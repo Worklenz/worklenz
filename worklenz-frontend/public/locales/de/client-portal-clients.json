@@ -48,6 +48,9 @@
   "createButton": "Kunde erstellen",
   "cancelButton": "Abbrechen",
 
+  "basicInformationSection": "Grundlegende Informationen",
+  "contactInformationSection": "Kontaktinformationen",
+
   "clientNameLabel": "Kundenname",
   "clientNamePlaceholder": "Kundenname eingeben",
   "clientNameRequired": "Bitte geben Sie den Kundennamen ein",
@@ -67,6 +70,16 @@
 
   "addressLabel": "Adresse",
   "addressPlaceholder": "Adresse eingeben (optional)",
+  "addressLine1Label": "Straße",
+  "addressLine1Placeholder": "Straße eingeben (optional)",
+  "cityLabel": "Stadt",
+  "cityPlaceholder": "Stadt",
+  "stateLabel": "Bundesland / Provinz",
+  "statePlaceholder": "Bundesland / Provinz",
+  "zipCodeLabel": "Postleitzahl",
+  "zipCodePlaceholder": "Postleitzahl",
+  "countryLabel": "Land",
+  "countryPlaceholder": "Land",
 
   "contactPersonLabel": "Kontaktperson",
   "contactPersonPlaceholder": "Namen der Kontaktperson eingeben",
@@ -84,6 +97,7 @@
   "clientPortalAccessTitle": "Kundenportal-Zugang",
   "clientPortalAccessDescription": "Teilen Sie diesen Link mit Ihrem Kunden, um ihm Zugang zu seinem Portal zu gewähren",
   "clientPortalAccessInfo": "Nach dem Erstellen des Kunden verwenden Sie den Organisations-Einladungslink von der Kundenseite, um ihm Portal-Zugang zu gewähren.",
+  "clientInvitationEmailInfo": "Dem Kunden wird eine Einladungs-E-Mail zugesandt, um dem Portal beizutreten. Sie können auch den Einladungslink von der Kundenseite teilen.",
   "copyButton": "Kopieren",
   "linkCopiedMessage": "Link in die Zwischenablage kopiert",
 
@@ -246,6 +260,12 @@
     "not_invited": "Nicht Eingeladen",
     "expired": "Abgelaufen"
   },
+  "portalStatusHelp": {
+    "active": "Aktiv: Der Kunde hat akzeptiert und kann auf das Portal zugreifen.",
+    "invited": "Eingeladen: Die Einladung wurde gesendet und ist noch gültig, aber noch nicht angenommen.",
+    "notInvited": "Nicht eingeladen: Es wurde noch keine Einladung gesendet.",
+    "expired": "Abgelaufen: Die vorherige Einladung ist abgelaufen und sollte erneut gesendet werden."
+  },
 
   "inviteToPortalTooltip": "Zum Portal einladen",
   "resendInvitationTooltip": "Einladung erneut senden",
@@ -309,5 +329,8 @@
   "clientAlreadyHasPortalAccess": "Kunde hat bereits Portal-Zugang",
   "clientAlreadyHasPendingInvitation": "Einladung bereits gesendet. Bitte verwenden Sie die Option \"Erneut senden\".",
   "clientEmailRequired": "Client-E-Mail ist für Einladung erforderlich",
-  "addEmailButton": "E-Mail hinzufügen & einladen"
+  "addEmailButton": "E-Mail hinzufügen & einladen",
+  "clientExistsWarning": "Ein Kunde mit dieser E-Mail existiert bereits. Der vorhandene Kundendatensatz wird verwendet.",
+  "clientExistsWithInvitationSent": "Ein Kunde mit dieser E-Mail existiert bereits und eine Einladung wurde bereits gesendet.",
+  "clientExistsNoInvitation": "Ein Kunde mit dieser E-Mail existiert bereits. Sie können ihm eine Einladung aus der Kundenliste senden."
 }

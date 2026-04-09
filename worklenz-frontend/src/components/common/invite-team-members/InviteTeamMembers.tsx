@@ -23,6 +23,9 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 import { LinkOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
+import { useAuthService } from '@/hooks/useAuth';
 
 interface FormValues {
   email: string[];
@@ -49,8 +52,17 @@ const InviteTeamMembers = () => {
   const [form] = Form.useForm<FormValues>();
 
   const { t } = useTranslation('settings/team-members');
+  const { t: tCommon } = useTranslation('common');
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isInviteRestricted = Boolean(currentSession?.is_expired);
+  const inviteRestrictedMessage = tCommon('license-expired-subtitle', {
+    defaultValue:
+      'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+  });
 
   // const handleSearch = useCallback(
   //   async (value: string) => {
@@ -94,17 +106,23 @@ const InviteTeamMembers = () => {
   };
 
   const handleCreateInvitationLink = async () => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       setLinkLoading(true);
       const linkData = {
         job_title_id: selectedJobTitle || undefined,
-        role_name: form.getFieldValue('access') === 'team-lead' 
-          ? ROLE_NAMES.TEAM_LEAD 
-          : form.getFieldValue('access') === 'admin' 
-            ? ROLE_NAMES.ADMIN 
-            : ROLE_NAMES.MEMBER,
+        role_name:
+          form.getFieldValue('access') === 'team-lead'
+            ? ROLE_NAMES.TEAM_LEAD
+            : form.getFieldValue('access') === 'admin'
+              ? ROLE_NAMES.ADMIN
+              : ROLE_NAMES.MEMBER,
         is_admin: form.getFieldValue('access') === 'admin',
-        max_usage: null // Unlimited usage
+        max_usage: null, // Unlimited usage
       };
 
       const res = await teamMembersApiService.generateInvitationLink(linkData);
@@ -112,27 +130,61 @@ const InviteTeamMembers = () => {
         setInvitationLink(res.body.invitation_url);
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
-        message.success(t('Invitation link created successfully'));
+        message.success(
+          t('Invitation link created successfully', {
+            defaultValue: 'Invitation link created successfully',
+          })
+        );
       }
     } catch (error) {
-      message.error(t('Failed to create invitation link'));
+      message.error(
+        t('Failed to create invitation link', {
+          defaultValue: 'Failed to create invitation link',
+        })
+      );
     } finally {
       setLinkLoading(false);
     }
   };
 
   const handleCopyLink = async () => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(invitationLink);
+
+      // Track team invitation link copy
+      trackMixpanelEvent(evt_team_invite_sent, {
+        invite_method: 'copy_link',
+        role: form.getFieldValue('access') || 'member',
+        has_job_title: !!selectedJobTitle,
+      });
+
       setLinkCopied(true);
-      message.success(t('Invitation link copied to clipboard'));
+      message.success(
+        t('Invitation link copied to clipboard', {
+          defaultValue: 'Invitation link copied to clipboard',
+        })
+      );
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (error) {
-      message.error(t('Failed to copy link'));
+      message.error(
+        t('Failed to copy link', {
+          defaultValue: 'Failed to copy link',
+        })
+      );
     }
   };
 
   const handleDeactivateLink = async () => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       setLinkLoading(true);
       const res = await teamMembersApiService.revokeInvitationLink();
@@ -140,16 +192,29 @@ const InviteTeamMembers = () => {
         setHasActiveLink(false);
         setInvitationLink('');
         setLinkExpiry('');
-        message.success(t('Invitation link deactivated'));
+        message.success(
+          t('Invitation link deactivated', {
+            defaultValue: 'Invitation link deactivated',
+          })
+        );
       }
     } catch (error) {
-      message.error(t('Failed to deactivate link'));
+      message.error(
+        t('Failed to deactivate link', {
+          defaultValue: 'Failed to deactivate link',
+        })
+      );
     } finally {
       setLinkLoading(false);
     }
   };
 
   const handleFormSubmit = async (values: FormValues) => {
+    if (isInviteRestricted) {
+      message.error(inviteRestrictedMessage);
+      return;
+    }
+
     try {
       setLoading(true);
       const body: ITeamMemberCreateRequest = {
@@ -165,6 +230,14 @@ const InviteTeamMembers = () => {
       };
       const res = await teamMembersApiService.createTeamMember(body);
       if (res.done) {
+        // Track team invitation via email
+        trackMixpanelEvent(evt_team_invite_sent, {
+          invite_method: 'email',
+          invite_count: emails.length,
+          role: values.access,
+          has_job_title: !!selectedJobTitle,
+        });
+
         form.resetFields();
         setEmails([]);
         setSelectedJobTitle(null);
@@ -197,7 +270,7 @@ const InviteTeamMembers = () => {
       const now = new Date();
       const diffTime = date.getTime() - now.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       if (diffDays > 0) {
         return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
       } else {
@@ -211,7 +284,9 @@ const InviteTeamMembers = () => {
   const tabItems = [
     {
       key: 'email',
-      label: t('Invite with Email'),
+      label: t('Invite with Email', {
+        defaultValue: 'Invite with Email',
+      }),
       children: (
         <Form
           form={form}
@@ -219,6 +294,11 @@ const InviteTeamMembers = () => {
           layout="vertical"
           initialValues={{ access: 'member' }}
         >
+          {isInviteRestricted && (
+            <Typography.Text type="danger" style={{ display: 'block', marginBottom: 16 }}>
+              {inviteRestrictedMessage}
+            </Typography.Text>
+          )}
           <Form.Item
             name="emails"
             label={t('memberEmailLabel')}
@@ -239,6 +319,7 @@ const InviteTeamMembers = () => {
                 style={{ width: '100%' }}
                 placeholder={t('memberEmailPlaceholder')}
                 onChange={handleEmailChange}
+                disabled={isInviteRestricted}
                 notFoundContent={
                   <Typography.Text type="secondary">{t('noResultFound')}</Typography.Text>
                 }
@@ -274,6 +355,7 @@ const InviteTeamMembers = () => {
 
           <Form.Item label={t('memberAccessLabel')} name="access">
             <Select
+              disabled={isInviteRestricted}
               options={[
                 { value: 'member', label: t('memberText') },
                 { value: 'team-lead', label: 'Team Lead' },
@@ -286,15 +368,26 @@ const InviteTeamMembers = () => {
     },
     {
       key: 'link',
-      label: t('Invite with Link'),
+      label: t('Invite with Link', {
+        defaultValue: 'Invite with Link',
+      }),
       children: (
         <Flex vertical gap={16}>
+          {isInviteRestricted && (
+            <Typography.Text type="danger">{inviteRestrictedMessage}</Typography.Text>
+          )}
           <div>
-            <Typography.Text strong>{t('Your Invite Link')}</Typography.Text>
+            <Typography.Text strong>
+              {t('Your Invite Link', {
+                defaultValue: 'Your Invite Link',
+              })}
+            </Typography.Text>
             <Input
               value={invitationLink}
               disabled
-              placeholder={t('No active invitation link')}
+              placeholder={t('No active invitation link', {
+                defaultValue: 'No active invitation link',
+              })}
               style={{ marginTop: 8 }}
               suffix={
                 invitationLink && (
@@ -303,23 +396,31 @@ const InviteTeamMembers = () => {
                     size="small"
                     icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
                     onClick={handleCopyLink}
+                    disabled={isInviteRestricted}
                     style={{ color: linkCopied ? '#52c41a' : undefined }}
                   />
                 )
               }
             />
-            {linkExpiry && (() => {
-              const expiryText = formatExpiryDate(linkExpiry);
-              return expiryText === 'Expired' ? (
-                <Typography.Text type="danger" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {expiryText}
-                </Typography.Text>
-              ) : (
-                <Typography.Text type="secondary" style={{ fontSize: 12, marginTop: 4, display: 'block' }}>
-                  {t('This link will automatically expire in')} {expiryText}.
-                </Typography.Text>
-              );
-            })()}
+            {linkExpiry &&
+              (() => {
+                const expiryText = formatExpiryDate(linkExpiry);
+                return expiryText === 'Expired' ? (
+                  <Typography.Text
+                    type="danger"
+                    style={{ fontSize: 12, marginTop: 4, display: 'block' }}
+                  >
+                    {expiryText}
+                  </Typography.Text>
+                ) : (
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, marginTop: 4, display: 'block' }}
+                  >
+                    {t('This link will automatically expire in')} {expiryText}.
+                  </Typography.Text>
+                );
+              })()}
           </div>
 
           <Flex gap={8}>
@@ -329,24 +430,37 @@ const InviteTeamMembers = () => {
                 loading={linkLoading}
                 onClick={handleCreateInvitationLink}
                 icon={<LinkOutlined />}
+                disabled={isInviteRestricted}
               >
-                {t('Create Link')}
+                {t('Create Link', {
+                  defaultValue: 'Create Link',
+                })}
               </Button>
             ) : (
               <>
                 <Button
                   loading={linkLoading}
                   onClick={handleDeactivateLink}
+                  disabled={isInviteRestricted}
                 >
-                  {t('Deactivate Link')}
+                  {t('Deactivate Link', {
+                    defaultValue: 'Deactivate Link',
+                  })}
                 </Button>
                 {formatExpiryDate(linkExpiry) !== 'Expired' && (
                   <Button
                     type="primary"
                     onClick={handleCopyLink}
                     icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+                    disabled={isInviteRestricted}
                   >
-                    {linkCopied ? t('Copied!') : t('Copy Link')}
+                    {linkCopied
+                      ? t('Copied!', {
+                          defaultValue: 'Copied!',
+                        })
+                      : t('Copy Link', {
+                          defaultValue: 'Copy Link',
+                        })}
                   </Button>
                 )}
               </>
@@ -374,18 +488,13 @@ const InviteTeamMembers = () => {
         activeTab === 'email' ? (
           <Flex justify="end">
             <Button onClick={form.submit} style={{ fontSize: 12 }}>
-              {t('addToTeamButton')}
+              {t('addToTeamButton', { defaultValue: 'Add to Team' })}
             </Button>
           </Flex>
         ) : null
       }
     >
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        size="small"
-      />
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="small" />
     </Modal>
   );
 };

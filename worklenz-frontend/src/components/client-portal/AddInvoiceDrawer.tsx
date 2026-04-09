@@ -15,18 +15,15 @@ import {
   Divider,
   Card,
 } from '@/shared/antd-imports';
-import { 
-  FileDoneOutlined, 
-  PlusOutlined, 
+import {
+  FileDoneOutlined,
+  PlusOutlined,
   DollarOutlined,
   CalendarOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import {
-  useGetClientsQuery,
-  useGetRequestsQuery,
-} from '@/api/client-portal/client-portal-api';
+import { useGetClientsQuery, useGetRequestsQuery } from '@/api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
 
@@ -62,12 +59,14 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
   const { t } = useTranslation(['client-portal-invoices', 'common']);
   const [form] = Form.useForm<InvoiceForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [items, setItems] = useState<InvoiceItem[]>([{
-    description: '',
-    quantity: 1,
-    rate: 0,
-    amount: 0
-  }]);
+  const [items, setItems] = useState<InvoiceItem[]>([
+    {
+      description: '',
+      quantity: 1,
+      rate: 0,
+      amount: 0,
+    },
+  ]);
 
   // Get available clients and requests
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery({});
@@ -77,13 +76,15 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
     if (open) {
       // Reset form when drawer opens
       form.resetFields();
-      setItems([{
-        description: '',
-        quantity: 1,
-        rate: 0,
-        amount: 0
-      }]);
-      
+      setItems([
+        {
+          description: '',
+          quantity: 1,
+          rate: 0,
+          amount: 0,
+        },
+      ]);
+
       // Set default values
       form.setFieldsValue({
         currency: 'USD',
@@ -108,24 +109,33 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
       // await createInvoice(invoiceData).unwrap();
       console.log('Creating invoice with data:', invoiceData);
 
-      message.success(t('invoiceCreatedSuccessfully', { ns: 'client-portal-invoices' }) || 'Invoice created successfully!');
+      message.success(
+        t('invoiceCreatedSuccessfully', { ns: 'client-portal-invoices' }) ||
+          'Invoice created successfully!'
+      );
       onClose();
       onSuccess?.();
     } catch (error) {
       console.error('Failed to create invoice:', error);
-      message.error(t('invoiceCreateFailed', { ns: 'client-portal-invoices' }) || 'Failed to create invoice. Please try again.');
+      message.error(
+        t('invoiceCreateFailed', { ns: 'client-portal-invoices' }) ||
+          'Failed to create invoice. Please try again.'
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const addItem = () => {
-    setItems([...items, {
-      description: '',
-      quantity: 1,
-      rate: 0,
-      amount: 0
-    }]);
+    setItems([
+      ...items,
+      {
+        description: '',
+        quantity: 1,
+        rate: 0,
+        amount: 0,
+      },
+    ]);
   };
 
   const removeItem = (index: number) => {
@@ -138,12 +148,12 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
   const updateItem = (index: number, field: keyof InvoiceItem, value: any) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
-    
+
     // Calculate amount when quantity or rate changes
     if (field === 'quantity' || field === 'rate') {
       newItems[index].amount = newItems[index].quantity * newItems[index].rate;
     }
-    
+
     setItems(newItems);
   };
 
@@ -168,12 +178,7 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
       destroyOnClose
       maskClosable={false}
     >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        scrollToFirstError
-      >
+      <Form form={form} layout="vertical" onFinish={handleSubmit} scrollToFirstError>
         <Row gutter={[16, 0]}>
           <Col xs={24} sm={12}>
             <Form.Item
@@ -184,7 +189,12 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
                   {t('client', { ns: 'common' }) || 'Client'}
                 </Space>
               }
-              rules={[{ required: true, message: t('clientRequired', { ns: 'common' }) || 'Please select a client' }]}
+              rules={[
+                {
+                  required: true,
+                  message: t('clientRequired', { ns: 'common' }) || 'Please select a client',
+                },
+              ]}
             >
               <Select
                 placeholder={t('selectClient', { ns: 'client-portal-invoices' }) || 'Select client'}
@@ -192,7 +202,9 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
                 showSearch
                 optionFilterProp="children"
                 filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  (option?.children as unknown as string)
+                    ?.toLowerCase()
+                    .includes(input.toLowerCase())
                 }
               >
                 {clients.map((client: any) => (
@@ -203,20 +215,28 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
               </Select>
             </Form.Item>
           </Col>
-          
+
           <Col xs={24} sm={12}>
             <Form.Item
               name="requestId"
-              label={t('relatedRequest', { ns: 'client-portal-invoices' }) || 'Related Request (Optional)'}
+              label={
+                t('relatedRequest', { ns: 'client-portal-invoices' }) ||
+                'Related Request (Optional)'
+              }
             >
               <Select
-                placeholder={t('selectRequest', { ns: 'client-portal-invoices' }) || 'Select request (optional)'}
+                placeholder={
+                  t('selectRequest', { ns: 'client-portal-invoices' }) ||
+                  'Select request (optional)'
+                }
                 loading={isLoadingRequests}
                 allowClear
                 showSearch
                 optionFilterProp="children"
                 filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  (option?.children as unknown as string)
+                    ?.toLowerCase()
+                    .includes(input.toLowerCase())
                 }
               >
                 {requests.map((request: any) => (
@@ -239,17 +259,26 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
                   {t('currency', { ns: 'client-portal-invoices' }) || 'Currency'}
                 </Space>
               }
-              rules={[{ required: true, message: t('currencyRequired', { ns: 'common' }) || 'Please select currency' }]}
+              rules={[
+                {
+                  required: true,
+                  message: t('currencyRequired', { ns: 'common' }) || 'Please select currency',
+                },
+              ]}
             >
-              <Select 
-                placeholder={t('selectCurrency', { ns: 'client-portal-invoices' }) || 'Select currency'}
+              <Select
+                placeholder={
+                  t('selectCurrency', { ns: 'client-portal-invoices' }) || 'Select currency'
+                }
                 showSearch
                 optionFilterProp="children"
                 filterOption={(input, option) =>
-                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                  (option?.children as unknown as string)
+                    ?.toLowerCase()
+                    .includes(input.toLowerCase())
                 }
               >
-                {CURRENCY_OPTIONS.map((currency) => (
+                {CURRENCY_OPTIONS.map(currency => (
                   <Option key={currency.value} value={currency.value.toUpperCase()}>
                     {currency.label}
                   </Option>
@@ -257,7 +286,7 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
               </Select>
             </Form.Item>
           </Col>
-          
+
           <Col xs={24} sm={12}>
             <Form.Item
               name="dueDate"
@@ -267,29 +296,36 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
                   {t('dueDate', { ns: 'client-portal-invoices' }) || 'Due Date'}
                 </Space>
               }
-              rules={[{ required: true, message: t('dueDateRequired', { ns: 'common' }) || 'Please select due date' }]}
+              rules={[
+                {
+                  required: true,
+                  message: t('dueDateRequired', { ns: 'common' }) || 'Please select due date',
+                },
+              ]}
             >
-              <DatePicker 
+              <DatePicker
                 style={{ width: '100%' }}
-                disabledDate={(current) => current && current < dayjs().startOf('day')}
+                disabledDate={current => current && current < dayjs().startOf('day')}
                 format="YYYY-MM-DD"
               />
             </Form.Item>
           </Col>
         </Row>
 
-        <Form.Item
-          name="description"
-          label={t('description', { ns: 'common' }) || 'Description'}
-        >
+        <Form.Item name="description" label={t('description', { ns: 'common' }) || 'Description'}>
           <TextArea
-            placeholder={t('invoiceDescriptionPlaceholder', { ns: 'client-portal-invoices' }) || 'Brief description of the invoice'}
+            placeholder={
+              t('invoiceDescriptionPlaceholder', { ns: 'client-portal-invoices' }) ||
+              'Brief description of the invoice'
+            }
             rows={2}
           />
         </Form.Item>
 
         <Divider orientation="left">
-          <Title level={5}>{t('invoiceItems', { ns: 'client-portal-invoices' }) || 'Invoice Items'}</Title>
+          <Title level={5}>
+            {t('invoiceItems', { ns: 'client-portal-invoices' }) || 'Invoice Items'}
+          </Title>
         </Divider>
 
         <Card>
@@ -298,9 +334,11 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
               <Row gutter={[8, 8]} align="middle">
                 <Col xs={24} sm={10}>
                   <Input
-                    placeholder={t('itemDescription', { ns: 'client-portal-invoices' }) || 'Item description'}
+                    placeholder={
+                      t('itemDescription', { ns: 'client-portal-invoices' }) || 'Item description'
+                    }
                     value={item.description}
-                    onChange={(e) => updateItem(index, 'description', e.target.value)}
+                    onChange={e => updateItem(index, 'description', e.target.value)}
                   />
                 </Col>
                 <Col xs={6} sm={3}>
@@ -308,7 +346,7 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
                     min={1}
                     placeholder="Qty"
                     value={item.quantity}
-                    onChange={(value) => updateItem(index, 'quantity', value || 1)}
+                    onChange={value => updateItem(index, 'quantity', value || 1)}
                     style={{ width: '100%' }}
                   />
                 </Col>
@@ -318,7 +356,7 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
                     step={0.01}
                     placeholder="Rate"
                     value={item.rate}
-                    onChange={(value) => updateItem(index, 'rate', value || 0)}
+                    onChange={value => updateItem(index, 'rate', value || 0)}
                     style={{ width: '100%' }}
                     addonBefore="$"
                   />
@@ -346,7 +384,7 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
               {index < items.length - 1 && <Divider style={{ margin: '16px 0 0 0' }} />}
             </div>
           ))}
-          
+
           <Button
             type="dashed"
             onClick={addItem}
@@ -356,7 +394,9 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
             {t('addItem', { ns: 'client-portal-invoices' }) || 'Add Item'}
           </Button>
 
-          <div style={{ textAlign: 'right', marginTop: 16, padding: 16, backgroundColor: '#fafafa' }}>
+          <div
+            style={{ textAlign: 'right', marginTop: 16, padding: 16, backgroundColor: '#fafafa' }}
+          >
             <Title level={4}>
               {t('total', { ns: 'common' }) || 'Total'}: ${getTotalAmount().toFixed(2)}
             </Title>
@@ -369,12 +409,22 @@ const AddInvoiceDrawer: React.FC<AddInvoiceDrawerProps> = ({ open, onClose, onSu
           style={{ marginTop: 24 }}
         >
           <TextArea
-            placeholder={t('invoiceNotesPlaceholder', { ns: 'client-portal-invoices' }) || 'Additional notes or terms'}
+            placeholder={
+              t('invoiceNotesPlaceholder', { ns: 'client-portal-invoices' }) ||
+              'Additional notes or terms'
+            }
             rows={3}
           />
         </Form.Item>
 
-        <div style={{ textAlign: 'right', marginTop: 32, borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
+        <div
+          style={{
+            textAlign: 'right',
+            marginTop: 32,
+            borderTop: '1px solid #f0f0f0',
+            paddingTop: 16,
+          }}
+        >
           <Space>
             <Button onClick={onClose} disabled={isSubmitting}>
               {t('cancel', { ns: 'common' }) || 'Cancel'}

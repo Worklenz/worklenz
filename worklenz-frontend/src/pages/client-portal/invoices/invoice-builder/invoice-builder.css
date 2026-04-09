@@ -63,7 +63,7 @@
   opacity: 0.6;
 }
 
-[data-theme='dark'] .invoice-builder-table .ant-input-number-input::placeholder {
+[data-theme="dark"] .invoice-builder-table .ant-input-number-input::placeholder {
   color: var(--ant-color-text-placeholder, rgba(255, 255, 255, 0.25));
 }
 
@@ -101,11 +101,11 @@
 }
 
 /* Dark mode support for handler border */
-[data-theme='dark'] .invoice-builder-table .ant-input-number-handler-wrap {
+[data-theme="dark"] .invoice-builder-table .ant-input-number-handler-wrap {
   border-left-color: var(--ant-color-border, rgba(255, 255, 255, 0.2));
 }
 
-[data-theme='dark'] .invoice-builder-table .ant-input-number-handler-down {
+[data-theme="dark"] .invoice-builder-table .ant-input-number-handler-down {
   border-top-color: var(--ant-color-border, rgba(255, 255, 255, 0.2));
 }
 
@@ -120,7 +120,7 @@
   cursor: default;
 }
 
-[data-theme='dark'] .invoice-builder-table .ant-input-number-prefix {
+[data-theme="dark"] .invoice-builder-table .ant-input-number-prefix {
   color: var(--ant-color-text-secondary, rgba(255, 255, 255, 0.45));
 }
 
@@ -136,7 +136,10 @@
   cursor: text;
 }
 
-.invoice-builder-table .ant-input-number .ant-input-number-input-wrap > *:not(.ant-input-number-input) {
+.invoice-builder-table
+  .ant-input-number
+  .ant-input-number-input-wrap
+  > *:not(.ant-input-number-input) {
   pointer-events: none;
   cursor: default;
 }
@@ -152,7 +155,7 @@
   .invoice-builder-container {
     flex-direction: column;
   }
-  
+
   .invoice-builder-left,
   .invoice-builder-right {
     min-width: 100% !important;

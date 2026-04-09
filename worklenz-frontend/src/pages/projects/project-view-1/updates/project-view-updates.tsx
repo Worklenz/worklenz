@@ -4,24 +4,16 @@ import {
   Empty,
   Flex,
   Form,
-  Mentions,
   Popconfirm,
   Space,
   Spin,
   theme,
   Tooltip,
   Input,
-  Dropdown
+  Dropdown,
+  message,
 } from '@/shared/antd-imports';
-import {
-  SendOutlined,
-  UserOutlined,
-  MessageOutlined,
-  EditOutlined,
-  MoreOutlined,
-  DeleteOutlined,
-  SmileOutlined
-} from '@ant-design/icons';
+import { SendOutlined, EditOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -37,22 +29,20 @@ import {
   createProjectComment,
   deleteProjectComment,
   addReactionToComment,
-  updateCommentAfterEdit
+  updateCommentAfterEdit,
 } from '@/features/projects/singleProject/updates/updatesSlice';
 import { getAllProjectMembers } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
-import EmojiPicker from '@/components/project-updates/EmojiPicker';
-import { getUserSession } from '@/utils/session-helper';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
+import CustomMentionsInput from './CustomMentionsInput';
 import './project-view-updates.css';
 
 dayjs.extend(relativeTime);
 
 const { useToken } = theme;
 
-// Helper function from task-comments.tsx
 const formatDateForSeparator = (date: string) => {
   const today = dayjs();
   const commentDate = dayjs(date);
@@ -70,6 +60,12 @@ const isDifferentDay = (date1: string, date2: string) => {
   return !dayjs(date1).isSame(dayjs(date2), 'day');
 };
 
+const escapeHtml = (text: string) => {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+};
+
 const ProjectViewUpdates = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
@@ -79,7 +75,6 @@ const ProjectViewUpdates = () => {
   const { token } = useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  // Ref for auto-scrolling
   const listRef = useRef<HTMLDivElement>(null);
 
   const { updatesList, loading } = useAppSelector(state => state.updatesReducer);
@@ -89,8 +84,11 @@ const ProjectViewUpdates = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [commentValue, setCommentValue] = useState('');
+  const [selectedMembers, setSelectedMembers] = useState<
+    { id: string; team_member_id: string; name: string; user_id?: string }[]
+  >([]);
 
-  // Initial fetch
   useEffect(() => {
     if (projectId) {
       dispatch(getProjectComments(projectId));
@@ -98,7 +96,6 @@ const ProjectViewUpdates = () => {
     }
   }, [projectId, dispatch]);
 
-  // Socket listener for real-time updates
   useEffect(() => {
     if (!socket || !projectId) return;
 
@@ -109,17 +106,21 @@ const ProjectViewUpdates = () => {
     };
 
     const handleReactionAdded = (data: any) => {
-      dispatch(addReactionToComment({
-        comment_id: data.comment_id,
-        reactions: data.reactions
-      }));
+      dispatch(
+        addReactionToComment({
+          comment_id: data.comment_id,
+          reactions: data.reactions,
+        })
+      );
     };
 
     const handleReactionRemoved = (data: any) => {
-      dispatch(addReactionToComment({
-        comment_id: data.comment_id,
-        reactions: data.reactions
-      }));
+      dispatch(
+        addReactionToComment({
+          comment_id: data.comment_id,
+          reactions: data.reactions,
+        })
+      );
     };
 
     const handleCommentEdited = (data: any) => {
@@ -140,54 +141,123 @@ const ProjectViewUpdates = () => {
     };
   }, [socket, projectId, dispatch]);
 
-  // Scroll to bottom on new updates
   useEffect(() => {
     if (listRef.current) {
       listRef.current.scrollTop = listRef.current.scrollHeight;
     }
   }, [updatesList]);
 
-  const onFinish = async (values: any) => {
-    if (!projectId || !values.comment?.trim()) return;
+  const mentionsOptions = useMemo(
+    () =>
+      projectMembers
+        .filter(member => member.name && member.user_id)
+        .map(member => ({
+          value: member.name,
+          label: (
+            <Space>
+              <SingleAvatar avatarUrl={member.avatar_url} name={member.name} size={24} />
+              <span>{member.name}</span>
+              {member.role && (
+                <span style={{ color: '#999', fontSize: '12px' }}>({member.role})</span>
+              )}
+            </Space>
+          ),
+          key: member.user_id,
+        })),
+    [projectMembers]
+  );
+
+  const memberSelectHandler = useCallback(
+    (member: any) => {
+      if (!member?.value || !member?.key) return;
+
+      const selectedMember = projectMembers.find(m => m.user_id === member.key);
+
+      if (!selectedMember || !selectedMember.user_id) return;
+
+      const mentionObject = {
+        id: selectedMember.user_id,
+        team_member_id: selectedMember.id,
+        name: selectedMember.name,
+        user_id: selectedMember.user_id,
+      };
+
+      setSelectedMembers(prev => {
+        if (prev.some(m => m.id === selectedMember.user_id)) {
+          return prev;
+        }
+        return [...prev, mentionObject];
+      });
+    },
+    [projectMembers]
+  );
+
+  const handleCommentChange = useCallback((value: string) => {
+    setCommentValue(value);
+  }, []);
+
+  const onFinish = async () => {
+    if (!projectId || !commentValue?.trim()) {
+      message.error(t('emptyCommentError', { defaultValue: 'Please enter a comment' }));
+      return;
+    }
 
     setSubmitting(true);
 
-    const content = values.comment;
-
-    // Detect mentions from text
-    const mentionedMembers = projectMembers
-      .filter(member => member.name && content.includes(`@${member.name}`) && (member.user_id || member.id))
-      .map(m => ({
-        id: m.user_id || m.id,
-        name: m.name,
-        team_member_id: m.team_member_id
-      }));
-
     try {
-      const result = await dispatch(createProjectComment({
-        project_id: projectId,
-        content: content,
-        mentions: mentionedMembers
-      })).unwrap();
-      form.resetFields();
-      
-      // Scroll to bottom after posting
+      const uniqueMentions = Array.from(
+        new Map(selectedMembers.map(member => [member.id, member])).values()
+      );
+
+      const validMentions = uniqueMentions.filter(
+        mention => mention.id && mention.user_id && mention.name
+      );
+
+      if (validMentions.length !== uniqueMentions.length) {
+        message.warning('Some invalid mentions were removed');
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const mentionsWithValidUUIDs = validMentions.filter(mention => uuidRegex.test(mention.id));
+
+      if (mentionsWithValidUUIDs.length !== validMentions.length) {
+        message.error('Some mentions have invalid user IDs and were removed');
+      }
+
+      await dispatch(
+        createProjectComment({
+          project_id: projectId,
+          content: commentValue,
+          mentions: mentionsWithValidUUIDs,
+        })
+      ).unwrap();
+
+      setCommentValue('');
+      setSelectedMembers([]);
+
       setTimeout(() => {
         if (listRef.current) {
           listRef.current.scrollTop = listRef.current.scrollHeight;
         }
       }, 100);
-    } catch (error) {
-      console.error('Failed to send comment', error);
+    } catch (error: any) {
+      if (
+        error?.message?.includes('foreign_key_violation') ||
+        error?.message?.includes('informed_by')
+      ) {
+        message.error('Failed to send comment: Invalid user reference. Please try again.');
+      } else {
+        message.error(t('commentError', { defaultValue: 'Failed to send comment' }));
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
-      form.submit();
+      onFinish();
     }
   };
 
@@ -195,8 +265,9 @@ const ProjectViewUpdates = () => {
     if (!commentId) return;
     try {
       await dispatch(deleteProjectComment(commentId)).unwrap();
+      message.success(t('deleteSuccess', { defaultValue: 'Comment deleted successfully' }));
     } catch (error) {
-      console.error('Failed to delete comment', error);
+      message.error(t('deleteError', { defaultValue: 'Failed to delete comment' }));
     }
   };
 
@@ -218,19 +289,19 @@ const ProjectViewUpdates = () => {
 
   const handleEdit = async (commentId: string) => {
     if (!editContent.trim()) return;
-    
+
     try {
       await projectCommentsApiService.editComment(commentId, editContent);
       setEditingCommentId(null);
       setEditContent('');
+      message.success(t('editSuccess', { defaultValue: 'Comment updated successfully' }));
     } catch (error) {
-      console.error('Failed to edit comment', error);
+      message.error(t('editError', { defaultValue: 'Failed to edit comment' }));
     }
   };
 
   const startEdit = (commentId: string, content: string) => {
     setEditingCommentId(commentId);
-    // Strip HTML tags for editing
     const textContent = content.replace(/<[^>]*>/g, '');
     setEditContent(textContent);
   };
@@ -242,11 +313,11 @@ const ProjectViewUpdates = () => {
 
     let processedContent = content;
     const placeholders = content.match(/{\d+}/g);
-    
+
     if (placeholders) {
       processedContent = processedContent.replace(/\n/g, '<br/>');
-      
-      placeholders.forEach((placeholder) => {
+
+      placeholders.forEach(placeholder => {
         const match = placeholder.match(/\d+/);
         if (match) {
           const index = parseInt(match[0]);
@@ -254,7 +325,7 @@ const ProjectViewUpdates = () => {
             const userName = mentions[index].user_name || mentions[index].name;
             processedContent = processedContent.replace(
               placeholder,
-              `<span class='mentions'>@${userName}</span>`
+              `<span class='mentions'>@${escapeHtml(userName)}</span>`
             );
           }
         }
@@ -262,25 +333,21 @@ const ProjectViewUpdates = () => {
     } else {
       processedContent = processedContent.replace(/\n/g, '<br/>');
     }
-    
+
     return processedContent;
   };
 
   const renderCommentContent = (htmlContent: string, mentions?: any[]) => {
     const processedContent = mentions ? processMentions(htmlContent, mentions) : htmlContent;
-    return (
-      <div
-        dangerouslySetInnerHTML={{ __html: processedContent }}
-      />
-    );
+    return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
   };
 
   const renderTimeSeparator = (date: string) => (
     <div className="comment-time-separator">
       <span
         style={{
-          backgroundColor: token.colorBgContainer, // Match container background
-          color: token.colorTextSecondary
+          backgroundColor: token.colorBgContainer,
+          color: token.colorTextSecondary,
         }}
       >
         {formatDateForSeparator(date)}
@@ -288,19 +355,6 @@ const ProjectViewUpdates = () => {
     </div>
   );
 
-  const mentionsOptions = useMemo(() => projectMembers
-    .filter(member => member.user_id || member.id)
-    .map(member => ({
-      value: member.name || '',
-      label: (
-        <Space>
-          <SingleAvatar avatarUrl={member.avatar_url} name={member.name} />
-          <span>{member.name}</span>
-        </Space>
-      ),
-    })), [projectMembers]);
-
-  // Styles from task-comments.tsx logic
   const authorStyle = {
     color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
     fontSize: '12px',
@@ -309,27 +363,19 @@ const ProjectViewUpdates = () => {
   const dateStyle = {
     color: themeWiseColor(colors.deepLightGray, colors.lightGray, themeMode),
     fontSize: '11px',
-    marginLeft: '8px'
+    marginLeft: '8px',
   };
 
-  const actionStyle = {
-    color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
-    cursor: 'pointer',
-    fontSize: '11px'
-  };
-
-  // Helper function to check if messages should be grouped
   const shouldGroupWithPrevious = (currentIndex: number) => {
     if (currentIndex === 0) return false;
-    
+
     const current = updatesList[currentIndex];
     const previous = updatesList[currentIndex - 1];
-    
-    // Group if same user and within 2 minutes
+
     const isSameUser = current.user_id === previous.user_id;
     const timeDiff = dayjs(current.created_at).diff(dayjs(previous.created_at), 'minute');
     const isWithinTimeWindow = timeDiff < 2;
-    
+
     return isSameUser && isWithinTimeWindow;
   };
 
@@ -343,184 +389,261 @@ const ProjectViewUpdates = () => {
         className="updates-list-container"
         ref={listRef}
         style={{
-          backgroundColor: token.colorBgContainer
+          backgroundColor: token.colorBgContainer,
         }}
       >
         <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
-        {loading && updatesList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <Spin size="large" />
-          </div>
-        ) : updatesList.length === 0 ? (
-          <Empty description={t('emptyState')} />
-        ) : (
-          <div>
-            {updatesList.map((item, index) => {
-              const isUserComment = item.user_id === user.id;
-              const isGrouped = shouldGroupWithPrevious(index);
+          {loading && updatesList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <Spin size="large" />
+            </div>
+          ) : updatesList.length === 0 ? (
+            <Empty description={t('emptyState')} />
+          ) : (
+            <div>
+              {updatesList.map((item, index) => {
+                const isUserComment = item.user_id === user.id;
+                const isGrouped = shouldGroupWithPrevious(index);
 
-              // Render time separator logic
-              const showTimeSeparator = index === 0 ||
-                (index > 0 && isDifferentDay(item.created_at || '', updatesList[index - 1].created_at || ''));
+                const showTimeSeparator =
+                  index === 0 ||
+                  (index > 0 &&
+                    isDifferentDay(item.created_at || '', updatesList[index - 1].created_at || ''));
 
-              return (
-                <div key={item.id || index}>
-                  {showTimeSeparator && renderTimeSeparator(item.created_at || '')}
+                return (
+                  <div key={item.id || index}>
+                    {showTimeSeparator && renderTimeSeparator(item.created_at || '')}
 
-                  <Comment
-                    author={!isGrouped ? <span style={authorStyle}>{item.created_by}</span> : null}
-                    datetime={!isGrouped ? <span style={dateStyle}>{dayjs(item.created_at).fromNow()}</span> : null}
-                    avatar={
-                      !isGrouped ? (
-                        <SingleAvatar
-                          name={item.created_by}
-                          avatarUrl={item.avatar_url}
-                        />
-                      ) : (
-                        <div style={{ width: '32px' }} />
-                      )
-                    }
-                    content={
-                      <div className="comment-wrapper">
-                        <div className="comment-hover-bar">
-                          <div className="quick-reactions">
-                            <Tooltip title={t('reactions.like', { defaultValue: 'Like' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '👍')}>👍</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.love', { defaultValue: 'Love' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '❤️')}>❤️</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.laugh', { defaultValue: 'Laugh' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '😄')}>😄</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.surprised', { defaultValue: 'Surprised' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '😮')}>😮</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.sad', { defaultValue: 'Sad' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '😢')}>😢</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.celebrate', { defaultValue: 'Celebrate' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '🎉')}>🎉</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.rocket', { defaultValue: 'Rocket' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '🚀')}>🚀</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.eyes', { defaultValue: 'Eyes' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '👀')}>👀</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.fire', { defaultValue: 'Fire' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '🔥')}>🔥</span>
-                            </Tooltip>
-                            <Tooltip title={t('reactions.hundred', { defaultValue: '100' })}>
-                              <span className="quick-emoji" onClick={() => handleReaction(item.id!, '💯')}>💯</span>
-                            </Tooltip>
-                          </div>
-                          {isUserComment && (
-                            <>
-                              <div className="hover-divider" />
-                              <Tooltip title={t('actions.edit', { defaultValue: 'Edit' })}>
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  icon={<EditOutlined />}
-                                  className="hover-action-btn"
-                                  onClick={() => startEdit(item.id!, item.content || '')}
-                                />
+                    <Comment
+                      author={
+                        !isGrouped ? <span style={authorStyle}>{item.created_by}</span> : null
+                      }
+                      datetime={
+                        !isGrouped ? (
+                          <span style={dateStyle}>{dayjs(item.created_at).fromNow()}</span>
+                        ) : null
+                      }
+                      avatar={
+                        !isGrouped ? (
+                          <SingleAvatar name={item.created_by} avatarUrl={item.avatar_url} />
+                        ) : (
+                          <div style={{ width: '32px' }} />
+                        )
+                      }
+                      content={
+                        <div className="comment-wrapper">
+                          <div className="comment-hover-bar">
+                            <div className="quick-reactions">
+                              <Tooltip title={t('reactions.like', { defaultValue: 'Like' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '👍')}
+                                >
+                                  👍
+                                </span>
                               </Tooltip>
-                              <Dropdown
-                                menu={{
-                                  items: [
-                                    {
-                                      key: 'delete',
-                                      label: t('deleteButton'),
-                                      icon: <DeleteOutlined />,
-                                      danger: true,
-                                      onClick: () => {
-                                        handleDelete(item.id!);
-                                      }
-                                    }
-                                  ]
-                                }}
-                                trigger={['click']}
+                              <Tooltip title={t('reactions.love', { defaultValue: 'Love' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '❤️')}
+                                >
+                                  ❤️
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={t('reactions.laugh', { defaultValue: 'Laugh' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '😄')}
+                                >
+                                  😄
+                                </span>
+                              </Tooltip>
+                              <Tooltip
+                                title={t('reactions.surprised', { defaultValue: 'Surprised' })}
                               >
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  icon={<MoreOutlined />}
-                                  className="hover-action-btn"
-                                />
-                              </Dropdown>
-                            </>
-                          )}
-                        </div>
-                        <div className={`comment-content-${themeMode}`}>
-                          {editingCommentId === item.id ? (
-                            <div>
-                              <Input.TextArea
-                                value={editContent}
-                                onChange={(e) => setEditContent(e.target.value)}
-                                autoSize={{ minRows: 2, maxRows: 6 }}
-                                style={{ marginBottom: 8 }}
-                              />
-                              <Space>
-                              <Button size="small" type="primary" onClick={() => handleEdit(item.id!)}>
-                                {t('actions.save', { defaultValue: 'Save' })}
-                              </Button>
-                              <Button size="small" onClick={() => setEditingCommentId(null)}>
-                                {t('cancelButton', { defaultValue: 'Cancel' })}
-                              </Button>
-                            </Space>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '😮')}
+                                >
+                                  😮
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={t('reactions.sad', { defaultValue: 'Sad' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '😢')}
+                                >
+                                  😢
+                                </span>
+                              </Tooltip>
+                              <Tooltip
+                                title={t('reactions.celebrate', { defaultValue: 'Celebrate' })}
+                              >
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '🎉')}
+                                >
+                                  🎉
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={t('reactions.rocket', { defaultValue: 'Rocket' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '🚀')}
+                                >
+                                  🚀
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={t('reactions.eyes', { defaultValue: 'Eyes' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '👀')}
+                                >
+                                  👀
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={t('reactions.fire', { defaultValue: 'Fire' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '🔥')}
+                                >
+                                  🔥
+                                </span>
+                              </Tooltip>
+                              <Tooltip title={t('reactions.hundred', { defaultValue: '100' })}>
+                                <span
+                                  className="quick-emoji"
+                                  onClick={() => handleReaction(item.id!, '💯')}
+                                >
+                                  💯
+                                </span>
+                              </Tooltip>
                             </div>
-                          ) : (
-                            <>
-                              {renderCommentContent(item.content || '', item.mentions)}
-                              {item.edited && (
-                                <Tooltip title={`Edited ${dayjs(item.last_edited_at).fromNow()} by ${item.last_edited_by_name || 'Unknown'}`}>
-                                  <span style={{ fontSize: 11, color: '#8c8c8c', marginLeft: 8, fontStyle: 'italic' }}>
-                                    (edited)
-                                  </span>
+                            {isUserComment && (
+                              <>
+                                <div className="hover-divider" />
+                                <Tooltip title={t('actions.edit', { defaultValue: 'Edit' })}>
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<EditOutlined />}
+                                    className="hover-action-btn"
+                                    onClick={() => startEdit(item.id!, item.content || '')}
+                                  />
                                 </Tooltip>
-                              )}
-                            </>
-                          )}
-                        
-                          {/* Reactions */}
-                          {item.reactions && item.reactions.length > 0 && (
-                            <div style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                              {item.reactions.map((reaction: any) => {
-                                const hasReacted = reaction.users?.some((u: any) => u.user_id === user.id);
-                                return (
+                                <Dropdown
+                                  menu={{
+                                    items: [
+                                      {
+                                        key: 'delete',
+                                        label: t('deleteButton'),
+                                        icon: <DeleteOutlined />,
+                                        danger: true,
+                                        onClick: () => {
+                                          handleDelete(item.id!);
+                                        },
+                                      },
+                                    ],
+                                  }}
+                                  trigger={['click']}
+                                >
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<MoreOutlined />}
+                                    className="hover-action-btn"
+                                  />
+                                </Dropdown>
+                              </>
+                            )}
+                          </div>
+                          <div className={`comment-content-${themeMode}`}>
+                            {editingCommentId === item.id ? (
+                              <div>
+                                <Input.TextArea
+                                  value={editContent}
+                                  onChange={e => setEditContent(e.target.value)}
+                                  autoSize={{ minRows: 2, maxRows: 6 }}
+                                  style={{ marginBottom: 8 }}
+                                />
+                                <Space>
+                                  <Button
+                                    size="small"
+                                    type="primary"
+                                    onClick={() => handleEdit(item.id!)}
+                                  >
+                                    {t('actions.save', { defaultValue: 'Save' })}
+                                  </Button>
+                                  <Button size="small" onClick={() => setEditingCommentId(null)}>
+                                    {t('cancelButton', { defaultValue: 'Cancel' })}
+                                  </Button>
+                                </Space>
+                              </div>
+                            ) : (
+                              <>
+                                {renderCommentContent(item.content || '', item.mentions)}
+                                {item.edited && (
                                   <Tooltip
-                                    key={reaction.emoji}
-                                    title={reaction.users?.map((u: any) => u.user_name).join(', ') || ''}
+                                    title={`Edited ${dayjs(item.last_edited_at).fromNow()} by ${item.last_edited_by_name || 'Unknown'}`}
                                   >
                                     <span
-                                      onClick={() => {
-                                        if (hasReacted) {
-                                          handleRemoveReaction(item.id!, reaction.emoji);
-                                        } else {
-                                          handleReaction(item.id!, reaction.emoji);
-                                        }
+                                      style={{
+                                        fontSize: 11,
+                                        color: '#8c8c8c',
+                                        marginLeft: 8,
+                                        fontStyle: 'italic',
                                       }}
-                                      className={`reaction ${hasReacted ? 'reacted' : ''}`}
                                     >
-                                      {reaction.emoji} {reaction.count}
+                                      (edited)
                                     </span>
                                   </Tooltip>
-                                );
-                              })}
-                            </div>
-                          )}
+                                )}
+                              </>
+                            )}
+
+                            {item.reactions && item.reactions.length > 0 && (
+                              <div
+                                style={{ marginTop: 6, display: 'flex', gap: 4, flexWrap: 'wrap' }}
+                              >
+                                {item.reactions.map((reaction: any) => {
+                                  const hasReacted = reaction.users?.some(
+                                    (u: any) => u.user_id === user.id
+                                  );
+                                  return (
+                                    <Tooltip
+                                      key={reaction.emoji}
+                                      title={
+                                        reaction.users?.map((u: any) => u.user_name).join(', ') ||
+                                        ''
+                                      }
+                                    >
+                                      <span
+                                        onClick={() => {
+                                          if (hasReacted) {
+                                            handleRemoveReaction(item.id!, reaction.emoji);
+                                          } else {
+                                            handleReaction(item.id!, reaction.emoji);
+                                          }
+                                        }}
+                                        className={`reaction ${hasReacted ? 'reacted' : ''}`}
+                                      >
+                                        {reaction.emoji} {reaction.count}
+                                      </span>
+                                    </Tooltip>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    }
-                    className={`${isUserComment ? 'current-user-comment' : ''} ${isGrouped ? 'grouped-comment' : ''}`}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+                      }
+                      className={`${isUserComment ? 'current-user-comment' : ''} ${isGrouped ? 'grouped-comment' : ''}`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -528,33 +651,48 @@ const ProjectViewUpdates = () => {
         className="updates-input-container"
         style={{
           borderTop: `1px solid ${token.colorBorderSecondary}`,
-          backgroundColor: token.colorBgContainer
+          backgroundColor: token.colorBgContainer,
+          position: 'relative',
+          zIndex: 10,
+          overflow: 'visible',
         }}
       >
         <div style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}>
-          <Form form={form} onFinish={onFinish}>
-            <Form.Item name="comment" style={{ marginBottom: 8 }}>
-              <Mentions
-                rows={2}
-                placeholder={`${t('inputPlaceholder')} (Shift+Enter to send)`}
-                options={mentionsOptions}
-                autoSize={{ minRows: 1, maxRows: 4 }}
-                style={{ borderRadius: '8px' }}
-                onKeyDown={handleKeyDown}
-              />
-            </Form.Item>
-            <Flex justify="flex-end">
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={submitting}
-                icon={<SendOutlined />}
-                size="small"
-              >
-                {t('addButton')}
-              </Button>
-            </Flex>
-          </Form>
+          <div style={{ marginBottom: 8 }}>
+            <CustomMentionsInput
+              placeholder={t('inputPlaceholder')}
+              options={mentionsOptions}
+              value={commentValue}
+              onSelect={memberSelectHandler}
+              onChange={handleCommentChange}
+              onKeyDown={handleKeyDown}
+              prefix="@"
+              filterOption={(input: string, option: any) => {
+                if (!input) return true;
+                const optionLabel =
+                  option?.label?.props?.children?.[1]?.props?.children || option?.value || '';
+                return optionLabel.toLowerCase().includes(input.toLowerCase());
+              }}
+              style={{
+                minHeight: 60,
+                maxHeight: 120,
+                borderRadius: '8px',
+              }}
+              themeMode={themeMode}
+            />
+          </div>
+          <Flex justify="flex-end">
+            <Button
+              type="primary"
+              onClick={onFinish}
+              loading={submitting}
+              icon={<SendOutlined />}
+              size="small"
+              disabled={!commentValue.trim()}
+            >
+              {t('addButton')}
+            </Button>
+          </Flex>
         </div>
       </div>
     </Card>

@@ -9,7 +9,10 @@ import WorkloadChart from './components/WorkloadChart';
 import WorkloadCalendar from './components/WorkloadCalendar';
 import WorkloadTable from './components/WorkloadTable';
 import WorkloadFilters from './components/WorkloadFilters';
-import { useGetProjectWorkloadQuery, useGetWorkloadMembersQuery } from '@/api/project-workload/project-workload.api.service';
+import {
+  useGetProjectWorkloadQuery,
+  useGetWorkloadMembersQuery,
+} from '@/api/project-workload/project-workload.api.service';
 import projectWorkloadApi from '@/api/project-workload/project-workload.api.service';
 import { setWorkloadView, setDateRange } from '@/features/project-workload/projectWorkloadSlice';
 import dayjs from 'dayjs';
@@ -33,10 +36,10 @@ const ProjectViewWorkload = React.memo(() => {
     refetch,
     isFetching,
   } = useGetProjectWorkloadQuery(
-    { 
+    {
       projectId: projectId!,
       startDate: dateRange.startDate,
-      endDate: dateRange.endDate
+      endDate: dateRange.endDate,
     },
     {
       skip: !projectId,
@@ -54,10 +57,10 @@ const ProjectViewWorkload = React.memo(() => {
     refetch: fallbackRefetch,
     isFetching: fallbackFetching,
   } = useGetWorkloadMembersQuery(
-    { 
+    {
       projectId: projectId!,
       startDate: dateRange.startDate,
-      endDate: dateRange.endDate
+      endDate: dateRange.endDate,
     },
     {
       skip: !projectId || !error, // Only use fallback if main query has error
@@ -85,57 +88,25 @@ const ProjectViewWorkload = React.memo(() => {
     }
   }, [dateRange.startDate, dateRange.endDate, dispatch]);
 
-  // Debug logging and state monitoring
-  useEffect(() => {
-    console.log('ProjectViewWorkload State:', {
-      projectId,
-      dateRange,
-      isLoading: finalLoading,
-      isFetching: finalFetching,
-      hasData: !!finalData,
-      dataLength: finalData?.members?.length || finalData?.body?.length || 0,
-      error: finalError,
-      usingFallback: error && fallbackData,
-    });
-  }, [projectId, dateRange, finalLoading, finalFetching, finalData, finalError, error, fallbackData]);
-
   // Force refetch when projectId or dateRange changes
   useEffect(() => {
     if (projectId) {
-      console.log('Project or date range changed, refetching workload data for:', projectId);
-      const timeoutId = setTimeout(() => {
-        finalRefetch();
-      }, 100);
-      return () => clearTimeout(timeoutId);
+      finalRefetch();
     }
   }, [projectId, dateRange.startDate, dateRange.endDate, finalRefetch]);
 
-  // Retry mechanism for failed loads
   const handleRetry = useCallback(() => {
-    console.log('Manual retry triggered');
     finalRefetch();
   }, [finalRefetch]);
 
-  // Enhanced refetch handler with debugging
   const handleRefresh = useCallback(() => {
-    console.log('=== REFRESH TRIGGERED ===');
-    console.log('Current state:', {
-      projectId,
-      dateRange,
-      isLoading: finalLoading,
-      isFetching: finalFetching,
-      hasData: !!finalData,
-      error: finalError
-    });
-    
     try {
       dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
       finalRefetch();
-      console.log('Refetch completed successfully');
     } catch (error) {
-      console.error('Error calling refetch:', error);
+      console.error('Error refreshing workload:', error);
     }
-  }, [finalRefetch, projectId, dateRange, finalLoading, finalFetching, finalData, finalError, dispatch]);
+  }, [finalRefetch, dispatch]);
 
   // Memoize the content to prevent unnecessary re-renders
   const memoizedContent = useMemo(() => {
@@ -203,7 +174,12 @@ const ProjectViewWorkload = React.memo(() => {
       );
     }
 
-    if (!finalData || (!finalData.members && !finalData.body) || (finalData.members && finalData.members.length === 0) || (finalData.body && finalData.body.length === 0)) {
+    if (
+      !finalData ||
+      (!finalData.members && !finalData.body) ||
+      (finalData.members && finalData.members.length === 0) ||
+      (finalData.body && finalData.body.length === 0)
+    ) {
       return (
         <div style={{ padding: '60px 0', textAlign: 'center' }}>
           <Empty
@@ -242,7 +218,13 @@ const ProjectViewWorkload = React.memo(() => {
       }}
     >
       {/* Fixed Header Section - View Tabs and Filters */}
-      <Flex justify="space-between" align="center" wrap="wrap" gap={16} style={{ marginBottom: '16px' }}>
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={16}
+        style={{ marginBottom: '16px' }}
+      >
         <Segmented
           value={localView}
           onChange={handleViewChange}
@@ -260,9 +242,9 @@ const ProjectViewWorkload = React.memo(() => {
       </Flex>
 
       {/* Scrollable Content Section */}
-      <div 
-        className="workload-scroll-container" 
-        style={{ 
+      <div
+        className="workload-scroll-container"
+        style={{
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
@@ -281,9 +263,7 @@ const ProjectViewWorkload = React.memo(() => {
             <>
               <WorkloadOverview data={finalData as any} isLoading={finalLoading} />
 
-              <Card>
-                {renderContent()}
-              </Card>
+              <Card>{renderContent()}</Card>
             </>
           )}
         </Flex>

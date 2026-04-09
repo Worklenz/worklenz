@@ -44,7 +44,7 @@ const HomePage = memo(() => {
         console.warn('Failed to preload TaskDrawer:', error);
       }
     };
-    
+
     preloadTaskDrawer();
   }, []);
 
@@ -131,8 +131,8 @@ const HomePage = memo(() => {
         {createPortal(
           <React.Suspense fallback={null}>
             <TaskDrawer />
-          </React.Suspense>, 
-          document.body, 
+          </React.Suspense>,
+          document.body,
           'home-task-drawer'
         )}
       </Suspense>

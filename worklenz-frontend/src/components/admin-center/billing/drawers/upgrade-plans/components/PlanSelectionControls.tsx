@@ -26,7 +26,9 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
       <Space size="middle" align="center">
         {!isAppSumoUser && (
           <Space align="center" size="small">
-            <Typography.Text strong style={{ fontSize: '13px' }}>{t('pricing-modal:teamSize.label')}:</Typography.Text>
+            <Typography.Text strong style={{ fontSize: '13px' }}>
+              {t('pricing-modal:teamSize.label')}:
+            </Typography.Text>
             <Flex align="center" gap={8}>
               <InputNumber
                 value={teamSize}
@@ -35,7 +37,7 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
                 step={1}
                 size="middle"
                 style={{ width: 120 }}
-                onChange={(value) => {
+                onChange={value => {
                   const v = Number(value);
                   if (Number.isFinite(v)) {
                     onTeamSizeChange(Math.min(Math.max(v, minTeamSize), maxTeamSize));
@@ -53,7 +55,9 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
         )}
 
         <Space align="center" size="small">
-          <Typography.Text strong style={{ fontSize: '13px' }}>{t('pricing-modal:billingCycle.label')}:</Typography.Text>
+          <Typography.Text strong style={{ fontSize: '13px' }}>
+            {t('pricing-modal:billingCycle.label')}:
+          </Typography.Text>
           <Button.Group size="middle">
             <Button
               type={billingFrequency === 'monthly' ? 'primary' : 'default'}
@@ -71,8 +75,12 @@ export const PlanSelectionControls: React.FC<PlanSelectionControlsProps> = ({
             </Button>
           </Button.Group>
           {annualSavingsPercent !== undefined && annualSavingsPercent > 0 && (
-            <Typography.Text style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8, fontSize: '12px' }}>
-              {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', { percent: annualSavingsPercent })}
+            <Typography.Text
+              style={{ color: '#52c41a', fontWeight: 600, marginLeft: 8, fontSize: '12px' }}
+            >
+              {t('pricing-modal:billing.annualSavingsShortOff', 'Up to {{percent}}% off', {
+                percent: annualSavingsPercent,
+              })}
             </Typography.Text>
           )}
         </Space>

@@ -91,6 +91,7 @@ export const OrganizationStep: React.FC<Props> = ({
               onPressEnter={onPressEnter}
               ref={inputRef}
               className="text-base"
+              maxLength={50}
             />
           </Form.Item>
 

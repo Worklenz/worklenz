@@ -139,7 +139,7 @@ const GranttMembersTable = React.memo(
             const memberId = member.team_member_id || member.id;
             const isExpanded = expandedMemberId === memberId;
             const projects = getMemberProjects(memberId);
-            
+
             return (
               <Flex vertical key={memberId}>
                 <Flex
@@ -181,8 +181,8 @@ const GranttMembersTable = React.memo(
                           return (
                             <div style={{ fontSize: '12px' }}>
                               <div>Projects: {workload.projectCount}</div>
-                              <div>Allocated: {workload.totalAllocatedHours}h</div>
-                              <div>Available: {workload.availableHours}h</div>
+                              {/* <div>Allocated: {workload.totalAllocatedHours}h</div> */}
+                              {/* <div>Available: {workload.availableHours}h</div> */}
                               <div>Status: {getStatusText(workload.status)}</div>
                             </div>
                           );
@@ -204,9 +204,9 @@ const GranttMembersTable = React.memo(
                       </Tooltip>
                     </Flex>
                   </Flex>
-                  <Button 
-                    size="small" 
-                    type="text" 
+                  <Button
+                    size="small"
+                    type="text"
                     onClick={() => onToggleProject(memberId)}
                     loading={isProjectsLoading && expandedMemberId === memberId}
                   >
@@ -214,47 +214,102 @@ const GranttMembersTable = React.memo(
                   </Button>
                 </Flex>
 
-                {isExpanded && projects.length > 0 && (() => {
-                  // Group projects by project ID to show each project only once
-                  const groupedProjects = projects.reduce((acc: Record<string, any>, project: any) => {
-                    if (!acc[project.id]) {
-                      acc[project.id] = project; // Keep first segment for display
-                    }
-                    return acc;
-                  }, {});
-                  
-                  return Object.values(groupedProjects).map((project: any, index: any) => {
-                    return (
-                      <Flex
-                        gap={8}
-                        align="center"
-                        key={project.id || index}
-                        style={{
-                          paddingInline: 12,
-                          position: 'sticky',
-                          height: 65,
-                        }}
-                      >
-                        <Badge color={project.color_code || '#1890ff'} />
-                        <Tooltip
-                          title={
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span>
-                                {t('startDate', { defaultValue: 'Start Date' })}: {project?.date_union?.start || t('notSet', { defaultValue: 'Not set' })}
-                              </span>
-                              <span>
-                                {t('endDate', { defaultValue: 'End Date' })}: {project?.date_union?.end || t('notSet', { defaultValue: 'Not set' })}
-                              </span>
-                            </div>
+                {isExpanded &&
+                  projects.length > 0 &&
+                  (() => {
+                    // Group projects by project ID and collect all segments to find earliest start and latest end
+                    const groupedProjects = projects.reduce(
+                      (acc: Record<string, any>, project: any) => {
+                        if (!acc[project.id]) {
+                          acc[project.id] = {
+                            ...project,
+                            allSegments: [project],
+                          };
+                        } else {
+                          acc[project.id].allSegments.push(project);
+                          // Update to earliest start date (from segments)
+                          if (
+                            project?.date_union?.start &&
+                            (!acc[project.id].date_union?.start ||
+                              project.date_union.start < acc[project.id].date_union.start)
+                          ) {
+                            acc[project.id].date_union.start = project.date_union.start;
                           }
-                        >
-                          {project.name}
-                        </Tooltip>
-                      </Flex>
+                          // Update to latest end date (from segments)
+                          if (
+                            project?.date_union?.end &&
+                            (!acc[project.id].date_union?.end ||
+                              project.date_union.end > acc[project.id].date_union.end)
+                          ) {
+                            acc[project.id].date_union.end = project.date_union.end;
+                          }
+                        }
+                        return acc;
+                      },
+                      {}
                     );
-                  });
-                })()}
-                
+
+                    return Object.values(groupedProjects).map((project: any, index: any) => {
+                      // Use project dates from projects table only
+                      const startDate = project?.project_dates?.start;
+                      const endDate = project?.project_dates?.end;
+                      const hasStartDate = !!startDate;
+                      const hasEndDate = !!endDate;
+                      const totalHours = project.allSegments.reduce(
+                        (sum: number, seg: any) => sum + (seg.total_hours || 0),
+                        0
+                      );
+                      const totalTasks = project.allSegments.reduce(
+                        (sum: number, seg: any) => sum + (seg.task_count || 0),
+                        0
+                      );
+
+                      return (
+                        <Flex
+                          gap={8}
+                          align="center"
+                          key={project.id || index}
+                          style={{
+                            paddingInline: 12,
+                            position: 'sticky',
+                            height: 65,
+                          }}
+                        >
+                          <Badge color={project.color_code || '#1890ff'} />
+                          <Tooltip
+                            title={
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <span>
+                                  {t('startDate', { defaultValue: 'Start Date' })}:{' '}
+                                  {hasStartDate
+                                    ? startDate
+                                    : t('notSet', { defaultValue: 'Not set' })}
+                                </span>
+                                <span>
+                                  {t('endDate', { defaultValue: 'End Date' })}:{' '}
+                                  {hasEndDate ? endDate : t('notSet', { defaultValue: 'Not set' })}
+                                </span>
+                                {totalTasks > 0 && (
+                                  <span>
+                                    {t('tasks', { defaultValue: 'Tasks' })}: {totalTasks}
+                                  </span>
+                                )}
+                                {totalHours > 0 && (
+                                  <span>
+                                    {t('allocatedHours', { defaultValue: 'Allocated Hours' })}:{' '}
+                                    {totalHours.toFixed(1)}h
+                                  </span>
+                                )}
+                              </div>
+                            }
+                          >
+                            <span style={{ cursor: 'default' }}>{project.name}</span>
+                          </Tooltip>
+                        </Flex>
+                      );
+                    });
+                  })()}
+
                 {isExpanded && projects.length === 0 && !isProjectsLoading && (
                   <Flex
                     align="center"

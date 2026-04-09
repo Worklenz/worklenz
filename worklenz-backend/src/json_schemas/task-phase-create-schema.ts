@@ -5,7 +5,7 @@ export default {
       type: "string",
       message: "Invalid name",
       minLength: 2,
-      maxLength: 30
+      maxLength: 50
     }
   },
   required: ["name"]

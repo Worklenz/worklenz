@@ -24,11 +24,7 @@ export const InvoicesTable = () => {
   const { token } = theme.useToken();
 
   // Fetch invoices from API
-  const {
-    data: invoicesData,
-    isLoading,
-    error,
-  } = useGetInvoicesQuery();
+  const { data: invoicesData, isLoading, error } = useGetInvoicesQuery();
 
   // Function to get status color
   const getStatusColor = (status: string) => {
@@ -95,13 +91,12 @@ export const InvoicesTable = () => {
   }
 
   // Extract invoices from API response - backend returns IServerResponse with {total, data} structure
-  const invoicesResponse =
-    invoicesData?.body || {
-      total: 0,
-      page: 1,
-      limit: 10,
-      invoices: [],
-    };
+  const invoicesResponse = invoicesData?.body || {
+    total: 0,
+    page: 1,
+    limit: 10,
+    invoices: [],
+  };
   const invoices = invoicesResponse.invoices || [];
 
   // Handle empty state
@@ -224,7 +219,7 @@ export const InvoicesTable = () => {
         scroll={{
           x: 'max-content',
         }}
-        rowKey={(record) => record.id}
+        rowKey={record => record.id}
         onRow={record => ({
           onClick: () => navigate(`/worklenz/client-portal/invoices/${record.id}`),
           style: { cursor: 'pointer' },

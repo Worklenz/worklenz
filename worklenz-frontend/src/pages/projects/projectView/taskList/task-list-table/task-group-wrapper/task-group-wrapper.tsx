@@ -59,7 +59,7 @@ import {
   setTaskSubscribers,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
-
+import { updateTask } from '@/features/task-management/task-management.slice';
 import TaskListTableWrapper from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-wrapper/task-list-table-wrapper';
 
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
@@ -197,24 +197,10 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
       // CRITICAL: Update the local groups state (old task list uses local state, not Redux)
       setGroups(prevGroups => {
-        console.log('[DEBUG task-group-wrapper] Updating groups for task:', response.id);
-        console.log('[DEBUG task-group-wrapper] completed_at:', response.completed_at);
-        console.log('[DEBUG task-group-wrapper] Groups count:', prevGroups.length);
-
-        const updated = prevGroups.map(group => {
-          // Find if this group contains the task
+        return prevGroups.map(group => {
           const taskIndex = group.tasks.findIndex(task => task.id === response.id);
           if (taskIndex === -1) return group;
 
-          console.log(
-            '[DEBUG task-group-wrapper] Found task in group:',
-            group.name,
-            'at index:',
-            taskIndex
-          );
-          console.log('[DEBUG task-group-wrapper] Task before update:', group.tasks[taskIndex]);
-
-          // Update the task with new completed_at
           const updatedTasks = [...group.tasks];
           updatedTasks[taskIndex] = {
             ...updatedTasks[taskIndex],
@@ -223,16 +209,11 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             status_color: response.color_code,
           };
 
-          console.log('[DEBUG task-group-wrapper] Task after update:', updatedTasks[taskIndex]);
-
           return {
             ...group,
             tasks: updatedTasks,
           };
         });
-
-        console.log('[DEBUG task-group-wrapper] Updated groups:', updated);
-        return updated;
       });
     },
     [dispatch]
@@ -591,7 +572,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
 
         updatedTasks.forEach((task, index) => {
           taskUpdates.push({
-            task_id: task.id,
+            task_id: task.id!,
             sort_order: index + 1, // 1-based indexing
           });
         });
@@ -611,7 +592,7 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
         // Add updates for source group
         updatedSourceTasks.forEach((task, index) => {
           taskUpdates.push({
-            task_id: task.id,
+            task_id: task.id!,
             sort_order: index + 1,
           });
         });
@@ -775,7 +756,10 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             name={taskGroup.name}
             groupBy={groupBy}
             statusCategory={taskGroup.category_id}
-            color={themeMode === 'dark' ? taskGroup.color_code_dark : taskGroup.color_code}
+            color={(()=>{
+              const raw=themeMode==='dark'? taskGroup.color_code_dark:taskGroup.color_code;
+              return raw?.length===9? raw.slice(0,7):raw;
+            })()}
             activeId={activeId}
           />
         ))}

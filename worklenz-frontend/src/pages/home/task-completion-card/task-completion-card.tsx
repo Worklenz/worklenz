@@ -10,7 +10,7 @@ import { colors } from '@/styles/colors';
 
 const TaskCompletionCard = memo(() => {
   console.log('TaskCompletionCard - Component Rendered');
-  
+
   const { data, isLoading, isError, error } = useGetCompletedTasksTodayPercentageQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
@@ -31,16 +31,15 @@ const TaskCompletionCard = memo(() => {
 
   if (isError) {
     console.error('Error fetching completion percentage:', error);
-    const errorMessage = error && 'status' in error 
-      ? `Error ${error.status}: ${JSON.stringify(error.data || 'Unknown error')}`
-      : 'Failed to load task completion data';
-    
+    const errorMessage =
+      error && 'status' in error
+        ? `Error ${error.status}: ${JSON.stringify(error.data || 'Unknown error')}`
+        : 'Failed to load task completion data';
+
     return (
       <Card style={{ width: '100%' }}>
         <Flex vertical gap={8} justify="center" align="center" style={{ minHeight: 80 }}>
-          <Typography.Text type="danger">
-            Failed to load task completion data
-          </Typography.Text>
+          <Typography.Text type="danger">Failed to load task completion data</Typography.Text>
           <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
             {errorMessage}
           </Typography.Text>
@@ -67,15 +66,15 @@ const TaskCompletionCard = memo(() => {
 
   const getMessage = () => {
     if (total_tasks === 0) {
-      return "No tasks due today";
+      return 'No tasks due today';
     }
     if (percentage === 100) {
-      return "All tasks completed!";
+      return 'All tasks completed!';
     }
     if (percentage >= 75) {
       return "Your today's tasks almost done!";
     }
-    return "Keep going with your tasks!";
+    return 'Keep going with your tasks!';
   };
 
   return (
@@ -97,10 +96,8 @@ const TaskCompletionCard = memo(() => {
           strokeColor={progressColor}
           size={60}
           strokeWidth={8}
-          format={(percent) => (
-            <span style={{ fontSize: 16, fontWeight: 600, color: progressColor }}>
-              {percent}%
-            </span>
+          format={percent => (
+            <span style={{ fontSize: 16, fontWeight: 600, color: progressColor }}>{percent}%</span>
           )}
         />
       </Flex>

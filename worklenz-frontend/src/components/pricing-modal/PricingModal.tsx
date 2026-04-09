@@ -640,9 +640,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
     const isAppSumoUser =
       currentUser?.userType === 'appsumo' || userPersonalization?.userType === 'appsumo';
     const shouldShowForAppSumo =
-      !isAppSumoUser ||
-      plan.category === 'business' ||
-      plan.id === 'free';
+      !isAppSumoUser || plan.category === 'business' || plan.id === 'free';
 
     if (isAppSumoUser && !shouldShowForAppSumo) return null;
 

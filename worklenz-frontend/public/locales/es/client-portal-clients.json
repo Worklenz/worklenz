@@ -48,6 +48,9 @@
   "createButton": "Crear Cliente",
   "cancelButton": "Cancelar",
 
+  "basicInformationSection": "Información Básica",
+  "contactInformationSection": "Información de Contacto",
+
   "clientNameLabel": "Nombre del Cliente",
   "clientNamePlaceholder": "Ingresa el nombre del cliente",
   "clientNameRequired": "Por favor ingresa el nombre del cliente",
@@ -67,6 +70,16 @@
 
   "addressLabel": "Dirección",
   "addressPlaceholder": "Ingresa la dirección (opcional)",
+  "addressLine1Label": "Dirección",
+  "addressLine1Placeholder": "Ingresa la dirección (opcional)",
+  "cityLabel": "Ciudad",
+  "cityPlaceholder": "Ciudad",
+  "stateLabel": "Estado / Provincia",
+  "statePlaceholder": "Estado / Provincia",
+  "zipCodeLabel": "Código Postal",
+  "zipCodePlaceholder": "Código postal",
+  "countryLabel": "País",
+  "countryPlaceholder": "País",
 
   "contactPersonLabel": "Persona de Contacto",
   "contactPersonPlaceholder": "Ingresa el nombre de la persona de contacto",
@@ -84,6 +97,7 @@
   "clientPortalAccessTitle": "Acceso al Portal del Cliente",
   "clientPortalAccessDescription": "Comparte este enlace con tu cliente para darle acceso a su portal",
   "clientPortalAccessInfo": "Después de crear el cliente, usa el enlace de invitación de la organización desde la página de Clientes para darle acceso al portal.",
+  "clientInvitationEmailInfo": "Se enviará un correo de invitación al cliente para unirse al portal. También puedes compartir el enlace de invitación desde la página de Clientes.",
   "copyButton": "Copiar",
   "linkCopiedMessage": "Enlace copiado al portapapeles",
 
@@ -240,6 +254,12 @@
     "not_invited": "No Invitado",
     "expired": "Expirado"
   },
+  "portalStatusHelp": {
+    "active": "Activo: El cliente aceptó y puede acceder al portal.",
+    "invited": "Invitado: Se envió la invitación y sigue siendo válida, pero aún no fue aceptada.",
+    "notInvited": "No Invitado: Aún no se ha enviado ninguna invitación.",
+    "expired": "Expirado: La invitación anterior expiró y debe reenviarse."
+  },
 
   "inviteToPortalTooltip": "Invitar al Portal",
   "resendInvitationTooltip": "Reenviar Invitación",
@@ -294,5 +314,8 @@
   "clientAlreadyHasPortalAccess": "El cliente ya tiene acceso al portal",
   "clientAlreadyHasPendingInvitation": "Invitación ya enviada. Por favor use la opción de reenviar.",
   "clientEmailRequired": "El correo electrónico del cliente es requerido para la invitación",
-  "addEmailButton": "Agregar Correo e Invitar"
+  "addEmailButton": "Agregar Correo e Invitar",
+  "clientExistsWarning": "Ya existe un cliente con este correo electrónico. Usando el registro de cliente existente.",
+  "clientExistsWithInvitationSent": "Ya existe un cliente con este correo electrónico y ya se ha enviado una invitación.",
+  "clientExistsNoInvitation": "Ya existe un cliente con este correo electrónico. Puede enviarle una invitación desde la lista de clientes."
 }

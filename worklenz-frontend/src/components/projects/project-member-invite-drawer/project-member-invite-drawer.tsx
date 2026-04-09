@@ -1,4 +1,14 @@
-import { Drawer, Flex, Form, Select, Typography, List, Button, Modal, Divider } from '@/shared/antd-imports';
+import {
+  Drawer,
+  Flex,
+  Form,
+  Select,
+  Typography,
+  List,
+  Button,
+  Modal,
+  Divider,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 

@@ -17,8 +17,15 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   toggleTaskExpansion,
   fetchSubTasks,
+  selectGroups,
 } from '@/features/task-management/task-management.slice';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import {
+  fetchTask as fetchTaskDrawer,
+  setNavigationContext,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
@@ -58,28 +65,41 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     const { t } = useTranslation('task-list-table');
     const inputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const groups = useAppSelector(selectGroups);
+    const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
 
-    // Context menu state
     const [contextMenuVisible, setContextMenuVisible] = useState(false);
     const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
 
-    // Handle task expansion toggle
     const handleToggleExpansion = useCallback(
       (e: React.MouseEvent) => {
         e.stopPropagation();
-
-        // Always try to fetch subtasks when expanding, regardless of count
-        if (!task.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0)) {
-          dispatch(fetchSubTasks({ taskId: task.id, projectId }));
+        if (task.is_parent_container) {
+          dispatch(toggleTaskExpansion(task.id));
+          return;
         }
-
-        // Toggle expansion state
+        if (!task.show_sub_tasks && (!task.sub_tasks || task.sub_tasks.length === 0)) {
+          dispatch(
+            fetchSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            })
+          );
+        }
         dispatch(toggleTaskExpansion(task.id));
       },
-      [dispatch, task.id, task.sub_tasks, task.show_sub_tasks, projectId]
+      [
+        dispatch,
+        task.id,
+        task.sub_tasks,
+        task.show_sub_tasks,
+        task.is_parent_container,
+        task.parent_task_container_id,
+        projectId,
+      ]
     );
 
-    // Handle task name save
     const handleTaskNameSave = useCallback(() => {
       const newTaskName = inputRef.current?.input?.value || taskName;
       if (
@@ -108,25 +128,37 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
       onEditTaskName,
     ]);
 
-    // Handle context menu
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
-      // Use clientX and clientY directly for fixed positioning
-      setContextMenuPosition({
-        x: e.clientX,
-        y: e.clientY,
-      });
+      setContextMenuPosition({ x: e.clientX, y: e.clientY });
       setContextMenuVisible(true);
     }, []);
 
-    // Handle context menu close
     const handleContextMenuClose = useCallback(() => {
       setContextMenuVisible(false);
     }, []);
 
-    // Handle click outside for task name editing
+    const handleOpenTaskInDrawer = useCallback(() => {
+      if (!task.id) return;
+      if (showTaskDrawer && selectedTaskId === task.id) return;
+
+      const taskIds = groups.flatMap(group => group.taskIds);
+      const currentIndex = taskIds.indexOf(task.id);
+
+      dispatch(
+        setNavigationContext({
+          taskIds,
+          currentIndex: currentIndex >= 0 ? currentIndex : 0,
+          sourceView: 'task-list',
+          projectId,
+        })
+      );
+      dispatch(setSelectedTaskId(task.id));
+      dispatch(setShowTaskDrawer(true));
+      dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
+    }, [dispatch, groups, projectId, selectedTaskId, showTaskDrawer, task.id]);
+
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -146,12 +178,16 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
 
     return (
       <div
-        className="relative flex items-center group pl-1 border-r border-gray-200 dark:border-gray-700"
-        style={{ width }}
+        className="relative flex items-center group pl-1 border-r border-b border-t border-gray-200 dark:border-gray-700"
+        style={{ width, height: '40px', minHeight: '40px' }}
+        onClick={() => {
+          if (showTaskDrawer && !editTaskName && !task.is_parent_container) {
+            handleOpenTaskInDrawer();
+          }
+        }}
       >
         {editTaskName ? (
-          /* Full cell input when editing */
-          <div className="flex-1" style={{ height: '38px' }} ref={wrapperRef}>
+          <div className="flex-1" style={{ height: '40px' }} ref={wrapperRef}>
             <Input
               ref={inputRef}
               variant="borderless"
@@ -160,10 +196,17 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               autoFocus
               onPressEnter={handleTaskNameSave}
               onBlur={handleTaskNameSave}
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  onTaskNameChange(task.title || task.name || '');
+                  onEditTaskName(false);
+                }
+              }}
               className="text-sm"
               style={{
                 width: '100%',
-                height: '38px',
+                height: '40px',
                 margin: '0',
                 padding: '8px 12px',
                 border: '1px solid #1677ff',
@@ -178,19 +221,15 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
             />
           </div>
         ) : (
-          /* Normal layout when not editing */
           <>
             <div className="flex items-center flex-1 min-w-0 pr-0 transition-[padding] duration-200 group-hover:pr-14">
-              {/* Indentation for subtasks - reduced spacing for level 1 */}
               {isSubtask && <div className="w-2 flex-shrink-0" />}
 
-              {/* Additional indentation for deeper levels - increased spacing for level 2+ */}
               {Array.from({ length: depth }).map((_, i) => (
                 <div key={i} className="w-6 flex-shrink-0" />
               ))}
 
-              {/* Expand/Collapse button - show for any task that can have sub-tasks */}
-              {depth < 2 && ( // Only show if not at maximum depth (can still have children)
+              {depth < 2 && (
                 <button
                   onClick={handleToggleExpansion}
                   className={`flex h-4 w-4 items-center justify-center rounded-sm text-xs mr-1 hover:border hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-110 transition-all duration-300 ease-out flex-shrink-0 ${
@@ -211,11 +250,9 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                 </button>
               )}
 
-              {/* Additional indentation for subtasks after the expand button space - reduced for level 1 */}
               {isSubtask && <div className="w-1 flex-shrink-0" />}
 
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                {/* Task name with dynamic width */}
                 <div className="flex-1 min-w-0" ref={wrapperRef}>
                   <span
                     className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-text block"
@@ -227,18 +264,20 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                     onClick={e => {
                       e.stopPropagation();
                       e.preventDefault();
+                      if (task.is_parent_container) return;
                       onEditTaskName(true);
                     }}
-                    onContextMenu={handleContextMenu}
+                    onContextMenu={e => {
+                      if (task.is_parent_container) return;
+                      handleContextMenu(e);
+                    }}
                     title={taskDisplayName}
                   >
                     {taskDisplayName}
                   </span>
                 </div>
 
-                {/* Indicators container - flex-shrink-0 to prevent compression */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Subtask count indicator - show for any task that can have sub-tasks */}
                   {depth < 2 && task.sub_tasks_count != null && task.sub_tasks_count > 0 && (
                     <Tooltip
                       title={t(
@@ -258,7 +297,6 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                     </Tooltip>
                   )}
 
-                  {/* Task indicators - compact layout */}
                   {task.comments_count != null && task.comments_count !== 0 && (
                     <Tooltip
                       title={t(
@@ -270,6 +308,16 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                         className="text-gray-500 dark:text-gray-400"
                         style={{ fontSize: 12 }}
                       />
+                    </Tooltip>
+                  )}
+
+                  {task.parent_task_not_archived && (
+                    <Tooltip
+                      title={t('activeParentTooltip', { defaultValue: 'Parent task is not archived' })}
+                    >
+                      <div className="px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-[11px] leading-4 text-gray-600 dark:text-gray-300">
+                        {t('activeParentBadge', { defaultValue: 'Active parent' })}
+                      </div>
                     </Tooltip>
                   )}
 
@@ -317,12 +365,12 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               </div>
             </div>
 
+            {/* Open button - fixed border, centered without transform */}
             <button
-              className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2"
+              className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-solid border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 absolute right-2 inset-y-0 my-auto h-fit"
               onClick={e => {
                 e.stopPropagation();
-                dispatch(setSelectedTaskId(task.id));
-                dispatch(setShowTaskDrawer(true));
+                handleOpenTaskInDrawer();
               }}
             >
               <ArrowsAltOutlined />
@@ -331,7 +379,6 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
           </>
         )}
 
-        {/* Context Menu */}
         {contextMenuVisible &&
           createPortal(
             <TaskContextMenu

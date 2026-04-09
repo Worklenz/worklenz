@@ -50,6 +50,16 @@ const TasksList: React.FC = React.memo(() => {
   const [skipAutoRefetch, setSkipAutoRefetch] = useState<boolean>(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
+  //change 1
+  //Added stableCounts state to store counts on first load only
+  const [stableCounts, setStableCounts] = useState<{
+    total: number;
+    today: number;
+    upcoming: number;
+    overdue: number;
+    no_due_date: number;
+  } | null>(null);
+
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
   const {
     data,
@@ -66,6 +76,20 @@ const TasksList: React.FC = React.memo(() => {
   const { t, ready } = useTranslation('home');
   const { model } = useAppSelector(state => state.homePageReducer);
   const isMobile = useDebouncedMediaQuery({ query: '(max-width: 768px)' });
+
+  //change 2
+  //Save counts only on first load — never overwrite on tab change
+  useEffect(() => {
+    if (data?.body && !stableCounts) {
+      setStableCounts({
+        total: data.body.total,
+        today: data.body.today,
+        upcoming: data.body.upcoming,
+        overdue: data.body.overdue,
+        no_due_date: data.body.no_due_date,
+      });
+    }
+  }, [data?.body]);
 
   const taskModes = useMemo(
     () => [
@@ -121,10 +145,12 @@ const TasksList: React.FC = React.memo(() => {
     [dispatch, data?.body?.tasks, homeTasksConfig]
   );
 
+  //change 3
+  //Reset stableCounts on manual refresh so fresh counts are saved
   const refetch = useCallback(() => {
     setSkipAutoRefetch(false);
+    setStableCounts(null); // Reset so next API response saves fresh counts
     originalRefetch();
-    // Invalidate task counts cache to refresh calendar badges
     dispatch(homePageApi.util.invalidateTags(['taskCounts']));
   }, [originalRefetch, dispatch]);
 
@@ -274,7 +300,19 @@ const TasksList: React.FC = React.memo(() => {
     >
       {/* toggle task view list / calendar */}
       {viewOptions === 'List' ? (
-        <ListView refetch={refetch} model={data?.body || (model as IHomeTasksModel)} />
+        //change 4
+        //Pass stableCounts to ListView so tab clicks never change badge counts
+        <ListView
+          refetch={refetch}
+          model={{
+            ...(data?.body || (model as IHomeTasksModel)),
+            total: stableCounts?.total ?? data?.body?.total ?? 0,
+            today: stableCounts?.today ?? data?.body?.today ?? 0,
+            upcoming: stableCounts?.upcoming ?? data?.body?.upcoming ?? 0,
+            overdue: stableCounts?.overdue ?? data?.body?.overdue ?? 0,
+            no_due_date: stableCounts?.no_due_date ?? data?.body?.no_due_date ?? 0,
+          }}
+        />
       ) : (
         <CalendarView />
       )}

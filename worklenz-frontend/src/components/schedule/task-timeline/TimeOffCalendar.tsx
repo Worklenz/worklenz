@@ -62,7 +62,11 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // RTK Query hooks
-  const { data: timeOffData, isLoading, refetch } = useFetchTimeOffQuery({
+  const {
+    data: timeOffData,
+    isLoading,
+    refetch,
+  } = useFetchTimeOffQuery({
     startDate: dateRange?.[0],
     endDate: dateRange?.[1],
   });
@@ -94,7 +98,9 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
       setEditingId(null);
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || t('timeOffError', { defaultValue: 'Failed to save time-off' }));
+      message.error(
+        error?.data?.message || t('timeOffError', { defaultValue: 'Failed to save time-off' })
+      );
     }
   };
 
@@ -114,7 +120,10 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
       message.success(t('timeOffDeleted', { defaultValue: 'Time-off deleted successfully' }));
       refetch();
     } catch (error: any) {
-      message.error(error?.data?.message || t('timeOffDeleteError', { defaultValue: 'Failed to delete time-off' }));
+      message.error(
+        error?.data?.message ||
+          t('timeOffDeleteError', { defaultValue: 'Failed to delete time-off' })
+      );
     }
   };
 
@@ -145,7 +154,8 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
       key: 'dateRange',
       render: (_: any, record: any) => (
         <Tag icon={<CalendarOutlined />} color="blue">
-          {dayjs(record.start_date).format('MMM D, YYYY')} - {dayjs(record.end_date).format('MMM D, YYYY')}
+          {dayjs(record.start_date).format('MMM D, YYYY')} -{' '}
+          {dayjs(record.end_date).format('MMM D, YYYY')}
         </Tag>
       ),
     },
@@ -201,11 +211,7 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
     >
       {/* Add Time-Off Button */}
       <Flex justify="flex-end" style={{ marginBottom: 16 }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setIsFormVisible(true)}
-        >
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsFormVisible(true)}>
           {t('addTimeOff', { defaultValue: 'Add Time-Off' })}
         </Button>
       </Flex>
@@ -220,16 +226,17 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
             borderRadius: 8,
           }}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Flex gap={16} wrap="wrap">
               <Form.Item
                 name="team_member_id"
                 label={t('teamMember', { defaultValue: 'Team Member' })}
-                rules={[{ required: true, message: t('selectMember', { defaultValue: 'Please select a team member' }) }]}
+                rules={[
+                  {
+                    required: true,
+                    message: t('selectMember', { defaultValue: 'Please select a team member' }),
+                  },
+                ]}
                 style={{ flex: 1, minWidth: 200 }}
               >
                 <Select
@@ -248,32 +255,30 @@ const TimeOffCalendar: React.FC<TimeOffCalendarProps> = ({
               <Form.Item
                 name="dateRange"
                 label={t('dateRange', { defaultValue: 'Date Range' })}
-                rules={[{ required: true, message: t('selectDateRange', { defaultValue: 'Please select date range' }) }]}
+                rules={[
+                  {
+                    required: true,
+                    message: t('selectDateRange', { defaultValue: 'Please select date range' }),
+                  },
+                ]}
                 style={{ flex: 1, minWidth: 280 }}
               >
                 <RangePicker style={{ width: '100%' }} />
               </Form.Item>
             </Flex>
 
-            <Form.Item
-              name="reason"
-              label={t('reason', { defaultValue: 'Reason (Optional)' })}
-            >
+            <Form.Item name="reason" label={t('reason', { defaultValue: 'Reason (Optional)' })}>
               <TextArea
                 rows={2}
-                placeholder={t('reasonPlaceholder', { defaultValue: 'e.g., Vacation, Sick leave, Personal day' })}
+                placeholder={t('reasonPlaceholder', {
+                  defaultValue: 'e.g., Vacation, Sick leave, Personal day',
+                })}
               />
             </Form.Item>
 
             <Flex justify="flex-end" gap={8}>
-              <Button onClick={handleCancel}>
-                {t('cancel', { defaultValue: 'Cancel' })}
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={isCreating || isUpdating}
-              >
+              <Button onClick={handleCancel}>{t('cancel', { defaultValue: 'Cancel' })}</Button>
+              <Button type="primary" htmlType="submit" loading={isCreating || isUpdating}>
                 {editingId
                   ? t('update', { defaultValue: 'Update' })
                   : t('create', { defaultValue: 'Create' })}

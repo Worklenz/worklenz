@@ -1,4 +1,13 @@
-import { Drawer, Empty, Segmented, Typography, Spin, Button, Flex } from '@/shared/antd-imports';
+import {
+  Drawer,
+  Empty,
+  Segmented,
+  Typography,
+  Spin,
+  Button,
+  Flex,
+  theme,
+} from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -33,6 +42,7 @@ import { createAuthService } from '@/services/auth/auth.service';
 const HTML_TAG_REGEXP = /<[^>]*>/g;
 
 const NotificationDrawer = () => {
+  const { token } = theme.useToken();
   const { isDrawerOpen, notificationType, notifications, invitations } = useAppSelector(
     state => state.notificationReducer
   );
@@ -41,6 +51,12 @@ const NotificationDrawer = () => {
   const { socket, connected } = useSocket();
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [showBrowserPush, setShowBrowserPush] = useState(false);
+  const [isMarkAllHovered, setIsMarkAllHovered] = useState(false);
+
+  const isDarkMode =
+    token.colorBgContainer === '#141414' ||
+    token.colorBgContainer.includes('dark') ||
+    document.documentElement.getAttribute('data-theme') === 'dark';
 
   const notificationCount = notifications?.length || 0;
   const [isLoading, setIsLoading] = useState(false);
@@ -131,11 +147,7 @@ const NotificationDrawer = () => {
     };
 
     if (isPushEnabled()) {
-      createPush(
-        notification.message,
-        'Worklenz',
-        notification.team_id || null
-      );
+      createPush(notification.message, 'Worklenz', notification.team_id || null);
     }
 
     showNotification(notification);
@@ -188,17 +200,27 @@ const NotificationDrawer = () => {
       setIsLoading(true);
       try {
         const currentSession = getUserSession();
-        if (currentSession?.team_id && notification.team_id !== currentSession.team_id) {
-          await handleVerifyAuth();
-        }
+        
+        // Build the target URL
+        let targetUrl = notification.url;
         if (notification.project && notification.task_id) {
-          navigate(
-            `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`
-          );
-        } else if (notification.project){
-          navigate(
-            `${notification.url}`
-          )
+          targetUrl = `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`;
+        }
+        
+        // If notification is from a different team, switch teams first
+        if (currentSession?.team_id && notification.team_id && notification.team_id !== currentSession.team_id) {
+          // Switch to the notification's team
+          await teamsApiService.setActiveTeam(notification.team_id);
+          
+          // Refresh authentication to get updated session with new team
+          await handleVerifyAuth();
+          
+          // Use window.location.href to force full page reload with new session
+          // This ensures guards re-evaluate with fresh session data
+          window.location.href = targetUrl;
+        } else {
+          // Same team - use React Router navigation
+          navigate(targetUrl);
         }
       } catch (error) {
         console.error('Error navigating to URL:', error);
@@ -243,10 +265,7 @@ const NotificationDrawer = () => {
         SocketEvents.NOTIFICATIONS_UPDATE.toString(),
         handleNotificationsUpdate
       );
-      socket?.removeListener(
-        SocketEvents.TEAM_MEMBER_REMOVED.toString(),
-        handleTeamMemberRemoved
-      );
+      socket?.removeListener(SocketEvents.TEAM_MEMBER_REMOVED.toString(), handleTeamMemberRemoved);
     };
   }, [socket, dispatch]);
 
@@ -258,6 +277,11 @@ const NotificationDrawer = () => {
     }
     dispatch(fetchUnreadCount()); // Fetch unread count when notification type changes
   }, [notificationType, dispatch]);
+
+  // Determine hover color based on theme
+  const getMarkAllHoverColor = () => {
+    return isDarkMode ? '#69b1ff' : '#1677ff';
+  };
 
   return (
     <Drawer
@@ -285,7 +309,16 @@ const NotificationDrawer = () => {
           }}
         />
 
-        <Button type="link" onClick={handleMarkAllAsRead}>
+        <Button
+          type="link"
+          onClick={handleMarkAllAsRead}
+          onMouseEnter={() => setIsMarkAllHovered(true)}
+          onMouseLeave={() => setIsMarkAllHovered(false)}
+          style={{
+            color: isMarkAllHovered ? getMarkAllHoverColor() : 'var(--ant-primary-color)',
+            transition: 'color 0.3s ease',
+          }}
+        >
           {t('notificationsDrawer.markAsRead')}
         </Button>
       </Flex>

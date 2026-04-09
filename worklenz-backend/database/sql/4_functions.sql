@@ -3,11 +3,23 @@ CREATE OR REPLACE FUNCTION accept_invitation(_email text, _team_member_id uuid, 
 AS
 $$
 DECLARE
+    _team_id UUID;
 BEGIN
     IF _team_member_id IS NOT NULL
     THEN
+        -- Get the team_id before updating
+        SELECT team_id FROM team_members WHERE id = _team_member_id INTO _team_id;
+        
         UPDATE team_members SET user_id = _user_id WHERE id = _team_member_id;
         DELETE FROM email_invitations WHERE email = _email AND team_member_id = _team_member_id;
+        
+        -- Mark all related team invitation notifications as read
+        UPDATE user_notifications 
+        SET read = TRUE 
+        WHERE user_id = _user_id 
+          AND team_id = _team_id 
+          AND message LIKE '%invited you to work with%'
+          AND read = FALSE;
     END IF;
 
     RETURN JSON_BUILD_OBJECT(
@@ -143,23 +155,26 @@ CREATE OR REPLACE FUNCTION bulk_archive_tasks(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _task   JSON;
-    _output JSON;
+    _archive_value BOOLEAN = ((_body ->> 'type')::TEXT = 'archive');
+    _output        JSON;
 BEGIN
-    FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON)
-        LOOP
-            -- Archive the parent task
-            UPDATE tasks
-            SET archived = ((_body ->> 'type')::TEXT = 'archive')
-            WHERE id = (_task ->> 'id')::UUID
-              AND parent_task_id IS NULL;
-            -- Prevent archiving subtasks
-
-            -- Archive its sub-tasks
-            UPDATE tasks
-            SET archived = ((_body ->> 'type')::TEXT = 'archive')
-            WHERE parent_task_id = (_task ->> 'id')::UUID;
-        END LOOP;
+    WITH RECURSIVE selected_ids AS (
+        SELECT DISTINCT (elem.value ->> 'id')::UUID AS id
+        FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON) AS elem(value)
+    ),
+    selected_and_descendants AS (
+        -- Base set: explicitly selected tasks (supports direct subtask selection)
+        SELECT id
+        FROM selected_ids
+        UNION
+        -- Recursive set: include all descendants at any nesting level
+        SELECT t.id
+        FROM tasks t
+                 INNER JOIN selected_and_descendants sd ON t.parent_task_id = sd.id
+    )
+    UPDATE tasks
+    SET archived = _archive_value
+    WHERE id IN (SELECT id FROM selected_and_descendants);
 
     RETURN _output;
 END;
@@ -895,6 +910,7 @@ DECLARE
     _parent_task UUID;
     _status_id   UUID;
     _priority_id UUID;
+    _next_sort   INTEGER;
 BEGIN
 
     _parent_task = (_body ->> 'parent_task_id')::UUID;
@@ -908,15 +924,28 @@ BEGIN
         );
     _priority_id = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1));
 
-    INSERT INTO cpt_tasks(name, priority_id, template_id, status_id, parent_task_id, sort_order, task_no)
+    -- Calculate next sort order across all sort columns
+    SELECT COALESCE(MAX(GREATEST(
+        COALESCE(sort_order, 0),
+        COALESCE(status_sort_order, 0),
+        COALESCE(priority_sort_order, 0),
+        COALESCE(phase_sort_order, 0)
+    )) + 1, 0)
+    INTO _next_sort
+    FROM cpt_tasks
+    WHERE template_id = (_body ->> 'template_id')::UUID;
+
+    INSERT INTO cpt_tasks(name, priority_id, template_id, status_id, parent_task_id,
+                          sort_order, status_sort_order, priority_sort_order, phase_sort_order,
+                          task_no)
     VALUES (TRIM((_body ->> 'name')::TEXT),
             _priority_id,
             (_body ->> 'template_id')::UUID,
 
                -- This should be came from client side later
             _status_id, _parent_task,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM cpt_tasks WHERE template_id = (_body ->> 'template_id')::UUID),
-                     0), ((SELECT COUNT(*) FROM cpt_tasks WHERE template_id = (_body ->> 'template_id')::UUID) + 1))
+            _next_sort, _next_sort, _next_sort, _next_sort,
+            ((SELECT COUNT(*) FROM cpt_tasks WHERE template_id = (_body ->> 'template_id')::UUID) + 1))
     RETURNING id INTO _task_id;
 
     PERFORM handle_on_pt_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
@@ -930,42 +959,128 @@ CREATE OR REPLACE FUNCTION create_quick_task(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _task_id     UUID;
-    _parent_task UUID;
-    _status_id   UUID;
-    _priority_id UUID;
-    _start_date  TIMESTAMP;
-    _end_date    TIMESTAMP;
+    _task_id                  UUID;
+    _parent_task              UUID;
+    _status_id                UUID;
+    _priority_id              UUID;
+    _start_date               TIMESTAMP;
+    _end_date                 TIMESTAMP;
+    _schedule_id              UUID;
+    _description              TEXT;
+    _next_sort_order          INTEGER;
+    _auto_assign_task_creator BOOLEAN;
+    _reporter_id              UUID;
+    _project_id               UUID;
+    _team_id                  UUID;
+    _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
 BEGIN
-
+    _reporter_id = (_body ->> 'reporter_id')::UUID;
+    _project_id  = (_body ->> 'project_id')::UUID;
     _parent_task = (_body ->> 'parent_task_id')::UUID;
+    _schedule_id = (_body ->> 'schedule_id')::UUID;
+    _description = (_body ->> 'description')::TEXT;
+
     _status_id = COALESCE(
         (_body ->> 'status_id')::UUID,
         (SELECT id
          FROM task_statuses
-         WHERE project_id = (_body ->> 'project_id')::UUID
+         WHERE project_id = _project_id
            AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
          LIMIT 1)
-        );
+    );
     _priority_id = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1));
-    _start_date = (_body ->> 'start_date')::TIMESTAMP;
-    _end_date = (_body ->> 'end_date')::TIMESTAMP;
+    _start_date  = (_body ->> 'start_date')::TIMESTAMP;
+    _end_date    = (_body ->> 'end_date')::TIMESTAMP;
 
-    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, roadmap_sort_order, start_date, end_date)
-    VALUES (TRIM((_body ->> 'name')::TEXT),
-            _priority_id,
-            (_body ->> 'project_id')::UUID,
-            (_body ->> 'reporter_id')::UUID,
+    -- Calculate the next sort order value once and apply it to every sort column.
+    -- Using GREATEST() across all six columns guarantees the new task lands at the
+    -- bottom regardless of which column had the highest current value.
+    SELECT COALESCE(MAX(GREATEST(
+        COALESCE(sort_order, 0),
+        COALESCE(roadmap_sort_order, 0),
+        COALESCE(status_sort_order, 0),
+        COALESCE(priority_sort_order, 0),
+        COALESCE(phase_sort_order, 0),
+        COALESCE(member_sort_order, 0)
+    )) + 1, 0)
+    INTO _next_sort_order
+    FROM tasks
+    WHERE project_id = _project_id;
 
-               -- This should be came from client side later
-            _status_id, _parent_task,
-            COALESCE((SELECT MAX(COALESCE(sort_order, roadmap_sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
-            COALESCE((SELECT MAX(COALESCE(roadmap_sort_order, sort_order, 0)) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
-            (_body ->> 'start_date')::TIMESTAMP,
-            (_body ->> 'end_date')::TIMESTAMP)
+    INSERT INTO tasks (
+        name,
+        priority_id,
+        project_id,
+        reporter_id,
+        status_id,
+        parent_task_id,
+        sort_order,
+        roadmap_sort_order,
+        status_sort_order,
+        priority_sort_order,
+        phase_sort_order,
+        member_sort_order,
+        start_date,
+        end_date,
+        schedule_id,
+        description
+    )
+    VALUES (
+        TRIM((_body ->> 'name')::TEXT),
+        _priority_id,
+        _project_id,
+        _reporter_id,
+        _status_id,
+        _parent_task,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _start_date,
+        _end_date,
+        _schedule_id,
+        _description
+    )
     RETURNING id INTO _task_id;
 
     PERFORM handle_on_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
+
+    -- Check if auto-assign is enabled for this project
+    SELECT auto_assign_task_creator, team_id
+    INTO _auto_assign_task_creator, _team_id
+    FROM projects
+    WHERE id = _project_id;
+
+    -- If auto-assign is enabled, assign the task creator
+    IF _auto_assign_task_creator IS TRUE THEN
+        -- Get the team_member_id and check if their role is admin or owner
+        SELECT tm.id, (r.admin_role OR r.owner)
+        INTO _team_member_id, _is_admin
+        FROM team_members tm
+        INNER JOIN roles r ON tm.role_id = r.id
+        WHERE tm.user_id = _reporter_id
+          AND tm.team_id = _team_id;
+
+        IF _team_member_id IS NOT NULL THEN
+            -- Check if user is already a project member
+            IF NOT EXISTS (
+                SELECT 1 FROM project_members
+                WHERE project_id = _project_id
+                  AND team_member_id = _team_member_id
+            ) THEN
+                -- Only auto-add and assign if user is admin or owner
+                IF _is_admin IS TRUE THEN
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
+            ELSE
+                -- User is already a project member, assign them to the task
+                PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+            END IF;
+        END IF;
+    END IF;
 
     RETURN get_single_task(_task_id);
 END;
@@ -976,33 +1091,49 @@ CREATE OR REPLACE FUNCTION create_task(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _assignee      TEXT;
-    _attachment_id TEXT;
-    _assignee_id   UUID;
-    _task_id       UUID;
-    _label         JSON;
+    _assignee                 TEXT;
+    _attachment_id            TEXT;
+    _assignee_id              UUID;
+    _task_id                  UUID;
+    _label                    JSON;
+    _auto_assign_task_creator BOOLEAN;
+    _reporter_id              UUID;
+    _project_id               UUID;
+    _team_id                  UUID;
+    _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
+    _already_assigned         BOOLEAN := FALSE;
 BEGIN
+    _reporter_id = (_body ->> 'reporter_id')::UUID;
+    _project_id = (_body ->> 'project_id')::UUID;
+    _team_id = (_body ->> 'team_id')::UUID;
+
     INSERT INTO tasks (name, done, priority_id, project_id, reporter_id, start_date, end_date, total_minutes,
                        description, parent_task_id, status_id, sort_order)
     VALUES (TRIM((_body ->> 'name')::TEXT), (FALSE),
             COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1)),
-            (_body ->> 'project_id')::UUID,
-            (_body ->> 'reporter_id')::UUID,
+            _project_id,
+            _reporter_id,
             (_body ->> 'start')::TIMESTAMPTZ,
             (_body ->> 'end')::TIMESTAMPTZ,
             (_body ->> 'total_minutes')::NUMERIC,
             (_body ->> 'description')::TEXT,
             (_body ->> 'parent_task_id')::UUID,
             (_body ->> 'status_id')::UUID,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0))
+            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = _project_id), 0))
     RETURNING id INTO _task_id;
 
-    -- insert task assignees
+    -- Insert task assignees from the request.
     FOR _assignee IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'assignees')::JSON)
         LOOP
             _assignee_id = TRIM('"' FROM _assignee)::UUID;
-            PERFORM create_task_assignee(_assignee_id, (_body ->> 'project_id')::UUID, _task_id,
-                                         (_body ->> 'reporter_id')::UUID);
+            PERFORM create_task_assignee(_assignee_id, _project_id, _task_id, _reporter_id);
+
+            IF _assignee_id IN (
+                SELECT id FROM team_members WHERE user_id = _reporter_id
+            ) THEN
+                _already_assigned := TRUE;
+            END IF;
         END LOOP;
 
     FOR _attachment_id IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'attachments')::JSON)
@@ -1012,12 +1143,40 @@ BEGIN
 
     FOR _label IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'labels')::JSON)
         LOOP
-            PERFORM assign_or_create_label((_body ->> 'team_id')::UUID, _task_id, (_label ->> 'name')::TEXT,
-                                           (_label ->> 'color')::TEXT);
+            PERFORM assign_or_create_label(_team_id, _task_id, (_label ->> 'name')::TEXT, (_label ->> 'color')::TEXT);
         END LOOP;
 
-    RETURN get_task_form_view_model((_body ->> 'reporter_id')::UUID, (_body ->> 'team_id')::UUID, _task_id,
-                                    (_body ->> 'project_id')::UUID);
+    -- Auto-assign the creator unless they were explicitly assigned already.
+    IF _already_assigned IS FALSE THEN
+        SELECT auto_assign_task_creator INTO _auto_assign_task_creator
+        FROM projects
+        WHERE id = _project_id;
+
+        IF _auto_assign_task_creator IS TRUE THEN
+            SELECT tm.id, (r.admin_role OR r.owner) INTO _team_member_id, _is_admin
+            FROM team_members tm
+            INNER JOIN roles r ON tm.role_id = r.id
+            WHERE tm.user_id = _reporter_id
+              AND tm.team_id = _team_id;
+
+            IF _team_member_id IS NOT NULL THEN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM project_members
+                    WHERE project_id = _project_id
+                      AND team_member_id = _team_member_id
+                ) THEN
+                    IF _is_admin IS TRUE THEN
+                        PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                    END IF;
+                ELSE
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN get_task_form_view_model(_reporter_id, _team_id, _task_id, _project_id);
 END;
 $$;
 
@@ -1328,43 +1487,63 @@ $$
 DECLARE
     _result JSON;
 BEGIN
-    -- Optimized version using CTEs for better performance and maintainability
     WITH user_team_data AS (
-        SELECT
-            u.id,
-            u.name,
-            u.email,
-            u.timezone_id AS timezone,
-            u.avatar_url,
-            u.user_no,
-            u.socket_id,
-            u.created_at AS joined_date,
-            u.updated_at AS last_updated,
-            u.setup_completed AS my_setup_completed,
-            (is_null_or_empty(u.google_id) IS FALSE) AS is_google,
-            COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
-            u.active_team
+        SELECT u.id,
+               u.name,
+               u.email,
+               u.timezone_id AS timezone,
+               u.avatar_url,
+               u.user_no,
+               u.socket_id,
+               u.created_at AS joined_date,
+               u.updated_at AS last_updated,
+               u.setup_completed AS my_setup_completed,
+               (is_null_or_empty(u.google_id) IS FALSE) AS is_google,
+               COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
+               u.active_team
         FROM users u
         WHERE u.id = _id
     ),
     team_org_data AS (
-        SELECT
-            utd.*,
-            t.name AS team_name,
-            t.user_id AS owner_id,
-            o.subscription_status,
-            o.license_type_id,
-            o.trial_expire_date,
-            o.id AS organization_id
+        SELECT utd.*,
+               t.name AS team_name,
+               t.user_id AS owner_id,
+               o.subscription_status,
+               o.license_type_id,
+               o.trial_expire_date,
+               o.id AS organization_id,
+               o.business_plan_override,
+               o.team_member_limit_override
         FROM user_team_data utd
         INNER JOIN teams t ON t.id = utd.team_id
         LEFT JOIN organizations o ON o.user_id = t.user_id
     ),
-    notification_data AS (
-        SELECT
-            tod.*,
-            COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
+    plan_trial_data AS (
+        SELECT pt.id AS trial_id,
+               pt.plan_tier_id,
+               pt.trial_end_date AS plan_trial_end_date,
+               pt.is_active,
+               lpt.tier_name AS active_plan_trial,
+               lpt.display_name AS trial_plan_display_name,
+               GREATEST(0, EXTRACT(DAY FROM (pt.trial_end_date - NOW()))::INTEGER) AS trial_days_remaining
         FROM team_org_data tod
+        LEFT JOIN licensing_plan_trials pt
+            ON pt.user_id = tod.owner_id
+            AND pt.organization_id = tod.organization_id
+            AND pt.is_active = TRUE
+            AND pt.trial_end_date > NOW()
+        LEFT JOIN licensing_plan_tiers lpt ON lpt.id = pt.plan_tier_id
+        LIMIT 1
+    ),
+    notification_data AS (
+        SELECT tod.*,
+               ptd.active_plan_trial,
+               ptd.plan_trial_end_date,
+               ptd.trial_days_remaining,
+               ptd.trial_plan_display_name,
+               COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
+        FROM team_org_data tod
+        LEFT JOIN plan_trial_data ptd ON TRUE
         LEFT JOIN notification_settings ns ON (ns.user_id = tod.id AND ns.team_id = tod.team_id)
     ),
     alerts_data AS (
@@ -1372,29 +1551,49 @@ BEGIN
         FROM (SELECT description, type FROM worklenz_alerts WHERE active IS TRUE) alert_rec
     ),
     complete_user_data AS (
-        SELECT
-            nd.*,
-            tz.name AS timezone_name,
-            slt.key AS subscription_type,
-            tm.id AS team_member_id,
-            ad.alerts,
-            CASE
-                WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
-                WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id)
-                    THEN (SELECT end_date FROM licensing_custom_subs WHERE user_id = nd.owner_id LIMIT 1)::DATE
-                WHEN EXISTS(SELECT 1 FROM licensing_user_subscriptions WHERE user_id = nd.owner_id AND active IS TRUE)
-                    THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day'
-                          FROM licensing_user_subscriptions
-                          WHERE user_id = nd.owner_id AND active IS TRUE
-                          LIMIT 1)::DATE
-                ELSE NULL
-            END AS valid_till_date,
-            CASE
-                WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
-                ELSE TRUE
-            END AS setup_completed,
-            is_owner(nd.id, nd.active_team) AS owner,
-            is_admin(nd.id, nd.active_team) AS is_admin
+        SELECT nd.*,
+               tz.name AS timezone_name,
+               (SELECT r.name FROM roles r WHERE r.id = tm.role_id) AS role_name,
+               CASE
+                   WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'BUSINESS_TRIAL'
+                   WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'ENTERPRISE_TRIAL'
+                   WHEN nd.active_plan_trial IS NOT NULL THEN 'PLAN_TRIAL'
+                   ELSE slt.key
+               END AS subscription_type,
+               CASE
+                   WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'business'
+                   WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'enterprise'
+                   ELSE (SELECT name
+                         FROM licensing_pricing_plans lpp
+                         LEFT JOIN licensing_user_subscriptions lus ON lus.subscription_plan_id = lpp.paddle_id
+                         WHERE lus.user_id = nd.owner_id AND lus.active IS TRUE
+                         LIMIT 1)
+               END AS plan_name,
+               tm.id AS team_member_id,
+               ad.alerts,
+               nd.active_plan_trial,
+               nd.plan_trial_end_date,
+               nd.trial_days_remaining,
+               nd.trial_plan_display_name,
+               CASE WHEN nd.active_plan_trial IS NOT NULL THEN TRUE ELSE FALSE END AS is_plan_trial,
+               CASE
+                   WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
+                   WHEN nd.active_plan_trial IS NOT NULL THEN nd.plan_trial_end_date::DATE
+                   WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id)
+                       THEN (SELECT end_date FROM licensing_custom_subs WHERE user_id = nd.owner_id LIMIT 1)::DATE
+                   WHEN EXISTS(SELECT 1 FROM licensing_user_subscriptions WHERE user_id = nd.owner_id AND active IS TRUE)
+                       THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day'
+                             FROM licensing_user_subscriptions
+                             WHERE user_id = nd.owner_id AND active IS TRUE
+                             LIMIT 1)::DATE
+                   ELSE NULL
+               END AS valid_till_date,
+               CASE
+                   WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
+                   ELSE TRUE
+               END AS setup_completed,
+               is_owner(nd.id, nd.active_team) AS owner,
+               is_admin(nd.id, nd.active_team) AS is_admin
         FROM notification_data nd
         CROSS JOIN alerts_data ad
         LEFT JOIN timezones tz ON tz.id = nd.timezone
@@ -1403,17 +1602,18 @@ BEGIN
     )
     SELECT ROW_TO_JSON(complete_user_data.*) INTO _result FROM complete_user_data;
 
-    -- Ensure notification settings exist using INSERT...ON CONFLICT for better concurrency
     INSERT INTO notification_settings (user_id, team_id, email_notifications_enabled, popup_notifications_enabled, show_unread_items_count)
     SELECT _id,
            COALESCE((SELECT active_team FROM users WHERE id = _id),
-                   (SELECT id FROM teams WHERE user_id = _id LIMIT 1)),
+                    (SELECT id FROM teams WHERE user_id = _id LIMIT 1)),
            TRUE, TRUE, TRUE
     ON CONFLICT (user_id, team_id) DO NOTHING;
 
     RETURN _result;
 END
 $$;
+
+COMMENT ON FUNCTION deserialize_user(uuid) IS 'Returns user session data including plan trial information and manual override flags for feature access control';
 
 CREATE OR REPLACE FUNCTION get_activity_logs_by_task(_task_id uuid) RETURNS json
     LANGUAGE plpgsql
@@ -1560,20 +1760,20 @@ DECLARE
     _is_ltd    BOOLEAN := FALSE;
     _result    JSON;
 BEGIN
-    SELECT EXISTS(SELECT id FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
+    SELECT EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
     SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes WHERE redeemed_by = _user_id) INTO _is_ltd;
 
     SELECT ROW_TO_JSON(rec)
     INTO _result
-    FROM (SELECT (SELECT name FROM users WHERE ud.user_id = users.id),
-                 (SELECT email FROM users WHERE ud.user_id = users.id),
-                 contact_number,
-                 contact_number_secondary,
-                 trial_in_progress,
-                 trial_expire_date,
-                 unit_price::NUMERIC,
-                 cancel_url,
-                 subscription_status AS status,
+    FROM (SELECT (SELECT name FROM users WHERE ud.user_id = users.id) AS name,
+                 (SELECT email FROM users WHERE ud.user_id = users.id) AS email,
+                 ud.contact_number,
+                 ud.contact_number_secondary,
+                 ud.trial_in_progress,
+                 ud.trial_expire_date,
+                 lus.unit_price::NUMERIC,
+                 lus.cancel_url,
+                 ud.subscription_status AS status,
                  lus.cancellation_effective_date,
                  lus.paused_at,
                  lus.paused_from::DATE,
@@ -1581,7 +1781,13 @@ BEGIN
                  _is_custom AS is_custom,
                  _is_ltd AS is_ltd_user,
                  (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = _user_id) AS ltd_users,
+                 (SELECT COUNT(*)
+                  FROM licensing_coupon_codes lcc
+                  WHERE lcc.redeemed_by = _user_id
+                    AND lcc.is_redeemed = TRUE
+                    AND lcc.is_refunded = FALSE) AS redeemed_codes_count,
                  (CASE
+                      WHEN (ud.business_plan_override = TRUE) THEN 'Business Plan'
                       WHEN (_is_custom) THEN 'Custom Plan'
                       WHEN (_is_ltd) THEN 'Life Time Deal'
                       ELSE
@@ -1592,17 +1798,24 @@ BEGIN
                  (SELECT billing_type FROM licensing_pricing_plans WHERE id = lus.plan_id),
                  (CASE
                       WHEN ud.subscription_status = 'trialing' THEN ud.trial_expire_date::DATE
-                      WHEN EXISTS (SELECT 1 FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id) THEN
-                          (SELECT end_date FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)::DATE
-                      WHEN EXISTS (SELECT 1 FROM licensing_user_subscriptions lus WHERE lus.user_id = ud.user_id) THEN
-                          (SELECT next_bill_date::DATE - INTERVAL '1 day'
-                           FROM licensing_user_subscriptions lus
-                           WHERE lus.user_id = ud.user_id)::DATE
+                      WHEN (_is_custom) THEN
+                          (SELECT MAX(end_date)::DATE FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)
+                      WHEN lus.id IS NOT NULL THEN
+                          (NULLIF(lus.next_bill_date, '')::DATE - INTERVAL '1 day')::DATE
                      END) AS valid_till_date,
-                 is_lkr_billing
-          FROM organizations ud
-                   LEFT JOIN licensing_user_subscriptions lus ON ud.user_id = lus.user_id
-          WHERE ud.user_id = _user_id) rec;
+                 ud.is_lkr_billing
+          FROM (SELECT *
+                FROM organizations
+                WHERE user_id = _user_id
+                ORDER BY created_at DESC NULLS LAST
+                LIMIT 1) ud
+                   LEFT JOIN LATERAL (SELECT *
+                                      FROM licensing_user_subscriptions
+                                      WHERE user_id = ud.user_id
+                                        AND active = TRUE
+                                        AND COALESCE(status, '') <> 'deleted'
+                                      ORDER BY NULLIF(next_bill_date, '')::DATE DESC NULLS LAST
+                                      LIMIT 1) lus ON TRUE) rec;
     RETURN _result;
 END;
 $$;
@@ -1624,6 +1837,7 @@ BEGIN
                     (SELECT get_daily_digest_overdue(u.id)) AS overdue,
                     (SELECT get_daily_digest_recently_completed(u.id)) AS recently_completed
              FROM users u
+             WHERE u.is_deleted IS NOT TRUE
              --
          ) rec;
     RETURN _result;
@@ -2125,7 +2339,8 @@ BEGIN
                         WHERE id = (SELECT user_id
                                     FROM project_subscribers
                                     WHERE project_id = projects.id
-                                      AND user_id = users.id)) rec) AS subscribers
+                                      AND user_id = users.id)
+                          AND users.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
@@ -3518,6 +3733,8 @@ DECLARE
     _team_members JSON;
     _assignees    JSON;
     _phases       JSON;
+    _custom_columns JSON;
+    _custom_column_values JSON;
 BEGIN
 
     -- Select task info
@@ -3534,6 +3751,7 @@ BEGIN
                  project_id,
                  created_at,
                  updated_at,
+                 completed_at,
                  status_id,
                  parent_task_id,
                  sort_order,
@@ -3612,14 +3830,110 @@ BEGIN
 
     SELECT get_task_assignees(_task_id) INTO _assignees;
 
+    SELECT COALESCE(
+               JSON_AGG(
+                   JSON_BUILD_OBJECT(
+                       'key', rec.key,
+                       'id', rec.id,
+                       'name', rec.name,
+                       'width', rec.width,
+                       'pinned', rec.is_visible,
+                       'custom_column', TRUE,
+                       'custom_column_obj', JSON_BUILD_OBJECT(
+                           'fieldType', rec.field_type,
+                           'fieldTitle', rec.field_title,
+                           'numberType', rec.number_type,
+                           'decimals', rec.decimals,
+                           'label', rec.label,
+                           'labelPosition', rec.label_position,
+                           'previewValue', rec.preview_value,
+                           'expression', rec.expression,
+                           'firstNumericColumnKey', rec.first_numeric_column_key,
+                           'secondNumericColumnKey', rec.second_numeric_column_key,
+                           'selectionsList', COALESCE(rec.selections_list, '[]'::JSON),
+                           'labelsList', COALESCE(rec.labels_list, '[]'::JSON)
+                       )
+                   )
+                   ORDER BY rec.created_at
+               ),
+               '[]'::JSON
+           )
+    INTO _custom_columns
+    FROM (
+             SELECT cc.id,
+                    cc.key,
+                    cc.name,
+                    cc.width,
+                    cc.is_visible,
+                    cc.created_at,
+                    cc.field_type,
+                    cf.field_title,
+                    cf.number_type,
+                    cf.decimals,
+                    cf.label,
+                    cf.label_position,
+                    cf.preview_value,
+                    cf.expression,
+                    cf.first_numeric_column_key,
+                    cf.second_numeric_column_key,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'selection_id', so.selection_id,
+                                            'selection_name', so.selection_name,
+                                            'selection_color', so.selection_color
+                                    )
+                            ORDER BY so.selection_order
+                            )
+                     FROM cc_selection_options so
+                     WHERE so.column_id = cc.id) AS selections_list,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'label_id', lo.label_id,
+                                            'label_name', lo.label_name,
+                                            'label_color', lo.label_color
+                                    )
+                            ORDER BY lo.label_order
+                            )
+                     FROM cc_label_options lo
+                     WHERE lo.column_id = cc.id) AS labels_list
+             FROM cc_custom_columns cc
+                      LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+             WHERE cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec;
+
+    SELECT COALESCE(
+               JSON_OBJECT_AGG(rec.key, rec.value),
+               '{}'::JSON
+           )
+    INTO _custom_column_values
+    FROM (
+             SELECT cc.key,
+                    CASE
+                        WHEN ccv.text_value IS NOT NULL THEN TO_JSON(ccv.text_value)
+                        WHEN ccv.number_value IS NOT NULL THEN TO_JSON(ccv.number_value)
+                        WHEN ccv.boolean_value IS NOT NULL THEN TO_JSON(ccv.boolean_value)
+                        WHEN ccv.date_value IS NOT NULL THEN TO_JSON(ccv.date_value)
+                        WHEN ccv.json_value IS NOT NULL THEN ccv.json_value::JSON
+                        ELSE NULL::JSON
+                        END AS value
+             FROM cc_column_values ccv
+                      INNER JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+             WHERE ccv.task_id = _task_id
+               AND cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec
+    WHERE rec.value IS NOT NULL;
+
     RETURN JSON_BUILD_OBJECT(
-        'task', _task,
+        'task', (_task::JSONB || JSONB_BUILD_OBJECT('custom_column_values', COALESCE(_custom_column_values, '{}'::JSON)::JSONB))::JSON,
         'priorities', _priorities,
         'projects', _projects,
         'statuses', _statuses,
         'team_members', _team_members,
         'assignees', _assignees,
-        'phases', _phases
+        'phases', _phases,
+        'custom_columns', _custom_columns
         );
 END;
 $$;
@@ -3681,7 +3995,8 @@ BEGIN
                                WHERE team_id = teams.id
                                  AND user_id = users.id) IS TRUE) r)
           FROM users
-          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)) rec;
+          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)
+            AND users.is_deleted IS NOT TRUE) rec;
 
     UPDATE task_updates SET is_sent = TRUE;
 
@@ -4617,7 +4932,10 @@ BEGIN
     FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS(_tasks)
         LOOP
             _max_sort = _max_sort + 1;
-            INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, sort_order, total_minutes)
+            INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id,
+                               sort_order, roadmap_sort_order,
+                               status_sort_order, priority_sort_order, phase_sort_order, member_sort_order,
+                               total_minutes)
             VALUES (TRIM((_task ->> 'name')::TEXT),
                     (SELECT id FROM task_priorities WHERE value = 1),
                     _project_id,
@@ -4628,7 +4946,10 @@ BEGIN
                      FROM task_statuses
                      WHERE project_id = _project_id::UUID
                        AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
-                     LIMIT 1), _max_sort, (_task ->> 'total_minutes')::NUMERIC) RETURNING id INTO _task_id_new;
+                     LIMIT 1),
+                    _max_sort, _max_sort,
+                    _max_sort, _max_sort, _max_sort, _max_sort,
+                    (_task ->> 'total_minutes')::NUMERIC) RETURNING id INTO _task_id_new;
 
             INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, project_id)
                 VALUES (
@@ -6179,6 +6500,22 @@ CREATE OR REPLACE FUNCTION insert_task_dependency(_task_id uuid, _related_task_i
 AS
 $$
 BEGIN
+    -- Prevent self-dependency
+    IF _task_id = _related_task_id THEN
+        RAISE EXCEPTION 'SELF_DEPENDENCY';
+    END IF;
+
+    -- Prevent circular dependency: check if _related_task_id is already blocked by _task_id
+    IF EXISTS (
+        SELECT 1
+        FROM task_dependencies
+        WHERE task_id = _related_task_id
+          AND related_task_id = _task_id
+          AND dependency_type = _dependency_type
+    ) THEN
+        RAISE EXCEPTION 'CIRCULAR_DEPENDENCY';
+    END IF;
+
     -- Attempt to insert into task_dependencies
     INSERT INTO task_dependencies (task_id, related_task_id, dependency_type)
     VALUES (_task_id, _related_task_id, _dependency_type)
@@ -6217,7 +6554,7 @@ BEGIN
         RETURN TRUE;
     END IF;
 
-    -- If the status is "done", check if any dependent tasks are not completed
+    -- If the status is "done", check if any direct dependent tasks are not completed
     SELECT NOT EXISTS (
         SELECT 1
         FROM task_dependencies td
@@ -6233,7 +6570,27 @@ BEGIN
           )
     ) INTO can_continue;
 
-    -- Return whether the update can continue based on the dependent task completion check
+    IF NOT can_continue THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Also check if any subtask of this task has incomplete dependencies
+    SELECT NOT EXISTS (
+        SELECT 1
+        FROM tasks subtask
+        INNER JOIN task_dependencies td ON td.task_id = subtask.id
+        LEFT JOIN tasks dep_task ON dep_task.id = td.related_task_id
+        WHERE subtask.parent_task_id = _task_id
+          AND dep_task.status_id NOT IN (
+              SELECT id
+              FROM task_statuses ts
+              WHERE dep_task.project_id = ts.project_id
+                AND ts.category_id IN (
+                    SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                )
+          )
+    ) INTO can_continue;
+
     RETURN can_continue;
 END;
 $$;
@@ -6299,8 +6656,11 @@ BEGIN
         end_date,
         priority_id,
         project_id,
+        reporter_id,
+        status_id,
         assignees,
-        labels
+        labels,
+        duration_days
     )
     SELECT
         uuid_generate_v4(),
@@ -6311,6 +6671,8 @@ BEGIN
         t.end_date,
         t.priority_id,
         t.project_id,
+        t.reporter_id,
+        t.status_id,
         COALESCE(
             (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('project_member_id', tas.project_member_id, 'team_member_id', tas.team_member_id))
              FROM tasks_assignees tas
@@ -6322,7 +6684,12 @@ BEGIN
              FROM task_labels tla
              WHERE tla.task_id = t.id),
             '[]'::JSONB
-        ) AS labels
+        ) AS labels,
+        CASE 
+            WHEN t.start_date IS NOT NULL AND t.end_date IS NOT NULL 
+            THEN (t.end_date::DATE - t.start_date::DATE)
+            ELSE NULL
+        END AS duration_days
     FROM tasks t
     WHERE t.id = p_task_id
     RETURNING id INTO v_new_id;

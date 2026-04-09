@@ -20,6 +20,7 @@ import {
 } from '@/shared/antd-imports';
 import {} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { toggleClientSettingsDrawer } from '../../features/clients-portal/clients/clients-slice';
@@ -38,6 +39,7 @@ const { Option } = Select;
 
 const ClientSettingsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
+  const navigate = useNavigate();
 
   const { isClientSettingsDrawerOpen, selectedClientId } = useAppSelector(
     state => state.clientsPortalReducer.clientsReducer
@@ -49,16 +51,13 @@ const ClientSettingsDrawer = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   // RTK Query hooks - only load data when drawer is open
-  const { 
-    data: clientDetails, 
+  const {
+    data: clientDetails,
     isLoading: isLoadingClient,
-    refetch: refetchClientDetails 
-  } = useGetClientDetailsQuery(
-    selectedClientId!,
-    {
-      skip: !selectedClientId,
-    }
-  );
+    refetch: refetchClientDetails,
+  } = useGetClientDetailsQuery(selectedClientId!, {
+    skip: !selectedClientId,
+  });
 
   // Extract data from comprehensive response
   const client = clientDetails?.body;
@@ -76,10 +75,10 @@ const ClientSettingsDrawer = () => {
   const isLoadingProjects = isLoadingClient;
 
   // Fetch available projects using RTK Query - get all projects for the team
-  const { 
-    data: availableProjects, 
+  const {
+    data: availableProjects,
     isLoading: isLoadingAvailableProjects,
-    error: projectsError 
+    error: projectsError,
   } = useGetProjectsQuery(
     {
       index: 1,
@@ -143,25 +142,26 @@ const ClientSettingsDrawer = () => {
     // Check response structure - projects API returns IServerResponse<IProjectsViewModel>
     // Structure: response.body.data (array) and response.body.total
     const projectsData = availableProjects?.body?.data;
-    
+
     if (!projectsData || !Array.isArray(projectsData) || projectsData.length === 0) {
       return [];
     }
 
     // Get list of project IDs already assigned to this client
-    const assignedProjectIds = clientProjects?.projects?.map(p => p.id).filter((id): id is string => !!id) || [];
-    
+    const assignedProjectIds =
+      clientProjects?.projects?.map(p => p.id).filter((id): id is string => !!id) || [];
+
     return projectsData
       .filter((project: IProjectViewModel) => {
         // Must have id and name
         if (!project.id || !project.name) return false;
-        
+
         // Exclude if already assigned to this client
         if (assignedProjectIds.includes(project.id)) return false;
-        
+
         // Exclude if already assigned to another client (client_id is set and not null)
         if (project.client_id) return false;
-        
+
         return true;
       })
       .map((project: IProjectViewModel) => ({
@@ -213,7 +213,16 @@ const ClientSettingsDrawer = () => {
       render: (_: any, record: any) => (
         <Flex gap={8} align="center">
           <Tooltip title={t('viewProjectTooltip') || 'View Project'}>
-            <Button type="link" icon={<EyeOutlined />} size="small">
+            <Button
+              type="link"
+              icon={<EyeOutlined />}
+              size="small"
+              onClick={() => {
+                if (record.id) {
+                  navigate(`/worklenz/projects/${record.id}?tab=tasks-list&pinned_tab=tasks-list`);
+                }
+              }}
+            >
               {t('viewButton') || 'View'}
             </Button>
           </Tooltip>

@@ -22,9 +22,11 @@ import { TasksStep } from '@/components/account-setup/tasks-step';
 import { SurveyStep } from '@/components/account-setup/survey-step';
 import MembersStep from '@/components/account-setup/members-step';
 import {
+  evt_account_setup_visit,
   evt_account_setup_complete,
   evt_account_setup_skip_invite,
-  evt_account_setup_visit,
+  evt_account_setup_template_complete,
+  evt_signup_completed,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { verifyAuthentication } from '@/features/auth/authSlice';
@@ -281,6 +283,14 @@ const AccountSetup: React.FC = () => {
       if (res.done && res.body.id) {
         trackMixpanelEvent(skip ? evt_account_setup_skip_invite : evt_account_setup_complete);
 
+        // Track signup completion
+        const currentUser = getUserSession();
+        trackMixpanelEvent(evt_signup_completed, {
+          plan_type: currentUser?.subscription_type?.toLowerCase() || 'free',
+          signup_method: 'email',
+          template_used: false,
+        });
+
         // Refresh user session to update setup_completed status
         try {
           const authResponse = (await dispatch(
@@ -297,7 +307,10 @@ const AccountSetup: React.FC = () => {
         // Check for pending invitation before navigating to default project
         const pendingInvitation = invitationRedirectService.getPendingInvitation();
         if (pendingInvitation) {
-          console.log('[AccountSetup] Found pending invitation after setup completion, redirecting to:', pendingInvitation.url);
+          console.log(
+            '[AccountSetup] Found pending invitation after setup completion, redirecting to:',
+            pendingInvitation.url
+          );
           // Don't clear here - let the invite page clear it after successful join
           navigate(pendingInvitation.url);
           return;
@@ -346,6 +359,14 @@ const AccountSetup: React.FC = () => {
       if (res.done && res.body.id) {
         trackMixpanelEvent(evt_account_setup_complete);
 
+        // Track signup completion with template
+        const currentUser = getUserSession();
+        trackMixpanelEvent(evt_signup_completed, {
+          plan_type: currentUser?.subscription_type?.toLowerCase() || 'free',
+          signup_method: 'email',
+          template_used: true,
+        });
+
         // Refresh user session to update setup_completed status
         try {
           const authResponse = (await dispatch(
@@ -362,7 +383,10 @@ const AccountSetup: React.FC = () => {
         // Check for pending invitation before navigating to default project
         const pendingInvitation = invitationRedirectService.getPendingInvitation();
         if (pendingInvitation) {
-          console.log('[AccountSetup] Found pending invitation after template setup completion, redirecting to:', pendingInvitation.url);
+          console.log(
+            '[AccountSetup] Found pending invitation after template setup completion, redirecting to:',
+            pendingInvitation.url
+          );
           // Don't clear here - let the invite page clear it after successful join
           navigate(pendingInvitation.url);
           return;

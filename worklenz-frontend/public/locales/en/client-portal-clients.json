@@ -14,6 +14,7 @@
   "clearFiltersButton": "Clear Filters",
 
   "clientColumn": "Client",
+  "contactColumn": "Contact",
   "statusColumn": "Status",
   "assignedProjectsColumn": "Assigned Projects",
   "teamMembersColumn": "Team Members",
@@ -61,10 +62,17 @@
   "createButton": "Create Client",
   "cancelButton": "Cancel",
 
+  "basicInformationSection": "Basic Information",
+  "contactInformationSection": "Contact Information",
+
   "clientNameLabel": "Client Name",
   "clientNamePlaceholder": "Enter client name",
   "clientNameRequired": "Please enter client name",
   "clientNameMinLength": "Name must be at least 2 characters",
+  "recordNameLabel": "Record Name (Internal)",
+  "recordNamePlaceholder": "Enter internal record name",
+  "recordNameRequired": "Please enter an internal record name",
+  "recordNameMinLength": "Record name must be at least 2 characters",
 
   "emailLabel": "Email Address",
   "emailPlaceholder": "Enter email address",
@@ -73,6 +81,9 @@
 
   "companyNameLabel": "Company Name",
   "companyNamePlaceholder": "Enter company name (optional)",
+  "clientCompanyLabel": "Client / Company",
+  "clientCompanyPlaceholder": "Enter client company name",
+  "clientCompanyRequired": "Please enter the client company name",
 
   "phoneLabel": "Phone Number",
   "phonePlaceholder": "Enter phone number (optional)",
@@ -80,9 +91,22 @@
 
   "addressLabel": "Address",
   "addressPlaceholder": "Enter address (optional)",
+  "addressLine1Label": "Street Address",
+  "addressLine1Placeholder": "Enter street address (optional)",
+  "cityLabel": "City",
+  "cityPlaceholder": "City",
+  "stateLabel": "State / Province",
+  "statePlaceholder": "State / Province",
+  "zipCodeLabel": "Zip / Postal Code",
+  "zipCodePlaceholder": "Zip code",
+  "countryLabel": "Country",
+  "countryPlaceholder": "Country",
 
   "contactPersonLabel": "Contact Person",
   "contactPersonPlaceholder": "Enter contact person name",
+  "primaryContactLabel": "Primary Contact (POC)",
+  "primaryContactPlaceholder": "Enter primary contact (POC) name",
+  "primaryContactRequired": "Please enter a primary contact person",
 
   "statusLabel": "Status",
 
@@ -101,6 +125,7 @@
   "clientPortalAccessTitle": "Client Portal Access",
   "clientPortalAccessDescription": "Share this link with your client to give them access to their portal",
   "clientPortalAccessInfo": "After creating the client, use the organization invite link from the Clients page to give them portal access.",
+  "clientInvitationEmailInfo": "An invitation email will be sent to the client to join the portal. You can also share the invite link from the Clients page.",
   "copyButton": "Copy",
   "linkCopiedMessage": "Link copied to clipboard",
 
@@ -275,6 +300,12 @@
     "not_invited": "Not Invited",
     "expired": "Expired"
   },
+  "portalStatusHelp": {
+    "active": "Active: Client has accepted and can access the portal.",
+    "invited": "Invited: Invitation was sent and is still valid, but not yet accepted.",
+    "notInvited": "Not Invited: No invitation has been sent yet.",
+    "expired": "Expired: Previous invitation expired and should be resent."
+  },
 
   "inviteToPortalTooltip": "Invite to Portal",
   "resendInvitationTooltip": "Resend Invitation",
@@ -310,5 +341,8 @@
   "clientAlreadyHasPortalAccess": "Client has already joined the portal",
   "clientAlreadyHasPendingInvitation": "Invitation already sent. Please use the resend option if needed.",
   "clientEmailRequired": "Client email is required for invitation",
-  "addEmailButton": "Add Email & Invite"
+  "addEmailButton": "Add Email & Invite",
+  "clientExistsWarning": "A client with this email already exists. Using the existing client record.",
+  "clientExistsWithInvitationSent": "A client with this email already exists and an invitation has already been sent.",
+  "clientExistsNoInvitation": "A client with this email already exists. You can send them an invitation from the clients list."
 }

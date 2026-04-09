@@ -25,7 +25,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { DeleteOutlined, SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 
 const Projects: React.FC = () => {
@@ -65,16 +65,19 @@ const Projects: React.FC = () => {
     }
   }, [requestParams]);
 
-  const deleteProject = useCallback(async (id: string) => {
-    if (!id) return;
-    try {
-      await projectsApiService.deleteProject(id);
-    } catch (error) {
-      logger.error('Error deleting project', error);
-    } finally {
-      fetchProjects();
-    }
-  }, [fetchProjects]);
+  const deleteProject = useCallback(
+    async (id: string) => {
+      if (!id) return;
+      try {
+        await projectsApiService.deleteProject(id);
+      } catch (error) {
+        logger.error('Error deleting project', error);
+      } finally {
+        fetchProjects();
+      }
+    },
+    [fetchProjects]
+  );
 
   useEffect(() => {
     trackMixpanelEvent(evt_admin_center_projects_visit);
@@ -111,7 +114,9 @@ const Projects: React.FC = () => {
         ),
       },
       {
-        title: <span style={{ display: 'flex', justifyContent: 'center' }}>{t('membersCount')}</span>,
+        title: (
+          <span style={{ display: 'flex', justifyContent: 'center' }}>{t('membersCount')}</span>
+        ),
         key: 'membersCount',
         render: (record: IOrganizationProject) => (
           <Typography.Text
@@ -167,8 +172,8 @@ const Projects: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>Projects</span>} style={{ padding: '16px 0' }} />
-      <PageHeader
+      <WorklenzPageHeader title={<span>Projects</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader
         style={{
           paddingLeft: 0,
           paddingTop: 0,

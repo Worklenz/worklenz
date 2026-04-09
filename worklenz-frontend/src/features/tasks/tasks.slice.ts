@@ -169,6 +169,7 @@ export const fetchTaskGroups = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: taskReducer.priorities.join(' '),
+        customColumns: true,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -238,6 +239,7 @@ export const fetchSubTasks = createAsyncThunk(
       labels: selectedLabels,
       priorities: taskReducer.priorities.join(' '),
       parent_task: taskId,
+      customColumns: true,
     };
     try {
       const response = await tasksApiService.getTaskListV3(config);
@@ -821,10 +823,12 @@ const taskSlice = createSlice({
     },
 
     toggleColumnVisibility: (state, action: PayloadAction<string>) => {
-      const column = state.columns.find(col => col.key === action.payload);
-      if (column) {
-        column.pinned = !column.pinned;
-      }
+      const targetKey = action.payload;
+      state.columns.forEach(column => {
+        if (column.key === targetKey) {
+          column.pinned = !column.pinned;
+        }
+      });
     },
 
     updateTaskTimeTracking: (
@@ -985,6 +989,21 @@ const taskSlice = createSlice({
       }
     },
 
+    removeSubTask: (state, action: PayloadAction<{ subtaskId: string; parentTaskId: string }>) => {
+      const { subtaskId, parentTaskId } = action.payload;
+      for (const group of state.taskGroups) {
+        const parentTask = group.tasks.find(t => t.id === parentTaskId);
+        if (parentTask && parentTask.sub_tasks) {
+          const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === subtaskId);
+          if (subtaskIndex !== -1) {
+            parentTask.sub_tasks.splice(subtaskIndex, 1);
+            parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
+            break;
+          }
+        }
+      }
+    },
+
     updateCustomColumnValue: (
       state,
       action: PayloadAction<{
@@ -1031,19 +1050,25 @@ const taskSlice = createSlice({
 
     updateCustomColumnPinned: (
       state,
-      action: PayloadAction<{ columnId: string; isVisible: boolean }>
+      action: PayloadAction<{ columnId?: string; columnKey?: string; isVisible: boolean }>
     ) => {
-      const { columnId, isVisible } = action.payload;
-      const customColumn = state.customColumns.find(col => col.id === columnId);
-      const column = state.columns.find(col => col.id === columnId);
+      const { columnId, columnKey, isVisible } = action.payload;
 
-      if (customColumn) {
-        customColumn.pinned = isVisible;
-      }
+      state.customColumns.forEach(column => {
+        const matchesId = !!columnId && column.id === columnId;
+        const matchesKey = !!columnKey && column.key === columnKey;
+        if (matchesId || matchesKey) {
+          column.pinned = isVisible;
+        }
+      });
 
-      if (column) {
-        column.pinned = isVisible;
-      }
+      state.columns.forEach(column => {
+        const matchesId = !!columnId && column.id === columnId;
+        const matchesKey = !!columnKey && column.key === columnKey;
+        if (matchesId || matchesKey) {
+          column.pinned = isVisible;
+        }
+      });
     },
 
     updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
@@ -1163,10 +1188,11 @@ const taskSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(updateColumnVisibility.fulfilled, (state, action) => {
-        const column = state.columns.find(col => col.key === action.payload.key);
-        if (column) {
-          column.pinned = action.payload.pinned;
-        }
+        state.columns.forEach(column => {
+          if (column.key === action.payload.key) {
+            column.pinned = action.payload.pinned;
+          }
+        });
       })
       .addCase(updateColumnVisibility.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -1227,6 +1253,7 @@ export const {
   updateCustomColumn,
   deleteCustomColumn,
   updateSubTasks,
+  removeSubTask,
   updateCustomColumnValue,
   updateCustomColumnPinned,
   updateRecurringChange,

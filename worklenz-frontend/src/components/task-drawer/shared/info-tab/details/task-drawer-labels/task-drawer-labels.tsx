@@ -58,6 +58,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
         team_id: currentSession?.team_id,
       };
       socket?.emit(SocketEvents.TASK_LABELS_CHANGE.toString(), JSON.stringify(labelData));
+      setSearchQuery('');
       socket?.once(SocketEvents.TASK_LABELS_CHANGE.toString(), (data: ILabelsChangeResponse) => {
         dispatch(setTaskLabels(data));
         if (tab === 'tasks-list') {
@@ -81,6 +82,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
       team_id: currentSession?.team_id,
     };
     socket?.emit(SocketEvents.CREATE_LABEL.toString(), JSON.stringify(labelData));
+    setSearchQuery('');
     socket?.once(SocketEvents.CREATE_LABEL.toString(), (data: ILabelsChangeResponse) => {
       dispatch(setTaskLabels(data));
       if (tab === 'tasks-list') {
@@ -131,7 +133,6 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
             if (isLabel === -1) {
               if (e.key === 'Enter') {
                 handleCreateLabel();
-                setSearchQuery('');
               }
             }
           }}

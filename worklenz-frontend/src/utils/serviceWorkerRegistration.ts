@@ -5,8 +5,8 @@ import React, { startTransition } from 'react';
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
-    window.location.hostname === '[::1]' ||
-    window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
+  window.location.hostname === '[::1]' ||
+  window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/)
 );
 
 type Config = {
@@ -24,48 +24,56 @@ export function registerSW(config?: Config) {
   if ('serviceWorker' in navigator) {
     // Check if service worker is already registered
     const checkExisting = navigator.serviceWorker.getRegistration();
-    
+
     if (checkExisting) {
-      return checkExisting.then(registration => {
-        if (registration) {
-          // Service worker already registered, just call callbacks if needed
-          if (config) {
-            if (config.onSuccess && registration.installing === null && registration.waiting === null) {
-              // Use setTimeout to defer callback execution outside of render phase
-              setTimeout(() => {
-                try {
-                  config.onSuccess?.(registration);
-                } catch (error) {
-                  console.error('Error in onSuccess callback:', error);
-                }
-              }, 0);
+      return checkExisting
+        .then(registration => {
+          if (registration) {
+            // Service worker already registered, just call callbacks if needed
+            if (config) {
+              if (
+                config.onSuccess &&
+                registration.installing === null &&
+                registration.waiting === null
+              ) {
+                // Use setTimeout to defer callback execution outside of render phase
+                setTimeout(() => {
+                  try {
+                    config.onSuccess?.(registration);
+                  } catch (error) {
+                    console.error('Error in onSuccess callback:', error);
+                  }
+                }, 0);
+              }
             }
+            return registration;
           }
-          return registration;
-        }
-        // No existing registration, continue with new registration
-        return null;
-      }).then(registration => {
-        // If we got an existing registration, return it
-        if (registration) {
-          return registration;
-        }
-        // Otherwise, continue with new registration below
-        return null;
-      }).catch(() => {
-        // Error checking existing registration, continue with new registration
-        return null;
-      }).then(existingReg => {
-        // If we have an existing registration, return it
-        if (existingReg) {
-          return existingReg;
-        }
-        
-        // Continue with new registration logic below
-        return performNewRegistration();
-      });
+          // No existing registration, continue with new registration
+          return null;
+        })
+        .then(registration => {
+          // If we got an existing registration, return it
+          if (registration) {
+            return registration;
+          }
+          // Otherwise, continue with new registration below
+          return null;
+        })
+        .catch(() => {
+          // Error checking existing registration, continue with new registration
+          return null;
+        })
+        .then(existingReg => {
+          // If we have an existing registration, return it
+          if (existingReg) {
+            return existingReg;
+          }
+
+          // Continue with new registration logic below
+          return performNewRegistration();
+        });
     }
-    
+
     return performNewRegistration();
   } else {
     console.log('Service workers are not supported in this browser.');
@@ -73,14 +81,17 @@ export function registerSW(config?: Config) {
   }
 
   function performNewRegistration(): Promise<ServiceWorkerRegistration | null> {
-
     // Prevent double registration
     if (isRegistering && registrationPromise) {
       console.log('Service Worker registration already in progress, skipping duplicate call');
       return registrationPromise.then(registration => {
         if (registration && config) {
           // Call callbacks for the duplicate registration attempt
-          if (config.onSuccess && registration.installing === null && registration.waiting === null) {
+          if (
+            config.onSuccess &&
+            registration.installing === null &&
+            registration.waiting === null
+          ) {
             // Use setTimeout to defer callback execution outside of render phase
             setTimeout(() => {
               try {
@@ -99,7 +110,7 @@ export function registerSW(config?: Config) {
     const swUrl = '/sw.js';
 
     isRegistering = true;
-    registrationPromise = new Promise<ServiceWorkerRegistration | null>((resolve) => {
+    registrationPromise = new Promise<ServiceWorkerRegistration | null>(resolve => {
       const registrationCallback = (registration: ServiceWorkerRegistration | null) => {
         isRegistering = false;
         resolve(registration);
@@ -127,7 +138,11 @@ export function registerSW(config?: Config) {
   }
 }
 
-function registerValidSW(swUrl: string, config?: Config, onComplete?: (registration: ServiceWorkerRegistration | null) => void) {
+function registerValidSW(
+  swUrl: string,
+  config?: Config,
+  onComplete?: (registration: ServiceWorkerRegistration | null) => void
+) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
@@ -213,7 +228,11 @@ function registerValidSW(swUrl: string, config?: Config, onComplete?: (registrat
     });
 }
 
-function checkValidServiceWorker(swUrl: string, config?: Config, onComplete?: (registration: ServiceWorkerRegistration | null) => void) {
+function checkValidServiceWorker(
+  swUrl: string,
+  config?: Config,
+  onComplete?: (registration: ServiceWorkerRegistration | null) => void
+) {
   // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl, {
     headers: { 'Service-Worker': 'script' },
@@ -316,11 +335,54 @@ export class ServiceWorkerManager {
     }
   }
 
-  // Check for updates
+  // Check for updates by comparing version.json
   async checkForUpdates(): Promise<boolean> {
     try {
-      const response = await this.sendMessage('CHECK_FOR_UPDATES');
-      return response.hasUpdates;
+      // Get current version from localStorage
+      const currentVersion = localStorage.getItem('app_version');
+
+      // Fetch latest version.json (bypassing all caches)
+      const response = await fetch('/version.json?' + Date.now(), {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to fetch version.json:', response.status);
+        return false;
+      }
+
+      const versionData = await response.json();
+      const latestVersion = versionData.buildId || versionData.buildTime;
+
+      if (!latestVersion) {
+        console.warn('Invalid version data received');
+        return false;
+      }
+
+      // First time check - store current version
+      if (!currentVersion) {
+        localStorage.setItem('app_version', latestVersion.toString());
+        console.log('Initial version stored:', latestVersion);
+        return false;
+      }
+
+      // Compare versions
+      const hasUpdate = currentVersion !== latestVersion.toString();
+
+      if (hasUpdate) {
+        console.log('New version detected:', {
+          current: currentVersion,
+          latest: latestVersion,
+        });
+      }
+
+      return hasUpdate;
     } catch (error) {
       console.error('Failed to check for updates:', error);
       return false;
@@ -332,6 +394,20 @@ export class ServiceWorkerManager {
     if (!this.registration) return;
 
     try {
+      // Update stored version before reload
+      const response = await fetch('/version.json?' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+
+      if (response.ok) {
+        const versionData = await response.json();
+        const latestVersion = versionData.buildId || versionData.buildTime;
+        if (latestVersion) {
+          localStorage.setItem('app_version', latestVersion.toString());
+        }
+      }
+
       await this.registration.update();
       await this.sendMessage('SKIP_WAITING');
       window.location.reload();
@@ -344,6 +420,20 @@ export class ServiceWorkerManager {
   // Perform hard reload (clear cache and reload)
   async hardReload(): Promise<void> {
     try {
+      // Update stored version before reload
+      const response = await fetch('/version.json?' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+
+      if (response.ok) {
+        const versionData = await response.json();
+        const latestVersion = versionData.buildId || versionData.buildTime;
+        if (latestVersion) {
+          localStorage.setItem('app_version', latestVersion.toString());
+        }
+      }
+
       // Clear all caches first
       await this.clearCache();
 

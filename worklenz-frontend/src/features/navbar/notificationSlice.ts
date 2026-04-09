@@ -91,7 +91,7 @@ const notificationSlice = createSlice({
     builder.addCase(fetchInvitations.rejected, state => {
       state.loadingInvitations = false;
     });
-    
+
     builder.addCase(fetchNotifications.pending, state => {
       state.loading = true;
     });
@@ -103,7 +103,7 @@ const notificationSlice = createSlice({
       // Reset and rebuild dataset for notifications
       // Remove previous notifications from dataset
       state._dataset = state._dataset.filter(item => item.type === 'invitation');
-      
+
       action.payload.forEach(notification => {
         state._dataset.push({
           type: 'notification',
@@ -114,7 +114,7 @@ const notificationSlice = createSlice({
     builder.addCase(fetchNotifications.rejected, state => {
       state.loading = false;
     });
-    
+
     builder.addCase(fetchUnreadCount.pending, state => {
       // Keep the previous count while loading
     });

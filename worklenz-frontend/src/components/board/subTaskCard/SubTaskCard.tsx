@@ -14,6 +14,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import Avatars from '@/components/avatars/avatars';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 interface SubTaskProps {
   subtask: IProjectTask;
@@ -70,7 +71,7 @@ const SubTaskCard: React.FC<SubTaskProps> = ({ subtask }) => {
           style={{ fontWeight: 500, fontSize: '12px' }}
           delete={subtask.status === 'done'}
         >
-          {subtask.name}
+          {safeTextDisplay(subtask.name)}
         </Typography.Text>
       </Col>
       <Col span={4}>

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useCallback, useRef, useMemo, useState } from 'react';
 import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
 import { DownOutlined, ReloadOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -28,61 +28,69 @@ const AllTasksReports = () => {
 
   const state = useAppSelector(state => state.allTasksReportsReducer);
   const { total, isLoading, includeArchived, sortField, sortOrder, searchQuery } = state;
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleRefresh = useCallback(() => {
     dispatch(fetchAllTasks());
   }, [dispatch]);
 
-  const handleExport = useCallback(async (key: string) => {
-    try {
-      const body = {
-        index: 1, // Reset to first page for export (though backend handles size)
-        size: total, // Attempt to get all, but backend might override or we might want to just pass filters
-        sortField,
-        sortOrder,
-        search: searchQuery,
-        teams: state.teams.filter(t => t.selected).map(t => t.id),
-        projects: state.selectedProjects,
-        statuses: state.selectedStatuses,
-        priorities: state.selectedPriorities,
-        assignees: state.selectedAssignees,
-        labels: state.selectedLabels,
-        phases: state.selectedPhases,
-        dateField: state.dateFilterField,
-        dateFrom: state.dateFrom,
-        dateTo: state.dateTo,
-        includeArchived: state.includeArchived,
-        includeSubtasks: state.includeSubtasks,
-        completionStatus: state.completionStatus,
-        billable: state.billableFilter,
-        groupBy: state.groupBy,
-      };
+  const handleExport = useCallback(
+    async (key: string) => {
+      setIsExporting(true);
+      try {
+        const body = {
+          index: 1, // Reset to first page for export (though backend handles size)
+          size: total, // Attempt to get all, but backend might override or we might want to just pass filters
+          sortField,
+          sortOrder,
+          search: searchQuery,
+          teams: state.teams.filter(t => t.selected).map(t => t.id),
+          projects: state.selectedProjects,
+          statuses: state.selectedStatuses,
+          priorities: state.selectedPriorities,
+          assignees: state.selectedAssignees,
+          labels: state.selectedLabels,
+          phases: state.selectedPhases,
+          clients: state.selectedClients,
+          dateField: state.dateFilterField,
+          dateFrom: state.dateFrom,
+          dateTo: state.dateTo,
+          includeArchived: state.includeArchived,
+          includeSubtasks: state.includeSubtasks,
+          completionStatus: state.completionStatus,
+          billable: state.billableFilter,
+          groupBy: state.groupBy,
+        };
 
-      let blob: Blob;
-      const fileName = `All_Tasks_Report_${new Date().toISOString().split('T')[0]}`;
+        let blob: Blob;
+        const fileName = `All_Tasks_Report_${new Date().toISOString().split('T')[0]}`;
 
-      if (key === 'csv') {
-        blob = await allTasksReportsApiService.exportAllTasksToCsv(body);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileName}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-      } else if (key === 'excel') {
-        blob = await allTasksReportsApiService.exportAllTasksToExcel(body);
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${fileName}.xlsx`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        if (key === 'csv') {
+          blob = await allTasksReportsApiService.exportAllTasksToCsv(body);
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${fileName}.csv`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } else if (key === 'excel') {
+          blob = await allTasksReportsApiService.exportAllTasksToExcel(body);
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${fileName}.xlsx`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        console.error('Export failed:', error);
+        // Ideally show a notification here
+      } finally {
+        setIsExporting(false);
       }
-    } catch (error) {
-      console.error('Export failed:', error);
-      // Ideally show a notification here
-    }
-  }, [state, total, sortField, sortOrder, searchQuery]);
+    },
+    [state, total, sortField, sortOrder, searchQuery]
+  );
 
   const exportMenuItems = [
     { key: 'csv', label: t('exportToCsv', { defaultValue: 'Export to CSV' }) },
@@ -107,9 +115,14 @@ const AllTasksReports = () => {
             <Button>
               <Checkbox
                 checked={includeArchived}
-                onChange={() => dispatch(setIncludeArchived(!includeArchived))}
+                onChange={() => {
+                  dispatch(setIncludeArchived(!includeArchived));
+                  dispatch(fetchAllTasks());
+                }}
               >
-                <Typography.Text>{t('archivedFilter', { defaultValue: 'Include Archived' })}</Typography.Text>
+                <Typography.Text>
+                  {t('archivedFilter', { defaultValue: 'Include Archived' })}
+                </Typography.Text>
               </Checkbox>
             </Button>
 
@@ -117,15 +130,23 @@ const AllTasksReports = () => {
               {t('refreshButton', { defaultValue: 'Refresh' })}
             </Button>
 
-            <Button onClick={() => dispatch(resetAllFilters())}>{t('clearFilters', { defaultValue: 'Clear Filters' })}</Button>
+            <Button onClick={() => dispatch(resetAllFilters())}>
+              {t('clearFilters', { defaultValue: 'Clear Filters' })}
+            </Button>
 
             <Dropdown
               menu={{
                 items: exportMenuItems,
                 onClick: ({ key }) => handleExport(key),
               }}
+              disabled={isExporting}
             >
-              <Button type="primary" icon={<DownOutlined />} iconPosition="end">
+              <Button
+                type="primary"
+                icon={<DownOutlined />}
+                iconPosition="end"
+                loading={isExporting}
+              >
                 {t('exportButton', { defaultValue: 'Export' })}
               </Button>
             </Dropdown>
@@ -137,7 +158,13 @@ const AllTasksReports = () => {
 
       <Card
         title={
-          <Flex justify="space-between" align="center" wrap="wrap" gap={24} style={{ paddingBlock: 10 }}>
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap="wrap"
+            gap={24}
+            style={{ paddingBlock: 10 }}
+          >
             <AllTasksReportsFilters />
           </Flex>
         }

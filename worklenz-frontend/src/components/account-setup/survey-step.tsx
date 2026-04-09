@@ -477,8 +477,12 @@ export const SurveyStep: React.FC<Props> = ({
       {/* Progress Indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
+          {/* ✅ FIX: replaced hardcoded "Step" and "of" with t() calls */}
           <span className="text-sm font-medium" style={{ color: token?.colorTextSecondary }}>
-            Step {surveySubStep + 1} of 3: {getSubStepTitle()}
+            {t('stepProgress', {
+              step: surveySubStep + 1,
+              title: getSubStepTitle(),
+            })}
           </span>
           <span className="text-sm" style={{ color: token?.colorTextSecondary }}>
             {Math.round(((surveySubStep + 1) / 3) * 100)}%

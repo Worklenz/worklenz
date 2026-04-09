@@ -92,7 +92,7 @@ const TaskListSkeleton: React.FC<TaskListSkeletonProps> = ({ visibleColumns }) =
             >
               <div
                 className="flex items-center px-1 py-3 w-full"
-                style={{ minWidth: 'max-content', height: '44px' }}
+                style={{ minWidth: 'max-content', height: '40px' }}
               >
                 {columns.map((column, index) => {
                   const columnStyle = {

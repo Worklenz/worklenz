@@ -39,7 +39,19 @@
       "taskWeightTooltip": "Set the weight of this subtask (percentage)",
       "taskWeightRequired": "Please enter a task weight",
       "taskWeightRange": "Weight must be between 0 and 100",
+      "customFields": {
+        "empty": "Empty",
+        "enterNumber": "Enter number",
+        "selectDate": "Select date",
+        "selectOption": "Select option",
+        "selectPeople": "Select people",
+        "updateError": "Failed to update custom field"
+      },
       "recurring": "Recurring"
+    },
+    "customFields": {
+      "title": "Custom Fields",
+      "autoSaveHint": "Changes save automatically when you leave a field."
     },
     "labels": {
       "labelInputPlaceholder": "Search or create",
@@ -100,17 +112,27 @@
     "exportToExcel": "Export to Excel",
     "noTimeLogsFound": "No time logs found",
     "timeLogForm": {
+      "inputMode": "Input Mode",
+      "durationMode": "Duration",
+      "timeRangeMode": "Time Range",
       "date": "Date",
       "startTime": "Start Time",
       "endTime": "End Time",
+      "hours": "Hours",
+      "minutes": "Minutes",
       "workDescription": "Work Description",
       "descriptionPlaceholder": "Add a description",
       "logTime": "Log time",
       "updateTime": "Update time",
       "cancel": "Cancel",
+      "durationHelper": "Log total time with hours and minutes.",
+      "timeRangeHelper": "Log time by selecting start and end times.",
       "selectDateError": "Please select a date",
       "selectStartTimeError": "Please select start time",
       "selectEndTimeError": "Please select end time",
+      "hoursMinError": "Hours must be 0 or greater",
+      "minutesRangeError": "Minutes must be between 0 and 59",
+      "durationGreaterThanZeroError": "Duration must be greater than 0 minutes",
       "endTimeAfterStartError": "End time must be after start time"
     }
   },

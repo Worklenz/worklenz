@@ -11,14 +11,15 @@ import {
 } from '@/shared/antd-imports';
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { taskTimeLogsApiService, IRunningTimer, IRecentTimeLog } from '@/api/tasks/task-time-logs.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
+import {
+  taskTimeLogsApiService,
+  IRunningTimer,
+  IRecentTimeLog,
+} from '@/api/tasks/task-time-logs.api.service';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
-import { format, differenceInSeconds, isValid, parseISO, formatDistanceToNow } from 'date-fns';
-import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
-import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
+import { format, parseISO, formatDistanceToNow } from 'date-fns';
+import NavbarTimer from './NavbarTimer';
 
 const { Text } = Typography;
 const { useToken } = theme;
@@ -27,12 +28,10 @@ const TimerButton = () => {
   const [runningTimers, setRunningTimers] = useState<IRunningTimer[]>([]);
   const [recentTimeLogs, setRecentTimeLogs] = useState<IRecentTimeLog[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentTimes, setCurrentTimes] = useState<Record<string, string>>({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation('navbar');
   const { token } = useToken();
-  const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
 
   const logError = (message: string, error?: any) => {
@@ -74,38 +73,6 @@ const TimerButton = () => {
     }
   }, []);
 
-  const updateCurrentTimes = useCallback(() => {
-    try {
-      if (!Array.isArray(runningTimers) || runningTimers.length === 0) return;
-
-      const newTimes: Record<string, string> = {};
-      runningTimers.forEach(timer => {
-        try {
-          if (!timer || !timer.task_id || !timer.start_time) return;
-
-          const startTime = parseISO(timer.start_time);
-          if (!isValid(startTime)) {
-            logError(`Invalid start time for timer ${timer.task_id}: ${timer.start_time}`);
-            return;
-          }
-
-          const now = new Date();
-          const totalSeconds = differenceInSeconds(now, startTime);
-          const hours = Math.floor(totalSeconds / 3600);
-          const minutes = Math.floor((totalSeconds % 3600) / 60);
-          const seconds = totalSeconds % 60;
-          newTimes[timer.task_id] =
-            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } catch (error) {
-          logError(`Error updating time for timer ${timer?.task_id}`, error);
-        }
-      });
-      setCurrentTimes(newTimes);
-    } catch (error) {
-      logError('Error in updateCurrentTimes', error);
-    }
-  }, [runningTimers]);
-
   useEffect(() => {
     fetchTimerData();
 
@@ -118,14 +85,6 @@ const TimerButton = () => {
       return () => clearInterval(pollInterval);
     }
   }, [fetchTimerData, socket]);
-
-  useEffect(() => {
-    if (runningTimers.length > 0) {
-      updateCurrentTimes();
-      const interval = setInterval(updateCurrentTimes, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [runningTimers, updateCurrentTimes]);
 
   // Listen for timer start/stop events and project updates to refresh the count
   useEffect(() => {
@@ -197,28 +156,6 @@ const TimerButton = () => {
     return Array.isArray(runningTimers) ? runningTimers.length : 0;
   };
 
-  const handleStopTimer = (taskId: string) => {
-    if (!socket || !connected) {
-      // Socket not available or not connected - use fallback method
-      // Fallback: just update the local state and dispatch the action
-      dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
-      fetchTimerData(); // Refresh the list
-      return;
-    }
-
-    if (!taskId) {
-      logError('Invalid task ID for stopping timer');
-      return;
-    }
-
-    try {
-      socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
-      dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
-    } catch (error) {
-      logError(`Error stopping timer for task ${taskId}`, error);
-    }
-  };
-
   // Helper function to format time spent in seconds
   const formatTimeSpent = (seconds: number | undefined): string => {
     if (!seconds || seconds === 0) return '0m 0s';
@@ -229,35 +166,6 @@ const TimerButton = () => {
     const m = `${minutes}m`;
     const s = `${secs}s`;
     return `${h} ${m} ${s}`.trim();
-  };
-
-  // Component to handle timer for recent logs with conflict checking
-  const RecentLogTimerButton = ({ taskId, timeSpent }: { taskId: string; timeSpent?: number }) => {
-    const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
-      taskId,
-      null
-    );
-
-    // Use timer's timeString if timer is running, otherwise use the last time log duration
-    const displayTime = started ? timeString : formatTimeSpent(timeSpent);
-
-    return (
-      <TaskTimer
-        taskId={taskId}
-        started={started}
-        handleStartTimer={() => {
-          handleStartTimer();
-          // Refresh timer data after starting
-          setTimeout(() => fetchTimerData(), 100);
-        }}
-        handleStopTimer={() => {
-          handleStopTimer();
-          // Refresh timer data after stopping
-          setTimeout(() => fetchTimerData(), 100);
-        }}
-        timeString={displayTime}
-      />
-    );
   };
 
   // Timer icon component (Lucide-style)
@@ -279,19 +187,6 @@ const TimerButton = () => {
         <line x1="12" x2="15" y1="14" y2="11" />
         <circle cx="12" cy="14" r="8" />
       </svg>
-    );
-  };
-
-  const renderStopIcon = () => {
-    return (
-      <span
-        className="nz-icon"
-        style={{ fontSize: 8, position: 'relative', top: -1, left: 0, right: 0, bottom: 0 }}
-      >
-        <svg viewBox="0 0 1024 1024" width="1em" height="1em" fill="currentColor">
-          <path d="M864 64H160C107 64 64 107 64 160v704c0 53 43 96 96 96h704c53 0 96-43 96-96V160c0-53-43-96-96-96z"></path>
-        </svg>
-      </span>
     );
   };
 
@@ -404,44 +299,17 @@ const TimerButton = () => {
                               alignItems: 'center',
                             }}
                           >
-                            <div style={{ flex: 1 }}>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 8,
-                                  marginBottom: 4,
-                                }}
-                              >
-                                <Text type="secondary" style={{ fontSize: 11 }}>
-                                  {t('timerButton.started')}:{' '}
-                                  {timer.start_time
-                                    ? format(parseISO(timer.start_time), 'HH:mm')
-                                    : '--:--'}
-                                </Text>
-                                <Text
-                                  strong
-                                  style={{
-                                    fontSize: 14,
-                                    color: token.colorPrimary,
-                                    fontFamily: 'monospace',
-                                  }}
-                                >
-                                  {currentTimes[timer.task_id] || '00:00:00'}
-                                </Text>
-                              </div>
-                            </div>
-                            <Button
-                              type="text"
-                              size="small"
-                              icon={renderStopIcon()}
-                              onClick={e => {
-                                e.stopPropagation();
-                                handleStopTimer(timer.task_id);
-                              }}
-                              style={{
-                                color: token.colorError,
-                              }}
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              {t('timerButton.started')}:{' '}
+                              {timer.start_time
+                                ? format(parseISO(timer.start_time), 'HH:mm')
+                                : '--:--'}
+                            </Text>
+                            <NavbarTimer
+                              taskId={timer.task_id}
+                              isRunning={true}
+                              startTime={timer.start_time}
+                              onTimerChange={fetchTimerData}
                             />
                           </div>
                         </Space>
@@ -475,6 +343,8 @@ const TimerButton = () => {
                 renderItem={log => {
                   if (!log || !log.task_id) return null;
 
+                  const [isHovered, setIsHovered] = useState(false);
+
                   return (
                     <List.Item
                       style={{
@@ -482,6 +352,8 @@ const TimerButton = () => {
                         borderBottom: `1px solid ${token.colorBorderSecondary}`,
                         backgroundColor: 'transparent',
                       }}
+                      onMouseEnter={() => setIsHovered(true)}
+                      onMouseLeave={() => setIsHovered(false)}
                     >
                       <div style={{ width: '100%' }}>
                         <Space direction="vertical" size={4} style={{ width: '100%' }}>
@@ -544,7 +416,30 @@ const TimerButton = () => {
                             <Text type="secondary" style={{ fontSize: 11 }}>
                               {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
                             </Text>
-                            <RecentLogTimerButton taskId={log.task_id} timeSpent={log.time_spent} />
+                            {isHovered ? (
+                              <NavbarTimer
+                                taskId={log.task_id}
+                                isRunning={runningTimers.some(
+                                  timer => timer.task_id === log.task_id
+                                )}
+                                startTime={
+                                  runningTimers.find(timer => timer.task_id === log.task_id)
+                                    ?.start_time
+                                }
+                                onTimerChange={fetchTimerData}
+                              />
+                            ) : (
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  color: token.colorTextSecondary,
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                {formatTimeSpent(log.time_spent)}
+                              </Text>
+                            )}
                           </div>
                         </Space>
                       </div>
@@ -617,9 +512,7 @@ const TimerButton = () => {
       >
         <Tooltip title={t('timerButton.runningTimers')}>
           <Button
-            style={
-              { height: '62px', width: '60px' }
-            }
+            style={{ height: '62px', width: '60px' }}
             type="text"
             icon={
               hasRunningTimers() ? (

@@ -94,7 +94,8 @@
   "aboutYouStepName": "About You",
   "yourNeedsStepName": "Your Needs",
   "discoveryStepName": "Discovery",
-  "stepProgress": "Step {step} of 3: {title}",
+
+  "stepProgress": "Step {{step}} of 3: {{title}}",
 
   "projectStepHeader": "Let's create your first project",
   "projectStepSubheader": "Start from scratch or use a template to get going faster",

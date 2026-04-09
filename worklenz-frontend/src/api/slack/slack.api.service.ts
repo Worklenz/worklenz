@@ -126,7 +126,9 @@ export const slackApiService = {
 
   // Channel operations
   refreshChannels: async (): Promise<IServerResponse<ISlackChannel[]>> => {
-    const response = await apiClient.post<IServerResponse<ISlackChannel[]>>(`${rootUrl}/channels/refresh`);
+    const response = await apiClient.post<IServerResponse<ISlackChannel[]>>(
+      `${rootUrl}/channels/refresh`
+    );
     return response.data;
   },
 
@@ -166,7 +168,9 @@ export const slackApiService = {
     await apiClient.post(`${rootUrl}/channel-configs/${configId}/reactivate`);
   },
 
-  getProjectChannelConfigs: async (projectId: string): Promise<IServerResponse<ISlackChannelConfig[]>> => {
+  getProjectChannelConfigs: async (
+    projectId: string
+  ): Promise<IServerResponse<ISlackChannelConfig[]>> => {
     const response = await apiClient.get<IServerResponse<ISlackChannelConfig[]>>(
       `${rootUrl}/channel-configs/project/${projectId}`
     );
@@ -181,7 +185,10 @@ export const slackApiService = {
   },
 
   // Test notification
-  sendTestNotification: async (configId: string, message?: unknown): Promise<IServerResponse<void>> => {
+  sendTestNotification: async (
+    configId: string,
+    message?: unknown
+  ): Promise<IServerResponse<void>> => {
     const response = await apiClient.post<IServerResponse<void>>(
       `${rootUrl}/test-notification/${configId}`,
       { message }
@@ -190,34 +197,42 @@ export const slackApiService = {
   },
 
   // Channel joining operations
-  joinChannel: async (workspaceId: string, channelId: string): Promise<IServerResponse<{
-    success: boolean;
-    message: string;
-    alreadyInChannel?: boolean;
-  }>> => {
-    const response = await apiClient.post<IServerResponse<{
+  joinChannel: async (
+    workspaceId: string,
+    channelId: string
+  ): Promise<
+    IServerResponse<{
       success: boolean;
       message: string;
       alreadyInChannel?: boolean;
-    }>>(
-      `${rootUrl}/channels/join`,
-      { workspaceId, channelId }
-    );
+    }>
+  > => {
+    const response = await apiClient.post<
+      IServerResponse<{
+        success: boolean;
+        message: string;
+        alreadyInChannel?: boolean;
+      }>
+    >(`${rootUrl}/channels/join`, { workspaceId, channelId });
     return response.data;
   },
 
-  autoJoinPublicChannels: async (workspaceId: string): Promise<IServerResponse<{
-    joinedCount: number;
-    failedCount: number;
-    results: Array<{ channelName: string; success: boolean; message: string }>;
-  }>> => {
-    const response = await apiClient.post<IServerResponse<{
+  autoJoinPublicChannels: async (
+    workspaceId: string
+  ): Promise<
+    IServerResponse<{
       joinedCount: number;
       failedCount: number;
       results: Array<{ channelName: string; success: boolean; message: string }>;
-    }>>(
-      `${rootUrl}/workspace/${workspaceId}/channels/auto-join`
-    );
+    }>
+  > => {
+    const response = await apiClient.post<
+      IServerResponse<{
+        joinedCount: number;
+        failedCount: number;
+        results: Array<{ channelName: string; success: boolean; message: string }>;
+      }>
+    >(`${rootUrl}/workspace/${workspaceId}/channels/auto-join`);
     return response.data;
   },
 };

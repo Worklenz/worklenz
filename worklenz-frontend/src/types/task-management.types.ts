@@ -28,7 +28,10 @@ export interface Task {
   show_sub_tasks?: boolean;
   has_filtered_children?: boolean; // Flag to auto-expand when filtered descendants exist
   parent_task_id?: string;
+  parent_task_container_id?: string;
   is_sub_task?: boolean; // Add this property
+  is_parent_container?: boolean;
+  parent_task_not_archived?: boolean;
   progress?: number;
   weight?: number;
   color?: string;
@@ -56,7 +59,7 @@ export interface Task {
   custom_column_values?: Record<string, any>; // Custom column values
   isTemporary?: boolean; // Temporary task indicator
   // Add any other task properties as needed
-  complete_ratio?: number
+  complete_ratio?: number;
 }
 
 export interface TaskGroup {
@@ -108,6 +111,7 @@ export interface TaskManagementState {
   entities: Record<string, Task>;
   loading: boolean;
   error: string | null;
+  loadedProjectId: string | null;
   groups: TaskGroup[];
   grouping: string | undefined;
   selectedPriorities: string[];

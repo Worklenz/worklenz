@@ -7,7 +7,9 @@
   box-shadow: 0 1px 3px var(--ant-color-shadow);
   cursor: grab;
   /* Use transform for GPU acceleration, avoid transitioning during drag */
-  transition: box-shadow 0.15s ease, transform 0.1s ease;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
   will-change: transform;
   display: flex;
   align-items: flex-start;

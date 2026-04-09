@@ -27,6 +27,7 @@ teamMembersApiRouter.get("/overview-chart/:id", teamOwnerOrAdminValidator, idPar
 teamMembersApiRouter.get("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.getById));
 teamMembersApiRouter.put("/resend-invitation", teamOwnerOrAdminValidator, safeControllerFunction(TeamMembersController.resend_invitation));
 teamMembersApiRouter.put("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.update));
+teamMembersApiRouter.put("/:id/name", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.updateMemberName));
 teamMembersApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.deleteById));
 teamMembersApiRouter.get("/deactivate/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(TeamMembersController.toggleMemberActiveStatus));
 

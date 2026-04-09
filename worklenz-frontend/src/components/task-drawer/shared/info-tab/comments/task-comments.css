@@ -31,6 +31,82 @@
   border: 1px solid #2a4a6d;
 }
 
+/* ─── Clickable link styles ──────────────────────────────────────────────── */
+
+/*
+ * .comment-link is injected by linkifyUrls() in task-comments.tsx.
+ * Rules are scoped to the theme wrapper so light/dark both work,
+ * and the current-user bubble gets its own tinted variant.
+ */
+.comment-link {
+  /* Layout */
+  display: inline;
+  word-break: break-all; /* prevent long URLs from overflowing the bubble */
+
+  /* Typography */
+  font-size: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+
+  /* Interaction */
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+
+/* Light theme — other user's bubble */
+.theme-light .comment-link,
+.comment-content-light .comment-link {
+  color: #1677ff;
+  text-decoration-color: #91caff;
+}
+
+.theme-light .comment-link:hover,
+.comment-content-light .comment-link:hover {
+  color: #0958d9;
+  text-decoration-color: #1677ff;
+}
+
+/* Dark theme — other user's bubble */
+.theme-dark .comment-link,
+.comment-content-dark .comment-link {
+  color: #4096ff;
+  text-decoration-color: #2a4a6d;
+}
+
+.theme-dark .comment-link:hover,
+.comment-content-dark .comment-link:hover {
+  color: #69b1ff;
+  text-decoration-color: #4096ff;
+}
+
+/* Light theme — current user's bubble (blue tinted background) */
+.theme-light .current-user-comment .comment-link {
+  color: #0958d9;
+  text-decoration-color: #91caff;
+}
+
+.theme-light .current-user-comment .comment-link:hover {
+  color: #003eb3;
+  text-decoration-color: #0958d9;
+}
+
+/* Dark theme — current user's bubble (dark blue background) */
+.theme-dark .current-user-comment .comment-link {
+  color: #69b1ff;
+  text-decoration-color: #3a5a7d;
+}
+
+.theme-dark .current-user-comment .comment-link:hover {
+  color: #95cbff;
+  text-decoration-color: #69b1ff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 .ant-upload-list {
   border: 1px dashed transparent;
   transition: 0.15s all;

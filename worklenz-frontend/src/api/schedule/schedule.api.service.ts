@@ -27,7 +27,7 @@ export const scheduleAPIService = {
   }): Promise<IServerResponse<any>> => {
     // Ensure CSRF token is available before making the request
     await ensureCsrfToken();
-    
+
     const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/settings`, {
       workingDays,
       workingHours,
@@ -67,7 +67,7 @@ export const scheduleAPIService = {
   }): Promise<IServerResponse<any>> => {
     // Ensure CSRF token is available before making the request
     await ensureCsrfToken();
-    
+
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/schedule`, schedule);
     return response.data;
   },
@@ -108,7 +108,7 @@ export const scheduleAPIService = {
   }): Promise<IServerResponse<any>> => {
     // Ensure CSRF token is available before making the request
     await ensureCsrfToken();
-    
+
     const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/allocation`, {
       memberId,
       projectId,
@@ -130,7 +130,7 @@ export const scheduleAPIService = {
   }): Promise<IServerResponse<any>> => {
     // Ensure CSRF token is available before making the request
     await ensureCsrfToken();
-    
+
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/rebalance`, {
       memberIds,
       strategy,

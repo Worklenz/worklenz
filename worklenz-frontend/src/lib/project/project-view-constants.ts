@@ -238,7 +238,10 @@ export const getFilteredTabItems = (
       }
 
       // Disable insights, roadmap, and workload tabs for free users
-      if (isFree && ['project-insights-member-overview', 'roadmap', 'workload'].includes(item.key)) {
+      if (
+        isFree &&
+        ['project-insights-member-overview', 'roadmap', 'workload'].includes(item.key)
+      ) {
         return {
           ...item,
           disabled: true,

@@ -3,7 +3,14 @@ import { Flex, Typography } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { toggleScheduleDrawer, setSelectedMember, setSelectedProject, setSelectedSegmentData, setSelectedDateRange, SegmentData } from '../../../features/schedule/scheduleSliceRTK';
+import {
+  toggleScheduleDrawer,
+  setSelectedMember,
+  setSelectedProject,
+  setSelectedSegmentData,
+  setSelectedDateRange,
+  SegmentData,
+} from '../../../features/schedule/scheduleSliceRTK';
 import { Resizable } from 're-resizable';
 import { themeWiseColor } from '../../../utils/themeWiseColor';
 import { MoreOutlined } from '@/shared/antd-imports';
@@ -42,7 +49,13 @@ const ProjectTimelineBar = ({
     setLeftOffset(indicatorOffset);
     setTotalHours(project?.total_hours || 0);
     setCurrentDuration(indicatorWidth);
-  }, [indicatorWidth, indicatorOffset, project?.total_hours, project?.task_count, project?.hours_per_day]);
+  }, [
+    indicatorWidth,
+    indicatorOffset,
+    project?.total_hours,
+    project?.task_count,
+    project?.hours_per_day,
+  ]);
 
   // 🔄 Additional effect to handle project data changes
   useEffect(() => {
@@ -68,24 +81,26 @@ const ProjectTimelineBar = ({
     if (project?.id) {
       dispatch(setSelectedProject(project.id));
     }
-    
+
     // Store the complete segment data including date range
     const segmentData: SegmentData = {
       ...project,
       memberId: memberId,
       segmentId: project?.segment_id || `${project?.id}_${project?.segment_number || 0}`,
     };
-    
+
     dispatch(setSelectedSegmentData(segmentData));
-    
+
     // Set the date range for this specific segment
     if (project?.date_union?.start && project?.date_union?.end) {
-      dispatch(setSelectedDateRange({
-        start: project.date_union.start,
-        end: project.date_union.end,
-      }));
+      dispatch(
+        setSelectedDateRange({
+          start: project.date_union.start,
+          end: project.date_union.end,
+        })
+      );
     }
-    
+
     // Open the drawer
     dispatch(toggleScheduleDrawer());
   };
@@ -98,7 +113,7 @@ const ProjectTimelineBar = ({
   ) => {
     // Temporarily disabled resize functionality
     return;
-    
+
     /* Original resize logic - commented out temporarily
     let newWidth = width;
     let newLeftOffset = leftOffset;
@@ -185,12 +200,7 @@ const ProjectTimelineBar = ({
           width: '100%', // Take full width of the container
         }}
       >
-        <Flex
-          vertical
-          align="center"
-          justify="center"
-          style={{ width: '100%' }}
-        >
+        <Flex vertical align="center" justify="center" style={{ width: '100%' }}>
           {totalHours > 0 && (
             <Typography.Text
               style={{
@@ -216,7 +226,10 @@ const ProjectTimelineBar = ({
               }}
               ellipsis={{ expanded: false }}
             >
-              {project?.task_count || 0} {(project?.task_count || 0) === 1 ? t('task', { defaultValue: 'task' }) : t('tasks', { defaultValue: 'tasks' })}
+              {project?.task_count || 0}{' '}
+              {(project?.task_count || 0) === 1
+                ? t('task', { defaultValue: 'task' })
+                : t('tasks', { defaultValue: 'tasks' })}
             </Typography.Text>
           )}
           {!totalHours && !(project?.task_count || 0) && (
@@ -247,7 +260,8 @@ export default React.memo(ProjectTimelineBar, (prevProps, nextProps) => {
     prevProps.project?.task_count === nextProps.project?.task_count &&
     prevProps.project?.hours_per_day === nextProps.project?.hours_per_day &&
     prevProps.memberId === nextProps.memberId &&
-    JSON.stringify(prevProps.project?.date_union) === JSON.stringify(nextProps.project?.date_union) &&
+    JSON.stringify(prevProps.project?.date_union) ===
+      JSON.stringify(nextProps.project?.date_union) &&
     prevProps.allProjectSegments?.length === nextProps.allProjectSegments?.length
   );
 });

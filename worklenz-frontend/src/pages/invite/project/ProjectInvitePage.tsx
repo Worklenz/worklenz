@@ -1,7 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Card, Spin, Result, Button, Typography, Form, Input, message, Tag, Tooltip } from '@/shared/antd-imports';
-import { CheckCircleOutlined, LoadingOutlined, ProjectOutlined, CloseOutlined } from '@ant-design/icons';
+import {
+  Card,
+  Spin,
+  Result,
+  Button,
+  Typography,
+  Form,
+  Input,
+  message,
+  Tag,
+  Tooltip,
+} from '@/shared/antd-imports';
+import {
+  CheckCircleOutlined,
+  LoadingOutlined,
+  ProjectOutlined,
+  CloseOutlined,
+} from '@ant-design/icons';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -23,7 +39,9 @@ const ProjectInvitePage: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { t } = useTranslation('invitation');
 
-  const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error' | 'invalid'>('loading');
+  const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error' | 'invalid'>(
+    'loading'
+  );
   const [errorMessage, setErrorMessage] = useState('');
   const [projectInfo, setProjectInfo] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -48,7 +66,7 @@ const ProjectInvitePage: React.FC = () => {
   const validateInvitation = async () => {
     try {
       const response = await projectMembersApiService.validateInvitationLink(token!);
-      
+
       if (response.done) {
         setProjectInfo(response.body);
         setStatus('form');
@@ -57,6 +75,14 @@ const ProjectInvitePage: React.FC = () => {
         setErrorMessage(response.message || 'Invalid invitation link');
       }
     } catch (error: any) {
+      // Check if this is a 401 error (not authenticated)
+      if (error?.response?.status === 401) {
+        // The API client will handle the redirect to login
+        // Just keep showing loading state
+        console.log('[ProjectInvite] 401 error - redirecting to login');
+        return;
+      }
+      
       setStatus('error');
       setErrorMessage(error?.response?.data?.message || 'Failed to validate invitation');
     }
@@ -68,25 +94,37 @@ const ProjectInvitePage: React.FC = () => {
     try {
       setSubmitting(true);
       const response = await projectMembersApiService.acceptInvitationByLink(token, values);
-      
+
       if (response.done) {
         setStatus('success');
         message.success(t('successMessage'));
-        
+
         // Clear the stored invitation context since we successfully joined
         invitationRedirectService.clearPendingInvitation();
         console.log('[ProjectInvite] Cleared invitation context after successful join');
-        
+
+        const teamId = response.body?.team_id;
+        const projectId = response.body?.project_id || projectInfo?.project?.id;
+
         // Redirect to login or project after a delay
         setTimeout(() => {
-          if (currentUser) {
-            navigate(`/worklenz/projects/${projectInfo?.project?.id}`);
+          if (currentUser && teamId) {
+            // Force full page reload to refresh session with new active team
+            // Backend has already set the active team, so reload will pick it up
+            console.log(
+              '[ProjectInvite] Reloading to refresh session with new active team:',
+              teamId
+            );
+            window.location.href = `/worklenz/projects/${projectId}`;
+          } else if (currentUser) {
+            // Fallback: reload to pick up the active team set by backend
+            window.location.href = `/worklenz/projects/${projectId}`;
           } else {
             navigate('/auth/login', {
               state: {
                 message: t('projectLoginPrompt'),
-                email: values.email
-              }
+                email: values.email,
+              },
             });
           }
         }, 2000);
@@ -112,11 +150,11 @@ const ProjectInvitePage: React.FC = () => {
     // Clear the stored invitation context
     invitationRedirectService.clearPendingInvitation();
     console.log('[ProjectInvite] Cleared invitation context after skip');
-    
+
     // Clear the session
     await authService.signOut();
     console.log('[ProjectInvite] Cleared session after skip');
-    
+
     // Redirect to authenticating page
     navigate('/auth/authenticating');
   };
@@ -138,52 +176,57 @@ const ProjectInvitePage: React.FC = () => {
             <ProjectOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: 16 }} />
             <Title level={3}>{t('joinProject')}</Title>
             <div style={{ marginBottom: 24 }}>
-              <Paragraph type="secondary">
-                {t('invitedToProject')}
-              </Paragraph>
+              <Paragraph type="secondary">{t('invitedToProject')}</Paragraph>
               <div style={{ margin: '16px 0' }}>
-                <Tag 
-                  color={projectInfo?.project?.color_code || '#1890ff'} 
-                  style={{ 
-                    fontSize: '16px', 
-                    padding: '8px 16px', 
+                <Tag
+                  color={projectInfo?.project?.color_code || '#1890ff'}
+                  style={{
+                    fontSize: '16px',
+                    padding: '8px 16px',
                     borderRadius: '20px',
-                    fontWeight: 'bold'
+                    fontWeight: 'bold',
                   }}
                 >
                   {projectInfo?.project?.name}
                 </Tag>
               </div>
               <Paragraph type="secondary">
-                {t('in')} <strong>{projectInfo?.project?.team_name}</strong> {t('invitedBy')} {projectInfo?.project?.owner_name}
+                {t('in')} <strong>{projectInfo?.project?.team_name}</strong> {t('invitedBy')}{' '}
+                {projectInfo?.project?.owner_name}
               </Paragraph>
               <Paragraph type="secondary" style={{ fontSize: '12px' }}>
                 {t('accessLevel')}: <strong>{projectInfo?.invitation?.access_level}</strong>
               </Paragraph>
             </div>
-            
+
             {currentUser ? (
               // Logged in user - show confirmation UI without form fields
               <div style={{ maxWidth: 400, margin: '0 auto' }}>
-                <div style={{ 
-                  marginBottom: 24, 
-                  padding: '16px', 
-                  backgroundColor: themeMode === 'dark' ? '#1c3a5e' : '#e6f7ff',
-                  border: `1px solid ${themeMode === 'dark' ? '#2a5a8a' : '#91d5ff'}`,
-                  borderRadius: '8px' 
-                }}>
-                  <Typography.Text style={{ 
-                    fontSize: '14px', 
-                    color: themeMode === 'dark' ? '#91d5ff' : '#1890ff' 
-                  }}>
+                <div
+                  style={{
+                    marginBottom: 24,
+                    padding: '16px',
+                    backgroundColor: themeMode === 'dark' ? '#1c3a5e' : '#e6f7ff',
+                    border: `1px solid ${themeMode === 'dark' ? '#2a5a8a' : '#91d5ff'}`,
+                    borderRadius: '8px',
+                  }}
+                >
+                  <Typography.Text
+                    style={{
+                      fontSize: '14px',
+                      color: themeMode === 'dark' ? '#91d5ff' : '#1890ff',
+                    }}
+                  >
                     {t('joiningAs', { name: currentUser.name, email: currentUser.email })}
                   </Typography.Text>
                 </div>
-                
+
                 <div style={{ marginTop: 24 }}>
-                  <Button 
-                    type="primary" 
-                    onClick={() => handleSubmit({ name: currentUser.name || '', email: currentUser.email || '' })}
+                  <Button
+                    type="primary"
+                    onClick={() =>
+                      handleSubmit({ name: currentUser.name || '', email: currentUser.email || '' })
+                    }
                     loading={submitting}
                     size="large"
                     style={{ minWidth: 120, marginRight: 8 }}
@@ -191,16 +234,12 @@ const ProjectInvitePage: React.FC = () => {
                     {t('joinProjectButton')}
                   </Button>
                   <Tooltip title={t('skipInvitationTooltip')}>
-                    <Button 
-                      onClick={handleSkipInvitation}
-                      size="large"
-                      style={{ minWidth: 120 }}
-                    >
+                    <Button onClick={handleSkipInvitation} size="large" style={{ minWidth: 120 }}>
                       {t('skipInvitation')}
                     </Button>
                   </Tooltip>
                 </div>
-                
+
                 <Paragraph type="secondary" style={{ fontSize: 12, marginTop: 16 }}>
                   {t('projectTermsAgreement')}
                 </Paragraph>
@@ -218,7 +257,7 @@ const ProjectInvitePage: React.FC = () => {
                   label={t('fullName')}
                   rules={[
                     { required: true, message: t('fullNameRequired') },
-                    { min: 2, message: t('fullNameMinLength') }
+                    { min: 2, message: t('fullNameMinLength') },
                   ]}
                 >
                   <Input placeholder={t('fullNamePlaceholder')} />
@@ -229,16 +268,16 @@ const ProjectInvitePage: React.FC = () => {
                   label={t('emailAddress')}
                   rules={[
                     { required: true, message: t('emailRequired') },
-                    { type: 'email', message: t('emailInvalid') }
+                    { type: 'email', message: t('emailInvalid') },
                   ]}
                 >
                   <Input placeholder={t('emailPlaceholder')} />
                 </Form.Item>
 
                 <Form.Item style={{ marginTop: 24, textAlign: 'center' }}>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
+                  <Button
+                    type="primary"
+                    htmlType="submit"
                     loading={submitting}
                     size="large"
                     style={{ minWidth: 120, marginRight: 8 }}
@@ -246,11 +285,7 @@ const ProjectInvitePage: React.FC = () => {
                     {t('joinProjectButton')}
                   </Button>
                   <Tooltip title={t('skipInvitationTooltip')}>
-                    <Button 
-                      onClick={handleSkipInvitation}
-                      size="large"
-                      style={{ minWidth: 120 }}
-                    >
+                    <Button onClick={handleSkipInvitation} size="large" style={{ minWidth: 120 }}>
                       {t('skipInvitation')}
                     </Button>
                   </Tooltip>
@@ -276,9 +311,9 @@ const ProjectInvitePage: React.FC = () => {
       case 'error':
         return (
           <Result
-            status="error"
-            title={t('errorNotLoggedIn') || errorMessage}
-            subTitle={ errorMessage}
+            status="warning"
+            title={errorMessage}
+            subTitle={t('invalidInvitationSubtitle')}
             extra={[
               <Button key="home" onClick={() => navigate('/')}>
                 {t('goToHome')}
@@ -324,9 +359,8 @@ const ProjectInvitePage: React.FC = () => {
         style={{
           maxWidth: 500,
           width: '100%',
-          boxShadow: themeMode === 'dark' 
-            ? '0 4px 12px rgba(0,0,0,0.3)' 
-            : '0 4px 12px rgba(0,0,0,0.1)',
+          boxShadow:
+            themeMode === 'dark' ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
           backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#ffffff',
           border: themeMode === 'dark' ? '1px solid #303030' : undefined,
           position: 'relative',

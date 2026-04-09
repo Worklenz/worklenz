@@ -220,7 +220,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
 
   const handleSkip = () => {
     setVisible(false);
-    
+
     // If user checked "don't show again", permanently dismiss
     if (dontShowAgain) {
       setSurveyPermanentlyDismissed();
@@ -228,7 +228,7 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
       // Record the skip for frequency cap
       recordSurveySkip();
     }
-    
+
     onClose?.();
   };
 
@@ -273,16 +273,13 @@ export const SurveyPromptModal: React.FC<SurveyPromptModalProps> = ({
           <Flex vertical gap={12}>
             {/* Don't show again checkbox */}
             <Flex justify="flex-start" align="center">
-              <Checkbox
-                checked={dontShowAgain}
-                onChange={e => setDontShowAgain(e.target.checked)}
-              >
+              <Checkbox checked={dontShowAgain} onChange={e => setDontShowAgain(e.target.checked)}>
                 <Typography.Text type="secondary" style={{ fontSize: 13 }}>
                   {t('survey:dontShowAgain')}
                 </Typography.Text>
               </Checkbox>
             </Flex>
-            
+
             {/* Action buttons */}
             <Flex justify="space-between" align="center">
               <div>

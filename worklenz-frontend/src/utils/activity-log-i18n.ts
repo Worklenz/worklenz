@@ -33,7 +33,7 @@ export const renderActivityMessage = (
       return item.description;
     }
   }
-  
+
   // Fallback to original description for backward compatibility
   return item.description;
 };
@@ -52,11 +52,11 @@ export const getActivityUserName = (item: ActivityLogItem): string => {
   if (item.user_name) {
     return item.user_name;
   }
-  
+
   if (item.i18n_params?.userName) {
     return item.i18n_params.userName;
   }
-  
+
   return 'Unknown User';
 };
 
@@ -67,10 +67,10 @@ export const getActivityProjectName = (item: ActivityLogItem): string => {
   if (item.project_name) {
     return item.project_name;
   }
-  
+
   if (item.i18n_params?.projectName) {
     return item.i18n_params.projectName;
   }
-  
+
   return 'Unknown Project';
 };

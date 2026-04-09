@@ -94,15 +94,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       project.actual_time = int(project.actual_time);
       project.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(project.estimated_time));
       project.actual_time_string = this.convertSecondsToHoursAndMinutes(int(project.actual_time));
-      
-      // FIX: Format dates consistently like tasks to avoid timezone issues
+
       if (project.start_date) {
-        project.start_date = moment(project.start_date).format('YYYY-MM-DD');
+        project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
       }
       if (project.end_date) {
-        project.end_date = moment(project.end_date).format('YYYY-MM-DD');
+        project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
       }
-      
+
       project.tasks_stat = {
         todo: this.getPercentage(int(project.tasks_stat.todo), +project.tasks_stat.total),
         doing: this.getPercentage(int(project.tasks_stat.doing), +project.tasks_stat.total),
@@ -344,48 +343,69 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     switch (groupBy) {
       case "status":
-        groupField = "COALESCE(p.status_id::text, 'no-status')";
-        groupName = "COALESCE(ps.name, 'No Status')";
+        groupField = "COALESCE(p.status_id::text, 'no_status')";
+        groupName = "COALESCE(ps.name, 'no_status')";
         groupColor = "COALESCE(ps.color_code, '#888')";
         groupByFields = "p.status_id, ps.name, ps.color_code";
-        groupOrderBy = "COALESCE(ps.name, 'No Status')";
+        groupOrderBy = "COALESCE(ps.name, 'no_status')";
         break;
       case "health":
-        groupField = "COALESCE(p.health_id::text, 'not-set')";
-        groupName = "COALESCE(sph.name, 'Not Set')";
+        groupField = "COALESCE(p.health_id::text, 'not_set')";
+        groupName = "COALESCE(sph.name, 'not_set')";
         groupColor = "COALESCE(sph.color_code, '#888')";
         groupJoin = "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
         groupByFields = "p.health_id, sph.name, sph.color_code";
-        groupOrderBy = "COALESCE(sph.name, 'Not Set')";
+        groupOrderBy = "COALESCE(sph.name, 'not_set')";
         break;
       case "team":
-        groupField = "COALESCE(p.team_id::text, 'no-team')";
-        groupName = "COALESCE(t.name, 'No Team')";
+        groupField = "COALESCE(p.team_id::text, 'no_team')";
+        groupName = "COALESCE(t.name, 'no_team')";
         groupColor = "COALESCE('#1890ff', '#888')";
         groupJoin = "LEFT JOIN teams t ON p.team_id = t.id";
         groupByFields = "p.team_id, t.name";
-        groupOrderBy = "COALESCE(t.name, 'No Team')";
+        groupOrderBy = "COALESCE(t.name, 'no_team')";
         break;
       case "manager":
-        groupField = "COALESCE((SELECT pm.team_member_id::text FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1), 'no-manager')";
-        groupName = "COALESCE((SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = (SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1)), 'No Manager')";
+        // Use LATERAL join to get manager info for each project
+        groupField = "COALESCE(mgr.manager_id::text, 'no_manager')";
+        groupName = "COALESCE(mgr.manager_name, 'no_manager')";
         groupColor = "'#1890ff'";
-        groupByFields = "(SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1), (SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = (SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1))";
-        groupOrderBy = groupName;
+        groupJoin = `LEFT JOIN LATERAL (
+          SELECT
+            pm.team_member_id as manager_id,
+            tmiv.name as manager_name
+          FROM project_members pm
+          JOIN team_member_info_view tmiv ON tmiv.team_member_id = pm.team_member_id
+          WHERE pm.project_id = p.id
+            AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+          LIMIT 1
+        ) mgr ON true`;
+        groupByFields = "mgr.manager_id, mgr.manager_name";
+        groupOrderBy = "COALESCE(mgr.manager_name, 'no_manager')";
         break;
       case "category":
       default:
         groupField = "COALESCE(p.category_id::text, 'uncategorized')";
-        groupName = "COALESCE(pc.name, 'Uncategorized')";
+        groupName = "COALESCE(pc.name, 'uncategorized')";
         groupColor = "COALESCE(pc.color_code, '#888')";
         groupByFields = "p.category_id, pc.name, pc.color_code";
-        groupOrderBy = "COALESCE(pc.name, 'Uncategorized')";
+        groupOrderBy = "COALESCE(pc.name, 'uncategorized')";
     }
 
-    // Build optimized query with group-level task aggregations
+    // Add health join only if not already included in groupJoin (to avoid duplicate table alias)
+    const healthJoin = groupBy === "health" ? "" : "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
+
+    // Build pagination clause using SqlHelper for safe parameter handling
+    const { clause: paginationClause, params: paginationParams } = SqlHelper.buildPaginationClause(
+      size,
+      offset,
+      paramOffset
+    );
+
+    // Build optimized query with group-level task aggregations and pagination
     const q = `
       WITH project_tasks AS (
-        SELECT 
+        SELECT
           t.project_id,
           COUNT(t.id) AS total_tasks,
           COUNT(CASE WHEN is_completed(t.status_id, t.project_id) IS TRUE THEN 1 END) AS done_tasks,
@@ -394,56 +414,66 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
         FROM tasks t
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
+      ),
+      all_groups AS (
+        SELECT
+          ${groupField} AS group_id,
+          ${groupName} AS group_name,
+          ${groupColor} AS group_color,
+          COUNT(DISTINCT p.id) AS project_count,
+          COALESCE(SUM(pt.total_tasks), 0)::INT AS total_tasks,
+          COALESCE(SUM(pt.done_tasks), 0)::INT AS done_tasks,
+          COALESCE(SUM(pt.doing_tasks), 0)::INT AS doing_tasks,
+          COALESCE(SUM(pt.todo_tasks), 0)::INT AS todo_tasks,
+          COALESCE(ARRAY_TO_JSON(ARRAY_AGG(
+            JSON_BUILD_OBJECT(
+              'id', p.id,
+              'name', p.name,
+              'color_code', p.color_code,
+              'category_id', pc.id,
+              'category_name', pc.name,
+              'category_color', pc.color_code,
+              'status_id', ps.id,
+              'status_name', ps.name,
+              'status_color', ps.color_code,
+              'health_id', p.health_id,
+              'health_name', sph.name,
+              'health_color', sph.color_code,
+              'team_id', p.team_id,
+              'team_name', (SELECT name FROM teams WHERE id = p.team_id),
+              'start_date', p.start_date,
+              'end_date', p.end_date,
+              'tasks_stat', JSON_BUILD_OBJECT(
+                'total', COALESCE(pt.total_tasks, 0),
+                'todo', COALESCE(pt.todo_tasks, 0),
+                'doing', COALESCE(pt.doing_tasks, 0),
+                'done', COALESCE(pt.done_tasks, 0)
+              )
+            ) ORDER BY p.name
+          )), '[]'::JSON) AS projects
+        FROM projects p
+        LEFT JOIN project_categories pc ON p.category_id = pc.id
+        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        ${healthJoin}
+        LEFT JOIN project_tasks pt ON p.id = pt.project_id
+        ${groupJoin}
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+        GROUP BY ${groupByFields}
+      ),
+      total_count AS (
+        SELECT COUNT(*) as total FROM all_groups
       )
-      SELECT 
-        ${groupField} AS group_id,
-        ${groupName} AS group_name,
-        ${groupColor} AS group_color,
-        COUNT(DISTINCT p.id) AS project_count,
-        COALESCE(SUM(pt.total_tasks), 0)::INT AS total_tasks,
-        COALESCE(SUM(pt.done_tasks), 0)::INT AS done_tasks,
-        COALESCE(SUM(pt.doing_tasks), 0)::INT AS doing_tasks,
-        COALESCE(SUM(pt.todo_tasks), 0)::INT AS todo_tasks,
-        COALESCE(ARRAY_TO_JSON(ARRAY_AGG(
-          JSON_BUILD_OBJECT(
-            'id', p.id,
-            'name', p.name,
-            'color_code', p.color_code,
-            'category_id', pc.id,
-            'category_name', pc.name,
-            'category_color', pc.color_code,
-            'status_id', ps.id,
-            'status_name', ps.name,
-            'status_color', ps.color_code,
-            'health_id', p.health_id,
-            'health_name', sph.name,
-            'health_color', sph.color_code,
-            'team_id', p.team_id,
-            'team_name', (SELECT name FROM teams WHERE id = p.team_id),
-            'start_date', p.start_date,
-            'end_date', p.end_date,
-            'tasks_stat', JSON_BUILD_OBJECT(
-              'total', COALESCE(pt.total_tasks, 0),
-              'todo', COALESCE(pt.todo_tasks, 0),
-              'doing', COALESCE(pt.doing_tasks, 0),
-              'done', COALESCE(pt.done_tasks, 0)
-            )
-          ) ORDER BY p.name
-        )), '[]'::JSON) AS projects
-      FROM projects p
-      LEFT JOIN project_categories pc ON p.category_id = pc.id
-      LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
-      LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
-      LEFT JOIN project_tasks pt ON p.id = pt.project_id
-      ${groupJoin}
-      WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
-      GROUP BY ${groupByFields}
-      ORDER BY ${groupOrderBy}
+      SELECT
+        ag.*,
+        tc.total as total_groups
+      FROM all_groups ag
+      CROSS JOIN total_count tc
+      ORDER BY ag.group_name
+      ${paginationClause}
     `;
 
-    // Build final params: teamId ($1), searchParams ($2+), then filter params
-    // Note: getGrouped query doesn't use LIMIT/OFFSET
-    const finalParams = [teamId, ...filterParams];
+    // Build final params: teamId ($1), searchParams ($2+), filter params, then LIMIT and OFFSET
+    const finalParams = [teamId, ...filterParams, ...paginationParams];
     const result = await db.query(q, finalParams);
 
     const groups = result.rows.map(row => ({
@@ -455,21 +485,25 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       done_tasks: int(row.done_tasks),
       doing_tasks: int(row.doing_tasks),
       todo_tasks: int(row.todo_tasks),
+    
       projects: row.projects.map((project: any) => {
         // FIX: Format dates consistently like tasks to avoid timezone issues
         if (project.start_date) {
-          project.start_date = moment(project.start_date).format('YYYY-MM-DD');
+          project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
         }
         if (project.end_date) {
-          project.end_date = moment(project.end_date).format('YYYY-MM-DD');
+          project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
         }
         return project;
       })
     }));
 
+    // Get total_groups from first row (all rows have the same total from CROSS JOIN)
+    const totalGroups = result.rows.length > 0 ? int(result.rows[0].total_groups) : 0;
+
     return res.status(200).send(new ServerResponse(true, {
       groups,
-      total_groups: groups.length
+      total_groups: totalGroups
     }));
   }
 

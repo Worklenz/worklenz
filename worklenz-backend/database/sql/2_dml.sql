@@ -4,6 +4,7 @@ BEGIN
     INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('Medium', 1, '#fbc84c', '#FFC227');
     INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('Low', 0, '#75c997', '#46D980');
     INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('High', 2, '#f37070', '#FF4141');
+    INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('Critical', 3, '#8B1A1A', '#B22222');
 END;
 $$ LANGUAGE plpgsql;
 

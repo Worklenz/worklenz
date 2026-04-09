@@ -5,12 +5,39 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 // Lazy load auth page components for better code splitting with chunk error handling
-const LoginPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/LoginPage'), 'LoginPage'));
-const SignupPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/SignupPage'), 'SignupPage'));
-const ForgotPasswordPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/ForgotPasswordPage'), 'ForgotPasswordPage'));
-const LoggingOutPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/LoggingOutPage'), 'LoggingOutPage'));
-const AuthenticatingPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/AuthenticatingPage'), 'AuthenticatingPage'));
-const VerifyResetEmailPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/VerifyResetEmailPage'), 'VerifyResetEmailPage'));
+const LoginPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/LoginPage'), 'LoginPage')
+);
+const SignupPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/SignupPage'), 'SignupPage')
+);
+const ForgotPasswordPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/auth/ForgotPasswordPage'),
+    'ForgotPasswordPage'
+  )
+);
+const LoggingOutPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/auth/LoggingOutPage'), 'LoggingOutPage')
+);
+const AuthenticatingPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/auth/AuthenticatingPage'),
+    'AuthenticatingPage'
+  )
+);
+const VerifyResetEmailPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/auth/VerifyResetEmailPage'),
+    'VerifyResetEmailPage'
+  )
+);
+const ResetPasswordRedirect = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/auth/ResetPasswordRedirect'),
+    'ResetPasswordRedirect'
+  )
+);
 
 const authRoutes = [
   {
@@ -66,6 +93,14 @@ const authRoutes = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <VerifyResetEmailPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'reset-password',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <ResetPasswordRedirect />
           </Suspense>
         ),
       },

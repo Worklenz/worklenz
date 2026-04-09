@@ -59,8 +59,19 @@ export const getProject = createAsyncThunk(
     try {
       const response = await projectsApiService.getProject(projectId);
       return response.body;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch project');
+    } catch (error: any) {
+      // Check if it's a 403 Forbidden error (no access to project)
+      if (error?.response?.status === 403) {
+        const errorData = error?.response?.data;
+        return rejectWithValue({
+          message: errorData?.message || 'You do not have permission to access this project',
+          statusCode: 403,
+        });
+      }
+      return rejectWithValue({
+        message: error instanceof Error ? error.message : 'Failed to fetch project',
+        statusCode: error?.response?.status || 500,
+      });
     }
   }
 );
@@ -193,7 +204,8 @@ const projectSlice = createSlice({
       })
       .addCase(getProject.rejected, (state, action) => {
         state.projectLoading = false;
-        state.error = action.payload as string;
+        const payload = action.payload as { message: string; statusCode?: number } | undefined;
+        state.error = payload?.message || 'Failed to fetch project';
       });
   },
 });

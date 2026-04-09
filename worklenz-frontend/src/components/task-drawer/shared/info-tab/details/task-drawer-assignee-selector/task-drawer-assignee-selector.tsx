@@ -27,6 +27,8 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { updateTaskAssignees as updateBoardTaskAssignees } from '@/features/board/board-slice';
 import { updateTaskAssignees as updateTasksListTaskAssignees } from '@/features/tasks/tasks.slice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_task_assigned } from '@/shared/worklenz-analytics-events';
 interface TaskDrawerAssigneeSelectorProps {
   task: ITaskViewModel;
 }
@@ -44,6 +46,7 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
 
   const dispatch = useAppDispatch();
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const filteredMembersData = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -72,11 +75,11 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
   // FIX: Improved handleMemberChange function with proper state checking
   const handleMemberChange = (e: CheckboxChangeEvent | null, memberId: string) => {
     if (!memberId || !projectId || !task?.id || !currentSession?.id) return;
-    
+
     try {
       // Check if member is currently assigned
       const isCurrentlyAssigned = task?.assignees?.some(assignee => assignee === memberId);
-      
+
       // Determine the new checked state
       // If event exists (checkbox clicked), use event's checked state
       // If no event (list item clicked), toggle the current state
@@ -95,6 +98,17 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
       socket?.once(
         SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
         (data: ITaskAssigneesUpdateResponse) => {
+          // Track task assignment (only when adding, not removing)
+          if (checked) {
+            trackMixpanelEvent(evt_task_assigned, {
+              task_id: task.id,
+              project_id: projectId,
+              assignee_id: memberId,
+              assigned_by: currentSession?.id,
+              assignment_method: 'task_drawer',
+            });
+          }
+
           dispatch(setTaskAssignee(data));
           if (tab === 'tasks-list') {
             dispatch(updateTasksListTaskAssignees(data));

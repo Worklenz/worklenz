@@ -1,5 +1,5 @@
 import React, { memo, useCallback, useState } from 'react';
-import { DatePicker, Tooltip } from '@/shared/antd-imports';
+import { DatePicker } from '@/shared/antd-imports';
 import { CloseOutlined } from '@/shared/antd-imports';
 import { dayjs } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -17,16 +17,14 @@ export const ProjectDatePicker: React.FC<ProjectDatePickerProps> = memo(
     const { t } = useTranslation('project-drawer');
     const [isActive, setIsActive] = useState(false);
 
-    // Handle date change
     const handleDateChange = useCallback(
       (date: dayjs.Dayjs | null) => {
         onChange(date);
-        setIsActive(false); // Close picker after selection
+        setIsActive(false);
       },
       [onChange]
     );
 
-    // Handle clear date
     const handleClearDate = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
@@ -36,7 +34,6 @@ export const ProjectDatePicker: React.FC<ProjectDatePickerProps> = memo(
       [handleDateChange]
     );
 
-    // Handle open date picker
     const handleOpenDatePicker = useCallback(() => {
       if (!disabled) {
         setIsActive(true);
@@ -45,7 +42,6 @@ export const ProjectDatePicker: React.FC<ProjectDatePickerProps> = memo(
 
     const placeholder = field === 'start_date' ? t('selectStartDate') : t('selectEndDate');
     const clearTitle = field === 'start_date' ? t('clearStartDate') : t('clearEndDate');
-    const setTitle = field === 'start_date' ? t('setStartDate') : t('setEndDate');
 
     if (isActive) {
       return (
@@ -59,15 +55,13 @@ export const ProjectDatePicker: React.FC<ProjectDatePickerProps> = memo(
             suffixIcon={null}
             open={true}
             onOpenChange={open => {
-              if (!open) {
-                setIsActive(false);
-              }
+              if (!open) setIsActive(false);
             }}
+            // ✅ disabledDate is now correctly forwarded — greys out invalid calendar dates
             disabledDate={disabledDate}
             disabled={disabled}
             autoFocus
           />
-          {/* Custom clear button */}
           {value && (
             <button
               onClick={handleClearDate}
@@ -93,9 +87,7 @@ export const ProjectDatePicker: React.FC<ProjectDatePickerProps> = memo(
             {value.format('MMM DD, YYYY')}
           </span>
         ) : (
-          <span className="text-sm text-gray-400 dark:text-gray-500">
-            {placeholder}
-          </span>
+          <span className="text-sm text-gray-400 dark:text-gray-500">{placeholder}</span>
         )}
       </div>
     );

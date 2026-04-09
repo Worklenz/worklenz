@@ -11,6 +11,7 @@ import {
   LinkOutlined,
   CopyOutlined,
   MailOutlined,
+  QuestionCircleOutlined,
 } from '@/shared/antd-imports';
 import {
   Button,
@@ -29,11 +30,15 @@ import {
   Modal,
   Empty,
   Alert,
+  Tooltip,
 } from '@/shared/antd-imports';
 import { TableProps } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { RootState } from '@/app/store';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_client_portal_share } from '@/shared/worklenz-analytics-events';
 import {
   toggleClientSettingsDrawer,
   toggleClientTeamsDrawer,
@@ -67,6 +72,41 @@ import './clients-table.css';
 const { Search } = Input;
 const { Option } = Select;
 
+const getPrimaryClientLabel = (record: any): string => {
+  const companyName = record.company_name?.trim();
+  if (companyName) {
+    return companyName;
+  }
+
+  return record.name?.trim() || '-';
+};
+
+const isLikelyPersonName = (value?: string | null): boolean => {
+  if (!value) return false;
+
+  const normalized = value.trim();
+  if (!normalized || normalized.length > 80) return false;
+
+  const tokens = normalized.split(/\s+/);
+  if (tokens.length < 2 || tokens.length > 4) return false;
+
+  return /^[A-Za-z][A-Za-z'’-]*(\s+[A-Za-z][A-Za-z'’-]*)+$/.test(normalized);
+};
+
+const getContactLabel = (record: any): string => {
+  const contactPerson = record.contact_person?.trim();
+  if (contactPerson) {
+    return contactPerson;
+  }
+
+  const hasCompanyName = Boolean(record.company_name?.trim());
+  if (!hasCompanyName && isLikelyPersonName(record.name)) {
+    return record.name.trim();
+  }
+
+  return '';
+};
+
 const ClientsTable = () => {
   // localization
   const { t } = useTranslation('client-portal-clients');
@@ -81,6 +121,7 @@ const ClientsTable = () => {
   const isDarkMode = themeMode === 'dark';
 
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Local state for bulk operations
   const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
@@ -98,6 +139,7 @@ const ClientsTable = () => {
       page: pagination.page,
       limit: pagination.limit,
       search: filters.search,
+      status: filters.status !== 'all' ? filters.status : undefined,
       sortBy: filters.sortBy,
       sortOrder: filters.sortOrder,
     }),
@@ -214,7 +256,7 @@ const ClientsTable = () => {
     } else {
       sort = sorter;
     }
-    
+
     if (sort?.field && sort?.order) {
       dispatch(setSortBy(sort.field as string));
       dispatch(setSortOrder(sort.order === 'ascend' ? 'asc' : 'desc'));
@@ -481,6 +523,13 @@ const ClientsTable = () => {
   const copyInvitationLink = async () => {
     try {
       await navigator.clipboard.writeText(invitationLink);
+
+      // Track client portal share event
+      trackMixpanelEvent(evt_client_portal_share, {
+        client_id: currentClientId,
+        share_method: 'copy_link',
+      });
+
       message.success(
         t('invitationLinkCopiedSuccess', { defaultValue: 'Invitation link copied to clipboard!' })
       );
@@ -796,19 +845,14 @@ const ClientsTable = () => {
       title: t('clientColumn', { defaultValue: 'Client' }),
       dataIndex: 'name',
       sorter: true,
-      render: (name: string, record: any) => (
+      render: (_name: string, record: any) => (
         <Flex vertical gap={4}>
           <Typography.Text strong style={{ textTransform: 'capitalize' }}>
-            {name}
+            {getPrimaryClientLabel(record)}
           </Typography.Text>
-          {record.email && (
+          {record.email?.trim() && (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
               {record.email}
-            </Typography.Text>
-          )}
-          {record.company_name && (
-            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-              {record.company_name}
             </Typography.Text>
           )}
         </Flex>
@@ -818,8 +862,61 @@ const ClientsTable = () => {
       }),
     },
     {
+      key: 'contact',
+      title: t('contactColumn', { defaultValue: 'Contact' }),
+      dataIndex: 'contact_person',
+      render: (_contact: string, record: any) => {
+        const contactLabel = getContactLabel(record);
+        return contactLabel ? (
+          <Typography.Text>{contactLabel}</Typography.Text>
+        ) : (
+          <Typography.Text type="secondary">-</Typography.Text>
+        );
+      },
+      width: 180,
+    },
+    {
       key: 'portalStatus',
-      title: t('portalStatusColumn', { defaultValue: 'Portal Status' }),
+      title: (
+        <Flex align="center" gap={6}>
+          <span>{t('portalStatusColumn', { defaultValue: 'Portal Status' })}</span>
+          <Tooltip
+            title={
+              <Flex vertical gap={4}>
+                <Typography.Text style={{ color: '#fff' }}>
+                  {t('portalStatusHelp.active', {
+                    defaultValue: 'Active: Client has accepted and can access the portal.',
+                  })}
+                </Typography.Text>
+                <Typography.Text style={{ color: '#fff' }}>
+                  {t('portalStatusHelp.invited', {
+                    defaultValue:
+                      'Invited: Invitation was sent and is still valid, but not yet accepted.',
+                  })}
+                </Typography.Text>
+                <Typography.Text style={{ color: '#fff' }}>
+                  {t('portalStatusHelp.notInvited', {
+                    defaultValue: 'Not Invited: No invitation has been sent yet.',
+                  })}
+                </Typography.Text>
+                <Typography.Text style={{ color: '#fff' }}>
+                  {t('portalStatusHelp.expired', {
+                    defaultValue:
+                      'Expired: Previous invitation expired and should be resent.',
+                  })}
+                </Typography.Text>
+              </Flex>
+            }
+          >
+            <QuestionCircleOutlined
+              style={{
+                color: themeWiseColor({ dark: '#8c8c8c', light: '#595959' }, isDarkMode),
+                fontSize: 14,
+              }}
+            />
+          </Tooltip>
+        </Flex>
+      ),
       dataIndex: 'portal_status',
       render: (_: any, record: any) => {
         const portalStatus = getPortalStatus(record);
@@ -838,13 +935,6 @@ const ClientsTable = () => {
       sorter: true,
       render: (count: number) => <Typography.Text>{count || 0}</Typography.Text>,
       width: 160,
-    },
-    {
-      key: 'teamMembers',
-      title: t('teamMembersColumn', { defaultValue: 'Team Members' }),
-      dataIndex: 'team_members',
-      render: (teamMembers: any[]) => <Typography.Text>{teamMembers?.length || 0}</Typography.Text>,
-      width: 140,
     },
     {
       key: 'actionBtns',
@@ -895,9 +985,7 @@ const ClientsTable = () => {
             value={filters.status}
           >
             <Option value="all">{t('statusAll', { defaultValue: 'All' })}</Option>
-            <Option value="active">
-              {t('portalStatus.active', { defaultValue: 'Active' })}
-            </Option>
+            <Option value="active">{t('portalStatus.active', { defaultValue: 'Active' })}</Option>
             <Option value="invited">
               {t('portalStatus.invited', { defaultValue: 'Invited' })}
             </Option>

@@ -37,11 +37,16 @@ import {
   fetchBoardSubTasks,
   deleteTask as deleteKanbanTask,
   updateEnhancedKanbanSubtask,
-  fetchEnhancedKanbanGroups,
   updateEnhancedKanbanTaskAssignees,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import TaskProgressCircle from './TaskProgressCircle';
-import { Button, Modal, DeleteOutlined, InboxOutlined, UserAddOutlined } from '@/shared/antd-imports';
+import {
+  Button,
+  Modal,
+  DeleteOutlined,
+  InboxOutlined,
+  UserAddOutlined,
+} from '@/shared/antd-imports';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 
@@ -239,7 +244,13 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           dispatch(toggleTaskExpansion(task.id));
         } else if (task.sub_tasks_count && task.sub_tasks_count > 0) {
           dispatch(toggleTaskExpansion(task.id));
-          dispatch(fetchBoardSubTasks({ taskId: task.id, projectId }));
+          dispatch(
+            fetchBoardSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            })
+          );
         } else {
           dispatch(toggleTaskExpansion(task.id));
         }
@@ -275,7 +286,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   sectionId: '',
                   subtask: {
                     id: task.id,
-                    parent_task_id: task.parent_task_id || '',
+                    parent_task_id: task.parent_task_container_id || task.parent_task_id || '',
                     manual_progress: false,
                   },
                   mode: 'delete',
@@ -302,7 +313,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     // Archive/Unarchive logic
     const handleArchiveTask = async (task: IProjectTask | null) => {
       if (!task || !task.id || !projectId) return;
-      
+      if (task.is_parent_container) return;
       try {
         const body = {
           tasks: [task.id],
@@ -314,21 +325,21 @@ const TaskCard: React.FC<TaskCardProps> = memo(
         if (res.done) {
           // Remove task from current view (it will appear in the other view when user toggles filter)
           if (task.is_sub_task) {
-            dispatch(
-              updateEnhancedKanbanSubtask({
-                sectionId: '',
-                subtask: {
-                  id: task.id,
-                  parent_task_id: task.parent_task_id || '',
-                  manual_progress: false,
-                },
-                mode: 'delete',
-              })
+              dispatch(
+                updateEnhancedKanbanSubtask({
+                  sectionId: '',
+                  subtask: {
+                    id: task.id,
+                    parent_task_id: task.parent_task_container_id || task.parent_task_id || '',
+                    manual_progress: false,
+                  },
+                  mode: 'delete',
+                })
             );
           } else {
             dispatch(deleteKanbanTask(task.id));
           }
-          
+
           // No need to refetch - task is just removed from current view
           // It will appear when user toggles the "Show Archived" filter
         }
@@ -343,7 +354,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     // Assign to me logic
     const handleAssignToMe = async (task: IProjectTask | null) => {
       if (!task || !task.id || !projectId) return;
-      
+
       try {
         const body = {
           tasks: [task.id],
@@ -440,7 +451,9 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 }}
                 onClick={() => handleArchiveTask(selectedTask || null)}
               >
-                {archived ? t('unarchive', 'Unarchive') : t('archive', 'Archive')}
+                {archived
+                  ? t('unarchive', { defaultValue: 'Unarchive' })
+                  : t('archive', { defaultValue: 'Archive' })}
               </Button>
               <Button
                 type="text"
@@ -486,6 +499,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
             onDragEnd={onDragEnd} // <-- add this
             onClick={e => handleCardClick(e, task.id!)}
             onContextMenu={e => {
+              if (task.is_parent_container) return;
               e.preventDefault();
               setContextMenu({ visible: true, x: e.clientX, y: e.clientY });
               setSelectedTask(task);
@@ -493,36 +507,47 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           >
             <div className="task-content">
               <div className="task_labels" style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-                {task.labels?.map(label => (
-                  <div
-                    key={label.id}
-                    className="task-label"
-                    style={{
-                      backgroundColor: label.color_code,
-                      display: 'inline-block',
-                      borderRadius: '2px',
-                      padding: '0px 4px',
-                      color: themeMode === 'dark' ? '#181818' : '#fff',
-                      fontSize: 10,
-                      marginRight: 4,
-                      whiteSpace: 'nowrap',
-                      minWidth: 0,
-                    }}
-                  >
-                    {label.name}
-                  </div>
-                ))}
+                {task.labels?.map(label => {
+                  const bgColor = label.color_code || label.color || '#000000';
+                  const hex = bgColor.replace('#', '');
+                  const r = parseInt(hex.substring(0, 2), 16);
+                  const g = parseInt(hex.substring(2, 4), 16);
+                  const b = parseInt(hex.substring(4, 6), 16);
+                  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                  const textColor = brightness > 128 ? '#000000' : '#FFFFFF';
+                  return (
+                    <div
+                      key={label.id}
+                      className="task-label"
+                      style={{
+                        backgroundColor: bgColor,
+                        display: 'inline-block',
+                        borderRadius: '2px',
+                        padding: '0px 4px',
+                        color: textColor,
+                        fontSize: 10,
+                        marginRight: 4,
+                        whiteSpace: 'nowrap',
+                        minWidth: 0,
+                      }}
+                    >
+                      {label.name}
+                    </div>
+                  );
+                })}
               </div>
               <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
-                <span
-                  className="w-2 h-2 rounded-full inline-block"
-                  style={{
-                    backgroundColor:
-                      themeMode === 'dark'
-                        ? task.priority_color_dark || task.priority_color || '#d9d9d9'
-                        : task.priority_color || '#d9d9d9',
-                  }}
-                ></span>
+                {!task.is_parent_container && (
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{
+                      backgroundColor:
+                        themeMode === 'dark'
+                          ? task.priority_color_dark || task.priority_color || '#d9d9d9'
+                          : task.priority_color || '#d9d9d9',
+                    }}
+                  ></span>
+                )}
                 <div className="task-title" title={task.name} style={{ marginLeft: 8 }}>
                   {task.name}
                 </div>
@@ -783,7 +808,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                           setSelectedTask(sub);
                         }}
                       >
-                        {sub.priority_color || sub.priority_color_dark ? (
+                        {!sub.is_parent_container && (sub.priority_color || sub.priority_color_dark) ? (
                           <span
                             className="w-2 h-2 rounded-full inline-block"
                             style={{

@@ -193,9 +193,11 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
           textTransform: 'capitalize',
           fontSize: 13,
           height: 22,
-          backgroundColor: selectedCategory.id ? selectedCategory.color_code : colors.transparent,
+          backgroundColor: selectedCategory.id
+            ? `${selectedCategory.color_code}33`
+            : colors.transparent,
           color: selectedCategory.id
-            ? themeWiseColor(colors.white, colors.darkGray, themeMode)
+            ? colors.darkGray
             : themeWiseColor(colors.darkGray, colors.white, themeMode),
           border: selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`,
           cursor: 'pointer',

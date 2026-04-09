@@ -39,5 +39,7 @@
   "SET_DUE_DATE": "设置截止日期",
   "CLEAR_DUE_DATE": "清除截止日期",
   "DUE_DATE_UPDATED": "截止日期已成功更新",
-  "DUE_DATE_CLEARED": "截止日期已成功清除"
+  "DUE_DATE_CLEARED": "截止日期已成功清除",
+  "archiveSuccessTitle": "批量更新完成",
+  "archiveSuccessMessage": "已{{action}} {{parentCount}} 个任务和 {{subtaskCount}} 个子任务。"
 }

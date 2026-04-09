@@ -5,6 +5,7 @@ export interface IMentionMember {
 }
 
 export interface IMentionMemberViewModel extends IMentionMember {
+  role: import('react/jsx-runtime').JSX.Element;
   email?: string;
   avatar_url?: string;
   color_code?: string;

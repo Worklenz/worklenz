@@ -6,6 +6,7 @@ ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS i18n_key TEXT;
 ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS i18n_params JSONB;
 ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS user_name TEXT;
+ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS project_name TEXT;
 
 -- Add foreign key constraint for user_id
 ALTER TABLE project_logs 
@@ -165,6 +166,7 @@ COMMENT ON COLUMN project_logs.i18n_key IS 'Internationalization key for the log
 COMMENT ON COLUMN project_logs.i18n_params IS 'Parameters for interpolating the i18n message';
 COMMENT ON COLUMN project_logs.user_id IS 'ID of the user who performed the action';
 COMMENT ON COLUMN project_logs.user_name IS 'Name of the user who performed the action (cached)';
+COMMENT ON COLUMN project_logs.project_name IS 'Name of the project (cached for historical reference)';
 
 COMMENT ON COLUMN task_activity_logs.i18n_key IS 'Internationalization key for the log message';
 COMMENT ON COLUMN task_activity_logs.i18n_params IS 'Parameters for interpolating the i18n message';

@@ -14,12 +14,13 @@ import TaskTimeTracking from '../TaskTimeTracking';
 import { CustomNumberLabel, CustomColordLabel } from '@/components';
 import LabelsSelector from '@/components/LabelsSelector';
 import { CustomColumnCell } from './CustomColumnComponents';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 // Utility function to get task display name with fallbacks
 export const getTaskDisplayName = (task: Task): string => {
-  if (task.title && task.title.trim()) return task.title.trim();
-  if (task.name && task.name.trim()) return task.name.trim();
-  if (task.task_key && task.task_key.trim()) return task.task_key.trim();
+  if (task.title && task.title.trim()) return safeTextDisplay(task.title.trim());
+  if (task.name && task.name.trim()) return safeTextDisplay(task.name.trim());
+  if (task.task_key && task.task_key.trim()) return safeTextDisplay(task.task_key.trim());
   return DEFAULT_TASK_NAME;
 };
 
@@ -141,20 +142,24 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
   ({ width, description }) => (
     <div
       className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width }}
+      style={{ width, minHeight: '30px' }}
     >
-      <div
-        className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
-        style={{
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          maxHeight: '24px',
-          lineHeight: '24px',
-        }}
-        title={description || ''}
-        dangerouslySetInnerHTML={{ __html: description || '' }}
-      />
+      {description && description.trim() ? (
+        <div
+          className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
+          style={{
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxHeight: '24px',
+            lineHeight: '24px',
+          }}
+          title={safeTextDisplay(description)}
+          dangerouslySetInnerHTML={{ __html: description }}
+        />
+      ) : (
+        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+      )}
     </div>
   )
 );
@@ -414,8 +419,11 @@ export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, repo
     style={{ width }}
   >
     {reporter ? (
-      <span className="text-sm text-gray-500 dark:text-gray-400 truncate" title={reporter}>
-        {reporter}
+      <span
+        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+        title={safeTextDisplay(reporter)}
+      >
+        {safeTextDisplay(reporter)}
       </span>
     ) : (
       <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>

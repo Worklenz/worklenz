@@ -65,6 +65,17 @@
 
   "addressLabel": "Adresa",
   "addressPlaceholder": "Shkruani adresën (opsionale)",
+  "addressLine1Label": "Adresa",
+  "addressLine1Placeholder": "Shkruani adresën (opsionale)",
+  "cityLabel": "Qyteti",
+  "cityPlaceholder": "Qyteti",
+  "stateLabel": "Shteti / Provinca",
+  "statePlaceholder": "Shteti / Provinca",
+  "zipCodeLabel": "Kodi Postar",
+  "zipCodePlaceholder": "Kodi postar",
+  "countryLabel": "Vendi",
+  "countryPlaceholder": "Vendi",
+  "clientInvitationEmailInfo": "Një email ftese do t'i dërgohet klientit për t'u bashkuar me portalin. Mund të ndani gjithashtu lidhjen e ftesës nga faqja e Klientëve.",
 
   "contactPersonLabel": "Personi i Kontaktit",
   "contactPersonPlaceholder": "Shkruani emrin e personit të kontaktit",
@@ -151,6 +162,12 @@
     "not_invited": "Nuk është Ftuar",
     "expired": "Ka Skaduar"
   },
+  "portalStatusHelp": {
+    "active": "Aktiv: Klienti e ka pranuar ftesën dhe mund të hyjë në portal.",
+    "invited": "I ftuar: Ftesa është dërguar dhe është ende e vlefshme, por ende nuk është pranuar.",
+    "notInvited": "Nuk është ftuar: Ende nuk është dërguar asnjë ftesë.",
+    "expired": "Ka skaduar: Ftesa e mëparshme ka skaduar dhe duhet ridërguar."
+  },
 
   "inviteToPortalTooltip": "Fto në Portal",
   "resendInvitationTooltip": "Ridërgo Ftesën",
@@ -206,5 +223,8 @@
   "clientAlreadyHasPortalAccess": "Klienti ka tashmë hyrje në portal",
   "clientAlreadyHasPendingInvitation": "Ftesa tashmë u dërgua. Ju lutemi përdorni opsionin e ridërgimit.",
   "clientEmailRequired": "Email i klientit kërkohet për ftesën",
-  "addEmailButton": "Shto Email dhe Fto"
+  "addEmailButton": "Shto Email dhe Fto",
+  "clientExistsWarning": "Një klient me këtë email ekziston tashmë. Duke përdorur regjistrin ekzistues të klientit.",
+  "clientExistsWithInvitationSent": "Një klient me këtë email ekziston tashmë dhe një ftesë është dërguar tashmë.",
+  "clientExistsNoInvitation": "Një klient me këtë email ekziston tashmë. Mund t'i dërgoni një ftesë nga lista e klientëve."
 }

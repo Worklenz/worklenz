@@ -46,6 +46,6 @@
 }
 
 /* Dark mode adjustments */
-:root[data-theme='dark'] .stats-card:hover {
+:root[data-theme="dark"] .stats-card:hover {
   box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
 }

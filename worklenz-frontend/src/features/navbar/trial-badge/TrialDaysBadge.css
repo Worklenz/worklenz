@@ -62,7 +62,8 @@
 
 /* Subtle pulse animation */
 @keyframes subtle-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -108,7 +109,7 @@
     animation: none !important;
     transition: none !important;
   }
-  
+
   .trial-badge:hover {
     transform: none;
   }

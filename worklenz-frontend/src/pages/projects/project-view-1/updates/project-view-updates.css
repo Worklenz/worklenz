@@ -18,6 +18,197 @@
   border: 1px solid #2a4a6d;
 }
 
+/* ========== MENTION INPUT HIGHLIGHTING STYLES ========== */
+
+/* Mention dropdown menu item styling */
+.ant-mentions-dropdown-menu-item {
+  padding: 8px 12px;
+  transition: background-color 0.2s;
+}
+
+.ant-mentions-dropdown-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item:hover {
+  background-color: #2a2a2a;
+}
+
+/* Selected item in dropdown */
+.ant-mentions-dropdown-menu-item-selected {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item-selected {
+  background-color: #1e3a5f;
+}
+
+/* Active/focused item */
+.ant-mentions-dropdown-menu-item-active {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item-active {
+  background-color: #1e3a5f;
+}
+
+/* The measure div is what shows the highlighted text overlay */
+.ant-mentions-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: transparent;
+  z-index: 1;
+}
+
+/* Highlighted mention text in the measure overlay - Light theme */
+.theme-light .ant-mentions-measure mark,
+.theme-light .ant-mentions .ant-mentions-measure mark {
+  color: #1890ff !important;
+  background-color: #e6f4ff !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border: 1px solid #91caff !important;
+  margin: 0 2px !important;
+}
+
+/* Highlighted mention text in the measure overlay - Dark theme */
+.theme-dark .ant-mentions-measure mark,
+.theme-dark .ant-mentions .ant-mentions-measure mark {
+  color: #40a9ff !important;
+  background-color: #1e3a5f !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border: 1px solid #2a4a6d !important;
+  margin: 0 2px !important;
+}
+
+/* Make sure the textarea is positioned correctly */
+.ant-mentions > textarea {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+}
+
+/* Style for @ symbol prefix in mentions */
+.theme-light .ant-mentions-prefix {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.theme-dark .ant-mentions-prefix {
+  color: #40a9ff;
+  font-weight: 600;
+}
+
+/* Mention input focus state */
+.theme-light .ant-mentions:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.theme-dark .ant-mentions:focus-within {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(64, 169, 255, 0.1);
+}
+
+/* Ensure mentions container has correct positioning */
+.ant-mentions {
+  position: relative;
+}
+
+/* ========== END MENTION INPUT HIGHLIGHTING ========== */
+
+/* ========== CUSTOM MENTIONS INPUT STYLES ========== */
+
+/* Custom mentions wrapper */
+.custom-mentions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Custom mentions editable div */
+.custom-mentions-editable {
+  position: relative;
+  z-index: 1;
+}
+
+/* Placeholder styling */
+.custom-mentions-editable:empty:before {
+  content: attr(data-placeholder);
+  color: #bfbfbf;
+  pointer-events: none;
+  position: absolute;
+}
+
+.theme-dark .custom-mentions-editable:empty:before {
+  color: #595959;
+}
+
+/* Mention highlights in the contenteditable - Light theme */
+.mention-highlight-light {
+  background-color: #e6f4ff;
+  color: #1890ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  border: 1px solid #91caff;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+/* Mention highlights in the contenteditable - Dark theme */
+.mention-highlight-dark {
+  background-color: #1e3a5f;
+  color: #40a9ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  border: 1px solid #2a4a6d;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+/* Mentions dropdown - FIXED FOR BUG - APPEARS ABOVE INPUT */
+.mentions-dropdown {
+  position: absolute !important;
+  bottom: 100% !important;
+  top: auto !important;
+  margin-bottom: 4px !important;
+  z-index: 9999 !important;
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Mentions option - FIXED FOR BUG */
+.mentions-option {
+  display: flex !important;
+  align-items: center;
+  min-height: 40px;
+}
+
+.theme-light .mentions-option:hover,
+.theme-light .mentions-option.selected {
+  background-color: #f5f5f5 !important;
+}
+
+.theme-dark .mentions-option:hover,
+.theme-dark .mentions-option.selected {
+  background-color: #2a2a2a !important;
+}
+
+/* ========== END CUSTOM MENTIONS INPUT STYLES ========== */
+
 /* Conversation-like styles */
 .project-view-updates {
   padding: 0;
@@ -148,23 +339,23 @@
 }
 
 /* Comment actions styling */
-.theme-light .ant-comment-actions>li>span {
+.theme-light .ant-comment-actions > li > span {
   color: #707070;
   transition: color 0.3s;
   font-size: 11px;
 }
 
-.theme-dark .ant-comment-actions>li>span {
+.theme-dark .ant-comment-actions > li > span {
   color: #d1d0d3;
   transition: color 0.3s;
   font-size: 11px;
 }
 
-.theme-light .ant-comment-actions>li>span:hover {
+.theme-light .ant-comment-actions > li > span:hover {
   color: #1890ff;
 }
 
-.theme-dark .ant-comment-actions>li>span:hover {
+.theme-dark .ant-comment-actions > li > span:hover {
   color: #1890ff;
 }
 
@@ -233,34 +424,37 @@
   border-radius: 3px;
 }
 
-/* Input area - sticky at bottom */
+/* Input area - sticky at bottom - FIXED FOR BUG */
 .updates-input-container {
   padding: 10px 16px;
   border-top: 1px solid transparent;
   /* controlled by theme */
   flex: 0 0 auto;
   /* Prevent input from shrinking or growing */
+  position: relative;
+  z-index: 10;
+  overflow: visible !important;
 }
 
 /* Action buttons hover */
-.ant-comment .ant-comment-actions>li {
+.ant-comment .ant-comment-actions > li {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.ant-comment:hover .ant-comment-actions>li {
+.ant-comment:hover .ant-comment-actions > li {
   visibility: visible;
   opacity: 1;
 }
 
 /* Always show emoji picker */
-.ant-comment .ant-comment-actions>li:last-child {
+.ant-comment .ant-comment-actions > li:last-child {
   visibility: visible;
   opacity: 1;
 }
 
-.current-user-comment .ant-comment-actions>li {
+.current-user-comment .ant-comment-actions > li {
   float: right;
 }
 
@@ -375,7 +569,9 @@
   border-radius: 20px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s 0.3s, visibility 0.2s 0.3s;
+  transition:
+    opacity 0.2s 0.3s,
+    visibility 0.2s 0.3s;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -408,7 +604,9 @@
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
-  transition: transform 0.2s, background-color 0.2s;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
   display: inline-flex;
   align-items: center;
   justify-content: center;

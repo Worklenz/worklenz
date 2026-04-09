@@ -85,7 +85,7 @@
   "logoTooLarge": "Die Logo-Abmessungen sind sehr groß. Empfohlene Maximalgröße: 800×240px",
   "logoVerticalWarning": "Vertikale Logos können in der Navigationsleiste klein erscheinen. Querformat wird empfohlen",
   "logoFileSizeWarning": "Die Dateigröße ist groß. Empfohlen: unter 500KB für optimale Leistung",
-  "logoFormatRecommendation": "PNG-Format mit transparentem Hintergrund wird für beste Ergebnisse empfohlen",
+  "logoFormatRecommendation": "PNG-Format empfohlen: 400×120px, transparenter Hintergrund, unter 500KB",
   "logoDeleteConfirm": "Sind Sie sicher, dass Sie das Organisationslogo entfernen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "logoUsage": "Wird in der Navigationsleiste verwendet und mit dem Client-Portal synchronisiert",
   "logoUpgradeToUpload": "Upgraden Sie auf einen kostenpflichtigen Plan, um ein benutzerdefiniertes Logo hochzuladen.",

@@ -1,12 +1,4 @@
-import {
-  Button,
-  Flex,
-  Form,
-  Typography,
-  message,
-  Tooltip,
-  Space,
-} from '@/shared/antd-imports';
+import { Button, Flex, Form, Typography, message, Tooltip, Space } from '@/shared/antd-imports';
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PaperClipOutlined, DeleteOutlined, PlusOutlined } from '@/shared/antd-imports';
@@ -50,6 +42,12 @@ const escapeHtml = (text: string) => {
   return div.innerHTML;
 };
 
+/**
+ * URL regex — only matches http:// and https:// to prevent javascript: / data: schemes.
+ * Kept outside the component so it is compiled once.
+ */
+const URL_REGEX = /https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+/gi;
+
 // Component to render mentions with highlighting using contenteditable
 const CustomMentionsInput = ({
   value,
@@ -75,62 +73,112 @@ const CustomMentionsInput = ({
   const lastMentionedOptionsRef = useRef<Set<string>>(new Set());
   const isUpdatingRef = useRef(false);
 
-  // Process text to create HTML with highlighted mentions
+  /**
+   * Builds the highlighted HTML shown inside the contentEditable div.
+   *
+   * Pass order:
+   *   1. Collect all mention ranges (existing logic, unchanged).
+   *   2. Collect all URL ranges (new).
+   *   3. Merge & sort ranges by start position so they never overlap.
+   *   4. Walk the plain text once and emit either a highlight span or
+   *      escaped plain text for each segment.
+   *
+   * URLs that fall inside a mention are skipped automatically by the
+   * overlap guard in step 3.
+   */
   const createHighlightedHTML = (text: string) => {
     if (!text) return '';
-    
-    const highlightClass = themeMode === 'light' ? 'mention-highlight-light' : 'mention-highlight-dark';
-    
-    // First, identify all mentions in the text
-    const mentions: Array<{start: number; end: number; text: string; option: any}> = [];
-    
-    // Find all @mentions that match options
+
+    const mentionClass =
+      themeMode === 'light' ? 'mention-highlight-light' : 'mention-highlight-dark';
+    const urlClass = themeMode === 'light' ? 'url-highlight-light' : 'url-highlight-dark';
+
+    // ── Step 1: collect mention ranges ──────────────────────────────────────
+    type Range = { start: number; end: number; html: string };
+    const ranges: Range[] = [];
+
     for (const option of options) {
       const mentionText = `@${option.value}`;
       let startIndex = 0;
-      
+
       while (startIndex < text.length) {
         const index = text.indexOf(mentionText, startIndex);
         if (index === -1) break;
-        
-        // Check if it's a valid mention (preceded by whitespace or start of string, followed by whitespace or end)
+
         const beforeChar = index === 0 ? '' : text[index - 1];
-        const afterChar = index + mentionText.length < text.length ? text[index + mentionText.length] : '';
-        
+        const afterChar =
+          index + mentionText.length < text.length ? text[index + mentionText.length] : '';
+
         const isValidBefore = index === 0 || /\s/.test(beforeChar);
         const isValidAfter = afterChar === '' || /\s/.test(afterChar) || afterChar === ',';
-        
+
         if (isValidBefore && isValidAfter) {
-          // Also check that we're not matching part of a longer word
-          const endIndex = index + mentionText.length;
-          if (!mentions.some(m => index >= m.start && index < m.end)) {
-            mentions.push({
+          const end = index + mentionText.length;
+          // Only add if not already covered by another range
+          if (!ranges.some(r => index >= r.start && index < r.end)) {
+            ranges.push({
               start: index,
-              end: endIndex,
-              text: mentionText,
-              option
+              end,
+              html:
+                `<span class="${mentionClass}" ` +
+                `data-mention="true" ` +
+                `data-mention-id="${option.key}" ` +
+                `contenteditable="false"` +
+                `>${escapeHtml(mentionText)}</span>`,
             });
           }
         }
-        
+
         startIndex = index + 1;
       }
     }
-    
-    // Sort mentions by start position (descending) so we can replace from end to beginning
-    mentions.sort((a, b) => b.start - a.start);
-    
-    // Build the HTML string
-    let result = escapeHtml(text);
-    
-    // Replace each mention with highlighted HTML
-    for (const mention of mentions) {
-      const before = result.slice(0, mention.start);
-      const after = result.slice(mention.end);
-      const mentionHtml = `<span class="${highlightClass}" data-mention="true" data-mention-id="${mention.option.key}" contenteditable="false">${escapeHtml(mention.text)}</span>`;
-      result = before + mentionHtml + after;
+
+    // ── Step 2: collect URL ranges ───────────────────────────────────────────
+    // Reset lastIndex because the regex is defined outside the function
+    URL_REGEX.lastIndex = 0;
+    let urlMatch: RegExpExecArray | null;
+
+    while ((urlMatch = URL_REGEX.exec(text)) !== null) {
+      const start = urlMatch.index;
+      const end = start + urlMatch[0].length;
+      const rawUrl = urlMatch[0];
+
+      // Skip if this URL is entirely inside an existing mention range
+      const overlaps = ranges.some(r => start >= r.start && end <= r.end);
+      if (!overlaps) {
+        ranges.push({
+          start,
+          end,
+          html:
+            `<span class="${urlClass}" ` +
+            `contenteditable="false" ` +
+            `data-url="true"` +
+            `>${escapeHtml(rawUrl)}</span>`,
+        });
+      }
     }
-    
+
+    // ── Step 3: sort ranges by start position (ascending) ───────────────────
+    ranges.sort((a, b) => a.start - b.start);
+
+    // ── Step 4: build the final HTML in a single pass ────────────────────────
+    let result = '';
+    let cursor = 0;
+
+    for (const range of ranges) {
+      if (range.start > cursor) {
+        // Plain text segment before this range
+        result += escapeHtml(text.slice(cursor, range.start));
+      }
+      result += range.html;
+      cursor = range.end;
+    }
+
+    // Any remaining plain text after the last range
+    if (cursor < text.length) {
+      result += escapeHtml(text.slice(cursor));
+    }
+
     return result;
   };
 
@@ -138,15 +186,16 @@ const CustomMentionsInput = ({
   const extractPlainText = (html: string) => {
     const temp = document.createElement('div');
     temp.innerHTML = html;
-    
-    // Walk through nodes and build plain text
+
     let plainText = '';
-    
+
     const walkNodes = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
         plainText += node.textContent || '';
       } else if (node.nodeType === Node.ELEMENT_NODE) {
-        if ((node as Element).getAttribute('data-mention') === 'true') {
+        const el = node as Element;
+        if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
+          // For both mentions and URL spans, use their text content as-is
           plainText += node.textContent || '';
         } else {
           for (let i = 0; i < node.childNodes.length; i++) {
@@ -155,7 +204,7 @@ const CustomMentionsInput = ({
         }
       }
     };
-    
+
     walkNodes(temp);
     return plainText;
   };
@@ -163,38 +212,35 @@ const CustomMentionsInput = ({
   // Helper function to safely add a range to selection
   const safelyAddRange = (selection: Selection, range: Range): boolean => {
     if (!selection || !range) return false;
-    
+
     try {
-      // Validate that the range is still valid
       if (!range.startContainer || !range.endContainer) return false;
-      
-      // Check if containers are still in the DOM
+
       if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return false;
       }
-      
-      // Validate that the editable element is still in the DOM
+
       if (!editableRef.current || !document.contains(editableRef.current)) {
         return false;
       }
-      
-      // Ensure the range is within the editable element
-      if (!editableRef.current.contains(range.startContainer) || 
-          !editableRef.current.contains(range.endContainer)) {
+
+      if (
+        !editableRef.current.contains(range.startContainer) ||
+        !editableRef.current.contains(range.endContainer)
+      ) {
         return false;
       }
-      
+
       selection.removeAllRanges();
       selection.addRange(range);
       return true;
     } catch (e) {
-      // Selection might be in an invalid state
       console.debug('Failed to add range to selection:', e);
       return false;
     }
   };
 
-  // Get cursor position that respects mention boundaries
+  // Get cursor position that respects mention and URL span boundaries
   const getCursorPosition = () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || !editableRef.current) return 0;
@@ -202,70 +248,64 @@ const CustomMentionsInput = ({
     let range;
     try {
       range = selection.getRangeAt(0);
-      
-      // Validate range is still valid
+
       if (!range.startContainer || !range.endContainer) return 0;
       if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return 0;
       }
-      
+
       const preCaretRange = range.cloneRange();
       preCaretRange.selectNodeContents(editableRef.current!);
       preCaretRange.setEnd(range.endContainer, range.endOffset);
     } catch (e) {
-      // Selection might be in an invalid state
       return 0;
     }
 
-    // Walk through nodes to count text length
     let length = 0;
     const walker = document.createTreeWalker(
       editableRef.current!,
       NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
       {
-        acceptNode: (node) => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            return NodeFilter.FILTER_ACCEPT;
-          }
-          if (node.nodeType === Node.ELEMENT_NODE && (node as Element).getAttribute('data-mention') === 'true') {
-            return NodeFilter.FILTER_ACCEPT;
+        acceptNode: node => {
+          if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const el = node as Element;
+            if (
+              el.getAttribute('data-mention') === 'true' ||
+              el.getAttribute('data-url') === 'true'
+            ) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
           }
           return NodeFilter.FILTER_SKIP;
-        }
+        },
       }
     );
 
     let currentNode: Node | null;
     while ((currentNode = walker.nextNode())) {
-      if (currentNode === range.endContainer) {
+      if (currentNode === selection.getRangeAt(0).endContainer) {
         if (currentNode.nodeType === Node.TEXT_NODE) {
-          length += range.endOffset;
+          length += selection.getRangeAt(0).endOffset;
         } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
-          // If inside a mention, count the full mention
           length += currentNode.textContent?.length || 0;
         }
         break;
       }
-      if (currentNode.nodeType === Node.TEXT_NODE) {
-        length += currentNode.textContent?.length || 0;
-      } else if (currentNode.nodeType === Node.ELEMENT_NODE) {
-        length += currentNode.textContent?.length || 0;
-      }
+      length += currentNode.textContent?.length || 0;
     }
 
     return length;
   };
 
-  // Check if cursor is inside a mention
-  const isCursorInMention = () => {
+  // Check if cursor is inside a mention or URL span (both are non-editable)
+  const isCursorInNonEditableSpan = () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return false;
-    
+
     let range;
     try {
       range = selection.getRangeAt(0);
-      
-      // Validate range is still valid
       if (!range.startContainer || !range.endContainer) return false;
       if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return false;
@@ -273,35 +313,34 @@ const CustomMentionsInput = ({
     } catch (e) {
       return false;
     }
-    
+
     let node = range.commonAncestorContainer;
-    
-    // If it's a text node, check its parent
-    if (node.nodeType === Node.TEXT_NODE) {
-      node = node.parentNode!;
-    }
-    
-    // Check if node or any parent is a mention
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentNode!;
+
     while (node && node !== editableRef.current) {
-      if (node.nodeType === Node.ELEMENT_NODE && (node as Element).getAttribute('data-mention') === 'true') {
-        return true;
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as Element;
+        if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
+          return true;
+        }
       }
       node = node.parentNode!;
     }
-    
+
     return false;
   };
 
-  // Move cursor after mention with a space
+  // Keep the old name as an alias so none of the existing call-sites break
+  const isCursorInMention = isCursorInNonEditableSpan;
+
+  // Move cursor after a non-editable span (mention or URL) with a space
   const moveCursorAfterMentionWithSpace = () => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || !editableRef.current) return;
-    
+
     let range;
     try {
       range = selection.getRangeAt(0);
-      
-      // Validate range is still valid
       if (!range.startContainer || !range.endContainer) return;
       if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
         return;
@@ -309,37 +348,32 @@ const CustomMentionsInput = ({
     } catch (e) {
       return;
     }
-    
-    const mention = range.commonAncestorContainer.nodeType === Node.TEXT_NODE 
-      ? range.commonAncestorContainer.parentNode
-      : range.commonAncestorContainer;
-    
+
+    const mention =
+      range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+        ? range.commonAncestorContainer.parentNode
+        : range.commonAncestorContainer;
+
     if (!mention || mention === editableRef.current || !document.contains(mention)) return;
-    
+
     const newRange = document.createRange();
-    
-    // Check if there's already a space after the mention
     let nextSibling = mention.nextSibling;
-    
+
     if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE) {
       const textContent = nextSibling.textContent || '';
-      
-      // If the text node starts with a space, move cursor after it
       if (textContent.startsWith(' ')) {
         newRange.setStart(nextSibling, 1);
       } else {
-        // Insert a space at the beginning of the text node
         const space = document.createTextNode(' ');
         mention.parentNode?.insertBefore(space, nextSibling);
         newRange.setStart(space, 1);
       }
     } else {
-      // Create a space text node after the mention
       const space = document.createTextNode(' ');
       mention.parentNode?.insertBefore(space, mention.nextSibling);
       newRange.setStart(space, 1);
     }
-    
+
     newRange.collapse(true);
     safelyAddRange(selection, newRange);
   };
@@ -347,39 +381,39 @@ const CustomMentionsInput = ({
   // Handle input changes
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
     if (isComposingRef.current || isUpdatingRef.current) return;
-    
+
     const plainText = extractPlainText(e.currentTarget.innerHTML);
     const currentCursorPos = getCursorPosition();
     setCursorPosition(currentCursorPos);
-    
-    // Update the value
+
     if (plainText !== value) {
       onChange(plainText);
     }
-    
-    // Check if cursor is inside a mention
+
     if (isCursorInMention()) {
       moveCursorAfterMentionWithSpace();
     }
-    
+
     // Check if user is typing a mention
     const textUpToCursor = plainText.slice(0, currentCursorPos);
     const lastAtIndex = textUpToCursor.lastIndexOf('@');
-    
+
     if (lastAtIndex !== -1) {
-      // Check if @ is part of a completed mention
       const beforeAt = textUpToCursor.slice(0, lastAtIndex);
       const afterAt = textUpToCursor.slice(lastAtIndex);
-      
-      // Don't trigger mention if @ is in the middle of a word
+
       const charBeforeAt = beforeAt.slice(-1);
-      if (!charBeforeAt || /\s/.test(charBeforeAt) || charBeforeAt === '\u00A0' || /[.,;:!?()]/.test(charBeforeAt)) {
-        const textAfterAt = afterAt.slice(1); // Remove @
+      if (
+        !charBeforeAt ||
+        /\s/.test(charBeforeAt) ||
+        charBeforeAt === '\u00A0' ||
+        /[.,;:!?()]/.test(charBeforeAt)
+      ) {
+        const textAfterAt = afterAt.slice(1);
         const spaceIndex = textAfterAt.indexOf(' ');
-        
+
         if (spaceIndex === -1) {
-          // No space yet, filter options
-          const filtered = options.filter((opt: any) => 
+          const filtered = options.filter((opt: any) =>
             filterOption ? filterOption(textAfterAt, opt) : true
           );
           setFilteredOptions(filtered);
@@ -389,7 +423,7 @@ const CustomMentionsInput = ({
         }
       }
     }
-    
+
     setIsDropdownOpen(false);
   };
 
@@ -405,18 +439,15 @@ const CustomMentionsInput = ({
 
   // Handle key down events
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Check if cursor is in mention and user tries to type
     if (isCursorInMention() && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       moveCursorAfterMentionWithSpace();
-      
+
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         let range;
         try {
           range = selection.getRangeAt(0);
-          
-          // Validate range is still valid
           if (!range.startContainer || !range.endContainer) return;
           if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
             return;
@@ -424,14 +455,13 @@ const CustomMentionsInput = ({
         } catch (err) {
           return;
         }
-        
+
         const textNode = document.createTextNode(e.key);
         range.insertNode(textNode);
         range.setStartAfter(textNode);
         range.collapse(true);
         safelyAddRange(selection, range);
-        
-        // Trigger input update
+
         setTimeout(() => {
           if (editableRef.current) {
             const event = new Event('input', { bubbles: true });
@@ -442,22 +472,18 @@ const CustomMentionsInput = ({
       return;
     }
 
-    // Handle arrow keys inside mentions
     if (isCursorInMention() && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
       e.preventDefault();
       moveCursorAfterMentionWithSpace();
       return;
     }
 
-    // Handle backspace/delete at mention boundaries
     if (e.key === 'Backspace' || e.key === 'Delete') {
       const selection = window.getSelection();
       if (selection && selection.rangeCount > 0) {
         let range;
         try {
           range = selection.getRangeAt(0);
-          
-          // Validate range is still valid
           if (!range.startContainer || !range.endContainer) return;
           if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
             return;
@@ -465,26 +491,31 @@ const CustomMentionsInput = ({
         } catch (err) {
           return;
         }
-        
+
         if (e.key === 'Backspace' && range.collapsed) {
           const previousNode = range.startContainer.childNodes[range.startOffset - 1];
-          if (previousNode && previousNode.nodeType === Node.ELEMENT_NODE && 
-              (previousNode as Element).getAttribute('data-mention') === 'true') {
+          if (
+            previousNode &&
+            previousNode.nodeType === Node.ELEMENT_NODE &&
+            ((previousNode as Element).getAttribute('data-mention') === 'true' ||
+              (previousNode as Element).getAttribute('data-url') === 'true')
+          ) {
             e.preventDefault();
-            
-            // Remove the mention
             previousNode.remove();
-            
-            // Also remove any space after it if it exists
+
             const nextNode = previousNode.nextSibling;
-            if (nextNode && nextNode.nodeType === Node.TEXT_NODE && nextNode.textContent?.startsWith(' ')) {
+            if (
+              nextNode &&
+              nextNode.nodeType === Node.TEXT_NODE &&
+              nextNode.textContent?.startsWith(' ')
+            ) {
               if (nextNode.textContent.length === 1) {
                 nextNode.remove();
               } else {
                 nextNode.textContent = nextNode.textContent.substring(1);
               }
             }
-            
+
             setTimeout(() => {
               if (editableRef.current) {
                 const event = new Event('input', { bubbles: true });
@@ -494,14 +525,18 @@ const CustomMentionsInput = ({
             return;
           }
         }
-        
+
         if (e.key === 'Delete' && range.collapsed) {
           const nextNode = range.startContainer.childNodes[range.startOffset];
-          if (nextNode && nextNode.nodeType === Node.ELEMENT_NODE && 
-              (nextNode as Element).getAttribute('data-mention') === 'true') {
+          if (
+            nextNode &&
+            nextNode.nodeType === Node.ELEMENT_NODE &&
+            ((nextNode as Element).getAttribute('data-mention') === 'true' ||
+              (nextNode as Element).getAttribute('data-url') === 'true')
+          ) {
             e.preventDefault();
             nextNode.remove();
-            
+
             setTimeout(() => {
               if (editableRef.current) {
                 const event = new Event('input', { bubbles: true });
@@ -514,7 +549,6 @@ const CustomMentionsInput = ({
       }
     }
 
-    // Handle dropdown navigation
     if (isDropdownOpen) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -536,29 +570,24 @@ const CustomMentionsInput = ({
   const selectOption = (option: any) => {
     const plainText = value || '';
     const lastAtIndex = plainText.lastIndexOf('@', cursorPosition);
-    
+
     if (lastAtIndex !== -1) {
       const beforeAt = plainText.slice(0, lastAtIndex);
-      const textAfterAt = plainText.slice(lastAtIndex + 1, cursorPosition);
       const afterCursor = plainText.slice(cursorPosition);
-      
-      // Ensure there's a space after the mention
+
       const newText = beforeAt + '@' + option.value + ' ' + afterCursor;
-      
+
       onChange(newText);
       if (onSelect) onSelect(option);
-      
-      // Track this mention
+
       lastMentionedOptionsRef.current.add(option.key);
     }
-    
+
     setIsDropdownOpen(false);
-    
-    // Focus back on the input after a short delay
+
     setTimeout(() => {
       if (editableRef.current) {
         editableRef.current.focus();
-        // Ensure cursor is placed after the mention with a space
         moveCursorAfterMentionWithSpace();
       }
     }, 10);
@@ -568,28 +597,22 @@ const CustomMentionsInput = ({
   const restoreCursorPosition = (offset: number) => {
     const selection = window.getSelection();
     if (!selection || !editableRef.current) return;
-    
-    // Check if editable element is still in the DOM
-    if (!document.contains(editableRef.current)) {
-      return;
-    }
 
-    // Guard against invalid selection state
+    if (!document.contains(editableRef.current)) return;
+
     try {
       selection.removeAllRanges();
     } catch (e) {
-      // Selection might be in an invalid state, skip restoration
       return;
     }
-    
+
     const newRange = document.createRange();
     let currentPos = 0;
     let found = false;
-    
+
     const walkNodes = (node: Node): boolean => {
-      // Validate node is still in the DOM
       if (!document.contains(node)) return false;
-      
+
       if (node.nodeType === Node.TEXT_NODE) {
         const textLength = node.textContent?.length || 0;
         if (currentPos + textLength >= offset) {
@@ -606,16 +629,18 @@ const CustomMentionsInput = ({
         currentPos += textLength;
         return false;
       }
-      
+
       if (node.nodeType === Node.ELEMENT_NODE) {
-        if ((node as Element).getAttribute('data-mention') === 'true') {
+        const el = node as Element;
+        if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           const textLength = node.textContent?.length || 0;
           if (currentPos + textLength >= offset) {
-            // Cursor should be after the mention with a space
-            // Insert a space after the mention if needed
             const nextSibling = node.nextSibling;
-            if (nextSibling && nextSibling.nodeType === Node.TEXT_NODE && nextSibling.textContent?.startsWith(' ')) {
-              // Place cursor after the space
+            if (
+              nextSibling &&
+              nextSibling.nodeType === Node.TEXT_NODE &&
+              nextSibling.textContent?.startsWith(' ')
+            ) {
               try {
                 newRange.setStart(nextSibling, 1);
                 newRange.collapse(true);
@@ -626,7 +651,6 @@ const CustomMentionsInput = ({
                 return false;
               }
             } else {
-              // Create a space after the mention
               try {
                 const spaceNode = document.createTextNode(' ');
                 node.parentNode?.insertBefore(spaceNode, node.nextSibling);
@@ -643,24 +667,21 @@ const CustomMentionsInput = ({
           currentPos += textLength;
           return false;
         }
-        
+
         for (let i = 0; i < node.childNodes.length; i++) {
-          if (walkNodes(node.childNodes[i])) {
-            return true;
-          }
+          if (walkNodes(node.childNodes[i])) return true;
         }
       }
-      
+
       return false;
     };
-    
+
     walkNodes(editableRef.current);
 
     try {
       if (found) {
         safelyAddRange(selection, newRange);
       } else {
-        // Place cursor at end
         const lastNode = editableRef.current.lastChild;
         if (lastNode && document.contains(lastNode)) {
           try {
@@ -678,7 +699,6 @@ const CustomMentionsInput = ({
         }
       }
     } catch (e) {
-      // Ignore errors from selection manipulation - browser may be in invalid state
       console.debug('Selection restoration failed:', e);
     }
   };
@@ -687,21 +707,20 @@ const CustomMentionsInput = ({
   useEffect(() => {
     if (editableRef.current && value !== undefined && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
-      
+
       const highlighted = createHighlightedHTML(value);
-      
-      // Only update if HTML has actually changed
+
       if (editableRef.current.innerHTML !== highlighted) {
         const selection = window.getSelection();
         const offset = selection && selection.rangeCount > 0 ? getCursorPosition() : value.length;
-        
+
         editableRef.current.innerHTML = highlighted;
-        
+
         if (editableRef.current.childNodes.length > 0 && offset >= 0) {
           restoreCursorPosition(offset);
         }
       }
-      
+
       setTimeout(() => {
         isUpdatingRef.current = false;
       }, 0);
@@ -719,7 +738,7 @@ const CustomMentionsInput = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node) &&
         editableRef.current &&
         !editableRef.current.contains(event.target as Node)
@@ -751,10 +770,10 @@ const CustomMentionsInput = ({
     }
   }, []);
 
-  // Handle click to move cursor outside mention if clicked inside
+  // Handle click — move cursor outside non-editable span if clicked inside one
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (onClick) onClick(e);
-    
+
     if (isCursorInMention()) {
       moveCursorAfterMentionWithSpace();
     }
@@ -788,9 +807,9 @@ const CustomMentionsInput = ({
           cursor: 'text',
         }}
       />
-      
+
       {isDropdownOpen && filteredOptions.length > 0 && (
-        <div 
+        <div
           ref={dropdownRef}
           className={`mentions-dropdown theme-${themeMode}`}
           style={{
@@ -861,7 +880,6 @@ const InfoTabFooter = () => {
   const createdFromNow = useMemo(() => {
     const createdAt = taskFormViewModel?.task?.created_at;
     if (!createdAt) return 'N/A';
-
     try {
       return fromNow(createdAt);
     } catch (error) {
@@ -873,7 +891,6 @@ const InfoTabFooter = () => {
   const updatedFromNow = useMemo(() => {
     const updatedAt = taskFormViewModel?.task?.updated_at;
     if (!updatedAt) return 'N/A';
-
     try {
       return fromNow(updatedAt);
     } catch (error) {
@@ -929,7 +946,13 @@ const InfoTabFooter = () => {
       setSelectedMembers(prev =>
         prev.some(mention => mention.team_member_id === selectedMember.id)
           ? prev
-          : [...prev, { team_member_id: selectedMember.id!, name: selectedMember.name! }]
+          : [
+              ...prev,
+              {
+                team_member_id: selectedMember.id!,
+                name: selectedMember.name!,
+              },
+            ]
       );
     },
     [members]
@@ -944,7 +967,11 @@ const InfoTabFooter = () => {
     if (!selectedTaskId || !projectId) return;
 
     if (!isCommentValid()) {
-      message.error(t('taskInfoTab.comments.addCommentError', { defaultValue: 'Please add a comment or attachment' }));
+      message.error(
+        t('taskInfoTab.comments.addCommentError', {
+          defaultValue: 'Please add a comment or attachment',
+        })
+      );
       return;
     }
 
@@ -980,7 +1007,16 @@ const InfoTabFooter = () => {
     } finally {
       setUploading(false);
     }
-  }, [commentValue, selectedMembers, selectedFiles, selectedTaskId, projectId, form, isCommentValid, t]);
+  }, [
+    commentValue,
+    selectedMembers,
+    selectedFiles,
+    selectedTaskId,
+    projectId,
+    form,
+    isCommentValid,
+    t,
+  ]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files.length || !selectedTaskId || !projectId) return;
@@ -988,7 +1024,12 @@ const InfoTabFooter = () => {
     const files = Array.from(event.target.files);
 
     if (selectedFiles.length + files.length > MAXIMUM_FILE_COUNT) {
-      message.error(t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Maximum {count} files allowed' }));
+      message.error(
+        t('taskInfoTab.comments.maxFilesError', {
+          count: MAXIMUM_FILE_COUNT,
+          defaultValue: 'Maximum {count} files allowed',
+        })
+      );
       return;
     }
 
@@ -1007,7 +1048,6 @@ const InfoTabFooter = () => {
           task_id: selectedTaskId,
           size: file.size,
         };
-
         newFiles.push(attachment);
       }
 
@@ -1018,10 +1058,13 @@ const InfoTabFooter = () => {
       }
     } catch (error) {
       console.error('Failed to process files:', error);
-      message.error(t('taskInfoTab.comments.processFilesError', { defaultValue: 'Failed to process files' }));
+      message.error(
+        t('taskInfoTab.comments.processFilesError', {
+          defaultValue: 'Failed to process files',
+        })
+      );
     } finally {
       setUploading(false);
-
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -1032,11 +1075,7 @@ const InfoTabFooter = () => {
     setSelectedFiles(prev => {
       const newFiles = [...prev];
       newFiles.splice(index, 1);
-
-      if (newFiles.length === 0) {
-        setAttachmentComment(false);
-      }
-
+      if (newFiles.length === 0) setAttachmentComment(false);
       return newFiles;
     });
   };
@@ -1076,7 +1115,9 @@ const InfoTabFooter = () => {
           }}
         >
           <CustomMentionsInput
-            placeholder={t('taskInfoTab.comments.addCommentPlaceholder', { defaultValue: 'Add a comment...' })}
+            placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
+              defaultValue: 'Add a comment...',
+            })}
             options={mentionsOptions}
             value={commentValue}
             onClick={() => setIsCommentBoxExpand(true)}
@@ -1111,7 +1152,10 @@ const InfoTabFooter = () => {
           {selectedFiles.length > 0 && (
             <Flex vertical gap={8} style={{ marginTop: 12 }}>
               <Typography.Title level={5} style={{ margin: 0 }}>
-                {t('taskInfoTab.comments.selectedFiles', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Selected Files ({count} max)' })}
+                {t('taskInfoTab.comments.selectedFiles', {
+                  count: MAXIMUM_FILE_COUNT,
+                  defaultValue: 'Selected Files ({count} max)',
+                })}
               </Typography.Title>
               <Flex
                 vertical
@@ -1136,7 +1180,9 @@ const InfoTabFooter = () => {
                     }}
                   >
                     <Typography.Text
-                      style={{ color: themeWiseColor('#000000d9', '#ffffffd9', themeMode) }}
+                      style={{
+                        color: themeWiseColor('#000000d9', '#ffffffd9', themeMode),
+                      }}
                     >
                       {file.file_name} ({formatFileSize(file.size)})
                     </Typography.Text>
@@ -1167,7 +1213,9 @@ const InfoTabFooter = () => {
                     icon={<PlusOutlined />}
                     disabled={selectedFiles.length >= MAXIMUM_FILE_COUNT || uploading}
                   >
-                    {t('taskInfoTab.comments.addMoreFiles', { defaultValue: 'Add More Files' })}
+                    {t('taskInfoTab.comments.addMoreFiles', {
+                      defaultValue: 'Add More Files',
+                    })}
                   </Button>
                 </Flex>
               </Flex>
@@ -1177,11 +1225,15 @@ const InfoTabFooter = () => {
           <Form.Item name={'comment'} style={{ marginBlock: 12 }}>
             <div style={{ position: 'relative' }}>
               <CustomMentionsInput
-                placeholder={t('taskInfoTab.comments.addCommentPlaceholder', { defaultValue: 'Add a comment...' })}
+                placeholder={t('taskInfoTab.comments.addCommentPlaceholder', {
+                  defaultValue: 'Add a comment...',
+                })}
                 options={mentionsOptions}
                 autoFocus
                 value={commentValue}
-                onSelect={(option: any) => memberSelectHandler(option as IMentionMemberSelectOption)}
+                onSelect={(option: any) =>
+                  memberSelectHandler(option as IMentionMemberSelectOption)
+                }
                 onChange={handleCommentChange}
                 prefix="@"
                 filterOption={(input: string, option: any) => {
@@ -1224,8 +1276,13 @@ const InfoTabFooter = () => {
               <Tooltip
                 title={
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
-                    ? t('taskInfoTab.comments.maxFilesError', { count: MAXIMUM_FILE_COUNT, defaultValue: 'Maximum {count} files allowed' })
-                    : t('taskInfoTab.comments.attachFiles', { defaultValue: 'Attach Files' })
+                    ? t('taskInfoTab.comments.maxFilesError', {
+                        count: MAXIMUM_FILE_COUNT,
+                        defaultValue: 'Maximum {count} files allowed',
+                      })
+                    : t('taskInfoTab.comments.attachFiles', {
+                        defaultValue: 'Attach Files',
+                      })
                 }
               >
                 <Button
@@ -1236,14 +1293,20 @@ const InfoTabFooter = () => {
               </Tooltip>
 
               <Space>
-                <Button onClick={handleCancel}>{t('taskInfoTab.comments.cancel', { defaultValue: 'Cancel' })}</Button>
+                <Button onClick={handleCancel}>
+                  {t('taskInfoTab.comments.cancel', {
+                    defaultValue: 'Cancel',
+                  })}
+                </Button>
                 <Button
                   type="primary"
                   disabled={!isCommentValid()}
                   onClick={handleSubmit}
                   loading={uploading}
                 >
-                  {t('taskInfoTab.comments.commentButton', { defaultValue: 'Comment' })}
+                  {t('taskInfoTab.comments.commentButton', {
+                    defaultValue: 'Comment',
+                  })}
                 </Button>
               </Space>
             </Flex>

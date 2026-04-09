@@ -1,5 +1,5 @@
 import { SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
 import { Button, Flex, Input, Tooltip } from '@/shared/antd-imports';
 
 import React, { useEffect, useState } from 'react';
@@ -55,27 +55,27 @@ const Teams: React.FC = () => {
       if (res.done) {
         setRequestParams(prev => ({ ...prev, total: res.body.total ?? 0 }));
         const mergedTeams = [...(res.body.data ?? [])];
-        
+
         // Only add current team if there's no search filter or if it matches the search
         if (res.body.current_team_data) {
           const searchTerm = requestParams.search?.toLowerCase().trim() || '';
           const currentTeamName = res.body.current_team_data.name?.toLowerCase() || '';
-          
+
           // Add current team if: no search term OR current team name matches search
           const shouldIncludeCurrentTeam = !searchTerm || currentTeamName.includes(searchTerm);
-          
+
           if (shouldIncludeCurrentTeam) {
             // Check if current team is already in the results to avoid duplicates
             const isCurrentTeamInResults = mergedTeams.some(
               team => team.id === res.body.current_team_data?.id
             );
-            
+
             if (!isCurrentTeamInResults) {
               mergedTeams.unshift(res.body.current_team_data);
             }
           }
         }
-        
+
         setTeams(mergedTeams);
         setCurrentTeam(res.body.current_team_data ?? null);
       }
@@ -102,8 +102,8 @@ const Teams: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>{t('title')}</span>} style={{ padding: '16px 0' }} />
-      <PageHeader
+      <WorklenzPageHeader title={<span>{t('title')}</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader
         style={{
           paddingLeft: 0,
           paddingTop: 0,

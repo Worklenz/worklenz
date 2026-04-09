@@ -83,7 +83,8 @@ const PhaseDropdown = ({ task }: PhaseDropdownProps) => {
       popupClassName="phase-select-dropdown"
       allowClear
       style={{
-        backgroundColor: currentPhase ? task.phase_color + ALPHA_CHANNEL : undefined,
+        backgroundColor: currentPhase
+          ? (task.phase_color?.length === 9 ? task.phase_color.slice(0, 7) : task.phase_color) : undefined,
         borderRadius: 16,
         height: 22,
         width: 120,

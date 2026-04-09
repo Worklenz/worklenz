@@ -11,8 +11,13 @@ import AllTasksShowFieldsDropdown from './all-tasks-show-fields-dropdown';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { fetchAllTasks, setSearchQuery } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
+import {
+  fetchAllTasks,
+  setSearchQuery,
+} from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 import './all-tasks-reports-filters.css';
+import AllTasksPhaseFilter from './all-tasks-phase-filter';
+import AllTasksClientFilter from './all-tasks-client-filter';
 
 const AllTasksReportsFilters = () => {
   const dispatch = useAppDispatch();
@@ -34,6 +39,8 @@ const AllTasksReportsFilters = () => {
         <AllTasksStatusFilter />
         <AllTasksPriorityFilter />
         <AllTasksAssigneeFilter />
+        <AllTasksPhaseFilter />
+        <AllTasksClientFilter />
       </Flex>
     ),
     []

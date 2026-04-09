@@ -88,7 +88,7 @@
   "logoTooLarge": "Logo dimensions are very large. Recommended maximum: 800×240px",
   "logoVerticalWarning": "Vertical logos may appear small in the navbar. Landscape orientation is recommended",
   "logoFileSizeWarning": "File size is large. Recommended: under 500KB for optimal performance",
-  "logoFormatRecommendation": "PNG format with transparent background is recommended for best results",
+  "logoFormatRecommendation": "PNG format recommended: 400×120px, transparent background, under 500KB",
   "logoDeleteConfirm": "Are you sure you want to remove the organization logo? This action cannot be undone.",
   "logoUsage": "Used in navbar and synced to client portal",
   "logoUpgradeToUpload": "Upgrade to a paid plan to upload a custom logo.",

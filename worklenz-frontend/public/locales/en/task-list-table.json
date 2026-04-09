@@ -26,6 +26,8 @@
   "reporterColumn": "Reporter",
   "moveColumnHandle": "Move column",
   "dueTimeColumn": "Due Time",
+  "activeParentBadge": "Active parent",
+  "activeParentTooltip": "Parent task is not archived",
   "todoSelectorText": "To Do",
   "doingSelectorText": "Doing",
   "doneSelectorText": "Done",
@@ -40,6 +42,7 @@
   "addTaskText": "Add Task",
   "addSubTaskText": "Add Sub Task",
   "addTaskInputPlaceholder": "Type your task and hit enter",
+  "addSubTaskInputPlaceholder": "Type subtask name and press Enter to save",
   "noTasksInGroup": "No tasks in this group",
   "dropTaskHere": "Drop task here",
 
@@ -68,7 +71,12 @@
     "convertToSubTask": "Convert to Sub task",
     "convertToTask": "Convert to Task",
     "delete": "Delete",
-    "searchByNameInputPlaceholder": "Search by name"
+    "searchByNameInputPlaceholder": "Search by name",
+    "deleteConfirmTitle": "Delete Task",
+    "deleteConfirmMessage": "Are you sure you want to delete this task? This action cannot be undone.",
+    "deleteSubtaskConfirmMessage": "Are you sure you want to delete this subtask? This action cannot be undone.",
+    "deleteConfirmOk": "Delete",
+    "deleteConfirmCancel": "Cancel"
   },
   "setDueDate": "Set due date",
   "setStartDate": "Set start date",
@@ -92,6 +100,19 @@
     "peopleField": "People field",
     "noDate": "No date",
     "unsupportedField": "Unsupported field type",
+    "datePlaceholder": "Set date",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Select option",
+    "noOptionsAvailable": "No options available",
+    "updating": "Updating...",
+    "peopleDropdown": {
+      "searchMembers": "Search members...",
+      "pending": "Pending",
+      "loadingMembers": "Loading members...",
+      "noMembersFound": "No members found",
+      "inviteMember": "Invite member"
+    },
 
     "modal": {
       "addFieldTitle": "Add field",
@@ -116,6 +137,7 @@
 
     "fieldTypes": {
       "people": "People",
+      "text": "Text",
       "number": "Number",
       "date": "Date",
       "selection": "Selection",
@@ -144,5 +166,12 @@
     "conflictTitle": "Timer Already Running",
     "conflictMessage": "You have a timer running for \"{{taskName}}\" in project \"{{projectName}}\". Would you like to stop that timer and start a new one for this task?",
     "stopAndStart": "Stop & Start New Timer"
+  },
+
+  "errors": {
+    "taskNotCompleted": "Task is not completed",
+    "completeTaskDependencies": "Please complete the task dependencies before proceeding",
+    "incompleteDependencies": "Incomplete Dependencies!",
+    "someDependenciesNotCompleted": "Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding."
   }
 }

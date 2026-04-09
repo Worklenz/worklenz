@@ -24,7 +24,7 @@ export function validateColumnWidth(
   // Convert width to number for comparison
   const widthString = typeof width === 'string' ? width : `${width}px`;
   const currentWidth = parseInt(widthString.replace('px', ''), 10);
-  
+
   // Handle NaN or invalid values
   if (isNaN(currentWidth)) {
     return baseColumn?.width || '150px';
@@ -76,12 +76,11 @@ export function validateColumnWidths(
   baseColumns: BaseColumn[] = []
 ): Record<string, string> {
   const validated: Record<string, string> = {};
-  
+
   Object.entries(widths).forEach(([columnId, width]) => {
     const baseColumn = baseColumns.find(col => col.id === columnId);
     validated[columnId] = validateColumnWidth(columnId, width, baseColumn);
   });
-  
+
   return validated;
 }
-

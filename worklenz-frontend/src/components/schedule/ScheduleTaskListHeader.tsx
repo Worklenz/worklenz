@@ -12,7 +12,8 @@ const ScheduleTaskListHeader: React.FC = () => {
     borderBottom: `1px solid ${isDarkMode ? '#434343' : '#e5e7eb'}`,
   };
 
-  const columnHeaderClass = 'text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider';
+  const columnHeaderClass =
+    'text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider';
 
   return (
     <div
@@ -20,9 +21,7 @@ const ScheduleTaskListHeader: React.FC = () => {
       style={{ ...headerStyle, minHeight: '44px' }}
     >
       {/* Task Key - 10% */}
-      <div className={`flex-[1] ${columnHeaderClass}`}>
-        {t('key', { defaultValue: 'Key' })}
-      </div>
+      <div className={`flex-[1] ${columnHeaderClass}`}>{t('key', { defaultValue: 'Key' })}</div>
 
       {/* Task Name - 35% */}
       <div className={`flex-[3.5] ${columnHeaderClass}`}>

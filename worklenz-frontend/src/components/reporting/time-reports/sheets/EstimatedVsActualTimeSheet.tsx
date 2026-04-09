@@ -84,7 +84,10 @@ const EstimatedVsActualTimeSheet = forwardRef<
     : [];
   const estimatedDays = Array.isArray(jsonData)
     ? jsonData.map(item => {
-        const value = typeof item.estimated_value === 'number' ? item.estimated_value : parseFloat(item.estimated_value || '0');
+        const value =
+          typeof item.estimated_value === 'number'
+            ? item.estimated_value
+            : parseFloat(item.estimated_value || '0');
         return (isNaN(value) ? 0 : value).toString();
       })
     : [];
@@ -217,6 +220,19 @@ const EstimatedVsActualTimeSheet = forwardRef<
       const selectedProjects = filterProjects.filter(project => project.selected);
       const selectedCategories = categories.filter(category => category.selected);
 
+      // Validate primary filters - show empty chart if any required filter is not met
+      // This matches backend logic which returns no data when primary filters are empty
+      const hasInvalidFilters =
+        selectedProjects.length === 0 || // Projects are required
+        selectedTeams.length === 0 || // Teams are required
+        (selectedCategories.length === 0 && !noCategory); // Categories required unless "No Category" is checked
+
+      if (hasInvalidFilters) {
+        setJsonData([]);
+        setChartWidth(window.innerWidth - 250);
+        return;
+      }
+
       const body = {
         type: type === 'WORKING_DAYS' ? 'WORKING_DAYS' : 'MAN_DAYS',
         teams: selectedTeams.map(t => t.id),
@@ -236,18 +252,18 @@ const EstimatedVsActualTimeSheet = forwardRef<
         // Update chart dimensions based on data
         if (dataArray.length) {
           const containerWidth = window.innerWidth - 300;
-          
+
           // FIXED: Better calculation for chart width
           // Each project group needs space for 2 bars + gap + label
           // Minimum 100px per project group (2 bars of ~40px each + spacing)
           const MIN_SPACE_PER_PROJECT = 100;
           const PADDING = 100; // Extra padding for labels and margins
-          
-          const calculatedWidth = (dataArray.length * MIN_SPACE_PER_PROJECT) + PADDING;
-          
+
+          const calculatedWidth = dataArray.length * MIN_SPACE_PER_PROJECT + PADDING;
+
           // Use the larger of calculated width or container width
           const finalWidth = Math.max(calculatedWidth, containerWidth, 1080);
-          
+
           setChartWidth(finalWidth);
         } else {
           // Default width when no data

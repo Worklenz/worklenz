@@ -153,7 +153,7 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
       const url = await createPresignedUrlWithClient(key, req.query.file as string);
-      return res.status(200).send(new ServerResponse(true, url));
+      return res.status(200).send(new ServerResponse(true, { url, expires_in: 3600 }));
     }
 
     return res.status(200).send(new ServerResponse(true, null));

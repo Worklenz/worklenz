@@ -37,7 +37,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.email,
           c.company_name,
           c.phone,
+          c.phone_country_code,
           c.address,
+          c.address_line_1,
+          c.city,
+          c.state,
+          c.zip_code,
+          c.country,
           c.contact_person,
           c.status,
           c.team_id,
@@ -84,7 +90,9 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         whereConditions.push(
           `(c.name ILIKE $${queryParams.length + 1} OR c.email ILIKE $${
             queryParams.length + 1
-          } OR c.company_name ILIKE $${queryParams.length + 1})`
+          } OR c.company_name ILIKE $${queryParams.length + 1} OR c.contact_person ILIKE $${
+            queryParams.length + 1
+          })`
         );
         queryParams.push(`%${search}%`);
       }
@@ -105,21 +113,31 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         query += ` WHERE ${whereConditions.join(" AND ")}`;
       }
 
-      query += ` GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at`;
+      query += ` GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at`;
 
       // Add sorting
       const sortField = String(sortBy || "name");
       const sortDirection = sortOrder === "desc" ? "DESC" : "ASC";
       // Validate sort field and ensure it's a valid column
-      const validSortFields = ["id", "name", "created_at", "updated_at", "assigned_projects_count"];
+      const validSortFields = [
+        "id",
+        "name",
+        "company_name",
+        "created_at",
+        "updated_at",
+        "assigned_projects_count",
+      ];
       const safeSortField = validSortFields.includes(sortField)
         ? sortField
         : "name";
       
-      // Handle special case for assigned_projects_count (it's an aggregated column)
-      const sortColumn = safeSortField === "assigned_projects_count" 
-        ? "assigned_projects_count" 
-        : `c.${safeSortField}`;
+      // Company-first sorting: when sorting by name, sort using company name fallback to record name.
+      const sortColumn =
+        safeSortField === "assigned_projects_count"
+          ? "assigned_projects_count"
+          : safeSortField === "name"
+          ? "COALESCE(NULLIF(TRIM(c.company_name), ''), c.name)"
+          : `c.${safeSortField}`;
       
       query += ` ORDER BY ${sortColumn} ${sortDirection}`;
 
@@ -186,6 +204,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           email: row.email,
           company_name: row.company_name,
           phone: row.phone,
+          phone_country_code: row.phone_country_code,
           address: row.address,
           contact_person: row.contact_person,
           status: row.status || "active",
@@ -231,16 +250,41 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const teamId = (req.user as any)?.team_id;
 
       // Validate required fields
-      if (!clientData.name) {
+      if (!clientData.name?.trim()) {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Client name is required"));
       }
 
+      if (!clientData.company_name?.trim()) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Company name is required"));
+      }
+
+      if (!clientData.contact_person?.trim()) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Primary contact is required"));
+      }
+      // Trim all string fields
+      clientData.name = clientData.name.trim();
+      if (clientData.email) clientData.email = clientData.email.trim();
+      if (clientData.company_name) clientData.company_name = clientData.company_name.trim();
+      if (clientData.phone) clientData.phone = clientData.phone.trim();
+      if (clientData.phone_country_code) clientData.phone_country_code = clientData.phone_country_code.trim().toUpperCase();
+      if (clientData.address) clientData.address = clientData.address.trim();
+      if (clientData.address_line_1) clientData.address_line_1 = clientData.address_line_1.trim();
+      if (clientData.city) clientData.city = clientData.city.trim();
+      if (clientData.state) clientData.state = clientData.state.trim();
+      if (clientData.zip_code) clientData.zip_code = clientData.zip_code.trim();
+      if (clientData.country) clientData.country = clientData.country.trim();
+      if (clientData.contact_person) clientData.contact_person = clientData.contact_person.trim();
+
       // Check if client with same email already exists in this team
       if (clientData.email) {
         const existingClientQuery = `
-          SELECT id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
+          SELECT id, name, email, company_name, phone, phone_country_code, address, contact_person, status, created_at, updated_at
           FROM clients 
           WHERE LOWER(email) = LOWER($1) AND team_id = $2
         `;
@@ -272,6 +316,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
                 email: existingClient.email,
                 company_name: existingClient.company_name,
                 phone: existingClient.phone,
+                phone_country_code: existingClient.phone_country_code,
                 address: existingClient.address,
                 contact_person: existingClient.contact_person,
                 status: existingClient.status,
@@ -296,12 +341,18 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           email,
           company_name,
           phone,
+          phone_country_code,
           address,
+          address_line_1,
+          city,
+          state,
+          zip_code,
+          country,
           contact_person,
           status,
           team_id
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING id, name, email, company_name, phone, phone_country_code, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
       `;
 
       const values = [
@@ -309,10 +360,16 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         clientData.email || null,
         clientData.company_name || null,
         clientData.phone || null,
+        clientData.phone_country_code || null,
         clientData.address || null,
+        clientData.address_line_1 || null,
+        clientData.city || null,
+        clientData.state || null,
+        clientData.zip_code || null,
+        clientData.country || null,
         clientData.contact_person || null,
         clientData.status || "pending",
-        teamId,
+        teamId
       ];
 
       const result = await db.query(query, values);
@@ -342,7 +399,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             email: newClient.email,
             company_name: newClient.company_name,
             phone: newClient.phone,
+            phone_country_code: newClient.phone_country_code,
             address: newClient.address,
+            address_line_1: newClient.address_line_1,
+            city: newClient.city,
+            state: newClient.state,
+            zip_code: newClient.zip_code,
+            country: newClient.country,
             contact_person: newClient.contact_person,
             status: newClient.status,
             created_at: newClient.created_at,
@@ -537,6 +600,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.email,
           c.company_name,
           c.phone,
+          c.phone_country_code,
           c.address,
           c.contact_person,
           c.status,
@@ -547,7 +611,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
         WHERE c.id = $1 AND c.team_id = $2
-        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
+        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
       const result = await db.query(query, [id, teamId]);
@@ -565,7 +629,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         email: client.email,
         company_name: client.company_name,
         phone: client.phone,
+        phone_country_code: client.phone_country_code,
         address: client.address,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         contact_person: client.contact_person,
         status: client.status || "active",
         created_at: client.created_at,
@@ -621,7 +691,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.email,
           c.company_name,
           c.phone,
+          c.phone_country_code,
           c.address,
+          c.address_line_1,
+          c.city,
+          c.state,
+          c.zip_code,
+          c.country,
           c.contact_person,
           c.status,
           c.team_id,
@@ -631,7 +707,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
         WHERE c.id = $1 AND c.team_id = $2
-        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.address, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
+        GROUP BY c.id, c.name, c.email, c.company_name, c.phone, c.phone_country_code, c.address, c.address_line_1, c.city, c.state, c.zip_code, c.country, c.contact_person, c.status, c.team_id, c.created_at, c.updated_at
       `;
 
       const clientResult = await db.query(clientQuery, [id, teamId]);
@@ -694,7 +770,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         email: client.email,
         company_name: client.company_name,
         phone: client.phone,
+        phone_country_code: client.phone_country_code,
         address: client.address,
+        address_line_1: client.address_line_1,
+        city: client.city,
+        state: client.state,
+        zip_code: client.zip_code,
+        country: client.country,
         contact_person: client.contact_person,
         status: client.status || "active",
         created_at: client.created_at,
@@ -764,33 +846,69 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       let paramIndex = 1;
 
       // Allow updating all available fields
-      if (updateData.name) {
+      if (updateData.name?.trim()) {
         updateFields.push(`name = $${paramIndex}`);
-        updateValues.push(updateData.name);
+        updateValues.push(updateData.name.trim());
         paramIndex++;
       }
 
-      if (updateData.email) {
+      if (updateData.email?.trim()) {
         updateFields.push(`email = $${paramIndex}`);
-        updateValues.push(updateData.email);
+        updateValues.push(updateData.email.trim());
         paramIndex++;
       }
 
-      if (updateData.company_name) {
+      if (updateData.company_name?.trim()) {
         updateFields.push(`company_name = $${paramIndex}`);
-        updateValues.push(updateData.company_name);
+        updateValues.push(updateData.company_name.trim());
         paramIndex++;
       }
 
-      if (updateData.phone) {
+      if (updateData.phone?.trim()) {
         updateFields.push(`phone = $${paramIndex}`);
-        updateValues.push(updateData.phone);
+        updateValues.push(updateData.phone.trim());
+        paramIndex++;
+      }
+
+      if (updateData.phone_country_code !== undefined) {
+        updateFields.push(`phone_country_code = $${paramIndex}`);
+        updateValues.push(updateData.phone_country_code?.trim() ? updateData.phone_country_code.trim().toUpperCase() : null);
         paramIndex++;
       }
 
       if (updateData.address !== undefined) {
         updateFields.push(`address = $${paramIndex}`);
         updateValues.push(updateData.address || null);
+        paramIndex++;
+      }
+
+      if (updateData.address_line_1 !== undefined) {
+        updateFields.push(`address_line_1 = $${paramIndex}`);
+        updateValues.push(updateData.address_line_1 || null);
+        paramIndex++;
+      }
+
+      if (updateData.city !== undefined) {
+        updateFields.push(`city = $${paramIndex}`);
+        updateValues.push(updateData.city || null);
+        paramIndex++;
+      }
+
+      if (updateData.state !== undefined) {
+        updateFields.push(`state = $${paramIndex}`);
+        updateValues.push(updateData.state || null);
+        paramIndex++;
+      }
+
+      if (updateData.zip_code !== undefined) {
+        updateFields.push(`zip_code = $${paramIndex}`);
+        updateValues.push(updateData.zip_code || null);
+        paramIndex++;
+      }
+
+      if (updateData.country !== undefined) {
+        updateFields.push(`country = $${paramIndex}`);
+        updateValues.push(updateData.country || null);
         paramIndex++;
       }
 
@@ -819,7 +937,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         UPDATE clients
         SET ${updateFields.join(", ")}
         WHERE id = $${paramIndex} AND team_id = $${paramIndex + 1}
-        RETURNING id, name, email, company_name, phone, address, contact_person, status, created_at, updated_at
+        RETURNING id, name, email, company_name, phone, phone_country_code, address, address_line_1, city, state, zip_code, country, contact_person, status, created_at, updated_at
       `;
 
       const result = await db.query(query, updateValues);
@@ -854,7 +972,14 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         email: updatedClient.email,
         company_name: updatedClient.company_name,
         phone: updatedClient.phone,
+        phone_country_code: updatedClient.phone_country_code,
         address: updatedClient.address,
+        address_line_1: updatedClient.address_line_1,
+        city: updatedClient.city,
+        state: updatedClient.state,
+        zip_code: updatedClient.zip_code,
+        country: updatedClient.country,
+        contact_person: updatedClient.contact_person,
         status: updatedClient.status || "active",
         created_at: updatedClient.created_at,
         updated_at: updatedClient.updated_at
@@ -970,12 +1095,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
   }
 
   static async deleteClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    const dbClient = await db.pool.connect();
     try {
       const { id } = req.params;
       const teamId = (req.user as any)?.team_id;
 
       // Verify client exists and belongs to team
-      const clientCheck = await db.query(
+      const clientCheck = await dbClient.query(
         "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
         [id, teamId]
       );
@@ -986,36 +1112,96 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           .json(new ServerResponse(false, null, "Client not found"));
       }
 
+      await dbClient.query("BEGIN");
+
       // Deactivate the client instead of deleting (soft delete)
-      const deactivateResult = await db.query(
+      const deactivateResult = await dbClient.query(
         "UPDATE clients SET status = 'inactive', updated_at = NOW() WHERE id = $1 AND team_id = $2",
         [id, teamId]
       );
 
       if (deactivateResult.rowCount === 0) {
+        await dbClient.query("ROLLBACK");
         return res
           .status(404)
           .json(new ServerResponse(false, null, "Client not found"));
       }
 
       // Also deactivate all client users for this client
-      await db.query(
+      await dbClient.query(
         "UPDATE client_users SET status = 'inactive' WHERE client_id = $1",
         [id]
       );
 
       // Deactivate client portal access
-      await db.query(
+      await dbClient.query(
         "UPDATE client_portal_access SET is_active = FALSE, updated_at = NOW() WHERE client_id = $1",
         [id]
       );
 
+      await dbClient.query("COMMIT");
+
       return res.json(new ServerResponse(true, null, "Client deactivated successfully"));
     } catch (error) {
+      await dbClient.query("ROLLBACK").catch(() => void 0);
       console.error("Error deactivating client:", error);
       return res
         .status(500)
         .json(new ServerResponse(false, null, "Failed to deactivate client"));
+    } finally {
+      dbClient.release();
+    }
+  }
+
+  static async activateClient(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
+    const dbClient = await db.pool.connect();
+    try {
+      const { id } = req.params;
+      const teamId = (req.user as any)?.team_id;
+
+      // Verify client exists and belongs to team
+      const clientCheck = await dbClient.query(
+        "SELECT id FROM clients WHERE id = $1 AND team_id = $2",
+        [id, teamId]
+      );
+
+      if (clientCheck.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
+      }
+
+      await dbClient.query("BEGIN");
+
+      // Reactivate the client
+      await dbClient.query(
+        "UPDATE clients SET status = 'active', updated_at = NOW() WHERE id = $1 AND team_id = $2",
+        [id, teamId]
+      );
+
+      // Reactivate all client users for this client
+      await dbClient.query(
+        "UPDATE client_users SET status = 'active' WHERE client_id = $1",
+        [id]
+      );
+
+      // Reactivate client portal access
+      await dbClient.query(
+        "UPDATE client_portal_access SET is_active = TRUE, updated_at = NOW() WHERE client_id = $1",
+        [id]
+      );
+
+      await dbClient.query("COMMIT");
+
+      return res.json(new ServerResponse(true, null, "Client activated successfully"));
+    } catch (error) {
+      await dbClient.query("ROLLBACK").catch(() => void 0);
+      console.error("Error activating client:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to activate client"));
+    } finally {
+      dbClient.release();
     }
   }
 
@@ -1626,6 +1812,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           email: client.email,
           companyName: client.company_name,
           phone: client.phone,
+          phoneCountryCode: client.phone_country_code,
           address: client.address,
           contactPerson: client.contact_person,
           status: client.status,

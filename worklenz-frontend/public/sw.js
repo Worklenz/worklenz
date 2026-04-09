@@ -2,8 +2,9 @@
 // Provides offline functionality, caching, and performance improvements
 
 // Extract build timestamp from current URL or use current time as fallback
-const BUILD_TIMESTAMP = self.location.search.match(/v=(\d+)/) ?
-  self.location.search.match(/v=(\d+)/)[1] : Date.now().toString();
+const BUILD_TIMESTAMP = self.location.search.match(/v=(\d+)/)
+  ? self.location.search.match(/v=(\d+)/)[1]
+  : Date.now().toString();
 
 const CACHE_VERSION = 'v' + BUILD_TIMESTAMP;
 const CACHE_NAMES = {
@@ -42,6 +43,7 @@ const NEVER_CACHE_PATTERNS = [
   /\/socket\.io/,
   /\.hot-update\./,
   /sw\.js$/,
+  /version\.json$/,
   /chrome-extension/,
   /moz-extension/,
 ];
@@ -115,9 +117,9 @@ async function handleFetchRequest(request) {
       return await networkFirstStrategy(request, CACHE_NAMES.DYNAMIC);
     }
 
-    // CSS assets - Stale While Revalidate (balance between cache and freshness)
+    // CSS assets - Network First (ensure fresh CSS after deployments)
     if (isCSSAsset(url)) {
-      return await staleWhileRevalidateStrategy(request, CACHE_NAMES.STATIC);
+      return await networkFirstStrategy(request, CACHE_NAMES.STATIC);
     }
 
     // Static assets (fonts, manifest) - Cache First strategy
@@ -235,11 +237,17 @@ function isStaticAsset(url) {
 }
 
 function isJavaScriptAsset(url) {
-  return /\.(js)$/.test(url.pathname) || url.pathname.includes('/assets/') && /\.js$/.test(url.pathname);
+  return (
+    /\.(js)$/.test(url.pathname) ||
+    (url.pathname.includes('/assets/') && /\.js$/.test(url.pathname))
+  );
 }
 
 function isCSSAsset(url) {
-  return /\.(css)$/.test(url.pathname) || url.pathname.includes('/assets/') && /\.css$/.test(url.pathname);
+  return (
+    /\.(css)$/.test(url.pathname) ||
+    (url.pathname.includes('/assets/') && /\.css$/.test(url.pathname))
+  );
 }
 
 function isImageRequest(url) {
@@ -394,7 +402,7 @@ async function checkForUpdates() {
       // Fetch fresh index.html to check for build changes
       const networkResponse = await fetch('/', {
         cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 'Cache-Control': 'no-cache' },
       });
 
       if (networkResponse.ok) {
@@ -410,7 +418,7 @@ async function checkForUpdates() {
           if (networkBuildTime && networkBuildTime !== BUILD_TIMESTAMP) {
             console.log('Service Worker: New build detected', {
               current: BUILD_TIMESTAMP,
-              new: networkBuildTime
+              new: networkBuildTime,
             });
 
             // Clear all caches for new build
@@ -425,7 +433,7 @@ async function checkForUpdates() {
           const cachedContent = await cachedResponse.text();
 
           // Compare script and CSS file hashes
-          const getAssetHashes = (content) => {
+          const getAssetHashes = content => {
             const scripts = [...content.matchAll(/src="[^"]*\/assets\/[^"]*\.js[^"]*"/g)];
             const styles = [...content.matchAll(/href="[^"]*\/assets\/[^"]*\.css[^"]*"/g)];
             return [...scripts, ...styles].map(match => match[0]);
@@ -434,7 +442,8 @@ async function checkForUpdates() {
           const cachedHashes = getAssetHashes(cachedContent);
           const networkHashes = getAssetHashes(networkContent);
 
-          const hashesChanged = cachedHashes.length !== networkHashes.length ||
+          const hashesChanged =
+            cachedHashes.length !== networkHashes.length ||
             cachedHashes.some((hash, i) => hash !== networkHashes[i]);
 
           if (hashesChanged) {

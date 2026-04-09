@@ -211,7 +211,7 @@ const GanttTimeline = forwardRef<HTMLDivElement, GanttTimelineProps>(
     const effectiveBottomHeaders = useMemo(() => {
       if (timelineCalculator) {
         const columns = timelineCalculator.getColumns();
-        return columns.map((column) => ({
+        return columns.map(column => ({
           label: getColumnLabel(column, viewMode),
           key: column.key,
         }));

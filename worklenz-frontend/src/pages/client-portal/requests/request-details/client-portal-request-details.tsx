@@ -17,10 +17,10 @@ import {
   Form,
   Empty,
 } from '@/shared/antd-imports';
-import { 
-  ArrowLeftOutlined, 
-  DownOutlined, 
-  PaperClipOutlined, 
+import {
+  ArrowLeftOutlined,
+  DownOutlined,
+  PaperClipOutlined,
   FileTextOutlined,
   CalendarOutlined,
   UserOutlined,
@@ -35,8 +35,8 @@ import {
 } from '@ant-design/icons';
 import { colors } from '../../../../styles/colors';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
-  useGetRequestDetailsQuery, 
+import {
+  useGetRequestDetailsQuery,
   useUpdateOrganizationRequestStatusMutation,
   useGetRequestCommentsQuery,
   useAddRequestCommentMutation,
@@ -72,17 +72,20 @@ const ClientPortalRequestDetails = () => {
   const selectedRequest = requestData?.body;
 
   // Status update mutation
-  const [updateStatus, { isLoading: isUpdatingStatus }] = useUpdateOrganizationRequestStatusMutation();
+  const [updateStatus, { isLoading: isUpdatingStatus }] =
+    useUpdateOrganizationRequestStatusMutation();
 
   // Comments
-  const { data: commentsData, refetch: refetchComments } = useGetRequestCommentsQuery(id || '', { skip: !id });
+  const { data: commentsData, refetch: refetchComments } = useGetRequestCommentsQuery(id || '', {
+    skip: !id,
+  });
   const [addComment, { isLoading: isAddingComment }] = useAddRequestCommentMutation();
   const [form] = Form.useForm();
   const commentValue = Form.useWatch('comment', form) || '';
   const commentsResponse = commentsData?.body;
-  const comments = Array.isArray(commentsResponse) 
-    ? commentsResponse 
-    : (commentsResponse?.comments || []);
+  const comments = Array.isArray(commentsResponse)
+    ? commentsResponse
+    : commentsResponse?.comments || [];
   const [displayedNewCommentsCount, setDisplayedNewCommentsCount] = React.useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +100,11 @@ const ClientPortalRequestDetails = () => {
 
   // Update displayed count when data changes (but not when we manually clear it)
   React.useEffect(() => {
-    if (commentsResponse && !Array.isArray(commentsResponse) && 'newCommentsCount' in commentsResponse) {
+    if (
+      commentsResponse &&
+      !Array.isArray(commentsResponse) &&
+      'newCommentsCount' in commentsResponse
+    ) {
       setDisplayedNewCommentsCount(commentsResponse.newCommentsCount);
     }
   }, [commentsResponse]);
@@ -113,8 +120,8 @@ const ClientPortalRequestDetails = () => {
   };
 
   // Check if request can be invoiced (not pending or rejected)
-  const canCreateInvoice = selectedRequest?.status && 
-    !['pending', 'rejected'].includes(selectedRequest.status);
+  const canCreateInvoice =
+    selectedRequest?.status && !['pending', 'rejected'].includes(selectedRequest.status);
 
   // Navigate to invoice builder with request ID
   const handleCreateInvoice = () => {
@@ -171,6 +178,24 @@ const ClientPortalRequestDetails = () => {
     }
   };
 
+  // Helper to get status color
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'orange';
+      case 'accepted':
+        return 'blue';
+      case 'in_progress':
+        return 'processing';
+      case 'completed':
+        return 'success';
+      case 'rejected':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
   const items: TabsProps['items'] = [
     {
       key: 'submission',
@@ -181,12 +206,12 @@ const ClientPortalRequestDetails = () => {
         </Flex>
       ),
       children: (
-        <Flex 
-          vertical 
-          gap={24} 
-          style={{ 
-            height: 'calc(100vh - 420px)', 
-            overflowY: 'auto', 
+        <Flex
+          vertical
+          gap={24}
+          style={{
+            height: 'calc(100vh - 420px)',
+            overflowY: 'auto',
             paddingRight: 12,
             paddingBottom: 16,
           }}
@@ -194,16 +219,32 @@ const ClientPortalRequestDetails = () => {
           {/* Request Overview Card */}
           <Card
             size="small"
-            style={{ 
+            style={{
               borderRadius: 12,
               border: `1px solid ${token.colorBorderSecondary}`,
             }}
             styles={{ body: { padding: '20px 24px' } }}
           >
             <Flex vertical gap={8}>
-              <Typography.Title level={4} style={{ margin: 0, marginBottom: 4 }}>
-                {requestInfo.title || t1('untitledRequest')}
-              </Typography.Title>
+              <Flex align="center" gap={12} style={{ marginBottom: 4 }}>
+                <Typography.Title level={4} style={{ margin: 0 }}>
+                  {requestInfo.title || t1('untitledRequest')}
+                </Typography.Title>
+                <Tag
+                  color={getStatusColor(selectedRequest?.status || '')}
+                  style={{
+                    fontSize: 14,
+                    padding: '4px 12px',
+                    fontWeight: 500,
+                    borderRadius: 6,
+                  }}
+                >
+                  {selectedRequest?.status
+                    ? selectedRequest.status.charAt(0).toUpperCase() +
+                      selectedRequest.status.slice(1).replace('_', ' ')
+                    : 'Unknown'}
+                </Tag>
+              </Flex>
               <Flex align="center" gap={16} wrap="wrap">
                 <Flex align="center" gap={6}>
                   <AppstoreOutlined style={{ color: token.colorTextSecondary, fontSize: 14 }} />
@@ -213,7 +254,10 @@ const ClientPortalRequestDetails = () => {
                 </Flex>
                 <Flex align="center" gap={6}>
                   <UserOutlined style={{ color: token.colorTextSecondary, fontSize: 14 }} />
-                  <Typography.Text type="secondary" style={{ fontSize: 13, textTransform: 'capitalize' }}>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 13, textTransform: 'capitalize' }}
+                  >
                     {selectedRequest?.client_name || '-'}
                   </Typography.Text>
                 </Flex>
@@ -226,9 +270,9 @@ const ClientPortalRequestDetails = () => {
                   </Typography.Text>
                 </Flex>
                 {requestInfo.priority && (
-                  <Tag 
-                    color={getPriorityColor(requestInfo.priority)} 
-                    style={{ 
+                  <Tag
+                    color={getPriorityColor(requestInfo.priority)}
+                    style={{
                       margin: 0,
                       textTransform: 'capitalize',
                       borderRadius: 4,
@@ -253,18 +297,18 @@ const ClientPortalRequestDetails = () => {
                   <span>{t1('descriptionLabel')}</span>
                 </Flex>
               }
-              style={{ 
+              style={{
                 borderRadius: 12,
                 border: `1px solid ${token.colorBorderSecondary}`,
               }}
-              styles={{ 
+              styles={{
                 header: { borderBottom: `1px solid ${token.colorBorderSecondary}`, minHeight: 48 },
-                body: { padding: '16px 24px' } 
+                body: { padding: '16px 24px' },
               }}
             >
-              <Typography.Paragraph 
-                style={{ 
-                  margin: 0, 
+              <Typography.Paragraph
+                style={{
+                  margin: 0,
                   whiteSpace: 'pre-wrap',
                   lineHeight: 1.7,
                   color: token.colorText,
@@ -283,26 +327,26 @@ const ClientPortalRequestDetails = () => {
                 <Flex align="center" gap={8}>
                   <PaperClipOutlined style={{ color: token.colorPrimary }} />
                   <span>{t1('attachmentsLabel')}</span>
-                  <Badge 
-                    count={attachments.length} 
-                    style={{ 
+                  <Badge
+                    count={attachments.length}
+                    style={{
                       backgroundColor: token.colorPrimary,
                       marginLeft: 4,
-                    }} 
+                    }}
                   />
                 </Flex>
               }
-              style={{ 
+              style={{
                 borderRadius: 12,
                 border: `1px solid ${token.colorBorderSecondary}`,
               }}
-              styles={{ 
+              styles={{
                 header: { borderBottom: `1px solid ${token.colorBorderSecondary}`, minHeight: 48 },
-                body: { padding: '16px 24px' } 
+                body: { padding: '16px 24px' },
               }}
             >
               <Flex gap={12} wrap="wrap">
-                {attachments.map((attachment) => (
+                {attachments.map(attachment => (
                   <a
                     key={attachment.id}
                     href={attachment.url}
@@ -359,87 +403,92 @@ const ClientPortalRequestDetails = () => {
                 <Flex align="center" gap={8}>
                   <QuestionCircleOutlined style={{ color: token.colorPrimary }} />
                   <span>{t1('serviceQuestionsLabel')}</span>
-                  <Badge 
-                    count={requestInfo.questionAnswers.length} 
-                    style={{ 
+                  <Badge
+                    count={requestInfo.questionAnswers.length}
+                    style={{
                       backgroundColor: token.colorPrimary,
                       marginLeft: 4,
-                    }} 
+                    }}
                   />
                 </Flex>
               }
-              style={{ 
+              style={{
                 borderRadius: 12,
                 border: `1px solid ${token.colorBorderSecondary}`,
               }}
-              styles={{ 
+              styles={{
                 header: { borderBottom: `1px solid ${token.colorBorderSecondary}`, minHeight: 48 },
-                body: { padding: '16px 24px' } 
+                body: { padding: '16px 24px' },
               }}
             >
               <Flex vertical gap={16}>
-                {requestInfo.questionAnswers.map((qa: {
-                  question: string;
-                  type: string;
-                  answer: string | string[] | null;
-                  attachments?: Array<{
-                    id?: string;
-                    url: string;
-                    filename: string;
-                    originalName: string;
-                    size: number;
-                  }>;
-                }, index: number) => (
-                  <div key={index}>
-                    {index > 0 && <Divider style={{ margin: '0 0 16px 0' }} />}
-                    <Flex vertical gap={8}>
-                      <Typography.Text style={{ fontWeight: 600, color: token.colorText }}>
-                        {qa.question}
-                      </Typography.Text>
-                      {qa.type === 'attachment' ? (
-                        qa.attachments && qa.attachments.length > 0 ? (
-                          <Flex gap={8} wrap="wrap">
-                            {qa.attachments.map((att, attIndex) => (
-                              <a
-                                key={attIndex}
-                                href={att.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ textDecoration: 'none' }}
-                              >
-                                <Tag 
-                                  icon={<PaperClipOutlined />} 
-                                  style={{ 
-                                    cursor: 'pointer',
-                                    padding: '4px 10px',
-                                    borderRadius: 6,
-                                  }}
-                                >
-                                  {att.originalName}
-                                </Tag>
-                              </a>
-                            ))}
-                          </Flex>
-                        ) : (
-                          <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
-                            {t1('noFilesUploaded')}
-                          </Typography.Text>
-                        )
-                      ) : (
-                        <Typography.Text 
-                          style={{ 
-                            whiteSpace: 'pre-wrap',
-                            color: qa.answer ? token.colorText : token.colorTextSecondary,
-                            fontStyle: qa.answer ? 'normal' : 'italic',
-                            lineHeight: 1.6,
-                          }}
-                        >
-                          {qa.answer || t1('noAnswer')}
+                {requestInfo.questionAnswers.map(
+                  (
+                    qa: {
+                      question: string;
+                      type: string;
+                      answer: string | string[] | null;
+                      attachments?: Array<{
+                        id?: string;
+                        url: string;
+                        filename: string;
+                        originalName: string;
+                        size: number;
+                      }>;
+                    },
+                    index: number
+                  ) => (
+                    <div key={index}>
+                      {index > 0 && <Divider style={{ margin: '0 0 16px 0' }} />}
+                      <Flex vertical gap={8}>
+                        <Typography.Text style={{ fontWeight: 600, color: token.colorText }}>
+                          {qa.question}
                         </Typography.Text>
-                      )}
-                    </Flex>
-                  </div>
-                ))}
+                        {qa.type === 'attachment' ? (
+                          qa.attachments && qa.attachments.length > 0 ? (
+                            <Flex gap={8} wrap="wrap">
+                              {qa.attachments.map((att, attIndex) => (
+                                <a
+                                  key={attIndex}
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ textDecoration: 'none' }}
+                                >
+                                  <Tag
+                                    icon={<PaperClipOutlined />}
+                                    style={{
+                                      cursor: 'pointer',
+                                      padding: '4px 10px',
+                                      borderRadius: 6,
+                                    }}
+                                  >
+                                    {att.originalName}
+                                  </Tag>
+                                </a>
+                              ))}
+                            </Flex>
+                          ) : (
+                            <Typography.Text type="secondary" style={{ fontStyle: 'italic' }}>
+                              {t1('noFilesUploaded')}
+                            </Typography.Text>
+                          )
+                        ) : (
+                          <Typography.Text
+                            style={{
+                              whiteSpace: 'pre-wrap',
+                              color: qa.answer ? token.colorText : token.colorTextSecondary,
+                              fontStyle: qa.answer ? 'normal' : 'italic',
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            {qa.answer || t1('noAnswer')}
+                          </Typography.Text>
+                        )}
+                      </Flex>
+                    </div>
+                  )
+                )}
               </Flex>
             </Card>
           )}
@@ -453,58 +502,60 @@ const ClientPortalRequestDetails = () => {
           <CommentOutlined />
           {t1('commentsTab') || 'Comments'}
           {displayedNewCommentsCount > 0 && (
-            <Badge 
-              count={displayedNewCommentsCount} 
-              style={{ backgroundColor: token.colorError, marginLeft: 4 }} 
+            <Badge
+              count={displayedNewCommentsCount}
+              style={{ backgroundColor: token.colorError, marginLeft: 4 }}
             />
           )}
         </Flex>
       ),
       children: (
-        <Flex 
-          vertical 
-          style={{ 
-            height: 'calc(100vh - 420px)', 
+        <Flex
+          vertical
+          style={{
+            height: 'calc(100vh - 420px)',
             overflow: 'hidden',
           }}
         >
           {/* Chat Messages Area */}
-          <div style={{ 
-            flex: 1, 
-            overflowY: 'auto', 
-            padding: '16px 20px',
-            backgroundColor: token.colorBgLayout,
-            borderRadius: '8px 8px 0 0',
-          }}>
+          <div
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: '16px 20px',
+              backgroundColor: token.colorBgLayout,
+              borderRadius: '8px 8px 0 0',
+            }}
+          >
             {comments.length === 0 ? (
-              <Empty 
+              <Empty
                 description={t1('noComments') || 'No comments yet. Start the conversation!'}
                 style={{ marginTop: 60 }}
               />
             ) : (
               <>
-                {comments.map((comment) => {
+                {comments.map(comment => {
                   const isTeamMember = comment.sender_type === 'team_member';
                   const isOwnMessage = isTeamMember; // Admin's own messages (team member)
                   return (
-                    <Flex 
+                    <Flex
                       key={comment.id}
                       justify={isOwnMessage ? 'flex-end' : 'flex-start'}
                       style={{ marginBottom: 16 }}
                     >
-                      <Flex 
-                        gap={8} 
+                      <Flex
+                        gap={8}
                         align="flex-start"
-                        style={{ 
+                        style={{
                           maxWidth: '75%',
                           flexDirection: isOwnMessage ? 'row-reverse' : 'row',
                         }}
                       >
-                        <div 
-                          style={{ 
-                            width: 32, 
-                            height: 32, 
-                            borderRadius: '50%', 
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
                             backgroundColor: isTeamMember ? token.colorPrimary : token.colorSuccess,
                             display: 'flex',
                             alignItems: 'center',
@@ -512,16 +563,17 @@ const ClientPortalRequestDetails = () => {
                             flexShrink: 0,
                           }}
                         >
-                          {isTeamMember 
-                            ? <TeamOutlined style={{ color: '#fff', fontSize: 14 }} />
-                            : <UserOutlined style={{ color: '#fff', fontSize: 14 }} />
-                          }
+                          {isTeamMember ? (
+                            <TeamOutlined style={{ color: '#fff', fontSize: 14 }} />
+                          ) : (
+                            <UserOutlined style={{ color: '#fff', fontSize: 14 }} />
+                          )}
                         </div>
                         <div style={{ minWidth: 0 }}>
-                          <Flex 
-                            align="center" 
-                            gap={8} 
-                            style={{ 
+                          <Flex
+                            align="center"
+                            gap={8}
+                            style={{
                               marginBottom: 4,
                               flexDirection: isOwnMessage ? 'row-reverse' : 'row',
                             }}
@@ -530,22 +582,29 @@ const ClientPortalRequestDetails = () => {
                               {comment.sender_name}
                             </Typography.Text>
                             <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                              {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {new Date(comment.created_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
                             </Typography.Text>
                           </Flex>
                           <div
                             style={{
                               padding: '10px 14px',
-                              borderRadius: isOwnMessage ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                              backgroundColor: isOwnMessage ? token.colorPrimary : token.colorBgContainer,
+                              borderRadius: isOwnMessage
+                                ? '16px 16px 4px 16px'
+                                : '16px 16px 16px 4px',
+                              backgroundColor: isOwnMessage
+                                ? token.colorPrimary
+                                : token.colorBgContainer,
                               color: isOwnMessage ? '#fff' : token.colorText,
                               boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                               wordBreak: 'break-word',
                             }}
                           >
-                            <Typography.Text 
-                              style={{ 
-                                whiteSpace: 'pre-wrap', 
+                            <Typography.Text
+                              style={{
+                                whiteSpace: 'pre-wrap',
                                 lineHeight: 1.5,
                                 color: 'inherit',
                               }}
@@ -553,11 +612,11 @@ const ClientPortalRequestDetails = () => {
                               {comment.comment}
                             </Typography.Text>
                           </div>
-                          <Typography.Text 
-                            type="secondary" 
-                            style={{ 
-                              fontSize: 10, 
-                              marginTop: 4, 
+                          <Typography.Text
+                            type="secondary"
+                            style={{
+                              fontSize: 10,
+                              marginTop: 4,
                               display: 'block',
                               textAlign: isOwnMessage ? 'right' : 'left',
                             }}
@@ -575,8 +634,8 @@ const ClientPortalRequestDetails = () => {
           </div>
 
           {/* Compact Input Area */}
-          <div 
-            style={{ 
+          <div
+            style={{
               padding: '12px 16px',
               borderTop: `1px solid ${token.colorBorderSecondary}`,
               backgroundColor: token.colorBgContainer,
@@ -587,18 +646,20 @@ const ClientPortalRequestDetails = () => {
               <Flex gap={12} align="flex-end">
                 <Form.Item
                   name="comment"
-                  rules={[{ required: true, message: t1('commentRequired') || 'Please enter a comment' }]}
+                  rules={[
+                    { required: true, message: t1('commentRequired') || 'Please enter a comment' },
+                  ]}
                   style={{ marginBottom: 0, flex: 1 }}
                 >
                   <TextArea
                     rows={2}
                     placeholder={t1('addCommentPlaceholder') || 'Type your comment here...'}
                     maxLength={5000}
-                    style={{ 
+                    style={{
                       borderRadius: 20,
                       resize: 'none',
                     }}
-                    onPressEnter={(e) => {
+                    onPressEnter={e => {
                       if (!e.shiftKey) {
                         e.preventDefault();
                         form.submit();
@@ -616,8 +677,12 @@ const ClientPortalRequestDetails = () => {
                   style={{ marginBottom: 4 }}
                 />
               </Flex>
-              <Typography.Text type="secondary" style={{ fontSize: 11, marginTop: 4, display: 'block' }}>
-                {commentValue.length}/5000 · {t1('pressEnterToSend') || 'Press Enter to send, Shift+Enter for new line'}
+              <Typography.Text
+                type="secondary"
+                style={{ fontSize: 11, marginTop: 4, display: 'block' }}
+              >
+                {commentValue.length}/5000 ·{' '}
+                {t1('pressEnterToSend') || 'Press Enter to send, Shift+Enter for new line'}
               </Typography.Text>
             </Form>
           </div>
@@ -631,33 +696,34 @@ const ClientPortalRequestDetails = () => {
           <DollarOutlined />
           {t1('invoicesTab') || 'Invoices'}
           {invoices.length > 0 && (
-            <Badge 
-              count={invoices.length} 
-              style={{ backgroundColor: token.colorPrimary, marginLeft: 4 }} 
+            <Badge
+              count={invoices.length}
+              style={{ backgroundColor: token.colorPrimary, marginLeft: 4 }}
             />
           )}
         </Flex>
       ),
       children: (
-        <Flex 
-          vertical 
+        <Flex
+          vertical
           gap={16}
-          style={{ 
-            height: 'calc(100vh - 420px)', 
-            overflowY: 'auto', 
+          style={{
+            height: 'calc(100vh - 420px)',
+            overflowY: 'auto',
             paddingRight: 12,
             paddingBottom: 16,
           }}
         >
           {invoices.length === 0 ? (
-            <Empty 
+            <Empty
               description={t1('noInvoices') || 'No invoices for this request yet'}
               style={{ marginTop: 60 }}
             />
           ) : (
             <>
               <Typography.Text type="secondary" style={{ fontSize: 13, marginBottom: 8 }}>
-                {t1('invoicesDescription') || `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} linked to this request`}
+                {t1('invoicesDescription') ||
+                  `${invoices.length} invoice${invoices.length === 1 ? '' : 's'} linked to this request`}
               </Typography.Text>
               {invoices.map((invoice: any) => {
                 const getStatusColor = (status: string) => {
@@ -693,17 +759,23 @@ const ClientPortalRequestDetails = () => {
                       <Flex vertical gap={4}>
                         <Flex align="center" gap={8}>
                           <Typography.Text strong>{invoice.invoiceNo}</Typography.Text>
-                          <Tag color={getStatusColor(invoice.status)} style={{ textTransform: 'capitalize', fontSize: 11 }}>
+                          <Tag
+                            color={getStatusColor(invoice.status)}
+                            style={{ textTransform: 'capitalize', fontSize: 11 }}
+                          >
                             {invoice.status}
                           </Tag>
                         </Flex>
                         <Flex align="center" gap={12}>
                           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                            {getCurrencySymbol(invoice.currency)}{invoice.amount.toFixed(2)}
+                            {getCurrencySymbol(invoice.currency)}
+                            {invoice.amount.toFixed(2)}
                           </Typography.Text>
                           {invoice.dueDate && (
                             <>
-                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>•</Typography.Text>
+                              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                •
+                              </Typography.Text>
                               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                                 Due: {durationDateFormat(new Date(invoice.dueDate))}
                               </Typography.Text>
@@ -765,11 +837,11 @@ const ClientPortalRequestDetails = () => {
             onChange={handleStatusChange}
             loading={isUpdatingStatus}
             disabled={isUpdatingStatus}
-            style={{ 
+            style={{
               minWidth: 140,
               border: `1px solid ${colors.skyBlue}`,
               borderRadius: '6px',
-              backgroundColor: token.colorBgContainer
+              backgroundColor: token.colorBgContainer,
             }}
             placeholder="Select status"
             showSearch
@@ -778,22 +850,18 @@ const ClientPortalRequestDetails = () => {
             }
             dropdownStyle={{
               borderRadius: '8px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             }}
           />
           {canCreateInvoice && (
-            <Button
-              type="primary"
-              icon={<FileTextOutlined />}
-              onClick={handleCreateInvoice}
-            >
+            <Button type="primary" icon={<FileTextOutlined />} onClick={handleCreateInvoice}>
               {t1('createInvoiceButton') || 'Create Invoice'}
             </Button>
           )}
         </Flex>
       </Flex>
-      <Card 
-        style={{ 
+      <Card
+        style={{
           height: 'calc(100vh - 280px)',
           borderRadius: 12,
         }}

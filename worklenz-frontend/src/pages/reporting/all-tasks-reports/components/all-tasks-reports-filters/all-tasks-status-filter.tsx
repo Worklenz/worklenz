@@ -1,5 +1,14 @@
 import { memo, useState, useEffect } from 'react';
-import { Button, Card, Checkbox, Dropdown, Flex, Typography, Spin, Tag } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Flex,
+  Typography,
+  Spin,
+  Tag,
+} from '@/shared/antd-imports';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

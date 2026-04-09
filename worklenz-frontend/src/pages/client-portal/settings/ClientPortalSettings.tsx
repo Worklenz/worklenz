@@ -38,7 +38,11 @@ import {
 import { profileSettingsApiService } from '../../../api/settings/profile/profile-settings.api.service';
 import { colors } from '../../../styles/colors';
 import { useMixpanelTracking } from '../../../hooks/useMixpanelTracking';
-import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '../../../types/mixpanel-events.types';
+import {
+  MixpanelEvents,
+  ClientPortalEventProps,
+  ClientPortalActionEventProps,
+} from '../../../types/mixpanel-events.types';
 
 const ClientPortalSettings = () => {
   // localization
@@ -86,7 +90,7 @@ const ClientPortalSettings = () => {
     const pageEventProps: ClientPortalEventProps = {
       page: 'settings',
       section: 'client_portal',
-      source: 'direct_visit'
+      source: 'direct_visit',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_SETTINGS_VIEWED, pageEventProps);
@@ -168,7 +172,7 @@ const ClientPortalSettings = () => {
       item_type: 'settings',
       page: 'settings',
       section: 'client_portal',
-      source: 'remove_logo_button'
+      source: 'remove_logo_button',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_LOGO_REMOVED, actionProps);
@@ -204,14 +208,14 @@ const ClientPortalSettings = () => {
           item_type: 'settings',
           page: 'settings',
           section: 'client_portal',
-          source: 'save_changes_button'
+          source: 'save_changes_button',
         };
 
         trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_LOGO_UPLOADED, actionProps);
 
         // Upload new logo
         const reader = new FileReader();
-        reader.onload = async (e) => {
+        reader.onload = async e => {
           try {
             const base64String = e.target?.result as string;
             const response = await profileSettingsApiService.uploadClientPortalLogo(base64String);
@@ -244,7 +248,7 @@ const ClientPortalSettings = () => {
             page: 'settings',
             section: 'client_portal',
             source: 'save_changes_button',
-            success: true
+            success: true,
           };
 
           trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_SETTINGS_SAVED, saveProps);
@@ -259,7 +263,8 @@ const ClientPortalSettings = () => {
       }
 
       // Save company details if changed
-      const companyDetailsChanged = JSON.stringify(companyDetails) !== JSON.stringify(originalCompanyDetails);
+      const companyDetailsChanged =
+        JSON.stringify(companyDetails) !== JSON.stringify(originalCompanyDetails);
       if (companyDetailsChanged) {
         const response = await profileSettingsApiService.updateClientPortalSettings({
           ...companyDetails,
@@ -274,7 +279,7 @@ const ClientPortalSettings = () => {
       if (!pendingLogoFile && !pendingLogoRemoval && !companyDetailsChanged) {
         resetPendingChanges();
       }
-      
+
       setSaving(false);
     } catch (error) {
       console.error('Failed to save settings:', error);
@@ -342,7 +347,7 @@ const ClientPortalSettings = () => {
             textAlign: 'center',
           }}
         >
-          {(pendingLogoUrl && !pendingLogoRemoval) ? (
+          {pendingLogoUrl && !pendingLogoRemoval ? (
             <img
               src={pendingLogoUrl}
               alt="New Client Portal Logo"
@@ -352,7 +357,7 @@ const ClientPortalSettings = () => {
                 objectFit: 'contain',
                 filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))',
                 border: '2px dashed #1890ff',
-                borderRadius: '4px'
+                borderRadius: '4px',
               }}
             />
           ) : pendingLogoRemoval ? (
@@ -386,12 +391,8 @@ const ClientPortalSettings = () => {
           <Tag color="blue">{t('headerDisplayTag')}</Tag>
           <Tag color="green">{t('responsiveTag')}</Tag>
           <Tag color="orange">{t('autoScaledTag')}</Tag>
-          {pendingLogoUrl && !pendingLogoRemoval && (
-            <Tag color="cyan">Pending Upload</Tag>
-          )}
-          {pendingLogoRemoval && (
-            <Tag color="orange">Pending Removal</Tag>
-          )}
+          {pendingLogoUrl && !pendingLogoRemoval && <Tag color="cyan">Pending Upload</Tag>}
+          {pendingLogoRemoval && <Tag color="orange">Pending Removal</Tag>}
         </Flex>
       </Flex>
     </Card>
@@ -429,10 +430,7 @@ const ClientPortalSettings = () => {
               </Typography.Text>
             </Space>
             <Space>
-              <Button
-                onClick={handleCancelChanges}
-                icon={<CloseOutlined />}
-              >
+              <Button onClick={handleCancelChanges} icon={<CloseOutlined />}>
                 {t('cancelButton')}
               </Button>
               <Button
@@ -476,33 +474,49 @@ const ClientPortalSettings = () => {
                     <Flex vertical gap={20}>
                       {/* Logo Display Area */}
                       <div
-                        onClick={!pendingLogoRemoval && !pendingLogoUrl ? triggerFileInput : undefined}
+                        onClick={
+                          !pendingLogoRemoval && !pendingLogoUrl ? triggerFileInput : undefined
+                        }
                         style={{
                           width: '100%',
                           minHeight: '180px',
                           border: pendingLogoUrl
                             ? `2px dashed #1890ff`
                             : pendingLogoRemoval
-                            ? `2px dashed #ff4d4f`
-                            : `2px dashed ${colors.deepLightGray}`,
+                              ? `2px dashed #ff4d4f`
+                              : `2px dashed ${colors.deepLightGray}`,
                           borderRadius: '12px',
                           backgroundColor: 'var(--ant-color-bg-layout)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           position: 'relative',
-                          cursor: !pendingLogoRemoval && !pendingLogoUrl && !saving ? 'pointer' : 'default',
+                          cursor:
+                            !pendingLogoRemoval && !pendingLogoUrl && !saving
+                              ? 'pointer'
+                              : 'default',
                           transition: 'all 0.2s ease',
                           padding: '24px',
                         }}
-                        onMouseEnter={(e) => {
-                          if (!pendingLogoRemoval && !pendingLogoUrl && !saving && !(customLogo || organizationLogo)) {
+                        onMouseEnter={e => {
+                          if (
+                            !pendingLogoRemoval &&
+                            !pendingLogoUrl &&
+                            !saving &&
+                            !(customLogo || organizationLogo)
+                          ) {
                             e.currentTarget.style.borderColor = colors.skyBlue;
-                            e.currentTarget.style.backgroundColor = 'var(--ant-color-fill-tertiary)';
+                            e.currentTarget.style.backgroundColor =
+                              'var(--ant-color-fill-tertiary)';
                           }
                         }}
-                        onMouseLeave={(e) => {
-                          if (!pendingLogoRemoval && !pendingLogoUrl && !saving && !(customLogo || organizationLogo)) {
+                        onMouseLeave={e => {
+                          if (
+                            !pendingLogoRemoval &&
+                            !pendingLogoUrl &&
+                            !saving &&
+                            !(customLogo || organizationLogo)
+                          ) {
                             e.currentTarget.style.borderColor = colors.deepLightGray;
                             e.currentTarget.style.backgroundColor = 'var(--ant-color-bg-layout)';
                           }
@@ -530,9 +544,14 @@ const ClientPortalSettings = () => {
 
                         {pendingLogoRemoval ? (
                           <Flex vertical gap={12} align="center">
-                            <ExclamationCircleOutlined style={{ fontSize: '48px', color: colors.red }} />
+                            <ExclamationCircleOutlined
+                              style={{ fontSize: '48px', color: colors.red }}
+                            />
                             <Typography.Text strong>Logo will be removed</Typography.Text>
-                            <Typography.Text type="secondary" style={{ fontSize: '12px', textAlign: 'center' }}>
+                            <Typography.Text
+                              type="secondary"
+                              style={{ fontSize: '12px', textAlign: 'center' }}
+                            >
                               {organizationLogo
                                 ? 'After removal, the organization logo will be used automatically.'
                                 : 'No logo will be displayed.'}
@@ -581,12 +600,17 @@ const ClientPortalSettings = () => {
                                 justifyContent: 'center',
                               }}
                             >
-                              <PictureOutlined style={{ fontSize: '32px', color: colors.skyBlue }} />
+                              <PictureOutlined
+                                style={{ fontSize: '32px', color: colors.skyBlue }}
+                              />
                             </div>
                             <Typography.Text strong style={{ fontSize: '16px' }}>
                               {organizationLogo ? 'Using organization logo' : 'No logo uploaded'}
                             </Typography.Text>
-                            <Typography.Text type="secondary" style={{ fontSize: '12px', textAlign: 'center' }}>
+                            <Typography.Text
+                              type="secondary"
+                              style={{ fontSize: '12px', textAlign: 'center' }}
+                            >
                               {organizationLogo
                                 ? 'This logo is synced from your organization settings.'
                                 : 'Click to upload a logo for your client portal'}
@@ -608,55 +632,58 @@ const ClientPortalSettings = () => {
                             Save New Logo
                           </Button>
                         )}
-                        {!pendingLogoUrl && !pendingLogoRemoval && (customLogo || organizationLogo) && (
-                          <Flex gap={8} style={{ width: '100%' }}>
-                            <Button
-                              icon={<UploadOutlined />}
-                              onClick={triggerFileInput}
-                              disabled={saving}
-                              style={{ flex: 1 }}
-                            >
-                              {customLogo || organizationLogo ? 'Change Logo' : 'Upload Logo'}
-                            </Button>
-                            {customLogo && !isLogoSynced && (
+                        {!pendingLogoUrl &&
+                          !pendingLogoRemoval &&
+                          (customLogo || organizationLogo) && (
+                            <Flex gap={8} style={{ width: '100%' }}>
                               <Button
-                                danger
-                                icon={<DeleteOutlined />}
-                                onClick={handleStageLogoRemoval}
+                                icon={<UploadOutlined />}
+                                onClick={triggerFileInput}
                                 disabled={saving}
                                 style={{ flex: 1 }}
                               >
-                                Remove Logo
+                                {customLogo || organizationLogo ? 'Change Logo' : 'Upload Logo'}
                               </Button>
-                            )}
-                            {isLogoSynced && organizationLogo && (
-                              <Button
-                                type="default"
-                                onClick={async () => {
-                                  try {
-                                    setSaving(true);
-                                    const response = await profileSettingsApiService.updateClientPortalSettings({
-                                      logo_url: null,
-                                    });
-                                    if (response.done) {
-                                      setCustomLogo(null);
-                                      setIsLogoSynced(true);
-                                      await loadSettings();
+                              {customLogo && !isLogoSynced && (
+                                <Button
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  onClick={handleStageLogoRemoval}
+                                  disabled={saving}
+                                  style={{ flex: 1 }}
+                                >
+                                  Remove Logo
+                                </Button>
+                              )}
+                              {isLogoSynced && organizationLogo && (
+                                <Button
+                                  type="default"
+                                  onClick={async () => {
+                                    try {
+                                      setSaving(true);
+                                      const response =
+                                        await profileSettingsApiService.updateClientPortalSettings({
+                                          logo_url: null,
+                                        });
+                                      if (response.done) {
+                                        setCustomLogo(null);
+                                        setIsLogoSynced(true);
+                                        await loadSettings();
+                                      }
+                                    } catch (error) {
+                                      console.error('Failed to reset to organization logo:', error);
+                                    } finally {
+                                      setSaving(false);
                                     }
-                                  } catch (error) {
-                                    console.error('Failed to reset to organization logo:', error);
-                                  } finally {
-                                    setSaving(false);
-                                  }
-                                }}
-                                loading={saving}
-                                style={{ flex: 1 }}
-                              >
-                                Use Custom Logo Instead
-                              </Button>
-                            )}
-                          </Flex>
-                        )}
+                                  }}
+                                  loading={saving}
+                                  style={{ flex: 1 }}
+                                >
+                                  Use Custom Logo Instead
+                                </Button>
+                              )}
+                            </Flex>
+                          )}
                         {pendingLogoRemoval && (
                           <Flex gap={8} style={{ width: '100%' }}>
                             <Button
@@ -692,11 +719,14 @@ const ClientPortalSettings = () => {
                           }
                           description={
                             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-                              This logo is automatically synced from your organization settings. It appears in client portal emails and invoices.{' '}
+                              This logo is automatically synced from your organization settings. It
+                              appears in client portal emails and invoices.{' '}
                               <Button
                                 type="link"
                                 size="small"
-                                onClick={() => window.open('/worklenz/admin-center/overview', '_blank')}
+                                onClick={() =>
+                                  window.open('/worklenz/admin-center/overview', '_blank')
+                                }
                                 style={{ padding: 0, height: 'auto', fontSize: '12px' }}
                               >
                                 Manage in Admin Center
@@ -723,16 +753,28 @@ const ClientPortalSettings = () => {
                           Logo guidelines
                         </summary>
                         <div style={{ marginTop: 12, paddingLeft: 20 }}>
-                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}
+                          >
                             {t('recommendedSizeText')}
                           </Typography.Text>
-                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}
+                          >
                             {t('maxFileSizeText')}
                           </Typography.Text>
-                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: '12px', display: 'block', marginBottom: 4 }}
+                          >
                             {t('supportedFormatsText')}
                           </Typography.Text>
-                          <Typography.Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: '12px', display: 'block' }}
+                          >
                             {t('autoScaledInfoText')}
                           </Typography.Text>
                         </div>
@@ -744,7 +786,7 @@ const ClientPortalSettings = () => {
                         type="file"
                         accept="image/png,image/jpeg,image/jpg,image/webp"
                         style={{ display: 'none' }}
-                        onChange={(e) => {
+                        onChange={e => {
                           if (e.target.files && e.target.files[0]) {
                             handleLogoSelect(e.target.files[0]);
                           }
@@ -775,19 +817,25 @@ const ClientPortalSettings = () => {
                   >
                     <Flex vertical gap={12}>
                       <Flex align="center" gap={8}>
-                        <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
+                        <CheckCircleOutlined
+                          style={{ color: colors.limeGreen, fontSize: '12px' }}
+                        />
                         <Typography.Text style={{ fontSize: '13px' }}>
                           {t('professionalBrandingText')}
                         </Typography.Text>
                       </Flex>
                       <Flex align="center" gap={8}>
-                        <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
+                        <CheckCircleOutlined
+                          style={{ color: colors.limeGreen, fontSize: '12px' }}
+                        />
                         <Typography.Text style={{ fontSize: '13px' }}>
                           {t('consistentIdentityText')}
                         </Typography.Text>
                       </Flex>
                       <Flex align="center" gap={8}>
-                        <CheckCircleOutlined style={{ color: colors.limeGreen, fontSize: '12px' }} />
+                        <CheckCircleOutlined
+                          style={{ color: colors.limeGreen, fontSize: '12px' }}
+                        />
                         <Typography.Text style={{ fontSize: '13px' }}>
                           {t('enhancedTrustText')}
                         </Typography.Text>
@@ -825,7 +873,7 @@ const ClientPortalSettings = () => {
                         <Input
                           placeholder={t('companyNamePlaceholder')}
                           value={companyDetails.company_name}
-                          onChange={(e) => handleCompanyDetailsChange('company_name', e.target.value)}
+                          onChange={e => handleCompanyDetailsChange('company_name', e.target.value)}
                         />
                       </Form.Item>
                     </Col>
@@ -834,7 +882,9 @@ const ClientPortalSettings = () => {
                         <Input
                           placeholder={t('contactEmailPlaceholder')}
                           value={companyDetails.contact_email}
-                          onChange={(e) => handleCompanyDetailsChange('contact_email', e.target.value)}
+                          onChange={e =>
+                            handleCompanyDetailsChange('contact_email', e.target.value)
+                          }
                         />
                       </Form.Item>
                     </Col>
@@ -850,14 +900,14 @@ const ClientPortalSettings = () => {
                               if (!value || value.trim() === '') return Promise.resolve();
                               if (validatePhoneNumber(value)) return Promise.resolve();
                               return Promise.reject(new Error(t('invalidPhoneNumberFormat')));
-                            }
-                          }
+                            },
+                          },
                         ]}
                       >
                         <PhoneInput
                           placeholder={t('contactPhonePlaceholder')}
                           value={companyDetails.contact_phone}
-                          onChange={(value) => handleCompanyDetailsChange('contact_phone', value)}
+                          onChange={value => handleCompanyDetailsChange('contact_phone', value)}
                         />
                       </Form.Item>
                     </Col>
@@ -868,7 +918,9 @@ const ClientPortalSettings = () => {
                         <Input
                           placeholder={t('addressLine1Placeholder')}
                           value={companyDetails.address_line_1}
-                          onChange={(e) => handleCompanyDetailsChange('address_line_1', e.target.value)}
+                          onChange={e =>
+                            handleCompanyDetailsChange('address_line_1', e.target.value)
+                          }
                         />
                       </Form.Item>
                     </Col>
@@ -877,7 +929,9 @@ const ClientPortalSettings = () => {
                         <Input
                           placeholder={t('addressLine2Placeholder')}
                           value={companyDetails.address_line_2}
-                          onChange={(e) => handleCompanyDetailsChange('address_line_2', e.target.value)}
+                          onChange={e =>
+                            handleCompanyDetailsChange('address_line_2', e.target.value)
+                          }
                         />
                       </Form.Item>
                     </Col>
@@ -888,7 +942,9 @@ const ClientPortalSettings = () => {
                         <Input
                           placeholder={t('invoiceFooterPlaceholder')}
                           value={companyDetails.invoice_footer_message}
-                          onChange={(e) => handleCompanyDetailsChange('invoice_footer_message', e.target.value)}
+                          onChange={e =>
+                            handleCompanyDetailsChange('invoice_footer_message', e.target.value)
+                          }
                         />
                       </Form.Item>
                     </Col>
@@ -899,7 +955,6 @@ const ClientPortalSettings = () => {
           },
         ]}
       />
-
 
       {/* Image Preview Modal */}
       <Image

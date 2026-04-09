@@ -4,9 +4,7 @@ import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import {
-  toggleColumnVisibility,
-} from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
+import { toggleColumnVisibility } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 
 const AllTasksShowFieldsDropdown = () => {
   const { t } = useTranslation('reporting-all-tasks');
@@ -33,6 +31,7 @@ const AllTasksShowFieldsDropdown = () => {
     { key: 'labels', label: t('labelsColumn', { defaultValue: 'Labels' }) },
     { key: 'progress', label: t('progressColumn', { defaultValue: 'Progress' }) },
     { key: 'subtasksCount', label: t('subtasksCountColumn', { defaultValue: 'Subtasks' }) },
+    { key: 'client', label: t('clientColumn', { defaultValue: 'Client' }) },
   ];
 
   const handleToggle = (columnKey: string) => {

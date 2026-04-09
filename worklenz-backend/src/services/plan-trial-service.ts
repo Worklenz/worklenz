@@ -208,6 +208,40 @@ export class PlanTrialService {
   }
 
   /**
+   * Cancel an active plan trial for a specific tier (e.g. BUSINESS_LARGE)
+   */
+  public static async cancelPlanTrialByTier(
+    userId: string,
+    planTierName: string,
+    reason?: string
+  ): Promise<ServerResponse<any>> {
+    try {
+      const result = await db.query(
+        `UPDATE licensing_plan_trials pt
+         SET is_active = FALSE,
+             cancellation_reason = $3,
+             updated_at = NOW()
+         FROM licensing_plan_tiers lpt
+         WHERE pt.user_id = $1
+           AND pt.is_active = TRUE
+           AND lpt.id = pt.plan_tier_id
+           AND lpt.tier_name = $2
+         RETURNING pt.id`,
+        [userId, planTierName, reason]
+      );
+
+      if (result.rows.length === 0) {
+        return new ServerResponse(false, null, "No active trial found");
+      }
+
+      return new ServerResponse(true, { message: "Trial cancelled successfully" });
+    } catch (error) {
+      log_error(error);
+      return new ServerResponse(false, null, "Failed to cancel trial");
+    }
+  }
+
+  /**
    * Convert trial to paid subscription
    */
   public static async convertTrialToPaid(userId: string, trialId: string): Promise<ServerResponse<any>> {
@@ -286,7 +320,8 @@ export class PlanTrialService {
         WHERE pt.is_active = TRUE
           AND pt.trial_end_date > NOW()
           AND pt.trial_end_date <= NOW() + INTERVAL '${hoursBeforeExpiry} hours'
-          AND NOT pt.converted_to_paid`,
+          AND NOT pt.converted_to_paid
+          AND u.is_deleted IS NOT TRUE`,
         []
       );
 

@@ -26,7 +26,10 @@ import './template-drawer.css';
 import { SearchOutlined } from '@/shared/antd-imports';
 import logger from '@/utils/errorLogger';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_project_import_from_template_click, evt_project_import_tasks_click } from '@/shared/worklenz-analytics-events';
+import {
+  evt_project_import_from_template_click,
+  evt_project_import_tasks_click,
+} from '@/shared/worklenz-analytics-events';
 
 const { Title, Text } = Typography;
 
@@ -57,6 +60,9 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   const [selectedTemplate, setSelectedTemplate] = useState<IProjectTemplate | null>(null);
   const [loadingSelectedTemplate, setLoadingSelectedTemplate] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const getSelectedTemplate = async (templateId: string) => {
     try {
@@ -96,6 +102,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
       const res = await projectTemplatesApiService.getCustomTemplates();
       if (res.done) {
         setCustomTemplates(res.body);
+        setCurrentPage(1);
       }
     } catch (error) {
       logger.error('Error loading custom templates:', error);
@@ -106,7 +113,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   useEffect(() => {
     getTemplates();
-    // Track opening of the template drawer
     trackMixpanelEvent(evt_project_import_from_template_click, { source: 'template_drawer' });
   }, []);
 
@@ -119,11 +125,15 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   const handleMenuClick = (templateId: string) => {
     templateSelected(templateId);
     getSelectedTemplate(templateId);
-    // Track Worklenz template selection
     trackMixpanelEvent(evt_project_import_tasks_click, {
       selected_template_id: templateId,
       template_type: 'worklenz',
     });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
   };
 
   const filteredCustomTemplates = customTemplates.filter(template =>
@@ -137,7 +147,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
     return (
       <div>
-        {/* Description */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('description')}</Text>
@@ -147,7 +156,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Phase */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('phase')}</Text>
@@ -174,7 +182,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Statuses */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('statuses')}</Text>
@@ -201,7 +208,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Priorities */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('priorities')}</Text>
@@ -228,7 +234,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Labels */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('labels')}</Text>
@@ -255,7 +260,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           </div>
         </div>
 
-        {/* Tasks */}
         <div className="template-detail-row mt-2">
           <div className="template-detail-label">
             <Text strong>{t('tasks')}</Text>
@@ -280,8 +284,7 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const menuContent = (
-    <div style={{ display: 'flex', backgroundColor: token.colorBgContainer }}>
-      {/* Menu Area */}
+    <div style={{ display: 'flex', height: '100%', backgroundColor: token.colorBgContainer }}>
       <div
         style={{
           minWidth: '250px',
@@ -306,12 +309,11 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
           />
         </Skeleton>
       </div>
-      {/* Content Area */}
       <div
         className="temp-details"
         style={{
           flex: 1,
-          maxHeight: 'calc(100vh - 200px)',
+          maxHeight: '100%',
           padding: '16px',
           backgroundColor: token.colorBgContainer,
           color: token.colorText,
@@ -339,7 +341,6 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
     setCustomTemplates(updatedCustomTemplates);
     templateSelected(templateId);
     selectedTemplateType('custom');
-    // Track Custom template selection
     trackMixpanelEvent(evt_project_import_tasks_click, {
       selected_template_id: templateId,
       template_type: 'custom',
@@ -347,8 +348,22 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
   };
 
   const customTemplatesContent = (
-    <div style={{ backgroundColor: token.colorBgContainer, padding: '16px' }}>
-      <Flex justify="space-between" align="center">
+    <div
+      style={{
+        backgroundColor: token.colorBgContainer,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+      }}
+    >
+      {/* ✅ FIXED: search bar is outside scroll area — always stays at top */}
+      <div
+        style={{
+          padding: '16px 16px 8px 16px',
+          backgroundColor: token.colorBgContainer,
+          flexShrink: 0, // ← prevents search bar from shrinking
+        }}
+      >
         <Input
           placeholder={t('searchTemplates')}
           suffix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
@@ -358,41 +373,64 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
             borderColor: token.colorBorder,
             color: token.colorText,
           }}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={handleSearchChange}
         />
-      </Flex>
+      </div>
 
-      <List
-        className="custom-template-list mt-4"
-        bordered
-        dataSource={filteredCustomTemplates}
-        loading={loadingCustomTemplates}
+      {/* ✅ FIXED: only this section scrolls, search bar stays fixed above */}
+      <div
         style={{
-          backgroundColor: token.colorBgContainer,
-          borderColor: token.colorBorder,
+          flex: 1,
+          overflowY: 'auto',
+          padding: '0 16px 16px 16px',
         }}
-        renderItem={item => (
-          <List.Item
-            key={item.id}
-            onClick={() => handleCustomTemplateClick(item.id || '')}
-            style={{
-              backgroundColor: item.selected ? token.colorPrimaryBg : token.colorBgContainer,
-              borderColor: item.selected ? token.colorPrimary : token.colorBorder,
-              color: token.colorText,
-              cursor: 'pointer',
-            }}
-            className={
-              item.selected && themeMode === 'dark'
-                ? 'selected-custom-template-dark'
-                : item.selected && themeMode === 'light'
-                  ? 'selected-custom-template'
-                  : ''
-            }
-          >
-            <span style={{ color: token.colorText }}>{item.name}</span>
-          </List.Item>
-        )}
-      />
+      >
+        <List
+          className="custom-template-list"
+          bordered
+          dataSource={filteredCustomTemplates}
+          loading={loadingCustomTemplates}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: filteredCustomTemplates.length,
+            size: 'small',
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
+            style: { marginTop: '12px', textAlign: 'right' },
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            },
+          }}
+          style={{
+            backgroundColor: token.colorBgContainer,
+            borderColor: token.colorBorder,
+          }}
+          renderItem={item => (
+            <List.Item
+              key={item.id}
+              onClick={() => handleCustomTemplateClick(item.id || '')}
+              style={{
+                backgroundColor: item.selected ? token.colorPrimaryBg : token.colorBgContainer,
+                borderColor: item.selected ? token.colorPrimary : token.colorBorder,
+                color: token.colorText,
+                cursor: 'pointer',
+              }}
+              className={
+                item.selected && themeMode === 'dark'
+                  ? 'selected-custom-template-dark'
+                  : item.selected && themeMode === 'light'
+                    ? 'selected-custom-template'
+                    : ''
+              }
+            >
+              <span style={{ color: token.colorText }}>{item.name}</span>
+            </List.Item>
+          )}
+        />
+      </div>
     </div>
   );
 
@@ -423,36 +461,27 @@ const TemplateDrawer: React.FC<TemplateDrawerProps> = ({
 
   return (
     <div
+      className="template-drawer-content"
       style={{
-        height: '100vh',
+        height: '100%',
         overflow: 'hidden',
         backgroundColor: token.colorBgLayout,
       }}
     >
-      <div
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          backgroundColor: token.colorBgContainer,
-          overflow: 'hidden',
-          borderBottom: `1px solid ${token.colorBorder}`,
-        }}
-      >
-        {showBothTabs ? (
-          <Tabs
-            type="card"
-            items={tabs}
-            onChange={handleTabChange}
-            destroyOnHidden
-            style={{
-              backgroundColor: token.colorBgContainer,
-            }}
-          />
-        ) : (
-          menuContent
-        )}
-      </div>
+      {showBothTabs ? (
+        <Tabs
+          type="card"
+          items={tabs}
+          onChange={handleTabChange}
+          destroyOnHidden
+          style={{
+            height: '100%',
+            backgroundColor: token.colorBgContainer,
+          }}
+        />
+      ) : (
+        menuContent
+      )}
     </div>
   );
 };

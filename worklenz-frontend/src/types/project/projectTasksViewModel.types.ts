@@ -54,7 +54,12 @@ export interface IProjectTask {
   total_tasks_count?: number;
   is_sub_task?: boolean;
   parent_task_name?: string;
+  parent_task_key?: string;
+  parent_task_archived?: boolean | null;
+  parent_task_container_id?: string;
   parent_task_id?: string;
+  is_parent_container?: boolean;
+  parent_task_not_archived?: boolean;
   show_handles?: boolean;
   min?: number;
   max?: number;

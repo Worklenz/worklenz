@@ -90,24 +90,28 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const dateList = dateListResponse?.body;
   const loading = teamLoading || dateLoading;
   const isRefetching = teamFetching || dateFetching || capacityFetching;
-  const dayCount = dateList?.date_data?.reduce((total: number, month: any) => total + (month.days?.length || 0), 0) || 0;
+  const dayCount =
+    dateList?.date_data?.reduce(
+      (total: number, month: any) => total + (month.days?.length || 0),
+      0
+    ) || 0;
 
   // Initialize base schedule socket handlers for real-time updates
   useScheduleSocketHandlers();
 
   // Enhanced member projects socket handlers for real-time segment updates
   const expandedMemberIds = expandedMemberId ? [expandedMemberId] : [];
-  
+
   // Use RTK Query hook for expanded member projects (this will auto-refetch on cache invalidation)
   const {
     data: expandedMemberProjectsResponse,
     isLoading: isExpandedProjectsLoading,
-    refetch: refetchExpandedMemberProjects
+    refetch: refetchExpandedMemberProjects,
   } = useFetchMemberProjectsQuery(
     {
       id: expandedMemberId || '',
       chartStart: dateList?.chart_start || '',
-      chartEnd: dateList?.chart_end || ''
+      chartEnd: dateList?.chart_end || '',
     },
     {
       skip: !expandedMemberId || !dateList?.chart_start || !dateList?.chart_end,
@@ -142,22 +146,25 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   }, [expandedMemberId, expandedMemberProjects]);
 
   // Helper function to refetch member projects (now just uses RTK Query)
-  const handleRefetchMemberProjects = useCallback(async (memberId: string) => {
-    // RTK Query will handle this automatically, but we can force refetch if needed
-    if (memberId === expandedMemberId) {
-      refetchExpandedMemberProjects();
-    }
-  }, [expandedMemberId, refetchExpandedMemberProjects]);
+  const handleRefetchMemberProjects = useCallback(
+    async (memberId: string) => {
+      // RTK Query will handle this automatically, but we can force refetch if needed
+      if (memberId === expandedMemberId) {
+        refetchExpandedMemberProjects();
+      }
+    },
+    [expandedMemberId, refetchExpandedMemberProjects]
+  );
 
   // Helper function to get capacity for specific date/member
   const capacityData = capacityResponse?.body || [];
-  
+
   const getCapacityForDate = (memberId: string, dateStr: string) => {
     const memberCapacity = capacityData.find((m: any) => m.team_member_id === memberId);
     if (!memberCapacity) {
       return null;
     }
-    
+
     const dayCapacity = memberCapacity.daily_capacity.find((d: any) => d.date === dateStr);
     return dayCapacity || null;
   };
@@ -199,7 +206,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
     refetchTeam();
     refetchDates();
     refetchCapacity();
-    
+
     // Clear member projects cache when date changes so they'll be refetched with new chartStart
     setMemberProjects({});
     setExpandedMemberId(null);
@@ -312,7 +319,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
           <Spin size="large" tip={t('refreshingData', { defaultValue: 'Refreshing data...' })} />
         </div>
       )}
-      
+
       <div
         style={{
           display: 'grid',
@@ -326,249 +333,258 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
           transition: 'opacity 0.3s ease',
         }}
       >
-      {/* teams table */}
-      <div
-        style={{
-          background: themeWiseColor('#fff', '#141414', themeMode),
-        }}
-        className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
-      >
-        <GranttMembersTable
-          members={teamData}
-          expandedMemberId={expandedMemberId}
-          onToggleProject={handleToggleProject}
-          getMemberProjects={getMemberProjects}
-          isProjectsLoading={isProjectsLoading || isExpandedProjectsLoading}
-          membersScrollRef={membersScrollRef}
-          syncVerticalScroll={syncVerticalScroll}
-        />
-      </div>
-
-      {/* timeline */}
-      <div style={{ overflow: 'auto', position: 'relative' }}>
+        {/* teams table */}
         <div
-          ref={timelineHeaderScrollRef}
           style={{
-            position: 'sticky',
-            overflow: 'auto',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 100,
-            backgroundColor: themeWiseColor('#fff', '#141414', themeMode),
-            scrollbarWidth: 'none',
-            borderBottom: themeMode === 'dark' ? '1px solid #303030' : '1px solid #e5e7eb',
+            background: themeWiseColor('#fff', '#141414', themeMode),
           }}
-          onScroll={() => syncHorizontalScroll('header')}
+          className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
         >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
-            }}
-          >
-            {dateList?.date_data?.map((date: any, index: number) =>
-              date.days.map((day: any) => (
-                <div
-                  key={index + day.day}
-                  style={{
-                    background: day.isWeekend
-                      ? 'rgba(217, 217, 217, 0.4)'
-                      : day.isToday
-                        ? '#69b6fb'
-                        : '',
-                    color: day.isToday ? '#fff' : '',
-                    padding: '8px 0',
-                    textAlign: 'center',
-                    height: 60,
-                  }}
-                >
-                  <div>{day.name},</div>
-                  <div>
-                    {date?.month.substring(0, 4)} {day.day}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <GranttMembersTable
+            members={teamData}
+            expandedMemberId={expandedMemberId}
+            onToggleProject={handleToggleProject}
+            getMemberProjects={getMemberProjects}
+            isProjectsLoading={isProjectsLoading || isExpandedProjectsLoading}
+            membersScrollRef={membersScrollRef}
+            syncVerticalScroll={syncVerticalScroll}
+          />
         </div>
 
-        <Flex
-          vertical
-          ref={timelineScrollRef}
-          onScroll={() => {
-            syncVerticalScroll('timeline');
-            syncHorizontalScroll('timeline');
-          }}
-          style={{
-            height: 'calc(100vh - 270px)',
-            overflow: 'auto',
-          }}
-        >
-          {teamData && teamData.length > 0 ? (
-            teamData.map((member: any) => {
-              // Standardize on team_member_id since that's what backend returns
-              const memberId = member.team_member_id;
-              
-              const isExpanded = expandedMemberId === memberId;
-              const projects = getMemberProjects(memberId);
-              
-              return (
-                <div key={memberId}>
-                  {/* Member row */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
-                    }}
-                  >
-                    {dateList?.date_data?.map((dateObj: any, dateIndex: number) =>
-                      dateObj.days.map((day: any, dayIndex: number) => {
-                        // Extract year and month from chart_start or calculate from month string
-                        // Month format is "Mon YYYY" (e.g., "Jan 2025")
-                        const monthParts = dateObj.month.split(' ');
-                        const monthName = monthParts[0]; // "Jan"
-                        const year = monthParts[1]; // "2025"
-                        
-                        // Convert month name to number
-                        const monthMap: Record<string, string> = {
-                          'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
-                          'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
-                          'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-                        };
-                        const monthNumber = monthMap[monthName] || '01';
-                        
-                        // Format date as YYYY-MM-DD to match capacity data
-                        const formattedDateStr = `${year}-${monthNumber}-${String(day.day).padStart(2, '0')}`;
-                        
-                        const dayCapacity = getCapacityForDate(memberId, formattedDateStr);
-                        
-                        return (
-                          <div
-                            key={`${dateObj.month}-${day.day}-${dayIndex}`}
-                            style={{
-                              background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
-                              color: day.isToday ? '#fff' : '',
-                              height: 90,
-                            }}
-                          >
-                            <DayAllocationCell
-                              capacityData={dayCapacity}
-                              memberName={member.name}
-                              memberId={memberId}
-                              date={formattedDateStr}
-                              isWeekend={day.isWeekend}
-                            />
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {/* Expanded projects */}
-                  {isExpanded && projects.length > 0 && (
-                    <div>
-                      {/* Group projects by project ID to show all segments in one row */}
-                      {Object.entries(
-                        projects.reduce((acc: Record<string, any[]>, project: any) => {
-                          if (!acc[project.id]) {
-                            acc[project.id] = [];
-                          }
-                          acc[project.id].push(project);
-                          return acc;
-                        }, {})
-                      ).map(([projectId, projectSegments]: [string, any[]]) => {
-                        return (
-                          <div
-                            key={projectId}
-                            onClick={(e) => {
-                              // Only open modal if no segments have dates
-                              const hasAnyDates = projectSegments.some(
-                                seg => seg?.date_union?.start && seg?.date_union?.end
-                              );
-                              if (!hasAnyDates) {
-                                setSelectedProjectId(projectId);
-                                setIsModalOpen(true);
-                              }
-                            }}
-                            style={{
-                              display: 'grid',
-                              gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
-                              position: 'relative',
-                            }}
-                          >
-                            {/* Render each segment as a positioned timeline bar 
-                                Each segment gets its own container positioned at the correct offset
-                                to prevent overlapping click areas and ensure independent interaction */}
-                            {projectSegments.map((segment: any, segmentIndex: number) => (
-                              <div
-                                key={`segment-${segmentIndex}`}
-                                style={{
-                                  position: 'absolute',
-                                  left: segment?.indicator_offset || 0,
-                                  width: segment?.indicator_width || 0,
-                                  height: 65,
-                                  zIndex: 50 + segmentIndex,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                }}
-                              >
-                                {segment?.date_union?.start && segment?.date_union?.end && (
-                                  <ProjectTimelineBar
-                                    key={`${segment?.id}-${segment?.segment_number}-${segment?.total_hours}-${segment?.task_count}`}
-                                    defaultData={segment?.default_values}
-                                    project={segment}
-                                    indicatorWidth={segment?.indicator_width}
-                                    indicatorOffset={0} // Set to 0 since positioning is handled by container
-                                    memberId={memberId}
-                                    allProjectSegments={projectSegments}
-                                  />
-                                )}
-                              </div>
-                            ))}
-
-                            {/* Background grid cells */}
-                            {dateList?.date_data?.map((date: any) =>
-                              date.days.map((day: any) => (
-                                <div
-                                  key={`${date.month}-${day.day}`}
-                                  style={{
-                                    background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
-                                    height: 65,
-                                  }}
-                                >
-                                  <div
-                                    style={{ width: '100%', height: '100%' }}
-                                    className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
-                                  ></div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          ) : (
+        {/* timeline */}
+        <div style={{ overflow: 'auto', position: 'relative' }}>
+          <div
+            ref={timelineHeaderScrollRef}
+            style={{
+              position: 'sticky',
+              overflow: 'auto',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 100,
+              backgroundColor: themeWiseColor('#fff', '#141414', themeMode),
+              scrollbarWidth: 'none',
+              borderBottom: themeMode === 'dark' ? '1px solid #303030' : '1px solid #e5e7eb',
+            }}
+            onScroll={() => syncHorizontalScroll('header')}
+          >
             <div
               style={{
-                gridColumn: `1 / -1`,
-                textAlign: 'center',
-                padding: '40px',
-                color: themeWiseColor('#666', '#999', themeMode),
+                display: 'grid',
+                gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
               }}
             >
-              {loading
-                ? t('loadingData') || 'Loading data...'
-                : t('noDataAvailable') || 'No team members found'}
+              {dateList?.date_data?.map((date: any, index: number) =>
+                date.days.map((day: any) => (
+                  <div
+                    key={index + day.day}
+                    style={{
+                      background: day.isWeekend
+                        ? 'rgba(217, 217, 217, 0.4)'
+                        : day.isToday
+                          ? '#69b6fb'
+                          : '',
+                      color: day.isToday ? '#fff' : '',
+                      padding: '8px 0',
+                      textAlign: 'center',
+                      height: 60,
+                    }}
+                  >
+                    <div>{day.name},</div>
+                    <div>
+                      {date?.month.substring(0, 4)} {day.day}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          )}
-        </Flex>
+          </div>
+
+          <Flex
+            vertical
+            ref={timelineScrollRef}
+            onScroll={() => {
+              syncVerticalScroll('timeline');
+              syncHorizontalScroll('timeline');
+            }}
+            style={{
+              height: 'calc(100vh - 270px)',
+              overflow: 'auto',
+            }}
+          >
+            {teamData && teamData.length > 0 ? (
+              teamData.map((member: any) => {
+                // Standardize on team_member_id since that's what backend returns
+                const memberId = member.team_member_id;
+
+                const isExpanded = expandedMemberId === memberId;
+                const projects = getMemberProjects(memberId);
+
+                return (
+                  <div key={memberId}>
+                    {/* Member row */}
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
+                      }}
+                    >
+                      {dateList?.date_data?.map((dateObj: any, dateIndex: number) =>
+                        dateObj.days.map((day: any, dayIndex: number) => {
+                          // Extract year and month from chart_start or calculate from month string
+                          // Month format is "Mon YYYY" (e.g., "Jan 2025")
+                          const monthParts = dateObj.month.split(' ');
+                          const monthName = monthParts[0]; // "Jan"
+                          const year = monthParts[1]; // "2025"
+
+                          // Convert month name to number
+                          const monthMap: Record<string, string> = {
+                            Jan: '01',
+                            Feb: '02',
+                            Mar: '03',
+                            Apr: '04',
+                            May: '05',
+                            Jun: '06',
+                            Jul: '07',
+                            Aug: '08',
+                            Sep: '09',
+                            Oct: '10',
+                            Nov: '11',
+                            Dec: '12',
+                          };
+                          const monthNumber = monthMap[monthName] || '01';
+
+                          // Format date as YYYY-MM-DD to match capacity data
+                          const formattedDateStr = `${year}-${monthNumber}-${String(day.day).padStart(2, '0')}`;
+
+                          const dayCapacity = getCapacityForDate(memberId, formattedDateStr);
+
+                          return (
+                            <div
+                              key={`${dateObj.month}-${day.day}-${dayIndex}`}
+                              style={{
+                                background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                                color: day.isToday ? '#fff' : '',
+                                height: 90,
+                              }}
+                            >
+                              <DayAllocationCell
+                                capacityData={dayCapacity}
+                                memberName={member.name}
+                                memberId={memberId}
+                                date={formattedDateStr}
+                                isWeekend={day.isWeekend}
+                              />
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Expanded projects */}
+                    {isExpanded && projects.length > 0 && (
+                      <div>
+                        {/* Group projects by project ID to show all segments in one row */}
+                        {Object.entries(
+                          projects.reduce((acc: Record<string, any[]>, project: any) => {
+                            if (!acc[project.id]) {
+                              acc[project.id] = [];
+                            }
+                            acc[project.id].push(project);
+                            return acc;
+                          }, {})
+                        ).map(([projectId, projectSegments]: [string, any[]]) => {
+                          return (
+                            <div
+                              key={projectId}
+                              onClick={e => {
+                                // Only open modal if no segments have dates
+                                const hasAnyDates = projectSegments.some(
+                                  seg => seg?.date_union?.start && seg?.date_union?.end
+                                );
+                                if (!hasAnyDates) {
+                                  setSelectedProjectId(projectId);
+                                  setIsModalOpen(true);
+                                }
+                              }}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
+                                position: 'relative',
+                              }}
+                            >
+                              {/* Render each segment as a positioned timeline bar 
+                                Each segment gets its own container positioned at the correct offset
+                                to prevent overlapping click areas and ensure independent interaction */}
+                              {projectSegments.map((segment: any, segmentIndex: number) => (
+                                <div
+                                  key={`segment-${segmentIndex}`}
+                                  style={{
+                                    position: 'absolute',
+                                    left: segment?.indicator_offset || 0,
+                                    width: segment?.indicator_width || 0,
+                                    height: 65,
+                                    zIndex: 50 + segmentIndex,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  {segment?.date_union?.start && segment?.date_union?.end && (
+                                    <ProjectTimelineBar
+                                      key={`${segment?.id}-${segment?.segment_number}-${segment?.total_hours}-${segment?.task_count}`}
+                                      defaultData={segment?.default_values}
+                                      project={segment}
+                                      indicatorWidth={segment?.indicator_width}
+                                      indicatorOffset={0} // Set to 0 since positioning is handled by container
+                                      memberId={memberId}
+                                      allProjectSegments={projectSegments}
+                                    />
+                                  )}
+                                </div>
+                              ))}
+
+                              {/* Background grid cells */}
+                              {dateList?.date_data?.map((date: any) =>
+                                date.days.map((day: any) => (
+                                  <div
+                                    key={`${date.month}-${day.day}`}
+                                    style={{
+                                      background: day.isWeekend ? 'rgba(217, 217, 217, 0.4)' : '',
+                                      height: 65,
+                                    }}
+                                  >
+                                    <div
+                                      style={{ width: '100%', height: '100%' }}
+                                      className={`rounded-xs outline-1 hover:outline-solid ${themeMode === 'dark' ? 'outline-white/10' : 'outline-black/10'}`}
+                                    ></div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div
+                style={{
+                  gridColumn: `1 / -1`,
+                  textAlign: 'center',
+                  padding: '40px',
+                  color: themeWiseColor('#666', '#999', themeMode),
+                }}
+              >
+                {loading
+                  ? t('loadingData') || 'Loading data...'
+                  : t('noDataAvailable') || 'No team members found'}
+              </div>
+            )}
+          </Flex>
+        </div>
       </div>
-    </div>
     </>
   );
 });

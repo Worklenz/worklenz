@@ -138,11 +138,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     modalContextHolder: contextHolder,
   };
 
-  return (
-    <SocketContext.Provider value={value}>
-      {children}
-    </SocketContext.Provider>
-  );
+  return <SocketContext.Provider value={value}>{children}</SocketContext.Provider>;
 };
 
 export const useSocket = () => {

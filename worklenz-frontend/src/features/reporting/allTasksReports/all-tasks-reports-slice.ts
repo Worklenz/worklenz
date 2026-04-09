@@ -5,7 +5,15 @@ import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { allTasksReportsApiService } from '@/api/reporting/all-tasks-reports.api.service';
 
 // Types
-export type AllTasksGroupBy = 'none' | 'project' | 'status' | 'priority' | 'assignee' | 'dueDate' | 'phase' | 'team';
+export type AllTasksGroupBy =
+  | 'none'
+  | 'project'
+  | 'status'
+  | 'priority'
+  | 'assignee'
+  | 'dueDate'
+  | 'phase'
+  | 'team';
 export type AllTasksViewMode = 'table' | 'board' | 'list';
 export type CompletionStatus = 'all' | 'completed' | 'incomplete' | 'overdue';
 export type DateFilterField = 'due_date' | 'start_date' | 'created_at' | 'completed_at';
@@ -60,6 +68,7 @@ interface AllTasksReportsState {
   selectedAssignees: string[];
   selectedLabels: string[];
   selectedPhases: string[];
+  selectedClients: string[];
 
   // Date filter
   dateFilterField: DateFilterField;
@@ -128,6 +137,7 @@ const initialState: AllTasksReportsState = {
   selectedAssignees: [],
   selectedLabels: [],
   selectedPhases: [],
+  selectedClients: [],
 
   // Date filter
   dateFilterField: 'due_date',
@@ -150,13 +160,10 @@ const getSelectedTeamIds = (state: AllTasksReportsState): string[] => {
 };
 
 // Async thunks
-export const fetchAllTasksTeams = createAsyncThunk(
-  'allTasksReports/fetchTeams',
-  async () => {
-    const res = await reportingApiService.getOverviewTeams();
-    return res.body;
-  }
-);
+export const fetchAllTasksTeams = createAsyncThunk('allTasksReports/fetchTeams', async () => {
+  const res = await reportingApiService.getOverviewTeams();
+  return res.body;
+});
 
 export const fetchAllTasks = createAsyncThunk(
   'allTasksReports/fetchAllTasks',
@@ -176,6 +183,7 @@ export const fetchAllTasks = createAsyncThunk(
       assignees: state.selectedAssignees,
       labels: state.selectedLabels,
       phases: state.selectedPhases,
+      clients: state.selectedClients,
       dateField: state.dateFilterField,
       dateFrom: state.dateFrom,
       dateTo: state.dateTo,
@@ -315,6 +323,21 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
+    // Clients filter
+    setSelectedClients: (state, action: PayloadAction<string[]>) => {
+      state.selectedClients = action.payload;
+      state.index = 1;
+    },
+    toggleClient: (state, action: PayloadAction<string>) => {
+      const index = state.selectedClients.indexOf(action.payload);
+      if (index >= 0) {
+        state.selectedClients.splice(index, 1);
+      } else {
+        state.selectedClients.push(action.payload);
+      }
+      state.index = 1;
+    },
+
     // Date filter
     setDateFilterField: (state, action: PayloadAction<DateFilterField>) => {
       state.dateFilterField = action.payload;
@@ -383,6 +406,7 @@ const allTasksReportsSlice = createSlice({
       state.selectedAssignees = [];
       state.selectedLabels = [];
       state.selectedPhases = [];
+      state.selectedClients = [];
       state.dateFrom = null;
       state.dateTo = null;
       state.includeArchived = false;
@@ -470,6 +494,8 @@ export const {
   collapseAllGroups,
   resetAllFilters,
   resetState,
+  setSelectedClients, 
+  toggleClient,
 } = allTasksReportsSlice.actions;
 
 export default allTasksReportsSlice.reducer;

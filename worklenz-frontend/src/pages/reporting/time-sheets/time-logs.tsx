@@ -1,5 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, Flex, Select, Table, Typography, Input, Dropdown, Space, Checkbox } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Flex,
+  Select,
+  Table,
+  Typography,
+  Input,
+  Dropdown,
+  Space,
+  Checkbox,
+} from '@/shared/antd-imports';
 import { DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -34,7 +45,9 @@ const TimeLogsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [search, setSearch] = useState<string>('');
-  const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean }>({ billable: true, nonBillable: true });
+  const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean }>(
+    { billable: true, nonBillable: true }
+  );
 
   // Columns
   const columns = useMemo(
@@ -153,7 +166,14 @@ const TimeLogsPage: React.FC = () => {
   useEffect(() => {
     fetchLogs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMemberId, reporting.dateRange?.[0], reporting.dateRange?.[1], billableFilter.billable, billableFilter.nonBillable, search]);
+  }, [
+    selectedMemberId,
+    reporting.dateRange?.[0],
+    reporting.dateRange?.[1],
+    billableFilter.billable,
+    billableFilter.nonBillable,
+    search,
+  ]);
 
   const onExportExcel = () => {
     if (!reporting.dateRange || reporting.dateRange.length !== 2) return;
@@ -186,11 +206,12 @@ const TimeLogsPage: React.FC = () => {
   const filteredLogs = useMemo(() => {
     const term = search.trim().toLowerCase();
     if (!term) return logs;
-    return logs.filter(l =>
-      l.project.toLowerCase().includes(term) ||
-      l.task.toLowerCase().includes(term) ||
-      (l.description || '').toLowerCase().includes(term) ||
-      l.member.toLowerCase().includes(term)
+    return logs.filter(
+      l =>
+        l.project.toLowerCase().includes(term) ||
+        l.task.toLowerCase().includes(term) ||
+        (l.description || '').toLowerCase().includes(term) ||
+        l.member.toLowerCase().includes(term)
     );
   }, [logs, search]);
 
@@ -219,7 +240,7 @@ const TimeLogsPage: React.FC = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
                 display: 'block',
-                marginBottom: 12
+                marginBottom: 12,
               }}
             >
               {t('Task Type')}
@@ -234,7 +255,9 @@ const TimeLogsPage: React.FC = () => {
               </Checkbox>
               <Checkbox
                 checked={billableFilter.nonBillable}
-                onChange={e => setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))}
+                onChange={e =>
+                  setBillableFilter(prev => ({ ...prev, nonBillable: e.target.checked }))
+                }
                 style={{ width: '100%' }}
               >
                 <span style={{ fontSize: 14 }}>{t('Non-billable')}</span>
@@ -268,7 +291,7 @@ const TimeLogsPage: React.FC = () => {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-            <Dropdown menu={secondaryFiltersMenu} trigger={["click"]}>
+            <Dropdown menu={secondaryFiltersMenu} trigger={['click']}>
               <Button>{t('Filters')}</Button>
             </Dropdown>
             <Button onClick={fetchLogs}>{t('Refresh')}</Button>
@@ -295,5 +318,3 @@ const TimeLogsPage: React.FC = () => {
 };
 
 export default TimeLogsPage;
-
-

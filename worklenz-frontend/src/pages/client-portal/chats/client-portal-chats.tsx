@@ -6,7 +6,11 @@ import { MessageOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons
 import { useGetOrganizationChatsQuery } from '@api/client-portal/client-portal-api';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '../../../types/mixpanel-events.types';
+import {
+  MixpanelEvents,
+  ClientPortalEventProps,
+  ClientPortalActionEventProps,
+} from '../../../types/mixpanel-events.types';
 
 const ClientPortalChats = () => {
   // localization
@@ -25,7 +29,7 @@ const ClientPortalChats = () => {
       page: 'chats',
       section: 'client_portal',
       total_items: chats?.length || 0,
-      source: 'direct_visit'
+      source: 'direct_visit',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
@@ -37,7 +41,7 @@ const ClientPortalChats = () => {
       item_type: 'chat',
       page: 'chats',
       section: 'client_portal',
-      source: 'refresh_button'
+      source: 'refresh_button',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CHAT_REFRESHED, actionProps);
@@ -99,7 +103,7 @@ const ClientPortalChats = () => {
         </Flex>
       </div>
 
-      <ChatBoxWrapper 
+      <ChatBoxWrapper
         isNewChatModalOpen={isNewChatModalOpen}
         setIsNewChatModalOpen={setIsNewChatModalOpen}
       />

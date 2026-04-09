@@ -22,7 +22,10 @@ const AuthenticatingPage: React.FC = () => {
     // Check for pending invitation first (highest priority)
     const pendingInvitation = invitationRedirectService.getPendingInvitation();
     if (pendingInvitation) {
-      console.log('[Authenticating] Found pending invitation, redirecting to:', pendingInvitation.url);
+      console.log(
+        '[Authenticating] Found pending invitation, redirecting to:',
+        pendingInvitation.url
+      );
       // Don't clear here - let the invite page clear it after successful join
       navigate(pendingInvitation.url);
       return;

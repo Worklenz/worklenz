@@ -1,7 +1,7 @@
 {
   "title": "Relatórios da Minha Equipe",
   "subtitle": "Rastreamento de tempo e insights de desempenho para os membros da sua equipe",
-  
+
   "dateRange": {
     "label": "Intervalo de Datas",
     "showing": "Mostrando",
@@ -103,4 +103,3 @@
 
   "export": "Exportar"
 }
-

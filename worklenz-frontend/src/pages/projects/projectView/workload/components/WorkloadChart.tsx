@@ -54,7 +54,7 @@ const calculateWorkingDaysInPeriod = (
 ): number => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   if (end < start) return 0;
 
   const workingDays = workingDaysConfig || {
@@ -77,11 +77,11 @@ const calculateWorkingDaysInPeriod = (
   while (currentDate <= end) {
     const dayOfWeek = currentDate.getDay();
     const dayName = dayMapping[dayOfWeek];
-    
+
     if (workingDays[dayName]) {
       workingDaysCount++;
     }
-    
+
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
@@ -91,13 +91,13 @@ const calculateWorkingDaysInPeriod = (
 // Helper function to calculate workload from tasks for a specific date range
 const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: string): number => {
   if (!Array.isArray(tasks)) return 0;
-  
+
   let totalHours = 0;
-  
+
   // Use provided date range or default to current/next month
   let startOfPeriod: Date;
   let endOfPeriod: Date;
-  
+
   if (startDate && endDate) {
     startOfPeriod = new Date(startDate);
     endOfPeriod = new Date(endDate);
@@ -109,22 +109,25 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
     startOfPeriod = new Date(currentYear, currentMonth, 1);
     endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
   }
-  
+
   let activeTasks = 0;
-  
+
   tasks.forEach(task => {
     if (task?.start_date && task?.end_date) {
       const startDate = new Date(task.start_date);
       const endDate = new Date(task.end_date);
-      
+
       // Check if task overlaps with our period
       if (startDate <= endOfPeriod && endDate >= startOfPeriod) {
         activeTasks++;
         // Calculate overlap period
         const overlapStart = new Date(Math.max(startDate.getTime(), startOfPeriod.getTime()));
         const overlapEnd = new Date(Math.min(endDate.getTime(), endOfPeriod.getTime()));
-        const overlapDays = Math.max(1, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)));
-        
+        const overlapDays = Math.max(
+          1,
+          Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24))
+        );
+
         // Estimate 3-6 hours per active task based on duration
         const baseHours = Math.min(6, Math.max(3, overlapDays * 0.5));
         totalHours += baseHours;
@@ -142,12 +145,12 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
       totalHours += 2; // Minimal hours for undated tasks
     }
   });
-  
+
   // If no dated tasks but there are tasks in the array, assume some workload
   if (totalHours === 0 && tasks.length > 0) {
     totalHours = Math.min(20, tasks.length * 2); // 2 hours per task, max 20 hours
   }
-  
+
   return Math.round(totalHours);
 };
 
@@ -165,7 +168,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
   const sortedMembers = useMemo(() => {
     // Handle the case where data might have different structures
     let members = [];
-    
+
     if (data?.members && Array.isArray(data.members)) {
       // If data is already transformed to IWorkloadData format
       members = [...data.members];
@@ -173,12 +176,14 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       // If data is raw API response format from /workload-members endpoint, transform it
       members = data.body.map((member: any) => {
         const dailyHours = Number(member.org_working_hours) || 8;
-        const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
+        const workingDaysPerWeek =
+          calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
         const weeklyCapacity = dailyHours * workingDaysPerWeek;
-        
+
         // Calculate workload from tasks array for the selected date range
-        const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
-        
+        const currentWorkload =
+          calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
+
         // Calculate capacity for the same date range period based on actual working days
         const startDate = dateRange.startDate || new Date().toISOString().split('T')[0];
         const endDate = dateRange.endDate || new Date().toISOString().split('T')[0];
@@ -188,26 +193,15 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           member.org_working_days
         );
         let periodCapacity = workingDaysInPeriod * dailyHours;
-        
+
         // Fallback: if periodCapacity is 0, use weekly capacity as fallback
         if (periodCapacity === 0) {
           periodCapacity = weeklyCapacity;
         }
-        
-        // Debug logging
-        console.log('Member capacity calculation:', {
-          memberName: member.name,
-          startDate,
-          endDate,
-          dailyHours,
-          workingDaysInPeriod,
-          periodCapacity,
-          weeklyCapacity,
-          orgWorkingDays: member.org_working_days
-        });
-        
-        const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
-        
+
+        const utilizationPercentage =
+          periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
+
         return {
           id: member.project_member_id || member.team_member_id || member.user_id,
           name: member.name || t('table.unknown'),
@@ -228,12 +222,14 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       // If data is directly an array of members (direct API response)
       members = data.map((member: any) => {
         const dailyHours = Number(member.org_working_hours) || 8;
-        const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
+        const workingDaysPerWeek =
+          calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
         const weeklyCapacity = dailyHours * workingDaysPerWeek;
-        
+
         // Calculate workload from tasks array for the selected date range
-        const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
-        
+        const currentWorkload =
+          calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
+
         // Calculate capacity for the same date range period based on actual working days
         const startDate = dateRange.startDate || new Date().toISOString().split('T')[0];
         const endDate = dateRange.endDate || new Date().toISOString().split('T')[0];
@@ -243,14 +239,15 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           member.org_working_days
         );
         let periodCapacity = workingDaysInPeriod * dailyHours;
-        
+
         // Fallback: if periodCapacity is 0, use weekly capacity as fallback
         if (periodCapacity === 0) {
           periodCapacity = weeklyCapacity;
         }
-        
-        const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
-        
+
+        const utilizationPercentage =
+          periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
+
         return {
           id: member.project_member_id || member.team_member_id || member.user_id,
           name: member.name || t('table.unknown'),
@@ -270,7 +267,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
     } else {
       members = [];
     }
-    
+
     switch (sortBy) {
       case 'name':
         return members.sort((a, b) => a.name.localeCompare(b.name));
@@ -411,7 +408,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
 
   // Check if we have any members to display
   const hasMembers = sortedMembers && sortedMembers.length > 0;
-  
+
   if (!hasMembers) {
     return <Empty description={t('noMembersFound')} />;
   }
@@ -462,13 +459,15 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           width: '100%',
           position: 'relative',
           overflowX: 'auto',
-          overflowY: 'hidden'
+          overflowY: 'hidden',
         }}
       >
-        <div style={{
-          minWidth: Math.max(600, sortedMembers.length * 50), // Smaller fixed width per column (50px instead of 80px)
-          height: '100%'
-        }}>
+        <div
+          style={{
+            minWidth: Math.max(600, sortedMembers.length * 50), // Smaller fixed width per column (50px instead of 80px)
+            height: '100%',
+          }}
+        >
           <Bar
             data={chartData}
             options={{

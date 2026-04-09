@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Card, Spin, Empty, Alert } from '@/shared/antd-imports';
-import { RootState } from '@/app/store';
+import { RootState , store  } from '@/app/store';
 import {
   selectAllTasks,
   selectLoading,
@@ -25,6 +25,8 @@ import {
   fetchTasksV3,
   selectTaskGroupsV3,
   fetchSubTasks,
+  setSort,
+  updateTask,
 } from '@/features/task-management/task-management.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import {
@@ -238,14 +240,21 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
   }, []);
 
   // Fetch task groups when component mounts or dependencies change
+  // AFTER
   useEffect(() => {
     if (projectId && !hasInitialized.current) {
       hasInitialized.current = true;
 
-      // Measure task loading performance
-      CustomPerformanceMeasurer.mark('task-load-time');
+      // Read sort from URL if passed from insights "See All"
+      const urlParams = new URLSearchParams(window.location.search);
+      const sortField = urlParams.get('sort_field');
+      const sortOrder = urlParams.get('sort_order') as 'ASC' | 'DESC' | null;
 
-      // Fetch real tasks from V3 API (minimal processing needed)
+      if (sortField && sortOrder) {
+        dispatch(setSort({ field: sortField, order: sortOrder }));
+      }
+
+      CustomPerformanceMeasurer.mark('task-load-time');
       dispatch(fetchTasksV3(projectId)).finally(() => {
         CustomPerformanceMeasurer.measure('task-load-time');
       });
@@ -776,6 +785,42 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
     [selectedTaskIds, projectId, trackMixpanelEvent, dispatch]
   );
 
+  const handleBulkSetStartDate = useCallback(
+    async (date: string) => {
+      if (!projectId) return;
+      try {
+        const body: IBulkTasksDueDateChangeRequest = {
+          tasks: selectedTaskIds,
+          start_date: date || null,
+        };
+        const res = await taskListBulkActionsApiService.changeStartDate(body, projectId);
+        if (res.done) {
+          trackMixpanelEvent(evt_project_task_list_bulk_change_due_date);
+
+          // Mirror exactly what socket handleStartDateChange does
+          selectedTaskIds.forEach(id => {
+            const currentTask = store.getState().taskManagement.entities[id];
+            if (currentTask) {
+              dispatch(updateTask({
+                ...currentTask,
+                startDate: date || undefined,
+                updatedAt: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }));
+            }
+          });
+
+          dispatch(deselectAllBulk());
+          dispatch(clearSelection());
+        }
+      } catch (error) {
+        logger.error('Error changing start date:', error);
+        alertService.error('Error', 'Failed to update start date');
+      }
+    },
+    [selectedTaskIds, projectId, trackMixpanelEvent, dispatch]
+  );
+
   // Cleanup effect
   useEffect(() => {
     return () => {
@@ -906,6 +951,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         onBulkDuplicate={handleBulkDuplicate}
         onBulkExport={handleBulkExport}
         onBulkSetDueDate={handleBulkSetDueDate}
+        onBulkSetStartDate={handleBulkSetStartDate}
       />
 
       <style>{`

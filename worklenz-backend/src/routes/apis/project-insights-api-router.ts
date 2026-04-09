@@ -7,6 +7,7 @@ import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const projectInsightsApiRouter = express.Router();
 
+projectInsightsApiRouter.get("/last-updated/:id/:limit/:offset", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getLastUpdatedtasks));
 projectInsightsApiRouter.get("/last-updated/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getLastUpdatedtasks));
 projectInsightsApiRouter.get("/logs/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getProjectLogs));
 projectInsightsApiRouter.get("/status-overview/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectInsightsController.getStatusOverview));

@@ -5,7 +5,6 @@ import {
   ITaskListSortableColumn,
 } from '@/types/tasks/taskList.types';
 import { tasksApiService, ITaskListConfigV2 } from '@/api/tasks/tasks.api.service';
-import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
 import logger from '@/utils/errorLogger';
 import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
@@ -176,12 +175,21 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   task_key: task.task_key || '',
   project_id: projectId,
   parent_task_id: task.parent_task_id || null,
+  parent_task_container_id: task.parent_task_container_id || undefined,
+  is_parent_container: !!task.is_parent_container,
+  parent_task_not_archived: !!task.parent_task_not_archived,
   status: task.originalStatusId || task.status,
   status_id: task.originalStatusId || task.status,
   status_color: task.statusColor,
-  priority: task.originalPriorityId || task.priority,
-  priority_color: task.priorityColor,
-  priority_value: task.priority === 'high' ? 2 : task.priority === 'medium' ? 1 : 0,
+  priority: task.is_parent_container ? undefined : (task.originalPriorityId || task.priority),
+  priority_color: task.is_parent_container ? undefined : task.priorityColor,
+  priority_value: task.is_parent_container
+    ? undefined
+    : task.priority === 'high'
+      ? 2
+      : task.priority === 'medium'
+        ? 1
+        : 0,
   phase_id: task.phase_id || null,
   phase_name: task.phase || '',
   end_date: task.dueDate || task.end_date,
@@ -190,15 +198,19 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   progress: task.progress ?? task.complete_ratio ?? 0,
   progress_value: task.progress_value ?? task.complete_ratio ?? 0,
   manual_progress: false,
-  assignees: task.assignees || [],
+  assignees: (task.assignees || []).map((a: any) =>
+    typeof a === 'string' ? { team_member_id: a, id: a, project_member_id: '', name: '' } : a
+  ),
   names: task.assignee_names || task.names || [],
   labels: task.labels || [],
   all_labels: task.all_labels || [],
   sub_tasks_count: task.sub_tasks_count || 0,
   total_tasks_count: task.sub_tasks_count || 0,
   completed_count: 0,
-  show_sub_tasks: task.has_filtered_children || false,
-  sub_tasks: [],
+  show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
+  sub_tasks: (task.sub_tasks || []).map((subtask: any) =>
+    transformV3TaskToProjectTask(subtask, projectId)
+  ),
   sub_tasks_loading: false,
   created_at: task.createdAt || task.created_at,
   updated_at: task.updatedAt || task.updated_at,
@@ -263,9 +275,9 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
 
       // Use V3 API for better performance and consistency with TaskListV2
       const response = await tasksApiService.getTaskListV3(config);
-      
+
       // Transform V3 response to ITaskListGroup[] format expected by the kanban board
-      const transformedGroups: ITaskListGroup[] = response.body.groups.map((group: any) => 
+      const transformedGroups: ITaskListGroup[] = response.body.groups.map((group: any) =>
         transformV3GroupToTaskListGroup(group, projectId)
       );
 
@@ -353,12 +365,16 @@ export const reorderEnhancedKanbanGroups = createAsyncThunk(
 export const fetchBoardSubTasks = createAsyncThunk(
   'enhancedKanban/fetchBoardSubTasks',
   async (
-    { taskId, projectId }: { taskId: string; projectId: string },
+    {
+      taskId,
+      projectId,
+      parentTaskIdForQuery,
+    }: { taskId: string; projectId: string; parentTaskIdForQuery?: string },
     { rejectWithValue, getState }
   ) => {
     try {
       const state = getState() as RootState;
-      
+
       // Get active filters from enhancedKanbanReducer
       const selectedLabels = state.enhancedKanbanReducer.labels
         .filter((l: any) => l.selected && l.id)
@@ -374,6 +390,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
 
       // Get search value
       const searchValue = state.enhancedKanbanReducer.search || '';
+      const archivedState = state.enhancedKanbanReducer.archived;
 
       // Get current grouping
       const currentGrouping = state.enhancedKanbanReducer.groupBy || 'status';
@@ -381,7 +398,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
       // Use the filtered task list API instead of the basic subtasks API
       const config: ITaskListConfigV2 = {
         id: projectId,
-        archived: false,
+        archived: archivedState,
         group: currentGrouping,
         field: '',
         order: '',
@@ -392,19 +409,19 @@ export const fetchBoardSubTasks = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: selectedPriorities,
-        parent_task: taskId,
+        parent_task: parentTaskIdForQuery || taskId,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
       const tasks = response.body.allTasks || [];
-      
+
       // Transform V3 API response back to IProjectTask format expected by BoardSubTaskCard
       const transformedTasks: IProjectTask[] = tasks.map((task: any) => ({
         id: task.id,
         name: task.title || task.name,
         task_no: task.task_key,
         project_id: projectId,
-        parent_task_id: taskId,
+        parent_task_id: task.parent_task_id || taskId,
         status_id: task.originalStatusId || task.status,
         priority_id: task.originalPriorityId || task.priority,
         priority_color: task.priorityColor,
@@ -419,13 +436,15 @@ export const fetchBoardSubTasks = createAsyncThunk(
         sub_tasks_count: task.sub_tasks_count || 0,
         total_tasks_count: task.sub_tasks_count || 0,
         completed_count: 0,
-        show_sub_tasks: false,
+        show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
         sub_tasks: [],
         sub_tasks_loading: false,
+        parent_task_container_id: task.parent_task_container_id || undefined,
+        is_parent_container: !!task.is_parent_container,
+        parent_task_not_archived: !!task.parent_task_not_archived,
         created_at: task.createdAt || task.created_at,
         updated_at: task.updatedAt || task.updated_at,
       } as IProjectTask));
-      
       return transformedTasks;
     } catch (error) {
       logger.error('Fetch Enhanced Board Sub Tasks', error);
@@ -514,6 +533,61 @@ const deleteTaskFromGroup = (
       group.tasks.splice(taskIndex, 1);
     }
   }
+};
+
+const removeTaskFromCacheRecursively = (
+  task: IProjectTask | undefined,
+  taskCache: Record<string, IProjectTask>
+): void => {
+  if (!task) return;
+  if (task.id) {
+    delete taskCache[task.id];
+  }
+  (task.sub_tasks || []).forEach(subTask => removeTaskFromCacheRecursively(subTask, taskCache));
+};
+
+const removeTaskFromNestedSubtasks = (
+  parent: IProjectTask,
+  taskId: string,
+  taskCache: Record<string, IProjectTask>
+): boolean => {
+  if (!parent.sub_tasks?.length) return false;
+
+  const directIndex = parent.sub_tasks.findIndex(st => st.id === taskId);
+  if (directIndex !== -1) {
+    const [removedSubtask] = parent.sub_tasks.splice(directIndex, 1);
+    parent.sub_tasks_count = Math.max(0, (parent.sub_tasks_count || 1) - 1);
+    removeTaskFromCacheRecursively(removedSubtask, taskCache);
+    return true;
+  }
+
+  for (const child of parent.sub_tasks) {
+    if (removeTaskFromNestedSubtasks(child, taskId, taskCache)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const cleanupEmptyParentContainers = (
+  taskGroups: ITaskListGroup[],
+  taskCache: Record<string, IProjectTask>
+): void => {
+  taskGroups.forEach(group => {
+    group.tasks = group.tasks.filter(task => {
+      const isEmptyContainer =
+        !!task.is_parent_container &&
+        (!task.sub_tasks || task.sub_tasks.length === 0 || (task.sub_tasks_count || 0) <= 0);
+      if (isEmptyContainer) {
+        if (task.id) {
+          delete taskCache[task.id];
+        }
+        return false;
+      }
+      return true;
+    });
+  });
 };
 
 const enhancedKanbanSlice = createSlice({
@@ -858,15 +932,37 @@ const enhancedKanbanSlice = createSlice({
     // Task deletion
     deleteTask: (state, action: PayloadAction<string>) => {
       const taskId = action.payload;
+      let removed = false;
 
-      // Remove from all groups
+      for (const group of state.taskGroups) {
+        const taskIndex = group.tasks.findIndex(task => task.id === taskId);
+        if (taskIndex !== -1) {
+          const [removedTask] = group.tasks.splice(taskIndex, 1);
+          removeTaskFromCacheRecursively(removedTask, state.taskCache);
+          removed = true;
+          break;
+        }
+
+        for (const parentTask of group.tasks) {
+          if (removeTaskFromNestedSubtasks(parentTask, taskId, state.taskCache)) {
+            removed = true;
+            break;
+          }
+        }
+
+        if (removed) break;
+      }
+
+      cleanupEmptyParentContainers(state.taskGroups, state.taskCache);
       state.taskGroups.forEach(group => {
-        group.tasks = group.tasks.filter(task => task.id !== taskId);
+        state.groupCache[group.id] = group;
       });
 
-      // Remove from caches
-      delete state.taskCache[taskId];
+      if (!removed) {
+        delete state.taskCache[taskId];
+      }
       state.selectedTaskIds = state.selectedTaskIds.filter(id => id !== taskId);
+      delete state.expandedSubtasks[taskId];
     },
 
     // Reset state
@@ -923,39 +1019,43 @@ const enhancedKanbanSlice = createSlice({
 
     addTaskToGroup: (state, action) => {
       const { sectionId, task } = action.payload;
-      
+
       // First try exact match
       let group = state.taskGroups.find(g => g.id === sectionId);
-      
+
       // If not found and this is for priority/phase grouping, try fallback logic
       if (!group) {
         const currentGrouping = state.groupBy;
-        
+
         if (currentGrouping === IGroupBy.PRIORITY) {
           // For priority grouping, try to find by priority_id or priority name
-          group = state.taskGroups.find(g => 
-            g.id === task.priority_id || 
-            g.name?.toLowerCase() === (task.priority || '').toLowerCase() ||
-            (sectionId === 'Unmapped' && g.name === 'Unmapped')
+          group = state.taskGroups.find(
+            g =>
+              g.id === task.priority_id ||
+              g.name?.toLowerCase() === (task.priority || '').toLowerCase() ||
+              (sectionId === 'Unmapped' && g.name === 'Unmapped')
           );
         } else if (currentGrouping === IGroupBy.PHASE) {
           // For phase grouping, try to find by phase_id or phase name
-          group = state.taskGroups.find(g => 
-            g.id === task.phase_id || 
-            g.name?.toLowerCase() === (task.phase_name || '').toLowerCase() ||
-            (sectionId === 'Unmapped' && g.name === 'Unmapped')
+          group = state.taskGroups.find(
+            g =>
+              g.id === task.phase_id ||
+              g.name?.toLowerCase() === (task.phase_name || '').toLowerCase() ||
+              (sectionId === 'Unmapped' && g.name === 'Unmapped')
           );
         }
-        
+
         // Last resort: if still not found and we have an unmapped group, use it
         if (!group && sectionId === 'Unmapped') {
           group = state.taskGroups.find(g => g.name === 'Unmapped');
         }
       }
-      
+
       if (group) {
         // Transform task to IProjectTask format if needed
-        const transformedTask = task.id ? task : transformV3TaskToProjectTask(task, task.project_id || '');
+        const transformedTask = task.id
+          ? task
+          : transformV3TaskToProjectTask(task, task.project_id || '');
         group.tasks.push(transformedTask);
         // Update cache
         state.taskCache[transformedTask.id!] = transformedTask;
@@ -1042,8 +1142,12 @@ const enhancedKanbanSlice = createSlice({
           task.sub_tasks.push({ ...subtask });
         } else {
           // Remove the subtask
-          task.sub_tasks = task.sub_tasks.filter(t => t.id !== subtask.id);
-          task.sub_tasks_count = Math.max(0, (task.sub_tasks_count || 1) - 1);
+          const subtaskIndex = task.sub_tasks.findIndex(t => t.id === subtask.id);
+          if (subtaskIndex !== -1) {
+            const [removedSubtask] = task.sub_tasks.splice(subtaskIndex, 1);
+            task.sub_tasks_count = Math.max(0, (task.sub_tasks_count || 1) - 1);
+            removeTaskFromCacheRecursively(removedSubtask, state.taskCache);
+          }
         }
 
         // Update cache
@@ -1070,7 +1174,26 @@ const enhancedKanbanSlice = createSlice({
         updateTaskWithSubtask(result.task);
         // Update group cache
         state.groupCache[result.groupId] = result.group;
+        return;
       }
+
+      // Fallback for synthetic archived parent containers or stale parent references:
+      // remove/add by matching subtask id across all parents.
+      if (mode === 'delete') {
+        state.taskGroups.forEach(group => {
+          group.tasks.forEach(task => {
+            if (!subtask.id) return;
+            if (removeTaskFromNestedSubtasks(task, subtask.id, state.taskCache)) {
+              state.groupCache[group.id] = group;
+            }
+          });
+        });
+      }
+
+      cleanupEmptyParentContainers(state.taskGroups, state.taskCache);
+      state.taskGroups.forEach(group => {
+        state.groupCache[group.id] = group;
+      });
     },
 
     setEditableSection: (state, action: PayloadAction<string | null>) => {

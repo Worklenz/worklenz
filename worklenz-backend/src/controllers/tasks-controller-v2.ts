@@ -17,6 +17,30 @@ import TasksControllerBase, {
   ITaskGroup,
 } from "./tasks-controller-base";
 
+const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return [];
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue);
+      if (Array.isArray(parsedValue)) {
+        return parsedValue.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {
+      return [trimmedValue];
+    }
+
+    return [];
+  }
+
+  return [];
+};
+
 export class TaskListGroup implements ITaskGroup {
   name: string;
   category_id: string | null;
@@ -290,6 +314,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
+      'task_key': 'CAST(t.task_no AS INTEGER)',
       'name': 't.name',
       'status': '(SELECT sort_order FROM task_statuses WHERE id = t.status_id)',
       'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',
@@ -447,14 +472,18 @@ export default class TasksControllerV2 extends TasksControllerBase {
         // Fallback: if parent_task is not provided, this shouldn't happen but handle gracefully
         subTasksFilter = "1 = 0"; // Return no results
       } else {
-        subTasksFilter = "parent_task_id IS NULL";
+        // In archived mode we need archived subtasks too, so they can be shown under parent containers.
+        subTasksFilter =
+          options.archived === "true"
+            ? "(parent_task_id IS NULL OR parent_task_id IS NOT NULL)"
+            : "parent_task_id IS NULL";
       }
     }
 
     const filters = [
       projectIdFilter,
       subTasksFilter,
-      isSubTasks ? "1 = 1" : archivedFilter,
+      archivedFilter,
       isSubTasks ? "1 = 1" : filterByAssignee,
       statusesResult.clause,
       priorityResult.clause,
@@ -599,6 +628,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
+             (SELECT CONCAT((SELECT key FROM projects WHERE id = p.project_id), '-', p.task_no)
+              FROM tasks p
+              WHERE p.id = t.parent_task_id) AS parent_task_key,
+             (SELECT archived FROM tasks WHERE id = t.parent_task_id) AS parent_task_archived,
+             (SELECT priority_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_priority_id,
+             (SELECT value
+              FROM task_priorities
+              WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_value,
+             (SELECT color_code
+              FROM task_priorities
+              WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_color,
              (SELECT COUNT(*)::INT
               FROM tasks subtask
               WHERE subtask.parent_task_id = t.id
@@ -1179,7 +1219,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         ) THEN TRUE -- If status is not in the "done" category, continue immediately (TRUE)
 
         WHEN EXISTS (
-            -- Check if any dependent tasks are not completed
+            -- Check if any direct dependent tasks are not completed
             SELECT 1
             FROM task_dependencies td
             LEFT JOIN public.tasks t ON t.id = td.related_task_id
@@ -1193,6 +1233,37 @@ export default class TasksControllerV2 extends TasksControllerBase {
                     )
               )
         ) THEN FALSE -- If there are incomplete dependent tasks, do not continue (FALSE)
+
+        WHEN EXISTS (
+            -- Check if any subtask dependencies (at any nesting level) are not completed
+            -- Uses recursive CTE to find all descendants (subtasks, nested subtasks, etc.)
+            WITH RECURSIVE task_descendants AS (
+                -- Base case: direct children (subtasks)
+                SELECT id, parent_task_id
+                FROM tasks
+                WHERE parent_task_id = $1 AND archived IS FALSE
+                
+                UNION ALL
+                
+                -- Recursive case: children of children (nested subtasks at any level)
+                SELECT child.id, child.parent_task_id
+                FROM tasks child
+                INNER JOIN task_descendants td ON child.parent_task_id = td.id
+                WHERE child.archived IS FALSE
+            )
+            SELECT 1
+            FROM task_descendants subtask
+            INNER JOIN task_dependencies dep ON dep.task_id = subtask.id
+            LEFT JOIN public.tasks dep_task ON dep_task.id = dep.related_task_id
+            WHERE dep_task.status_id NOT IN (
+                SELECT id
+                FROM task_statuses ts
+                WHERE dep_task.project_id = ts.project_id
+                  AND ts.category_id IN (
+                      SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                  )
+            )
+        ) THEN FALSE -- If there are incomplete subtask dependencies at any level, do not continue (FALSE)
 
         ELSE TRUE -- Continue if no other conditions block the process
     END AS can_continue;`;
@@ -1274,6 +1345,33 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const columnId = column.id;
     const fieldType = column.field_type;
 
+    const normalizedPeopleValue =
+      fieldType === "people" ? normalizePeopleCustomColumnValue(value) : null;
+
+    const isEmptyValue =
+      value === null ||
+      value === '' ||
+      (Array.isArray(value) && value.length === 0) ||
+      (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
+
+    if (isEmptyValue) {
+      await db.query(
+        `
+          DELETE FROM cc_column_values
+          WHERE task_id = $1 AND column_id = $2
+        `,
+        [taskId, columnId]
+      );
+
+      return res.status(200).send(
+        new ServerResponse(true, {
+          task_id: taskId,
+          column_key,
+          value: null,
+        })
+      );
+    }
+
     // Determine which value field to use based on the field_type
     let textValue = null;
     let numberValue = null;
@@ -1282,6 +1380,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     let jsonValue = null;
 
     switch (fieldType) {
+      case "text":
+        textValue = String(value);
+        break;
       case "number":
         numberValue = parseFloat(String(value));
         break;
@@ -1292,7 +1393,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         booleanValue = Boolean(value);
         break;
       case "people":
-        jsonValue = JSON.stringify(Array.isArray(value) ? value : [value]);
+        jsonValue = JSON.stringify(normalizedPeopleValue || []);
         break;
       default:
         textValue = String(value);
@@ -1567,6 +1668,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         id: task.id,
         task_key: task.task_key || "",
         title: task.name || "",
+        name: task.name || "",
         description: task.description || "",
         // Use dynamic status mapping from database
         status: statusCategoryMap[task.status] || task.status,
@@ -1607,6 +1709,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priorityColor: task.priority_color,
         // Add subtask count
         sub_tasks_count: task.sub_tasks_count || 0,
+        sub_tasks: task.sub_tasks || [],
+        show_sub_tasks: !!task.show_sub_tasks,
+        is_sub_task: !!task.is_sub_task,
+        parent_task_id: task.parent_task_id || null,
+        parent_task_name: task.parent_task_name || null,
+        parent_task_key: task.parent_task_key || null,
+        parent_task_archived: task.parent_task_archived ?? null,
+        parent_task_priority_id: task.parent_task_priority_id || null,
+        parent_task_priority_value: task.parent_task_priority_value ?? null,
+        parent_task_priority_color: task.parent_task_priority_color || null,
         // Add flag for auto-expansion when filters match descendants
         has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
@@ -1618,6 +1730,81 @@ export default class TasksControllerV2 extends TasksControllerBase {
         reporter: task.reporter || null,
       };
     });
+
+    const isArchivedMode = req.query.archived === "true";
+    if (isArchivedMode && !isSubTasks) {
+      const subTasksByParent = new Map<string, any[]>();
+      const topLevelTasks: any[] = [];
+      // Track all real task IDs present in the archived payload (top-level + nested).
+      // This prevents creating duplicate synthetic parent containers when a real parent
+      // task exists but is not a top-level row.
+      const existingRealTaskIds = new Set<string>();
+
+      for (const task of transformedTasks) {
+        if (task.id) {
+          existingRealTaskIds.add(String(task.id));
+        }
+        if (task.parent_task_id) {
+          const parentId = String(task.parent_task_id);
+          const list = subTasksByParent.get(parentId) || [];
+          list.push(task);
+          subTasksByParent.set(parentId, list);
+        } else {
+          topLevelTasks.push(task);
+        }
+      }
+
+      for (const [parentId, subtasks] of subTasksByParent.entries()) {
+        subtasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const existingParent = topLevelTasks.find((task) => String(task.id) === parentId);
+        if (existingParent) {
+          existingParent.show_sub_tasks = true;
+          existingParent.sub_tasks = subtasks;
+          existingParent.sub_tasks_count = subtasks.length;
+          continue;
+        }
+
+        // Parent exists in the archived dataset as a real task (likely nested under another
+        // archived parent). Skip synthetic container to avoid duplicated standalone rows.
+        if (existingRealTaskIds.has(parentId)) {
+          continue;
+        }
+
+        const [firstSubtask] = subtasks;
+        const syntheticParent = {
+          ...firstSubtask,
+          id: `archived-parent-container-${parentId}`,
+          parent_task_container_id: parentId,
+          task_key: firstSubtask.parent_task_key || firstSubtask.task_key || "",
+          title: firstSubtask.parent_task_name || "Parent Task",
+          name: firstSubtask.parent_task_name || "Parent Task",
+          is_sub_task: false,
+          archived: false,
+          is_parent_container: true,
+          parent_task_not_archived: true,
+          // Synthetic rows should reflect the real parent task's priority when available.
+          priority:
+            priorityMap[firstSubtask.parent_task_priority_value?.toString()] ||
+            firstSubtask.priority ||
+            "medium",
+          originalPriorityId: firstSubtask.parent_task_priority_id || null,
+          priorityColor: firstSubtask.parent_task_priority_color || null,
+          priority_color: firstSubtask.parent_task_priority_color || null,
+          priority_value: firstSubtask.parent_task_priority_value ?? null,
+          show_sub_tasks: true,
+          sub_tasks: subtasks,
+          sub_tasks_count: subtasks.length,
+          order: Math.max((firstSubtask.order || 0) - 0.001, 0),
+        };
+
+        topLevelTasks.push(syntheticParent);
+      }
+
+      topLevelTasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+      transformedTasks.length = 0;
+      transformedTasks.push(...topLevelTasks);
+    }
 
 
     const groupedResponse: Record<string, any> = {};
