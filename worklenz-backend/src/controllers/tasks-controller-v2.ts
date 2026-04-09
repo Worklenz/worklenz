@@ -632,6 +632,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
               FROM tasks p
               WHERE p.id = t.parent_task_id) AS parent_task_key,
              (SELECT archived FROM tasks WHERE id = t.parent_task_id) AS parent_task_archived,
+             (SELECT status_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_status_id,
+             (SELECT LOWER(REPLACE(name, ' ', '_')) FROM task_statuses WHERE id = (SELECT status_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_status_name,
              (SELECT priority_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_priority_id,
              (SELECT value
               FROM task_priorities
@@ -1716,6 +1718,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         parent_task_name: task.parent_task_name || null,
         parent_task_key: task.parent_task_key || null,
         parent_task_archived: task.parent_task_archived ?? null,
+        parent_task_status_id: task.parent_task_status_id || null,
+        parent_task_status_name: task.parent_task_status_name || null,
         parent_task_priority_id: task.parent_task_priority_id || null,
         parent_task_priority_value: task.parent_task_priority_value ?? null,
         parent_task_priority_color: task.parent_task_priority_color || null,
@@ -1783,6 +1787,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
           archived: false,
           is_parent_container: true,
           parent_task_not_archived: true,
+          // Synthetic rows should reflect the real parent task's status when available.
+          // Without this override the spread from firstSubtask would carry the subtask's
+          // status (e.g. "Doing") onto the parent container row.
+          status: firstSubtask.parent_task_status_name
+            || (firstSubtask.parent_task_status_id
+              ? statusCategoryMap[firstSubtask.parent_task_status_id] || firstSubtask.parent_task_status_id
+              : firstSubtask.status),
           // Synthetic rows should reflect the real parent task's priority when available.
           priority:
             priorityMap[firstSubtask.parent_task_priority_value?.toString()] ||
