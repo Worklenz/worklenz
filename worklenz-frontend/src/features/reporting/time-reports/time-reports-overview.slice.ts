@@ -305,6 +305,7 @@ const timeReportsOverviewSlice = createSlice({
         selected: true,
         avatar_url: member.avatar_url,
         email: member.email,
+          color_code: member.color_code,
       }));
       state.members = members;
       state.loadingMembers = false;

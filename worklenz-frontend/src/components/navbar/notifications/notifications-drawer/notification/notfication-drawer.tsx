@@ -200,15 +200,27 @@ const NotificationDrawer = () => {
       setIsLoading(true);
       try {
         const currentSession = getUserSession();
-        if (currentSession?.team_id && notification.team_id !== currentSession.team_id) {
-          await handleVerifyAuth();
-        }
+        
+        // Build the target URL
+        let targetUrl = notification.url;
         if (notification.project && notification.task_id) {
-          navigate(
-            `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`
-          );
-        } else if (notification.project) {
-          navigate(`${notification.url}`);
+          targetUrl = `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`;
+        }
+        
+        // If notification is from a different team, switch teams first
+        if (currentSession?.team_id && notification.team_id && notification.team_id !== currentSession.team_id) {
+          // Switch to the notification's team
+          await teamsApiService.setActiveTeam(notification.team_id);
+          
+          // Refresh authentication to get updated session with new team
+          await handleVerifyAuth();
+          
+          // Use window.location.href to force full page reload with new session
+          // This ensures guards re-evaluate with fresh session data
+          window.location.href = targetUrl;
+        } else {
+          // Same team - use React Router navigation
+          navigate(targetUrl);
         }
       } catch (error) {
         console.error('Error navigating to URL:', error);

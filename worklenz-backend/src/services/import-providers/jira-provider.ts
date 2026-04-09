@@ -419,6 +419,9 @@ export default class JiraProvider implements ImportProvider {
         comment?.author?.displayName ||
         comment?.author?.emailAddress ||
         "Unknown",
+      authorDisplayName: comment?.author?.displayName || null,
+      authorEmail: comment?.author?.emailAddress || null,
+      authorAccountId: comment?.author?.accountId || null,
       created: comment?.created || null,
     }));
     const commentLines = comments

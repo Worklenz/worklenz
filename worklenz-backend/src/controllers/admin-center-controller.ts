@@ -590,42 +590,95 @@ export default class AdminCenterController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, obj || {}));
   }
 
-  @HandleExceptions()
+   @HandleExceptions()
   public static async updateTeam(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { name, teamMembers } = req.body;
-
+ 
     try {
-      // Update team name
+      // 1. Update team name
       const updateNameQuery = `UPDATE teams SET name = $1 WHERE id = $2 RETURNING id;`;
       const nameResult = await db.query(updateNameQuery, [name, id]);
-
+ 
       if (!nameResult.rows.length) {
         return res
           .status(404)
           .send(new ServerResponse(false, null, "Team not found"));
       }
-
-      // Update team member roles if provided
+ 
+      // 2. Update team member roles and names
       if (teamMembers?.length) {
-        // Use Promise.all to handle all role updates concurrently
         await Promise.all(
-          teamMembers.map(
-            async (member: { role_name: string; user_id: string }) => {
-              const roleQuery = `
-            UPDATE team_members 
-            SET role_id = (SELECT id FROM roles WHERE roles.team_id = $1 AND name = $2)
-            WHERE user_id = $3 AND team_id = $1
-            RETURNING id;`;
-              await db.query(roleQuery, [id, member.role_name, member.user_id]);
+          teamMembers.map(async (member: {
+            id: string;
+            role_name: string;
+            user_id: string | null;
+            name: string;
+            pending_invitation?: boolean;
+          }) => {
+ 
+            // Always resolve user_id fresh from the DB using the team_member id.
+            // Never trust the client-supplied user_id — it may be null or stale
+            // because getTeamDetails selects tm.user_id which can be null for
+            // pending members whose row exists only in email_invitations.
+            const resolveQ = `
+              SELECT tm.user_id
+              FROM team_members tm
+              WHERE tm.id = $1
+                AND tm.team_id = $2;
+            `;
+            const resolveResult = await db.query(resolveQ, [member.id, id]);
+ 
+            if (!resolveResult.rows.length) return; // not in this team — skip
+ 
+            // eslint-disable-next-line prefer-destructuring
+            const { user_id } = resolveResult.rows[0];
+ 
+            // 2a. Update role (skip Owner — their role must never change here)
+            if (member.role_name && member.role_name !== "Owner") {
+              await db.query(
+                `UPDATE team_members
+                 SET role_id = (
+                   SELECT id FROM roles
+                   WHERE roles.team_id = $1
+                     AND name = $2
+                 )
+                 WHERE id = $3
+                   AND team_id = $1;`,
+                [id, member.role_name, member.id]
+              );
             }
-          )
+ 
+            // 2b. Update name — mirrors COALESCE(u.name, email_invitations.name)
+            //     that team_member_info_view uses, so the GET after save returns
+            //     the correct updated name immediately.
+            if (member.name?.trim()) {
+              const trimmedName = member.name.trim();
+ 
+              if (user_id) {
+                // Active member — users.name is the COALESCE first branch
+                await db.query(
+                  `UPDATE users SET name = $1 WHERE id = $2;`,
+                  [trimmedName, user_id]
+                );
+              } else {
+                // Pending invitation — email_invitations.name is the fallback branch
+                await db.query(
+                  `UPDATE email_invitations
+                   SET name = $1
+                   WHERE team_member_id = $2
+                     AND team_id = $3;`,
+                  [trimmedName, member.id, id]
+                );
+              }
+            }
+          })
         );
       }
-
+ 
       return res
         .status(200)
         .send(new ServerResponse(true, null, "Team updated successfully"));
@@ -636,7 +689,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Failed to update team"));
     }
   }
-
+ 
   @HandleExceptions()
   public static async getBillingInfo(
     req: IWorkLenzRequest,

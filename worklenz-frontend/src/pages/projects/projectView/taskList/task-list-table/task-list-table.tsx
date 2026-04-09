@@ -1548,7 +1548,18 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
     () => `worklenz.taskList.columnOrder.${project?.id || 'default'}.${tableId}`,
     [project?.id, tableId]
   );
-  const pinnedColumns = useMemo(() => columnList.filter(column => column.pinned), [columnList]);
+  const pinnedColumns = useMemo(() => {
+    const uniquePinnedColumns = columnList
+      .filter(column => column.pinned)
+      .reduce((map, column) => {
+        const identity = column.id || column.key || '';
+        if (!identity) return map;
+        map.set(identity, column);
+        return map;
+      }, new Map<string, (typeof columnList)[number]>());
+
+    return Array.from(uniquePinnedColumns.values());
+  }, [columnList]);
 
   const [columnOrder, setColumnOrder] = useState<string[]>(() => {
     try {

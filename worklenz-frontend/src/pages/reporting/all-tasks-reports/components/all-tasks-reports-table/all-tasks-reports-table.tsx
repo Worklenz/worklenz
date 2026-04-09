@@ -369,6 +369,19 @@ const AllTasksReportsTable = () => {
         sorter: true,
         render: value => <Typography.Text style={{ fontSize: 12 }}>{value || '0'}</Typography.Text>,
       },
+      {
+        key: 'client',
+        dataIndex: 'client_name',
+        title: <CustomTableTitle title={t('clientColumn', { defaultValue: 'Client' })} />,
+        width: 120,
+        ellipsis: true,
+        sorter: true,
+        render: (value: string) => (
+          <Typography.Text ellipsis={{ tooltip: value }} style={{ maxWidth: 100, fontSize: 12 }}>
+            {value || '-'}
+          </Typography.Text>
+        ),
+      },
     ],
     [t]
   );

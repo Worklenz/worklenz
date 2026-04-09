@@ -39,6 +39,7 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDark
 
   const sortFieldsList = useMemo(() => {
     const allFields = [
+      { label: t('keyText'), key: 'task_key' },
       { label: t('taskText', { defaultValue: 'Task' }), key: 'name' },
       { label: t('statusText', { defaultValue: 'Status' }), key: 'status' },
       { label: t('priorityText', { defaultValue: 'Priority' }), key: 'priority' },

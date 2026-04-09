@@ -34,6 +34,9 @@ import { canManageUserRole, getAvailableRoleOptions } from '@/utils/role-permiss
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
+  // Pass the current name from the table row so the drawer title shows
+  // the correct (already-updated) name instantly, without waiting for getById
+  selectedMemberName?: string | null;
   onRoleUpdate?: (memberId: string, newRoleName: string) => void;
   onJobTitleUpdate?: (memberId: string, newJobTitle: string) => void;
   initialRoleName?: string;
@@ -41,6 +44,7 @@ type UpdateMemberDrawerProps = {
 
 const UpdateMemberDrawer = ({
   selectedMemberId,
+  selectedMemberName,
   onRoleUpdate,
   onJobTitleUpdate,
   initialRoleName,
@@ -61,6 +65,11 @@ const UpdateMemberDrawer = ({
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
+  // Use the name from the parent table row while the drawer is loading its own fetch.
+  // Once getById completes, teamMember.name takes over (which will be the same value).
+  // This prevents the flash: updated name → old name → updated name.
+  const displayName = teamMember?.name ?? selectedMemberName ?? '';
+
   const isOwnAccount = useMemo(() => {
     return auth.getCurrentSession()?.email === teamMember?.email;
   }, [auth, teamMember?.email]);
@@ -73,7 +82,6 @@ const UpdateMemberDrawer = ({
     return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
   }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin, teamMember?.role_name]);
 
-  // Allow Owners to edit their own role (but not other roles)
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount && currentUser?.owner;
   }, [isOwnAccount, currentUser?.owner]);
@@ -106,7 +114,6 @@ const UpdateMemberDrawer = ({
       setLoadingTeamLeads(true);
       const res = await teamMembersApiService.get(1, 1000, 'name', 'asc', '', true);
       if (res.done) {
-        // Filter for Team Leads only and exclude the member being assigned
         const leads =
           res.body.data?.filter(m => m.id !== selectedMemberId && m.role_name === 'Team Lead') ||
           [];
@@ -128,9 +135,7 @@ const UpdateMemberDrawer = ({
       if (res.done) {
         setTeamMember(res.body);
 
-        // Determine access level based on role_name (with fallback to initialRoleName)
         let accessLevel = 'member';
-
         const roleNameToUse = res.body.role_name || initialRoleName;
         const roleName = (roleNameToUse || '').toLowerCase().trim();
 
@@ -144,7 +149,6 @@ const UpdateMemberDrawer = ({
           accessLevel = 'member';
         }
 
-        // Set form values
         setTimeout(() => {
           form.setFieldsValue({
             jobTitle: res.body?.job_title,
@@ -162,38 +166,36 @@ const UpdateMemberDrawer = ({
 
   const handleFormSubmit = async (values: any) => {
     if (!selectedMemberId || !teamMember?.email) return;
+    const accessValue = form.getFieldValue('access') ?? values.access;
 
     try {
       const body: ITeamMemberCreateRequest = {
         job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
-        is_admin: values.access === 'admin' || values.access === 'owner',
+        is_admin: accessValue === 'admin' || accessValue === 'owner',
         role_name:
-          values.access === 'owner'
+          accessValue === 'owner'
             ? ROLE_NAMES.OWNER
-            : values.access === 'team-lead'
+            : accessValue === 'team-lead'
               ? ROLE_NAMES.TEAM_LEAD
-              : values.access === 'admin'
+              : accessValue === 'admin'
                 ? ROLE_NAMES.ADMIN
                 : ROLE_NAMES.MEMBER,
       };
 
       const res = await teamMembersApiService.update(selectedMemberId, body);
       if (res.done) {
-        // Handle manager assignment if changed
         const currentManagerId = teamMember?.reports_to_member_id;
         const newManagerId = values.manager;
 
         if (currentManagerId !== newManagerId) {
           if (newManagerId) {
-            // Assign new manager
             await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
           } else if (currentManagerId) {
-            // Remove manager assignment
             await teamManagementApiService.removeManagerAssignment(selectedMemberId);
           }
         }
-        const selectedJobTitleId = form.getFieldValue('jobTitle'); //  before reset
+        const selectedJobTitleId = form.getFieldValue('jobTitle');
         const resolvedJobTitle =
           jobTitles.find(j => j.id === selectedJobTitleId)?.name ?? selectedJobTitleId ?? '';
 
@@ -201,14 +203,12 @@ const UpdateMemberDrawer = ({
         setSelectedJobTitle(null);
         dispatch(toggleUpdateMemberDrawer());
 
-        // Update role_name in parent component
         const newRoleName =
-
-          values.access === 'owner'
+          accessValue === 'owner'
             ? 'Owner'
-            : values.access === 'team-lead'
+            : accessValue === 'team-lead'
               ? 'Team Lead'
-              : values.access === 'admin'
+              : accessValue === 'admin'
                 ? 'Admin'
                 : 'Member';
         onRoleUpdate?.(selectedMemberId, newRoleName);
@@ -253,7 +253,6 @@ const UpdateMemberDrawer = ({
     }
   };
 
-  // Effect to update form when teamMember changes
   useEffect(() => {
     if (teamMember && isDrawerOpen) {
       const roleNameToUse = teamMember.role_name || initialRoleName;
@@ -276,8 +275,6 @@ const UpdateMemberDrawer = ({
     }
   }, [teamMember, isDrawerOpen, initialRoleName, form]);
 
-  // Determine if member can be assigned to a manager
-  // Only regular Members can be assigned to Team Leads
   const canBeAssignedToManager = useMemo(() => {
     const roleName = teamMember?.role_name || '';
     return !['Owner', 'Admin', 'Team Lead'].includes(roleName);
@@ -287,7 +284,7 @@ const UpdateMemberDrawer = ({
     <Drawer
       title={
         <Flex gap={8} align="center">
-          <Avatar src={teamMember?.avatar_url}>{teamMember?.name?.charAt(0).toUpperCase()}</Avatar>
+          <Avatar src={teamMember?.avatar_url}>{displayName?.charAt(0).toUpperCase()}</Avatar>
           <Flex vertical gap={4}>
             <Typography.Text
               style={{
@@ -296,7 +293,9 @@ const UpdateMemberDrawer = ({
                 textTransform: 'capitalize',
               }}
             >
-              {teamMember?.name}
+              {/* Use displayName so the correct (updated) name shows immediately
+                  while getById is still in flight, preventing the old-name flash */}
+              {displayName}
             </Typography.Text>
             <Typography.Text
               type="secondary"
@@ -365,7 +364,6 @@ const UpdateMemberDrawer = ({
           />
         </Form.Item>
 
-        {/* Manager Assignment - Only show for Members */}
         {canBeAssignedToManager && (
           <Form.Item
             label={
@@ -426,23 +424,13 @@ const UpdateMemberDrawer = ({
               {t('resendInvitationButton')}
             </Button>
             <Flex vertical style={{ marginBlockStart: 8 }}>
-              <Typography.Text
-                style={{
-                  fontSize: 12,
-                  color: colors.lightGray,
-                }}
-              >
+              <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
                 {t('addedText')}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
                   {calculateTimeDifference(teamMember?.created_at || '')}
                 </Tooltip>
               </Typography.Text>
-              <Typography.Text
-                style={{
-                  fontSize: 12,
-                  color: colors.lightGray,
-                }}
-              >
+              <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
                 {t('updatedText')}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
                   {calculateTimeDifference(teamMember?.updated_at || '')}

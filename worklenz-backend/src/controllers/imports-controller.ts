@@ -637,9 +637,19 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      await ImportsService.commit(job.id);
+
+      // Run the commit pipeline asynchronously to avoid request timeouts for large imports.
+      // Progress can be tracked via GET /api/v1/imports/:jobId/progress.
+      if (job.status !== "running") {
+        // Optimistically mark as running so the UI can reflect "in progress" immediately.
+        await ImportsService.updateJobStatus(job.id, "running");
+        void ImportsService.commit(job.id).catch(() => {
+          // Errors are persisted by the service (status + logs); avoid unhandled rejections.
+        });
+      }
+
       const data = await ImportsService.progress(job.id);
-      return res.status(200).send(new ServerResponse(true, data));
+      return res.status(202).send(new ServerResponse(true, data));
     },
   );
 

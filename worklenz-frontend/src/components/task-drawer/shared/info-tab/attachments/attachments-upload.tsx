@@ -67,7 +67,7 @@ const AttachmentsUpload = ({
 
   return (
     <div
-      className={`ant-upload-list ant-upload-list-picture-card ${isDragOver ? 'focused' : ''}`}
+      className={`task-drawer-attachments-upload ant-upload-list ant-upload-list-picture-card ${isDragOver ? 'focused' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

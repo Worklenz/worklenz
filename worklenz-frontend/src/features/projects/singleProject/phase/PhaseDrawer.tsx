@@ -179,9 +179,11 @@ const PhaseDrawer = () => {
           onPressEnter={handlePhaseNameBlur}
           onBlur={handlePhaseNameBlur}
           disabled={isSaving}
+          maxLength={50}
+          showCount
+          style={{ width: '100%' }}
         />
       </Flex>
-
       <Divider style={{ marginBlock: 24 }} />
 
       <Flex vertical gap={16}>

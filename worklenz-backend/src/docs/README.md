@@ -25,7 +25,7 @@ This guide explains how to access, update, and maintain the Worklenz API documen
 
 2. Open your browser and navigate to:
    ```
-   http://localhost:5000/api-docs
+   http://localhost:3000/api-docs
    ```
 
 3. You should see the interactive Swagger UI interface with all documented endpoints.
@@ -108,7 +108,7 @@ tasksApiRouter.put("/archive/:id",
 ### 3. Validate Using Swagger UI
 
 1. Reload the development server
-2. Open http://localhost:5000/api-docs
+2. Open http://localhost:3000/api-docs
 3. Find your new endpoint
 4. Click "Try it out"
 5. Test the endpoint with sample data
@@ -375,7 +375,7 @@ npm run validate-docs
 # Swagger UI will auto-reload with new changes
 
 # 4. Test in Swagger UI
-# Open http://localhost:5000/api-docs
+# Open http://localhost:3000/api-docs
 # Verify the endpoint appears correctly
 # Test with "Try it out"
 

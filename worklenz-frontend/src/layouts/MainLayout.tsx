@@ -12,6 +12,7 @@ import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plan
 // import UpgradePlansLKR from '@/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
+import { ImportProgressNotifier } from '@/components/imports/ImportProgressNotifier';
 
 const MainLayout = memo(() => {
   const dispatch = useAppDispatch();
@@ -57,6 +58,7 @@ const MainLayout = memo(() => {
 
   return (
     <>
+      <ImportProgressNotifier />
       <Layout className="min-h-screen">
         {/* Trial expiration alert banner */}
         <TrialExpirationAlert />

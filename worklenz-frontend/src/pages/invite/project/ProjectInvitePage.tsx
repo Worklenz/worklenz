@@ -75,6 +75,14 @@ const ProjectInvitePage: React.FC = () => {
         setErrorMessage(response.message || 'Invalid invitation link');
       }
     } catch (error: any) {
+      // Check if this is a 401 error (not authenticated)
+      if (error?.response?.status === 401) {
+        // The API client will handle the redirect to login
+        // Just keep showing loading state
+        console.log('[ProjectInvite] 401 error - redirecting to login');
+        return;
+      }
+      
       setStatus('error');
       setErrorMessage(error?.response?.data?.message || 'Failed to validate invitation');
     }
@@ -303,9 +311,9 @@ const ProjectInvitePage: React.FC = () => {
       case 'error':
         return (
           <Result
-            status="error"
-            title={t('errorNotLoggedIn') || errorMessage}
-            subTitle={errorMessage}
+            status="warning"
+            title={errorMessage}
+            subTitle={t('invalidInvitationSubtitle')}
             extra={[
               <Button key="home" onClick={() => navigate('/')}>
                 {t('goToHome')}

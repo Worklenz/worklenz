@@ -1035,10 +1035,19 @@ const taskManagementSlice = createSlice({
     },
     // Add column-related reducers
     toggleColumnVisibility: (state, action: PayloadAction<string>) => {
-      const column = state.columns.find(col => col.key === action.payload);
-      if (column) {
-        column.pinned = !column.pinned;
-      }
+      const targetKey = action.payload;
+
+      state.columns.forEach(column => {
+        if (column.key === targetKey) {
+          column.pinned = !column.pinned;
+        }
+      });
+
+      state.customColumns.forEach(column => {
+        if (column.key === targetKey) {
+          column.pinned = !column.pinned;
+        }
+      });
     },
     addCustomColumn: (state, action: PayloadAction<ITaskListColumn>) => {
       state.customColumns.push(action.payload);
@@ -1293,20 +1302,29 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchCustomColumns.fulfilled, (state, action) => {
         state.loadingColumns = false;
-        state.customColumns = action.payload;
-        // Add custom columns to the columns array
-        const customColumnsForVisibility = action.payload;
-        state.columns = [...state.columns, ...customColumnsForVisibility];
+        const incomingCustomColumns = Array.isArray(action.payload) ? action.payload : [];
+        state.customColumns = incomingCustomColumns;
+
+        // Replace custom part in state.columns to avoid duplicate merges.
+        const standardColumns = state.columns.filter(col => !col.custom_column);
+        state.columns = [...standardColumns, ...incomingCustomColumns];
       })
       .addCase(fetchCustomColumns.rejected, (state, action) => {
         state.loadingColumns = false;
         state.error = action.error.message || 'Failed to fetch custom columns';
       })
       .addCase(updateColumnVisibility.fulfilled, (state, action) => {
-        const column = state.columns.find(col => col.key === action.payload.key);
-        if (column) {
-          column.pinned = action.payload.pinned;
-        }
+        state.columns.forEach(column => {
+          if (column.key === action.payload.key) {
+            column.pinned = action.payload.pinned;
+          }
+        });
+
+        state.customColumns.forEach(column => {
+          if (column.key === action.payload.key) {
+            column.pinned = action.payload.pinned;
+          }
+        });
       })
       .addCase(updateColumnVisibility.rejected, (state, action) => {
         state.error = action.payload as string;
