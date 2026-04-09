@@ -424,16 +424,22 @@ const projectReportsSlice = createSlice({
         state.loadingTeams = false;
       })
       .addCase(fetchProjectData.pending, state => {
-        state.isLoading = true;
+        if (state.viewMode === 'table') {
+          state.isLoading = true;
+        }
         state.error = null;
       })
       .addCase(fetchProjectData.fulfilled, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'table') {
+          state.isLoading = false;
+        }
         state.total = action.payload.total || 0;
         state.projectList = action.payload.projects || [];
       })
       .addCase(fetchProjectData.rejected, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'table') {
+          state.isLoading = false;
+        }
         state.error = action.error.message || 'Failed to fetch project data';
       })
       .addCase(fetchMoreProjectsForGroupedView.pending, state => {
@@ -471,16 +477,22 @@ const projectReportsSlice = createSlice({
         }
       })
       .addCase(fetchGroupedProjects.pending, state => {
-        state.isLoading = true;
+        if (state.viewMode === 'grouped') {
+          state.isLoading = true;
+        }
         state.error = null;
       })
       .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'grouped') {
+          state.isLoading = false;
+        }
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
       })
       .addCase(fetchGroupedProjects.rejected, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'grouped') {
+          state.isLoading = false;
+        }
         state.error = action.error.message || 'Failed to fetch grouped projects';
       });
   },
