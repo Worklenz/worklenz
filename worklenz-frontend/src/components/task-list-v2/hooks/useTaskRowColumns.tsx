@@ -19,6 +19,7 @@ import {
 } from '../components/TaskRowColumns';
 import { TitleColumn } from '../components/TitleColumn';
 import { DatePickerColumn } from '../components/DatePickerColumn';
+import TaskListDueTimeCell from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-cells/task-list-due-time-cell/task-list-due-time-cell';
 
 interface UseTaskRowColumnsProps {
   task: Task;
@@ -223,6 +224,16 @@ export const useTaskRowColumns = ({
               />
             );
 
+          case 'dueTime':
+            return (
+              <div
+                className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+                style={{ width }}
+              >
+                <TaskListDueTimeCell />
+              </div>
+            );
+
           case 'progress':
             return <ProgressColumn width={width} task={task} />;
 
@@ -309,11 +320,7 @@ export const useTaskRowColumns = ({
       }
 
       return (
-        <div
-          data-column-id={columnId}
-          style={{ width: `var(--col-width-${columnId})`, flexShrink: 0 }}
-          className="border-r border-gray-200 dark:border-gray-700 h-full flex items-center overflow-hidden"
-        >
+        <div data-column-id={columnId} style={{ width: `var(--col-width-${columnId})` }}>
           {content}
         </div>
       );
