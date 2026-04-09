@@ -309,7 +309,11 @@ export const useTaskRowColumns = ({
       }
 
       return (
-        <div data-column-id={columnId} style={{ width: `var(--col-width-${columnId})` }}>
+        <div
+          data-column-id={columnId}
+          style={{ width: `var(--col-width-${columnId})`, flexShrink: 0 }}
+          className="border-r border-gray-200 dark:border-gray-700 h-full flex items-center overflow-hidden"
+        >
           {content}
         </div>
       );
