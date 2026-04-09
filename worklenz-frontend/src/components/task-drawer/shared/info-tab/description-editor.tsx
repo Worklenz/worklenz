@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ComponentType, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -7,8 +7,11 @@ import { SocketEvents } from '@/shared/socket-events';
 import 'react-quill/dist/quill.snow.css';
 import './description-editor.css';
 
-const LazyQuillEditor = lazy(() => import('react-quill'));
-
+const LazyQuillEditor = lazy(() =>
+  import('react-quill').then(module => ({
+    default: module.default as unknown as ComponentType<any>,
+  }))
+);
 interface DescriptionEditorProps {
   description: string | null;
   taskId: string;
@@ -136,40 +139,39 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
             </span>
           </div>
         </div>
-      ) : (
-        <div
-          className={`description-editor-preview ${isHovered ? 'is-hovered' : ''}`}
-          onClick={event => {
-            const target = event.target as HTMLElement;
-            if (target.tagName === 'A' || target.closest('a')) {
-              event.preventDefault();
-              event.stopPropagation();
-              const link = target.tagName === 'A' ? target : target.closest('a');
-              if (link) {
-                const href = (link as HTMLAnchorElement).href;
-                if (href) window.open(href, '_blank', 'noopener,noreferrer');
-              }
-              return;
-            }
-            handleOpenEditor();
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          {content ? (
-            <div
-              className="description-content"
-              dangerouslySetInnerHTML={{
-                __html: processMentions(DOMPurify.sanitize(content)),
-              }}
-            />
-          ) : (
-            <div className="description-placeholder">
-              {t('description.clickToAdd', { defaultValue: 'Click to add description...' })}
-            </div>
-          )}
-        </div>
-      )}
+      ) : <div
+  className={`description-editor-preview ${isHovered ? 'is-hovered' : ''}`}
+  onClick={event => {
+    const target = event.target as HTMLElement;
+    if (target.tagName === 'A' || target.closest('a')) {
+      event.preventDefault();
+      event.stopPropagation();
+      const link = target.tagName === 'A' ? target : target.closest('a');
+      if (link) {
+        const href = (link as HTMLAnchorElement).href;
+        if (href) window.open(href, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+    handleOpenEditor();
+  }}
+  onMouseEnter={() => setIsHovered(true)}
+  onMouseLeave={() => setIsHovered(false)}
+>
+  {(!content || content === '<p><br></p>') && (
+    <div className="description-placeholder">
+      {t('description.clickToAdd', { defaultValue: 'Click to add description...' })}
+    </div>
+  )}
+
+  {/* Render actual content if exists */}
+  {content && (
+    <div
+      className="description-content"
+      dangerouslySetInnerHTML={{ __html: processMentions(content) }}
+    />
+  )}
+</div>}
     </div>
   );
 };

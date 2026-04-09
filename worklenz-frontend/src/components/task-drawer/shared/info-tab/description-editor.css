@@ -18,11 +18,11 @@
 }
 
 .description-editor-shell .description-editor-preview {
-  min-height: 44px;
-  padding: 8px 12px;
+  min-height: 120px;
+  padding:12px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  cursor: pointer;
+  cursor: text;
   transition: all 0.2s ease;
   background-color: #ffffff;
   color: #000000;
@@ -63,14 +63,19 @@
   border: 1px solid #d9d9d9;
   border-radius: 0 0 8px 8px;
   min-height: 200px;
+  max-height:400px;
+  overflow-y:auto;
   background: #ffffff;
   color: #141414;
 }
 
 .description-editor-shell .ql-editor {
   min-height: 160px;
+  max-height:none;
+  overflow-y:visible;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  padding:12px;
 }
 
 .description-editor-shell .description-editor-footer {
