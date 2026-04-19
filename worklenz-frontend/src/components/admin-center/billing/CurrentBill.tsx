@@ -26,6 +26,8 @@ import {
   UserType,
 } from '@/types/mixpanel-events.types';
 
+const PLAN_TRIAL_SUBSCRIPTION_TYPES = ['TRIAL', 'BUSINESS_TRIAL', 'ENTERPRISE_TRIAL', 'PLAN_TRIAL'];
+
 const CurrentBill: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('admin-center/current-bill');
@@ -48,9 +50,10 @@ const CurrentBill: React.FC = React.memo(() => {
     const getUserType = (): UserType => {
       const planName = billingInfo?.plan_name?.toLowerCase() || '';
       const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
+      const normalizedSubscriptionType = String(currentSession?.subscription_type || '').toUpperCase();
 
-      // First check if user is on trial - trial users should never be considered AppSumo users
-      if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
+      // Trial users should never be considered AppSumo users.
+      if (PLAN_TRIAL_SUBSCRIPTION_TYPES.includes(normalizedSubscriptionType)) return 'trial';
 
       if (
         planName.includes('appsumo') ||
