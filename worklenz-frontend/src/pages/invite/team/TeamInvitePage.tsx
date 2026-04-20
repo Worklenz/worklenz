@@ -96,7 +96,7 @@ const TeamInvitePage: React.FC = () => {
 
       if (response.done) {
         setStatus('success');
-        message.success(t('successMessage'));
+        // message.success(t('successMessage'));
 
         // Clear the stored invitation context since we successfully joined
         invitationRedirectService.clearPendingInvitation();
