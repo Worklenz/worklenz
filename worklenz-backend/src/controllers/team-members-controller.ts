@@ -1843,11 +1843,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     try {
-      // Check if an active link already exists
+      // Check if an active and non-expired link already exists for this team
       const checkQuery = `
         SELECT id, token, expires_at, created_at, status
         FROM team_invitation_links
-        WHERE team_id = $1 AND status = 'active'
+        WHERE team_id = $1 AND status = 'active' AND expires_at > NOW()
         ORDER BY created_at DESC
         LIMIT 1
       `;
@@ -1857,15 +1857,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
       let message = "Team invitation link generated successfully";
 
       if (checkResult.rows.length > 0) {
-        // Active link exists, return it
+        // Active and non-expired link exists, return it
         invitationLink = checkResult.rows[0];
         message = "Active invitation link already exists";
       } else {
-        // Check if there's an inactive link we can reactivate
+        // Check if there's an inactive or expired link we can reactivate
         const inactiveQuery = `
           SELECT id, token, expires_at, created_at, status
           FROM team_invitation_links
-          WHERE team_id = $1 AND status != 'active'
+          WHERE team_id = $1 AND (status != 'active' OR expires_at <= NOW())
           ORDER BY created_at DESC
           LIMIT 1
         `;

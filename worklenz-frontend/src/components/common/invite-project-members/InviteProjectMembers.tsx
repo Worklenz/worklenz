@@ -4,11 +4,10 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
-import { CopyOutlined, CheckOutlined, ShareAltOutlined } from '@ant-design/icons';
+import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
-import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service'; // ✅ NEW IMPORT
-import { themeWiseColor } from '@/utils/themeWiseColor';
+import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 
 interface FormValues {
   emails: string[];
@@ -24,7 +23,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
   // Email invitation states
   const [loading, setLoading] = useState(false);
 
-  // ✅ NEW: Team member options for the dropdown
+  // Team member options for the dropdown
   const [teamMemberOptions, setTeamMemberOptions] = useState<{ value: string; label: string }[]>(
     []
   );
@@ -40,42 +39,42 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
 
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.projectMemberReducer.isDrawerOpen);
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
 
-  // ✅ UPDATED: Also fetch team members when modal opens
+  // Fetch team members when modal opens
   useEffect(() => {
     if (isDrawerOpen && projectId) {
+      fetchTeamMembers();
       checkExistingInvitationLink();
-      fetchTeamMembers(); // ✅ NEW
     }
   }, [isDrawerOpen, projectId]);
 
-  // ✅ NEW: Fetch all team members and build options for the Select dropdown
-  const fetchTeamMembers = async () => {
+  // Check if link is expired based on expires_at date
+  const isLinkExpired = (expiresAt: string): boolean => {
     try {
-      const res = await teamMembersApiService.getAll(projectId);
-      if (res.done && res.body) {
-        const options = res.body
-          .filter(member => member.email)
-          .map(member => ({
-            value: member.email,
-            label: `${member.name} (${member.email})`,
-          }));
-        setTeamMemberOptions(options);
-      }
-    } catch (error) {
-      console.error('Error fetching team members:', error);
+      const expiryDate = new Date(expiresAt);
+      const now = new Date();
+      return expiryDate <= now;
+    } catch {
+      return true;
     }
   };
 
+  // Check existing invitation link status
   const checkExistingInvitationLink = async () => {
     try {
       const res = await projectMembersApiService.getInvitationLinkStatus(projectId);
-      if (res.done && res.body.has_active_link) {
-        setHasActiveLink(true);
-        setInvitationLink(res.body.invitation_url || '');
-        setLinkExpiry(res.body.expires_at || '');
+      if (res.done && res.body.has_active_link && res.body.expires_at) {
+        // Check if the link is actually expired
+        if (isLinkExpired(res.body.expires_at)) {
+          setHasActiveLink(false);
+          setInvitationLink('');
+          setLinkExpiry('');
+        } else {
+          setHasActiveLink(true);
+          setInvitationLink(res.body.invitation_url || '');
+          setLinkExpiry(res.body.expires_at);
+        }
       } else {
         setHasActiveLink(false);
         setInvitationLink('');
@@ -83,6 +82,24 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       }
     } catch (error) {
       console.error('Error checking project invitation link status:', error);
+    }
+  };
+
+  // Fetch all team members and build options for the Select dropdown
+  const fetchTeamMembers = async () => {
+    try {
+      const res = await teamMembersApiService.getAll(projectId);
+      if (res.done && res.body) {
+        const options = res.body
+          .filter(member => member.email)
+          .map(member => ({
+            value: member.email!,
+            label: `${member.name} (${member.email})`,
+          }));
+        setTeamMemberOptions(options);
+      }
+    } catch (error) {
+      console.error('Error fetching team members:', error);
     }
   };
 
@@ -146,7 +163,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
     }
   };
 
-  const handleCreateInvitationLink = async () => {
+  const handleGenerateAndCopyLink = async () => {
     try {
       setLinkLoading(true);
       const linkData = {
@@ -158,53 +175,34 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       };
 
       const res = await projectMembersApiService.generateInvitationLink(linkData);
-      if (res.done) {
+      if (res.done && res.body.invitation_url) {
+        // Update state with new link
         setInvitationLink(res.body.invitation_url);
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
-        message.success(t('projectInvite_linkCreatedSuccess'));
+        
+        // Copy to clipboard
+        await navigator.clipboard.writeText(res.body.invitation_url);
+        
+        setLinkCopied(true);
+        // message.success(t('projectInvite_linkCopied'));
+        
+        setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
+      console.error('Error generating and copying invitation link:', error);
       message.error(t('projectInvite_linkCreateFailed'));
     } finally {
       setLinkLoading(false);
     }
   };
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(invitationLink);
-      setLinkCopied(true);
-      message.success(t('projectInvite_linkCopied'));
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch (error) {
-      message.error(t('projectInvite_linkCopyFailed'));
-    }
-  };
-
-  // ✅ UPDATED: Also clear team member options on close
+  // Clear team member options on close
   const handleClose = () => {
     form.resetFields();
     setLinkCopied(false);
-    setTeamMemberOptions([]); // ✅ NEW
+    setTeamMemberOptions([]);
     dispatch(toggleProjectMemberDrawer());
-  };
-
-  const formatExpiryDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffTime = date.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      if (diffDays > 0) {
-        return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
-      } else {
-        return 'Expired';
-      }
-    } catch {
-      return 'Unknown';
-    }
   };
 
   return (
@@ -220,27 +218,17 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       width={500}
       loading={loading}
       footer={
-        <Flex justify="flex-end" align="center">
+        <Flex justify="space-between" align="center">
           <Button
             loading={linkLoading}
-            onClick={hasActiveLink ? handleCopyLink : handleCreateInvitationLink}
-            icon={
-              hasActiveLink ? (
-                linkCopied ? (
-                  <CheckOutlined />
-                ) : (
-                  <CopyOutlined />
-                )
-              ) : (
-                <ShareAltOutlined />
-              )
-            }
+            onClick={handleGenerateAndCopyLink}
+            icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
           >
-            {hasActiveLink
-              ? linkCopied
-                ? t('projectInvite_copiedShort')
-                : t('projectInvite_copyLinkButton')
-              : t('projectInvite_copyLinkButton')}
+            {linkCopied
+              ? t('projectInvite_copiedShort')
+              : hasActiveLink && !isLinkExpired(linkExpiry)
+                ? t('projectInvite_copyLinkButton')
+                : t('Copy Link', { defaultValue: 'Copy Link' })}
           </Button>
         </Flex>
       }
@@ -279,16 +267,19 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                 },
               ]}
             >
-              {/* ✅ UPDATED: Now shows all team members immediately on open */}
+              {/* Shows all team members immediately on open */}
               <Select
                 mode="tags"
                 style={{ width: '100%' }}
                 placeholder={t('projectInvite_emailPlaceholder')}
                 options={teamMemberOptions}
-                filterOption={(input, option) =>
-                  option?.value?.toLowerCase().includes(input.toLowerCase()) ||
-                  option?.label?.toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={(input, option) => {
+                  if (!option) return false;
+                  return (
+                    option.value.toLowerCase().includes(input.toLowerCase()) ||
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                  );
+                }}
                 notFoundContent={
                   <Typography.Text type="secondary">{t('projectInvite_emailHelp')}</Typography.Text>
                 }
@@ -314,22 +305,6 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             />
           </Form.Item>
         </Form>
-
-        {/* Link Status Section */}
-        {hasActiveLink && (
-          <div
-            style={{
-              padding: '4px',
-              backgroundColor: themeWiseColor('#f6ffed', '#1f2937', themeMode),
-              border: `1px solid ${themeWiseColor('#b7eb8f', '#374151', themeMode)}`,
-              borderRadius: '6px',
-            }}
-          >
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              Active invitation link expires in {formatExpiryDate(linkExpiry)}
-            </Typography.Text>
-          </div>
-        )}
       </Flex>
     </Modal>
   );
