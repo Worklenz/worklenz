@@ -32,8 +32,9 @@ import ProjectViewHeader from './project-view-header';
 import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
-import { resetTaskManagement } from '@/features/task-management/task-management.slice';
-import { resetGrouping } from '@/features/task-management/grouping.slice';
+import { resetTaskManagement, fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
+import { resetGrouping, initGroupingFromServer, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
@@ -48,23 +49,23 @@ import {
   setShowTaskDrawer,
   resetTaskDrawer,
 } from '@/features/task-drawer/task-drawer.slice';
-import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { resetState as resetEnhancedKanbanState, initKanbanGroupingFromServer, IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ProjectViewSkeleton from './project-view-skeleton';
 import { useTranslation } from 'react-i18next';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
+import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
-import { createAuthService } from '@/services/auth/auth.service';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { fetchTaskListColumns, fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTaskListColumns } from '@/features/task-management/task-management.slice';
 
 // Lazy load non-critical components with better error handling
 const DeleteStatusDrawer = React.lazy(
@@ -97,9 +98,8 @@ const ProjectView = React.memo(() => {
   useDocumentTitle(selectedProject?.name || t('projectView'));
 
   // Get auth service and current session
-  const authService = createAuthService(navigate);
-  // Don't memoize currentSession - we want it to update when session changes
-  const currentSession = authService.getCurrentSession();
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
 
@@ -300,6 +300,34 @@ const ProjectView = React.memo(() => {
             if (!result.payload) {
               navigate('/worklenz/projects');
               return;
+            }
+
+            // Initialize grouping preferences from server data.
+            // If the server value differs from what was already in Redux (loaded from
+            // localStorage before the project data arrived), re-fetch tasks so the
+            // task list reflects the correct saved grouping without requiring a refresh.
+            const projectData = result.payload as any;
+            const validGroupings = ['status', 'priority', 'phase'] as const;
+            type GroupingType = typeof validGroupings[number];
+
+            const taskListGroupBy: GroupingType = validGroupings.includes(projectData?.task_list_group_by)
+              ? projectData.task_list_group_by
+              : 'status';
+
+            const boardGroupBy: GroupingType = validGroupings.includes(projectData?.board_group_by)
+              ? projectData.board_group_by
+              : 'status';
+
+            // Read current Redux grouping BEFORE dispatching the init action
+            const currentListGrouping = selectCurrentGrouping(store.getState());
+
+            dispatch(initGroupingFromServer({ grouping: taskListGroupBy, projectId }));
+            dispatch(initKanbanGroupingFromServer({ groupBy: boardGroupBy as IGroupBy, projectId }));
+
+            // If the task list was already fetched in parallel but with the wrong grouping,
+            // re-fetch now that the correct grouping is in Redux state
+            if (shouldPreloadTaskList && currentListGrouping !== taskListGroupBy) {
+              dispatch(fetchTasksV3(projectId));
             }
           }
 
