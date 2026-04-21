@@ -129,16 +129,15 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     const [taskName, setTaskName] = useState('');
     const { socket, connected } = useSocket();
     const dispatch = useAppDispatch();
-    const formatDateRange = useCallback(() => {
-      if (!task.start_date || !task.end_date) {
-        return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
-      }
-
-      const start = new Date(task.start_date).toLocaleDateString();
-      const end = new Date(task.end_date).toLocaleDateString();
-      return `${start} - ${end}`;
-    }, [task.start_date, task.end_date]);
-
+   // ✅ After
+const formatDateRange = useCallback(() => {
+  if (!task.start_date || !task.end_date) {
+    return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
+  }
+  const start = dayjs(task.start_date).isValid() ? dayjs(task.start_date).format('MMM D, YYYY') : 'Invalid';
+  const end = dayjs(task.end_date).isValid() ? dayjs(task.end_date).format('MMM D, YYYY') : 'Invalid';
+  return `${start} - ${end}`;
+}, [task.start_date, task.end_date]);
     const isPhase = task.type === 'milestone' || task.is_milestone;
     const hasChildren = task.children && task.children.length > 0;
     // For phases, use phase_id for expansion state, for tasks use task.id
@@ -381,14 +380,19 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
                         title={t('task.clickEditPhase', 'Click to edit phase details')}
                       >
                         <CalendarOutlined className="text-[10px]" />
-                        {task.start_date && task.end_date ? (
-                          <>
-                            {dayjs(task.start_date, 'YYYY-MM-DD').format('MMM D')} -{' '}
-                            {dayjs(task.end_date, 'YYYY-MM-DD').format('MMM D, YYYY')}
-                          </>
-                        ) : (
-                          'Set dates'
-                        )}
+                     {task.start_date && task.end_date ? (
+  <>
+    {dayjs(task.start_date).isValid()
+      ? dayjs(task.start_date).format('MMM D')
+      : 'Set dates'}{' '}
+    -{' '}
+    {dayjs(task.end_date).isValid()
+      ? dayjs(task.end_date).format('MMM D, YYYY')
+      : 'Set dates'}
+  </>
+) : (
+  'Set dates'
+)}
                       </button>
                     </div>
                   )}

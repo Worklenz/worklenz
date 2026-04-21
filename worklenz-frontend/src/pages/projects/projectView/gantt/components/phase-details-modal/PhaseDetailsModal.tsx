@@ -125,10 +125,11 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
     return { totalTasks, completedTasks, pendingTasks, overdueTasks, completionPercentage };
   }, [localPhase]);
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return t('timeline.notSet');
-    return dayjs(date).format('MMM DD, YYYY');
-  };
+const formatDate = (date: Date | string | null | undefined) => {
+  if (!date) return t('timeline.notSet');
+  const d = dayjs(date);
+  return d.isValid() ? d.format('MMM DD, YYYY') : t('timeline.notSet');
+};
 
   const getDateStatus = () => {
     if (!localPhase?.start_date || !localPhase?.end_date) return 'not-set';
@@ -748,7 +749,9 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                                 type="secondary"
                                 className={`text-xs ${taskStatus === 'overdue' ? 'text-red-500 dark:text-red-400' : ''}`}
                               >
-                                {dayjs(task.end_date, 'YYYY-MM-DD').format('MMM DD')}
+                               {dayjs(task.end_date).isValid()
+  ? dayjs(task.end_date).format('MMM DD')
+  : 'No due date'}
                               </Text>
                             </div>
                           ) : (
