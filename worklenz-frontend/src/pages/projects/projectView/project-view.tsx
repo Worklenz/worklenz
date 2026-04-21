@@ -117,6 +117,9 @@ const ProjectView = React.memo(() => {
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
   const [taskid, setTaskId] = useState<string>(urlParams.taskId);
   const [isInitialized, setIsInitialized] = useState(false);
+  // Track whether pinnedTab has been initialised from the URL at least once.
+  // After that we own the state locally and must not let urlParams overwrite it.
+  const pinnedTabInitializedRef = useRef(false);
 
   // Use ref to prevent duplicate API calls and error messages
   const isLoadingRef = useRef(false);
@@ -145,7 +148,15 @@ const ProjectView = React.memo(() => {
       setActiveTab(urlParams.tab);
     }
 
-    setPinnedTab(urlParams.pinnedTab);
+    // Only initialise pinnedTab from the URL once — after that pinToDefaultTab
+    // owns the state directly. Overwriting on every urlParams change causes the
+    // first pin click to be silently reverted (the navigate() in pinToDefaultTab
+    // triggers urlParams to recompute before the new pinnedTab state settles).
+    if (!pinnedTabInitializedRef.current) {
+      setPinnedTab(urlParams.pinnedTab);
+      pinnedTabInitializedRef.current = true;
+    }
+
     setTaskId(urlParams.taskId);
   }, [urlParams, currentSession, selectedProject, dispatch]);
 
@@ -205,6 +216,8 @@ const ProjectView = React.memo(() => {
     setIsInitialized(false);
     isLoadingRef.current = false;
     hasShownErrorRef.current = false;
+    // Allow pinnedTab to be re-read from the URL for the new project
+    pinnedTabInitializedRef.current = false;
   }, [projectId]);
 
   // Optimized project data loading with better error handling and performance tracking
@@ -388,29 +401,22 @@ const ProjectView = React.memo(() => {
         });
 
         if (res.done) {
+          // Update local state immediately — this is the single source of truth.
+          // Do NOT call navigate() here: it would update searchParams → urlParams →
+          // the sync useEffect, which would race against this setState and revert it
+          // on the first click. The URL is kept consistent by handleTabChange which
+          // already includes pinned_tab in every navigation.
           setPinnedTab(itemKey);
 
-          // Optimize tab items update
           tabItems.forEach(item => {
             item.isPinned = item.key === itemKey;
           });
-
-          navigate(
-            {
-              pathname: `/worklenz/projects/${projectId}`,
-              search: new URLSearchParams({
-                tab: activeTab,
-                pinned_tab: itemKey,
-              }).toString(),
-            },
-            { replace: true }
-          ); // Use replace to avoid history pollution
         }
       } catch (error) {
         console.error('Error updating default tab:', error);
       }
     },
-    [projectId, activeTab, navigate]
+    [projectId]
   );
 
   // Optimized tab change handler
