@@ -62,6 +62,7 @@ interface AllTasksReportsState {
   // Filters
   teams: IRPTTeam[];
   loadingTeams: boolean;
+  teamsLoaded: boolean;
   selectedProjects: string[];
   selectedStatuses: string[];
   selectedPriorities: string[];
@@ -92,13 +93,11 @@ const defaultVisibleColumns = [
   'priority',
   'assignees',
   'dueDate',
-
   'estimatedTime',
   'loggedTime',
 ];
 
 const initialState: AllTasksReportsState = {
-  // Data
   tasksList: [],
   groupedTasks: [],
   total: 0,
@@ -113,24 +112,20 @@ const initialState: AllTasksReportsState = {
   isLoading: false,
   error: null,
 
-  // View settings
   viewMode: 'table',
   groupBy: 'none',
 
-  // Pagination
   index: 1,
   pageSize: 50,
 
-  // Sorting
   sortField: 'end_date',
   sortOrder: 'asc',
 
-  // Search
   searchQuery: '',
 
-  // Filters
   teams: [],
   loadingTeams: false,
+  teamsLoaded: false,
   selectedProjects: [],
   selectedStatuses: [],
   selectedPriorities: [],
@@ -139,27 +134,26 @@ const initialState: AllTasksReportsState = {
   selectedPhases: [],
   selectedClients: [],
 
-  // Date filter
   dateFilterField: 'due_date',
   dateFrom: null,
   dateTo: null,
 
-  // Additional filters
   includeArchived: false,
   includeSubtasks: true,
   completionStatus: 'all',
   billableFilter: 'all',
 
-  // Column visibility
   visibleColumns: defaultVisibleColumns,
 };
 
-// Helper to get selected team IDs
+// Returns selected team IDs from state.
 const getSelectedTeamIds = (state: AllTasksReportsState): string[] => {
+  if (state.teams.length === 0) return [];
   return state.teams.filter(team => team.selected).map(team => team.id) as string[];
 };
 
-// Async thunks
+// ─── Async Thunks ────────────────────────────────────────────────────────────
+
 export const fetchAllTasksTeams = createAsyncThunk('allTasksReports/fetchTeams', async () => {
   const res = await reportingApiService.getOverviewTeams();
   return res.body;
@@ -169,6 +163,14 @@ export const fetchAllTasks = createAsyncThunk(
   'allTasksReports/fetchAllTasks',
   async (_, { getState }) => {
     const state = (getState() as any).allTasksReportsReducer as AllTasksReportsState;
+    const selectedTeamIds = getSelectedTeamIds(state);
+
+    // BUG FIX: When no teams are selected, skip the API entirely and return
+    // an empty result. Previously an empty teams array was sent to the backend
+    // which ignored the filter and returned all tasks regardless.
+    if (state.teamsLoaded && selectedTeamIds.length === 0) {
+      return { data: [], total: 0, stats: initialState.stats, groups: [] };
+    }
 
     const body = {
       index: state.index,
@@ -176,7 +178,7 @@ export const fetchAllTasks = createAsyncThunk(
       sortField: state.sortField,
       sortOrder: state.sortOrder,
       search: state.searchQuery,
-      teams: getSelectedTeamIds(state),
+      teams: selectedTeamIds,
       projects: state.selectedProjects,
       statuses: state.selectedStatuses,
       priorities: state.selectedPriorities,
@@ -199,11 +201,40 @@ export const fetchAllTasks = createAsyncThunk(
   }
 );
 
+// BUG FIX: Replaces the old two-dispatch pattern in the team filter component:
+//
+//   dispatch(setSelectOrDeselectTeam(...))  ← updates state
+//   dispatch(fetchAllTasks())               ← but reads OLD state via getState()
+//
+// Redux does not flush state between two dispatches in the same event handler,
+// so fetchAllTasks always read the stale team selections. By combining both
+// into a single thunk we guarantee the state mutation runs first (as a plain
+// action which is synchronous inside Redux), and only then fetchAllTasks reads
+// the now-updated state via getState().
+export const setTeamsAndFetch = createAsyncThunk(
+  'allTasksReports/setTeamsAndFetch',
+  async (
+    payload:
+      | { type: 'all'; selected: boolean }
+      | { type: 'single'; id: string; selected: boolean },
+    { dispatch }
+  ) => {
+    if (payload.type === 'all') {
+      dispatch(setSelectOrDeselectAllTeams(payload.selected));
+    } else {
+      dispatch(setSelectOrDeselectTeam({ id: payload.id, selected: payload.selected }));
+    }
+    // State is now updated — fetchAllTasks will read correct selections
+    await dispatch(fetchAllTasks());
+  }
+);
+
+// ─── Slice ───────────────────────────────────────────────────────────────────
+
 const allTasksReportsSlice = createSlice({
   name: 'allTasksReportsReducer',
   initialState,
   reducers: {
-    // View settings
     setViewMode: (state, action: PayloadAction<AllTasksViewMode>) => {
       state.viewMode = action.payload;
     },
@@ -211,7 +242,6 @@ const allTasksReportsSlice = createSlice({
       state.groupBy = action.payload;
     },
 
-    // Pagination
     setIndex: (state, action: PayloadAction<number>) => {
       state.index = action.payload;
     },
@@ -220,7 +250,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Sorting
     setSortField: (state, action: PayloadAction<string>) => {
       state.sortField = action.payload;
     },
@@ -232,13 +261,14 @@ const allTasksReportsSlice = createSlice({
       state.sortOrder = action.payload.order;
     },
 
-    // Search
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
       state.index = 1;
     },
 
-    // Team filters
+    // Used internally by setTeamsAndFetch only.
+    // Do NOT dispatch these directly and then call fetchAllTasks in a
+    // component — that causes a stale-state race. Use setTeamsAndFetch instead.
     setSelectOrDeselectAllTeams: (state, action: PayloadAction<boolean>) => {
       state.teams.forEach(team => {
         team.selected = action.payload;
@@ -251,7 +281,6 @@ const allTasksReportsSlice = createSlice({
       }
     },
 
-    // Project filter
     setSelectedProjects: (state, action: PayloadAction<string[]>) => {
       state.selectedProjects = action.payload;
       state.index = 1;
@@ -266,7 +295,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Status filter
     setSelectedStatuses: (state, action: PayloadAction<string[]>) => {
       state.selectedStatuses = action.payload;
       state.index = 1;
@@ -281,7 +309,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Priority filter
     setSelectedPriorities: (state, action: PayloadAction<string[]>) => {
       state.selectedPriorities = action.payload;
       state.index = 1;
@@ -296,7 +323,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Assignee filter
     setSelectedAssignees: (state, action: PayloadAction<string[]>) => {
       state.selectedAssignees = action.payload;
       state.index = 1;
@@ -311,19 +337,16 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Labels filter
     setSelectedLabels: (state, action: PayloadAction<string[]>) => {
       state.selectedLabels = action.payload;
       state.index = 1;
     },
 
-    // Phases filter
     setSelectedPhases: (state, action: PayloadAction<string[]>) => {
       state.selectedPhases = action.payload;
       state.index = 1;
     },
 
-    // Clients filter
     setSelectedClients: (state, action: PayloadAction<string[]>) => {
       state.selectedClients = action.payload;
       state.index = 1;
@@ -338,7 +361,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Date filter
     setDateFilterField: (state, action: PayloadAction<DateFilterField>) => {
       state.dateFilterField = action.payload;
     },
@@ -348,7 +370,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Additional filters
     setIncludeArchived: (state, action: PayloadAction<boolean>) => {
       state.includeArchived = action.payload;
       state.index = 1;
@@ -366,7 +387,6 @@ const allTasksReportsSlice = createSlice({
       state.index = 1;
     },
 
-    // Column visibility
     setVisibleColumns: (state, action: PayloadAction<string[]>) => {
       state.visibleColumns = action.payload;
     },
@@ -379,7 +399,6 @@ const allTasksReportsSlice = createSlice({
       }
     },
 
-    // Group expansion
     toggleGroupExpansion: (state, action: PayloadAction<string>) => {
       const group = state.groupedTasks.find(g => g.id === action.payload);
       if (group) {
@@ -397,7 +416,6 @@ const allTasksReportsSlice = createSlice({
       });
     },
 
-    // Reset
     resetAllFilters: state => {
       state.searchQuery = '';
       state.selectedProjects = [];
@@ -422,9 +440,9 @@ const allTasksReportsSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      // Fetch teams
       .addCase(fetchAllTasksTeams.pending, state => {
         state.loadingTeams = true;
+        state.teamsLoaded = false;
       })
       .addCase(fetchAllTasksTeams.fulfilled, (state, action) => {
         state.teams = action.payload.map(team => ({
@@ -432,11 +450,13 @@ const allTasksReportsSlice = createSlice({
           selected: true,
         }));
         state.loadingTeams = false;
+        state.teamsLoaded = true;
       })
       .addCase(fetchAllTasksTeams.rejected, state => {
         state.loadingTeams = false;
+        state.teamsLoaded = false;
       })
-      // Fetch all tasks
+
       .addCase(fetchAllTasks.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -494,7 +514,7 @@ export const {
   collapseAllGroups,
   resetAllFilters,
   resetState,
-  setSelectedClients, 
+  setSelectedClients,
   toggleClient,
 } = allTasksReportsSlice.actions;
 

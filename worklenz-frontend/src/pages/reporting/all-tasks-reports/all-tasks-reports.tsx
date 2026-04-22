@@ -39,8 +39,8 @@ const AllTasksReports = () => {
       setIsExporting(true);
       try {
         const body = {
-          index: 1, // Reset to first page for export (though backend handles size)
-          size: total, // Attempt to get all, but backend might override or we might want to just pass filters
+          index: 1,
+          size: total,
           sortField,
           sortOrder,
           search: searchQuery,
@@ -84,7 +84,6 @@ const AllTasksReports = () => {
         }
       } catch (error) {
         console.error('Export failed:', error);
-        // Ideally show a notification here
       } finally {
         setIsExporting(false);
       }
@@ -97,12 +96,19 @@ const AllTasksReports = () => {
     { key: 'excel', label: t('exportToExcel', { defaultValue: 'Export to Excel' }) },
   ];
 
-  // Fetch teams on mount and when current team changes
+  // Fetch teams first, then fetch tasks only after teams are loaded
+  // This prevents the race condition where fetchAllTasks fires with an empty
+  // teams array (state.teams = []), causing the backend to fall back to the
+  // default team instead of querying all teams.
   useEffect(() => {
-    dispatch(fetchAllTasksTeams());
+    dispatch(fetchAllTasksTeams()).then(() => {
+      dispatch(fetchAllTasks());
+    });
   }, [dispatch, currentSession?.team_id]);
 
-  useEffect(() => {
+  const handleResetFilters = useCallback(() => {
+    dispatch(resetAllFilters());
+    // Re-fetch after reset so the table reflects the cleared filter state
     dispatch(fetchAllTasks());
   }, [dispatch]);
 
@@ -130,7 +136,7 @@ const AllTasksReports = () => {
               {t('refreshButton', { defaultValue: 'Refresh' })}
             </Button>
 
-            <Button onClick={() => dispatch(resetAllFilters())}>
+            <Button onClick={handleResetFilters}>
               {t('clearFilters', { defaultValue: 'Clear Filters' })}
             </Button>
 
