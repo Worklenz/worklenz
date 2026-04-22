@@ -1696,7 +1696,7 @@ const TaskListV2Section: React.FC = () => {
 
                     return (
                       <div style={{ minWidth: 'max-content' }} className="relative">
-                        {showBefore && (
+                        {showBefore && !activeId && (
                           <DropSpacer
                             isVisible={true}
                             visibleColumns={visibleColumns}
@@ -1716,7 +1716,7 @@ const TaskListV2Section: React.FC = () => {
                           />
                         )}
                         {renderTask(index, isFirstInGroup)}
-                        {showAfter && (
+                        {showAfter && !activeId && (
                           <DropSpacer
                             isVisible={true}
                             visibleColumns={visibleColumns}
