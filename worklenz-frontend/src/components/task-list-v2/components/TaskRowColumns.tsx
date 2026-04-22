@@ -28,13 +28,18 @@ export const getTaskDisplayName = (task: Task): string => {
 // Parse date as local date to avoid timezone issues (e.g., "2024-02-10" should display as Feb 10, not Feb 9)
 export const formatDate = (dateString: string): string => {
   try {
-    // Handle both ISO date strings ("YYYY-MM-DD") and ISO timestamps ("YYYY-MM-DDTHH:mm:ss.sssZ")
-    // Extract just the date part if it's a timestamp
-    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+    // Full ISO timestamp with timezone (e.g. "2024-02-10T22:30:00.000Z" from updated_at / created_at):
+    // Let the Date constructor parse it as UTC, then read back the local year/month/day.
+    // This correctly handles cases where the UTC date differs from the user's local date
+    // (e.g. 11:30 PM UTC = next day in UTC+5:30).
+    if (dateString.includes('T')) {
+      const d = new Date(dateString);
+      return format(d, 'MMM d, yyyy'); // date-fns formats using local timezone by default
+    }
 
-    // Parse date string as local date to avoid UTC conversion issues
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Create date in local timezone (month is 0-indexed)
+    // Date-only string ("YYYY-MM-DD") from start_date / end_date (stored as DATE type in DB):
+    // Parse as local date to avoid UTC midnight shifting the date backward in negative-offset zones.
+    const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return format(date, 'MMM d, yyyy');
   } catch {
