@@ -1353,9 +1353,12 @@ const TaskListV2Section: React.FC = () => {
                           document.body.classList.add('column-resizing');
 
                           const updateIndicator = (x: number, width: number) => {
-                            // Calculate position relative to table container
+                            // Calculate position relative to table container's scroll origin.
+                            // scrollLeft must be added because the indicator uses position:absolute
+                            // inside the scrollable container — without it the line drifts left
+                            // by exactly the horizontal scroll offset.
                             const containerRect = tableContainer.getBoundingClientRect();
-                            const relativeX = x - containerRect.left;
+                            const relativeX = x - containerRect.left + tableContainer.scrollLeft;
                             indicator.style.left = `${relativeX}px`;
                             indicator.style.opacity = '1';
                             tooltip.textContent = `${width}px`;
