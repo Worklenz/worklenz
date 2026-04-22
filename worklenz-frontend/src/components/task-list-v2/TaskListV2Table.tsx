@@ -1187,6 +1187,21 @@ const TaskListV2Section: React.FC = () => {
                       <CustomColumnHeader
                         column={column}
                         onSettingsClick={handleCustomColumnSettings}
+                        dragHandle={
+                          !column.isSticky ? (
+                            <span
+                              className="column-drag-handle-inline"
+                              ref={dragParams?.setActivatorNodeRef}
+                              {...dragParams?.attributes}
+                              {...dragParams?.listeners}
+                              aria-label={t('moveColumnHandle')}
+                              title={t('moveColumnHandle')}
+                              style={{ cursor: 'grab', display: 'inline-flex', alignItems: 'center' }}
+                            >
+                            <HolderOutlined style={{ fontSize: 14, color: 'currentColor' }} />
+                            </span>
+                          ) : undefined
+                        }
                       />
                     ) : (
                       <span
@@ -1202,8 +1217,8 @@ const TaskListV2Section: React.FC = () => {
                       </span>
                     )}
 
-                    {/* Column drag handle */}
-                    {!column.isSticky && (
+                    {/* Column drag handle - only for non-custom, non-sticky columns */}
+                    {!column.isSticky && !column.isCustom && (
                       <span
                         className="column-drag-handle"
                         ref={dragParams?.setActivatorNodeRef}
@@ -1212,7 +1227,7 @@ const TaskListV2Section: React.FC = () => {
                         aria-label={t('moveColumnHandle')}
                         title={t('moveColumnHandle')}
                       >
-                        <HolderOutlined style={{ fontSize: 12 }} />
+                        <HolderOutlined style={{ fontSize: 14 }} />
                       </span>
                     )}
 
