@@ -24,6 +24,7 @@ import {
   fetchEnhancedKanbanGroups,
   fetchEnhancedKanbanTaskAssignees,
   updateEnhancedKanbanTaskPriority,
+  selectKanbanLoadedProjectId,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
@@ -66,6 +67,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   const { taskGroups, loadingGroups, error } = useSelector(
     (state: RootState) => state.enhancedKanbanReducer
   );
+  const loadedProjectId = useAppSelector(selectKanbanLoadedProjectId);
   const { phaseList } = useAppSelector(state => state.phaseReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
@@ -83,7 +85,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   useTaskSocketHandlers();
 
   useEffect(() => {
-    if (projectId) {
+    if (projectId && loadedProjectId !== projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
       dispatch(fetchEnhancedKanbanTaskAssignees(projectId) as any);
       dispatch(fetchEnhancedKanbanLabels(projectId) as any);
@@ -94,7 +96,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     if (groupBy === 'phase' && !phaseList.length) {
       dispatch(fetchPhasesByProjectId(projectId) as any);
     }
-  }, [dispatch, projectId]);
+  }, [dispatch, projectId, loadedProjectId]);
 
   // Cleanup RAF on unmount
   useEffect(() => {

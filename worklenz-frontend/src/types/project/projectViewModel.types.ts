@@ -40,6 +40,8 @@ export interface IProjectViewModel extends IProject {
   project_manager_id?: string | null;
 
   team_member_default_view?: string;
+  task_list_group_by?: 'status' | 'priority' | 'phase';
+  board_group_by?: 'status' | 'priority' | 'phase';
   working_days?: number;
 
   id?: string;

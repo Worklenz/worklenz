@@ -48,6 +48,7 @@ import { FilterDropdown } from './filter-dropdown';
 import { SearchFilter } from './search-filter';
 import { SortDropdown } from './sort-dropdown';
 import { FilterSection, ImprovedTaskFiltersProps } from './types';
+import { projectsApiService } from '@/api/projects/projects.api.service';
 
 const FILTER_DEBOUNCE_DELAY = 300;
 const SEARCH_DEBOUNCE_DELAY = 500;
@@ -321,6 +322,9 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const debouncedSearchChangeRef = useRef<
     (((projectId: string, value: string) => void) & { cancel: () => void }) | null
   >(null);
+  const debouncedGroupBySaveRef = useRef<
+    (((projectId: string, view: 'list' | 'board', groupBy: string) => void) & { cancel: () => void }) | null
+  >(null);
   const filterSectionsData = useFilterData(position);
   const isDataLoaded = useMemo(() => filterSectionsData.length > 0, [filterSectionsData]);
   const memoizedFilterSections = useMemo(() => filterSectionsData, [filterSectionsData]);
@@ -457,9 +461,23 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       SEARCH_DEBOUNCE_DELAY
     );
 
+    debouncedGroupBySaveRef.current = createDebouncedFunction(
+      (nextProjectId: string, view: 'list' | 'board', groupBy: string) => {
+        const body =
+          view === 'list'
+            ? { project_id: nextProjectId, task_list_group_by: groupBy }
+            : { project_id: nextProjectId, board_group_by: groupBy };
+        projectsApiService.updateDefaultTab(body).catch(err => {
+          console.warn('Failed to save group-by preference:', err);
+        });
+      },
+      800
+    );
+
     return () => {
       debouncedFilterChangeRef.current?.cancel();
       debouncedSearchChangeRef.current?.cancel();
+      debouncedGroupBySaveRef.current?.cancel();
     };
   }, [dispatch]);
 
@@ -491,6 +509,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         if (sectionId === 'groupBy' && values.length > 0) {
           dispatch(setKanbanGroupBy(values[0] as any));
           dispatch(fetchEnhancedKanbanGroups(projectId));
+          // Persist board groupBy preference
+          debouncedGroupBySaveRef.current?.(projectId, 'board', values[0]);
           return;
         }
         if (sectionId === 'priority') {
@@ -529,6 +549,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       if (sectionId === 'groupBy' && values.length > 0) {
         dispatch(setCurrentGrouping(values[0] as 'status' | 'priority' | 'phase'));
         dispatch(fetchTasksV3(projectId));
+        // Persist task list groupBy preference
+        debouncedGroupBySaveRef.current?.(projectId, 'list', values[0]);
         return;
       }
       if (sectionId === 'priority') {
@@ -647,6 +669,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setCurrentGrouping('status'));
         if (projectId) dispatch(fetchTasksV3(projectId));
       }
+      if (projectId) debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', 'status');
       return;
     }
 
@@ -658,6 +681,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setCurrentGrouping('priority'));
         if (projectId) dispatch(fetchTasksV3(projectId));
       }
+      if (projectId) debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', 'priority');
       return;
     }
 
@@ -669,6 +693,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setCurrentGrouping('phase'));
         if (projectId) dispatch(fetchTasksV3(projectId));
       }
+      if (projectId) debouncedGroupBySaveRef.current?.(projectId, position === 'board' ? 'board' : 'list', 'phase');
       return;
     }
 

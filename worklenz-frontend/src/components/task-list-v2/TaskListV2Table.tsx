@@ -616,6 +616,31 @@ const TaskListV2Section: React.FC = () => {
     dispatch(fetchStatusesCategories());
   }, [dispatch, urlProjectId, shouldFetchInitialData]);
 
+  // Re-fetch when grouping changes AFTER the initial load.
+  // This handles the case where initGroupingFromServer fires after the parallel
+  // fetchTasksV3 already completed with a stale grouping value.
+  const prevGroupingRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    // Skip on first render (undefined → initial value) to avoid double-fetching
+    // on mount alongside the shouldFetchInitialData effect above.
+    if (prevGroupingRef.current === undefined) {
+      prevGroupingRef.current = currentGrouping;
+      return;
+    }
+
+    // Only re-fetch if grouping actually changed and data for this project is loaded
+    if (
+      urlProjectId &&
+      loadedProjectId === urlProjectId &&
+      currentGrouping !== prevGroupingRef.current
+    ) {
+      prevGroupingRef.current = currentGrouping;
+      dispatch(fetchTasksV3(urlProjectId));
+    } else {
+      prevGroupingRef.current = currentGrouping;
+    }
+  }, [currentGrouping, dispatch, urlProjectId, loadedProjectId]);
+
   useEffect(() => {
     if (urlProjectId) {
       trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
