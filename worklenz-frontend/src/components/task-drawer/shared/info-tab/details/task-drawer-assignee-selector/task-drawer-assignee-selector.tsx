@@ -75,11 +75,11 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
   // FIX: Improved handleMemberChange function with proper state checking
   const handleMemberChange = (e: CheckboxChangeEvent | null, memberId: string) => {
     if (!memberId || !projectId || !task?.id || !currentSession?.id) return;
-    
+
     try {
       // Check if member is currently assigned
       const isCurrentlyAssigned = task?.assignees?.some(assignee => assignee === memberId);
-      
+
       // Determine the new checked state
       // If event exists (checkbox clicked), use event's checked state
       // If no event (list item clicked), toggle the current state
@@ -105,10 +105,10 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
               project_id: projectId,
               assignee_id: memberId,
               assigned_by: currentSession?.id,
-              assignment_method: 'task_drawer'
+              assignment_method: 'task_drawer',
             });
           }
-          
+
           dispatch(setTaskAssignee(data));
           if (tab === 'tasks-list') {
             dispatch(updateTasksListTaskAssignees(data));

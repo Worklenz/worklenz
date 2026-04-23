@@ -37,13 +37,17 @@ export const usePricingCalculations = (
       // Regular pricing logic for non-AppSumo users
       if (teamSize <= TEAM_SIZE_THRESHOLD) {
         if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
-          const perUserMonthlyPrice = parseFloat(pricingData.pro_small.monthly_per_user_price || '0');
+          const perUserMonthlyPrice = parseFloat(
+            pricingData.pro_small.monthly_per_user_price || '0'
+          );
           finalPrice = perUserMonthlyPrice * teamSize;
         } else if (
           planType === 'business' &&
           pricingData.business_small?.pricing_model === 'per_user'
         ) {
-          const perUserMonthlyPrice = parseFloat(pricingData.business_small.monthly_per_user_price || '0');
+          const perUserMonthlyPrice = parseFloat(
+            pricingData.business_small.monthly_per_user_price || '0'
+          );
           finalPrice = perUserMonthlyPrice * teamSize;
         } else if (planType === 'enterprise') {
           finalPrice = parseFloat(pricingData.enterprise.monthly_base_price || '0');
@@ -105,14 +109,18 @@ export const usePricingCalculations = (
       if (teamSize <= TEAM_SIZE_THRESHOLD) {
         if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
           // annual_per_user_price is already the monthly rate when paid annually, so multiply by 12
-          const perUserMonthlyWhenAnnual = parseFloat(pricingData.pro_small.annual_per_user_price || '0');
+          const perUserMonthlyWhenAnnual = parseFloat(
+            pricingData.pro_small.annual_per_user_price || '0'
+          );
           finalPrice = perUserMonthlyWhenAnnual * 12 * teamSize;
         } else if (
           planType === 'business' &&
           pricingData.business_small?.pricing_model === 'per_user'
         ) {
           // annual_per_user_price is already the monthly rate when paid annually, so multiply by 12
-          const perUserMonthlyWhenAnnual = parseFloat(pricingData.business_small.annual_per_user_price || '0');
+          const perUserMonthlyWhenAnnual = parseFloat(
+            pricingData.business_small.annual_per_user_price || '0'
+          );
           finalPrice = perUserMonthlyWhenAnnual * 12 * teamSize;
         } else if (planType === 'enterprise') {
           finalPrice = parseFloat(pricingData.enterprise.annual_base_price || '0');
@@ -178,9 +186,11 @@ export const usePricingCalculations = (
       if (planType === 'enterprise') return 'base_plan';
 
       // Check if small plans exist and have valid plan IDs (consistent with plan selection logic)
-      const hasValidProSmall = pricingData.pro_small &&
+      const hasValidProSmall =
+        pricingData.pro_small &&
         (pricingData.pro_small.monthly_plan_id || pricingData.pro_small.annual_plan_id);
-      const hasValidBusinessSmall = pricingData.business_small &&
+      const hasValidBusinessSmall =
+        pricingData.business_small &&
         (pricingData.business_small.monthly_plan_id || pricingData.business_small.annual_plan_id);
 
       return teamSize <= TEAM_SIZE_THRESHOLD &&
@@ -198,7 +208,10 @@ export const usePricingCalculations = (
 
       if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
         return pricingData.pro_small.monthly_per_user_price || '0';
-      } else if (planType === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
+      } else if (
+        planType === 'business' &&
+        pricingData.business_small?.pricing_model === 'per_user'
+      ) {
         return pricingData.business_small.monthly_per_user_price || '0';
       }
 
@@ -213,7 +226,10 @@ export const usePricingCalculations = (
 
       if (planType === 'pro' && pricingData.pro_small?.pricing_model === 'per_user') {
         return pricingData.pro_small.annual_per_user_price || '0';
-      } else if (planType === 'business' && pricingData.business_small?.pricing_model === 'per_user') {
+      } else if (
+        planType === 'business' &&
+        pricingData.business_small?.pricing_model === 'per_user'
+      ) {
         return pricingData.business_small.annual_per_user_price || '0';
       }
 
@@ -226,9 +242,12 @@ export const usePricingCalculations = (
   const calculateOriginalMonthlyTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       // Only show original price for AppSumo promo plans
-      const planData = planType === 'pro' ? pricingData.pro :
-        planType === 'business' ? pricingData.business :
-          pricingData.enterprise;
+      const planData =
+        planType === 'pro'
+          ? pricingData.pro
+          : planType === 'business'
+            ? pricingData.business
+            : pricingData.enterprise;
 
       if (!planData?.pricing_model?.startsWith('promo_')) {
         return null;
@@ -247,9 +266,12 @@ export const usePricingCalculations = (
   const calculateOriginalAnnualTotal = useCallback(
     (planType: 'pro' | 'business' | 'enterprise') => {
       // Only show original price for AppSumo promo plans
-      const planData = planType === 'pro' ? pricingData.pro :
-        planType === 'business' ? pricingData.business :
-          pricingData.enterprise;
+      const planData =
+        planType === 'pro'
+          ? pricingData.pro
+          : planType === 'business'
+            ? pricingData.business
+            : pricingData.enterprise;
 
       if (!planData?.pricing_model?.startsWith('promo_')) {
         return null;

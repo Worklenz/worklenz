@@ -37,10 +37,7 @@ const SendChatItem = ({ chatData }: SendChatItemProps) => {
           {chatData.content}
         </div>
         <Flex align="center" gap={4} style={{ marginTop: 4, paddingRight: 4 }}>
-          <Typography.Text
-            type="secondary"
-            style={{ fontSize: 11 }}
-          >
+          <Typography.Text type="secondary" style={{ fontSize: 11 }}>
             {durationDateFormat(chatData?.time)}
           </Typography.Text>
           <CheckOutlined

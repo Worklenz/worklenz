@@ -199,7 +199,7 @@ export enum MixpanelEvents {
   SIGNUP_WITH_EMAIL_CLICKED = 'signup_with_email_click',
   SIGNUP_WITH_GOOGLE_CLICKED = 'signup_with_google_click',
   ACCOUNT_SETUP_COMPLETED = 'account_setup_complete',
-  
+
   // Project Management
   PROJECT_CREATED = 'projects_create',
   PROJECT_TASK_CREATED = 'project_task_create',
@@ -208,16 +208,16 @@ export enum MixpanelEvents {
   PROJECT_ROADMAP_VISITED = 'project_roadmap_visit',
   PROJECT_MEMBERS_VISITED = 'project_members_visit',
   PROJECT_INSIGHTS_VIEWED = 'project_insights_overview_visit',
-  
+
   // Team Management
   TEAMMATE_INVITED = 'project_invite_members',
-  
+
   // File Management
   FILE_UPLOADED = 'file_uploaded',
-  
+
   // Timer
   TIMER_STARTED = 'timer_started',
-  
+
   // Client Portal
   CLIENT_PORTAL_VIEWED = 'client_portal_viewed',
   CLIENT_PORTAL_PAGE_VISITED = 'client_portal_page_visited',
@@ -261,13 +261,13 @@ export enum MixpanelEvents {
   CLIENT_PORTAL_LOGO_UPLOADED = 'client_portal_logo_uploaded',
   CLIENT_PORTAL_LOGO_REMOVED = 'client_portal_logo_removed',
   CLIENT_PORTAL_SETTINGS_SAVED = 'client_portal_settings_saved',
-  
+
   // Theme
   DARK_MODE_TOGGLED = 'dark_mode_toggled',
-  
+
   // Custom Fields
   CUSTOM_FIELD_ENABLED = 'custom_field_enabled',
-  
+
   // Filter & Sort
   FILTER_SORT_APPLIED = 'project_task_list_search_task',
 }
@@ -394,7 +394,7 @@ export function getBaseBillingProperties(
 // Helper function to detect device type
 export function getDeviceType(): DeviceType {
   if (typeof window === 'undefined') return 'web';
-  
+
   const userAgent = window.navigator.userAgent.toLowerCase();
   if (/mobile|android|iphone|ipad|tablet/.test(userAgent)) {
     return /tablet|ipad/.test(userAgent) ? 'tablet' : 'mobile';
@@ -405,20 +405,20 @@ export function getDeviceType(): DeviceType {
 // Helper function to get file type from filename
 export function getFileType(filename: string): FileType {
   const extension = filename.split('.').pop()?.toLowerCase();
-  
+
   if (!extension) return 'other';
-  
+
   const docTypes = ['doc', 'docx', 'txt', 'rtf', 'odt'];
   const pdfTypes = ['pdf'];
   const imgTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
   const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'];
   const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg'];
-  
+
   if (docTypes.includes(extension)) return 'doc';
   if (pdfTypes.includes(extension)) return 'pdf';
   if (imgTypes.includes(extension)) return 'img';
   if (videoTypes.includes(extension)) return 'video';
   if (audioTypes.includes(extension)) return 'audio';
-  
+
   return 'other';
 }

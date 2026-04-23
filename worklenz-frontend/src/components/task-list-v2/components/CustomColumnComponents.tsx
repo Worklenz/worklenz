@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
 import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -94,7 +94,8 @@ export const CustomColumnHeader: React.FC<{
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
 
-  const displayName = getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
+  const displayName =
+    getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
 
   return (
     <Flex
@@ -168,6 +169,15 @@ export const CustomColumnCell: React.FC<{
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );
+    case 'text':
+      return (
+        <TextCustomColumnCell
+          task={task}
+          columnKey={column.key}
+          customValue={customValue}
+          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+        />
+      );
     case 'selection':
       return (
         <SelectionCustomColumnCell
@@ -175,15 +185,6 @@ export const CustomColumnCell: React.FC<{
           columnKey={column.key}
           customValue={customValue}
           columnObj={column.custom_column_obj}
-          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-        />
-      );
-    case 'text':
-      return (
-        <TextCustomColumnCell
-          task={task}
-          columnKey={column.key}
-          customValue={customValue}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
         />
       );

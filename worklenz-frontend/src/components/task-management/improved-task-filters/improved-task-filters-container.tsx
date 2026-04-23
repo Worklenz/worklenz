@@ -29,12 +29,7 @@ import {
   selectCurrentGrouping,
   setCurrentGrouping,
 } from '@/features/task-management/grouping.slice';
-import {
-  setLabels,
-  setMembers,
-  setPriorities,
-  setFields,
-} from '@/features/tasks/tasks.slice';
+import { setLabels, setMembers, setPriorities, setFields } from '@/features/tasks/tasks.slice';
 import {
   fetchEnhancedKanbanGroups,
   setArchived as setKanbanArchived,
@@ -201,10 +196,15 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           selectedValues: [groupByValue],
           options: [
             { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status' },
-            { id: 'priority', label: t('priorityText', { defaultValue: 'Priority' }), value: 'priority' },
+            {
+              id: 'priority',
+              label: t('priorityText', { defaultValue: 'Priority' }),
+              value: 'priority',
+            },
             {
               id: 'phase',
-              label: (kanbanProject as any)?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
+              label:
+                (kanbanProject as any)?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
               value: 'phase',
             },
           ],
@@ -212,8 +212,10 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
       ];
     }
 
-    const currentLabels = currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
-    const currentAssignees = currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
+    const currentLabels =
+      currentProjectView === 'list' ? filterData.taskLabels : filterData.boardLabels;
+    const currentAssignees =
+      currentProjectView === 'list' ? filterData.taskAssignees : filterData.boardAssignees;
     const groupByValue = currentGrouping || 'status';
 
     return [
@@ -274,7 +276,11 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         selectedValues: [groupByValue],
         options: [
           { id: 'status', label: t('statusText', { defaultValue: 'Status' }), value: 'status' },
-          { id: 'priority', label: t('priorityText', { defaultValue: 'Priority' }), value: 'priority' },
+          {
+            id: 'priority',
+            label: t('priorityText', { defaultValue: 'Priority' }),
+            value: 'priority',
+          },
           {
             id: 'phase',
             label: filterData.project?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
@@ -309,8 +315,12 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const [showManageStatusModal, setShowManageStatusModal] = useState(false);
   const [showManagePhaseModal, setShowManagePhaseModal] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  const debouncedFilterChangeRef = useRef<(((projectId: string) => void) & { cancel: () => void }) | null>(null);
-  const debouncedSearchChangeRef = useRef<(((projectId: string, value: string) => void) & { cancel: () => void }) | null>(null);
+  const debouncedFilterChangeRef = useRef<
+    (((projectId: string) => void) & { cancel: () => void }) | null
+  >(null);
+  const debouncedSearchChangeRef = useRef<
+    (((projectId: string, value: string) => void) & { cancel: () => void }) | null
+  >(null);
   const filterSectionsData = useFilterData(position);
   const isDataLoaded = useMemo(() => filterSectionsData.length > 0, [filterSectionsData]);
   const memoizedFilterSections = useMemo(() => filterSectionsData, [filterSectionsData]);
@@ -349,9 +359,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         key: 'group-by-header',
         type: 'group',
         label: (
-          <span className="font-semibold">
-            {t('groupByText', { defaultValue: 'Group by' })}
-          </span>
+          <span className="font-semibold">{t('groupByText', { defaultValue: 'Group by' })}</span>
         ),
         children: [
           {
@@ -692,7 +700,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           )}
 
           {isDataLoaded ? (
-            filterSectionsData.map(section => (
+            filterSectionsData.map(section =>
               section.id === 'groupBy' && showOverflowMenu ? null : (
                 <FilterDropdown
                   key={section.id}
@@ -707,7 +715,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   projectPhaseLabel={projectPhaseLabel}
                 />
               )
-            ))
+            )
           ) : (
             <div
               className={`flex items-center gap-2 px-2.5 py-1.5 text-xs ${themeClasses.secondaryText}`}
@@ -749,19 +757,24 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
                 {activeFiltersCount}{' '}
-                {activeFiltersCount !== 1 ? t('filtersActive', { defaultValue: 'Filters Active' }) : t('filterActive', { defaultValue: 'Filter Active' })}
+                {activeFiltersCount !== 1
+                  ? t('filtersActive', { defaultValue: 'Filters Active' })
+                  : t('filterActive', { defaultValue: 'Filter Active' })}
               </span>
               <button
                 onClick={clearAllFilters}
                 disabled={clearingFilters}
-                className={`text-xs font-medium transition-colors duration-150 ${clearingFilters
-                  ? 'text-gray-400 cursor-not-allowed'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:text-gray-300'
-                    : 'text-gray-600 hover:text-gray-700'
-                  }`}
+                className={`text-xs font-medium transition-colors duration-150 ${
+                  clearingFilters
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : isDarkMode
+                      ? 'text-gray-400 hover:text-gray-300'
+                      : 'text-gray-600 hover:text-gray-700'
+                }`}
               >
-                {clearingFilters ? t('clearing', { defaultValue: 'Clearing' }) : t('clearAll', { defaultValue: 'Clear All' })}
+                {clearingFilters
+                  ? t('clearing', { defaultValue: 'Clearing' })
+                  : t('clearAll', { defaultValue: 'Clear All' })}
               </button>
             </div>
           )}
@@ -777,7 +790,9 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   : 'border-gray-300 bg-white focus:ring-offset-white'
               }`}
             />
-            <span className={`text-xs ${themeClasses.optionText}`}>{t('showArchivedText', { defaultValue: 'Show Archived' })}</span>
+            <span className={`text-xs ${themeClasses.optionText}`}>
+              {t('showArchivedText', { defaultValue: 'Show Archived' })}
+            </span>
           </label>
 
           {position === 'list' && (

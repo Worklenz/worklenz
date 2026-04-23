@@ -1,7 +1,7 @@
 {
   "title": "Informes de Mi Equipo",
   "subtitle": "Seguimiento del tiempo e información de rendimiento para los miembros de su equipo",
-  
+
   "dateRange": {
     "label": "Rango de Fechas",
     "showing": "Mostrando",
@@ -103,4 +103,3 @@
 
   "export": "Exportar"
 }
-

@@ -710,7 +710,7 @@ export const useTaskSocketHandlers = () => {
     (response: any) => {
       // Update BOTH task-management slice (for task list) AND enhanced kanban slice
       // They should work independently with their own grouping settings
-      
+
       handleTaskReceivedUtil(response, {
         dispatch,
         currentGroupingV3: currentGroupingV3,
@@ -847,7 +847,7 @@ export const useTaskSocketHandlers = () => {
       // Update the task drawer if this task is currently open
       const state = store.getState();
       const currentTaskId = state.taskDrawerReducer?.selectedTaskId;
-      
+
       if (currentTaskId === data.id) {
         // Import the action dynamically to avoid circular dependencies
         import('@/features/task-drawer/task-drawer.slice').then(({ setTaskBillable }) => {

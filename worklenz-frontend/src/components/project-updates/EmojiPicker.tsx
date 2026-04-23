@@ -11,12 +11,14 @@ const EmojiPicker = ({ onSelect }: EmojiPickerProps) => {
   return (
     <Popover
       content={
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(5, 1fr)', 
-          gap: 8,
-          padding: 4
-        }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: 8,
+            padding: 4,
+          }}
+        >
           {EMOJIS.map(emoji => (
             <span
               key={emoji}
@@ -27,12 +29,12 @@ const EmojiPicker = ({ onSelect }: EmojiPickerProps) => {
                 padding: 6,
                 borderRadius: 4,
                 textAlign: 'center',
-                transition: 'background-color 0.2s'
+                transition: 'background-color 0.2s',
               }}
-              onMouseEnter={(e) => {
+              onMouseEnter={e => {
                 e.currentTarget.style.backgroundColor = '#f0f0f0';
               }}
-              onMouseLeave={(e) => {
+              onMouseLeave={e => {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }}
             >

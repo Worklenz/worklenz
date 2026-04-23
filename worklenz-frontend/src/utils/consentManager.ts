@@ -28,10 +28,38 @@ class ConsentManager {
 
   // Regions requiring explicit consent
   private readonly GDPR_REGIONS = [
-    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
-    'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
-    'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'GB', 'CH', 'IS',
-    'LI', 'NO'
+    'AT',
+    'BE',
+    'BG',
+    'HR',
+    'CY',
+    'CZ',
+    'DK',
+    'EE',
+    'FI',
+    'FR',
+    'DE',
+    'GR',
+    'HU',
+    'IE',
+    'IT',
+    'LV',
+    'LT',
+    'LU',
+    'MT',
+    'NL',
+    'PL',
+    'PT',
+    'RO',
+    'SK',
+    'SI',
+    'ES',
+    'SE',
+    'GB',
+    'CH',
+    'IS',
+    'LI',
+    'NO',
   ];
 
   /**
@@ -45,7 +73,7 @@ class ConsentManager {
       const consent: ConsentPreferences = JSON.parse(stored);
 
       // Check if consent has expired
-      const expiryTime = consent.timestamp + (this.CONSENT_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
+      const expiryTime = consent.timestamp + this.CONSENT_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
       if (Date.now() > expiryTime) {
         this.clearConsent();
         return null;
@@ -66,7 +94,7 @@ class ConsentManager {
       const preferences: ConsentPreferences = {
         analytics,
         timestamp: Date.now(),
-        region
+        region,
       };
 
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(preferences));
@@ -111,8 +139,11 @@ class ConsentManager {
       // Check timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const europeanTimezones = [
-        'Europe/', 'Atlantic/Reykjavik', 'Atlantic/Faroe',
-        'Atlantic/Madeira', 'Atlantic/Canary'
+        'Europe/',
+        'Atlantic/Reykjavik',
+        'Atlantic/Faroe',
+        'Atlantic/Madeira',
+        'Atlantic/Canary',
       ];
 
       if (europeanTimezones.some(tz => timezone.startsWith(tz))) {

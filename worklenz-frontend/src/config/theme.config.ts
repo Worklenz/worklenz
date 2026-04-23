@@ -6,15 +6,19 @@ export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => (
   token: {
     colorPrimary: '#1890ff',
     borderRadius: 6,
-    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+    fontFamily:
+      "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
     colorBgLayout: currentTheme === 'dark' ? '#141414' : '#f5f5f5',
     colorBgContainer: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
     colorText: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
-    colorTextSecondary: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.65)',
+    colorTextSecondary:
+      currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.65)' : 'rgba(0, 0, 0, 0.65)',
     colorBorder: currentTheme === 'dark' ? '#424242' : '#d9d9d9',
     colorBorderSecondary: currentTheme === 'dark' ? '#303030' : '#f0f0f0',
-    colorFillSecondary: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
-    colorFillTertiary: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+    colorFillSecondary:
+      currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)',
+    colorFillTertiary:
+      currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
   },
   components: {
     Layout: {

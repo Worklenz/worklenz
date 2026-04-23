@@ -419,7 +419,10 @@ export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, repo
     style={{ width }}
   >
     {reporter ? (
-      <span className="text-sm text-gray-500 dark:text-gray-400 truncate" title={safeTextDisplay(reporter)}>
+      <span
+        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+        title={safeTextDisplay(reporter)}
+      >
         {safeTextDisplay(reporter)}
       </span>
     ) : (

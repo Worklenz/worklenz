@@ -19,12 +19,12 @@ const AppearanceSettings = () => {
 
   const handleThemeToggle = () => {
     const newMode: ThemeMode = themeMode === 'dark' ? 'light' : 'dark';
-    
+
     // Track the theme toggle event
     trackMixpanelEvent(evt_dark_mode_toggled, {
-      mode: newMode
+      mode: newMode,
     });
-    
+
     dispatch(toggleTheme());
   };
 

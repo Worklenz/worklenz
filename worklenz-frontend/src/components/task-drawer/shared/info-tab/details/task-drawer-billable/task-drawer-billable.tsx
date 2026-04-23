@@ -23,15 +23,15 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
   const { t } = useTranslation('common');
   const dispatch = useAppDispatch();
   const isRestricted = shouldRestrictProjectHealth(currentSession);
-  
+
   // Read billable status directly from Redux to ensure real-time updates
   const billableFromRedux = useAppSelector(
     state => state.taskDrawerReducer?.taskFormViewModel?.task?.billable
   );
-  
+
   // Use local state to track the billable value for immediate UI feedback
   const [localBillable, setLocalBillable] = useState<boolean>(false);
-  
+
   // Sync local state with Redux or prop value
   useEffect(() => {
     const billableValue = billableFromRedux !== undefined ? billableFromRedux : task?.billable;
@@ -66,7 +66,10 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
   if (isRestricted) {
     return (
       <Tooltip title={t('upgrade-plan')} placement="top">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={() => dispatch(toggleUpgradeModal())}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+          onClick={() => dispatch(toggleUpgradeModal())}
+        >
           <Switch defaultChecked={false} disabled />
           <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
         </div>

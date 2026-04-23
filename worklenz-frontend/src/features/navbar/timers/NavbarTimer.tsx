@@ -19,7 +19,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
   taskId,
   isRunning,
   startTime,
-  onTimerChange
+  onTimerChange,
 }) => {
   const [timeString, setTimeString] = useState('0m 0s');
   const [localRunning, setLocalRunning] = useState(isRunning);
@@ -36,7 +36,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
     const start = new Date(startTime).getTime();
     const now = Date.now();
     const diff = Math.floor((now - start) / 1000);
-    
+
     const hours = Math.floor(diff / 3600);
     const minutes = Math.floor((diff % 3600) / 60);
     const seconds = diff % 60;
@@ -84,7 +84,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
               SocketEvents.TASK_TIMER_STOP.toString(),
               JSON.stringify({ task_id: conflictingTimer.task_id })
             );
-            
+
             // Start new timer
             setTimeout(() => {
               socket?.emit(
@@ -98,10 +98,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
         });
       } else {
         // No conflict, start timer directly
-        socket?.emit(
-          SocketEvents.TASK_TIMER_START.toString(),
-          JSON.stringify({ task_id: taskId })
-        );
+        socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
         setLocalRunning(true);
         onTimerChange?.();
       }
@@ -111,10 +108,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
   };
 
   const handleStopTimer = () => {
-    socket?.emit(
-      SocketEvents.TASK_TIMER_STOP.toString(),
-      JSON.stringify({ task_id: taskId })
-    );
+    socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
     setLocalRunning(false);
     onTimerChange?.();
   };

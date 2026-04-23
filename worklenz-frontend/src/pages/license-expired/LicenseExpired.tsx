@@ -48,7 +48,8 @@ const LicenseExpired = () => {
   const teamsList = useAppSelector(state => state.teamReducer.teamsList);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const session = authService?.getCurrentSession();
-  const subscriptionType = (session?.subscription_type as ISUBSCRIPTION_TYPE) || ISUBSCRIPTION_TYPE.TRIAL;
+  const subscriptionType =
+    (session?.subscription_type as ISUBSCRIPTION_TYPE) || ISUBSCRIPTION_TYPE.TRIAL;
 
   useEffect(() => {
     dispatch(fetchTeams());
@@ -169,7 +170,9 @@ const LicenseExpired = () => {
         cursor: 'pointer',
         padding: '8px 12px',
         backgroundColor: isActiveTeam(team.id)
-          ? (themeMode === 'dark' ? 'rgba(24, 144, 255, 0.15)' : '#e6f7ff')
+          ? themeMode === 'dark'
+            ? 'rgba(24, 144, 255, 0.15)'
+            : '#e6f7ff'
           : 'transparent',
         borderRadius: '6px',
         transition: 'all 0.2s ease',
@@ -184,9 +187,14 @@ const LicenseExpired = () => {
               style={{
                 fontSize: 13,
                 fontWeight: isActiveTeam(team.id) ? 600 : 400,
-                color: themeMode === 'dark'
-                  ? isActiveTeam(team.id) ? '#fff' : 'rgba(255, 255, 255, 0.85)'
-                  : isActiveTeam(team.id) ? '#000' : 'rgba(0, 0, 0, 0.85)',
+                color:
+                  themeMode === 'dark'
+                    ? isActiveTeam(team.id)
+                      ? '#fff'
+                      : 'rgba(255, 255, 255, 0.85)'
+                    : isActiveTeam(team.id)
+                      ? '#000'
+                      : 'rgba(0, 0, 0, 0.85)',
                 lineHeight: '18px',
               }}
               ellipsis
@@ -219,7 +227,7 @@ const LicenseExpired = () => {
   );
 
   const dropdownItems =
-    teamsList?.map((team) => ({
+    teamsList?.map(team => ({
       key: team.id || '',
       label: renderTeamCard(team),
       type: 'item' as const,
@@ -234,9 +242,10 @@ const LicenseExpired = () => {
           style={{
             backgroundColor: themeMode === 'dark' ? 'rgba(250, 173, 20, 0.15)' : '#fff7e6',
             border: `3px solid ${themeMode === 'dark' ? 'rgba(250, 173, 20, 0.4)' : '#ffc53d'}`,
-            boxShadow: themeMode === 'dark'
-              ? '0 4px 12px rgba(250, 173, 20, 0.1)'
-              : '0 4px 12px rgba(250, 173, 20, 0.15)',
+            boxShadow:
+              themeMode === 'dark'
+                ? '0 4px 12px rgba(250, 173, 20, 0.1)'
+                : '0 4px 12px rgba(250, 173, 20, 0.15)',
           }}
         >
           <ClockCircleOutlined
@@ -267,21 +276,20 @@ const LicenseExpired = () => {
           variant="borderless"
           className="flex flex-col"
           style={{
-            backgroundColor: themeMode === 'dark'
-              ? 'rgba(24, 144, 255, 0.05)'
-              : '#f0f9ff',
+            backgroundColor: themeMode === 'dark' ? 'rgba(24, 144, 255, 0.05)' : '#f0f9ff',
             height: '100%',
             borderRadius: '12px',
-            boxShadow: themeMode === 'dark'
-              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+            boxShadow:
+              themeMode === 'dark'
+                ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+                : '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
           styles={{
             body: {
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
-            }
+            },
           }}
         >
           <Space direction="vertical" size="middle" style={{ width: '100%', height: '100%' }}>
@@ -302,7 +310,7 @@ const LicenseExpired = () => {
             <List
               dataSource={features}
               split={false}
-              renderItem={(feature) => (
+              renderItem={feature => (
                 <List.Item className="py-3 px-0 border-0">
                   <Space align="start" size={10}>
                     <CheckCircleFilled
@@ -315,7 +323,10 @@ const LicenseExpired = () => {
                     <Text
                       className="text-base leading-relaxed"
                       style={{
-                        color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)'
+                        color:
+                          themeMode === 'dark'
+                            ? 'rgba(255, 255, 255, 0.85)'
+                            : 'rgba(0, 0, 0, 0.85)',
                       }}
                     >
                       {feature}
@@ -335,16 +346,17 @@ const LicenseExpired = () => {
             height: '100%',
             borderRadius: '12px',
             backgroundColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.02)' : '#ffffff',
-            boxShadow: themeMode === 'dark'
-              ? '0 2px 8px rgba(0, 0, 0, 0.3)'
-              : '0 2px 8px rgba(0, 0, 0, 0.06)',
+            boxShadow:
+              themeMode === 'dark'
+                ? '0 2px 8px rgba(0, 0, 0, 0.3)'
+                : '0 2px 8px rgba(0, 0, 0, 0.06)',
           }}
           styles={{
             body: {
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
-            }
+            },
           }}
         >
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -372,7 +384,9 @@ const LicenseExpired = () => {
                   : getUpgradeText()}
               </Button>
 
-              <Divider className="my-4" style={{ margin: '16px 0' }}>{t('or')}</Divider>
+              <Divider className="my-4" style={{ margin: '16px 0' }}>
+                {t('or')}
+              </Divider>
 
               <Text
                 type="secondary"
@@ -397,7 +411,8 @@ const LicenseExpired = () => {
                     <div
                       className="flex items-center justify-center w-8 h-8 rounded-lg"
                       style={{
-                        backgroundColor: themeMode === 'dark' ? 'rgba(82, 196, 26, 0.15)' : '#f6ffed',
+                        backgroundColor:
+                          themeMode === 'dark' ? 'rgba(82, 196, 26, 0.15)' : '#f6ffed',
                         border: themeMode === 'dark' ? '1px solid rgba(82, 196, 26, 0.3)' : 'none',
                       }}
                     >
@@ -412,7 +427,8 @@ const LicenseExpired = () => {
                     type="secondary"
                     className="text-sm block"
                     style={{
-                      color: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
+                      color:
+                        themeMode === 'dark' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(0, 0, 0, 0.45)',
                     }}
                   >
                     {t('switch-team-active-subscription')}
@@ -422,7 +438,8 @@ const LicenseExpired = () => {
                     style={{
                       padding: '12px',
                       borderRadius: '8px',
-                      backgroundColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#fafafa',
+                      backgroundColor:
+                        themeMode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#fafafa',
                     }}
                   >
                     <Text
@@ -445,7 +462,7 @@ const LicenseExpired = () => {
                         maxHeight: '280px',
                         overflowY: 'auto',
                         padding: '4px',
-                      }
+                      },
                     }}
                     trigger={['click']}
                     placement="bottomLeft"
@@ -460,7 +477,12 @@ const LicenseExpired = () => {
                         borderRadius: '8px',
                       }}
                     >
-                      <Flex gap={8} align="center" justify="space-between" style={{ width: '100%' }}>
+                      <Flex
+                        gap={8}
+                        align="center"
+                        justify="space-between"
+                        style={{ width: '100%' }}
+                      >
                         <span className="text-sm">{t('select-team')}</span>
                         <CaretDownFilled />
                       </Flex>
@@ -469,9 +491,7 @@ const LicenseExpired = () => {
                 </div>
               </>
             ) : (
-              <>
-
-              </>
+              <></>
             )}
           </Space>
         </Card>

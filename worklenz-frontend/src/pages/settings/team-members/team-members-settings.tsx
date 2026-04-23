@@ -134,6 +134,15 @@ const TeamMembersSettings = () => {
     }));
   }, []);
 
+  const handleJobTitleUpdate = useCallback((memberId: string, newJobTitle: string) => {
+    setModel(prevModel => ({
+      ...prevModel,
+      data: prevModel.data?.map(member =>
+        member.id === memberId ? { ...member, job_title: newJobTitle } : member
+      ),
+    }));
+  }, []);
+
   const handleRefresh = useCallback(() => {
     setIsLoading(true);
     getTeamMembers().finally(() => setIsLoading(false));
@@ -358,6 +367,20 @@ const TeamMembersSettings = () => {
             )}
           </div>
         ),
+      },{
+        key: 'job_title',
+        dataIndex: 'job_title',
+        title: t('jobTitleColumn'),
+        sorter: true,
+        onCell: (record: ITeamMemberViewModel) => ({
+          onClick: () => handleMemberClick(record.id || '', record.role_name),
+          style: { cursor: 'pointer' },
+        }),
+        render: (_, record: ITeamMemberViewModel) => (
+          <Typography.Text>
+            {record.job_title || <Typography.Text type="secondary">Select a Job Title</Typography.Text>}
+          </Typography.Text>
+        ),
       },
       {
         key: 'role_name',
@@ -532,9 +555,9 @@ const TeamMembersSettings = () => {
                 title={
                   isInviteRestricted
                     ? tCommon('license-expired-subtitle', {
-                        defaultValue:
-                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                      })
+                      defaultValue:
+                        'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                    })
                     : ''
                 }
               >
@@ -639,6 +662,7 @@ const TeamMembersSettings = () => {
         <UpdateMemberDrawer
           selectedMemberId={selectedMemberId}
           onRoleUpdate={handleRoleUpdate}
+          onJobTitleUpdate={handleJobTitleUpdate}
           initialRoleName={selectedMemberRole || undefined}
         />,
         document.body

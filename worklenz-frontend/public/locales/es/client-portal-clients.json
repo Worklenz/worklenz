@@ -254,6 +254,12 @@
     "not_invited": "No Invitado",
     "expired": "Expirado"
   },
+  "portalStatusHelp": {
+    "active": "Activo: El cliente aceptó y puede acceder al portal.",
+    "invited": "Invitado: Se envió la invitación y sigue siendo válida, pero aún no fue aceptada.",
+    "notInvited": "No Invitado: Aún no se ha enviado ninguna invitación.",
+    "expired": "Expirado: La invitación anterior expiró y debe reenviarse."
+  },
 
   "inviteToPortalTooltip": "Invitar al Portal",
   "resendInvitationTooltip": "Reenviar Invitación",

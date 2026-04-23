@@ -19,14 +19,18 @@ export const SlackProjectIntegration: React.FC<SlackProjectIntegrationProps> = (
   projectName,
   status,
   onClose,
-  onRefresh
+  onRefresh,
 }) => {
   const { t } = useTranslation('project-integrations');
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleClick = () => {
     if (!status?.workspaceConnected) {
-      message.warning(t('slack.notConnected', { defaultValue: 'Please connect your Slack workspace in Settings first' }));
+      message.warning(
+        t('slack.notConnected', {
+          defaultValue: 'Please connect your Slack workspace in Settings first',
+        })
+      );
       return;
     }
     // Close the parent dropdown when opening the modal
@@ -43,7 +47,9 @@ export const SlackProjectIntegration: React.FC<SlackProjectIntegrationProps> = (
       <IntegrationItem
         icon={<SlackIcon />}
         title={t('slack.title', { defaultValue: 'Slack' })}
-        description={t('slack.description', { defaultValue: 'Send notifications to Slack channels' })}
+        description={t('slack.description', {
+          defaultValue: 'Send notifications to Slack channels',
+        })}
         badge={status?.channelCount}
         channels={status?.channels?.map(ch => `#${ch.name}`)}
         onClick={handleClick}

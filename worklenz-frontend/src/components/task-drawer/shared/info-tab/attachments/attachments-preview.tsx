@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
-import {
-  Button,
-  Tooltip,
-  Popconfirm,
-  message,
-  dayjs,
-} from '@/shared/antd-imports';
+import { Button, Tooltip, Popconfirm, message, dayjs } from '@/shared/antd-imports';
 import {
   EyeOutlined,
   DownloadOutlined,
@@ -55,9 +49,9 @@ const AttachmentsPreview = ({
     try {
       setDownloading(true);
       const res = await attachmentsApiService.downloadAttachment(id, name);
-      if (res && res.done) {
+      if (res && res.done && res.body?.url) {
         const link = document.createElement('a');
-        link.href = res.body || '';
+        link.href = res.body.url;
         link.download = name;
         link.click();
         link.remove();

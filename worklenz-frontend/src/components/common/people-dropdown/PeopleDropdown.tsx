@@ -305,9 +305,11 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
                         {member.email}
                         {member.pending_invitation && (
                           <span className="text-red-400 ml-1">
-                            ({t('customColumns.peopleDropdown.pending', {
+                            (
+                            {t('customColumns.peopleDropdown.pending', {
                               defaultValue: 'Pending',
-                            })})
+                            })}
+                            )
                           </span>
                         )}
                       </div>

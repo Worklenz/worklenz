@@ -119,31 +119,40 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
   const columnWidth = getColumnWidth(viewMode);
 
   // Theme-aware colors
-  const ganttColors = useMemo(() => ({
-    todayColor: isDarkMode ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59, 130, 246, 0.1)',
-    projectProgressColor: isDarkMode ? '#34d399' : '#10b981',
-    projectBackgroundColor: isDarkMode ? 'rgba(52, 211, 153, 0.2)' : 'rgba(16, 185, 129, 0.1)',
-  }), [isDarkMode]);
+  const ganttColors = useMemo(
+    () => ({
+      todayColor: isDarkMode ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+      projectProgressColor: isDarkMode ? '#34d399' : '#10b981',
+      projectBackgroundColor: isDarkMode ? 'rgba(52, 211, 153, 0.2)' : 'rgba(16, 185, 129, 0.1)',
+    }),
+    [isDarkMode]
+  );
 
   // Handle task date change (drag-drop)
-  const handleDateChange = useCallback(async (task: Task) => {
-    // Skip project-level tasks
-    if (task.id.startsWith('project-')) return;
+  const handleDateChange = useCallback(
+    async (task: Task) => {
+      // Skip project-level tasks
+      if (task.id.startsWith('project-')) return;
 
-    try {
-      await updateTaskDates({
-        taskId: task.id,
-        start_date: task.start.toISOString(),
-        end_date: task.end.toISOString(),
-      }).unwrap();
+      try {
+        await updateTaskDates({
+          taskId: task.id,
+          start_date: task.start.toISOString(),
+          end_date: task.end.toISOString(),
+        }).unwrap();
 
-      message.success(t('taskDatesUpdated', { defaultValue: 'Task dates updated' }));
-    } catch (error: any) {
-      message.error(error?.data?.message || t('taskDatesError', { defaultValue: 'Failed to update task dates' }));
-      // Refetch to restore original state
-      refetchTasks();
-    }
-  }, [updateTaskDates, refetchTasks, t]);
+        message.success(t('taskDatesUpdated', { defaultValue: 'Task dates updated' }));
+      } catch (error: any) {
+        message.error(
+          error?.data?.message ||
+            t('taskDatesError', { defaultValue: 'Failed to update task dates' })
+        );
+        // Refetch to restore original state
+        refetchTasks();
+      }
+    },
+    [updateTaskDates, refetchTasks, t]
+  );
 
   // Handle task click
   const handleTaskClick = useCallback((task: Task) => {
@@ -177,7 +186,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
     // Use our comprehensive socket handlers instead of individual ones
     // The useScheduleSocketHandlers hook will handle all task-related events
     // and invalidate the appropriate RTK Query cache, which will trigger refetch
-    
+
     return () => {
       // Cleanup is handled by useScheduleSocketHandlers
     };
@@ -200,9 +209,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
           description={t('timelineError', { defaultValue: 'Failed to load timeline' })}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         >
-          <Button onClick={() => refetchTasks()}>
-            {t('retry', { defaultValue: 'Retry' })}
-          </Button>
+          <Button onClick={() => refetchTasks()}>{t('retry', { defaultValue: 'Retry' })}</Button>
         </Empty>
       </Flex>
     );
@@ -231,10 +238,7 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
       {/* Action Buttons */}
       <Flex justify="flex-end" gap={8} style={{ marginBottom: 16 }}>
         <Tooltip title={t('manageTimeOff', { defaultValue: 'Manage Time-Off' })}>
-          <Button
-            icon={<CalendarOutlined />}
-            onClick={() => setIsTimeOffModalVisible(true)}
-          >
+          <Button icon={<CalendarOutlined />} onClick={() => setIsTimeOffModalVisible(true)}>
             {t('timeOff', { defaultValue: 'Time-Off' })}
           </Button>
         </Tooltip>
@@ -283,7 +287,9 @@ const TaskTimelineView: React.FC<TaskTimelineViewProps> = ({ type, date }) => {
           }}
         >
           <Empty
-            description={t('noTasksInRange', { defaultValue: 'No tasks found in the selected date range' })}
+            description={t('noTasksInRange', {
+              defaultValue: 'No tasks found in the selected date range',
+            })}
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
         </Flex>

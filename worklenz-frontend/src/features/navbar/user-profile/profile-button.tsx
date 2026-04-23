@@ -1,11 +1,19 @@
-import { Button, Card, Dropdown, Flex, MenuProps, Tooltip, Typography } from '@/shared/antd-imports';
-import { 
-  UserOutlined, 
-  SunOutlined, 
-  MoonOutlined, 
-  SettingOutlined, 
+import {
+  Button,
+  Card,
+  Dropdown,
+  Flex,
+  MenuProps,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
+import {
+  UserOutlined,
+  SunOutlined,
+  MoonOutlined,
+  SettingOutlined,
   LogoutOutlined,
-  DashboardOutlined
+  DashboardOutlined,
 } from '@/shared/antd-imports';
 
 import { Link } from 'react-router-dom';
@@ -104,7 +112,7 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
             <SettingOutlined />
             {t('settings')}
           </Link>
-          <div 
+          <div
             onClick={handleThemeToggle}
             style={{
               ...getLinkStyle(),

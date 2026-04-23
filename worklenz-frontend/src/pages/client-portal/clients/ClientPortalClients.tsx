@@ -30,7 +30,11 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { createPortal } from 'react-dom';
 import React, { useEffect } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { MixpanelEvents, ClientPortalEventProps, ClientPortalActionEventProps } from '@/types/mixpanel-events.types';
+import {
+  MixpanelEvents,
+  ClientPortalEventProps,
+  ClientPortalActionEventProps,
+} from '@/types/mixpanel-events.types';
 
 const { Title } = Typography;
 
@@ -83,7 +87,7 @@ const ClientPortalClients = () => {
       page: 'clients',
       section: 'client_portal',
       total_items: totalClients,
-      source: 'direct_visit'
+      source: 'direct_visit',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
@@ -96,7 +100,7 @@ const ClientPortalClients = () => {
       item_type: 'client',
       page: 'clients',
       section: 'client_portal',
-      source: 'add_client_button'
+      source: 'add_client_button',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_CREATED, actionProps);
@@ -109,7 +113,7 @@ const ClientPortalClients = () => {
       item_type: 'client',
       page: 'clients',
       section: 'client_portal',
-      source: 'invite_button'
+      source: 'invite_button',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CLIENT_LINK_COPIED, actionProps);

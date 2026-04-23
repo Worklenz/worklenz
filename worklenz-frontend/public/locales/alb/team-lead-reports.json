@@ -1,7 +1,7 @@
 {
   "title": "Raportet e Ekipit Tim",
   "subtitle": "Ndjekja e kohës dhe njohuri mbi performancën për anëtarët e ekipit tuaj",
-  
+
   "dateRange": {
     "label": "Periudha Kohore",
     "showing": "Duke Treguar",
@@ -103,4 +103,3 @@
 
   "export": "Eksporto"
 }
-

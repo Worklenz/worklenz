@@ -1,6 +1,6 @@
 /**
  * Survey Configuration
- * 
+ *
  * This file contains configuration for the survey popup behavior,
  * including route exclusions, frequency caps, and localStorage keys.
  */
@@ -26,10 +26,7 @@ export const SURVEY_EXCLUDED_ROUTES: string[] = [
 ];
 
 // Routes where the survey popup IS allowed to appear
-export const SURVEY_ALLOWED_ROUTES: string[] = [
-  '/worklenz/home',
-  '/worklenz/projects',
-];
+export const SURVEY_ALLOWED_ROUTES: string[] = ['/worklenz/home', '/worklenz/projects'];
 
 // LocalStorage keys for survey state management
 export const SURVEY_STORAGE_KEYS = {
@@ -114,7 +111,7 @@ export const hasFrequencyCapPassed = (): boolean => {
     const skippedDate = new Date(skippedAt);
     const now = new Date();
     const diffDays = (now.getTime() - skippedDate.getTime()) / (1000 * 60 * 60 * 24);
-    
+
     return diffDays >= SURVEY_FREQUENCY_CONFIG.DAYS_BETWEEN_SHOWS;
   } catch {
     return true;
@@ -127,7 +124,7 @@ export const hasFrequencyCapPassed = (): boolean => {
 export const recordSurveySkip = (): void => {
   try {
     localStorage.setItem(SURVEY_STORAGE_KEYS.SKIPPED_AT, new Date().toISOString());
-    
+
     // Increment show count
     const currentCount = parseInt(localStorage.getItem(SURVEY_STORAGE_KEYS.SHOW_COUNT) || '0', 10);
     localStorage.setItem(SURVEY_STORAGE_KEYS.SHOW_COUNT, String(currentCount + 1));

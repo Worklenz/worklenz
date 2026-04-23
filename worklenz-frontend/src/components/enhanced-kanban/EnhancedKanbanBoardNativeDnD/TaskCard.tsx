@@ -40,7 +40,13 @@ import {
   updateEnhancedKanbanTaskAssignees,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import TaskProgressCircle from './TaskProgressCircle';
-import { Button, Modal, DeleteOutlined, InboxOutlined, UserAddOutlined } from '@/shared/antd-imports';
+import {
+  Button,
+  Modal,
+  DeleteOutlined,
+  InboxOutlined,
+  UserAddOutlined,
+} from '@/shared/antd-imports';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 
@@ -306,8 +312,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
 
     // Archive/Unarchive logic
     const handleArchiveTask = async (task: IProjectTask | null) => {
-      if (!task || !task.id || !projectId || task.is_parent_container) return;
-      
+      if (!task || !task.id || !projectId) return;
+      if (task.is_parent_container) return;
       try {
         const body = {
           tasks: [task.id],
@@ -333,7 +339,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
           } else {
             dispatch(deleteKanbanTask(task.id));
           }
-          
+
           // No need to refetch - task is just removed from current view
           // It will appear when user toggles the "Show Archived" filter
         }
@@ -348,7 +354,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     // Assign to me logic
     const handleAssignToMe = async (task: IProjectTask | null) => {
       if (!task || !task.id || !projectId) return;
-      
+
       try {
         const body = {
           tasks: [task.id],

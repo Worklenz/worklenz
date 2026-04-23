@@ -6,7 +6,9 @@ import { setUser, setTag, addBreadcrumb } from '@/config/sentry';
 export const useSentryIntegration = () => {
   const user = useAppSelector((state: any) => state.auth?.user);
   const theme = useAppSelector((state: any) => state.userReducer?.theme);
-  const organization = useAppSelector((state: any) => state.organizationReducer?.currentOrganization);
+  const organization = useAppSelector(
+    (state: any) => state.organizationReducer?.currentOrganization
+  );
 
   useEffect(() => {
     // Set user context in Sentry when user data changes
@@ -46,7 +48,7 @@ export const useSentryIntegration = () => {
     if (organization) {
       setTag('organizationId', organization.id);
       setTag('organizationName', organization.name);
-      
+
       addBreadcrumb({
         category: 'organization',
         message: `Organization context: ${organization.name}`,
@@ -77,7 +79,7 @@ export const trackAnalyticsEvent = (eventName: string, properties?: Record<strin
 // Performance tracking helper
 export const trackPerformance = (operationName: string, startTime: number, endTime?: number) => {
   const duration = endTime ? endTime - startTime : performance.now() - startTime;
-  
+
   addBreadcrumb({
     category: 'performance',
     message: `${operationName} completed`,
@@ -115,9 +117,13 @@ export const trackApiError = (error: any, endpoint: string, method: string, payl
 };
 
 // Feature usage tracking
-export const trackFeatureUsage = (featureName: string, action: string, properties?: Record<string, any>) => {
+export const trackFeatureUsage = (
+  featureName: string,
+  action: string,
+  properties?: Record<string, any>
+) => {
   const eventName = `${featureName}_${action}`;
-  
+
   addBreadcrumb({
     category: 'feature',
     message: eventName,

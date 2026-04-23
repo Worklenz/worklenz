@@ -251,27 +251,27 @@
     width: 95% !important;
     max-width: 800px;
   }
-  
+
   .license-modal-container {
     flex-direction: column;
     min-height: auto;
   }
-  
+
   .license-modal-main-content {
     padding: 24px;
   }
-  
+
   .license-modal-sidebar {
     width: 100%;
     border-left: none;
     border-top: 1px solid #e8e8e8;
     padding: 24px;
   }
-  
+
   [data-theme="dark"] .license-modal-sidebar {
     border-top-color: #434343;
   }
-  
+
   .license-modal-divider {
     display: none;
   }
@@ -281,27 +281,27 @@
   .license-modal-main-content {
     padding: 20px;
   }
-  
+
   .license-modal-icon {
     font-size: 48px;
   }
-  
+
   .license-modal-title {
     font-size: 20px !important;
   }
-  
+
   .license-modal-subtitle {
     font-size: 14px;
   }
-  
+
   .license-modal-features-card {
     max-width: none;
   }
-  
+
   .license-modal-sidebar {
     padding: 20px;
   }
-  
+
   .license-modal-sidebar-icon {
     font-size: 24px;
   }

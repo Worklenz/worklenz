@@ -151,6 +151,7 @@ export const PriorityColorCodes: { [x: number]: string } = {
   0: '#75c997',
   1: '#fbc84c',
   2: '#f37070',
+  3: '#8B1A1A',
 };
 
 export const API_BASE_URL = '/api/v1';
@@ -180,6 +181,7 @@ export const TASK_STATUS_DONE_COLOR = '#75c997';
 export const TASK_PRIORITY_LOW_COLOR = '#75c997';
 export const TASK_PRIORITY_MEDIUM_COLOR = '#fbc84c';
 export const TASK_PRIORITY_HIGH_COLOR = '#f37070';
+export const TASK_PRIORITY_CRITICAL_COLOR = '#8B1A1A';
 
 export const TASK_DUE_COMPLETED_COLOR = '#75c997';
 export const TASK_DUE_UPCOMING_COLOR = '#70a6f3';

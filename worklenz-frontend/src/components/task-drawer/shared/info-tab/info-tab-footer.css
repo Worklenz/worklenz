@@ -6,7 +6,8 @@
 
 /* Contenteditable div styling */
 .custom-mentions-editable {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5715;
   transition: border-color 0.3s;
@@ -100,7 +101,7 @@
  */
 
 .url-highlight-light {
-  color: #1677ff !important;               /* Ant Design blue-6 */
+  color: #1677ff !important; /* Ant Design blue-6 */
   text-decoration: underline !important;
   text-underline-offset: 2px !important;
   text-decoration-thickness: 1px !important;
@@ -123,7 +124,7 @@
 }
 
 .url-highlight-dark {
-  color: #4096ff !important;               /* Ant Design blue-5 — readable on dark bg */
+  color: #4096ff !important; /* Ant Design blue-5 — readable on dark bg */
   text-decoration: underline !important;
   text-underline-offset: 2px !important;
   text-decoration-thickness: 1px !important;
@@ -161,7 +162,8 @@
 /* ─── Dropdown ───────────────────────────────────────────────────────────── */
 
 .mentions-dropdown {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   border: 1px solid;
   border-radius: 4px;
   max-height: 200px;
@@ -283,7 +285,7 @@
   display: block;
   margin: 0;
   line-height: inherit;
-  content: '';
+  content: "";
 }
 
 .custom-mentions-editable > * {
@@ -308,7 +310,7 @@
 
 .mention-highlight-light::after,
 .mention-highlight-dark::after {
-  content: '\00a0';
+  content: "\00a0";
   font-size: 0;
   display: inline-block;
   width: 0;
@@ -318,7 +320,7 @@
 
 .custom-mentions-editable > .mention-highlight-light:last-child::after,
 .custom-mentions-editable > .mention-highlight-dark:last-child::after {
-  content: '';
+  content: "";
 }
 
 .custom-mentions-editable * {

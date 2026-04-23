@@ -76,6 +76,9 @@ export default function HandleExceptions(options?: IExceptionHandlerConfig) {
         return await originalMethod.apply(target, args);
       } catch (error: any) {
         const [req, res] = args;
+        if (!res || typeof res.status !== "function" || typeof res.send !== "function") {
+          throw error;
+        }
         return handleError(error, res, opt, req);
       }
     };

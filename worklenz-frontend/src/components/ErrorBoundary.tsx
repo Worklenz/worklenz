@@ -1,13 +1,5 @@
 import React from 'react';
-import {
-  Button,
-  Result,
-  Collapse,
-  Typography,
-  Flex,
-  Space,
-  Card,
-} from '@/shared/antd-imports';
+import { Button, Result, Collapse, Typography, Flex, Space, Card } from '@/shared/antd-imports';
 import {
   ReloadOutlined,
   HomeOutlined,
@@ -86,11 +78,11 @@ class ErrorBoundary extends React.Component<Props, State> {
 
         // Auto-recover after resize stabilizes (500ms)
         this.resizeTimeoutId = setTimeout(() => {
-          this.setState({ 
-            hasError: false, 
-            error: undefined, 
+          this.setState({
+            hasError: false,
+            error: undefined,
             retryCount: this.state.retryCount + 1,
-            isManualReset: false 
+            isManualReset: false,
           });
           this.resizeTimeoutId = null;
         }, 500);
@@ -113,11 +105,11 @@ class ErrorBoundary extends React.Component<Props, State> {
     }
 
     // Reset error state and mark as manual reset
-    this.setState({ 
-      hasError: false, 
-      error: undefined, 
+    this.setState({
+      hasError: false,
+      error: undefined,
       retryCount: 0,
-      isManualReset: true 
+      isManualReset: true,
     });
 
     // Reset the manual reset flag after a brief delay to allow re-render
@@ -179,9 +171,10 @@ const ErrorFallback: React.FC<{ error?: Error; onReset?: () => void }> = ({ erro
         style={{
           maxWidth: '600px',
           width: '100%',
-          boxShadow: themeMode === 'dark' 
-            ? '0 4px 12px rgba(0, 0, 0, 0.5)' 
-            : '0 4px 12px rgba(0, 0, 0, 0.1)',
+          boxShadow:
+            themeMode === 'dark'
+              ? '0 4px 12px rgba(0, 0, 0, 0.5)'
+              : '0 4px 12px rgba(0, 0, 0, 0.1)',
           borderRadius: '8px',
         }}
         styles={{ body: { padding: '32px' } }}
@@ -209,7 +202,10 @@ const ErrorFallback: React.FC<{ error?: Error; onReset?: () => void }> = ({ erro
                 marginTop: '8px',
               }}
             >
-              {t('error.description', 'We encountered an unexpected error. Please try again or return to the home page.')}
+              {t(
+                'error.description',
+                'We encountered an unexpected error. Please try again or return to the home page.'
+              )}
             </Typography.Text>
           }
           extra={
@@ -247,7 +243,7 @@ const ErrorFallback: React.FC<{ error?: Error; onReset?: () => void }> = ({ erro
               {error && (
                 <Collapse
                   ghost
-                  expandIcon={(panelProps) =>
+                  expandIcon={panelProps =>
                     panelProps.isActive ? (
                       <DownOutlined
                         style={{

@@ -79,7 +79,9 @@ export function SlackIntegration() {
           return; // Exit early to prevent API calls
         } else {
           // Show success message in non-popup mode
-          messageApi.success(t('connection.success', { defaultValue: 'Slack workspace connected successfully!' }));
+          messageApi.success(
+            t('connection.success', { defaultValue: 'Slack workspace connected successfully!' })
+          );
           // Clean up URL params
           window.history.replaceState({}, '', window.location.pathname);
           // Update connection status
@@ -92,7 +94,9 @@ export function SlackIntegration() {
           return; // Exit early to prevent API calls
         } else {
           // Show error message in non-popup mode
-          messageApi.error(t('connection.error', { defaultValue: 'Failed to connect Slack workspace' }));
+          messageApi.error(
+            t('connection.error', { defaultValue: 'Failed to connect Slack workspace' })
+          );
           // Clean up URL params
           window.history.replaceState({}, '', window.location.pathname);
         }
@@ -103,7 +107,9 @@ export function SlackIntegration() {
           return; // Exit early to prevent API calls
         } else {
           // Show cancelled message in non-popup mode
-          messageApi.info(t('connection.cancelled', { defaultValue: 'Slack installation cancelled' }));
+          messageApi.info(
+            t('connection.cancelled', { defaultValue: 'Slack installation cancelled' })
+          );
           // Clean up URL params
           window.history.replaceState({}, '', window.location.pathname);
         }
@@ -174,16 +180,22 @@ export function SlackIntegration() {
         if (event.origin !== window.location.origin) return;
 
         if (event.data.type === 'SLACK_AUTH_SUCCESS') {
-          messageApi.success(t('connection.success', { defaultValue: 'Slack workspace connected successfully!' }));
+          messageApi.success(
+            t('connection.success', { defaultValue: 'Slack workspace connected successfully!' })
+          );
           checkSlackConnection();
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'SLACK_AUTH_ERROR') {
-          messageApi.error(t('connection.error', { defaultValue: 'Failed to connect Slack workspace' }));
+          messageApi.error(
+            t('connection.error', { defaultValue: 'Failed to connect Slack workspace' })
+          );
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         } else if (event.data.type === 'SLACK_AUTH_CANCELLED') {
-          messageApi.info(t('connection.cancelled', { defaultValue: 'Slack installation cancelled' }));
+          messageApi.info(
+            t('connection.cancelled', { defaultValue: 'Slack installation cancelled' })
+          );
           setLoading(false);
           window.removeEventListener('message', handleMessage);
         }
@@ -296,7 +308,7 @@ export function SlackIntegration() {
         title: t('deleteConfig.title'),
         content: t('deleteConfig.content'),
         okText: t('deleteConfig.okText'),
-        cancelText: t('cancel', { ns: 'common' }),  
+        cancelText: t('cancel', { ns: 'common' }),
         okButtonProps: { danger: true },
         onOk: async () => {
           try {

@@ -65,16 +65,19 @@ const Projects: React.FC = () => {
     }
   }, [requestParams]);
 
-  const deleteProject = useCallback(async (id: string) => {
-    if (!id) return;
-    try {
-      await projectsApiService.deleteProject(id);
-    } catch (error) {
-      logger.error('Error deleting project', error);
-    } finally {
-      fetchProjects();
-    }
-  }, [fetchProjects]);
+  const deleteProject = useCallback(
+    async (id: string) => {
+      if (!id) return;
+      try {
+        await projectsApiService.deleteProject(id);
+      } catch (error) {
+        logger.error('Error deleting project', error);
+      } finally {
+        fetchProjects();
+      }
+    },
+    [fetchProjects]
+  );
 
   useEffect(() => {
     trackMixpanelEvent(evt_admin_center_projects_visit);
@@ -111,7 +114,9 @@ const Projects: React.FC = () => {
         ),
       },
       {
-        title: <span style={{ display: 'flex', justifyContent: 'center' }}>{t('membersCount')}</span>,
+        title: (
+          <span style={{ display: 'flex', justifyContent: 'center' }}>{t('membersCount')}</span>
+        ),
         key: 'membersCount',
         render: (record: IOrganizationProject) => (
           <Typography.Text

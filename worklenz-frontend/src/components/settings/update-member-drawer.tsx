@@ -35,12 +35,14 @@ import { canManageUserRole, getAvailableRoleOptions } from '@/utils/role-permiss
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
   onRoleUpdate?: (memberId: string, newRoleName: string) => void;
+  onJobTitleUpdate?: (memberId: string, newJobTitle: string) => void;
   initialRoleName?: string;
 };
 
 const UpdateMemberDrawer = ({
   selectedMemberId,
   onRoleUpdate,
+  onJobTitleUpdate,
   initialRoleName,
 }: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
@@ -105,9 +107,9 @@ const UpdateMemberDrawer = ({
       const res = await teamMembersApiService.get(1, 1000, 'name', 'asc', '', true);
       if (res.done) {
         // Filter for Team Leads only and exclude the member being assigned
-        const leads = res.body.data?.filter(
-          m => m.id !== selectedMemberId && m.role_name === 'Team Lead'
-        ) || [];
+        const leads =
+          res.body.data?.filter(m => m.id !== selectedMemberId && m.role_name === 'Team Lead') ||
+          [];
         setTeamLeads(leads);
       }
     } catch (error) {
@@ -189,6 +191,9 @@ const UpdateMemberDrawer = ({
             await teamManagementApiService.removeManagerAssignment(selectedMemberId);
           }
         }
+        const selectedJobTitleId = form.getFieldValue('jobTitle'); //  before reset
+        const resolvedJobTitle =
+          jobTitles.find(j => j.id === selectedJobTitleId)?.name ?? selectedJobTitleId ?? '';
 
         form.resetFields();
         setSelectedJobTitle(null);
@@ -202,6 +207,7 @@ const UpdateMemberDrawer = ({
               ? 'Admin'
               : 'Member';
         onRoleUpdate?.(selectedMemberId, newRoleName);
+        onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
 
         const authorizeResponse = await authApiService.verify();
         if (authorizeResponse.authenticated) {

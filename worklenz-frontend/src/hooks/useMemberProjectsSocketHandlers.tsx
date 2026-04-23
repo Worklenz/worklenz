@@ -24,13 +24,13 @@ export const useMemberProjectsSocketHandlers = (
 
       const tagsToInvalidate = [
         { type: 'MemberProjects' as const, id: memberId },
-        { type: 'MemberProjects' as const, id: `${memberId}-${chartStart}` }
+        { type: 'MemberProjects' as const, id: `${memberId}-${chartStart}` },
       ];
 
       if (forceRefetch) {
         // Force immediate refetch by invalidating and then triggering callback
         dispatch(scheduleApi.util.invalidateTags(tagsToInvalidate));
-        
+
         // Trigger immediate callback for additional handling
         if (onMemberProjectUpdate) {
           setTimeout(() => onMemberProjectUpdate(memberId), 0);
@@ -38,7 +38,7 @@ export const useMemberProjectsSocketHandlers = (
       } else {
         // Normal invalidation
         dispatch(scheduleApi.util.invalidateTags(tagsToInvalidate));
-        
+
         if (onMemberProjectUpdate) {
           onMemberProjectUpdate(memberId);
         }
@@ -134,20 +134,20 @@ export const useMemberProjectsSocketHandlers = (
       // Task date changes - most critical for segments
       [SocketEvents.TASK_START_DATE_CHANGE.toString()]: handleTaskDateChange,
       [SocketEvents.TASK_END_DATE_CHANGE.toString()]: handleTaskDateChange,
-      
+
       // Task estimation changes - affects workload calculations
       [SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString()]: handleTaskEstimationChange,
-      
+
       // Assignee changes - affects which projects appear for members
       [SocketEvents.TASK_ASSIGNEES_CHANGE.toString()]: handleTaskAssigneeChange,
       [SocketEvents.QUICK_ASSIGNEES_UPDATE.toString()]: handleTaskAssigneeChange,
-      
+
       // Status changes - might affect task visibility
       [SocketEvents.TASK_STATUS_CHANGE.toString()]: handleTaskStatusChange,
-      
+
       // New task creation
       [SocketEvents.QUICK_TASK.toString()]: handleNewTaskCreated,
-      
+
       // Other task changes that might affect segments
       [SocketEvents.TASK_NAME_CHANGE.toString()]: handleTaskDateChange, // Reuse date handler
       [SocketEvents.TASK_PRIORITY_CHANGE.toString()]: handleTaskDateChange, // Reuse date handler

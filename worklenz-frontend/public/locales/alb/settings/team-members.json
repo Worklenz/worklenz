@@ -91,5 +91,6 @@
   "managerTooltip": "Caktoni një udhëheqës ekipi për të menaxhuar këtë anëtar. Vetëm anëtarët mund t'u caktohen menaxherëve.",
   "selectManagerPlaceholder": "Zgjidhni një udhëheqës ekipi si menaxher",
   "manager_removed_successfully": "Caktimi i menaxherit u hoq me sukses",
-  "updateError": "Dështoi përditësimi i anëtarit të ekipit. Ju lutemi provoni përsëri."
+  "updateError": "Dështoi përditësimi i anëtarit të ekipit. Ju lutemi provoni përsëri.",
+  "noTeamLeadsAvailable": "Nuk ka drejtues ekipi të disponueshëm"
 }

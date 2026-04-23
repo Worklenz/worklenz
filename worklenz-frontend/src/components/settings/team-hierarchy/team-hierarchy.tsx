@@ -1,6 +1,29 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { Card, Typography, Spin, Alert, Avatar, Tag, Space, Tooltip, Row, Col, Divider, Badge, Empty, Flex, theme } from '@/shared/antd-imports';
-import { UserOutlined, TeamOutlined, CrownOutlined, UsergroupAddOutlined, UserSwitchOutlined, MailOutlined } from '@ant-design/icons';
+import {
+  Card,
+  Typography,
+  Spin,
+  Alert,
+  Avatar,
+  Tag,
+  Space,
+  Tooltip,
+  Row,
+  Col,
+  Divider,
+  Badge,
+  Empty,
+  Flex,
+  theme,
+} from '@/shared/antd-imports';
+import {
+  UserOutlined,
+  TeamOutlined,
+  CrownOutlined,
+  UsergroupAddOutlined,
+  UserSwitchOutlined,
+  MailOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { getRoleColor } from '@/types/roles/role.types';
@@ -47,7 +70,7 @@ const TeamHierarchy: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await teamManagementApiService.getTeamHierarchy();
-      
+
       if (response.done && response.body) {
         setHierarchyData(response.body);
       } else {
@@ -67,18 +90,19 @@ const TeamHierarchy: React.FC = () => {
 
     // Get all team leads
     const teamLeads = members.filter(member => member.role_name === 'Team Lead');
-    
+
     // Get unassigned members (no team lead)
-    const unassignedMembers = members.filter(member => 
-      !member.reports_to_member_id && 
-      member.role_name !== 'Team Lead' && 
-      member.role_name !== 'Owner' && 
-      member.role_name !== 'Admin'
+    const unassignedMembers = members.filter(
+      member =>
+        !member.reports_to_member_id &&
+        member.role_name !== 'Team Lead' &&
+        member.role_name !== 'Owner' &&
+        member.role_name !== 'Admin'
     );
 
     // Get leadership (Owner, Admin)
-    const leadership = members.filter(member => 
-      member.role_name === 'Owner' || member.role_name === 'Admin'
+    const leadership = members.filter(
+      member => member.role_name === 'Owner' || member.role_name === 'Admin'
     );
 
     const groups: HierarchyGroup[] = [];
@@ -88,22 +112,28 @@ const TeamHierarchy: React.FC = () => {
       groups.push({
         teamLead: null,
         directReports: leadership,
-        indirectReports: []
+        indirectReports: [],
       });
     }
 
     // Add team lead groups
     teamLeads.forEach(teamLead => {
-      const directReports = members.filter(member => 
-        member.reports_to_member_id === teamLead.id &&
-        member.role_name !== 'Team Lead' &&
-        member.role_name !== 'Owner' &&
-        member.role_name !== 'Admin'
+      const directReports = members.filter(
+        member =>
+          member.reports_to_member_id === teamLead.id &&
+          member.role_name !== 'Team Lead' &&
+          member.role_name !== 'Owner' &&
+          member.role_name !== 'Admin'
       );
-      
+
       const indirectReports = members.filter(member => {
         if (!member.reports_to_member_id) return false;
-        if (member.role_name === 'Team Lead' || member.role_name === 'Owner' || member.role_name === 'Admin') return false;
+        if (
+          member.role_name === 'Team Lead' ||
+          member.role_name === 'Owner' ||
+          member.role_name === 'Admin'
+        )
+          return false;
         const manager = memberMap.get(member.reports_to_member_id);
         return manager && manager.reports_to_member_id === teamLead.id;
       });
@@ -111,7 +141,7 @@ const TeamHierarchy: React.FC = () => {
       groups.push({
         teamLead,
         directReports,
-        indirectReports
+        indirectReports,
       });
     });
 
@@ -120,7 +150,7 @@ const TeamHierarchy: React.FC = () => {
       groups.push({
         teamLead: null,
         directReports: unassignedMembers,
-        indirectReports: []
+        indirectReports: [],
       });
     }
 
@@ -131,41 +161,43 @@ const TeamHierarchy: React.FC = () => {
     fetchHierarchy();
   }, [fetchHierarchy]);
 
-  const MemberCard: React.FC<{ member: TeamMember; isTeamLead?: boolean; isIndirect?: boolean }> = ({
-    member,
-    isTeamLead = false,
-    isIndirect = false
-  }) => {
+  const MemberCard: React.FC<{
+    member: TeamMember;
+    isTeamLead?: boolean;
+    isIndirect?: boolean;
+  }> = ({ member, isTeamLead = false, isIndirect = false }) => {
     const cardStyle = useMemo(
       () => ({
         marginBottom: 4,
         border: isTeamLead
           ? `2px solid ${token.colorPrimary}`
           : isIndirect
-          ? `1px dashed ${isDarkMode ? '#434343' : '#d9d9d9'}`
-          : `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
+            ? `1px dashed ${isDarkMode ? '#434343' : '#d9d9d9'}`
+            : `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
         backgroundColor: isTeamLead
-          ? (isDarkMode ? '#162312' : '#f6ffed')
+          ? isDarkMode
+            ? '#162312'
+            : '#f6ffed'
           : isIndirect
-          ? (isDarkMode ? '#1a1a1a' : '#fafafa')
-          : (isDarkMode ? '#1f1f1f' : '#ffffff')
+            ? isDarkMode
+              ? '#1a1a1a'
+              : '#fafafa'
+            : isDarkMode
+              ? '#1f1f1f'
+              : '#ffffff',
       }),
       [isTeamLead, isIndirect, isDarkMode, token.colorPrimary]
     );
 
     return (
-      <Card
-        size="small"
-        style={cardStyle}
-        styles={{ body: { padding: '8px' } }}
-      >
+      <Card size="small" style={cardStyle} styles={{ body: { padding: '8px' } }}>
         <Flex align="center" gap={8}>
           <Avatar
             size={isTeamLead ? 'default' : 'small'}
             icon={<UserOutlined />}
             style={{
               backgroundColor: getRoleColor(member.role_name),
-              flexShrink: 0
+              flexShrink: 0,
             }}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -179,7 +211,9 @@ const TeamHierarchy: React.FC = () => {
               </Tag>
             </Flex>
             <Flex align="center" gap={3} style={{ marginTop: 2 }}>
-              <MailOutlined style={{ fontSize: '11px', color: isDarkMode ? '#8c8c8c' : '#8c8c8c' }} />
+              <MailOutlined
+                style={{ fontSize: '11px', color: isDarkMode ? '#8c8c8c' : '#8c8c8c' }}
+              />
               <Text type="secondary" style={{ fontSize: '11px' }}>
                 {member.email}
               </Text>
@@ -190,17 +224,17 @@ const TeamHierarchy: React.FC = () => {
     );
   };
 
-  const HierarchyGroupCard: React.FC<{ group: HierarchyGroup; title: string; icon: React.ReactNode }> = ({
-    group,
-    title,
-    icon
-  }) => {
+  const HierarchyGroupCard: React.FC<{
+    group: HierarchyGroup;
+    title: string;
+    icon: React.ReactNode;
+  }> = ({ group, title, icon }) => {
     const headStyle = useMemo(
       () => ({
         backgroundColor: isDarkMode ? '#1a1a1a' : '#fafafa',
         padding: '8px 12px',
         minHeight: 'auto',
-        borderBottom: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
+        borderBottom: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
       }),
       [isDarkMode]
     );
@@ -209,7 +243,7 @@ const TeamHierarchy: React.FC = () => {
       () => ({
         marginBottom: 12,
         backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-        border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
+        border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
       }),
       [isDarkMode]
     );
@@ -266,12 +300,11 @@ const TeamHierarchy: React.FC = () => {
           </>
         )}
 
-        {group.directReports.length === 0 && group.indirectReports.length === 0 && !group.teamLead && (
-          <Empty
-            description="No members in this group"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-          />
-        )}
+        {group.directReports.length === 0 &&
+          group.indirectReports.length === 0 &&
+          !group.teamLead && (
+            <Empty description="No members in this group" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          )}
       </Card>
     );
   };
@@ -305,7 +338,7 @@ const TeamHierarchy: React.FC = () => {
                 background: 'none',
                 color: token.colorPrimary,
                 cursor: 'pointer',
-                textDecoration: 'underline'
+                textDecoration: 'underline',
               }}
             >
               Retry
@@ -340,14 +373,16 @@ const TeamHierarchy: React.FC = () => {
             styles={{ body: { padding: '8px' } }}
             style={{
               backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
+              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
             }}
           >
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: token.colorPrimary }}>
                 {totalMembers}
               </div>
-              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>Total Members</div>
+              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>
+                Total Members
+              </div>
             </div>
           </Card>
         </Col>
@@ -357,14 +392,16 @@ const TeamHierarchy: React.FC = () => {
             styles={{ body: { padding: '8px' } }}
             style={{
               backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
+              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
             }}
           >
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#52c41a' }}>
                 {teamLeadsCount}
               </div>
-              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>Team Leads</div>
+              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>
+                Team Leads
+              </div>
             </div>
           </Card>
         </Col>
@@ -374,14 +411,16 @@ const TeamHierarchy: React.FC = () => {
             styles={{ body: { padding: '8px' } }}
             style={{
               backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
+              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
             }}
           >
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#faad14' }}>
                 {assignedMembersCount}
               </div>
-              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>Assigned Members</div>
+              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>
+                Assigned Members
+              </div>
             </div>
           </Card>
         </Col>
@@ -397,7 +436,9 @@ const TeamHierarchy: React.FC = () => {
             if (group.teamLead) {
               title = `${group.teamLead.name}'s Team`;
               icon = <UsergroupAddOutlined />;
-            } else if (group.directReports.some(m => m.role_name === 'Owner' || m.role_name === 'Admin')) {
+            } else if (
+              group.directReports.some(m => m.role_name === 'Owner' || m.role_name === 'Admin')
+            ) {
               title = 'Management';
               icon = <CrownOutlined />;
             } else {
@@ -405,25 +446,22 @@ const TeamHierarchy: React.FC = () => {
               icon = <UserSwitchOutlined />;
             }
 
-            return (
-              <HierarchyGroupCard 
-                key={index}
-                group={group} 
-                title={title} 
-                icon={icon}
-              />
-            );
+            return <HierarchyGroupCard key={index} group={group} title={title} icon={icon} />;
           })}
         </div>
       ) : (
         <Card
           style={{
             backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-            border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`
+            border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
           }}
         >
           <Empty
-            image={<TeamOutlined style={{ fontSize: '64px', color: isDarkMode ? '#434343' : '#d9d9d9' }} />}
+            image={
+              <TeamOutlined
+                style={{ fontSize: '64px', color: isDarkMode ? '#434343' : '#d9d9d9' }}
+              />
+            }
             description={
               <div>
                 <Text type="secondary">No team hierarchy found</Text>

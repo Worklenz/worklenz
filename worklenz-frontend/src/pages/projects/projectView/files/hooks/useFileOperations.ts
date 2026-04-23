@@ -27,13 +27,12 @@ export const useFileOperations = () => {
     downloadFn: null,
   });
 
-  const setDownloadingId = (id: string | null) => 
+  const setDownloadingId = (id: string | null) =>
     setOperations(prev => ({ ...prev, downloadingId: id }));
-  
-  const setDeletingId = (id: string | null) => 
-    setOperations(prev => ({ ...prev, deletingId: id }));
-  
-  const setDeletingTaskAttachmentId = (id: string | null) => 
+
+  const setDeletingId = (id: string | null) => setOperations(prev => ({ ...prev, deletingId: id }));
+
+  const setDeletingTaskAttachmentId = (id: string | null) =>
     setOperations(prev => ({ ...prev, deletingTaskAttachmentId: id }));
 
   const downloadFile = async (file: ProjectFile, onSuccess?: () => void) => {
@@ -80,7 +79,7 @@ export const useFileOperations = () => {
 
   const downloadTaskAttachment = async (attachment: ITaskAttachmentViewModel) => {
     if (!attachment.id || !attachment.name) return;
-    
+
     try {
       const response = await taskAttachmentsApiService.downloadTaskAttachment(
         attachment.id,
@@ -102,7 +101,7 @@ export const useFileOperations = () => {
 
   const deleteTaskAttachment = async (attachmentId?: string, onSuccess?: () => void) => {
     if (!attachmentId) return;
-    
+
     try {
       setDeletingTaskAttachmentId(attachmentId);
       const response = await taskAttachmentsApiService.deleteTaskAttachment(attachmentId);
@@ -118,7 +117,7 @@ export const useFileOperations = () => {
 
   const openProjectFilePreview = async (file: ProjectFile) => {
     if (!projectId || !file.id) return;
-    
+
     setPreview(prev => ({
       ...prev,
       name: file.name,

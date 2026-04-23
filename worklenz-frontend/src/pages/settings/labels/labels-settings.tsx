@@ -13,7 +13,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '../../../components/PinRouteToNavbarButton';
 import { useTranslation } from 'react-i18next';
-import { DeleteOutlined, EditOutlined, ExclamationCircleFilled, SearchOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleFilled,
+  SearchOutlined,
+} from '@ant-design/icons';
 import { ITaskLabel } from '@/types/label.type';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
@@ -134,17 +139,14 @@ const LabelsSettings = () => {
         const isInUse = usageCount > 0;
 
         return (
-          <div 
-            className="row-action-buttons"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="row-action-buttons" onClick={e => e.stopPropagation()}>
             <Flex gap={4}>
               <Tooltip title={t('editTooltip', 'Edit')}>
                 <Button
                   shape="default"
                   icon={<EditOutlined />}
                   size="small"
-                  onClick={(e) => handleEditClick(record.id!, e)}
+                  onClick={e => handleEditClick(record.id!, e)}
                 />
               </Tooltip>
               <Popconfirm
@@ -161,22 +163,25 @@ const LabelsSettings = () => {
                           labelName,
                           count: usageCount,
                           plural,
-                          defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`
+                          defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`,
                         })}
                       </Typography.Text>
                       <br />
-                      <Typography.Text strong style={{ marginTop: 8, display: 'block', color: '#ff4d4f' }}>
+                      <Typography.Text
+                        strong
+                        style={{ marginTop: 8, display: 'block', color: '#ff4d4f' }}
+                      >
                         {t('labelDeleteWarning', {
                           count: usageCount,
                           plural,
-                          defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}.`
+                          defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}.`,
                         })}
                       </Typography.Text>
                     </div>
                   ) : (
                     t('deleteConfirmMessage', {
                       labelName,
-                      defaultValue: `Are you sure you want to delete the label "${labelName}"?`
+                      defaultValue: `Are you sure you want to delete the label "${labelName}"?`,
                     })
                   )
                 }
@@ -184,18 +189,18 @@ const LabelsSettings = () => {
                 okText={t('deleteButton', 'Delete')}
                 cancelText={t('cancelButton', 'Cancel')}
                 okType="danger"
-                onConfirm={(e) => {
+                onConfirm={e => {
                   e?.stopPropagation();
                   handleDeleteClick(record);
                 }}
-                onCancel={(e) => e?.stopPropagation()}
+                onCancel={e => e?.stopPropagation()}
               >
                 <Tooltip title={t('deleteTooltip', 'Delete')}>
                   <Button
                     shape="default"
                     icon={<DeleteOutlined />}
                     size="small"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={e => e.stopPropagation()}
                   />
                 </Tooltip>
               </Popconfirm>
@@ -224,7 +229,12 @@ const LabelsSettings = () => {
         style={{ width: '100%' }}
         title={
           <Flex justify="flex-end">
-            <Flex gap={8} align="center" justify="flex-end" style={{ width: '100%', maxWidth: 400 }}>
+            <Flex
+              gap={8}
+              align="center"
+              justify="flex-end"
+              style={{ width: '100%', maxWidth: 400 }}
+            >
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}

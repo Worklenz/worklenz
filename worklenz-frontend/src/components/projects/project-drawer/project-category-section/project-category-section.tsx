@@ -142,19 +142,22 @@ const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionPro
 
   return (
     <>
-      <Form.Item name="category_id" label={
-        <Flex align="center" gap={4}>
-          <span>{t('category')}</span>
-          {isFree && (
-            <Tooltip title={tCommon('upgrade-plan')} placement="top">
-              <CrownOutlined 
-                style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
-                onClick={handleSelectClick}
-              />
-            </Tooltip>
-          )}
-        </Flex>
-      }>
+      <Form.Item
+        name="category_id"
+        label={
+          <Flex align="center" gap={4}>
+            <span>{t('category')}</span>
+            {isFree && (
+              <Tooltip title={tCommon('upgrade-plan')} placement="top">
+                <CrownOutlined
+                  style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
+                  onClick={handleSelectClick}
+                />
+              </Tooltip>
+            )}
+          </Flex>
+        }
+      >
         {!isAddCategoryInputShow ? (
           <Select
             options={categoryOptions}

@@ -1,10 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  DownOutlined,
-  SortAscendingOutlined,
-  SortDescendingOutlined,
-} from '@/shared/antd-imports';
+import { DownOutlined, SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTasksV3, setSort } from '@/features/task-management/task-management.slice';
@@ -20,10 +16,7 @@ interface SortDropdownProps {
   isDarkMode: boolean;
 }
 
-export const SortDropdown: React.FC<SortDropdownProps> = ({
-  themeClasses,
-  isDarkMode,
-}) => {
+export const SortDropdown: React.FC<SortDropdownProps> = ({ themeClasses, isDarkMode }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -96,7 +89,10 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
 
   const isActive = currentSortField !== '';
   const currentFieldLabel = sortFieldsList.find(f => f.key === currentSortField)?.label;
-  const orderText = currentSortOrder === 'ASC' ? t('ascendingOrder', { defaultValue: 'Ascending Order' }) : t('descendingOrder', { defaultValue: 'Descending Order' });
+  const orderText =
+    currentSortOrder === 'ASC'
+      ? t('ascendingOrder', { defaultValue: 'Ascending Order' })
+      : t('descendingOrder', { defaultValue: 'Descending Order' });
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -110,11 +106,12 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
         className={`
           inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
           border transition-all duration-200 ease-in-out
-          ${isActive
-            ? isDarkMode
-              ? 'bg-gray-600 text-white border-gray-500'
-              : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
-            : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
+          ${
+            isActive
+              ? isDarkMode
+                ? 'bg-gray-600 text-white border-gray-500'
+                : 'bg-gray-200 text-gray-800 border-gray-300 font-semibold'
+              : `${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}`
           }
           hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
           ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
@@ -167,20 +164,22 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
                     className={`
                       w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded
                       transition-colors duration-150 text-left
-                      ${isSelected
-                        ? isDarkMode
-                          ? 'bg-gray-600 text-white'
-                          : 'bg-gray-200 text-gray-800 font-semibold'
-                        : `${themeClasses.optionText} ${themeClasses.optionHover}`
+                      ${
+                        isSelected
+                          ? isDarkMode
+                            ? 'bg-gray-600 text-white'
+                            : 'bg-gray-200 text-gray-800 font-semibold'
+                          : `${themeClasses.optionText} ${themeClasses.optionHover}`
                       }
                     `}
                     title={
                       isSelected
                         ? t('currentSort', {
-                          field: sortField.label,
-                          order: orderText,
-                        }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
-                        : t('sortByField', { field: sortField.label }) + ` - ${t('sortAscending', { defaultValue: 'Sort Ascending' })}`
+                            field: sortField.label,
+                            order: orderText,
+                          }) + ` - ${t('sortDescending', { defaultValue: 'Sort Descending' })}`
+                        : t('sortByField', { field: sortField.label }) +
+                          ` - ${t('sortAscending', { defaultValue: 'Sort Ascending' })}`
                     }
                   >
                     <div className="flex items-center gap-2">

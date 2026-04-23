@@ -13,7 +13,6 @@ import {
   Dropdown,
   Form,
   Input,
-  Select,
   Row,
   Col,
   Divider,
@@ -45,7 +44,6 @@ import { getCountries } from 'libphonenumber-js';
 import type { CountryCode } from 'libphonenumber-js';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 const getDefaultPhoneCountry = (
   phoneCountryCodeValue?: string,
@@ -122,13 +120,7 @@ const ClientDetailsDrawer = () => {
       resetClientDetails();
       fetchClientDetails(selectedClientId, false);
     }
-  }, [
-    fetchClientDetails,
-    form,
-    isClientDetailsDrawerOpen,
-    resetClientDetails,
-    selectedClientId,
-  ]);
+  }, [fetchClientDetails, form, isClientDetailsDrawerOpen, resetClientDetails, selectedClientId]);
 
   // Populate form whenever client data arrives
   useEffect(() => {
@@ -144,7 +136,6 @@ const ClientDetailsDrawer = () => {
         state: client.state,
         zip_code: client.zip_code,
         country: client.country,
-        status: client.status,
         contact_person: client.contact_person,
       });
     }
@@ -174,7 +165,6 @@ const ClientDetailsDrawer = () => {
           state: values.state,
           zip_code: values.zip_code,
           country: values.country,
-          status: values.status,
           contact_person: values.contact_person,
         },
       }).unwrap();
@@ -227,10 +217,14 @@ const ClientDetailsDrawer = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active':  return 'green';
-      case 'inactive': return 'red';
-      case 'pending':  return 'orange';
-      default:         return 'default';
+      case 'active':
+        return 'green';
+      case 'inactive':
+        return 'red';
+      case 'pending':
+        return 'orange';
+      default:
+        return 'default';
     }
   };
 
@@ -332,13 +326,30 @@ const ClientDetailsDrawer = () => {
             <Col span={12}>
               <Form.Item
                 name="name"
-                label={t('clientNameLabel') || 'Client Name'}
+                label={t('recordNameLabel', { defaultValue: 'Record Name (Internal)' })}
                 rules={[
-                  { required: true, message: t('clientNameRequired') || 'Please enter client name' },
-                  { min: 2, message: t('clientNameMinLength') || 'At least 2 characters' },
+                  {
+                    required: true,
+                    message:
+                      t('recordNameRequired', { defaultValue: 'Please enter an internal record name' }) ||
+                      'Please enter an internal record name',
+                  },
+                  {
+                    min: 2,
+                    message:
+                      t('recordNameMinLength', {
+                        defaultValue: 'Record name must be at least 2 characters',
+                      }) || 'Record name must be at least 2 characters',
+                  },
                 ]}
               >
-                <Input placeholder="Enter client name" />
+                <Input
+                  placeholder={
+                    t('recordNamePlaceholder', {
+                      defaultValue: 'Enter internal record name',
+                    }) || 'Enter internal record name'
+                  }
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -357,8 +368,17 @@ const ClientDetailsDrawer = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="company_name" label={t('companyNameLabel') || 'Company'}>
-                <Input placeholder="Enter company name" />
+              <Form.Item
+                name="company_name"
+                label={t('clientCompanyLabel', { defaultValue: 'Client / Company' })}
+              >
+                <Input
+                  placeholder={
+                    t('clientCompanyPlaceholder', {
+                      defaultValue: 'Enter client company name',
+                    }) || 'Enter client company name'
+                  }
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -401,17 +421,17 @@ const ClientDetailsDrawer = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item name="contact_person" label={t('contactPersonLabel') || 'Contact Person'}>
-                <Input placeholder="Enter contact person name" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="status" label={t('statusLabel') || 'Status'}>
-                <Select>
-                  <Option value="active">{t('statusActive') || 'Active'}</Option>
-                  <Option value="inactive">{t('statusInactive') || 'Inactive'}</Option>
-                  <Option value="pending">{t('statusPending') || 'Pending'}</Option>
-                </Select>
+              <Form.Item
+                name="contact_person"
+                label={t('primaryContactLabel', { defaultValue: 'Primary Contact (POC)' })}
+              >
+                <Input
+                  placeholder={
+                    t('primaryContactPlaceholder', {
+                      defaultValue: 'Enter primary contact (POC) name',
+                    }) || 'Enter primary contact (POC) name'
+                  }
+                />
               </Form.Item>
             </Col>
           </Row>

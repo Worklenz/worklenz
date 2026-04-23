@@ -69,17 +69,17 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const updateDropdownPosition = useCallback(() => {
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      
+
       // Use actual dropdown height if available, otherwise estimate based on structure:
       // - Header (search): ~40px
       // - Members list: max-h-48 = 192px
       // - Footer (conditional): ~40px
       // - Total: ~280px (using 300px for safety margin)
       const dropdownHeight = dropdownRef.current?.offsetHeight || 300;
-      
+
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      
+
       // Check if we're in the bottom portion of the viewport
       // Open upward only if there's insufficient space below AND sufficient space above
       const shouldOpenUpward = spaceBelow < dropdownHeight && spaceAbove >= dropdownHeight;
@@ -172,7 +172,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       setTeamMembers({ data: sortedMembers });
 
       setIsOpen(true);
-      
+
       // Update position after state update and DOM render
       setTimeout(() => {
         updateDropdownPosition();

@@ -33,7 +33,12 @@ interface NewChatForm {
   message: string;
 }
 
-const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, clientId: propClientId }) => {
+const NewChatModal: React.FC<NewChatModalProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  clientId: propClientId,
+}) => {
   const { t } = useTranslation('client-portal-chats');
   const { t: tCommon } = useTranslation('common');
   const [form] = Form.useForm<NewChatForm>();
@@ -41,7 +46,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
   const [selectedClientId, setSelectedClientId] = useState<string | undefined>(propClientId);
 
   const [createChat] = useCreateOrganizationChatMutation();
-  
+
   // Fetch clients list when no clientId is provided as prop
   const { data: clientsData, isLoading: isLoadingClients } = useGetClientsQuery(
     { page: 1, limit: 100, status: 'active' },
@@ -62,7 +67,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
 
   const handleSubmit = async (values: NewChatForm) => {
     const effectiveClientId = propClientId || values.clientId || selectedClientId;
-    
+
     if (!effectiveClientId) {
       message.error(t('clientIdRequired') || 'Please select a client to start a chat');
       return;
@@ -146,9 +151,7 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
               </Typography.Text>
             }
             tooltip={t('selectClientHelper') || 'Choose which client to start a conversation with'}
-            rules={[
-              { required: true, message: t('clientRequired') || 'Please select a client' },
-            ]}
+            rules={[{ required: true, message: t('clientRequired') || 'Please select a client' }]}
           >
             <Select
               placeholder={t('selectClientPlaceholder') || 'Select a client...'}
@@ -156,10 +159,12 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
               showSearch
               optionFilterProp="label"
               loading={isLoadingClients}
-              notFoundContent={isLoadingClients ? <Spin size="small" /> : t('noClientsFound') || 'No clients found'}
-              onChange={(value) => setSelectedClientId(value)}
+              notFoundContent={
+                isLoadingClients ? <Spin size="small" /> : t('noClientsFound') || 'No clients found'
+              }
+              onChange={value => setSelectedClientId(value)}
               style={{ borderRadius: '6px' }}
-              options={clients.map((client) => ({
+              options={clients.map(client => ({
                 value: client.id,
                 label: (
                   <Space>
@@ -188,7 +193,10 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
           rules={[
             { required: true, message: t('subjectRequired') || 'Please enter a subject' },
             { min: 3, message: t('subjectMinLength') || 'Subject must be at least 3 characters' },
-            { max: 100, message: t('subjectMaxLength') || 'Subject must be less than 100 characters' },
+            {
+              max: 100,
+              message: t('subjectMaxLength') || 'Subject must be less than 100 characters',
+            },
           ]}
         >
           <Input
@@ -212,7 +220,10 @@ const NewChatModal: React.FC<NewChatModalProps> = ({ open, onClose, onSuccess, c
           tooltip={t('messageHelper') || 'Describe your question or request in detail'}
           rules={[
             { required: true, message: t('messageRequired') || 'Please enter a message' },
-            { max: 1000, message: t('messageMaxLength') || 'Message must be less than 1000 characters' },
+            {
+              max: 1000,
+              message: t('messageMaxLength') || 'Message must be less than 1000 characters',
+            },
           ]}
         >
           <TextArea

@@ -10,15 +10,43 @@ import ChunkErrorHandler from '@/utils/chunk-error-handler';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 
 // Lazy load page components for better code splitting with chunk error handling
-const HomePage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/home/HomePage'), 'HomePage'));
-const ProjectList = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/project-list'), 'ProjectList'));
-const Schedule = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/schedule/schedule'), 'Schedule'));
-const TeamLeadReports = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/team-lead-reports/team-lead-reports'), 'TeamLeadReports'));
+const HomePage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/home/HomePage'), 'HomePage')
+);
+const ProjectList = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/project-list'), 'ProjectList')
+);
+const Schedule = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/schedule/schedule'), 'Schedule')
+);
+const TeamLeadReports = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/team-lead-reports/team-lead-reports'),
+    'TeamLeadReports'
+  )
+);
 
-const ProjectView = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/projectView/project-view'), 'ProjectView'));
-const Unauthorized = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/unauthorized/unauthorized'), 'Unauthorized'));
-const GanttDemoPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/GanttDemoPage'), 'GanttDemoPage'));
-const LicenseExpiredPage = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/license-expired/LicenseExpired'), 'LicenseExpiredPage'));
+const ProjectView = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/projects/projectView/project-view'),
+    'ProjectView'
+  )
+);
+const Unauthorized = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/unauthorized/unauthorized'),
+    'Unauthorized'
+  )
+);
+const GanttDemoPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/GanttDemoPage'), 'GanttDemoPage')
+);
+const LicenseExpiredPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/license-expired/LicenseExpired'),
+    'LicenseExpiredPage'
+  )
+);
 
 // Define AdminGuard component with defensive programming
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {
@@ -67,9 +95,11 @@ const TeamLeadGuard = ({ children }: { children: React.ReactNode }) => {
     }
 
     const currentSession = authService.getCurrentSession();
-    
+
     // Check if user has Team Lead role using role_name field
-    const hasTeamLeadRole = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
+    const hasTeamLeadRole = currentSession?.role_name
+      ? isTeamLeadRole(currentSession.role_name)
+      : false;
 
     if (!hasTeamLeadRole) {
       return <Navigate to="/worklenz/unauthorized" replace />;

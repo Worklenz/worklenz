@@ -20,7 +20,13 @@ import AccountStorage from './account-storage/account-storage';
 import { useAuthService } from '@/hooks/useAuth';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { MixpanelBillingEvents, BillingPageEventProps, UserType } from '@/types/mixpanel-events.types';
+import {
+  MixpanelBillingEvents,
+  BillingPageEventProps,
+  UserType,
+} from '@/types/mixpanel-events.types';
+
+const PLAN_TRIAL_SUBSCRIPTION_TYPES = ['TRIAL', 'BUSINESS_TRIAL', 'ENTERPRISE_TRIAL', 'PLAN_TRIAL'];
 
 const CurrentBill: React.FC = React.memo(() => {
   const dispatch = useAppDispatch();
@@ -39,23 +45,28 @@ const CurrentBill: React.FC = React.memo(() => {
   // Separate effect for tracking events when billing info is available
   useEffect(() => {
     if (!billingInfo || !currentSession || !storageInfo) return;
-    
+
     // Track billing page view
     const getUserType = (): UserType => {
       const planName = billingInfo?.plan_name?.toLowerCase() || '';
       const subscriptionType = currentSession?.subscription_type?.toLowerCase() || '';
-      
-      // First check if user is on trial - trial users should never be considered AppSumo users
-      if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.TRIAL) return 'trial';
-      
-      if (planName.includes('appsumo') || subscriptionType.includes('appsumo') || 
-          planName.includes('lifetime') || subscriptionType.includes('lifetime')) {
+      const normalizedSubscriptionType = String(currentSession?.subscription_type || '').toUpperCase();
+
+      // Trial users should never be considered AppSumo users.
+      if (PLAN_TRIAL_SUBSCRIPTION_TYPES.includes(normalizedSubscriptionType)) return 'trial';
+
+      if (
+        planName.includes('appsumo') ||
+        subscriptionType.includes('appsumo') ||
+        planName.includes('lifetime') ||
+        subscriptionType.includes('lifetime')
+      ) {
         return 'appsumo';
       }
       if (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE) return 'free';
       return 'paid';
     };
-    
+
     const eventProps: BillingPageEventProps = {
       user_type: getUserType(),
       current_plan: billingInfo?.plan_name,
@@ -66,7 +77,7 @@ const CurrentBill: React.FC = React.memo(() => {
       has_invoices: false, // Will be updated when invoices load
       has_charges: false, // Will be updated when charges load
     };
-    
+
     trackMixpanelEvent(MixpanelBillingEvents.BILLING_PAGE_VIEWED, eventProps);
     trackMixpanelEvent(MixpanelBillingEvents.CURRENT_PLAN_VIEWED, eventProps);
   }, [billingInfo, currentSession, storageInfo, trackMixpanelEvent]);

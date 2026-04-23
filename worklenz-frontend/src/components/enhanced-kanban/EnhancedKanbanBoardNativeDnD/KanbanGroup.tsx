@@ -32,6 +32,7 @@ import {
   ArrowPathIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import { getContrastColor } from '@/utils/colorUtils';
 
 // Simple Portal component - removed as it's no longer used
 
@@ -84,6 +85,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
       }
       return group.color_code || '#f5f5f5';
     }, [themeMode, group.color_code, group.color_code_dark]);
+    const headerTextColor = useMemo(
+      () => getContrastColor(headerBackgroundColor),
+      [headerBackgroundColor]
+    );
 
     const updateStatus = async (category = group.category_id ?? null) => {
       if (!category || !projectId || !group.id) return;
@@ -249,7 +254,9 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
 
     // Check if this is the Unmapped phase (should not be editable)
     const isUnmappedPhase = useMemo(() => {
-      return groupBy === IGroupBy.PHASE && (group.id === 'Unmapped' || group.name === t('unmapped'));
+      return (
+        groupBy === IGroupBy.PHASE && (group.id === 'Unmapped' || group.name === t('unmapped'))
+      );
     }, [groupBy, group.id, group.name, t]);
 
     // Create dropdown menu items
@@ -383,9 +390,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             onDrop={e => onGroupDrop(e, group.id)}
             onDragEnd={onDragEnd}
           >
-            <div
-              className="flex items-center justify-between w-full font-semibold rounded-md"
-            >
+            <div className="flex items-center justify-between w-full font-semibold rounded-md">
               <div
                 className="flex items-center gap-2 cursor-pointer"
                 onClick={e => {
@@ -401,8 +406,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   <input
                     ref={inputRef}
                     value={name}
-                    className={`bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px] ${themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
-                      }`}
+                    className="bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px]"
+                    style={{ color: headerTextColor }}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     onKeyDown={handlePressEnter}
@@ -415,8 +420,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   />
                 ) : (
                   <div
-                    className={`min-w-[185px] text-sm font-semibold capitalize truncate ${themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
-                      }`}
+                    className="min-w-[185px] text-sm font-semibold capitalize truncate"
+                    style={{ color: headerTextColor }}
                     onMouseDown={e => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -443,7 +448,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   }}
                 >
                   <svg
-                    className="w-4 h-4 text-gray-800"
+                    className="w-4 h-4"
+                    style={{ color: headerTextColor }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -469,12 +475,12 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     <button
                       type="button"
                       className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                      onClick={(e) => {
+                      onClick={e => {
                         e.stopPropagation();
                         setDropdownVisible(!dropdownVisible);
                       }}
                     >
-                      <EllipsisHorizontalIcon className="w-4 h-4 text-gray-800" />
+                      <EllipsisHorizontalIcon className="w-4 h-4" style={{ color: headerTextColor }} />
                     </button>
                   </Dropdown>
                 )}
@@ -527,32 +533,31 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     onTaskDrop(e, group.id, 0);
                   }}
                 >
-                  {!showNewCardTop &&
-                    !showNewCardBottom && (
-                      <button
-                        type="button"
-                        className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                        onClick={() => {
-                          setShowNewCardBottom(false);
-                          setShowNewCardTop(true);
-                        }}
+                  {!showNewCardTop && !showNewCardBottom && (
+                    <button
+                      type="button"
+                      className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                      onClick={() => {
+                        setShowNewCardBottom(false);
+                        setShowNewCardTop(true);
+                      }}
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 4v16m8-8H4"
-                          />
-                        </svg>
-                        {t('addTask')}
-                      </button>
-                    )}
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      {t('addTask')}
+                    </button>
+                  )}
                 </div>
               )}
 

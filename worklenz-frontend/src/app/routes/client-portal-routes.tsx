@@ -5,17 +5,72 @@ import ClientPortalLayout from '@/layouts/client-portal-layout';
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 // Lazy load all client portal components with chunk error handling
-const ClientPortalClients = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/clients/ClientPortalClients'), 'ClientPortalClients'));
-const ClientPortalRequests = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/requests/client-portal-requests'), 'ClientPortalRequests'));
-const ClientPortalRequestDetails = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/requests/request-details/client-portal-request-details'), 'ClientPortalRequestDetails'));
-const ClientPortalServices = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/services/client-portal-services'), 'ClientPortalServices'));
-const ClientPortalAddServices = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/services/add-service/ClientPortalAddServices'), 'ClientPortalAddServices'));
-const ClientPortalEditService = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'), 'ClientPortalEditService'));
-const ClientPortalChats = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/chats/client-portal-chats'), 'ClientPortalChats'));
-const ClientPortalSettings = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/settings/ClientPortalSettings'), 'ClientPortalSettings'));
-const ClientPortalInvoices = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/invoices/client-portal-invoices'), 'ClientPortalInvoices'));
-const ClientPortalInvoiceDetails = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'), 'ClientPortalInvoiceDetails'));
-const InvoiceBuilder = lazy(ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-portal/invoices/invoice-builder/invoice-builder'), 'InvoiceBuilder'));
+const ClientPortalClients = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/clients/ClientPortalClients'),
+    'ClientPortalClients'
+  )
+);
+const ClientPortalRequests = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/requests/client-portal-requests'),
+    'ClientPortalRequests'
+  )
+);
+const ClientPortalRequestDetails = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/requests/request-details/client-portal-request-details'),
+    'ClientPortalRequestDetails'
+  )
+);
+const ClientPortalServices = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/services/client-portal-services'),
+    'ClientPortalServices'
+  )
+);
+const ClientPortalAddServices = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/services/add-service/ClientPortalAddServices'),
+    'ClientPortalAddServices'
+  )
+);
+const ClientPortalEditService = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'),
+    'ClientPortalEditService'
+  )
+);
+const ClientPortalChats = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/chats/client-portal-chats'),
+    'ClientPortalChats'
+  )
+);
+const ClientPortalSettings = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/settings/ClientPortalSettings'),
+    'ClientPortalSettings'
+  )
+);
+const ClientPortalInvoices = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/invoices/client-portal-invoices'),
+    'ClientPortalInvoices'
+  )
+);
+const ClientPortalInvoiceDetails = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'),
+    'ClientPortalInvoiceDetails'
+  )
+);
+const InvoiceBuilder = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/invoices/invoice-builder/invoice-builder'),
+    'InvoiceBuilder'
+  )
+);
 
 const clientPortalRoutes: RouteObject[] = [
   {
@@ -25,7 +80,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'clients',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalClients />
           </Suspense>
         ),
@@ -33,7 +90,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'requests',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalRequests />
           </Suspense>
         ),
@@ -41,7 +100,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'requests/:id',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalRequestDetails />
           </Suspense>
         ),
@@ -49,7 +110,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'services',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalServices />
           </Suspense>
         ),
@@ -57,7 +120,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'add-service',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalAddServices />
           </Suspense>
         ),
@@ -65,7 +130,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'edit-service/:id',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalEditService />
           </Suspense>
         ),
@@ -73,7 +140,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'chats',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalChats />
           </Suspense>
         ),
@@ -81,7 +150,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'invoices',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalInvoices />
           </Suspense>
         ),
@@ -89,7 +160,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'invoices/create',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <InvoiceBuilder />
           </Suspense>
         ),
@@ -97,7 +170,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'invoices/:invoiceId/edit',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <InvoiceBuilder />
           </Suspense>
         ),
@@ -105,7 +180,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'invoices/:invoiceId',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalInvoiceDetails />
           </Suspense>
         ),
@@ -113,7 +190,9 @@ const clientPortalRoutes: RouteObject[] = [
       {
         path: 'settings',
         element: (
-          <Suspense fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}>
+          <Suspense
+            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+          >
             <ClientPortalSettings />
           </Suspense>
         ),

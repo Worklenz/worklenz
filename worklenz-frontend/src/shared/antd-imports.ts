@@ -212,6 +212,7 @@ export {
   FireOutlined,
   SlackOutlined,
   ApiOutlined,
+  ApartmentOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';

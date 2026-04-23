@@ -4,15 +4,24 @@ import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallba
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 const OrganizationInvitePage = lazy(
-  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/client-view/organization-invite/organization-invite'), 'OrganizationInvitePage')
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-view/organization-invite/organization-invite'),
+    'OrganizationInvitePage'
+  )
 );
 
 const TeamInvitePage = lazy(
-  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/invite/team/TeamInvitePage'), 'TeamInvitePage')
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/invite/team/TeamInvitePage'),
+    'TeamInvitePage'
+  )
 );
 
 const ProjectInvitePage = lazy(
-  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/invite/project/ProjectInvitePage'), 'ProjectInvitePage')
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/invite/project/ProjectInvitePage'),
+    'ProjectInvitePage'
+  )
 );
 
 const rootRoutes: RouteObject[] = [
