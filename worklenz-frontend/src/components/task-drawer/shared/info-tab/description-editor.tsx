@@ -18,6 +18,8 @@ interface DescriptionEditorProps {
   parentTaskId: string | null;
 }
 
+const COLLAPSE_MAX_HEIGHT = 120;
+
 const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEditorProps) => {
   const { t } = useTranslation('task-drawer/task-drawer-info-tab');
   const { socket } = useSocket();
@@ -29,9 +31,13 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const [content, setContent] = useState(description || '');
   const [wordCount, setWordCount] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
-
+const contentRef = useRef<HTMLDivElement>(null);
+const [isExpanded, setIsExpanded] = useState(false);
+const [isLongContent, setIsLongContent] = useState(false);
   useEffect(() => {
     setContent(description || '');
+     setIsExpanded(false);
+  setIsLongContent(false);
   }, [description, taskId]);
 
   const modules = useMemo(
@@ -49,6 +55,16 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     }),
     []
   );
+
+  useEffect(() => {
+  if (!content || isEditorOpen) return;
+  const raf = requestAnimationFrame(() => {
+    if (contentRef.current) {
+      setIsLongContent(contentRef.current.scrollHeight > COLLAPSE_MAX_HEIGHT);
+    }
+  });
+  return () => cancelAnimationFrame(raf);
+}, [content, isEditorOpen]);
 
   const formats = useMemo(
     () => ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'link'],
@@ -112,6 +128,11 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     setWordCount(extractWordCount(content || ''));
   };
 
+  const handleToggleExpand = (event: React.MouseEvent) => {
+  event.stopPropagation();
+  setIsExpanded(prev => !prev);
+};
+
   const shellClass = `description-editor-shell ${isDarkMode ? 'is-dark' : 'is-light'}`;
 
   return (
@@ -166,10 +187,42 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
   {/* Render actual content if exists */}
   {content && (
+    <>
     <div
+        ref={contentRef}
       className="description-content"
       dangerouslySetInnerHTML={{ __html: processMentions(content) }}
+       style={
+        isLongContent && !isExpanded
+          ? {
+              overflow: 'hidden',
+              maxHeight: `${COLLAPSE_MAX_HEIGHT}px`,
+              WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+              pointerEvents: 'none',
+            }
+          : undefined
+      }
     />
+    {isLongContent && (
+      <button
+        onClick={handleToggleExpand}
+        style={{
+          marginTop: '4px',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          fontSize: '13px',
+          fontWeight: 500,
+          color: isDarkMode ? '#888888' : '#999999',
+          display: 'block',
+        }}
+      >
+        {isExpanded ? 'Show less' : 'Read more'}
+      </button>
+    )}
+  </>
   )}
 </div>}
     </div>
