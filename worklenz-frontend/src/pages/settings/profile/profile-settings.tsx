@@ -30,17 +30,22 @@ import './profile-settings.css';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 import logger from '@/utils/errorLogger';
+import { calculateTimeDifference } from '@/utils/calculate-time-difference';
+import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { setSession } from '@/utils/session-helper';
-import { authApiService } from '@/api/auth/auth.api.service';
 
 const ProfileSettings = () => {
   const { t } = useTranslation('settings/profile');
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const currentSession = useAuthService().getCurrentSession();
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | undefined>(
+    currentSession?.last_updated ?? currentSession?.updated_at
+  );
 
   // New states for preview functionality
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -53,7 +58,6 @@ const ProfileSettings = () => {
 
   const [imageUrl, setImageUrl] = useState<string>();
   const [form] = Form.useForm();
-  const currentSession = useAuthService().getCurrentSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useDocumentTitle(t('title') || 'Profile Settings');
@@ -106,6 +110,7 @@ const ProfileSettings = () => {
         const updatedUser = {
           ...currentSession,
           avatar_url: res.body.url,
+          last_updated: res.body.updated_at || new Date().toISOString(),
           updated_at: res.body.updated_at || new Date().toISOString(),
         };
         setSession(updatedUser);
@@ -113,6 +118,7 @@ const ProfileSettings = () => {
 
         // Update local image URL
         setImageUrl(res.body.url);
+        setLastUpdatedAt(res.body.updated_at || new Date().toISOString());
 
         // Close modal and clear pending data
         setIsPreviewModalVisible(false);
@@ -197,14 +203,18 @@ const ProfileSettings = () => {
         trackMixpanelEvent(evt_settings_profile_name_change, { newName: name });
         dispatch(changeUserName(name));
 
+        const newUpdatedAt = res.body.updated_at || new Date().toISOString();
+
         // Update session with the latest data from API response
         const updatedUser = {
           ...currentSession,
           ...res.body,
-          updated_at: res.body.updated_at || new Date().toISOString(),
+          last_updated: newUpdatedAt,
+          updated_at: newUpdatedAt,
         };
         setSession(updatedUser);
         dispatch(setUser(updatedUser));
+        setLastUpdatedAt(newUpdatedAt);
       }
     } catch (error) {
       logger.error('Error changing name', error);
@@ -285,20 +295,27 @@ const ProfileSettings = () => {
         )}
 
         <Flex vertical gap={4} style={{ marginTop: 16 }}>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('profileJoinedText', {
-              date: currentSession?.created_at
-                ? new Date(currentSession.created_at).toLocaleDateString()
-                : '',
-            })}
-          </Typography.Text>
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('profileLastUpdatedText', {
-              date: currentSession?.updated_at
-                ? new Date(currentSession.updated_at).toLocaleDateString()
-                : '',
-            })}
-          </Typography.Text>
+          <Tooltip
+            title={(currentSession?.joined_date || currentSession?.created_at)
+              ? formatDateTimeWithLocale(currentSession?.joined_date || currentSession?.created_at || '')
+              : ''}>
+            <Typography.Text type="secondary" style={{ fontSize: 12, width: 'fit-content' }}>
+              {t('profileJoinedText', {
+                date: (currentSession?.joined_date || currentSession?.created_at)
+                  ? calculateTimeDifference(currentSession?.joined_date || currentSession?.created_at || '')
+                  : '',
+              })}
+            </Typography.Text>
+          </Tooltip>
+          <Tooltip title={lastUpdatedAt ? formatDateTimeWithLocale(lastUpdatedAt) : ''}>
+            <Typography.Text type="secondary" style={{ fontSize: 12, width: 'fit-content' }}>
+              {t('profileLastUpdatedText', {
+                date: lastUpdatedAt
+                  ? calculateTimeDifference(lastUpdatedAt)
+                  : '',
+              })}
+            </Typography.Text>
+          </Tooltip>
         </Flex>
       </Card>
 
