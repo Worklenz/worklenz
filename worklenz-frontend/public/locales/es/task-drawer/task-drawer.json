@@ -45,7 +45,10 @@
     },
     "description": {
       "title": "Descripción",
-      "placeholder": "Añade una descripción más detallada..."
+      "placeholder": "Añade una descripción más detallada...",
+       "clickToAdd": "Haz clic para añadir una descripción...",
+  "readMore": "Leer más",
+  "showLess": "Mostrar menos"
     },
     "subTasks": {
       "title": "Subtareas",

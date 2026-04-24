@@ -45,7 +45,10 @@
     },
     "description": {
       "title": "Përshkrimi",
-      "placeholder": "Shto një përshkrim më të detajuar..."
+      "placeholder": "Shto një përshkrim më të detajuar...",
+      "clickToAdd": "Klikoni për të shtuar një përshkrim...",
+      "readMore": "Lexo më shumë",
+      "showLess": "Shfaq më pak"
     },
     "subTasks": {
       "title": "Nëndetyrat",
