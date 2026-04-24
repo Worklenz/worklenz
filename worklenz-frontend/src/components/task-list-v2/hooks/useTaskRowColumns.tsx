@@ -230,7 +230,7 @@ export const useTaskRowColumns = ({
                 className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
                 style={{ width }}
               >
-                <TaskListDueTimeCell />
+                <TaskListDueTimeCell task={task} />
               </div>
             );
 
