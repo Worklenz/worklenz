@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/notifications",
+      "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/cron/daily-digest",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/project-digest",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/recurring-tasks",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
