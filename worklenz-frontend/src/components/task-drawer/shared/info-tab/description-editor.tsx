@@ -21,7 +21,7 @@ interface DescriptionEditorProps {
 const COLLAPSE_MAX_HEIGHT = 120;
 
 const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEditorProps) => {
-  const { t } = useTranslation('task-drawer/task-drawer-info-tab');
+  const { t } = useTranslation('task-drawer/task-drawer');
   const { socket } = useSocket();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
@@ -31,13 +31,13 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   const [content, setContent] = useState(description || '');
   const [wordCount, setWordCount] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
-const contentRef = useRef<HTMLDivElement>(null);
-const [isExpanded, setIsExpanded] = useState(false);
-const [isLongContent, setIsLongContent] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isLongContent, setIsLongContent] = useState(false);
   useEffect(() => {
     setContent(description || '');
-     setIsExpanded(false);
-  setIsLongContent(false);
+    setIsExpanded(false);
+    setIsLongContent(false);
   }, [description, taskId]);
 
   const modules = useMemo(
@@ -57,14 +57,14 @@ const [isLongContent, setIsLongContent] = useState(false);
   );
 
   useEffect(() => {
-  if (!content || isEditorOpen) return;
-  const raf = requestAnimationFrame(() => {
-    if (contentRef.current) {
-      setIsLongContent(contentRef.current.scrollHeight > COLLAPSE_MAX_HEIGHT);
-    }
-  });
-  return () => cancelAnimationFrame(raf);
-}, [content, isEditorOpen]);
+    if (!content || isEditorOpen) return;
+    const raf = requestAnimationFrame(() => {
+      if (contentRef.current) {
+        setIsLongContent(contentRef.current.scrollHeight > COLLAPSE_MAX_HEIGHT);
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [content, isEditorOpen]);
 
   const formats = useMemo(
     () => ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'link'],
@@ -129,9 +129,9 @@ const [isLongContent, setIsLongContent] = useState(false);
   };
 
   const handleToggleExpand = (event: React.MouseEvent) => {
-  event.stopPropagation();
-  setIsExpanded(prev => !prev);
-};
+    event.stopPropagation();
+    setIsExpanded(prev => !prev);
+  };
 
   const shellClass = `description-editor-shell ${isDarkMode ? 'is-dark' : 'is-light'}`;
 
@@ -161,70 +161,71 @@ const [isLongContent, setIsLongContent] = useState(false);
           </div>
         </div>
       ) : <div
-  className={`description-editor-preview ${isHovered ? 'is-hovered' : ''}`}
-  onClick={event => {
-    const target = event.target as HTMLElement;
-    if (target.tagName === 'A' || target.closest('a')) {
-      event.preventDefault();
-      event.stopPropagation();
-      const link = target.tagName === 'A' ? target : target.closest('a');
-      if (link) {
-        const href = (link as HTMLAnchorElement).href;
-        if (href) window.open(href, '_blank', 'noopener,noreferrer');
-      }
-      return;
-    }
-    handleOpenEditor();
-  }}
-  onMouseEnter={() => setIsHovered(true)}
-  onMouseLeave={() => setIsHovered(false)}
->
-  {(!content || content === '<p><br></p>') && (
-    <div className="description-placeholder">
-      {t('description.clickToAdd', { defaultValue: 'Click to add description...' })}
-    </div>
-  )}
-
-  {/* Render actual content if exists */}
-  {content && (
-    <>
-    <div
-        ref={contentRef}
-      className="description-content"
-      dangerouslySetInnerHTML={{ __html: processMentions(content) }}
-       style={
-        isLongContent && !isExpanded
-          ? {
-              overflow: 'hidden',
-              maxHeight: `${COLLAPSE_MAX_HEIGHT}px`,
-              WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
-              maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
-              pointerEvents: 'none',
+        className={`description-editor-preview ${isHovered ? 'is-hovered' : ''}`}
+        onClick={event => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === 'A' || target.closest('a')) {
+            event.preventDefault();
+            event.stopPropagation();
+            const link = target.tagName === 'A' ? target : target.closest('a');
+            if (link) {
+              const href = (link as HTMLAnchorElement).href;
+              if (href) window.open(href, '_blank', 'noopener,noreferrer');
             }
-          : undefined
-      }
-    />
-    {isLongContent && (
-      <button
-        onClick={handleToggleExpand}
-        style={{
-          marginTop: '4px',
-          background: 'none',
-          border: 'none',
-          padding: 0,
-          cursor: 'pointer',
-          fontSize: '13px',
-          fontWeight: 500,
-          color: isDarkMode ? '#888888' : '#999999',
-          display: 'block',
+            return;
+          }
+          handleOpenEditor();
         }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        {isExpanded ? 'Show less' : 'Read more'}
-      </button>
-    )}
-  </>
-  )}
-</div>}
+        {(!content || content === '<p><br></p>') && (
+          <div className="description-placeholder">
+            {t('taskInfoTab.description.clickToAdd')}
+          </div>
+        )}
+
+        {/* Render actual content if exists */}
+        {content && (
+          <>
+            <div
+              ref={contentRef}
+              className="description-content"
+              dangerouslySetInnerHTML={{ __html: processMentions(content) }}
+              style={
+                isLongContent && !isExpanded
+                  ? {
+                    overflow: 'hidden',
+                    maxHeight: `${COLLAPSE_MAX_HEIGHT}px`,
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                    maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                    pointerEvents: 'none',
+                  }
+                  : undefined
+              }
+            />
+            {isLongContent && (
+              <button
+                onClick={handleToggleExpand}
+                style={{
+                  marginTop: '4px',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: isDarkMode ? '#888888' : '#999999',
+                  display: 'block',
+                }}
+              >
+                {isExpanded ? t('taskInfoTab.description.showLess')
+                  : t('taskInfoTab.description.readMore')}
+              </button>
+            )}
+          </>
+        )}
+      </div>}
     </div>
   );
 };
