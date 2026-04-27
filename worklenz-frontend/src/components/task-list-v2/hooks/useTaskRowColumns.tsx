@@ -100,7 +100,7 @@ export const useTaskRowColumns = ({
       rowBackgrounds?: any
     ) => {
       // Calculate left position for sticky columns - must account for ALL previous columns
-      let leftPosition = 4; // Account for px-1 (4px) padding on container
+      let leftPosition = 0; // Start at 0 to cover the row's left padding
       if (isSticky && typeof index === 'number') {
         for (let i = 0; i < index; i++) {
           const prevColumn = visibleColumns[i];
@@ -115,8 +115,10 @@ export const useTaskRowColumns = ({
             left: leftPosition,
             zIndex: 5, // Lower than header but above regular content
             backgroundColor: currentBg || (isDarkMode ? '#1e1e1e' : '#ffffff'), // Use dynamic background or fallback
-            overflow: 'hidden', // Prevent content from spilling over
             width: width,
+            height: '100%', // Fill the row height
+            display: 'flex', // Use flex to contain child
+            alignItems: 'center', // Center content vertically
           }
         : {
             width: width,

@@ -89,8 +89,7 @@ interface DragHandleColumnProps {
 export const DragHandleColumn: React.FC<DragHandleColumnProps> = memo(
   ({ width, isSubtask, attributes, listeners }) => (
     <div
-      className="flex items-center justify-center"
-      style={{ width }}
+      className="flex items-center justify-center pl-1 h-full w-full"
       {...(isSubtask ? {} : { ...attributes, ...listeners })}
     >
       {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
@@ -108,7 +107,7 @@ interface CheckboxColumnProps {
 
 export const CheckboxColumn: React.FC<CheckboxColumnProps> = memo(
   ({ width, isSelected, onCheckboxChange }) => (
-    <div className="flex items-center justify-center dark:border-gray-700" style={{ width }}>
+    <div className="flex items-center justify-center h-full w-full dark:border-gray-700">
       <Checkbox
         checked={isSelected}
         onChange={onCheckboxChange}

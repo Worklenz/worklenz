@@ -105,13 +105,11 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
     >
       {visibleColumns.map((column, index) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -143,7 +141,7 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
         return (
           <div
             key={`spacer-${column.id}`}
-            className="border-r border-blue-300 dark:border-blue-600"
+            className={`border-r border-blue-300 dark:border-blue-600 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
             style={columnStyle}
           />
         );
@@ -164,13 +162,11 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
     >
       {visibleColumns.map((column, index) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -203,7 +199,7 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
         return (
           <div
             key={`empty-${column.id}`}
-            className="border-r border-gray-200 dark:border-gray-700"
+            className={`border-r border-gray-200 dark:border-gray-700 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
             style={emptyColumnStyle}
           />
         );
@@ -1126,7 +1122,7 @@ const TaskListV2Section: React.FC = () => {
                 const isDropTarget = overColumnId === column.id && column.id !== activeColumnId;
 
                 // Calculate left position for sticky columns
-                let leftPosition = 4; // Account for px-1 (4px) padding on container
+                let leftPosition = 0; // Start at 0 to cover the row's left padding
                 if (column.isSticky) {
                   // For sticky columns, we need to account for ALL previous columns
                   // because non-sticky columns between sticky ones still take up space
@@ -1146,6 +1142,9 @@ const TaskListV2Section: React.FC = () => {
                     left: leftPosition,
                     zIndex: 15,
                     backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+                    height: '100%', // Fill the header height
+                    display: 'flex', // Use flex to contain child
+                    alignItems: 'center', // Center content vertically
                   }),
                 };
 
@@ -1157,15 +1156,15 @@ const TaskListV2Section: React.FC = () => {
                 }) => (
                   <div
                     data-column-id={column.id}
-                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell ${
+                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell h-full w-full ${
                       column.id === 'dragHandle'
-                        ? 'flex items-center justify-center'
+                        ? 'flex items-center justify-center pl-1'
                         : column.id === 'checkbox'
                           ? 'flex items-center justify-center'
                           : column.id === 'taskKey'
                             ? 'flex items-center pl-3'
                             : column.id === 'title'
-                              ? 'flex items-center justify-between'
+                              ? 'flex items-center justify-between px-2'
                               : column.id === 'description'
                                 ? 'flex items-center pl-2'
                                 : column.id === 'labels'

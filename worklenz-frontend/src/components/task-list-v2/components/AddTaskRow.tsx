@@ -176,13 +176,11 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     const renderColumn = useCallback(
       (columnId: string, width: string, index: number, isSticky?: boolean) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -193,11 +191,17 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
             left: leftPosition,
             zIndex: 10,
             backgroundColor: 'inherit',
+            height: '100%', // Fill the row height
+            display: 'flex', // Use flex to contain child
+            alignItems: 'center', // Center content vertically
           }),
         };
 
         switch (columnId) {
           case 'dragHandle':
+            return (
+              <div className="border-r border-gray-200 dark:border-gray-700 pl-1" style={baseStyle} />
+            );
           case 'checkbox':
           case 'taskKey':
           case 'description':
