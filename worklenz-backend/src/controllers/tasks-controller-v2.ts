@@ -723,7 +723,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
              start_date,
              billable,
              schedule_id,
-             END_DATE ${customColumnsQuery} ${statusesQuery}
+             END_DATE,
+             due_time ${customColumnsQuery} ${statusesQuery}
       FROM tasks t
       WHERE ${filters} ${enhancedSearchQuery}
       ORDER BY ${sortFields}
@@ -1694,6 +1695,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
+        due_time: task.due_time ? String(task.due_time).substring(0, 5) : null,
         completed_at: task.completed_at || undefined,
         timeTracking: {
           estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes

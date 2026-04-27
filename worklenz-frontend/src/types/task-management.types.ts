@@ -17,6 +17,7 @@ export interface Task {
   names?: InlineMember[]; // Alternative names field
   due_date?: string;
   dueDate?: string; // Alternative due date field
+  due_time?: string | null; // Due time stored separately (HH:mm)
   startDate?: string; // Start date field
   completedAt?: string; // Completion date
   updatedAt?: string; // Update timestamp (camelCase from API)

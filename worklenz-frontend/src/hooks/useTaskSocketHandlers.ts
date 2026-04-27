@@ -460,6 +460,17 @@ export const useTaskSocketHandlers = () => {
     [dispatch, currentGroupingV3]
   );
 
+  const handleDueTimeChange = useCallback(
+    (data: { id: string; due_time: string | null } | null) => {
+      if (!data) return;
+      const currentTask = store.getState().taskManagement.entities[data.id];
+      if (currentTask) {
+        dispatch(updateTask({ ...currentTask, due_time: data.due_time }));
+      }
+    },
+    [dispatch]
+  );
+
   const handleEndDateChange = useCallback(
     (task: { id: string; parent_task: string | null; end_date: string }) => {
       if (!task) return;
@@ -1052,6 +1063,7 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgress },
       { event: SocketEvents.TASK_PRIORITY_CHANGE.toString(), handler: handlePriorityChange },
       { event: SocketEvents.TASK_END_DATE_CHANGE.toString(), handler: handleEndDateChange },
+      { event: SocketEvents.TASK_DUE_TIME_CHANGE.toString(), handler: handleDueTimeChange },
       { event: SocketEvents.TASK_NAME_CHANGE.toString(), handler: handleTaskNameChange },
       { event: SocketEvents.TASK_PHASE_CHANGE.toString(), handler: handlePhaseChange },
       { event: SocketEvents.TASK_START_DATE_CHANGE.toString(), handler: handleStartDateChange },
@@ -1103,6 +1115,7 @@ export const useTaskSocketHandlers = () => {
     handleTaskProgress,
     handlePriorityChange,
     handleEndDateChange,
+    handleDueTimeChange,
     handleTaskNameChange,
     handlePhaseChange,
     handleStartDateChange,

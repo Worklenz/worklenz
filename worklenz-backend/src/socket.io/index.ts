@@ -57,6 +57,7 @@ import { on_update_task_weight } from "./commands/on-update-task-weight";
 import { on_get_task_subtasks_count } from "./commands/on-get-task-subtasks-count";
 import { on_get_done_statuses } from "./commands/on-get-done-statuses";
 import { on_schedule_task_drag_change } from "./commands/on_schedule_task_drag_change";
+import { on_task_due_time_change } from "./commands/on-task-due-time-change";
 
 // Client Portal imports
 import { on_client_connect } from "./commands/client-portal/on-client-connect";
@@ -123,6 +124,7 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), (taskId) => on_get_task_subtasks_count(io, socket, taskId));
   socket.on(SocketEvents.GET_DONE_STATUSES.toString(), (projectId, callback) => on_get_done_statuses(io, socket, projectId, callback));
   socket.on(SocketEvents.SCHEDULE_TASK_UPDATE.toString(), data => on_schedule_task_drag_change(io, socket, data));
+  socket.on(SocketEvents.TASK_DUE_TIME_CHANGE.toString(), data => on_task_due_time_change(io, socket, data));
   
   // Client Portal events
   socket.on("client_portal:connect", data => on_client_connect(io, socket, data));
