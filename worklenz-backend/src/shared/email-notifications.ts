@@ -21,13 +21,15 @@ async function deleteTaskUpdate(updateId: string) {
   }
 }
 
-async function incrementAttempts(updateId: string) {
+async function incrementAttempts(updateId: string): Promise<number | null> {
   try {
-    const q = "UPDATE task_updates SET attempts = attempts + 1 WHERE id = $1;";
-    await db.query(q, [updateId]);
+    const q = "UPDATE task_updates SET attempts = attempts + 1 WHERE id = $1 RETURNING attempts;";
+    const result = await db.query(q, [updateId]);
+    return result.rows[0]?.attempts ?? null;
   } catch (error) {
     log_error(error);
   }
+  return null;
 }
 
 async function moveToFailedNotifications(updateId: string, errorMessage: string) {
@@ -49,24 +51,32 @@ async function moveToFailedNotifications(updateId: string, errorMessage: string)
   }
 }
 
-async function checkAndHandleMaxAttempts(updateId: string, currentAttempts: number) {
-  if (currentAttempts >= MAX_RETRY_ATTEMPTS - 1) {
+async function checkAndHandleMaxAttempts(updateId: string, currentAttempts: number, errorMessage: string) {
+  if (currentAttempts >= MAX_RETRY_ATTEMPTS) {
     // This was the last attempt, move to failed notifications
-    await moveToFailedNotifications(updateId, 'Max retry attempts exceeded');
+    await moveToFailedNotifications(updateId, errorMessage);
     await deleteTaskUpdate(updateId);
     return true; // Exceeded max attempts
   }
   return false; // Still within retry limit
 }
 
+async function handleFailedTaskUpdates(updateIds: string[], errorMessage: string) {
+  for (const updateId of updateIds) {
+    const attempts = await incrementAttempts(updateId);
+    if (attempts === null) continue;
 
-
+    const exceededMax = await checkAndHandleMaxAttempts(updateId, attempts, errorMessage);
+    if (exceededMax) {
+      log_error(`Notification ${updateId} exceeded max retry attempts and was moved to failed_task_notifications`);
+    }
+  }
+}
 
 export async function sendAssignmentUpdate(
   toEmail: string,
   assignment: ITaskAssignmentsModel,
-  updateIds: string[] = [],
-  attempts: number = 0
+  updateIds: string[] = []
 ) {
   try {
     const template = FileConstants.getEmailTemplate(IEmailTemplateType.TaskAssigneeChange) as compileTemplate;
@@ -78,28 +88,20 @@ export async function sendAssignmentUpdate(
       })
       : true;
 
-    // Delete successfully sent task updates
     if (isSent && updateIds.length > 0) {
       for (const updateId of updateIds) {
         await deleteTaskUpdate(updateId);
       }
+    } else if (!isSent && updateIds.length > 0) {
+      await handleFailedTaskUpdates(updateIds, "Email send returned no message id");
     }
 
-    return isSent;
+    return !!isSent;
   } catch (e) {
     log_error(e);
 
-    // Increment attempt counter for failed emails
     if (updateIds.length > 0) {
-      for (const updateId of updateIds) {
-        await incrementAttempts(updateId);
-
-        // Check if max attempts reached and handle accordingly
-        const exceededMax = await checkAndHandleMaxAttempts(updateId, attempts);
-        if (exceededMax) {
-          log_error(`Notification ${updateId} exceeded max retry attempts and was moved to failed_task_notifications`);
-        }
-      }
+      await handleFailedTaskUpdates(updateIds, e instanceof Error ? e.message : "Email send failed");
     }
 
     return false;

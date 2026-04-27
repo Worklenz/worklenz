@@ -11,6 +11,7 @@ import {getBaseUrl, mapProjects} from "./helpers";
 const TIME = "*/10 * * * *";
 
 const log = (value: any) => console.log("notifications-cron-job:", value);
+let isRunning = false;
 
 function getModel(model: ITaskAssignmentsModel): ITaskAssignmentsModel {
   const mappedModel: ITaskAssignmentsModel = {...model};
@@ -63,7 +64,21 @@ function getMaxAttempts(model: ITaskAssignmentsModel): number {
 }
 
 async function onNotificationJobTick() {
+  if (isRunning) {
+    log("(cron) Previous notifications job is still running, skipping tick.");
+    return;
+  }
+
+  let hasLock = false;
+  isRunning = true;
   try {
+    const lockResult = await db.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-email-notifications"]);
+    hasLock = !!lockResult.rows[0]?.locked;
+    if (!hasLock) {
+      log("(cron) Another instance is running notifications job, skipping tick.");
+      return;
+    }
+
     log("(cron) Notifications job started.");
     const q = "SELECT get_task_updates() AS updates;";
     const result = await db.query(q, []);
@@ -80,7 +95,7 @@ async function onNotificationJobTick() {
         if (model.teams?.length) {
           const updateIds = collectUpdateIds(item);
           const attempts = getMaxAttempts(item);
-          const isSent = await sendAssignmentUpdate(item.email, model, updateIds, attempts);
+          const isSent = await sendAssignmentUpdate(item.email, model, updateIds);
           if (isSent) {
             sentCount++;
           } else {
@@ -102,6 +117,15 @@ async function onNotificationJobTick() {
   } catch (error) {
     log_error(error);
     log("(cron) Notifications job ended with errors.");
+  } finally {
+    if (hasLock) {
+      try {
+        await db.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-email-notifications"]);
+      } catch (error) {
+        log_error(error);
+      }
+    }
+    isRunning = false;
   }
 }
 

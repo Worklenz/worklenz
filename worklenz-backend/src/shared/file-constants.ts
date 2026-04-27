@@ -51,6 +51,7 @@ class FileConstants {
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskDone);
     FileConstants.getEmailTemplate(IEmailTemplateType.ProjectDailyDigest);
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskComment);
+    FileConstants.getEmailTemplate(IEmailTemplateType.ProjectComment);
     FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation);
   }
 
@@ -80,6 +81,8 @@ class FileConstants {
         return FileConstants.readPugEmailTemplate("project-daily-digest");
       case IEmailTemplateType.TaskComment:
         return FileConstants.readPugEmailTemplate("task-comment");
+      case IEmailTemplateType.ProjectComment:
+        return FileConstants.readPugEmailTemplate("project-comment");
       case IEmailTemplateType.ClientInvitation:
         return FileConstants.readHtmlEmailTemplate("client-invitation");
       case IEmailTemplateType.ClientPortalNewRequest:

@@ -2121,13 +2121,14 @@ BEGIN
                               TO_CHAR(CURRENT_DATE + INTERVAL '1 day', 'yyyy-mm-dd')) rec) AS due_tomorrow,
 
                  (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
-                  FROM (SELECT name, email
-                        FROM users
-                        WHERE id = (SELECT user_id
-                                    FROM project_subscribers
-                                    WHERE project_id = projects.id
-                                      AND user_id = users.id)
-                          AND users.is_deleted IS NOT TRUE) rec) AS subscribers
+                  FROM (SELECT u.name, u.email
+                        FROM project_subscribers ps
+                                 INNER JOIN users u ON ps.user_id = u.id
+                                 INNER JOIN notification_settings ns ON ns.user_id = u.id
+                        WHERE ps.project_id = projects.id
+                          AND ns.team_id = projects.team_id
+                          AND ns.email_notifications_enabled IS TRUE
+                          AND u.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
