@@ -3745,6 +3745,7 @@ BEGIN
                  description,
                  start_date,
                  end_date,
+                 due_time,
                  done,
                  total_minutes,
                  priority_id,
@@ -5034,13 +5035,15 @@ BEGIN
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
     VALUES (_project_id, 'Due Date', 'DUE_DATE', 12, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 13, FALSE);
+    VALUES (_project_id, 'Due Time', 'DUE_TIME', 13, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 14, FALSE);
+    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 14, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 15, FALSE);
+    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 15, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Reporter', 'REPORTER', 16, FALSE);
+    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 16, FALSE);
+    INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
+    VALUES (_project_id, 'Reporter', 'REPORTER', 17, FALSE);
 END
 $$;
 

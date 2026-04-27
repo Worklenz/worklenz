@@ -93,6 +93,13 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.end_date = end_date;
       }
     },
+    setTaskDueTime: (state, action: PayloadAction<{ id: string; due_time: string | null }>) => {
+      if (!action.payload) return;
+      const { due_time, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.due_time = due_time;
+      }
+    },
     setTaskAssignee: (state, action: PayloadAction<IProjectTask>) => {
       if (!action.payload) return;
       const { assignees, id: taskId, names } = action.payload;
@@ -253,6 +260,7 @@ export const {
   setTaskStatus,
   setStartDate,
   setTaskEndDate,
+  setTaskDueTime,
   setTaskAssignee,
   setTaskPriority,
   setTaskPhase,

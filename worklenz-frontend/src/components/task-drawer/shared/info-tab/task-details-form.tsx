@@ -88,6 +88,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         phase: task?.phase_id,
         assignees: task?.assignees,
         dueDate: task?.end_date ?? null,
+        dueTime: task?.due_time || null,
         hours: task?.total_hours || 0,
         minutes: task?.total_minutes || 0,
         priority: task?.priority || 'medium',
@@ -138,6 +139,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
           billable: false,
           progress_value: null,
           weight: null,
+          dueTime: null,
         }}
         onFinish={handleSubmit}
       >
