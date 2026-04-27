@@ -9,11 +9,13 @@ import {
   Typography,
   Spin,
   Skeleton,
-  Space,
   Modal,
+  Slider,
 } from '@/shared/antd-imports';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import Cropper from 'react-easy-crop';
+import type { Area, Point } from 'react-easy-crop';
 import { changeUserName, setUser } from '@features/user/userSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -34,6 +36,37 @@ import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { setSession } from '@/utils/session-helper';
 
+// ─── Helper: crop the image on a canvas and return a base64 string ───────────
+const getCroppedImg = (imageSrc: string, pixelCrop: Area): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = pixelCrop.width;
+      canvas.height = pixelCrop.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas context not available'));
+
+      ctx.drawImage(
+        image,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        pixelCrop.width,
+        pixelCrop.height,
+      );
+
+      resolve(canvas.toDataURL('image/jpeg', 0.92));
+    });
+    image.addEventListener('error', reject);
+    image.src = imageSrc;
+  });
+};
+
+// ─── Component ───────────────────────────────────────────────────────────────
 const ProfileSettings = () => {
   const { t } = useTranslation('settings/profile');
   const dispatch = useAppDispatch();
@@ -44,17 +77,18 @@ const ProfileSettings = () => {
   const [uploading, setUploading] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | undefined>(
-    currentSession?.last_updated ?? currentSession?.updated_at
+    currentSession?.last_updated ?? currentSession?.updated_at,
   );
 
-  // New states for preview functionality
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [pendingFile, setPendingFile] = useState<{
-    base64: string;
-    name: string;
-    size: number;
-  } | null>(null);
-  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+  // ── Crop modal state ──────────────────────────────────────────────────────
+  const [rawImageSrc, setRawImageSrc] = useState<string | null>(null);
+  const [pendingFileName, setPendingFileName] = useState<string>('avatar.jpg');
+  const [isCropModalVisible, setIsCropModalVisible] = useState(false);
+
+  // react-easy-crop state
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const [imageUrl, setImageUrl] = useState<string>();
   const [form] = Form.useForm();
@@ -66,47 +100,53 @@ const ProfileSettings = () => {
     trackMixpanelEvent(evt_settings_profile_visit);
   }, [trackMixpanelEvent]);
 
+  // ── File selected → open crop modal ──────────────────────────────────────
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (uploading || !event.target.files || event.target.files.length === 0) return;
 
     const file = event.target.files[0];
 
     try {
-      const base64 = await getBase64(file);
-
-      // Store the file data and preview for user confirmation
-      setPendingFile({
-        base64: base64 as string,
-        name: file.name,
-        size: file.size,
-      });
-      setPreviewImage(base64 as string);
-      setIsPreviewModalVisible(true);
+      const base64 = (await getBase64(file)) as string;
+      setRawImageSrc(base64);
+      setPendingFileName(file.name);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setIsCropModalVisible(true);
     } catch (e) {
       logger.error('Error reading file', e);
     }
 
-    // Reset file input
+    // Reset file input so the same file can be re-selected
     const dt = new DataTransfer();
     event.target.files = dt.files;
   };
 
+  const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  // ── Save cropped image ────────────────────────────────────────────────────
   const handleSaveAvatar = async () => {
-    if (!pendingFile) return;
+    if (!rawImageSrc || !croppedAreaPixels) return;
 
     setUploading(true);
 
     try {
+      const croppedBase64 = await getCroppedImg(rawImageSrc, croppedAreaPixels);
+
+      // Approximate byte size of the base64 data
+      const size = Math.round((croppedBase64.length * 3) / 4);
+
       const res = await taskAttachmentsApiService.createAvatarAttachment({
-        file: pendingFile.base64,
-        file_name: pendingFile.name,
-        size: pendingFile.size,
+        file: croppedBase64,
+        file_name: pendingFileName,
+        size,
       });
 
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_picture_update);
 
-        // Update session with the latest data from API response
         const updatedUser = {
           ...currentSession,
           avatar_url: res.body.url,
@@ -115,15 +155,10 @@ const ProfileSettings = () => {
         };
         setSession(updatedUser);
         dispatch(setUser(updatedUser));
-
-        // Update local image URL
         setImageUrl(res.body.url);
         setLastUpdatedAt(res.body.updated_at || new Date().toISOString());
 
-        // Close modal and clear pending data
-        setIsPreviewModalVisible(false);
-        setPendingFile(null);
-        setPreviewImage(null);
+        handleCancelCrop();
       }
     } catch (e) {
       logger.error('Error uploading avatar', e);
@@ -132,18 +167,19 @@ const ProfileSettings = () => {
     }
   };
 
-  const handleCancelAvatar = () => {
-    setIsPreviewModalVisible(false);
-    setPendingFile(null);
-    setPreviewImage(null);
+  const handleCancelCrop = () => {
+    setIsCropModalVisible(false);
+    setRawImageSrc(null);
+    setCroppedAreaPixels(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
   };
 
   const triggerFileInput = () => {
-    if (!uploading) {
-      fileInputRef.current?.click();
-    }
+    if (!uploading) fileInputRef.current?.click();
   };
 
+  // ── Avatar preview button ─────────────────────────────────────────────────
   const avatarPreview = (
     <div
       className="avatar-uploader ant-upload-select-picture-card"
@@ -159,10 +195,7 @@ const ProfileSettings = () => {
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            inset: 0,
             background: 'rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
@@ -191,10 +224,9 @@ const ProfileSettings = () => {
     </div>
   );
 
+  // ── Name update ───────────────────────────────────────────────────────────
   const handleFormSubmit = async ({ name }: { name: string }) => {
-    if (name === currentSession?.name) {
-      return;
-    }
+    if (name === currentSession?.name) return;
 
     setUpdating(true);
     try {
@@ -204,8 +236,6 @@ const ProfileSettings = () => {
         dispatch(changeUserName(name));
 
         const newUpdatedAt = res.body.updated_at || new Date().toISOString();
-
-        // Update session with the latest data from API response
         const updatedUser = {
           ...currentSession,
           ...res.body,
@@ -223,6 +253,7 @@ const ProfileSettings = () => {
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <Card style={{ width: '100%' }}>
@@ -254,14 +285,12 @@ const ProfileSettings = () => {
                 />
               </Tooltip>
             </Form.Item>
+
             <Form.Item
               name="name"
               label={t('nameLabel')}
               rules={[
-                {
-                  required: true,
-                  message: t('nameRequiredError'),
-                },
+                { required: true, message: t('nameRequiredError') },
                 {
                   min: 2,
                   message: t('nameMinLengthError') || 'Name must be at least 2 characters',
@@ -274,18 +303,15 @@ const ProfileSettings = () => {
             >
               <Input style={{ borderRadius: 4 }} />
             </Form.Item>
+
             <Form.Item
               name="email"
               label={t('emailLabel')}
-              rules={[
-                {
-                  required: true,
-                  message: t('emailRequiredError'),
-                },
-              ]}
+              rules={[{ required: true, message: t('emailRequiredError') }]}
             >
               <Input style={{ borderRadius: 4 }} disabled />
             </Form.Item>
+
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={updating}>
                 {t('saveChanges')}
@@ -296,60 +322,99 @@ const ProfileSettings = () => {
 
         <Flex vertical gap={4} style={{ marginTop: 16 }}>
           <Tooltip
-            title={(currentSession?.joined_date || currentSession?.created_at)
-              ? formatDateTimeWithLocale(currentSession?.joined_date || currentSession?.created_at || '')
-              : ''}>
+            title={
+              currentSession?.joined_date || currentSession?.created_at
+                ? formatDateTimeWithLocale(
+                    currentSession?.joined_date || currentSession?.created_at || '',
+                  )
+                : ''
+            }
+          >
             <Typography.Text type="secondary" style={{ fontSize: 12, width: 'fit-content' }}>
               {t('profileJoinedText', {
-                date: (currentSession?.joined_date || currentSession?.created_at)
-                  ? calculateTimeDifference(currentSession?.joined_date || currentSession?.created_at || '')
-                  : '',
+                date:
+                  currentSession?.joined_date || currentSession?.created_at
+                    ? calculateTimeDifference(
+                        currentSession?.joined_date || currentSession?.created_at || '',
+                      )
+                    : '',
               })}
             </Typography.Text>
           </Tooltip>
           <Tooltip title={lastUpdatedAt ? formatDateTimeWithLocale(lastUpdatedAt) : ''}>
             <Typography.Text type="secondary" style={{ fontSize: 12, width: 'fit-content' }}>
               {t('profileLastUpdatedText', {
-                date: lastUpdatedAt
-                  ? calculateTimeDifference(lastUpdatedAt)
-                  : '',
+                date: lastUpdatedAt ? calculateTimeDifference(lastUpdatedAt) : '',
               })}
             </Typography.Text>
           </Tooltip>
         </Flex>
       </Card>
 
-      {/* Preview Modal */}
+      {/* ── Crop Modal ──────────────────────────────────────────────────────── */}
       <Modal
-        title="Confirm Profile Picture"
-        open={isPreviewModalVisible}
-        onCancel={handleCancelAvatar}
+        title="Crop Profile Picture"
+        open={isCropModalVisible}
+        onCancel={handleCancelCrop}
+        width={520}
+        centered
+        destroyOnClose
         footer={[
-          <Button key="cancel" onClick={handleCancelAvatar} disabled={uploading}>
+          <Button key="cancel" onClick={handleCancelCrop} disabled={uploading}>
             Cancel
           </Button>,
           <Button key="save" type="primary" onClick={handleSaveAvatar} loading={uploading}>
             Save
           </Button>,
         ]}
-        centered
       >
-        <Flex vertical align="center" gap={16} style={{ padding: '20px 0' }}>
-          <Typography.Text>Do you want to set this as your profile picture?</Typography.Text>
-          {previewImage && (
-            <img
-              src={previewImage}
-              alt="Preview"
-              style={{
-                width: '200px',
-                height: '200px',
-                objectFit: 'cover',
-                borderRadius: '8px',
-                border: '1px solid #d9d9d9',
-              }}
+        {/* Crop area */}
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: 360,
+            background: '#1a1a1a',
+            borderRadius: 8,
+            overflow: 'hidden',
+          }}
+        >
+          {rawImageSrc && (
+            <Cropper
+              image={rawImageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
             />
           )}
+        </div>
+
+        {/* Zoom slider */}
+        <Flex align="center" gap={12} style={{ marginTop: 16, padding: '0 4px' }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+            Zoom
+          </Typography.Text>
+          <Slider
+            min={1}
+            max={3}
+            step={0.05}
+            value={zoom}
+            onChange={(val) => setZoom(val)}
+            style={{ flex: 1 }}
+          />
         </Flex>
+
+        <Typography.Text
+          type="secondary"
+          style={{ display: 'block', textAlign: 'center', fontSize: 12, marginTop: 8 }}
+        >
+          Drag to reposition · Scroll or use slider to zoom
+        </Typography.Text>
       </Modal>
     </>
   );
