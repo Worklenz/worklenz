@@ -48,10 +48,10 @@ const AttachmentsPreview = ({
     if (!id || !name) return;
     try {
       setDownloading(true);
-      const res = await attachmentsApiService.downloadAttachment(id, name);
-      if (res && res.done) {
+      const res = await taskAttachmentsApiService.downloadTaskAttachment(id, name);
+      if (res && res.done && res.body?.url) {
         const link = document.createElement('a');
-        link.href = res.body || '';
+        link.href = res.body.url;
         link.download = name;
         link.click();
         link.remove();
