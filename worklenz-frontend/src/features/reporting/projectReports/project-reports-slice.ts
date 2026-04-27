@@ -155,7 +155,7 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
 // Fetch grouped projects with accurate task counts
 export const fetchGroupedProjects = createAsyncThunk(
   'projectReports/fetchGroupedProjects',
-  async (_, { getState }) => {
+  async (_, { getState, rejectWithValue }) => {
     const state = (getState() as any).projectReportsReducer;
     const teams = selectedTeams(state);
 
@@ -184,9 +184,22 @@ export const fetchGroupedProjects = createAsyncThunk(
       index: 1,
       size: 1000,
     };
-    const response = await reportingProjectsApiService.getProjectsGrouped(params);
-    // Ensure we return a valid structure even if response.body is null
-    return response.body || { groups: [], total_groups: 0 };
+
+    try {
+      const response = await reportingProjectsApiService.getProjectsGrouped(params);
+      // Ensure we return a valid structure even if response.body is null
+      return response.body || { groups: [], total_groups: 0 };
+    } catch (error: any) {
+      // ── Fix: Return a rejected value with a user-friendly message instead of
+      // letting the raw axios timeout error bubble up and crash the component.
+      // The rejected case in extraReducers sets isLoading = false so the UI
+      // recovers cleanly (shows empty state instead of a frozen spinner).
+      const message =
+        error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')
+          ? 'Search request timed out. Please try a more specific name.'
+          : error?.message || 'Failed to fetch grouped projects';
+      return rejectWithValue(message);
+    }
   }
 );
 
@@ -352,8 +365,16 @@ const projectReportsSlice = createSlice({
 
       state.viewMode = newViewMode;
 
-      // Reset data when switching between views to ensure fresh data
+      // Reset data AND search query when switching between views to ensure
+      // fresh data and no leaked search terms across view types.
       if (previousViewMode !== newViewMode) {
+        // ── Fix: clear searchQuery in Redux when the view changes ──
+        // The filter component mirrors this by also clearing its localSearch state
+        // inside a useEffect that watches viewMode. Both must be cleared together
+        // so the input box and the API params stay in sync.
+        state.searchQuery = '';
+        state.index = 1;
+
         if (newViewMode === 'grouped') {
           // Clear table data when switching to grouped view
           state.projectList = [];
@@ -489,11 +510,20 @@ const projectReportsSlice = createSlice({
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
       })
+      // ── Fix: handle both rejectWithValue (our friendly message) and unexpected
+      // runtime errors so isLoading is always cleared and the UI can recover.
       .addCase(fetchGroupedProjects.rejected, (state, action) => {
         if (state.viewMode === 'grouped') {
           state.isLoading = false;
         }
-        state.error = action.error.message || 'Failed to fetch grouped projects';
+        // action.payload comes from rejectWithValue(); action.error.message is the
+        // fallback for unexpected throws (network down, etc.)
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          'Failed to fetch grouped projects';
+        // Keep whatever was previously shown rather than wiping to empty on error
+        // state.groupedProjects stays unchanged so the user can see their last results
       });
   },
 });
