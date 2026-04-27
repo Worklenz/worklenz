@@ -348,7 +348,7 @@ const RateCardTable: React.FC = () => {
             {memberscol?.map((memberId, i) => {
               const member = members.find(m => m.id === memberId);
               return member ? (
-                <CustomAvatar key={i} avatarName={member.name || ''} size={26} />
+                <CustomAvatar key={i} avatarName={member.name || ''} avatarUrl={member.avatar_url} size={26} />
               ) : null;
             })}
           </Avatar.Group>
