@@ -685,6 +685,64 @@ const TaskListV2Section: React.FC = () => {
     }
   }, [loading, loadingColumns]);
 
+  // Fix sticky group headers positioning - they should stick below column headers
+  // GroupedVirtuoso creates wrapper divs with position: sticky and top: 0px
+  // We need to adjust them to top: 40px (column header height) with proper z-index
+  useEffect(() => {
+    if (!contentScrollRef.current) return;
+
+    const scrollContainer = contentScrollRef.current;
+    
+    // Function to update sticky group header styles
+    const updateStickyHeaders = () => {
+      // GroupedVirtuoso wraps each group in a div with position: sticky
+      // We need to find all elements with position: sticky that are group wrappers
+      const allElements = scrollContainer.querySelectorAll('*');
+      
+      allElements.forEach(element => {
+        const htmlElement = element as HTMLElement;
+        const computedStyle = window.getComputedStyle(htmlElement);
+        
+        // Check if this is a sticky element (group header wrapper created by virtuoso)
+        if (computedStyle.position === 'sticky') {
+          // Check if it's a group wrapper by looking for our TaskGroupHeader inside
+          const hasGroupHeader = htmlElement.querySelector('[class*="inline-flex"][class*="w-max"]');
+          
+          if (hasGroupHeader && !htmlElement.classList.contains('virtuoso-group-header-wrapper')) {
+            // This is a group wrapper - add our custom class
+            htmlElement.classList.add('virtuoso-group-header-wrapper');
+            
+            // Set background to match the scroll container to prevent content showing through
+            // Get the computed background color from the scroll container
+            const containerBg = window.getComputedStyle(scrollContainer).backgroundColor;
+            htmlElement.style.backgroundColor = containerBg;
+          }
+        }
+      });
+    };
+
+    // Initial update after a short delay to ensure virtuoso has rendered
+    const timeoutId = setTimeout(updateStickyHeaders, 100);
+
+    // Create a MutationObserver to watch for DOM changes
+    // GroupedVirtuoso dynamically creates/removes elements as you scroll
+    const observer = new MutationObserver(() => {
+      updateStickyHeaders();
+    });
+
+    // Observe the scroll container for child list changes
+    observer.observe(scrollContainer, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [contentScrollRef.current, loading, loadingColumns]);
+
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -1633,6 +1691,13 @@ const TaskListV2Section: React.FC = () => {
           .hover\\:bg-gray-50:hover .sticky-column-hover,
           .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
             background-color: var(--hover-bg) !important;
+          }
+          
+          /* Sticky group headers positioning */
+          .virtuoso-group-header-wrapper {
+            position: sticky !important;
+            top: 40px !important;
+            z-index: 25 !important;
           }
         `}
       </style>
