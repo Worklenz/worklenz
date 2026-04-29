@@ -425,13 +425,13 @@ const UpdateMemberDrawer = ({
             </Button>
             <Flex vertical style={{ marginBlockStart: 8 }}>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
-                {t('addedText')}
+                {t('addedText')}{''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
                   {calculateTimeDifference(teamMember?.created_at || '')}
                 </Tooltip>
               </Typography.Text>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
-                {t('updatedText')}
+                {t('updatedText')}{''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
                   {calculateTimeDifference(teamMember?.updated_at || '')}
                 </Tooltip>
