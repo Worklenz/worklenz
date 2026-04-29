@@ -79,6 +79,40 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     return text ? text.split(' ').length : 0;
   }, []);
 
+  const processHTML = useCallback((html: string) => {
+   if (!html) return html;
+   const parser = new DOMParser();
+   const doc = parser.parseFromString(html, 'text/html');
+   const children = Array.from(doc.body.children);
+  
+   let olCounter = 0; // track consecutive ol group
+   let lastWasOlGroup = false;
+
+
+   children.forEach((el, index) => {
+     const tag = el.tagName.toLowerCase();
+    
+     if (tag === 'ol') {
+       olCounter++;
+       (el as HTMLElement).setAttribute('start', String(olCounter));
+       lastWasOlGroup = true;
+     } else if (tag === 'ul') {
+       const prev = children[index - 1];
+       if (prev && prev.tagName.toLowerCase() === 'ol') {
+         el.classList.add('ql-nested-list');
+       }
+       // don't reset counter — ul between ol items shouldn't break numbering
+     } else {
+       // any non-list element resets the counter
+       olCounter = 0;
+       lastWasOlGroup = false;
+     }
+   });
+  
+   return doc.body.innerHTML;
+ }, []);
+
+
   const processMentions = useCallback((html: string) => {
     if (!html || html.includes('class="mentions"')) return html;
     const mentionRegex = /(^|[^\w.+-])@([\w-]+)/g;
@@ -87,7 +121,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
 
   const emitDescriptionChange = useCallback(() => {
     if (!taskId) return;
-    const sanitizedContent = DOMPurify.sanitize(content || '');
+    const sanitizedContent = DOMPurify.sanitize(content || '',{ ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'] });
     socket?.emit(
       SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
       JSON.stringify({
@@ -118,7 +152,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
   }, [isEditorOpen, closeEditorAndPersist]);
 
   const handleEditorChange = (nextHtml: string) => {
-    const sanitizedContent = DOMPurify.sanitize(nextHtml);
+    const sanitizedContent = DOMPurify.sanitize(nextHtml,{ ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'] });
     setContent(sanitizedContent);
     setWordCount(extractWordCount(sanitizedContent));
   };
@@ -191,7 +225,12 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
             <div
               ref={contentRef}
               className="description-content"
-              dangerouslySetInnerHTML={{ __html: processMentions(content) }}
+              dangerouslySetInnerHTML={{ __html:  (() => {
+ const result = processHTML(processMentions(content));
+
+ return result;
+})()
+ }}
               style={
                 isLongContent && !isExpanded
                   ? {
