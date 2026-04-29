@@ -1,6 +1,9 @@
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
-import { setSelectedProjectCategories } from '@/features/reporting/projectReports/project-reports-slice';
+import { 
+  setSelectedProjectCategories,
+  fetchProjectDataForCurrentView 
+} from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
@@ -76,6 +79,7 @@ const ProjectCategoriesFilterDropdown = () => {
       updatedCategory = [...orgCategories, category];
     }
     dispatch(setSelectedProjectCategories(category));
+    dispatch(fetchProjectDataForCurrentView());
   };
 
   useEffect(() => {
