@@ -327,6 +327,9 @@ const UpdateMemberDrawer = ({
             optionLabelProp="label"
             size="middle"
             placeholder={t('jobTitlePlaceholder')}
+            showSearch
+            filterOption={(input,option) =>(option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+  }
             options={jobTitles.map(job => ({
               label: job.name,
               value: job.id,
