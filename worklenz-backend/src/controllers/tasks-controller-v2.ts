@@ -1778,6 +1778,39 @@ export default class TasksControllerV2 extends TasksControllerBase {
         }
 
         const [firstSubtask] = subtasks;
+        
+        // Fetch the real parent task's progress value from database
+        const parentTaskQuery = `
+          SELECT 
+            progress_value,
+            COALESCE(progress_value, 0) AS complete_ratio,
+            (SELECT is_completed(status_id, project_id)) AS is_complete
+          FROM tasks
+          WHERE id = $1
+        `;
+        const parentTaskResult = await db.query(parentTaskQuery, [parentId]);
+        const realParentData = parentTaskResult.rows[0];
+        
+        // Calculate the actual progress value for the synthetic parent
+        // Use the real parent task's progress from database
+        let parentProgress = 0;
+        let parentCompleteRatio = 0;
+        let parentProgressValue = 0;
+        
+        if (realParentData) {
+          // If parent task is marked as complete, show 100%
+          if (realParentData.is_complete) {
+            parentProgress = 100;
+            parentCompleteRatio = 100;
+            parentProgressValue = 100;
+          } else {
+            // Otherwise use the calculated progress value from database
+            parentProgress = realParentData.progress_value || 0;
+            parentCompleteRatio = realParentData.complete_ratio || 0;
+            parentProgressValue = realParentData.progress_value || 0;
+          }
+        }
+        
         const syntheticParent = {
           ...firstSubtask,
           id: `archived-parent-container-${parentId}`,
@@ -1805,6 +1838,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
           priorityColor: firstSubtask.parent_task_priority_color || null,
           priority_color: firstSubtask.parent_task_priority_color || null,
           priority_value: firstSubtask.parent_task_priority_value ?? null,
+          // CRITICAL FIX: Use the real parent task's actual progress value from database
+          // This ensures consistency between archived and non-archived views
+          // If parent is "Done", it shows 100%; otherwise shows calculated progress (0 if all subtasks archived)
+          progress: parentProgress,
+          complete_ratio: parentCompleteRatio,
+          progress_value: parentProgressValue,
           show_sub_tasks: true,
           sub_tasks: subtasks,
           sub_tasks_count: subtasks.length,
