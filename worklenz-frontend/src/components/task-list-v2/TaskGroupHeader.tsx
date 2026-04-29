@@ -405,7 +405,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           color: headerTextColor,
           position: 'sticky',
           left: 0,
-          top: 0,
           zIndex: 25,
           height: '36px',
           minHeight: '36px',
