@@ -35,7 +35,7 @@ const taskCommentsApiService = {
 
   download: async (id: string, filename: string): Promise<IServerResponse<any>> => {
     const response = await apiClient.get(
-      `${API_BASE_URL}/task-comments/download?id=${id}&file=${filename}`
+      `${API_BASE_URL}/task-comments/download?id=${id}&file=${encodeURIComponent(filename)}`
     );
     return response.data;
   },

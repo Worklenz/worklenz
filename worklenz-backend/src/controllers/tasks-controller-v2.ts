@@ -1623,6 +1623,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       "0": "low",
       "1": "medium",
       "2": "high",
+      "3": "critical",
     };
 
     // Create status category mapping based on actual status names from database

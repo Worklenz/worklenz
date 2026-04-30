@@ -447,7 +447,8 @@ export const fetchBoardSubTasks = createAsyncThunk(
         status_id: task.originalStatusId || task.status,
         priority_id: task.originalPriorityId || task.priority,
         priority_color: task.priorityColor,
-        priority_value: task.priority === 'high' ? 2 : task.priority === 'medium' ? 1 : 0,
+        priority_value:
+          task.priority === 'critical' ? 3 : task.priority === 'high' ? 2 : task.priority === 'medium' ? 1 : 0,
         end_date: task.dueDate || task.end_date,
         start_date: task.startDate || task.start_date,
         complete_ratio: task.complete_ratio || task.progress || 0,

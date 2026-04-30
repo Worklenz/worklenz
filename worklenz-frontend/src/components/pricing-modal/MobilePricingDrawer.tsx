@@ -247,10 +247,10 @@ const MobilePricingDrawer: React.FC<MobilePricingDrawerProps> = ({
             )}
 
             <Typography.Title level={5} style={{ margin: 0, color: '#1890ff' }}>
-              {plan.id === 'free' ? 'Free' : `$${totalCost.toFixed(2)}`}
+              {plan.id === 'free' ? 'Free' : plan.id === 'enterprise' ? '' : `$${totalCost.toFixed(2)}`}
             </Typography.Title>
 
-            {plan.id !== 'free' && (
+            {plan.id !== 'free' && plan.id !== 'enterprise' && (
               <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
                 /month
               </Typography.Text>
