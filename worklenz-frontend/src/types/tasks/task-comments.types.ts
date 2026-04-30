@@ -33,10 +33,14 @@ export interface ITaskCommentViewModel extends ITaskComment {
   attachments?: ITaskAttachmentViewModel[];
 }
 
+export type ReactionType = 'like' | 'love' | 'celebrate' | 'support' | 'insightful' | 'curious';
+
+export interface IReactionDetails {
+  count: number;
+  reacted_members: string[];
+  reacted_member_ids: string[];
+}
+
 interface ITaskCommentReaction {
-  likes: {
-    count: number;
-    liked_members: string[];
-    liked_member_ids: string[];
-  };
+  [key: string]: IReactionDetails;
 }
