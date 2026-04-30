@@ -7,7 +7,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
+import { DoubleLeftOutlined, ExclamationOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
 
 type PriorityDropdownProps = {
   task: IProjectTask;
@@ -119,6 +119,13 @@ const PriorityDropdown = ({ task, teamId }: PriorityDropdownProps) => {
                 style={{
                   color: themeMode === 'dark' ? priority.color_code_dark : priority.color_code,
                   transform: 'rotate(90deg)',
+                }}
+              />
+            )}
+            {priority.name === 'Critical' && (
+              <ExclamationOutlined
+                style={{
+                  color: themeMode === 'dark' ? priority.color_code_dark : priority.color_code,
                 }}
               />
             )}
