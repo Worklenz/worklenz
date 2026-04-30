@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Avatar,
@@ -62,6 +62,13 @@ const UpdateMemberDrawer = ({
   const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
   const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
   const [loadingTeamLeads, setLoadingTeamLeads] = useState(false);
+  
+  // Job titles pagination state
+  const [jobTitlesLoading, setJobTitlesLoading] = useState(false);
+  const [jobTitlesTotal, setJobTitlesTotal] = useState(0);
+  const [jobTitlesPage, setJobTitlesPage] = useState(1);
+  const jobTitlesPageSize = 10;
+  const scrollPositionRef = useRef(0);
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
@@ -97,15 +104,22 @@ const UpdateMemberDrawer = ({
     return teamMember?.pending_invitation && selectedMemberId && !resentSuccess;
   }, [teamMember?.pending_invitation, selectedMemberId, resentSuccess]);
 
-  const getJobTitles = async () => {
+  const getJobTitles = async (page: number = 1, append: boolean = false) => {
     try {
-      const res = await jobTitlesApiService.getJobTitles(1, 10, null, null, null);
+      setJobTitlesLoading(true);
+      const res = await jobTitlesApiService.getJobTitles(page, jobTitlesPageSize, null, null, null);
       if (res.done) {
-        setJobTitles(res.body.data || []);
+        const newJobTitles = res.body.data || [];
+        const total = res.body.total || 0;
+        
+        setJobTitles(prev => (append ? [...prev, ...newJobTitles] : newJobTitles));
+        setJobTitlesTotal(total);
       }
     } catch (error) {
       logger.error('Error fetching job titles:', error);
       message.error(t('jobTitlesFetchError'));
+    } finally {
+      setJobTitlesLoading(false);
     }
   };
 
@@ -124,6 +138,26 @@ const UpdateMemberDrawer = ({
     } finally {
       setLoadingTeamLeads(false);
     }
+  };
+
+  // Handle scroll to load more job titles
+  const handleJobTitleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const scrollTop = target.scrollTop;
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+
+    // Check if scrolled to the very end of the list
+    if (scrollTop + clientHeight >= scrollHeight) {
+      const hasMore = jobTitles.length < jobTitlesTotal;
+      if (hasMore && !jobTitlesLoading) {
+        const nextPage = jobTitlesPage + 1;
+        setJobTitlesPage(nextPage);
+        getJobTitles(nextPage, true);
+      }
+    }
+
+    scrollPositionRef.current = scrollTop;
   };
 
   const getTeamMember = async () => {
@@ -246,7 +280,13 @@ const UpdateMemberDrawer = ({
   const afterOpenChange = async (visible: boolean) => {
     if (visible) {
       form.resetFields();
-      await Promise.all([getJobTitles(), getTeamMember(), getTeamLeads()]);
+      // Reset job titles pagination state
+      setJobTitles([]);
+      setJobTitlesPage(1);
+      setJobTitlesTotal(0);
+      scrollPositionRef.current = 0;
+      
+      await Promise.all([getJobTitles(1, false), getTeamMember(), getTeamLeads()]);
     } else {
       setTeamMember(null);
       setResentSuccess(false);
@@ -341,10 +381,17 @@ const UpdateMemberDrawer = ({
               }
             }}
             onSelect={value => setSelectedJobTitle(value)}
+            onPopupScroll={handleJobTitleScroll}
+            loading={jobTitlesLoading && jobTitles.length === 0}
+            notFoundContent={jobTitlesLoading && jobTitles.length === 0 ? <Spin size="small" /> : null}
             dropdownRender={menu => (
               <div>
-                {loading && <Spin size="small" />}
                 {menu}
+                {jobTitlesLoading && jobTitles.length > 0 && (
+                  <div style={{ textAlign: 'center', padding: '8px' }}>
+                    <Spin size="small" />
+                  </div>
+                )}
               </div>
             )}
           />
