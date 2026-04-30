@@ -203,6 +203,21 @@ export const fetchGroupedProjects = createAsyncThunk(
   }
 );
 
+// View-aware fetch: calls the appropriate fetch function based on current view mode
+// This should be used by filter components instead of calling fetchProjectData directly
+export const fetchProjectDataForCurrentView = createAsyncThunk(
+  'projectReports/fetchProjectDataForCurrentView',
+  async (_, { getState, dispatch }) => {
+    const state = (getState() as any).projectReportsReducer;
+    
+    if (state.viewMode === 'grouped') {
+      return dispatch(fetchGroupedProjects());
+    } else {
+      return dispatch(fetchProjectData());
+    }
+  }
+);
+
 export const updateProjectCategory = createAction<{
   projectId: string;
   category: IProjectCategory;
@@ -509,6 +524,8 @@ const projectReportsSlice = createSlice({
         }
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
+        // Use total project count from backend (accurate with filters applied)
+        state.total = action.payload?.total || 0;
       })
       // ── Fix: handle both rejectWithValue (our friendly message) and unexpected
       // runtime errors so isLoading is always cleared and the UI can recover.
