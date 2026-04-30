@@ -3,6 +3,7 @@ import { Popover, Tooltip, SmileOutlined } from '@/shared/antd-imports';
 import { ITaskCommentViewModel, ReactionType } from '@/types/tasks/task-comments.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { REACTION_CONFIGS } from '@/shared/reaction-config';
 import './comment-reactions-bar.css';
 
 interface CommentReactionsBarProps {
@@ -10,23 +11,11 @@ interface CommentReactionsBarProps {
   onReactionClick: (reactionType: ReactionType) => void;
 }
 
-const REACTIONS: { type: ReactionType; emoji: string; label: string }[] = [
-  { type: 'like', emoji: '👍', label: 'Like' },
-  { type: 'love', emoji: '❤️', label: 'Love' },
-  { type: 'celebrate', emoji: '🎉', label: 'Celebrate' },
-  { type: 'support', emoji: '💪', label: 'Support' },
-  { type: 'insightful', emoji: '💡', label: 'Insightful' },
-  { type: 'curious', emoji: '🤔', label: 'Curious' },
-];
-
-const REACTION_EMOJIS: Record<ReactionType, string> = {
-  like: '👍',
-  love: '❤️',
-  celebrate: '🎉',
-  support: '💪',
-  insightful: '💡',
-  curious: '🤔',
-};
+// Create emoji map from config for quick lookup
+const REACTION_EMOJIS = REACTION_CONFIGS.reduce((acc, config) => {
+  acc[config.type] = config.emoji;
+  return acc;
+}, {} as Record<ReactionType, string>);
 
 const CommentReactionsBar = ({ comment, onReactionClick }: CommentReactionsBarProps) => {
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -43,11 +32,11 @@ const CommentReactionsBar = ({ comment, onReactionClick }: CommentReactionsBarPr
   // Check if user has reacted with any type
   const hasUserReactedToAny = (): boolean => {
     if (!teamMemberId || !comment?.reactions) return false;
-    return REACTIONS.some(reaction => hasUserReacted(reaction.type));
+    return REACTION_CONFIGS.some(config => hasUserReacted(config.type));
   };
 
   // Get available reactions (not yet reacted by user)
-  const availableReactions = REACTIONS.filter(reaction => !hasUserReacted(reaction.type));
+  const availableReactions = REACTION_CONFIGS.filter(config => !hasUserReacted(config.type));
 
   // Get existing reactions with counts
   const existingReactions = comment.reactions
@@ -75,15 +64,15 @@ const CommentReactionsBar = ({ comment, onReactionClick }: CommentReactionsBarPr
   const pickerContent = (
     <div className={`reaction-picker-content theme-${themeMode}`}>
       {availableReactions.length > 0 ? (
-        availableReactions.map(reaction => (
+        availableReactions.map(config => (
           <button
-            key={reaction.type}
+            key={config.type}
             className="reaction-picker-button"
-            onClick={() => handleReactionSelect(reaction.type)}
-            title={reaction.label}
-            aria-label={reaction.label}
+            onClick={() => handleReactionSelect(config.type)}
+            title={config.label}
+            aria-label={config.label}
           >
-            <span className="reaction-picker-emoji">{reaction.emoji}</span>
+            <span className="reaction-picker-emoji">{config.emoji}</span>
           </button>
         ))
       ) : (
