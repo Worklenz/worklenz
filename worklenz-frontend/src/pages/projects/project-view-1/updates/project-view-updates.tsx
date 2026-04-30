@@ -300,9 +300,10 @@ const ProjectViewUpdates = () => {
     }
   };
 
-  const startEdit = (commentId: string, content: string) => {
+  const startEdit = (commentId: string, content: string,mentions?: any[]) => {
     setEditingCommentId(commentId);
-    const textContent = content.replace(/<[^>]*>/g, '');
+    const resolved = processMentions(content, mentions || []);
+    const textContent = content.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     setEditContent(textContent);
   };
 
@@ -528,7 +529,7 @@ const ProjectViewUpdates = () => {
                                     size="small"
                                     icon={<EditOutlined />}
                                     className="hover-action-btn"
-                                    onClick={() => startEdit(item.id!, item.content || '')}
+                                    onClick={() => startEdit(item.id!, item.content || '',item.mentions)}
                                   />
                                 </Tooltip>
                                 <Dropdown
