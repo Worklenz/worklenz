@@ -335,17 +335,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
   protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
-    // Predefined ranges take priority - check these first
-    if (key === DATE_RANGES.YESTERDAY)
-      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
-    if (key === DATE_RANGES.LAST_WEEK)
-      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
-    if (key === DATE_RANGES.LAST_MONTH)
-      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
-    if (key === DATE_RANGES.LAST_QUARTER)
-      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
-
-    // Custom date range - only use if no predefined range is specified
+    // Custom date range takes PRIORITY - check this FIRST
+    // This ensures that when a user selects a custom date range, it overrides any predefined range key
     if (dateRange && dateRange.length === 2) {
       // Use parameterized queries for custom date ranges
       // Parse dates - handle both ISO strings and Date.toString() format
@@ -365,6 +356,16 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
       return { clause: query, params };
     }
+
+    // Predefined ranges - only use if no custom date range is provided
+    if (key === DATE_RANGES.YESTERDAY)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
+    if (key === DATE_RANGES.LAST_WEEK)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    if (key === DATE_RANGES.LAST_MONTH)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    if (key === DATE_RANGES.LAST_QUARTER)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
 
     return { clause: "", params: [] };
   }
@@ -891,3 +892,5 @@ TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
   }
 
 }
+
+
