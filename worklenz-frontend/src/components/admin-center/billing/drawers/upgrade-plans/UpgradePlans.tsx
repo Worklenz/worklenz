@@ -883,41 +883,23 @@ const UpgradePlans = () => {
                   title={t('pricing-modal:plans.enterprise.name')}
                   description={t('pricing-modal:plans.enterprise.description')}
                   features={generateEnterprisePlanFeatures()}
-                  priceDisplay={
-                    <PlanPriceDisplay
-                      monthlyPrice={calculateMonthlyTotal('enterprise')}
-                      annualPrice={calculateAnnualTotal('enterprise')}
-                      perUserMonthlyPrice={null}
-                      perUserAnnualPrice={null}
-                      isSmallTeam={false}
-                      billingFrequency={billingFrequency}
-                      label={getPriceLabel('enterprise')}
-                      isAppSumoUser={false}
-                      originalMonthlyPrice={calculateOriginalMonthlyTotal('enterprise')}
-                      originalAnnualPrice={calculateOriginalAnnualTotal('enterprise')}
-                    />
-                  }
+                  priceDisplay={null}
                   selectedPlanType={selectedPlanType}
                   onPlanSelect={handlePlanSelect}
                   primaryActionLabel={t(
-                    'pricing-modal:buttons.choosePlan',
-                    'Continue with Selected Plan'
+                    'pricing-modal:buttons.contactSales',
+                    'Contact Sales'
                   )}
                   onPrimaryAction={() => {
                     handlePlanSelect('enterprise');
-                    void continueWithPaddlePlan('enterprise');
+                    window.open(
+                      'mailto:sales@worklenz.com?subject=Enterprise%20Plan%20Inquiry',
+                      '_blank'
+                    );
                   }}
                   primaryActionDisabled={isLoadingPlans}
                   primaryActionLoading={loadingPlanType === 'enterprise'}
-                  footerNote={(() => {
-                    if (billingFrequency === 'annual') {
-                      const annualTotal = calculateAnnualTotal('enterprise');
-                      return `$${annualTotal}/year`;
-                    } else {
-                      const monthlyTotal = calculateMonthlyTotal('enterprise');
-                      return `$${monthlyTotal}/month`;
-                    }
-                  })()}
+                  footerNote={null}
                   isAppSumoUser={false}
                   themeMode={themeMode}
                   teamSize={teamSize}
