@@ -142,13 +142,22 @@ interface DescriptionColumnProps {
   description: string;
 }
 
+const stripHtml=(html:string):string =>{
+  if(!html)return '';
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
-  ({ width, description }) => (
+  ({ width, description }) => {
+    const plainText=stripHtml(description);
+    return(
     <div
       className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
       style={{ width, minHeight: '30px' }}
     >
-      {description && description.trim() ? (
+      {plainText.trim() ? (
         <div
           className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
           style={{
@@ -158,14 +167,17 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
             maxHeight: '24px',
             lineHeight: '24px',
           }}
-          title={safeTextDisplay(description)}
-          dangerouslySetInnerHTML={{ __html: description }}
-        />
+          title={plainText}
+          >
+            {plainText}
+    
+        </div>
       ) : (
         <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
       )}
     </div>
-  )
+  );
+}
 );
 
 DescriptionColumn.displayName = 'DescriptionColumn';
@@ -441,7 +453,7 @@ interface CustomColumnProps {
   width: string;
   column: any;
   task: Task;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string| number | boolean | string[] | null) => void;
 }
 
 export const CustomColumn: React.FC<CustomColumnProps> = memo(

@@ -36,7 +36,7 @@ interface UseTaskRowColumnsProps {
     custom_column_obj?: any;
     isCustom?: boolean;
   }>;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string| number | boolean | string[] | null) => void;
 
   // From useTaskRowState
   taskDisplayName: string;
