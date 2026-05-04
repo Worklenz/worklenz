@@ -278,6 +278,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handleClosePhaseModal = useCallback(() => {
     setShowPhaseModal(false);
+    refetchTasks();
+    refetchPhases();
   }, []);
 
   const handlePhaseClick = useCallback((phase: any) => {
