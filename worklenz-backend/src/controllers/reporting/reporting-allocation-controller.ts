@@ -375,6 +375,12 @@ export default class ReportingAllocationController extends ReportingControllerBa
 
   @HandleExceptions()
   public static async getProjectTimeSheets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    console.log("=== getProjectTimeSheets REQUEST DEBUG ===");
+    console.log("Request body:", JSON.stringify(req.body, null, 2));
+    console.log("Request query:", JSON.stringify(req.query, null, 2));
+    console.log("User timezone (if available):", req.user?.timezone);
+    console.log("=== END REQUEST DEBUG ===");
+    
     const archived = req.query.archived === "true";
 
     const teams = (req.body.teams || []) as string[]; // ids
@@ -451,6 +457,49 @@ export default class ReportingAllocationController extends ReportingControllerBa
         WHERE ${projectsFilter} ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name, p.color_code
         ORDER BY logged_time DESC;`;
+    
+    // Log the final query and parameters for debugging
+    console.log("=== ALLOCATION QUERY DEBUG ===");
+    console.log("Final SQL Query:", q);
+    console.log("Query Parameters:", JSON.stringify([...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]));
+    console.log("Parameter breakdown:");
+    console.log("  projectIdsParams:", projectIdsParams);
+    console.log("  durationParams:", durationParams);
+    console.log("  archivedParams:", archivedParams);
+    console.log("  categoryParams:", categoryParams);
+    
+    // Log sample data from task_work_log to verify what's in the database
+    try {
+      const sampleQuery = `
+        SELECT 
+          id,
+          task_id,
+          created_at,
+          created_at::DATE as created_date,
+          created_at AT TIME ZONE 'UTC' as created_at_utc,
+          time_spent,
+          description
+        FROM task_work_log
+        ORDER BY created_at DESC
+        LIMIT 5;
+      `;
+      const sampleResult = await db.query(sampleQuery);
+      console.log("Sample task_work_log data (last 5 entries):");
+      sampleResult.rows.forEach((row, idx) => {
+        console.log(`  [${idx + 1}]`, {
+          id: row.id,
+          created_at: row.created_at,
+          created_date: row.created_date,
+          created_at_utc: row.created_at_utc,
+          time_spent: row.time_spent
+        });
+      });
+    } catch (err) {
+      console.error("Error fetching sample data:", err);
+    }
+    
+    console.log("=== END ALLOCATION QUERY DEBUG ===");
+    
     const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
 
     const utilization = (req.body.utilization || []) as string[];

@@ -335,9 +335,18 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
   protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
+    console.log("=== getDateRangeClause DEBUG START ===");
+    console.log("Input key:", key);
+    console.log("Input dateRange:", JSON.stringify(dateRange));
+    console.log("Input paramOffset:", paramOffset);
+    console.log("Server timezone:", Intl.DateTimeFormat().resolvedOptions().timeZone);
+    console.log("Server current time:", new Date().toISOString());
+    
     // Custom date range takes PRIORITY - check this FIRST
     // This ensures that when a user selects a custom date range, it overrides any predefined range key
     if (dateRange && dateRange.length === 2) {
+      console.log("Processing custom date range...");
+      
       // Use parameterized queries for custom date ranges
       // CRITICAL: Parse dates without timezone conversion to preserve the user's intended date
       // The dates come from the client in their local timezone (e.g., "2024-04-30")
@@ -348,25 +357,48 @@ export default abstract class ReportingControllerBase extends WorklenzController
       let end: string;
       
       try {
+        console.log("Date format detection:");
+        console.log("  dateRange[0] type:", typeof dateRange[0]);
+        console.log("  dateRange[0] value:", dateRange[0]);
+        console.log("  Contains GMT?", dateRange[0].includes("GMT"));
+        console.log("  Contains (?", dateRange[0].includes("("));
+        console.log("  Contains T?", dateRange[0].includes("T"));
+        
         // Extract just the date part (YYYY-MM-DD) without time or timezone
         if (dateRange[0].includes("GMT") || dateRange[0].includes("(")) {
           // JavaScript Date toString() format - parse and extract date
-          start = moment(new Date(dateRange[0])).format("YYYY-MM-DD");
-          end = moment(new Date(dateRange[1])).format("YYYY-MM-DD");
+          console.log("  Detected: JavaScript Date.toString() format");
+          const startDate = new Date(dateRange[0]);
+          const endDate = new Date(dateRange[1]);
+          console.log("  Parsed startDate object:", startDate);
+          console.log("  Parsed endDate object:", endDate);
+          start = moment(startDate).format("YYYY-MM-DD");
+          end = moment(endDate).format("YYYY-MM-DD");
+          console.log("  Formatted start:", start);
+          console.log("  Formatted end:", end);
         } else if (dateRange[0].includes("T")) {
           // ISO format with time - extract just the date part
+          console.log("  Detected: ISO format with time");
           start = dateRange[0].split("T")[0];
           end = dateRange[1].split("T")[0];
+          console.log("  Extracted start:", start);
+          console.log("  Extracted end:", end);
         } else {
           // Already in YYYY-MM-DD format
+          console.log("  Detected: Plain YYYY-MM-DD format");
           start = dateRange[0];
           end = dateRange[1];
+          console.log("  Using as-is start:", start);
+          console.log("  Using as-is end:", end);
         }
       } catch (error) {
-        console.error("Error parsing date range:", error, { dateRange });
+        console.error("ERROR parsing date range:", error);
+        console.error("Error details:", { dateRange });
         // Fallback to direct format
         start = moment(dateRange[0]).format("YYYY-MM-DD");
         end = moment(dateRange[1]).format("YYYY-MM-DD");
+        console.log("  Fallback start:", start);
+        console.log("  Fallback end:", end);
       }
 
       let query: string;
@@ -374,29 +406,47 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
       if (start === end) {
         // Single day: compare the DATE part of the timestamp
+        console.log("Single day query detected");
         query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
         params.push(start);
+        console.log("Generated query:", query);
+        console.log("Query params:", params);
       } else {
         // Date range: inclusive comparison on DATE part
         // Using ::DATE cast ensures we compare dates without time/timezone issues
+        console.log("Date range query detected");
         query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
         params.push(start, end);
+        console.log("Generated query:", query);
+        console.log("Query params:", params);
       }
 
+      console.log("=== getDateRangeClause DEBUG END ===");
       return { clause: query, params };
     }
 
     // Predefined ranges - only use if no custom date range is provided
     // These use server's current date, which is appropriate for predefined ranges
-    if (key === DATE_RANGES.YESTERDAY)
+    console.log("Using predefined range for key:", key);
+    
+    if (key === DATE_RANGES.YESTERDAY) {
+      console.log("=== getDateRangeClause DEBUG END (YESTERDAY) ===");
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
-    if (key === DATE_RANGES.LAST_WEEK)
+    }
+    if (key === DATE_RANGES.LAST_WEEK) {
+      console.log("=== getDateRangeClause DEBUG END (LAST_WEEK) ===");
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
-    if (key === DATE_RANGES.LAST_MONTH)
+    }
+    if (key === DATE_RANGES.LAST_MONTH) {
+      console.log("=== getDateRangeClause DEBUG END (LAST_MONTH) ===");
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
-    if (key === DATE_RANGES.LAST_QUARTER)
+    }
+    if (key === DATE_RANGES.LAST_QUARTER) {
+      console.log("=== getDateRangeClause DEBUG END (LAST_QUARTER) ===");
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    }
 
+    console.log("=== getDateRangeClause DEBUG END (NO MATCH) ===");
     return { clause: "", params: [] };
   }
 
