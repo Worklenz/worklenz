@@ -94,6 +94,11 @@ async function onNotificationJobTick() {
         const model = getModel(item);
         if (model.teams?.length) {
           const updateIds = collectUpdateIds(item);
+          if (!updateIds.length) {
+            failedCount++;
+            log(`(cron) Skipping notification for ${item.email}: no update IDs found to acknowledge.`);
+            continue;
+          }
           const attempts = getMaxAttempts(item);
           const isSent = await sendAssignmentUpdate(item.email, model, updateIds);
           if (isSent) {
