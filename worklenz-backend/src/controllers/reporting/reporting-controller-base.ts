@@ -339,18 +339,47 @@ export default abstract class ReportingControllerBase extends WorklenzController
     // This ensures that when a user selects a custom date range, it overrides any predefined range key
     if (dateRange && dateRange.length === 2) {
       // Use parameterized queries for custom date ranges
-      // Parse dates - handle both ISO strings and Date.toString() format
-      const start = moment(new Date(dateRange[0])).format("YYYY-MM-DD");
-      const end = moment(new Date(dateRange[1])).format("YYYY-MM-DD");
+      // CRITICAL: Parse dates without timezone conversion to preserve the user's intended date
+      // The dates come from the client in their local timezone (e.g., "2024-04-30")
+      // We need to compare against the DATE part of the timestamp, not convert timezones
+      
+      // Parse the date strings - handle both ISO strings and Date.toString() format
+      let start: string;
+      let end: string;
+      
+      try {
+        // Extract just the date part (YYYY-MM-DD) without time or timezone
+        if (dateRange[0].includes("GMT") || dateRange[0].includes("(")) {
+          // JavaScript Date toString() format - parse and extract date
+          start = moment(new Date(dateRange[0])).format("YYYY-MM-DD");
+          end = moment(new Date(dateRange[1])).format("YYYY-MM-DD");
+        } else if (dateRange[0].includes("T")) {
+          // ISO format with time - extract just the date part
+          start = dateRange[0].split("T")[0];
+          end = dateRange[1].split("T")[0];
+        } else {
+          // Already in YYYY-MM-DD format
+          start = dateRange[0];
+          end = dateRange[1];
+        }
+      } catch (error) {
+        console.error("Error parsing date range:", error, { dateRange });
+        // Fallback to direct format
+        start = moment(dateRange[0]).format("YYYY-MM-DD");
+        end = moment(dateRange[1]).format("YYYY-MM-DD");
+      }
 
       let query: string;
       const params: any[] = [];
 
       if (start === end) {
+        // Single day: compare the DATE part of the timestamp
         query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
         params.push(start);
       } else {
-        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`;
+        // Date range: inclusive comparison on DATE part
+        // Using ::DATE cast ensures we compare dates without time/timezone issues
+        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
         params.push(start, end);
       }
 
@@ -358,6 +387,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
     }
 
     // Predefined ranges - only use if no custom date range is provided
+    // These use server's current date, which is appropriate for predefined ranges
     if (key === DATE_RANGES.YESTERDAY)
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
@@ -892,5 +922,3 @@ TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
   }
 
 }
-
-
