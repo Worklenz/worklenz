@@ -366,16 +366,50 @@ export default abstract class ReportingControllerBase extends WorklenzController
         
         // Extract just the date part (YYYY-MM-DD) without time or timezone
         if (dateRange[0].includes("GMT") || dateRange[0].includes("(")) {
-          // JavaScript Date toString() format - parse and extract date
+          // JavaScript Date toString() format - extract date WITHOUT timezone conversion
+          // Example: "Mon Apr 27 2026 00:00:00 GMT+0530 (India Standard Time)"
           console.log("  Detected: JavaScript Date.toString() format");
-          const startDate = new Date(dateRange[0]);
-          const endDate = new Date(dateRange[1]);
-          console.log("  Parsed startDate object:", startDate);
-          console.log("  Parsed endDate object:", endDate);
-          start = moment(startDate).format("YYYY-MM-DD");
-          end = moment(endDate).format("YYYY-MM-DD");
-          console.log("  Formatted start:", start);
-          console.log("  Formatted end:", end);
+          
+          // Parse the date string to extract the date components
+          // Use a regex to extract the date parts from the string
+          const dateRegex = /^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/;
+          const startMatch = dateRange[0].match(dateRegex);
+          const endMatch = dateRange[1].match(dateRegex);
+          
+          if (startMatch && endMatch) {
+            // Extract month, day, year from the string
+            const monthMap: { [key: string]: string } = {
+              'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+              'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+              'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
+            };
+            
+            const startMonth = monthMap[startMatch[1]];
+            const startDay = startMatch[2].padStart(2, '0');
+            const startYear = startMatch[3];
+            start = `${startYear}-${startMonth}-${startDay}`;
+            
+            const endMonth = monthMap[endMatch[1]];
+            const endDay = endMatch[2].padStart(2, '0');
+            const endYear = endMatch[3];
+            end = `${endYear}-${endMonth}-${endDay}`;
+            
+            console.log("  Extracted from string - start:", start);
+            console.log("  Extracted from string - end:", end);
+          } else {
+            // Fallback: parse as Date but use UTC to avoid timezone shift
+            console.log("  Regex failed, using UTC parsing fallback");
+            const startDate = new Date(dateRange[0]);
+            const endDate = new Date(dateRange[1]);
+            console.log("  Parsed startDate object (UTC):", startDate.toISOString());
+            console.log("  Parsed endDate object (UTC):", endDate.toISOString());
+            
+            // Use moment.utc to parse without timezone conversion
+            start = moment.utc(dateRange[0]).format("YYYY-MM-DD");
+            end = moment.utc(dateRange[1]).format("YYYY-MM-DD");
+            console.log("  Formatted start (UTC):", start);
+            console.log("  Formatted end (UTC):", end);
+          }
         } else if (dateRange[0].includes("T")) {
           // ISO format with time - extract just the date part
           console.log("  Detected: ISO format with time");
