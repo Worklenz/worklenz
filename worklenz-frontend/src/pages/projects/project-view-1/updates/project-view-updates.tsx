@@ -303,7 +303,7 @@ const ProjectViewUpdates = () => {
   const startEdit = (commentId: string, content: string,mentions?: any[]) => {
     setEditingCommentId(commentId);
     const resolved = processMentions(content, mentions || []);
-    const textContent = content.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    const textContent = resolved.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     setEditContent(textContent);
   };
 
