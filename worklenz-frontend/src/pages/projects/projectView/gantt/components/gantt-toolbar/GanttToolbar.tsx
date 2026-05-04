@@ -19,15 +19,15 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
 
     const handleZoomIn = () => {
       // Zoom in means more detail (lower index)
-      if (currentZoomIndex > 0) {
-        onViewModeChange(zoomLevels[currentZoomIndex - 1]);
+      if (currentZoomIndex < zoomLevels.length - 1) {
+        onViewModeChange(zoomLevels[currentZoomIndex + 1]);
       }
     };
 
     const handleZoomOut = () => {
       // Zoom out means less detail (higher index)
-      if (currentZoomIndex < zoomLevels.length - 1) {
-        onViewModeChange(zoomLevels[currentZoomIndex + 1]);
+      if (currentZoomIndex > 0 ) {
+        onViewModeChange(zoomLevels[currentZoomIndex - 1]);
       }
     };
 
@@ -58,14 +58,14 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
             icon={<ZoomInOutlined />}
             title="Zoom In"
             onClick={handleZoomIn}
-            disabled={currentZoomIndex === 0}
+            disabled={currentZoomIndex === zoomLevels.length - 1}
             className="hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Button
             icon={<ZoomOutOutlined />}
             title="Zoom Out"
             onClick={handleZoomOut}
-            disabled={currentZoomIndex === zoomLevels.length - 1}
+            disabled={currentZoomIndex === 0}
             className="hover:text-blue-600 dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <Button
