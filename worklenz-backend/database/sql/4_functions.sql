@@ -2334,13 +2334,14 @@ BEGIN
                               TO_CHAR(CURRENT_DATE + INTERVAL '1 day', 'yyyy-mm-dd')) rec) AS due_tomorrow,
 
                  (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
-                  FROM (SELECT name, email
-                        FROM users
-                        WHERE id = (SELECT user_id
-                                    FROM project_subscribers
-                                    WHERE project_id = projects.id
-                                      AND user_id = users.id)
-                          AND users.is_deleted IS NOT TRUE) rec) AS subscribers
+                  FROM (SELECT u.name, u.email
+                        FROM project_subscribers ps
+                                 INNER JOIN users u ON ps.user_id = u.id
+                                 INNER JOIN notification_settings ns ON ns.user_id = u.id
+                        WHERE ps.project_id = projects.id
+                          AND ns.team_id = projects.team_id
+                          AND ns.email_notifications_enabled IS TRUE
+                          AND u.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
@@ -3945,6 +3946,7 @@ AS
 $$
 DECLARE
     _result JSON;
+    _max_attempts INTEGER := 3;
 BEGIN
     SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
     INTO _result
@@ -3967,6 +3969,8 @@ BEGIN
                                              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(r))), '[]'::JSON) AS tasks
                                               FROM (SELECT t.id,
                                                            t.name AS name,
+                                                           task_updates.id AS update_id,
+                                                           task_updates.attempts AS attempts,
                                                            (SELECT name FROM users WHERE id = task_updates.reporter_id) AS updater_name,
                                                            (SELECT STRING_AGG(DISTINCT
                                                                               (SELECT name
@@ -3981,6 +3985,7 @@ BEGIN
                                                       AND task_updates.project_id = projects.id
                                                       AND task_updates.type = 'ASSIGN'
                                                       AND is_sent IS FALSE
+                                                      AND task_updates.attempts < _max_attempts
                                                     ORDER BY task_updates.created_at) r)
                                       FROM projects
                                       WHERE team_id = teams.id
@@ -3988,7 +3993,8 @@ BEGIN
                                                    FROM task_updates
                                                    WHERE project_id = projects.id
                                                      AND type = 'ASSIGN'
-                                                     AND is_sent IS FALSE)) r)
+                                                     AND is_sent IS FALSE
+                                                     AND attempts < _max_attempts)) r)
                         FROM teams
                         WHERE EXISTS(SELECT 1 FROM team_members WHERE team_id = teams.id AND user_id = users.id)
                           AND (SELECT email_notifications_enabled
@@ -3999,7 +4005,8 @@ BEGIN
           WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)
             AND users.is_deleted IS NOT TRUE) rec;
 
-    UPDATE task_updates SET is_sent = TRUE;
+    -- Individual task_updates will be deleted after successful email send
+    -- No batch update needed here
 
     RETURN _result;
 END

@@ -91,7 +91,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
   }
 
   private static async updateComment(commentId: string, messageId: string) {
-    if (!commentId || messageId) return;
+    if (!commentId || !messageId) return;
     try {
       await db.query("UPDATE task_comments SET ses_message_id = $2 WHERE id = $1;", [commentId, messageId]);
     } catch (e) {

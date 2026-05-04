@@ -1368,11 +1368,30 @@ CREATE TABLE IF NOT EXISTS task_updates (
     project_id  UUID                                                NOT NULL,
     is_sent     BOOLEAN                  DEFAULT FALSE              NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    retry_count INTEGER                  DEFAULT 0
+    retry_count INTEGER                  DEFAULT 0,
+    attempts    INTEGER                  DEFAULT 0
 );
 
 ALTER TABLE task_updates
     ADD CONSTRAINT task_updates_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS failed_task_notifications (
+    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_update_id UUID                                                UNIQUE,
+    user_id        UUID,
+    task_id        UUID,
+    project_id     UUID,
+    type           VARCHAR(50),
+    email          VARCHAR(255),
+    attempts       INTEGER,
+    last_error     TEXT,
+    failed_at      TIMESTAMP                DEFAULT NOW(),
+    created_at     TIMESTAMP
+);
+
+ALTER TABLE failed_task_notifications
+    ADD CONSTRAINT failed_task_notifications_pk
         PRIMARY KEY (id);
 
 ALTER TABLE task_updates
