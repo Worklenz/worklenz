@@ -168,6 +168,7 @@ export {
   DownloadOutlined,
   LikeOutlined,
   LikeTwoTone,
+  SmileOutlined,
   HomeOutlined,
   PlayCircleFilled,
   CommentOutlined,

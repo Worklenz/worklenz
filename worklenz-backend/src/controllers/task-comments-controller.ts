@@ -256,13 +256,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       member_name: req.user?.name || "",
       mentions: mentions || [],
       rawContent: req.body.content,
-      reactions: {
-        likes: {
-          count: 0,
-          liked_members: [],
-          liked_member_ids: []
-        }
-      },
+      reactions: {},
       team_member_id: req.user?.team_member_id || "",
       user_id: req.user?.id || ""
     };
@@ -424,31 +418,26 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                             FROM task_comment_mentions tcm
                                     LEFT JOIN team_member_info_view tmiv ON tcm.informed_by = tmiv.team_member_id
                             WHERE tcm.comment_id = task_comments.id) rec) AS mentions,
-                    (SELECT JSON_BUILD_OBJECT(
-                            'likes',
+                    (SELECT JSON_OBJECT_AGG(
+                            reaction_type,
                             JSON_BUILD_OBJECT(
-                                'count', (SELECT COUNT(*)
-                                          FROM task_comment_reactions tcr
-                                          WHERE tcr.comment_id = task_comments.id
-                                            AND reaction_type = 'like'),
-                                'liked_members', COALESCE(
-                                    (SELECT JSON_AGG(tmiv.name)
-                                      FROM task_comment_reactions tcr
-                                      JOIN team_member_info_view tmiv ON tcr.team_member_id = tmiv.team_member_id
-                                      WHERE tcr.comment_id = task_comments.id
-                                        AND tcr.reaction_type = 'like'),
-                                    '[]'::JSON
-                                ),
-                               'liked_member_ids', COALESCE(
-                                       (SELECT JSON_AGG(tmiv.team_member_id)
-                                        FROM task_comment_reactions tcr
-                                                 JOIN team_member_info_view tmiv ON tcr.team_member_id = tmiv.team_member_id
-                                        WHERE tcr.comment_id = task_comments.id
-                                          AND tcr.reaction_type = 'like'),
-                                       '[]'::JSON
-                                                )
+                                'count', count,
+                                'reacted_members', reacted_members,
+                                'reacted_member_ids', reacted_member_ids
                             )
-                        )) AS reactions,
+                        )
+                      FROM (
+                          SELECT 
+                              tcr.reaction_type,
+                              COUNT(*) as count,
+                              COALESCE(JSON_AGG(tmiv.name), '[]'::JSON) as reacted_members,
+                              COALESCE(JSON_AGG(tmiv.team_member_id), '[]'::JSON) as reacted_member_ids
+                          FROM task_comment_reactions tcr
+                          JOIN team_member_info_view tmiv ON tcr.team_member_id = tmiv.team_member_id
+                          WHERE tcr.comment_id = task_comments.id
+                          GROUP BY tcr.reaction_type
+                      ) reactions
+                    ) AS reactions,
                     (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
                       FROM (SELECT id, created_at, name, size, type, (CONCAT('/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type)) AS url
                             FROM task_comment_attachments tca
@@ -511,14 +500,17 @@ export default class TaskCommentsController extends WorklenzControllerBase {
   }
 
   private static async checkIfAlreadyExists(commentId: string, teamMemberId: string | undefined, reaction_type: string) {
-    if (!teamMemberId) return;
+    if (!teamMemberId) return null;
     try {
-      const q = `SELECT EXISTS(SELECT 1 FROM task_comment_reactions WHERE comment_id = $1 AND team_member_id = $2 AND reaction_type = $3)`;
-      const result = await db.query(q, [commentId, teamMemberId, reaction_type]);
-      const [data] = result.rows;
-      return data.exists;
+      const q = `SELECT reaction_type FROM task_comment_reactions WHERE comment_id = $1 AND team_member_id = $2`;
+      const result = await db.query(q, [commentId, teamMemberId]);
+      if (result.rows.length > 0) {
+        return result.rows[0].reaction_type;
+      }
+      return null;
     } catch (error) {
       log_error(error);
+      return null;
     }
   }
 
@@ -549,19 +541,47 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const { id } = req.params;
     const { reaction_type, task_id } = req.query;
 
-    const exists = await this.checkIfAlreadyExists(id, req.user?.team_member_id, reaction_type as string);
+    // Validate reaction type
+    const validReactionTypes = ['like', 'love', 'celebrate', 'support', 'insightful', 'curious'];
+    if (!validReactionTypes.includes(reaction_type as string)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid reaction type"));
+    }
 
-    if (exists) {
+    const existingReaction = await this.checkIfAlreadyExists(id, req.user?.team_member_id, reaction_type as string);
+
+    if (existingReaction === reaction_type) {
+      // User clicked the same reaction - remove it
       const deleteQ = `DELETE FROM task_comment_reactions WHERE comment_id = $1 AND team_member_id = $2;`;
       await db.query(deleteQ, [id, req.user?.team_member_id]);
-    } else {
-      const q = `INSERT INTO task_comment_reactions (comment_id, user_id, team_member_id) VALUES ($1, $2, $3);`;
-      await db.query(q, [id, req.user?.id, req.user?.team_member_id]);
+    } else if (existingReaction) {
+      // User has a different reaction - update it
+      const updateQ = `UPDATE task_comment_reactions SET reaction_type = $1 WHERE comment_id = $2 AND team_member_id = $3;`;
+      await db.query(updateQ, [reaction_type, id, req.user?.team_member_id]);
 
       const getTaskCommentData = await TaskCommentsController.getTaskCommentData(id);
       // Sanitize reactor name to prevent XSS attacks
       const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
-      const commentMessage = `<b>${safeReactorName}</b> liked your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
+      const commentMessage = `<b>${safeReactorName}</b> reacted to your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
+
+      if (getTaskCommentData && getTaskCommentData.user_id !== req.user?.id) {
+        void NotificationsService.createNotification({
+          userId: getTaskCommentData.user_id,
+          teamId: req.user?.team_id as string,
+          socketId: getTaskCommentData.socket_id,
+          message: commentMessage,
+          taskId: req.body.task_id,
+          projectId: getTaskCommentData.project_id
+        });
+      }
+    } else {
+      // User has no reaction - add new one
+      const q = `INSERT INTO task_comment_reactions (comment_id, user_id, team_member_id, reaction_type) VALUES ($1, $2, $3, $4);`;
+      await db.query(q, [id, req.user?.id, req.user?.team_member_id, reaction_type]);
+
+      const getTaskCommentData = await TaskCommentsController.getTaskCommentData(id);
+      // Sanitize reactor name to prevent XSS attacks
+      const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
+      const commentMessage = `<b>${safeReactorName}</b> reacted to your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
 
       if (getTaskCommentData && getTaskCommentData.user_id !== req.user?.id) {
         void NotificationsService.createNotification({
