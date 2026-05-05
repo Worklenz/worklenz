@@ -215,8 +215,9 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  // Show loading skeleton if task is loading OR if we don't have task name yet
-  const isLoadingTaskName = loadingTask || !taskFormViewModel?.task?.name;
+  // Show loading skeleton only if task is loading AND we don't have task name yet
+  // This prevents showing skeleton when task properties (like status) are being updated
+  const isLoadingTaskName = loadingTask && !taskFormViewModel?.task?.name;
 
   return (
     <div>
@@ -226,7 +227,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
         <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
           {isLoadingTaskName ? (
-            <Skeleton.Input active size="large" style={{ width: '100%' }} />
+            <Skeleton.Input active size="small" style={{ width: '100%' }} />
           ) : isEditing ? (
             <Input
               ref={inputRef}
