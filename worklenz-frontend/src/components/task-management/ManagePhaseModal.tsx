@@ -146,7 +146,7 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
             // onChangeComplete={handleColorChangeComplete}
             size="small"
             className="phase-color-picker"
-            // disabledAlpha
+            disabledAlpha
             panelRender={panel => (
               <div className="flex flex-col gap-2">
                 {panel}
