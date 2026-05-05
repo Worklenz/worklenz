@@ -159,7 +159,7 @@ const ClientDetailsDrawer = () => {
           phone: values.phone,
           phone_country_code: values.phone?.trim()
             ? values.phone_country_code
-            : undefined,
+            : null,
           address_line_1: values.address_line_1,
           city: values.city,
           state: values.state,
