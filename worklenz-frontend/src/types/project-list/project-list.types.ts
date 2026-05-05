@@ -43,6 +43,6 @@ export interface ProjectListTableProps {
     filters: Record<string, FilterValue | null>,
     sorter: SorterResult<IProjectViewModel> | SorterResult<IProjectViewModel>[]
   ) => void;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
 }

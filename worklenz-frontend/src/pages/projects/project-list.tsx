@@ -1019,7 +1019,7 @@ const ProjectList: React.FC = () => {
             <ProjectGroupList
               groups={transformedGroupedProjects}
               navigate={navigate}
-              onProjectSelect={id => navigateToProject(id, undefined)}
+              onProjectSelect={(id, defaultView) => navigateToProject(id, defaultView)}
               onArchive={() => {}}
               isOwnerOrAdmin={isOwnerOrAdmin}
               loading={groupedProjects.loading}
