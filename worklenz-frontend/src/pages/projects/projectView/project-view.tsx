@@ -61,6 +61,8 @@ import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
+import { setProjectMemberDefaultView } from '@/features/projects/projectsSlice';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
@@ -401,22 +403,38 @@ const ProjectView = React.memo(() => {
         });
 
         if (res.done) {
-          // Update local state immediately — this is the single source of truth.
-          // Do NOT call navigate() here: it would update searchParams → urlParams →
-          // the sync useEffect, which would race against this setState and revert it
-          // on the first click. The URL is kept consistent by handleTabChange which
-          // already includes pinned_tab in every navigation.
+          // Keep local state and URL in sync immediately after pinning.
           setPinnedTab(itemKey);
+
+          navigate(
+            {
+              pathname: location.pathname,
+              search: new URLSearchParams({
+                tab: activeTab,
+                pinned_tab: itemKey,
+                ...(taskid ? { task: taskid } : {}),
+              }).toString(),
+            },
+            { replace: true }
+          );
 
           tabItems.forEach(item => {
             item.isPinned = item.key === itemKey;
           });
+
+          dispatch(
+            setProjectMemberDefaultView({
+              projectId,
+              defaultView,
+            })
+          );
+          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
         }
       } catch (error) {
         console.error('Error updating default tab:', error);
       }
     },
-    [projectId]
+    [activeTab, dispatch, location.pathname, navigate, projectId, taskid]
   );
 
   // Optimized tab change handler
