@@ -131,6 +131,7 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
             onChange={value => setColor(value.toHexString())}
             onChangeComplete={handleColorChange}
             value={color}
+            disabledAlpha
           />
           <Button
             className="borderless-icon-btn"

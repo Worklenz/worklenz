@@ -353,7 +353,8 @@ const formatDate = (date: Date | string | null | undefined) => {
             onChangeComplete={color => handleFieldSave('color', color.toHexString())}
             size="small"
             showText={false}
-            trigger="click"
+            trigger="click"                                                                                                                                     
+            disabledAlpha
           />
           {editingField === 'name' ? (
             <Input
