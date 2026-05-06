@@ -191,7 +191,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       }
     } catch (error) {
       console.error('Error generating and copying invitation link:', error);
-      message.error(t('projectInvite_linkCreateFailed'));
+      // message.error(t('projectInvite_linkCreateFailed'));
     } finally {
       setLinkLoading(false);
     }
