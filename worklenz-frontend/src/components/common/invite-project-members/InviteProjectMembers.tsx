@@ -157,7 +157,6 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       }
     } catch (error) {
       console.error('Error inviting project members:', error);
-      message.error(t('projectInvite_inviteFailed'));
     } finally {
       setLoading(false);
     }
