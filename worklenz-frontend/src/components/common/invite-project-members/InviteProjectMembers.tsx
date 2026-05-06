@@ -185,13 +185,11 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         await navigator.clipboard.writeText(res.body.invitation_url);
         
         setLinkCopied(true);
-        // message.success(t('projectInvite_linkCopied'));
         
         setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
       console.error('Error generating and copying invitation link:', error);
-      // message.error(t('projectInvite_linkCreateFailed'));
     } finally {
       setLinkLoading(false);
     }
