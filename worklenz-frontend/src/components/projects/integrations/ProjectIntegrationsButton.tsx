@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Dropdown, Tooltip, Badge, ApiOutlined, CrownOutlined } from '@/shared/antd-imports';
+import {
+  Button,
+  Dropdown,
+  Tooltip,
+  Badge,
+  ApiOutlined,
+  CrownOutlined,
+} from '@/shared/antd-imports';
 import { IntegrationsDropdown } from './IntegrationsDropdown';
 import { slackApiService } from '@api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
@@ -16,14 +23,17 @@ interface ProjectIntegrationsButtonProps {
 
 export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps> = ({
   projectId,
-  projectName
+  projectName,
 }) => {
   const { t } = useTranslation('project-integrations');
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const hasBusinessAccess = useMemo(() => hasBusinessFeatureAccess(currentSession), [currentSession]);
-  
+  const hasBusinessAccess = useMemo(
+    () => hasBusinessFeatureAccess(currentSession),
+    [currentSession]
+  );
+
   const [open, setOpen] = useState(false);
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,15 +43,15 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
 
     try {
       setLoading(true);
-      
+
       // Fetch Slack status
       const [slackWorkspace, slackConfigsResponse] = await Promise.all([
         slackApiService.getStatus().catch(() => null),
-        slackApiService.getProjectChannelConfigs(projectId).catch(() => null)
+        slackApiService.getProjectChannelConfigs(projectId).catch(() => null),
       ]);
 
       const slackChannels = slackConfigsResponse?.body || [];
-      const activeSlackChannels = Array.isArray(slackChannels) 
+      const activeSlackChannels = Array.isArray(slackChannels)
         ? slackChannels.filter((ch: any) => ch.isActive)
         : [];
 
@@ -53,19 +63,19 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
           channels: activeSlackChannels.map((ch: any) => ({
             id: ch.id,
             name: ch.slackChannelName || ch.channel_name || 'Unknown',
-            isActive: ch.isActive
-          }))
+            isActive: ch.isActive,
+          })),
         },
         teams: {
           connected: false,
           tenantConnected: false,
-          channelCount: 0
+          channelCount: 0,
         },
         github: {
           connected: false,
           accountConnected: false,
-          repositoryCount: 0
-        }
+          repositoryCount: 0,
+        },
       });
     } catch (error) {
       console.error('Failed to fetch integration status:', error);
@@ -100,13 +110,11 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   // Show premium button for non-business users
   if (!hasBusinessAccess) {
     return (
-      <Tooltip title={t('upgradeRequired', { defaultValue: 'Integrations available on Business plan' })}>
+      <Tooltip
+        title={t('upgradeRequired', { defaultValue: 'Integrations available on Business plan' })}
+      >
         <Badge count={<CrownOutlined style={{ color: '#faad14' }} />} offset={[-5, 5]}>
-          <Button
-            shape="circle"
-            icon={<ApiOutlined />}
-            onClick={handleUpgradeClick}
-          />
+          <Button shape="circle" icon={<ApiOutlined />} onClick={handleUpgradeClick} />
         </Badge>
       </Tooltip>
     );

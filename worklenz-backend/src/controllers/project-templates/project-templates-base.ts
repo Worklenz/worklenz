@@ -167,6 +167,12 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                     WHERE id = $1;`;
     const result = await db.query(q, [template_id]);
     const [data] = result.rows;
+    if (!data) return null;
+
+    if (!Array.isArray(data.phases)) {
+      data.phases = [];
+    }
+
     for (const phase of data.phases) {
       phase.color_code = getColor(phase.name);
     }
@@ -294,21 +300,61 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     }
   }
 
-  @HandleExceptions()
   protected static async importTemplate(body: any) {
     const q = `SELECT create_project($1) AS project`;
 
     const count = await this.checkProjectNameExists(body.name, body.team_id);
+    let keys = await this.getAllKeysByTeamId(body.team_id as string);
 
-    const keys = await this.getAllKeysByTeamId(body.team_id as string);
-    body.key = generateProjectKey(body.name, keys) || null;
+    // Generate initial key
+    let generatedKey = generateProjectKey(body.name, keys) || null;
+    const originalName = body.name; // Store original name for retries
+    
+    // If project name exists, modify it
+    if (count !== 0) {
+      body.name = `${body.name} - ${generatedKey}`;
+      // Add the temp key to existing keys to avoid regenerating the same key
+      keys.push(generatedKey);
+      // Regenerate key with the new name to ensure uniqueness
+      generatedKey = generateProjectKey(body.name, keys) || null;
+    }
 
-    if (count !== 0) body.name = `${body.name} - ${body.key}`;
+    body.key = generatedKey;
 
-    const result = await db.query(q, [JSON.stringify(body)]);
-    const [data] = result.rows;
-
-    return data.project.id;
+    // Try to insert, if duplicate error, retry with a timestamp-based key
+    let retries = 0;
+    const maxRetries = 5;
+    
+    while (retries < maxRetries) {
+      try {
+        const result = await db.query(q, [JSON.stringify(body)]);
+        const [data] = result.rows;
+        return data.project.id;
+      } catch (error: any) {
+        retries++;
+        
+        if (retries >= maxRetries) {
+          throw error; // Give up after max retries
+        }
+        
+        // Check if it's a duplicate key error OR duplicate name error
+        if (error.code === '23505' && error.constraint === 'projects_key_team_id_uindex') {
+          // Duplicate key - generate timestamp-based key
+          const timestamp = Date.now().toString(36).toUpperCase().slice(-3);
+          const baseKey = body.key?.slice(0, 2) || 'PR';
+          body.key = `${baseKey}${timestamp}`;
+        } else if (error.code === 'P0001' && error.message?.includes('PROJECT_EXISTS_ERROR')) {
+          // Duplicate name - append timestamp to name and regenerate key
+          const timestamp = Date.now().toString(36).toUpperCase().slice(-3);
+          body.name = `${originalName} - ${timestamp}`;
+          body.key = generateProjectKey(body.name, keys) || `PR${timestamp}`;
+        } else {
+          throw error; // Re-throw if it's a different error
+        }
+      }
+    }
+    
+    throw new Error('Failed to create project after maximum retries');
   }
 
   @HandleExceptions()
@@ -320,8 +366,13 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
     for await (const label of labels) {
       const q = `INSERT INTO team_labels(name, color_code, team_id)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (name, team_id) DO NOTHING;`;
+                 SELECT TRIM($1), $2, $3
+                 WHERE NOT EXISTS (
+                   SELECT 1
+                   FROM team_labels
+                   WHERE team_id = $3
+                     AND LOWER(TRIM(name)) = LOWER(TRIM($1))
+                 );`;
       await db.query(q, [label.name, label.color_code, team_id]);
     }
   }
@@ -505,6 +556,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     taskIncludes: ITaskIncludes,
   ) {
     let taskIncludesClause = "";
+    let whereClause = "WHERE project_id = $1 AND archived IS FALSE";
 
     if (taskIncludes.description) taskIncludesClause += " description,";
     if (taskIncludes.estimation) taskIncludesClause += " total_minutes,";
@@ -523,6 +575,9 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     }
     if (taskIncludes.subtasks) {
       taskIncludesClause += ` parent_task_id,`;
+    } else {
+      // When subtasks are not included, exclude tasks that have a parent (i.e., only include top-level tasks)
+      whereClause += " AND parent_task_id IS NULL";
     }
 
     const q = `SELECT id,
@@ -535,8 +590,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 ${taskIncludesClause}
                 priority_id
             FROM tasks t
-                WHERE project_id = $1
-                AND archived IS FALSE
+                ${whereClause}
             ORDER BY parent_task_id NULLS FIRST, sort_order ASC, task_no ASC;`;
     const result = await db.query(q, [project_id]);
     return result.rows;

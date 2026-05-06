@@ -219,7 +219,8 @@ const RequestChatWrapper: React.FC<RequestChatWrapperProps> = ({ clientId, clien
                 {t('noChatsWithClient') || `No conversations with ${clientName || 'this client'}`}
               </Typography.Title>
               <Typography.Text type="secondary" style={{ maxWidth: 320, display: 'block' }}>
-                {t('startConversationWithClient') || 'Start a conversation to discuss this request with the client.'}
+                {t('startConversationWithClient') ||
+                  'Start a conversation to discuss this request with the client.'}
               </Typography.Text>
             </div>
             <Button

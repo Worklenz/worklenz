@@ -14,6 +14,7 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import logger from '@/utils/errorLogger';
+import { ImportProgressNotifier } from '@/components/imports/ImportProgressNotifier';
 
 const MainLayout = memo(() => {
   const dispatch = useAppDispatch();
@@ -154,6 +155,7 @@ const MainLayout = memo(() => {
 
   return (
     <>
+      <ImportProgressNotifier />
       <Layout className="min-h-screen">
         {/* Trial expiration alert banner */}
         <TrialExpirationAlert />

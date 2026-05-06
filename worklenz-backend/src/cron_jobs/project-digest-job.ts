@@ -12,6 +12,7 @@ const TIME = "0 11 */1 * 1-5";
 // const TIME = "* * * * *";
 
 const log = (value: any) => console.log("project-digest-cron-job:", value);
+let isRunning = false;
 
 function updateTaskUrls(projectId: string, tasks: IProjectDigestTask[]) {
   const baseUrl = getBaseUrl();
@@ -28,7 +29,21 @@ function updateMetadata(project: IProjectDigest, subscriberName: string) {
 }
 
 async function onProjectDigestJobTick() {
+  if (isRunning) {
+    log("(cron) Previous project digest job is still running, skipping tick.");
+    return;
+  }
+
+  let hasLock = false;
+  isRunning = true;
   try {
+    const lockResult = await db.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-project-digest"]);
+    hasLock = !!lockResult.rows[0]?.locked;
+    if (!hasLock) {
+      log("(cron) Another instance is running project digest job, skipping tick.");
+      return;
+    }
+
     log("(cron) Daily digest job started.");
     const q = "SELECT get_project_daily_digest() AS digest;";
     const result = await db.query(q, []);
@@ -39,6 +54,8 @@ async function onProjectDigestJobTick() {
     let sentCount = 0;
 
     for (const project of dataset) {
+      if (!project.today_completed?.length && !project.today_new?.length && !project.due_tomorrow?.length) continue;
+
       for (const subscriber of project.subscribers) {
         updateMetadata(project, subscriber.name);
 
@@ -48,7 +65,7 @@ async function onProjectDigestJobTick() {
 
         if (subscriber.email) {
           sentCount++;
-          void sendProjectDailyDigest(subscriber.email, project);
+          await sendProjectDailyDigest(subscriber.email, project);
         }
       }
     }
@@ -57,6 +74,15 @@ async function onProjectDigestJobTick() {
   } catch (error) {
     log_error(error);
     log("(cron) Project digest job ended with errors.");
+  } finally {
+    if (hasLock) {
+      try {
+        await db.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-project-digest"]);
+      } catch (error) {
+        log_error(error);
+      }
+    }
+    isRunning = false;
   }
 }
 

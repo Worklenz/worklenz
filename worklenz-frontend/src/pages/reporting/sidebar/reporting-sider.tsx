@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { reportingsItems } from '@/lib/reporting/reporting-constants';
 import { useMemo } from 'react';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@/shared/antd-imports';
+import './reporting-sider.css';
 
 interface ReportingSiderProps {
   collapsed?: boolean;
@@ -75,6 +76,7 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
         flexDirection: 'column',
       }}
     >
+
       {/* Collapse toggle button at top */}
       {onToggleCollapse && (
         <div

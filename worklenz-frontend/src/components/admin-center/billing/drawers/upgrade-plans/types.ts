@@ -5,7 +5,7 @@ export interface PricingTier {
   users_included?: string; // Legacy field, kept for compatibility
   max_users?: string; // Legacy field, kept for compatibility
   additional_user_price?: string; // Legacy field, kept for compatibility
-  
+
   // New API fields to match actual structure
   monthly_base_price: string;
   annual_base_price: string;
@@ -13,7 +13,7 @@ export interface PricingTier {
   annual_per_user_price: string;
   included_users: string;
   max_users_limit?: string;
-  
+
   monthly_plan_id?: string;
   annual_plan_id?: string;
   pricing_model: string;
@@ -78,7 +78,11 @@ export interface PlanCardProps {
   themeMode?: 'light' | 'dark';
   teamSize?: number;
   billingFrequency?: 'monthly' | 'annual';
-  calculateTotalCostForPlan?: (planType: 'pro' | 'business' | 'enterprise', teamSize: number, isAnnual: boolean) => number;
+  calculateTotalCostForPlan?: (
+    planType: 'pro' | 'business' | 'enterprise',
+    teamSize: number,
+    isAnnual: boolean
+  ) => number;
 }
 
 export interface AppSumoAlertProps {

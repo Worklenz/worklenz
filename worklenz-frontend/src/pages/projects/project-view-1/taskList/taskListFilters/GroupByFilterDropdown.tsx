@@ -21,7 +21,7 @@ const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => 
   const { t } = useTranslation('task-list-filters');
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
-  
+
   // Get current groupBy value from Redux store
   const groupBy = useAppSelector(state => state.groupByFilterDropdownReducer?.groupBy || 'status');
 
@@ -52,11 +52,7 @@ const GroupByFilterDropdown = ({ position }: { position: 'list' | 'board' }) => 
   return (
     <Flex align="center" gap={4} style={{ marginInlineStart: 12 }}>
       {t('groupByText', { defaultValue: 'Group by' })}:
-      <Select
-        value={groupBy}
-        options={groupDropdownMenuItems}
-        onChange={handleChange}
-      />
+      <Select value={groupBy} options={groupDropdownMenuItems} onChange={handleChange} />
       {/* {(groupBy === 'status' || groupBy === 'phase') && (
         <ConfigProvider wave={{ disabled: true }}>
           {groupBy === 'phase' && <ConfigPhaseButton />}

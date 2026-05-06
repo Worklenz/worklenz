@@ -11,10 +11,7 @@ interface CapacityConflictsAlertProps {
   endDate: string;
 }
 
-const CapacityConflictsAlert: React.FC<CapacityConflictsAlertProps> = ({
-  startDate,
-  endDate,
-}) => {
+const CapacityConflictsAlert: React.FC<CapacityConflictsAlertProps> = ({ startDate, endDate }) => {
   const { t } = useTranslation('schedule');
   const { data: conflictsResponse } = useFetchCapacityConflictsQuery({
     startDate,
@@ -33,9 +30,7 @@ const CapacityConflictsAlert: React.FC<CapacityConflictsAlertProps> = ({
       message={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <WarningOutlined />
-          <span>
-            {t('capacityConflicts', { defaultValue: 'Capacity Conflicts Detected' })}
-          </span>
+          <span>{t('capacityConflicts', { defaultValue: 'Capacity Conflicts Detected' })}</span>
           <Badge count={conflicts.length} style={{ backgroundColor: '#f5222d' }} />
         </div>
       }
@@ -55,9 +50,9 @@ const CapacityConflictsAlert: React.FC<CapacityConflictsAlertProps> = ({
               >
                 <div style={{ fontWeight: 500 }}>{conflict.member_name}</div>
                 <div style={{ fontSize: '12px', color: '#666' }}>
-                  {new Date(conflict.date).toLocaleDateString()} - 
-                  Over-allocated by {conflict.overallocation_hours.toFixed(1)}h 
-                  ({conflict.utilization_percent.toFixed(0)}% utilization)
+                  {new Date(conflict.date).toLocaleDateString()} - Over-allocated by{' '}
+                  {conflict.overallocation_hours.toFixed(1)}h (
+                  {conflict.utilization_percent.toFixed(0)}% utilization)
                 </div>
               </div>
             ))}

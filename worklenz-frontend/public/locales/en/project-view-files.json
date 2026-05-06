@@ -20,6 +20,7 @@
   "cancelActionCta": "Cancel",
   "deleteTooltip": "Delete",
   "downloadTooltip": "Download",
+  "previewTooltip": "Preview",
   "deleteConfirmationTitle": "Are you sure?",
   "deleteConfirmationOk": "Yes",
   "deleteConfirmationCancel": "Cancel",
@@ -34,5 +35,11 @@
   "uploadedLabel": "Uploaded",
   "uploadingLabel": "Uploading",
   "fileTooLargeLabel": "File too large",
-  "uploadFailedShort": "Upload failed"
+  "uploadFailedShort": "Upload failed",
+  "projectFilesTab": "Project Files",
+  "taskAttachmentsTab": "Task Attachments",
+  "taskColumn": "Task",
+  "taskAttachmentsEmptyText": "No task attachments found.",
+  "taskAttachmentDeleteSuccess": "Attachment deleted successfully.",
+  "taskAttachmentDeleteFailed": "Unable to delete attachment."
 }

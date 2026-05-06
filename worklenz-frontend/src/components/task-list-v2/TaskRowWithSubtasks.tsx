@@ -191,7 +191,9 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
                         onPressEnter={handleAddSubtask}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
-                        placeholder="Type subtask name and press Enter to save"
+                        placeholder={t('addSubTaskInputPlaceholder', {
+                          defaultValue: 'Type subtask name and press Enter to save',
+                        })}
                         className="w-full h-full border-none shadow-none bg-transparent"
                         style={{
                           height: '100%',
@@ -315,6 +317,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         if (p.value === 0) map[p.id] = 'low';
         if (p.value === 1) map[p.id] = 'medium';
         if (p.value === 2) map[p.id] = 'high';
+        if (p.value === 3) map[p.id] = 'critical';
       });
       return map;
     }, [allPriorities]);
@@ -327,12 +330,19 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
         (!task.sub_tasks || task.sub_tasks.length === 0) &&
         !isLoadingSubtasks
       ) {
-        dispatch(fetchSubTasks({ taskId, projectId }));
+        dispatch(
+          fetchSubTasks({
+            taskId,
+            projectId,
+            parentTaskIdForQuery: task.parent_task_container_id || taskId,
+          })
+        );
       }
     }, [
       task?.has_filtered_children,
       task?.show_sub_tasks,
       task?.sub_tasks,
+      task?.parent_task_container_id,
       isLoadingSubtasks,
       dispatch,
       taskId,
@@ -462,7 +472,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
               ))}
 
             {/* Add subtask row - only show when not loading */}
-            {!isLoadingSubtasks && (
+            {!isLoadingSubtasks && !task.is_parent_container && (
               <div
                 className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}
               >

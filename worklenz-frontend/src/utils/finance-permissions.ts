@@ -16,7 +16,10 @@ export const hasFinanceEditPermission = (
   if (!currentSession) return false;
 
   // Team owner or admin always have permission (but not team leads)
-  if (currentSession.owner || (currentSession.is_admin && currentSession.role_name !== 'Team Lead')) {
+  if (
+    currentSession.owner ||
+    (currentSession.is_admin && currentSession.role_name !== 'Team Lead')
+  ) {
     return true;
   }
 
@@ -40,7 +43,10 @@ export const hasFinanceViewPermission = (
   if (!currentSession) return false;
 
   // Team owner or admin always have permission (but not team leads)
-  if (currentSession.owner || (currentSession.is_admin && currentSession.role_name !== 'Team Lead')) {
+  if (
+    currentSession.owner ||
+    (currentSession.is_admin && currentSession.role_name !== 'Team Lead')
+  ) {
     return true;
   }
 

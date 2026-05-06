@@ -40,8 +40,8 @@
   "adminText": "Administrador",
   "guestText": "Invitado (Solo lectura)",
   "ownerText": "Propietario del equipo",
-  "addedText": "Agregado",
-  "updatedText": "Actualizado",
+  "addedText": "Agregado ",
+  "updatedText": "Actualizado ",
   "noResultFound": "Escriba una dirección de correo electrónico y presione enter...",
   "jobTitlesFetchError": "Error al obtener los cargos",
   "invitationResent": "¡Invitación reenviada exitosamente!",
@@ -97,5 +97,6 @@
   "managerTooltip": "Asignar un líder de equipo para gestionar este miembro. Solo los miembros pueden ser asignados a gerentes.",
   "selectManagerPlaceholder": "Seleccionar un líder de equipo como gerente",
   "manager_removed_successfully": "Asignación de gerente eliminada exitosamente",
-  "updateError": "Error al actualizar el miembro del equipo. Por favor, inténtelo de nuevo."
+  "updateError": "Error al actualizar el miembro del equipo. Por favor, inténtelo de nuevo.",
+  "noTeamLeadsAvailable": "No hay líderes de equipo disponibles"
 }

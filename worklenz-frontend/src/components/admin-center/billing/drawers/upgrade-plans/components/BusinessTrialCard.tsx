@@ -1,12 +1,32 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Typography, Space, Tag, Spin, Badge, Statistic, Row, Col, message } from '@/shared/antd-imports';
+import {
+  Card,
+  Button,
+  Typography,
+  Space,
+  Tag,
+  Spin,
+  Badge,
+  Statistic,
+  Row,
+  Col,
+  message,
+} from '@/shared/antd-imports';
 import { CheckCircleOutlined, CrownOutlined } from '@ant-design/icons';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { isOnBusinessTrial, getPlanTrialDaysRemaining, isOnPlanTrial } from '@/utils/subscription-utils';
+import {
+  isOnBusinessTrial,
+  getPlanTrialDaysRemaining,
+  isOnPlanTrial,
+} from '@/utils/subscription-utils';
 import { useAuthService } from '@/hooks/useAuth';
 import { PlanTrialApiService, IPlanTrialInfo } from '@/api/admin-center/plan-trial.api.service';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { MixpanelBillingEvents, BusinessTrialEventProps, BusinessTrialStartEventProps } from '@/types/mixpanel-events.types';
+import {
+  MixpanelBillingEvents,
+  BusinessTrialEventProps,
+  BusinessTrialStartEventProps,
+} from '@/types/mixpanel-events.types';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import './BusinessTrialCard.css';
 
@@ -34,7 +54,11 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
 
   // Helper function to create base trial properties
   const getBaseTrialProperties = (): BusinessTrialEventProps => ({
-    user_type: isCurrentlyOnTrial ? 'trial' : (currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE ? 'paid' : 'free'),
+    user_type: isCurrentlyOnTrial
+      ? 'trial'
+      : currentSession?.subscription_type === ISUBSCRIPTION_TYPE.PADDLE
+        ? 'paid'
+        : 'free',
     current_plan: currentSession?.plan_name,
     trial_days_remaining: trialDaysRemaining,
     team_size: currentSession?.team_member_count,
@@ -42,7 +66,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
     trial_type: 'business_plan' as const,
     trial_duration_days: 7,
     source_component: 'BusinessTrialCard',
-    display_location: 'upgrade_plans_modal'
+    display_location: 'upgrade_plans_modal',
   });
 
   // Check trial eligibility on mount
@@ -57,7 +81,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
         ...getBaseTrialProperties(),
         trial_active: true,
         days_elapsed: 7 - trialDaysRemaining,
-        check_source: 'upgrade_modal_active_trial'
+        check_source: 'upgrade_modal_active_trial',
       });
     }
   }, [isCurrentlyOnTrial]);
@@ -75,12 +99,15 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
         trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_ELIGIBLE, {
           ...getBaseTrialProperties(),
           trial_active: false,
-          check_source: 'upgrade_modal_load'
+          check_source: 'upgrade_modal_load',
         });
 
         if (canStart) {
           // Track that offer is being viewed in upgrade modal
-          trackMixpanelEvent(MixpanelBillingEvents.BUSINESS_TRIAL_OFFER_VIEWED, getBaseTrialProperties());
+          trackMixpanelEvent(
+            MixpanelBillingEvents.BUSINESS_TRIAL_OFFER_VIEWED,
+            getBaseTrialProperties()
+          );
         }
       }
     } catch (error) {
@@ -96,7 +123,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
     const startEventProps: BusinessTrialStartEventProps = {
       ...getBaseTrialProperties(),
       start_method: 'upgrade_button',
-      original_plan: currentSession?.plan_name as any
+      original_plan: currentSession?.plan_name as any,
     };
 
     try {
@@ -125,7 +152,9 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
 
   // If user is currently on Business trial
   if (isCurrentlyOnTrial) {
-    const endDate = currentSession?.plan_trial_end_date ? new Date(currentSession.plan_trial_end_date) : new Date();
+    const endDate = currentSession?.plan_trial_end_date
+      ? new Date(currentSession.plan_trial_end_date)
+      : new Date();
 
     return (
       <Card
@@ -134,21 +163,24 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           border: 'none',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
         }}
         styles={{ body: { padding: 24 } }}
       >
         {/* Animated background pattern */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          opacity: 0.1,
-          background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.1) 10px, rgba(255,255,255,.1) 20px)',
-          animation: 'slide 20s linear infinite'
-        }} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.1,
+            background:
+              'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,.1) 10px, rgba(255,255,255,.1) 20px)',
+            animation: 'slide 20s linear infinite',
+          }}
+        />
 
         <Row gutter={[16, 16]} align="middle">
           <Col xs={24} sm={16}>
@@ -169,9 +201,15 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
                 </Space>
 
                 <Space wrap>
-                  <Tag icon={<CheckCircleOutlined />} color="green">Client Portal</Tag>
-                  <Tag icon={<CheckCircleOutlined />} color="green">Project Finance</Tag>
-                  <Tag icon={<CheckCircleOutlined />} color="green">Advanced Analytics</Tag>
+                  <Tag icon={<CheckCircleOutlined />} color="green">
+                    Client Portal
+                  </Tag>
+                  <Tag icon={<CheckCircleOutlined />} color="green">
+                    Project Finance
+                  </Tag>
+                  <Tag icon={<CheckCircleOutlined />} color="green">
+                    Advanced Analytics
+                  </Tag>
                 </Space>
               </Space>
             </Space>
@@ -194,7 +232,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
                   color: '#764ba2',
                   border: 'none',
                   fontWeight: 600,
-                  width: '100%'
+                  width: '100%',
                 }}
                 onClick={() => {
                   // Track upgrade button click from trial status
@@ -202,7 +240,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
                     ...getBaseTrialProperties(),
                     trial_active: true,
                     days_elapsed: 7 - trialDaysRemaining,
-                    check_source: 'upgrade_button_trial_card'
+                    check_source: 'upgrade_button_trial_card',
                   });
                   window.location.href = '/admin-center/billing?upgrade=true';
                 }}
@@ -245,7 +283,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
         marginBottom: 16,
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         border: 'none',
-        boxShadow: '0 4px 20px rgba(102, 126, 234, 0.25)'
+        boxShadow: '0 4px 20px rgba(102, 126, 234, 0.25)',
       }}
       styles={{ body: { padding: 24 } }}
     >
@@ -253,7 +291,9 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
         {/* Simple badge and title */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Space>
-            <Tag color="gold" style={{ margin: 0 }}>LIMITED OFFER</Tag>
+            <Tag color="gold" style={{ margin: 0 }}>
+              LIMITED OFFER
+            </Tag>
             <Text strong style={{ color: 'white', fontSize: 16 }}>
               Try Business Plan Free
             </Text>
@@ -306,7 +346,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
             background: 'white',
             color: '#764ba2',
             border: 'none',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
         >
           Start Free Trial

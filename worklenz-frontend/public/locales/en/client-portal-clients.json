@@ -14,6 +14,7 @@
   "clearFiltersButton": "Clear Filters",
 
   "clientColumn": "Client",
+  "contactColumn": "Contact",
   "statusColumn": "Status",
   "assignedProjectsColumn": "Assigned Projects",
   "teamMembersColumn": "Team Members",
@@ -68,6 +69,10 @@
   "clientNamePlaceholder": "Enter client name",
   "clientNameRequired": "Please enter client name",
   "clientNameMinLength": "Name must be at least 2 characters",
+  "recordNameLabel": "Record Name (Internal)",
+  "recordNamePlaceholder": "Enter internal record name",
+  "recordNameRequired": "Please enter an internal record name",
+  "recordNameMinLength": "Record name must be at least 2 characters",
 
   "emailLabel": "Email Address",
   "emailPlaceholder": "Enter email address",
@@ -76,6 +81,9 @@
 
   "companyNameLabel": "Company Name",
   "companyNamePlaceholder": "Enter company name (optional)",
+  "clientCompanyLabel": "Client / Company",
+  "clientCompanyPlaceholder": "Enter client company name",
+  "clientCompanyRequired": "Please enter the client company name",
 
   "phoneLabel": "Phone Number",
   "phonePlaceholder": "Enter phone number (optional)",
@@ -96,6 +104,9 @@
 
   "contactPersonLabel": "Contact Person",
   "contactPersonPlaceholder": "Enter contact person name",
+  "primaryContactLabel": "Primary Contact (POC)",
+  "primaryContactPlaceholder": "Enter primary contact (POC) name",
+  "primaryContactRequired": "Please enter a primary contact person",
 
   "statusLabel": "Status",
 
@@ -288,6 +299,12 @@
     "invited": "Invited",
     "not_invited": "Not Invited",
     "expired": "Expired"
+  },
+  "portalStatusHelp": {
+    "active": "Active: Client has accepted and can access the portal.",
+    "invited": "Invited: Invitation was sent and is still valid, but not yet accepted.",
+    "notInvited": "Not Invited: No invitation has been sent yet.",
+    "expired": "Expired: Previous invitation expired and should be resent."
   },
 
   "inviteToPortalTooltip": "Invite to Portal",

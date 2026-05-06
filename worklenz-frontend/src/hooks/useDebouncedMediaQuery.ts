@@ -4,7 +4,7 @@ import { useMediaQuery } from 'react-responsive';
 /**
  * Debounced version of useMediaQuery that prevents rapid re-renders during window resize
  * This helps prevent errors when components re-render too quickly during resize events
- * 
+ *
  * @param query - Media query string or object with query property
  * @param debounceMs - Debounce delay in milliseconds (default: 150ms)
  * @returns boolean indicating if the media query matches

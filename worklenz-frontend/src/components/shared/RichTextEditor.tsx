@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
-import { Editor } from '@tinymce/tinymce-react';
-import { Editor as TinyMCEEditor } from 'tinymce';
+import React, { useMemo } from 'react';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import './RichTextEditor.css';
 
 interface RichTextEditorProps {
@@ -20,36 +20,39 @@ export default function RichTextEditor({
   height = 200,
   readOnly = false,
 }: RichTextEditorProps) {
-  const editorRef = useRef<TinyMCEEditor | null>(null);
+  const modules = useMemo(
+    () => ({
+      toolbar: readOnly
+        ? false
+        : [
+            [{ header: [2, 3, false] }],
+            ['bold', 'italic', 'underline'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['link'],
+            ['clean'],
+          ],
+      clipboard: {
+        matchVisual: false,
+      },
+    }),
+    [readOnly]
+  );
+
+  const formats = useMemo(
+    () => ['header', 'bold', 'italic', 'underline', 'list', 'bullet', 'link'],
+    []
+  );
 
   return (
-    <div className={`rich-text-editor ${themeMode}`} style={{ height }}>
-      <Editor
-        tinymceScriptSrc="/tinymce/tinymce.min.js"
-        onInit={(_evt, editor) => (editorRef.current = editor)}
+    <div className={`rich-text-editor ${themeMode}`} style={{ minHeight: height }}>
+      <ReactQuill
+        theme="snow"
         value={value}
-        onEditorChange={onChange}
-        disabled={readOnly}
-        init={{
-          height: height,
-          menubar: false,
-          skin: themeMode === 'dark' ? 'oxide-dark' : 'oxide',
-          content_css: themeMode === 'dark' ? 'dark' : 'default',
-          placeholder: placeholder,
-          plugins: ['lists', 'link', 'autolink'],
-          toolbar:
-            'blocks | bold italic underline | bullist numlist | link | removeformat',
-          content_style: `
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              font-size: 14px;
-              line-height: 1.5;
-            }
-          `,
-          branding: false,
-          promotion: false,
-          statusbar: false,
-        }}
+        onChange={onChange}
+        readOnly={readOnly}
+        placeholder={placeholder}
+        modules={modules}
+        formats={formats}
       />
     </div>
   );

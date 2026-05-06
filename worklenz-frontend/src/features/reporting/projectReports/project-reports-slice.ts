@@ -155,7 +155,7 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
 // Fetch grouped projects with accurate task counts
 export const fetchGroupedProjects = createAsyncThunk(
   'projectReports/fetchGroupedProjects',
-  async (_, { getState }) => {
+  async (_, { getState, rejectWithValue }) => {
     const state = (getState() as any).projectReportsReducer;
     const teams = selectedTeams(state);
 
@@ -184,9 +184,37 @@ export const fetchGroupedProjects = createAsyncThunk(
       index: 1,
       size: 1000,
     };
-    const response = await reportingProjectsApiService.getProjectsGrouped(params);
-    // Ensure we return a valid structure even if response.body is null
-    return response.body || { groups: [], total_groups: 0 };
+
+    try {
+      const response = await reportingProjectsApiService.getProjectsGrouped(params);
+      // Ensure we return a valid structure even if response.body is null
+      return response.body || { groups: [], total_groups: 0 };
+    } catch (error: any) {
+      // ── Fix: Return a rejected value with a user-friendly message instead of
+      // letting the raw axios timeout error bubble up and crash the component.
+      // The rejected case in extraReducers sets isLoading = false so the UI
+      // recovers cleanly (shows empty state instead of a frozen spinner).
+      const message =
+        error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')
+          ? 'Search request timed out. Please try a more specific name.'
+          : error?.message || 'Failed to fetch grouped projects';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+// View-aware fetch: calls the appropriate fetch function based on current view mode
+// This should be used by filter components instead of calling fetchProjectData directly
+export const fetchProjectDataForCurrentView = createAsyncThunk(
+  'projectReports/fetchProjectDataForCurrentView',
+  async (_, { getState, dispatch }) => {
+    const state = (getState() as any).projectReportsReducer;
+    
+    if (state.viewMode === 'grouped') {
+      return dispatch(fetchGroupedProjects());
+    } else {
+      return dispatch(fetchProjectData());
+    }
   }
 );
 
@@ -209,7 +237,7 @@ const initialState: ProjectReportsState = {
 
   projectList: [],
   total: 0,
-  isLoading: false,
+  isLoading: true,
   error: null,
 
   // Grouped view data
@@ -352,8 +380,16 @@ const projectReportsSlice = createSlice({
 
       state.viewMode = newViewMode;
 
-      // Reset data when switching between views to ensure fresh data
+      // Reset data AND search query when switching between views to ensure
+      // fresh data and no leaked search terms across view types.
       if (previousViewMode !== newViewMode) {
+        // ── Fix: clear searchQuery in Redux when the view changes ──
+        // The filter component mirrors this by also clearing its localSearch state
+        // inside a useEffect that watches viewMode. Both must be cleared together
+        // so the input box and the API params stay in sync.
+        state.searchQuery = '';
+        state.index = 1;
+
         if (newViewMode === 'grouped') {
           // Clear table data when switching to grouped view
           state.projectList = [];
@@ -376,7 +412,7 @@ const projectReportsSlice = createSlice({
       state.total = 0;
       state.groupedProjects = [];
       state.totalGroups = 0;
-      state.isLoading = false;
+      state.isLoading = true;
       state.error = null;
       state.index = 1;
       state.pageSize = 10;
@@ -424,16 +460,22 @@ const projectReportsSlice = createSlice({
         state.loadingTeams = false;
       })
       .addCase(fetchProjectData.pending, state => {
-        state.isLoading = true;
+        if (state.viewMode === 'table') {
+          state.isLoading = true;
+        }
         state.error = null;
       })
       .addCase(fetchProjectData.fulfilled, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'table') {
+          state.isLoading = false;
+        }
         state.total = action.payload.total || 0;
         state.projectList = action.payload.projects || [];
       })
       .addCase(fetchProjectData.rejected, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'table') {
+          state.isLoading = false;
+        }
         state.error = action.error.message || 'Failed to fetch project data';
       })
       .addCase(fetchMoreProjectsForGroupedView.pending, state => {
@@ -471,17 +513,34 @@ const projectReportsSlice = createSlice({
         }
       })
       .addCase(fetchGroupedProjects.pending, state => {
-        state.isLoading = true;
+        if (state.viewMode === 'grouped') {
+          state.isLoading = true;
+        }
         state.error = null;
       })
       .addCase(fetchGroupedProjects.fulfilled, (state, action) => {
-        state.isLoading = false;
+        if (state.viewMode === 'grouped') {
+          state.isLoading = false;
+        }
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
+        // Use total project count from backend (accurate with filters applied)
+        state.total = action.payload?.total || 0;
       })
+      // ── Fix: handle both rejectWithValue (our friendly message) and unexpected
+      // runtime errors so isLoading is always cleared and the UI can recover.
       .addCase(fetchGroupedProjects.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = action.error.message || 'Failed to fetch grouped projects';
+        if (state.viewMode === 'grouped') {
+          state.isLoading = false;
+        }
+        // action.payload comes from rejectWithValue(); action.error.message is the
+        // fallback for unexpected throws (network down, etc.)
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          'Failed to fetch grouped projects';
+        // Keep whatever was previously shown rather than wiping to empty on error
+        // state.groupedProjects stays unchanged so the user can see their last results
       });
   },
 });

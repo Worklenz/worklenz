@@ -32,7 +32,7 @@ const LabelsSettings = () => {
   const { t } = useTranslation('settings/labels');
   const { trackMixpanelEvent } = useMixpanelTracking();
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
-  const themeMode = useAppSelector((state) => state.themeReducer.mode);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -104,7 +104,7 @@ const LabelsSettings = () => {
     const secondaryTextColor = isDark ? '#8c8c8c' : '#595959';
 
     const plural = usageCount > 1 ? 's' : '';
-    
+
     Modal.confirm({
       title: t('deleteConfirmTitle', 'Delete Label'),
       icon: <ExclamationCircleFilled style={{ color: '#ff9800' }} />,
@@ -117,7 +117,7 @@ const LabelsSettings = () => {
                   labelName,
                   count: usageCount,
                   plural,
-                  defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`
+                  defaultValue: `The label "${labelName}" is currently assigned to ${usageCount} task${plural}.`,
                 })}
               </Typography.Text>
               <br />
@@ -125,7 +125,7 @@ const LabelsSettings = () => {
                 {t('labelDeleteWarning', {
                   count: usageCount,
                   plural,
-                  defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}. This action cannot be undone.`
+                  defaultValue: `⚠️ Deleting this label will remove it from all ${usageCount} assigned task${plural}. This action cannot be undone.`,
                 })}
               </Typography.Text>
             </>
@@ -133,7 +133,7 @@ const LabelsSettings = () => {
             <Typography.Text style={{ color: textColor }}>
               {t('deleteConfirmMessage', {
                 labelName,
-                defaultValue: `Are you sure you want to delete the label "${labelName}"? This action cannot be undone.`
+                defaultValue: `Are you sure you want to delete the label "${labelName}"? This action cannot be undone.`,
               })}
             </Typography.Text>
           )}
@@ -199,7 +199,7 @@ const LabelsSettings = () => {
                 shape="default"
                 icon={<DeleteOutlined />}
                 size="small"
-                onClick={(e) => handleDeleteClick(record, e)}
+                onClick={e => handleDeleteClick(record, e)}
               />
             </Tooltip>
           </Flex>

@@ -41,7 +41,7 @@
 .comment-link {
   /* Layout */
   display: inline;
-  word-break: break-all;        /* prevent long URLs from overflowing the bubble */
+  word-break: break-all; /* prevent long URLs from overflowing the bubble */
 
   /* Typography */
   font-size: inherit;
@@ -52,7 +52,9 @@
 
   /* Interaction */
   cursor: pointer;
-  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
 }
 
 /* Light theme — other user's bubble */
@@ -359,4 +361,20 @@
 .ant-comment-avatar img {
   width: 28px;
   height: 28px;
+}
+
+/* Reaction action button styling */
+.ant-comment-actions > li > span {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ant-comment-actions > li > span:hover {
+  color: #1890ff;
+}
+
+.theme-dark .ant-comment-actions > li > span:hover {
+  color: #40a9ff;
 }

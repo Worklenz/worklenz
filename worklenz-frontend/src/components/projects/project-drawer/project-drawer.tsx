@@ -127,32 +127,35 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   /**
    * Calculate working days between two dates (excluding weekends)
    */
-  const calculateWorkingDays = useCallback((
-    startDate: dayjs.Dayjs | string | null | undefined,
-    endDate: dayjs.Dayjs | string | null | undefined
-  ): number => {
-    if (!startDate || !endDate) return 0;
+  const calculateWorkingDays = useCallback(
+    (
+      startDate: dayjs.Dayjs | string | null | undefined,
+      endDate: dayjs.Dayjs | string | null | undefined
+    ): number => {
+      if (!startDate || !endDate) return 0;
 
-    const start = dayjs.isDayjs(startDate) ? startDate : dayjs(startDate);
-    const end = dayjs.isDayjs(endDate) ? endDate : dayjs(endDate);
+      const start = dayjs.isDayjs(startDate) ? startDate : dayjs(startDate);
+      const end = dayjs.isDayjs(endDate) ? endDate : dayjs(endDate);
 
-    if (!start.isValid() || !end.isValid()) return 0;
-    if (start.isAfter(end)) return 0;
+      if (!start.isValid() || !end.isValid()) return 0;
+      if (start.isAfter(end)) return 0;
 
-    let workingDays = 0;
-    let currentDate = start.clone().startOf('day');
-    const endDateNormalized = end.clone().startOf('day');
+      let workingDays = 0;
+      let currentDate = start.clone().startOf('day');
+      const endDateNormalized = end.clone().startOf('day');
 
-    while (currentDate.isBefore(endDateNormalized) || currentDate.isSame(endDateNormalized)) {
-      const dayOfWeek = currentDate.day();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        workingDays++;
+      while (currentDate.isBefore(endDateNormalized) || currentDate.isSame(endDateNormalized)) {
+        const dayOfWeek = currentDate.day();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          workingDays++;
+        }
+        currentDate = currentDate.add(1, 'day');
       }
-      currentDate = currentDate.add(1, 'day');
-    }
 
-    return workingDays;
-  }, []);
+      return workingDays;
+    },
+    []
+  );
 
   // Auth and permissions
   const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
@@ -237,7 +240,15 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     } else if (drawerVisible && projectId) {
       console.log('Drawer visible, waiting for project data to load...');
     }
-  }, [drawerVisible, projectId, project, projectLoading, form, calculateWorkingDays, defaultFormValues]);
+  }, [
+    drawerVisible,
+    projectId,
+    project,
+    projectLoading,
+    form,
+    calculateWorkingDays,
+    defaultFormValues,
+  ]);
 
   useEffect(() => {
     if (drawerVisible && projectId && projectLoading) {
@@ -247,43 +258,49 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   }, [drawerVisible, projectId, projectLoading]);
 
   // Socket event handlers
-  const handleStartDateChangeResponse = useCallback((data: { project_id: string; start_date: string }) => {
-    try {
-      if (data.project_id === projectId) {
-        const newStartDate = data.start_date ? dayjs(data.start_date) : null;
-        form.setFieldsValue({ start_date: newStartDate });
+  const handleStartDateChangeResponse = useCallback(
+    (data: { project_id: string; start_date: string }) => {
+      try {
+        if (data.project_id === projectId) {
+          const newStartDate = data.start_date ? dayjs(data.start_date) : null;
+          form.setFieldsValue({ start_date: newStartDate });
 
-        const endDate = form.getFieldValue('end_date');
-        if (newStartDate && endDate) {
-          const days = calculateWorkingDays(newStartDate, endDate);
-          form.setFieldsValue({ working_days: days });
-        } else if (!newStartDate) {
-          form.setFieldsValue({ working_days: 0 });
+          const endDate = form.getFieldValue('end_date');
+          if (newStartDate && endDate) {
+            const days = calculateWorkingDays(newStartDate, endDate);
+            form.setFieldsValue({ working_days: days });
+          } else if (!newStartDate) {
+            form.setFieldsValue({ working_days: 0 });
+          }
         }
+      } catch (error) {
+        logger.error('Error handling start date change response:', error);
       }
-    } catch (error) {
-      logger.error('Error handling start date change response:', error);
-    }
-  }, [projectId, form, calculateWorkingDays]);
+    },
+    [projectId, form, calculateWorkingDays]
+  );
 
-  const handleEndDateChangeResponse = useCallback((data: { project_id: string; end_date: string }) => {
-    try {
-      if (data.project_id === projectId) {
-        const newEndDate = data.end_date ? dayjs(data.end_date) : null;
-        form.setFieldsValue({ end_date: newEndDate });
+  const handleEndDateChangeResponse = useCallback(
+    (data: { project_id: string; end_date: string }) => {
+      try {
+        if (data.project_id === projectId) {
+          const newEndDate = data.end_date ? dayjs(data.end_date) : null;
+          form.setFieldsValue({ end_date: newEndDate });
 
-        const startDate = form.getFieldValue('start_date');
-        if (startDate && newEndDate) {
-          const days = calculateWorkingDays(startDate, newEndDate);
-          form.setFieldsValue({ working_days: days });
-        } else if (!newEndDate) {
-          form.setFieldsValue({ working_days: 0 });
+          const startDate = form.getFieldValue('start_date');
+          if (startDate && newEndDate) {
+            const days = calculateWorkingDays(startDate, newEndDate);
+            form.setFieldsValue({ working_days: days });
+          } else if (!newEndDate) {
+            form.setFieldsValue({ working_days: 0 });
+          }
         }
+      } catch (error) {
+        logger.error('Error handling end date change response:', error);
       }
-    } catch (error) {
-      logger.error('Error handling end date change response:', error);
-    }
-  }, [projectId, form, calculateWorkingDays]);
+    },
+    [projectId, form, calculateWorkingDays]
+  );
 
   useEffect(() => {
     if (connected && socket && projectId) {
@@ -291,8 +308,14 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
 
       return () => {
-        socket.removeListener(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleStartDateChangeResponse);
-        socket.removeListener(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleEndDateChangeResponse);
+        socket.removeListener(
+          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+          handleStartDateChangeResponse
+        );
+        socket.removeListener(
+          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
+          handleEndDateChangeResponse
+        );
       };
     }
   }, [connected, socket, projectId, handleStartDateChangeResponse, handleEndDateChangeResponse]);
@@ -320,59 +343,65 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     }
   }, [form, calculateWorkingDays]);
 
-  const handleStartDateChange = useCallback((date: dayjs.Dayjs | null) => {
-    try {
-      form.setFieldsValue({ start_date: date });
+  const handleStartDateChange = useCallback(
+    (date: dayjs.Dayjs | null) => {
+      try {
+        form.setFieldsValue({ start_date: date });
 
-      const endDate = form.getFieldValue('end_date');
-      if (date && endDate) {
-        const days = calculateWorkingDays(date, endDate);
-        form.setFieldsValue({ working_days: days });
-      } else if (!date) {
-        form.setFieldsValue({ working_days: 0 });
+        const endDate = form.getFieldValue('end_date');
+        if (date && endDate) {
+          const days = calculateWorkingDays(date, endDate);
+          form.setFieldsValue({ working_days: days });
+        } else if (!date) {
+          form.setFieldsValue({ working_days: 0 });
+        }
+
+        if (socket && projectId) {
+          socket.emit(
+            SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
+            JSON.stringify({
+              project_id: projectId,
+              start_date: date?.format('YYYY-MM-DD'),
+              time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            })
+          );
+        }
+      } catch (error) {
+        logger.error('Error handling start date change', error);
       }
+    },
+    [form, calculateWorkingDays, socket, projectId]
+  );
 
-      if (socket && projectId) {
-        socket.emit(
-          SocketEvents.PROJECT_START_DATE_CHANGE.toString(),
-          JSON.stringify({
-            project_id: projectId,
-            start_date: date?.format('YYYY-MM-DD'),
-            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          })
-        );
+  const handleEndDateChange = useCallback(
+    (date: dayjs.Dayjs | null) => {
+      try {
+        form.setFieldsValue({ end_date: date });
+
+        const startDate = form.getFieldValue('start_date');
+        if (startDate && date) {
+          const days = calculateWorkingDays(startDate, date);
+          form.setFieldsValue({ working_days: days });
+        } else if (!date) {
+          form.setFieldsValue({ working_days: 0 });
+        }
+
+        if (socket && projectId) {
+          socket.emit(
+            SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
+            JSON.stringify({
+              project_id: projectId,
+              end_date: date?.format('YYYY-MM-DD'),
+              time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            })
+          );
+        }
+      } catch (error) {
+        logger.error('Error handling end date change', error);
       }
-    } catch (error) {
-      logger.error('Error handling start date change', error);
-    }
-  }, [form, calculateWorkingDays, socket, projectId]);
-
-  const handleEndDateChange = useCallback((date: dayjs.Dayjs | null) => {
-    try {
-      form.setFieldsValue({ end_date: date });
-
-      const startDate = form.getFieldValue('start_date');
-      if (startDate && date) {
-        const days = calculateWorkingDays(startDate, date);
-        form.setFieldsValue({ working_days: days });
-      } else if (!date) {
-        form.setFieldsValue({ working_days: 0 });
-      }
-
-      if (socket && projectId) {
-        socket.emit(
-          SocketEvents.PROJECT_END_DATE_CHANGE.toString(),
-          JSON.stringify({
-            project_id: projectId,
-            end_date: date?.format('YYYY-MM-DD'),
-            time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          })
-        );
-      }
-    } catch (error) {
-      logger.error('Error handling end date change', error);
-    }
-  }, [form, calculateWorkingDays, socket, projectId]);
+    },
+    [form, calculateWorkingDays, socket, projectId]
+  );
 
   const handleUpgradeClick = useCallback(() => {
     dispatch(toggleUpgradeModal());
@@ -517,7 +546,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   const handleManualProgressChange = (checked: boolean) => {
     if (checked) {
-      form.setFieldsValue({ use_manual_progress: true, use_weighted_progress: false, use_time_progress: false });
+      form.setFieldsValue({
+        use_manual_progress: true,
+        use_weighted_progress: false,
+        use_time_progress: false,
+      });
     } else {
       form.setFieldsValue({ use_manual_progress: false });
     }
@@ -525,7 +558,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   const handleWeightedProgressChange = (checked: boolean) => {
     if (checked) {
-      form.setFieldsValue({ use_manual_progress: false, use_weighted_progress: true, use_time_progress: false });
+      form.setFieldsValue({
+        use_manual_progress: false,
+        use_weighted_progress: true,
+        use_time_progress: false,
+      });
     } else {
       form.setFieldsValue({ use_weighted_progress: false });
     }
@@ -533,7 +570,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   const handleTimeProgressChange = (checked: boolean) => {
     if (checked) {
-      form.setFieldsValue({ use_manual_progress: false, use_weighted_progress: false, use_time_progress: true });
+      form.setFieldsValue({
+        use_manual_progress: false,
+        use_weighted_progress: false,
+        use_time_progress: true,
+      });
     } else {
       form.setFieldsValue({ use_time_progress: false });
     }

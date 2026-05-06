@@ -1,12 +1,20 @@
 import { memo, useMemo, useEffect, useState, useCallback } from 'react';
-import { Collapse, Progress, Typography, Flex, Badge, Empty, Spin, Button, Tooltip } from '@/shared/antd-imports';
+import {
+  Collapse,
+  Progress,
+  Typography,
+  Flex,
+  Badge,
+  Empty,
+  Spin,
+  Button,
+  Tooltip,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IRPTProject } from '@/types/reporting/reporting.types';
-import { 
-  fetchGroupedProjects
-} from '@/features/reporting/projectReports/project-reports-slice';
+import { fetchGroupedProjects } from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
 import { colors } from '@/styles/colors';
 import './projects-grouped-view.css';
@@ -43,30 +51,27 @@ const ProjectsGroupedView = () => {
    * Maps backend keys like "no_manager" to frontend translation keys like "noManagerText".
    * Falls back to original name if not a translation key (e.g., actual team/manager names).
    */
-  const translateGroupName = useCallback((name: string): string => {
-    const translationKeyMap: Record<string, string> = {
-      'no_manager': 'noManagerText',
-      'no_team': 'noTeamText',
-      'no_status': 'noStatusText',
-      'not_set': 'notSetText',
-      'uncategorized': 'uncategorizedText',
-    };
+  const translateGroupName = useCallback(
+    (name: string): string => {
+      const translationKeyMap: Record<string, string> = {
+        no_manager: 'noManagerText',
+        no_team: 'noTeamText',
+        no_status: 'noStatusText',
+        not_set: 'notSetText',
+        uncategorized: 'uncategorizedText',
+      };
 
-    const translationKey = translationKeyMap[name];
-    return translationKey ? t(translationKey) : name;
-  }, [t]);
+      const translationKey = translationKeyMap[name];
+      return translationKey ? t(translationKey) : name;
+    },
+    [t]
+  );
 
   const {
     groupedProjects,
     groupBy,
     isLoading,
     loadingTeams,
-    searchQuery,
-    selectedProjectStatuses,
-    selectedProjectHealths,
-    selectedProjectCategories,
-    selectedProjectManagers,
-    archived,
   } = useAppSelector(state => state.projectReportsReducer);
 
   // Handle project click to open modal
@@ -89,25 +94,19 @@ const ProjectsGroupedView = () => {
   }, []);
 
   // Get visible count for a group
-  const getVisibleCount = useCallback((groupId: string) => {
-    return groupPagination[groupId] || INITIAL_ITEMS_PER_GROUP;
-  }, [groupPagination]);
+  const getVisibleCount = useCallback(
+    (groupId: string) => {
+      return groupPagination[groupId] || INITIAL_ITEMS_PER_GROUP;
+    },
+    [groupPagination]
+  );
 
-  // Fetch grouped project data when filters or grouping changes
+  // Fetch grouped project data when groupBy changes
   useEffect(() => {
     dispatch(fetchGroupedProjects());
-    // Reset group pagination when filters change
+    // Reset group pagination when grouping changes
     setGroupPagination({});
-  }, [
-    dispatch,
-    groupBy,
-    searchQuery,
-    selectedProjectStatuses,
-    selectedProjectHealths,
-    selectedProjectCategories,
-    selectedProjectManagers,
-    archived,
-  ]);
+  }, [dispatch, groupBy]);
 
   // Transform backend grouped data to component format
   const transformedGroups = useMemo(() => {
@@ -121,9 +120,8 @@ const ProjectsGroupedView = () => {
       todoTasks: group.todo_tasks,
       doingTasks: group.doing_tasks,
       doneTasks: group.done_tasks,
-      progressPercent: group.total_tasks > 0
-        ? Math.round((group.done_tasks / group.total_tasks) * 100)
-        : 0,
+      progressPercent:
+        group.total_tasks > 0 ? Math.round((group.done_tasks / group.total_tasks) * 100) : 0,
     }));
   }, [groupedProjects, translateGroupName]);
 
@@ -133,47 +131,49 @@ const ProjectsGroupedView = () => {
       const todoTasks = project.tasks_stat?.todo || 0;
       const doingTasks = project.tasks_stat?.doing || 0;
       const doneTasks = project.tasks_stat?.done || 0;
-      const total = project.tasks_stat?.total || (todoTasks + doingTasks + doneTasks);
+      const total = project.tasks_stat?.total || todoTasks + doingTasks + doneTasks;
       const percentDone = total > 0 ? Math.round((doneTasks / total) * 100) : 0;
 
       // Enhanced tooltip with improved UI design
       // Ant Design Tooltip has dark background in both themes, so white text works
       const tooltipTextColor = colors.white;
       const dividerColor = 'rgba(255, 255, 255, 0.2)';
-      
+
       const progressTooltipTitle = (
         <Flex vertical gap={10} style={{ minWidth: 220, padding: '2px 0' }}>
           {/* Top section: Total tasks with emphasis */}
           <Flex vertical gap={2}>
-            <Typography.Text 
-              strong 
-              style={{ 
-                color: tooltipTextColor, 
-                fontSize: 14, 
+            <Typography.Text
+              strong
+              style={{
+                color: tooltipTextColor,
+                fontSize: 14,
                 fontWeight: 600,
-                lineHeight: 1.4
+                lineHeight: 1.4,
               }}
             >
               {doneTasks}/{total} {t('tasksText')}
             </Typography.Text>
           </Flex>
-          
+
           {/* Divider */}
-          <div style={{ 
-            height: 1, 
-            backgroundColor: dividerColor, 
-            width: '100%',
-            margin: '2px 0'
-          }} />
-          
+          <div
+            style={{
+              height: 1,
+              backgroundColor: dividerColor,
+              width: '100%',
+              margin: '2px 0',
+            }}
+          />
+
           {/* Middle section: Task status breakdown with better spacing */}
           <Flex vertical gap={6}>
             <Flex justify="space-between" align="center">
               <Typography.Text style={{ color: tooltipTextColor, fontSize: 12, opacity: 0.9 }}>
                 {t('todoText')}:
               </Typography.Text>
-              <Typography.Text 
-                strong 
+              <Typography.Text
+                strong
                 style={{ color: tooltipTextColor, fontSize: 12, fontWeight: 500 }}
               >
                 {todoTasks}
@@ -183,8 +183,8 @@ const ProjectsGroupedView = () => {
               <Typography.Text style={{ color: tooltipTextColor, fontSize: 12, opacity: 0.9 }}>
                 {t('doingText')}:
               </Typography.Text>
-              <Typography.Text 
-                strong 
+              <Typography.Text
+                strong
                 style={{ color: tooltipTextColor, fontSize: 12, fontWeight: 500 }}
               >
                 {doingTasks}
@@ -194,23 +194,25 @@ const ProjectsGroupedView = () => {
               <Typography.Text style={{ color: tooltipTextColor, fontSize: 12, opacity: 0.9 }}>
                 {t('doneText')}:
               </Typography.Text>
-              <Typography.Text 
-                strong 
+              <Typography.Text
+                strong
                 style={{ color: tooltipTextColor, fontSize: 12, fontWeight: 500 }}
               >
                 {doneTasks}
               </Typography.Text>
             </Flex>
           </Flex>
-          
+
           {/* Divider */}
-          <div style={{ 
-            height: 1, 
-            backgroundColor: dividerColor, 
-            width: '100%',
-            margin: '2px 0'
-          }} />
-          
+          <div
+            style={{
+              height: 1,
+              backgroundColor: dividerColor,
+              width: '100%',
+              margin: '2px 0',
+            }}
+          />
+
           {/* Bottom section: Progress bar with percentage - improved layout */}
           <Flex vertical gap={6}>
             <Flex align="center" gap={10} style={{ width: '100%' }}>
@@ -222,14 +224,14 @@ const ProjectsGroupedView = () => {
                 showInfo={false}
                 strokeWidth={6}
               />
-              <Typography.Text 
-                strong 
-                style={{ 
-                  color: tooltipTextColor, 
-                  fontSize: 13, 
+              <Typography.Text
+                strong
+                style={{
+                  color: tooltipTextColor,
+                  fontSize: 13,
                   fontWeight: 600,
                   minWidth: 40,
-                  textAlign: 'right'
+                  textAlign: 'right',
                 }}
               >
                 {percentDone}%
@@ -307,72 +309,82 @@ const ProjectsGroupedView = () => {
                     <Flex vertical gap={10} style={{ minWidth: 220, padding: '2px 0' }}>
                       {/* Top section: Total tasks with emphasis */}
                       <Flex vertical gap={2}>
-                        <Typography.Text 
-                          strong 
-                          style={{ 
-                            color: colors.white, 
-                            fontSize: 14, 
+                        <Typography.Text
+                          strong
+                          style={{
+                            color: colors.white,
+                            fontSize: 14,
                             fontWeight: 600,
-                            lineHeight: 1.4
+                            lineHeight: 1.4,
                           }}
                         >
                           {group.doneTasks}/{group.totalTasks} {t('tasksText')}
                         </Typography.Text>
                       </Flex>
-                      
+
                       {/* Divider */}
-                      <div style={{ 
-                        height: 1, 
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                        width: '100%',
-                        margin: '2px 0'
-                      }} />
-                      
+                      <div
+                        style={{
+                          height: 1,
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          width: '100%',
+                          margin: '2px 0',
+                        }}
+                      />
+
                       {/* Middle section: Task status breakdown with better spacing */}
                       <Flex vertical gap={6}>
                         <Flex justify="space-between" align="center">
-                          <Typography.Text style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
+                          <Typography.Text
+                            style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}
+                          >
                             {t('todoText')}:
                           </Typography.Text>
-                          <Typography.Text 
-                            strong 
+                          <Typography.Text
+                            strong
                             style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
                           >
                             {group.todoTasks}
                           </Typography.Text>
                         </Flex>
                         <Flex justify="space-between" align="center">
-                          <Typography.Text style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
+                          <Typography.Text
+                            style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}
+                          >
                             {t('doingText')}:
                           </Typography.Text>
-                          <Typography.Text 
-                            strong 
+                          <Typography.Text
+                            strong
                             style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
                           >
                             {group.doingTasks}
                           </Typography.Text>
                         </Flex>
                         <Flex justify="space-between" align="center">
-                          <Typography.Text style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}>
+                          <Typography.Text
+                            style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}
+                          >
                             {t('doneText')}:
                           </Typography.Text>
-                          <Typography.Text 
-                            strong 
+                          <Typography.Text
+                            strong
                             style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
                           >
                             {group.doneTasks}
                           </Typography.Text>
                         </Flex>
                       </Flex>
-                      
+
                       {/* Divider */}
-                      <div style={{ 
-                        height: 1, 
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                        width: '100%',
-                        margin: '2px 0'
-                      }} />
-                      
+                      <div
+                        style={{
+                          height: 1,
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          width: '100%',
+                          margin: '2px 0',
+                        }}
+                      />
+
                       {/* Bottom section: Progress bar with percentage - improved layout */}
                       <Flex vertical gap={6}>
                         <Flex align="center" gap={10} style={{ width: '100%' }}>
@@ -384,14 +396,14 @@ const ProjectsGroupedView = () => {
                             showInfo={false}
                             strokeWidth={6}
                           />
-                          <Typography.Text 
-                            strong 
-                            style={{ 
-                              color: colors.white, 
-                              fontSize: 13, 
+                          <Typography.Text
+                            strong
+                            style={{
+                              color: colors.white,
+                              fontSize: 13,
                               fontWeight: 600,
                               minWidth: 40,
-                              textAlign: 'right'
+                              textAlign: 'right',
                             }}
                           >
                             {group.progressPercent}%
@@ -418,14 +430,14 @@ const ProjectsGroupedView = () => {
                 <Flex justify="center" style={{ padding: '16px 0' }}>
                   <Button
                     type="link"
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleLoadMore(group.id);
                     }}
                     className="show-more-button"
                   >
                     {t('showMoreButton', {
-                      count: Math.min(remainingCount, ITEMS_PER_PAGE)
+                      count: Math.min(remainingCount, ITEMS_PER_PAGE),
                     })}
                   </Button>
                 </Flex>
@@ -462,11 +474,7 @@ const ProjectsGroupedView = () => {
         expandIconPosition="start"
       />
 
-      <ProjectTasksModal
-        open={isModalOpen}
-        project={selectedProject}
-        onClose={handleModalClose}
-      />
+      <ProjectTasksModal open={isModalOpen} project={selectedProject} onClose={handleModalClose} />
     </div>
   );
 };

@@ -281,3 +281,8 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_updates_cleanup
 ON task_updates(is_sent, created_at)
 WHERE is_sent = TRUE;
 
+CREATE INDEX IF NOT EXISTS idx_failed_task_notifications_user_id
+ON failed_task_notifications(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_failed_task_notifications_failed_at
+ON failed_task_notifications(failed_at);

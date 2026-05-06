@@ -5,7 +5,7 @@
   "manageAll": "Alle Integrationen verwalten",
   "comingSoon": "Demnächst",
   "cancel": "Abbrechen",
-  
+
   "slack": {
     "title": "Slack",
     "description": "Benachrichtigungen an Slack-Kanäle senden",
@@ -20,17 +20,17 @@
     "addButton": "Integration hinzufügen",
     "inviteBotTip": "Tipp: Stellen Sie sicher, dass Sie den @Worklenz-Bot zuerst zu Ihrem Slack-Kanal einladen!"
   },
-  
+
   "teams": {
     "title": "Microsoft Teams",
     "description": "Benachrichtigungen an Teams-Kanäle senden"
   },
-  
+
   "github": {
     "title": "GitHub",
     "description": "Aufgaben mit GitHub-Issues synchronisieren"
   },
-  
+
   "notificationTypes": {
     "taskCreated": "Aufgabe erstellt",
     "taskAssigned": "Aufgabe zugewiesen",
@@ -39,17 +39,17 @@
     "commentAdded": "Kommentar hinzugefügt",
     "dueDateChanged": "Fälligkeitsdatum geändert"
   },
-  
+
   "validation": {
     "selectChannel": "Bitte wählen Sie einen Slack-Kanal aus",
     "selectNotifications": "Bitte wählen Sie mindestens einen Benachrichtigungstyp aus"
   },
-  
+
   "messages": {
     "integrationAdded": "Slack-Integration erfolgreich hinzugefügt!",
     "channelsRefreshed": "Kanäle erfolgreich aktualisiert"
   },
-  
+
   "errors": {
     "loadChannelsFailed": "Laden der Kanäle fehlgeschlagen",
     "refreshChannelsFailed": "Aktualisierung der Kanäle fehlgeschlagen",

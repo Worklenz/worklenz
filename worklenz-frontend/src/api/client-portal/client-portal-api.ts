@@ -1,6 +1,12 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import {
+  BaseQueryFn,
+  FetchArgs,
+  FetchBaseQueryError,
+  createApi,
+  fetchBaseQuery,
+} from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
-import { getCsrfToken, ensureCsrfToken } from '../api-client';
+import { ensureCsrfToken, getCsrfToken, refreshCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 export interface ClientPortalDashboardData {
@@ -90,6 +96,12 @@ export interface ClientPortalInvoice {
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   notes?: string;
   paymentProofUrl?: string | null;
+  taxRate?: number;
+  taxAmount?: number;
+  discountType?: string;
+  discountValue?: number;
+  discountAmount?: number;
+  subtotal?: number;
   request: {
     id: string;
     requestNumber: string;
@@ -132,6 +144,12 @@ export interface UpdateInvoiceRequest {
   dueDate?: string;
   notes?: string;
   status?: string;
+  taxRate?: number;
+  taxAmount?: number;
+  discountType?: string;
+  discountValue?: number;
+  discountAmount?: number;
+  subtotal?: number;
 }
 
 export interface UpdateInvoiceResponseBody {
@@ -239,7 +257,13 @@ export interface ClientPortalClient {
   email: string;
   company_name?: string;
   phone?: string;
+  phone_country_code?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
@@ -271,9 +295,17 @@ export interface ClientPortalTeamMember {
 export interface CreateClientRequest {
   name: string;
   email: string;
-  company_name?: string;
+  company_name: string;
   phone?: string;
+  phone_country_code?: string;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  contact_person: string;
+  status?: 'active' | 'inactive' | 'pending';
 }
 
 export interface UpdateClientRequest {
@@ -281,7 +313,13 @@ export interface UpdateClientRequest {
   email?: string;
   company_name?: string;
   phone?: string;
+  phone_country_code?: string | null;
   address?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
   contact_person?: string;
   status?: 'active' | 'inactive' | 'pending';
 }
@@ -374,37 +412,76 @@ export interface BulkDeleteRequest {
   client_ids: string[];
 }
 
+const rawBaseQuery = fetchBaseQuery({
+  baseUrl: `${config.apiUrl}${API_BASE_URL}`,
+  prepareHeaders: async headers => {
+    let token = getCsrfToken();
+
+    if (!token) {
+      try {
+        token = await ensureCsrfToken();
+      } catch (error) {
+        console.error('[CSRF] Failed to refresh CSRF token:', error);
+      }
+    }
+
+    if (token) {
+      headers.set('X-CSRF-Token', token);
+    } else {
+      console.warn('[CSRF] No CSRF token available - request may fail');
+    }
+
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+  credentials: 'include',
+});
+
+const isCsrfError = (error?: FetchBaseQueryError): boolean => {
+  if (!error || error.status !== 403 || !('data' in error)) {
+    return false;
+  }
+
+  const errorData = error.data;
+
+  if (typeof errorData === 'string') {
+    const normalizedMessage = errorData.toLowerCase();
+    return normalizedMessage.includes('csrf') || normalizedMessage.includes('security token');
+  }
+
+  if (typeof errorData === 'object' && errorData !== null && 'message' in errorData) {
+    const message = errorData.message;
+    if (typeof message === 'string') {
+      const normalizedMessage = message.toLowerCase();
+      return normalizedMessage.includes('csrf') || normalizedMessage.includes('security token');
+    }
+  }
+
+  return false;
+};
+
+const baseQueryWithCsrfRetry: BaseQueryFn<
+  string | FetchArgs,
+  unknown,
+  FetchBaseQueryError
+> = async (args, api, extraOptions) => {
+  let result = await rawBaseQuery(args, api, extraOptions);
+
+  if (isCsrfError(result.error)) {
+    const refreshedToken = await refreshCsrfToken();
+
+    if (refreshedToken) {
+      result = await rawBaseQuery(args, api, extraOptions);
+    }
+  }
+
+  return result;
+};
+
 // RTK Query API
 export const clientPortalApi = createApi({
   reducerPath: 'clientPortalApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${config.apiUrl}${API_BASE_URL}`,
-    prepareHeaders: async headers => {
-      // Always try to get CSRF token, refresh if needed
-      let token = getCsrfToken();
-      
-      // If no token, try to refresh it with deduplication
-      if (!token) {
-        try {
-          token = await ensureCsrfToken();
-        } catch (error) {
-          console.error('[CSRF] Failed to refresh CSRF token:', error);
-        }
-      }
-
-      // Set token if available
-      if (token) {
-        headers.set('X-CSRF-Token', token);
-      } else {
-        // Log warning if no token available (backend will return proper error)
-        console.warn('[CSRF] No CSRF token available - request may fail');
-      }
-
-      headers.set('Content-Type', 'application/json');
-      return headers;
-    },
-    credentials: 'include',
-  }),
+  baseQuery: baseQueryWithCsrfRetry,
   tagTypes: [
     'Client',
     'Clients',
@@ -507,27 +584,29 @@ export const clientPortalApi = createApi({
     getRequestComments: builder.query<
       {
         done: boolean;
-        body: {
-          comments: Array<{
-            id: string;
-            comment: string;
-            sender_type: 'client' | 'team_member';
-            sender_id: string;
-            sender_name: string;
-            created_at: string;
-            updated_at: string;
-          }>;
-          totalCount: number;
-          newCommentsCount: number;
-        } | Array<{
-          id: string;
-          comment: string;
-          sender_type: 'client' | 'team_member';
-          sender_id: string;
-          sender_name: string;
-          created_at: string;
-          updated_at: string;
-        }>; // Support both old format (array) and new format (object)
+        body:
+          | {
+              comments: Array<{
+                id: string;
+                comment: string;
+                sender_type: 'client' | 'team_member';
+                sender_id: string;
+                sender_name: string;
+                created_at: string;
+                updated_at: string;
+              }>;
+              totalCount: number;
+              newCommentsCount: number;
+            }
+          | Array<{
+              id: string;
+              comment: string;
+              sender_type: 'client' | 'team_member';
+              sender_id: string;
+              sender_name: string;
+              created_at: string;
+              updated_at: string;
+            }>; // Support both old format (array) and new format (object)
         message: string;
       },
       string
@@ -694,7 +773,10 @@ export const clientPortalApi = createApi({
       ],
     }),
 
-    updateInvoice: builder.mutation<UpdateInvoiceResponse, { id: string; data: UpdateInvoiceRequest }>({
+    updateInvoice: builder.mutation<
+      UpdateInvoiceResponse,
+      { id: string; data: UpdateInvoiceRequest }
+    >({
       query: ({ id, data }) => ({
         url: `/clients/portal/invoices/${id}`,
         method: 'PUT',
@@ -712,11 +794,7 @@ export const clientPortalApi = createApi({
         url: `/clients/portal/invoices/${id}/send`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Invoices', id },
-        'Invoices',
-        'Dashboard',
-      ],
+      invalidatesTags: (result, error, id) => [{ type: 'Invoices', id }, 'Invoices', 'Dashboard'],
     }),
 
     markInvoiceAsPaid: builder.mutation<MarkInvoiceAsPaidResponse, string>({
@@ -724,11 +802,7 @@ export const clientPortalApi = createApi({
         url: `/clients/portal/invoices/${id}/mark-paid`,
         method: 'POST',
       }),
-      invalidatesTags: (result, error, id) => [
-        { type: 'Invoices', id },
-        'Invoices',
-        'Dashboard',
-      ],
+      invalidatesTags: (result, error, id) => [{ type: 'Invoices', id }, 'Invoices', 'Dashboard'],
     }),
 
     deleteInvoice: builder.mutation<void, string>({
@@ -765,7 +839,7 @@ export const clientPortalApi = createApi({
         message: string;
       }
     >({
-      query: (chatData) => ({
+      query: chatData => ({
         url: `${config.apiUrl}/api/client-portal/chats`,
         method: 'POST',
         body: chatData,
@@ -795,7 +869,8 @@ export const clientPortalApi = createApi({
 
     // Organization-side Client Portal Chats Management (for admin/organization users)
     getOrganizationChats: builder.query<
-      ClientPortalChat[] | { chats: ClientPortalChat[]; total: number; page: number; limit: number },
+      | ClientPortalChat[]
+      | { chats: ClientPortalChat[]; total: number; page: number; limit: number },
       { clientId?: string; page?: number; limit?: number }
     >({
       query: ({ clientId, page, limit }) => ({
@@ -853,7 +928,7 @@ export const clientPortalApi = createApi({
       { url: string; fileName: string },
       { fileData: string; fileName: string; fileType: string; clientId?: string }
     >({
-      query: (body) => ({
+      query: body => ({
         url: '/clients/portal/chats/upload',
         method: 'POST',
         body,
@@ -878,7 +953,14 @@ export const clientPortalApi = createApi({
     }),
 
     getOrganizationMessages: builder.query<
-      { messages: ClientPortalMessage[]; date: string; total: number; page: number; limit: number } | ClientPortalMessage[],
+      | {
+          messages: ClientPortalMessage[];
+          date: string;
+          total: number;
+          page: number;
+          limit: number;
+        }
+      | ClientPortalMessage[],
       { chatId: string; clientId: string }
     >({
       query: ({ chatId, clientId }) => ({
@@ -963,7 +1045,6 @@ export const clientPortalApi = createApi({
       },
     }),
 
-
     // Client Management APIs (Organization-side endpoints)
     getClients: builder.query<
       ClientsResponse,
@@ -1018,7 +1099,7 @@ export const clientPortalApi = createApi({
         { type: 'ClientStats', id },
         { type: 'ClientProjects', id },
         { type: 'ClientTeam', id },
-        'Clients'
+        'Clients',
       ],
     }),
 
@@ -1262,9 +1343,9 @@ export const clientPortalApi = createApi({
     }),
 
     updateOrganizationService: builder.mutation<
-      any, 
-      { 
-        id: string; 
+      any,
+      {
+        id: string;
         data: {
           name?: string;
           description?: string;
@@ -1278,7 +1359,7 @@ export const clientPortalApi = createApi({
           imageData?: string;
           imageName?: string;
           imageType?: string;
-        }
+        };
       }
     >({
       query: ({ id, data }) => ({
@@ -1402,6 +1483,7 @@ export const {
   useGetClientsQuery,
   useGetClientByIdQuery,
   useGetClientDetailsQuery,
+  useLazyGetClientDetailsQuery,
   useCreateClientMutation,
   useUpdateClientMutation,
   useDeactivateClientMutation,

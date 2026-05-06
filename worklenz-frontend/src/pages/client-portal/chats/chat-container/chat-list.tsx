@@ -30,9 +30,10 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
 
   // Ensure chatList is always an array and filter by search
   const safeChatList = Array.isArray(chatList) ? chatList : [];
-  const filteredChatList = safeChatList.filter(chat =>
-    chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    chat.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredChatList = safeChatList.filter(
+    chat =>
+      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      chat.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatTime = (timeString?: string) => {
@@ -101,7 +102,9 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
       <div style={{ padding: '12px 16px' }}>
         <Input
           placeholder={t('searchConversations')}
-          prefix={<SearchOutlined style={{ color: themeWiseColor('#bfbfbf', '#6b6b6b', themeMode) }} />}
+          prefix={
+            <SearchOutlined style={{ color: themeWiseColor('#bfbfbf', '#6b6b6b', themeMode) }} />
+          }
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           allowClear
@@ -122,11 +125,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
         }}
       >
         {filteredChatList.length === 0 ? (
-          <Flex
-            align="center"
-            justify="center"
-            style={{ padding: 24, height: '100%' }}
-          >
+          <Flex align="center" justify="center" style={{ padding: 24, height: '100%' }}>
             <Typography.Text type="secondary">
               {searchQuery ? t('noClientsFound') : t('noChatsDescription')}
             </Typography.Text>
@@ -141,17 +140,21 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
               style={{
                 padding: '12px 16px',
                 cursor: 'pointer',
-                backgroundColor: selectedChatId === chat.id
-                  ? themeWiseColor('#e6f4ff', '#111d2c', themeMode)
-                  : 'transparent',
-                borderLeft: selectedChatId === chat.id
-                  ? '3px solid #1890ff'
-                  : '3px solid transparent',
+                backgroundColor:
+                  selectedChatId === chat.id
+                    ? themeWiseColor('#e6f4ff', '#111d2c', themeMode)
+                    : 'transparent',
+                borderLeft:
+                  selectedChatId === chat.id ? '3px solid #1890ff' : '3px solid transparent',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={e => {
                 if (selectedChatId !== chat.id) {
-                  e.currentTarget.style.backgroundColor = themeWiseColor('#fafafa', '#262626', themeMode);
+                  e.currentTarget.style.backgroundColor = themeWiseColor(
+                    '#fafafa',
+                    '#262626',
+                    themeMode
+                  );
                 }
               }}
               onMouseLeave={e => {
@@ -161,11 +164,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
               }}
             >
               {/* Avatar with badge */}
-              <Badge
-                count={chat.unreadCount || 0}
-                size="small"
-                offset={[-4, 4]}
-              >
+              <Badge count={chat.unreadCount || 0} size="small" offset={[-4, 4]}>
                 <CustomAvatar avatarName={chat.name} size={44} />
               </Badge>
 
@@ -183,10 +182,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
                   >
                     {chat.name}
                   </Typography.Text>
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 11, flexShrink: 0 }}
-                  >
+                  <Typography.Text type="secondary" style={{ fontSize: 11, flexShrink: 0 }}>
                     {formatTime(chat.lastMessageTime)}
                   </Typography.Text>
                 </Flex>
@@ -209,7 +205,6 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
           ))
         )}
       </Flex>
-
     </Flex>
   );
 };

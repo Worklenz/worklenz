@@ -166,7 +166,9 @@ const TeamLeadTimeChart = forwardRef<TeamLeadTimeChartRef, TeamLeadTimeChartProp
               const idx = context[0].dataIndex;
               const member = chartData[idx];
               const lastActivity = member?.last_log_date;
-              return lastActivity ? `📅 Last Activity: ${new Date(lastActivity).toLocaleDateString()}` : '';
+              return lastActivity
+                ? `📅 Last Activity: ${new Date(lastActivity).toLocaleDateString()}`
+                : '';
             },
           },
         },

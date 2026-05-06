@@ -40,8 +40,8 @@
   "adminText": "Admin",
   "guestText": "Guest (Read-only)",
   "ownerText": "Team Owner",
-  "addedText": "Added",
-  "updatedText": "Updated",
+  "addedText": "Added ",
+  "updatedText": "Updated ",
   "noResultFound": "Type an email address and hit enter...",
   "jobTitlesFetchError": "Failed to fetch job titles",
   "invitationResent": "Invitation resent successfully!",
@@ -96,5 +96,7 @@
   "managerTooltip": "Assign a Team Lead to manage this member. Only Members can be assigned to managers.",
   "selectManagerPlaceholder": "Select a Team Lead as manager",
   "manager_removed_successfully": "Manager assignment removed successfully",
-  "updateError": "Failed to update team member. Please try again."
+  "updateError": "Failed to update team member. Please try again.",
+  "noTeamLeadsAvailable": "No team leads available",
+  "jobTitleColumn":"Job Title"
 }

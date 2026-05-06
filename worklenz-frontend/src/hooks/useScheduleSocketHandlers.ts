@@ -23,9 +23,9 @@ export const useScheduleSocketHandlers = () => {
         return;
       }
 
-      logger.info('Task billable status changed, refreshing schedule data', { 
-        taskId: data.id, 
-        billable: data.billable 
+      logger.info('Task billable status changed, refreshing schedule data', {
+        taskId: data.id,
+        billable: data.billable,
       });
 
       // Invalidate schedule-related cache tags to trigger refetch
@@ -44,12 +44,7 @@ export const useScheduleSocketHandlers = () => {
       logger.info('Task time estimation changed, refreshing schedule data', { taskId: data.id });
 
       dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members',
-          'TaskTimeline',
-          'MemberProjects',
-          'Workload',
-        ])
+        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
       );
     };
 
@@ -58,12 +53,7 @@ export const useScheduleSocketHandlers = () => {
       logger.info('Task assignees changed, refreshing schedule data', { taskId: data.task_id });
 
       dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members',
-          'TaskTimeline',
-          'MemberProjects',
-          'Workload',
-        ])
+        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
       );
     };
 
@@ -72,12 +62,7 @@ export const useScheduleSocketHandlers = () => {
       logger.info('Task dates changed, refreshing schedule data', { taskId: data.id });
 
       dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members',
-          'TaskTimeline',
-          'MemberProjects',
-          'Workload',
-        ])
+        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
       );
     };
 
@@ -86,12 +71,7 @@ export const useScheduleSocketHandlers = () => {
       logger.info('Task status changed, refreshing schedule data', { taskId: data.id });
 
       dispatch(
-        scheduleApi.util.invalidateTags([
-          'Members',
-          'TaskTimeline',
-          'MemberProjects',
-          'Workload',
-        ])
+        scheduleApi.util.invalidateTags(['Members', 'TaskTimeline', 'MemberProjects', 'Workload'])
       );
     };
 

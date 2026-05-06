@@ -1,4 +1,12 @@
-import { Button, Flex, Input, Typography, Spin, Tooltip, message as antMessage } from '@/shared/antd-imports';
+import {
+  Button,
+  Flex,
+  Input,
+  Typography,
+  Spin,
+  Tooltip,
+  message as antMessage,
+} from '@/shared/antd-imports';
 import React, { useEffect, useRef, useState } from 'react';
 import SendChatItem from './send-chat-item';
 import RecivedChatItem from './recived-chat-item';
@@ -23,7 +31,11 @@ type ChatBoxProps = {
 
 const ChatBox = ({ openedChat }: ChatBoxProps) => {
   const [message, setMessage] = useState<string>('');
-  const [pendingFile, setPendingFile] = useState<{ name: string; data: string; type: string } | null>(null);
+  const [pendingFile, setPendingFile] = useState<{
+    name: string;
+    data: string;
+    type: string;
+  } | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -51,9 +63,14 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
     return null;
   }, [openedChat.id, openedChat.clientId]);
 
-  const { data: messagesData, isLoading, error, refetch } = useGetOrganizationMessagesQuery(
+  const {
+    data: messagesData,
+    isLoading,
+    error,
+    refetch,
+  } = useGetOrganizationMessagesQuery(
     { chatId: openedChat.id, clientId: clientId || '' },
-    { 
+    {
       skip: !clientId,
       refetchOnMountOrArgChange: true, // Always refetch when chat is opened
       refetchOnFocus: true, // Refetch when window regains focus
@@ -95,10 +112,16 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         return messages.map((msg: any) => ({
           id: msg.id || '',
           content: msg.message || msg.content || '',
-          time: new Date(msg.created_at || Date.now()),
-          is_me: msg.senderType === 'team_member' || (currentUserId && msg.senderId === currentUserId),
-          file_url: msg.file_url || null,
-          file_name: msg.file_name || null,
+          time: new Date(msg.created_at || msg.createdAt || Date.now()),
+          is_me:
+            msg.senderType === 'team_member' || (currentUserId && msg.senderId === currentUserId),
+          file_url: msg.file_url || msg.fileUrl || null,
+          file_name:
+            msg.file_name ||
+            msg.fileName ||
+            (msg.file_url || msg.fileUrl
+              ? decodeURIComponent(String(msg.file_url || msg.fileUrl).split('/').pop() || '')
+              : null),
         }));
       }
       return Array.isArray(openedChat.chats_data) ? openedChat.chats_data : [];
@@ -113,7 +136,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = ev => {
       const dataUrl = ev.target?.result as string;
       // Strip base64 header (e.g. "data:image/png;base64,")
       const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
@@ -295,11 +318,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
             </Button>
           </Flex>
         )}
-        <Flex
-          align="center"
-          gap={12}
-          style={{ padding: '12px 20px' }}
-        >
+        <Flex align="center" gap={12} style={{ padding: '12px 20px' }}>
           <input
             ref={fileInputRef}
             type="file"
@@ -335,7 +354,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
             }}
           />
 
-          <EmojiPicker onSelect={(emoji) => setMessage(prev => prev + emoji)} />
+          <EmojiPicker onSelect={emoji => setMessage(prev => prev + emoji)} />
 
           <Button
             type="primary"

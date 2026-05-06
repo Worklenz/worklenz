@@ -49,6 +49,7 @@ export interface ITasksByPriority extends IChartData {
   low: number;
   medium: number;
   high: number;
+  critical: number;
 }
 
 export interface ITasksByDue extends IChartData {

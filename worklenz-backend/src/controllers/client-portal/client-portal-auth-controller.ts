@@ -425,7 +425,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       let organizationBranding = {
         logoUrl: null,
         primaryColor: "#52c41a",
-        companyName: invitation.team_name || invitation.company_name,
+        companyName: invitation.team_name || "Worklenz",
       };
 
       if (invitation.team_id) {
@@ -451,7 +451,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             companyName:
               settings.company_name ||
               invitation.team_name ||
-              invitation.company_name,
+              "Worklenz",
           };
         } else {
           // If no client_portal_settings record exists, check organization logo directly
@@ -473,7 +473,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       const organizationName =
         organizationBranding.companyName ||
         invitation.team_name ||
-        invitation.company_name ||
         "Worklenz";
 
       const emailHtml = generateWelcomeEmailHTML({
@@ -1640,7 +1639,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           // Import and call the email sending function
           const { sendClientPortalResetEmail } =
             await import("../../shared/email-templates");
-          sendClientPortalResetEmail(email, userIdBase64, hashedString);
+          await sendClientPortalResetEmail(email, userIdBase64, hashedString);
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(
@@ -1676,11 +1675,12 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       const userId = Buffer.from(user as string, "base64").toString("ascii");
 
       // First, verify the token exists, is not used, and is not expired
+      // Use raw hash (with dashes) as that is what is stored in the DB
       const tokenCheck = await db.query(
         `SELECT id, client_user_id, expires_at, is_used
          FROM client_password_reset_tokens
          WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
-        [hashedString],
+        [hash],
       );
 
       if (!tokenCheck.rowCount) {

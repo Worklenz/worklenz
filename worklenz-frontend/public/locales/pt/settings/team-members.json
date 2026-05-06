@@ -39,8 +39,8 @@
   "memberText": "Membro da Equipe",
   "adminText": "Administrador",
   "ownerText": "Dono da Equipe",
-  "addedText": "Adicionado",
-  "updatedText": "Atualizado",
+  "addedText": "Adicionado ",
+  "updatedText": "Atualizado ",
   "noResultFound": "Digite um endereço de email e pressione enter...",
   "jobTitlesFetchError": "Falha ao buscar cargos",
   "invitationResent": "Convite reenviado com sucesso!",
@@ -91,5 +91,6 @@
   "managerTooltip": "Atribuir um líder de equipe para gerenciar este membro. Apenas membros podem ser atribuídos a gerentes.",
   "selectManagerPlaceholder": "Selecionar um líder de equipe como gerente",
   "manager_removed_successfully": "Atribuição de gerente removida com sucesso",
-  "updateError": "Falha ao atualizar membro da equipe. Por favor, tente novamente."
+  "updateError": "Falha ao atualizar membro da equipe. Por favor, tente novamente.",
+  "noTeamLeadsAvailable": "Nenhum líder de equipe disponível"
 }

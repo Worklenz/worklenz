@@ -44,5 +44,6 @@ export interface IBulkAssignMembersRequest {
 
 export interface IBulkTasksDueDateChangeRequest {
   tasks: string[];
-  end_date: string | null;
+  end_date?: string | null;
+  start_date?: string | null;
 }

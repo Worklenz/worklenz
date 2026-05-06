@@ -17,6 +17,8 @@ import {
   evt_project_import_from_template_click,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import ProjectImportModal from '@/pages/projects/projectView/ProjectImportModal';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
 interface CreateProjectButtonProps {
   className?: string;
 }
@@ -30,6 +32,7 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
   const [selectedType, setSelectedType] = useState<'worklenz' | 'custom'>('worklenz');
   const [projectImporting, setProjectImporting] = useState(false);
   const [currentPath, setCurrentPath] = useState<string>('');
+  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const location = useLocation();
   const { t } = useTranslation('create-first-project-form');
 
@@ -85,7 +88,8 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
         const res = await projectTemplatesApiService.createFromWorklenzTemplate({
           template_id: currentTemplateId,
         });
-        if (res.done) {
+        if (res.done && res.body.project_id) {
+          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
           navigate(
             `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
           );
@@ -94,7 +98,8 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
         const res = await projectTemplatesApiService.createFromCustomTemplate({
           template_id: currentTemplateId,
         });
-        if (res.done) {
+        if (res.done && res.body.project_id) {
+          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
           navigate(
             `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
           );
@@ -118,6 +123,15 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
         </div>
       ),
     },
+    // {
+    //   key: 'import-export',
+    //   label: (
+    //     <div className="w-full m-0 p-0" onClick={() => setIsImportExportOpen(true)}>
+    //       <ImportOutlined className="mr-2" />
+    //       {t('importTasks', { defaultValue: 'Import Tasks' })}
+    //     </div>
+    //   ),
+    // },
   ];
 
   const handleCreateProject = () => {
@@ -163,6 +177,7 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
           selectedTemplateType={setSelectedType}
         />
       </Drawer>
+      <ProjectImportModal open={isImportExportOpen} onClose={() => setIsImportExportOpen(false)} />
     </div>
   );
 };

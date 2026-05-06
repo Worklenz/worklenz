@@ -18,7 +18,7 @@ const AdminCenterSidebar: React.FC = () => {
 
   type MenuItem = Required<MenuProps>['items'][number];
   const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
-  
+
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
       return isBusinessPlan(currentSession);
@@ -36,7 +36,9 @@ const AdminCenterSidebar: React.FC = () => {
         <Flex gap={8} justify="space-between" className="admin-center-sidebar-button">
           <Flex gap={8}>
             {item.icon}
-            <Link to={`/worklenz/admin-center/${item.endpoint}`}>{t(item.name, { defaultValue: item.defaultValue })}</Link>
+            <Link to={`/worklenz/admin-center/${item.endpoint}`}>
+              {t(item.name, { defaultValue: item.defaultValue })}
+            </Link>
           </Flex>
           <RightOutlined style={{ fontSize: 12, fontWeight: 'bold' }} />
         </Flex>

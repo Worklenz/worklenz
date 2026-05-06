@@ -1,6 +1,15 @@
-import { Button, Dropdown, Flex, Input, InputRef, MenuProps, Skeleton, message } from '@/shared/antd-imports';
+import {
+  Button,
+  Dropdown,
+  Flex,
+  Input,
+  InputRef,
+  MenuProps,
+  Skeleton,
+  message,
+} from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined, CopyOutlined, DeleteOutlined  } from '@/shared/antd-imports';
+import { EllipsisOutlined, CopyOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
@@ -135,7 +144,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   };
 
   // Menu click handler
-  const handleMenuClick: MenuProps['onClick'] = (e) => {
+  const handleMenuClick: MenuProps['onClick'] = e => {
     if (e.key === 'copy-link') {
       handleCopyTaskLink();
     } else if (e.key === 'delete') {
@@ -206,8 +215,9 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  // Show loading skeleton if task is loading OR if we don't have task name yet
-  const isLoadingTaskName = loadingTask || !taskFormViewModel?.task?.name;
+  // Show loading skeleton only if task is loading AND we don't have task name yet
+  // This prevents showing skeleton when task properties (like status) are being updated
+  const isLoadingTaskName = loadingTask && !taskFormViewModel?.task?.name;
 
   return (
     <div>
@@ -217,7 +227,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
       <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
         <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
           {isLoadingTaskName ? (
-            <Skeleton.Input active size="large" style={{ width: '100%' }} />
+            <Skeleton.Input active size="small" style={{ width: '100%' }} />
           ) : isEditing ? (
             <Input
               ref={inputRef}
@@ -241,7 +251,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
             </p>
           )}
         </Flex>
-        
+
         {/* Task Navigation - Show only if navigation context exists */}
         {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
           <TaskDrawerNavigation

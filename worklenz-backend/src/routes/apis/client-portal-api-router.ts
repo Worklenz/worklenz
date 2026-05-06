@@ -14,6 +14,7 @@ import ClientPortalAttachmentController from "../../controllers/client-portal-at
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../middlewares/client-auth-middleware";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
+import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/reset-password-rate-limiter";
 
 const router = express.Router();
 
@@ -23,8 +24,8 @@ router.get("/invitation/validate/:slug", safeControllerFunction(ClientPortalAuth
 router.post("/invitation/accept", safeControllerFunction(ClientPortalAuthController.acceptInvitation));
 router.post("/auth/login", safeControllerFunction(ClientPortalAuthController.clientLogin));
 router.post("/auth/refresh", safeControllerFunction(ClientPortalAuthController.refreshClientToken));
-router.post("/auth/forgot-password", safeControllerFunction(ClientPortalAuthController.forgotPassword));
-router.post("/auth/reset-password", safeControllerFunction(ClientPortalAuthController.resetPassword));
+router.post("/auth/forgot-password", resetPasswordLimiter, safeControllerFunction(ClientPortalAuthController.forgotPassword));
+router.post("/auth/reset-password", updatePasswordLimiter, safeControllerFunction(ClientPortalAuthController.resetPassword));
 router.post("/handle-organization-invite", safeControllerFunction(ClientPortalAuthController.handleOrganizationInvite));
 
 // Protected routes (authentication required)

@@ -9,7 +9,11 @@ interface PlanRibbonProps {
   themeMode?: 'light' | 'dark';
   teamSize?: number;
   billingFrequency?: 'monthly' | 'annual';
-  calculateTotalCostForPlan?: (planType: 'pro' | 'business' | 'enterprise', teamSize: number, isAnnual: boolean) => number;
+  calculateTotalCostForPlan?: (
+    planType: 'pro' | 'business' | 'enterprise',
+    teamSize: number,
+    isAnnual: boolean
+  ) => number;
 }
 
 export const PlanRibbon: React.FC<PlanRibbonProps> = ({
@@ -19,10 +23,10 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
   themeMode = 'light',
   teamSize = 1,
   billingFrequency = 'annual',
-  calculateTotalCostForPlan
+  calculateTotalCostForPlan,
 }) => {
   const { t } = useTranslation(['pricing-modal']);
-  
+
   // Show ribbon for selected plans OR for the recommended plan based on cost
 
   // Determine ribbon text and styling based on plan type and user type
@@ -33,13 +37,13 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
           return {
             text: t('pricing-modal:ribbon.appsumoSpecial', 'AppSumo Special'),
             backgroundColor: '#ff6b35',
-            textColor: '#ffffff'
+            textColor: '#ffffff',
           };
         case 'enterprise':
           return {
             text: t('pricing-modal:ribbon.appsumoSpecial', 'AppSumo Special'),
             backgroundColor: '#ff6b35',
-            textColor: '#ffffff'
+            textColor: '#ffffff',
           };
         default:
           return null;
@@ -48,12 +52,12 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
 
     // Cost-based recommendation logic
     let isRecommended = false;
-    
+
     if (calculateTotalCostForPlan && (planType === 'pro' || planType === 'business')) {
       const isAnnual = billingFrequency === 'annual';
       const proCost = calculateTotalCostForPlan('pro', teamSize, isAnnual);
       const businessCost = calculateTotalCostForPlan('business', teamSize, isAnnual);
-      
+
       // Determine which plan is cheaper and mark it as recommended
       if (planType === 'pro' && proCost < businessCost) {
         isRecommended = true;
@@ -61,25 +65,29 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
         isRecommended = true;
       }
     }
-    
+
     // Show ribbon only if this plan is recommended
     if (!isRecommended) {
       return null;
     }
-    
+
     switch (planType) {
       case 'pro':
-        return isRecommended ? {
-          text: t('pricing-modal:ribbon.recommended', 'Recommended'),
-          backgroundColor: themeMode === 'dark' ? '#1890ff' : '#1890ff',
-          textColor: '#ffffff'
-        } : null;
+        return isRecommended
+          ? {
+              text: t('pricing-modal:ribbon.recommended', 'Recommended'),
+              backgroundColor: themeMode === 'dark' ? '#1890ff' : '#1890ff',
+              textColor: '#ffffff',
+            }
+          : null;
       case 'business':
-        return isRecommended ? {
-          text: t('pricing-modal:ribbon.recommended', 'Recommended'),
-          backgroundColor: themeMode === 'dark' ? '#52c41a' : '#52c41a',
-          textColor: '#ffffff'
-        } : null;
+        return isRecommended
+          ? {
+              text: t('pricing-modal:ribbon.recommended', 'Recommended'),
+              backgroundColor: themeMode === 'dark' ? '#52c41a' : '#52c41a',
+              textColor: '#ffffff',
+            }
+          : null;
       case 'enterprise':
         return null;
       default:
@@ -88,7 +96,7 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
   };
 
   const ribbonConfig = getRibbonConfig();
-  
+
   if (!ribbonConfig || !ribbonConfig.text) return null;
 
   return (
@@ -107,12 +115,11 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
         letterSpacing: '0.5px',
         zIndex: 10,
         borderRadius: '0 8px 0 8px',
-        boxShadow: themeMode === 'dark' 
-          ? '0 2px 8px rgba(0, 0, 0, 0.3)' 
-          : '0 2px 8px rgba(0, 0, 0, 0.15)',
+        boxShadow:
+          themeMode === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.15)',
         transform: 'translate(8px, -8px)',
         minWidth: '80px',
-        textAlign: 'center'
+        textAlign: 'center',
       }}
     >
       <Typography.Text
@@ -120,7 +127,7 @@ export const PlanRibbon: React.FC<PlanRibbonProps> = ({
           color: ribbonConfig.textColor,
           fontSize: '12px',
           fontWeight: 600,
-          margin: 0
+          margin: 0,
         }}
       >
         {ribbonConfig.text}

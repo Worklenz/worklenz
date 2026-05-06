@@ -133,8 +133,8 @@ const ProjectViewMembers = () => {
       ...prev,
       current: tablePagination.current,
       pageSize: tablePagination.pageSize,
-      field: sorter.field || prev.field,
-      order: sorter.order || prev.order,
+      field: sorter.order ? sorter.field : 'name',   // reset to default field when sort cancelled
+      order: sorter.order ?? 'ascend',               // reset to default order when sort cancelled
     }));
   };
 
@@ -242,7 +242,9 @@ const ProjectViewMembers = () => {
             ? 'descend'
             : null,
       render: (_, record: IProjectMemberViewModel) => (
-        <Typography.Text style={{ textTransform: 'capitalize', color: getRoleColor(record.access || '') }}>
+        <Typography.Text
+          style={{ textTransform: 'capitalize', color: getRoleColor(record.access || '') }}
+        >
           {record.access}
         </Typography.Text>
       ),
@@ -299,7 +301,7 @@ const ProjectViewMembers = () => {
             <Tooltip title={t('refreshButtonTooltip')}>
               <Button
                 shape="circle"
-                icon={<SyncOutlined />}
+                icon={<SyncOutlined spin={isLoading} />}
                 onClick={() => void getProjectMembers()}
               />
             </Tooltip>

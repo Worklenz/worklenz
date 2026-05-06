@@ -233,7 +233,7 @@ const RateCardTable: React.FC = () => {
       ? Number(reduxRole?.man_day_rate ?? 0)
       : Number(reduxRole?.rate ?? 0);
     const inputValue = Number(value) || 0;
-    
+
     if (inputValue !== reduxValue) {
       const payload = {
         id: roles[index].id!,
@@ -348,7 +348,7 @@ const RateCardTable: React.FC = () => {
             {memberscol?.map((memberId, i) => {
               const member = members.find(m => m.id === memberId);
               return member ? (
-                <CustomAvatar key={i} avatarName={member.name || ''} size={26} />
+                <CustomAvatar key={i} avatarName={member.name || ''} avatarUrl={member.avatar_url} size={26} />
               ) : null;
             })}
           </Avatar.Group>

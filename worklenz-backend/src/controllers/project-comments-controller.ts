@@ -12,12 +12,14 @@ import { sendProjectComment } from "../shared/email-notifications";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
+import { getBaseUrl } from "../cron_jobs/helpers";
 
 interface IMailConfig {
   message: string;
   receiverEmail: string;
   receiverName: string;
   content: string;
+  projectId: string;
   teamName: string;
   projectName: string;
 }
@@ -51,7 +53,9 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
       summary: subject,
       team: config.teamName,
       project_name: config.projectName,
-      comment: config.content
+      comment: config.content,
+      settings_url: `${getBaseUrl()}/worklenz/settings/notifications`,
+      project_url: `${getBaseUrl()}/worklenz/projects/${config.projectId}`
     };
 
     await sendProjectComment(config.receiverEmail, data);
@@ -90,6 +94,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
     const projectMembers = await this.getMembersList(projectId);
 
     const commentMessage = `<b>${req.user?.name}</b> added a comment on <b>${data.comment.project_name}</b> (${data.comment.team_name})`;
+    const mentionedUserIds = new Set((mentions || []).map(mention => mention.id).filter(Boolean));
 
     for (const member of projectMembers || []) {
       if (member.id && member.id === req.user?.id) continue;
@@ -104,6 +109,16 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
       if (member.id !== req.user?.id && member.socket_id) {
         IO.emit(SocketEvents.NEW_PROJECT_COMMENT_RECEIVED, member.socket_id, true);
       }
+      if (member.email_notifications_enabled && !mentionedUserIds.has(member.id))
+        await this.sendMail({
+          message: commentMessage,
+          receiverEmail: member.email,
+          receiverName: member.name,
+          content: commentContent,
+          projectId,
+          teamName: data.comment.team_name,
+          projectName: data.comment.project_name
+        });
     }
 
     const mentionMessage = `<b>${req.user?.name}</b> has mentioned you in a comment on <b>${data.comment.project_name}</b> (${data.comment.team_name})`;
@@ -112,6 +127,8 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
     for (const mention of rdMentions) {
       if (mention) {
         const member = await this.getUserDataByUserId(mention.id, projectId, teamId as string);
+        if (!member) continue;
+
         NotificationsService.sendNotification({
           team: data.comment.team_name,
           receiver_socket_id: member.socket_id,
@@ -122,6 +139,16 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
           project_color: member.project_color,
           team_id: req.user?.team_id as string
         });
+        if (member.email_notifications_enabled)
+          await this.sendMail({
+            message: mentionMessage,
+            receiverEmail: member.email,
+            receiverName: member.name,
+            content: commentContent,
+            projectId,
+            teamName: data.comment.team_name,
+            projectName: data.comment.project_name
+          });
       }
     }
 

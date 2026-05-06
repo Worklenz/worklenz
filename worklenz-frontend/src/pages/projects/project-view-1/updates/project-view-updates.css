@@ -184,9 +184,10 @@
   top: auto !important;
   margin-bottom: 4px !important;
   z-index: 9999 !important;
-  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 
-              0 6px 16px 0 rgba(0, 0, 0, 0.08), 
-              0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Mentions option - FIXED FOR BUG */
@@ -338,23 +339,23 @@
 }
 
 /* Comment actions styling */
-.theme-light .ant-comment-actions>li>span {
+.theme-light .ant-comment-actions > li > span {
   color: #707070;
   transition: color 0.3s;
   font-size: 11px;
 }
 
-.theme-dark .ant-comment-actions>li>span {
+.theme-dark .ant-comment-actions > li > span {
   color: #d1d0d3;
   transition: color 0.3s;
   font-size: 11px;
 }
 
-.theme-light .ant-comment-actions>li>span:hover {
+.theme-light .ant-comment-actions > li > span:hover {
   color: #1890ff;
 }
 
-.theme-dark .ant-comment-actions>li>span:hover {
+.theme-dark .ant-comment-actions > li > span:hover {
   color: #1890ff;
 }
 
@@ -436,24 +437,24 @@
 }
 
 /* Action buttons hover */
-.ant-comment .ant-comment-actions>li {
+.ant-comment .ant-comment-actions > li {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.ant-comment:hover .ant-comment-actions>li {
+.ant-comment:hover .ant-comment-actions > li {
   visibility: visible;
   opacity: 1;
 }
 
 /* Always show emoji picker */
-.ant-comment .ant-comment-actions>li:last-child {
+.ant-comment .ant-comment-actions > li:last-child {
   visibility: visible;
   opacity: 1;
 }
 
-.current-user-comment .ant-comment-actions>li {
+.current-user-comment .ant-comment-actions > li {
   float: right;
 }
 
@@ -568,7 +569,9 @@
   border-radius: 20px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s 0.3s, visibility 0.2s 0.3s;
+  transition:
+    opacity 0.2s 0.3s,
+    visibility 0.2s 0.3s;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -601,7 +604,9 @@
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
-  transition: transform 0.2s, background-color 0.2s;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
   display: inline-flex;
   align-items: center;
   justify-content: center;

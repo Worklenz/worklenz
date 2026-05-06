@@ -131,7 +131,9 @@ export const projectsApiService = {
 
   updateDefaultTab: async (body: {
     project_id: string;
-    default_view: string;
+    default_view?: string;
+    task_list_group_by?: string;
+    board_group_by?: string;
   }): Promise<IServerResponse<any>> => {
     const url = `${rootUrl}/update-pinned-view`;
     const response = await apiClient.put<IServerResponse<IProjectViewModel>>(`${url}`, body);
@@ -141,6 +143,19 @@ export const projectsApiService = {
   getProjectManagers: async (): Promise<IServerResponse<IProjectManager[]>> => {
     const url = `${API_BASE_URL}/project-managers`;
     const response = await apiClient.get<IServerResponse<IProjectManager[]>>(`${url}`);
+    return response.data;
+  },
+
+  getProjectStatuses: async (): Promise<
+    IServerResponse<Array<{ id: string; name: string; color_code?: string; is_default?: boolean }>>
+  > => {
+    const url = `${API_BASE_URL}/project-statuses`;
+    const response =
+      await apiClient.get<
+        IServerResponse<
+          Array<{ id: string; name: string; color_code?: string; is_default?: boolean }>
+        >
+      >(url);
     return response.data;
   },
 };

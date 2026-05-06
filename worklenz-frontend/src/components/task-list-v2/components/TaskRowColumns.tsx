@@ -14,12 +14,13 @@ import TaskTimeTracking from '../TaskTimeTracking';
 import { CustomNumberLabel, CustomColordLabel } from '@/components';
 import LabelsSelector from '@/components/LabelsSelector';
 import { CustomColumnCell } from './CustomColumnComponents';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 // Utility function to get task display name with fallbacks
 export const getTaskDisplayName = (task: Task): string => {
-  if (task.title && task.title.trim()) return task.title.trim();
-  if (task.name && task.name.trim()) return task.name.trim();
-  if (task.task_key && task.task_key.trim()) return task.task_key.trim();
+  if (task.title && task.title.trim()) return safeTextDisplay(task.title.trim());
+  if (task.name && task.name.trim()) return safeTextDisplay(task.name.trim());
+  if (task.task_key && task.task_key.trim()) return safeTextDisplay(task.task_key.trim());
   return DEFAULT_TASK_NAME;
 };
 
@@ -27,13 +28,18 @@ export const getTaskDisplayName = (task: Task): string => {
 // Parse date as local date to avoid timezone issues (e.g., "2024-02-10" should display as Feb 10, not Feb 9)
 export const formatDate = (dateString: string): string => {
   try {
-    // Handle both ISO date strings ("YYYY-MM-DD") and ISO timestamps ("YYYY-MM-DDTHH:mm:ss.sssZ")
-    // Extract just the date part if it's a timestamp
-    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+    // Full ISO timestamp with timezone (e.g. "2024-02-10T22:30:00.000Z" from updated_at / created_at):
+    // Let the Date constructor parse it as UTC, then read back the local year/month/day.
+    // This correctly handles cases where the UTC date differs from the user's local date
+    // (e.g. 11:30 PM UTC = next day in UTC+5:30).
+    if (dateString.includes('T')) {
+      const d = new Date(dateString);
+      return format(d, 'MMM d, yyyy'); // date-fns formats using local timezone by default
+    }
 
-    // Parse date string as local date to avoid UTC conversion issues
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Create date in local timezone (month is 0-indexed)
+    // Date-only string ("YYYY-MM-DD") from start_date / end_date (stored as DATE type in DB):
+    // Parse as local date to avoid UTC midnight shifting the date backward in negative-offset zones.
+    const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return format(date, 'MMM d, yyyy');
   } catch {
@@ -83,8 +89,7 @@ interface DragHandleColumnProps {
 export const DragHandleColumn: React.FC<DragHandleColumnProps> = memo(
   ({ width, isSubtask, attributes, listeners }) => (
     <div
-      className="flex items-center justify-center"
-      style={{ width }}
+      className="flex items-center justify-center pl-1 h-full w-full"
       {...(isSubtask ? {} : { ...attributes, ...listeners })}
     >
       {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
@@ -102,7 +107,7 @@ interface CheckboxColumnProps {
 
 export const CheckboxColumn: React.FC<CheckboxColumnProps> = memo(
   ({ width, isSelected, onCheckboxChange }) => (
-    <div className="flex items-center justify-center dark:border-gray-700" style={{ width }}>
+    <div className="flex items-center justify-center h-full w-full dark:border-gray-700">
       <Checkbox
         checked={isSelected}
         onChange={onCheckboxChange}
@@ -137,13 +142,22 @@ interface DescriptionColumnProps {
   description: string;
 }
 
+const stripHtml=(html:string):string =>{
+  if(!html)return '';
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
-  ({ width, description }) => (
+  ({ width, description }) => {
+    const plainText=stripHtml(description);
+    return(
     <div
       className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
       style={{ width, minHeight: '30px' }}
     >
-      {description && description.trim() ? (
+      {plainText.trim() ? (
         <div
           className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
           style={{
@@ -153,14 +167,17 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
             maxHeight: '24px',
             lineHeight: '24px',
           }}
-          title={description}
-          dangerouslySetInnerHTML={{ __html: description }}
-        />
+          title={plainText}
+          >
+            {plainText}
+    
+        </div>
       ) : (
         <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
       )}
     </div>
-  )
+  );
+}
 );
 
 DescriptionColumn.displayName = 'DescriptionColumn';
@@ -418,8 +435,11 @@ export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, repo
     style={{ width }}
   >
     {reporter ? (
-      <span className="text-sm text-gray-500 dark:text-gray-400 truncate" title={reporter}>
-        {reporter}
+      <span
+        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+        title={safeTextDisplay(reporter)}
+      >
+        {safeTextDisplay(reporter)}
       </span>
     ) : (
       <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">-</span>
@@ -433,7 +453,7 @@ interface CustomColumnProps {
   width: string;
   column: any;
   task: Task;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string| number | boolean | string[] | null) => void;
 }
 
 export const CustomColumn: React.FC<CustomColumnProps> = memo(

@@ -6,7 +6,7 @@ import { ALPHA_CHANNEL } from '@/shared/constants';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { DoubleLeftOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
+import { DoubleLeftOutlined, ExclamationOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -82,6 +82,13 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
                 style={{
                   color: themeMode === 'dark' ? priority.color_code_dark : priority.color_code,
                   transform: 'rotate(90deg)',
+                }}
+              />
+            )}
+            {priority.name === 'Critical' && (
+              <ExclamationOutlined
+                style={{
+                  color: themeMode === 'dark' ? priority.color_code_dark : priority.color_code,
                 }}
               />
             )}

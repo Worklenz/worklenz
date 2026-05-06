@@ -94,15 +94,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       project.actual_time = int(project.actual_time);
       project.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(project.estimated_time));
       project.actual_time_string = this.convertSecondsToHoursAndMinutes(int(project.actual_time));
-      
-      // FIX: Format dates consistently like tasks to avoid timezone issues
+
       if (project.start_date) {
-        project.start_date = moment(project.start_date).format('YYYY-MM-DD');
+        project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
       }
       if (project.end_date) {
-        project.end_date = moment(project.end_date).format('YYYY-MM-DD');
+        project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
       }
-      
+
       project.tasks_stat = {
         todo: this.getPercentage(int(project.tasks_stat.todo), +project.tasks_stat.total),
         doing: this.getPercentage(int(project.tasks_stat.doing), +project.tasks_stat.total),
@@ -416,6 +415,15 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
       ),
+      total_projects AS (
+        SELECT COUNT(DISTINCT p.id) AS total_project_count
+        FROM projects p
+        LEFT JOIN project_categories pc ON p.category_id = pc.id
+        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        ${healthJoin}
+        ${groupJoin}
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+      ),
       all_groups AS (
         SELECT
           ${groupField} AS group_id,
@@ -466,9 +474,11 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       )
       SELECT
         ag.*,
-        tc.total as total_groups
+        tc.total as total_groups,
+        tp.total_project_count
       FROM all_groups ag
       CROSS JOIN total_count tc
+      CROSS JOIN total_projects tp
       ORDER BY ag.group_name
       ${paginationClause}
     `;
@@ -486,24 +496,27 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       done_tasks: int(row.done_tasks),
       doing_tasks: int(row.doing_tasks),
       todo_tasks: int(row.todo_tasks),
+    
       projects: row.projects.map((project: any) => {
         // FIX: Format dates consistently like tasks to avoid timezone issues
         if (project.start_date) {
-          project.start_date = moment(project.start_date).format('YYYY-MM-DD');
+          project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
         }
         if (project.end_date) {
-          project.end_date = moment(project.end_date).format('YYYY-MM-DD');
+          project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
         }
         return project;
       })
     }));
 
-    // Get total_groups from first row (all rows have the same total from CROSS JOIN)
+    // Get total_groups and total_project_count from first row (all rows have the same totals from CROSS JOIN)
     const totalGroups = result.rows.length > 0 ? int(result.rows[0].total_groups) : 0;
+    const totalProjects = result.rows.length > 0 ? int(result.rows[0].total_project_count) : 0;
 
     return res.status(200).send(new ServerResponse(true, {
       groups,
-      total_groups: totalGroups
+      total_groups: totalGroups,
+      total: totalProjects
     }));
   }
 

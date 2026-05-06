@@ -38,7 +38,7 @@ const initialState: ITimeReportsOverviewState = {
   loadingTeams: false,
 
   categories: [],
-  noCategory: true,
+  noCategory: false,
   loadingCategories: false,
 
   projects: [],
@@ -160,14 +160,28 @@ export const fetchReportingCategories = createAsyncThunk(
 
 export const fetchReportingProjects = createAsyncThunk(
   'timeReportsOverview/fetchReportingProjects',
-  async (_, { rejectWithValue, getState, dispatch }) => {
+  async (
+    overrides: { categories?: string[]; noCategory?: boolean } | undefined,
+    { rejectWithValue, getState }
+  ) => {
     const state = getState() as { timeReportsOverviewReducer: ITimeReportsOverviewState };
     const { timeReportsOverviewReducer } = state;
 
+ const categoriesToUse =
+      overrides?.categories !== undefined
+        ? overrides.categories
+        : selectedCategories(timeReportsOverviewReducer);
+
+    const noCategoryToUse =
+      overrides?.noCategory !== undefined
+        ? overrides.noCategory
+        : timeReportsOverviewReducer.noCategory;
+
+
     const res = await reportingApiService.getAllocationProjects(
       selectedTeams(timeReportsOverviewReducer),
-      selectedCategories(timeReportsOverviewReducer),
-      timeReportsOverviewReducer.noCategory
+     categoriesToUse,
+      noCategoryToUse
     );
     return res.body;
   }
@@ -273,7 +287,12 @@ const timeReportsOverviewSlice = createSlice({
     builder.addCase(fetchReportingCategories.fulfilled, (state, action) => {
       const categories = [];
       for (const category of action.payload) {
-        categories.push({ selected: true, name: category.name, id: category.id });
+       const existing = state.categories.find(c => c.id === category.id);
+    categories.push({
+      selected: existing ? existing.selected : true,
+      name: category.name,
+      id: category.id,
+    });
       }
       state.categories = categories;
       state.loadingCategories = false;
@@ -287,7 +306,12 @@ const timeReportsOverviewSlice = createSlice({
     builder.addCase(fetchReportingProjects.fulfilled, (state, action) => {
       const projects = [];
       for (const project of action.payload) {
-        projects.push({ selected: true, name: project.name, id: project.id });
+         const existing = state.projects.find(p => p.id === project.id);
+    projects.push({
+      selected: existing ? existing.selected : true,
+      name: project.name,
+      id: project.id,
+    });
       }
       state.projects = projects;
       state.loadingProjects = false;
@@ -305,6 +329,7 @@ const timeReportsOverviewSlice = createSlice({
         selected: true,
         avatar_url: member.avatar_url,
         email: member.email,
+          color_code: member.color_code,
       }));
       state.members = members;
       state.loadingMembers = false;

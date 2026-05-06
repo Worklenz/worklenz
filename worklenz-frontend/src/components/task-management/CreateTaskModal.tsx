@@ -441,7 +441,7 @@ const CreateTaskModal: React.FC<CreateTaskModalProps> = ({ open, onClose, projec
           maxHeight: 'calc(100vh - 200px)',
           overflowY: 'auto',
           padding: '24px',
-        }
+        },
       }}
       footer={
         <Flex justify="space-between" align="center">

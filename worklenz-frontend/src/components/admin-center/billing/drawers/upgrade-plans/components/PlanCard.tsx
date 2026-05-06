@@ -23,6 +23,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   calculateTotalCostForPlan,
 }) => (
   <Card
+    className="upgrade-plan-card"
     style={{
       height: '100%',
       border: selectedPlanType === planType ? '2px solid #1890ff' : '1px solid #d9d9d9',
@@ -38,7 +39,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         flexDirection: 'column',
         height: '100%',
         padding: '12px',
-      }
+      },
     }}
     onClick={() => onPlanSelect(planType)}
     hoverable
@@ -52,16 +53,18 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       billingFrequency={billingFrequency}
       calculateTotalCostForPlan={calculateTotalCostForPlan}
     />
-    <div style={{ textAlign: 'center', marginBottom: 12, position: 'relative' }}>
+    <div className="upgrade-plan-card__header" style={{ textAlign: 'center', position: 'relative' }}>
       <Typography.Title level={4} style={{ marginBottom: 4 }}>
         {title}
       </Typography.Title>
-      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>{description}</Typography.Text>
+      <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+        {description}
+      </Typography.Text>
     </div>
 
-    {priceDisplay}
+    <div className="upgrade-plan-card__price">{priceDisplay}</div>
 
-    <div style={{ marginTop: 12, marginBottom: 16 }}>
+    <div className="upgrade-plan-card__action">
       {footerNote && (
         <Typography.Text
           type="secondary"
@@ -74,7 +77,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         type="primary"
         block
         size="middle"
-        onClick={(e) => {
+        onClick={e => {
           e.stopPropagation();
           onPrimaryAction();
         }}
@@ -85,6 +88,6 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       </Button>
     </div>
 
-    <div style={{ flex: 1 }}>{features}</div>
+    <div className="upgrade-plan-card__features">{features}</div>
   </Card>
 );

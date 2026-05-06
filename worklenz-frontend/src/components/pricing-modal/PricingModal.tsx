@@ -640,9 +640,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
     const isAppSumoUser =
       currentUser?.userType === 'appsumo' || userPersonalization?.userType === 'appsumo';
     const shouldShowForAppSumo =
-      !isAppSumoUser ||
-      plan.category === 'business' ||
-      plan.id === 'free';
+      !isAppSumoUser || plan.category === 'business' || plan.id === 'free';
 
     if (isAppSumoUser && !shouldShowForAppSumo) return null;
 
@@ -655,7 +653,11 @@ const PricingModal: React.FC<PricingModalProps> = ({
           tabIndex={0}
           role="button"
           aria-pressed={isSelected}
-          aria-label={`${plan.name} plan - $${totalCost.toFixed(2)} per month`}
+          aria-label={
+            plan.id === 'enterprise'
+              ? t('buttons.contactSales')
+              : `${plan.name} plan - $${totalCost.toFixed(2)} per month`
+          }
           onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
@@ -713,12 +715,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
                 <Typography.Text type="secondary">{t('plans.free.forever')}</Typography.Text>
               </div>
             ) : plan.pricing.enterprise ? (
-              <div className="price-display">
-                <Typography.Title level={2} style={{ margin: 0 }}>
-                  ${plan.pricing.enterprise.price}
-                </Typography.Title>
-                <Typography.Text type="secondary">{t('pricing.perMonth')}</Typography.Text>
-              </div>
+              <div className="price-display" />
             ) : (
               <div className="price-display">
                 {discountApplied && (

@@ -19,7 +19,7 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
   projectName,
   status,
   onClose,
-  onRefresh
+  onRefresh,
 }) => {
   const { t } = useTranslation('project-integrations');
   const navigate = useNavigate();
@@ -43,9 +43,9 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
     width: 360,
     backgroundColor: token.colorBgElevated,
     borderRadius: '8px',
-    boxShadow: isDarkMode 
+    boxShadow: isDarkMode
       ? '0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2)'
-      : '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)'
+      : '0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05)',
   };
 
   // Memoize header styles with dark mode support
@@ -57,21 +57,18 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    color: token.colorText
+    color: token.colorText,
   };
 
   // Memoize footer styles with dark mode support
   const footerStyles = {
     padding: '8px 16px',
     borderTop: `1px solid ${token.colorBorder}`,
-    textAlign: 'center' as const
+    textAlign: 'center' as const,
   };
 
   return (
-    <div
-      className="integrations-dropdown"
-      style={dropdownStyles}
-    >
+    <div className="integrations-dropdown" style={dropdownStyles}>
       {/* Header */}
       <div style={headerStyles}>
         <ApiOutlined /> {t('title', { defaultValue: 'Integrations' })}
@@ -92,7 +89,9 @@ export const IntegrationsDropdown: React.FC<IntegrationsDropdownProps> = ({
         <IntegrationItem
           icon={<TeamOutlined style={{ color: '#6264A7' }} />}
           title={t('teams.title', { defaultValue: 'Microsoft Teams' })}
-          description={t('teams.description', { defaultValue: 'Send notifications to Teams channels' })}
+          description={t('teams.description', {
+            defaultValue: 'Send notifications to Teams channels',
+          })}
           comingSoon
         />
 

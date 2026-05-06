@@ -47,10 +47,10 @@ export const BASE_COLUMNS = [
   {
     id: 'labels',
     label: 'labelsColumn',
-    width: '250px',
+    width: '270px',
     key: COLUMN_KEYS.LABELS,
-    minWidth: '250px',
-    maxWidth: '350px',
+    minWidth: '270px',
+    maxWidth: '300px',
   },
   { id: 'phase', label: 'phaseColumn', width: '120px', key: COLUMN_KEYS.PHASE },
   { id: 'priority', label: 'priorityColumn', width: '120px', key: COLUMN_KEYS.PRIORITY },

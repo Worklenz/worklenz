@@ -22,6 +22,7 @@ import { MenuProps } from 'antd/lib';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
+import { getContrastColor } from '@/utils/colorUtils';
 
 type TaskListTableWrapperProps = {
   taskList: IProjectTask[];
@@ -60,6 +61,8 @@ const TaskListTableWrapper = ({
   };
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const groupHeaderTextColor =
+    type === 'priority' ? '#ffffff' : getContrastColor(color || '#d8d7d8');
 
   // this is for get the color for every typed tables
   const getBgColorClassName = (type: string) => {
@@ -80,6 +83,8 @@ const TaskListTableWrapper = ({
           return themeMode === 'dark' ? 'after:bg-[#916c33]' : 'after:bg-[#f9e3b1]';
         else if (priorityCategory === 'high')
           return themeMode === 'dark' ? 'after:bg-[#8b3a3b]' : 'after:bg-[#f6bfc0]';
+        else if (priorityCategory === 'critical')
+          return themeMode === 'dark' ? 'after:bg-[#b22222]' : 'after:bg-[#8b1a1a]';
         else return themeMode === 'dark' ? 'after:bg-[#916c33]' : 'after:bg-[#f9e3b1]';
       default:
         return '';
@@ -168,7 +173,7 @@ const TaskListTableWrapper = ({
               border: 'none',
               borderBottomLeftRadius: isExpanded ? 0 : 4,
               borderBottomRightRadius: isExpanded ? 0 : 4,
-              color: themeMode === 'dark' ? '#ffffffd9' : colors.darkGray,
+              color: groupHeaderTextColor,
             }}
             icon={<RightOutlined rotate={isExpanded ? 90 : 0} />}
             onClick={handlToggleExpand}
@@ -186,11 +191,11 @@ const TaskListTableWrapper = ({
               <Typography.Text
                 style={{
                   fontSize: 14,
-                  color: themeMode === 'dark' ? '#ffffffd9' : colors.darkGray,
+                  color: groupHeaderTextColor,
                 }}
               >
                 {/* check the default values available in the table names ==> this check for localization  */}
-                {['todo', 'doing', 'done', 'low', 'medium', 'high'].includes(
+                {['todo', 'doing', 'done', 'low', 'medium', 'high', 'critical'].includes(
                   tableName.replace(/\s+/g, '').toLowerCase()
                 )
                   ? t(`${tableName.replace(/\s+/g, '').toLowerCase()}SelectorText`)

@@ -133,6 +133,7 @@ export {
   DashboardOutlined,
   LinkOutlined,
   ExclamationCircleOutlined,
+  ExclamationOutlined,
   FormatPainterOutlined,
   CloseCircleOutlined,
   MailOutlined,
@@ -167,6 +168,7 @@ export {
   DownloadOutlined,
   LikeOutlined,
   LikeTwoTone,
+  SmileOutlined,
   HomeOutlined,
   PlayCircleFilled,
   CommentOutlined,
@@ -212,6 +214,7 @@ export {
   FireOutlined,
   SlackOutlined,
   ApiOutlined,
+  ApartmentOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';

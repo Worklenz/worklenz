@@ -60,6 +60,7 @@ tasksApiRouter.put("/bulk/assign-me", verifyBulkTaskAccessMiddleware(), mapTasks
 tasksApiRouter.put("/bulk/label", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignLabel));
 tasksApiRouter.put("/bulk/members", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksValidator, safeControllerFunction(TasksController.bulkAssignMembers));
 tasksApiRouter.put("/bulk/due-date", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksDueDateValidator, safeControllerFunction(TasksController.bulkChangeDueDate));
+tasksApiRouter.put("/bulk/start-date", verifyBulkTaskAccessMiddleware(), mapTasksToBulkUpdate, bulkTasksDueDateValidator, safeControllerFunction(TasksController.bulkChangeStartDate));
 tasksApiRouter.put("/duration/:id", verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.updateDuration));
 tasksApiRouter.put("/status/:status_id/:task_id", kanbanStatusUpdateValidator, verifyTaskAccess('params', 'task_id'), safeControllerFunction(TasksController.updateStatus));
 tasksApiRouter.put("/:id", idParamValidator, tasksBodyValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TasksController.update));

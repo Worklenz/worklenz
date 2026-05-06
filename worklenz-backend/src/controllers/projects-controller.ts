@@ -119,13 +119,38 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async updatePinnedView(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const projectId = req.body.project_id;
     const teamMemberId = req.user?.team_member_id;
-    const defaultView = req.body.default_view;
 
-    const  q = `UPDATE project_members SET default_view = $1 WHERE project_id = $2 AND team_member_id = $3`;
-    const result =  await db.query(q, [defaultView, projectId, teamMemberId]);
-    const [data] = result.rows;
+    // Build dynamic SET clause — only update fields that are provided
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
 
-    return res.status(200).send(new ServerResponse(true, data));
+    const VALID_GROUP_BY = ['status', 'priority', 'phase'];
+
+    if (req.body.default_view) {
+      updates.push(`default_view = $${paramIndex++}`);
+      params.push(req.body.default_view);
+    }
+
+    if (req.body.task_list_group_by && VALID_GROUP_BY.includes(req.body.task_list_group_by)) {
+      updates.push(`task_list_group_by = $${paramIndex++}`);
+      params.push(req.body.task_list_group_by);
+    }
+
+    if (req.body.board_group_by && VALID_GROUP_BY.includes(req.body.board_group_by)) {
+      updates.push(`board_group_by = $${paramIndex++}`);
+      params.push(req.body.board_group_by);
+    }
+
+    if (updates.length === 0) {
+      return res.status(200).send(new ServerResponse(true, null));
+    }
+
+    params.push(projectId, teamMemberId);
+    const q = `UPDATE project_members SET ${updates.join(', ')} WHERE project_id = $${paramIndex++} AND team_member_id = $${paramIndex}`;
+    await db.query(q, params);
+
+    return res.status(200).send(new ServerResponse(true, null));
   }
 
   @HandleExceptions()
@@ -275,7 +300,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         FROM project_categories 
         WHERE id = projects.category_id
       )`,
-      'client_name': 'client_id',
+      'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
       'project_owner': 'owner_id',
     };
 
@@ -589,6 +614,8 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.use_weighted_progress,
              projects.use_time_progress,
              projects.auto_assign_task_creator,
+             (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
+             (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
 
              (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
                     FROM (SELECT team_member_id AS id,

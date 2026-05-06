@@ -93,6 +93,13 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.end_date = end_date;
       }
     },
+    setTaskDueTime: (state, action: PayloadAction<{ id: string; due_time: string | null }>) => {
+      if (!action.payload) return;
+      const { due_time, id: taskId } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.due_time = due_time;
+      }
+    },
     setTaskAssignee: (state, action: PayloadAction<IProjectTask>) => {
       if (!action.payload) return;
       const { assignees, id: taskId, names } = action.payload;
@@ -159,6 +166,35 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.billable = billable;
       }
     },
+    setTaskCustomColumnValue: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        columnKey: string;
+        value: string | number | boolean | string[] | null;
+      }>
+    ) => {
+      const { taskId, columnKey, value } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        if (!state.taskFormViewModel.task.custom_column_values) {
+          state.taskFormViewModel.task.custom_column_values = {};
+        }
+
+        state.taskFormViewModel.task.custom_column_values[columnKey] = value;
+      }
+    },
+    updateSelectedTaskName: (
+      state,
+      action: PayloadAction<{
+        id: string;
+        name: string;
+      }>
+    ) => {
+      const { id, name } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id) {
+        state.taskFormViewModel.task.name = name;
+      }
+    },
     setNavigationContext: (
       state,
       action: PayloadAction<{
@@ -203,7 +239,7 @@ const taskDrawerSlice = createSlice({
     },
   },
   extraReducers: builder => {
-    builder.addCase(fetchTask.pending, state => {
+    (builder.addCase(fetchTask.pending, state => {
       state.loadingTask = true;
     }),
       builder.addCase(fetchTask.fulfilled, (state, action) => {
@@ -212,7 +248,7 @@ const taskDrawerSlice = createSlice({
       }),
       builder.addCase(fetchTask.rejected, (state, action) => {
         state.loadingTask = false;
-      });
+      }));
   },
 });
 
@@ -224,6 +260,7 @@ export const {
   setTaskStatus,
   setStartDate,
   setTaskEndDate,
+  setTaskDueTime,
   setTaskAssignee,
   setTaskPriority,
   setTaskPhase,
@@ -232,6 +269,8 @@ export const {
   setTimeLogEditing,
   setTaskRecurringSchedule,
   setTaskBillable,
+  setTaskCustomColumnValue,
+  updateSelectedTaskName,
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,

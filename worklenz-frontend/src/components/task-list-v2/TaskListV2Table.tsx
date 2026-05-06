@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { HolderOutlined } from '@/shared/antd-imports';
+import { PlusOutlined } from '@/shared/antd-imports';
 import '../../pages/projects/project-view-1/taskList/taskListTable/column-resize.css';
 
 // Redux hooks and selectors
@@ -38,9 +39,11 @@ import {
   selectError,
   fetchTasksV3,
   fetchTaskListColumns,
+  reorderTasks,
   selectColumns,
   selectCustomColumns,
   selectLoadingColumns,
+  selectLoadedProjectId,
   setDuplicateTaskModalStatus,
 } from '@/features/task-management/task-management.slice';
 import { setProjectContext } from '@/features/task-management/taskListFields.slice';
@@ -63,6 +66,13 @@ import {
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  fetchTask as fetchTaskDrawer,
+  setNavigationContext,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
+import { useAuthService } from '@/hooks/useAuth';
 
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
@@ -95,13 +105,11 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
     >
       {visibleColumns.map((column, index) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -133,7 +141,7 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
         return (
           <div
             key={`spacer-${column.id}`}
-            className="border-r border-blue-300 dark:border-blue-600"
+            className={`border-r border-blue-300 dark:border-blue-600 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
             style={columnStyle}
           />
         );
@@ -154,13 +162,11 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
     >
       {visibleColumns.map((column, index) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -193,11 +199,37 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
         return (
           <div
             key={`empty-${column.id}`}
-            className="border-r border-gray-200 dark:border-gray-700"
+            className={`border-r border-gray-200 dark:border-gray-700 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
             style={emptyColumnStyle}
           />
         );
       })}
+    </div>
+  );
+};
+
+const InsertTaskDivider: React.FC<{
+  onInsert: () => void;
+  title: string;
+}> = ({ onInsert, title }) => {
+  return (
+    <div className="group absolute inset-x-0 top-0 h-2 -translate-y-1/2 z-20">
+      <div className="relative h-full w-full">
+        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-blue-400 dark:border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <button
+          type="button"
+          onMouseDown={e => e.preventDefault()}
+          onClick={e => {
+            e.stopPropagation();
+            onInsert();
+          }}
+          className="absolute left-8 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900 text-[10px] text-blue-600 dark:text-blue-300 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center justify-center shadow-sm"
+          title={title}
+          aria-label={title}
+        >
+          <PlusOutlined />
+        </button>
+      </div>
     </div>
   );
 };
@@ -260,6 +292,7 @@ const TaskListV2Section: React.FC = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
+  const currentSession = useAuthService().getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
 
@@ -269,6 +302,7 @@ const TaskListV2Section: React.FC = () => {
   const grouping = useAppSelector(selectGrouping);
   const loading = useAppSelector(selectLoading);
   const error = useAppSelector(selectError);
+  const loadedProjectId = useAppSelector(selectLoadedProjectId);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
   const selectedTaskIds = useAppSelector(selectSelectedTaskIds);
   const lastSelectedTaskId = useAppSelector(selectLastSelectedTaskId);
@@ -276,6 +310,7 @@ const TaskListV2Section: React.FC = () => {
   const isOpenDuplicateTaskModal = useAppSelector(
     state => state.taskManagement.isOpenDuplicateTaskModal
   );
+  const { selectedTaskId, showTaskDrawer } = useAppSelector(state => state.taskDrawerReducer);
 
   const fields = useAppSelector(state => state.taskManagementFields?.fields) || [];
   const columns = useAppSelector(selectColumns);
@@ -285,6 +320,8 @@ const TaskListV2Section: React.FC = () => {
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
   const contentScrollRef = useRef<HTMLDivElement>(null);
+  // State for GroupedVirtuoso customScrollParent (updated after mount via useEffect)
+  const [scrollContainer, setScrollContainer] = useState<Element | null>(null);
 
   // Ref to store cleanup function for column resize drag operation
   const resizeCleanupRef = useRef<(() => void) | null>(null);
@@ -306,6 +343,11 @@ const TaskListV2Section: React.FC = () => {
   });
   const [activeColumnId, setActiveColumnId] = useState<string | null>(null);
   const [overColumnId, setOverColumnId] = useState<string | null>(null);
+  const [activeAddRowsByGroup, setActiveAddRowsByGroup] = useState<Record<string, boolean>>({});
+  const [insertAnchor, setInsertAnchor] = useState<{
+    groupId: string;
+    afterTaskId: string | null;
+  } | null>(null);
 
   // Configure sensors for drag and drop
   const sensors = useSensors(
@@ -549,16 +591,57 @@ const TaskListV2Section: React.FC = () => {
   }, [dispatch, urlProjectId]);
 
   // Effects
+  const shouldFetchInitialData = useMemo(() => {
+    if (!urlProjectId) return false;
+    return loadedProjectId !== urlProjectId || columns.length === 0;
+  }, [urlProjectId, loadedProjectId, columns.length]);
+
+  const shouldShowInitialSkeleton = useMemo(() => {
+    // Prevent a brief empty-state flash before initial fetch dispatch flips loading=true
+    return !!urlProjectId && shouldFetchInitialData && groups.length === 0;
+  }, [urlProjectId, shouldFetchInitialData, groups.length]);
+
+  useEffect(() => {
+    if (!urlProjectId || !shouldFetchInitialData) {
+      return;
+    }
+
+    dispatch(fetchTasksV3(urlProjectId));
+    dispatch(fetchTaskListColumns(urlProjectId));
+    dispatch(fetchPhasesByProjectId(urlProjectId));
+    dispatch(fetchStatusesCategories());
+  }, [dispatch, urlProjectId, shouldFetchInitialData]);
+
+  // Re-fetch when grouping changes AFTER the initial load.
+  // This handles the case where initGroupingFromServer fires after the parallel
+  // fetchTasksV3 already completed with a stale grouping value.
+  const prevGroupingRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    // Skip on first render (undefined → initial value) to avoid double-fetching
+    // on mount alongside the shouldFetchInitialData effect above.
+    if (prevGroupingRef.current === undefined) {
+      prevGroupingRef.current = currentGrouping;
+      return;
+    }
+
+    // Only re-fetch if grouping actually changed and data for this project is loaded
+    if (
+      urlProjectId &&
+      loadedProjectId === urlProjectId &&
+      currentGrouping !== prevGroupingRef.current
+    ) {
+      prevGroupingRef.current = currentGrouping;
+      dispatch(fetchTasksV3(urlProjectId));
+    } else {
+      prevGroupingRef.current = currentGrouping;
+    }
+  }, [currentGrouping, dispatch, urlProjectId, loadedProjectId]);
+
   useEffect(() => {
     if (urlProjectId) {
-      dispatch(fetchTasksV3(urlProjectId));
-      dispatch(fetchTaskListColumns(urlProjectId));
-      dispatch(fetchPhasesByProjectId(urlProjectId));
-      dispatch(fetchStatusesCategories());
-
       trackMixpanelEvent(evt_project_task_list_visit, { project_id: urlProjectId });
     }
-  }, [dispatch, urlProjectId]);
+  }, [trackMixpanelEvent, urlProjectId]);
 
   // Initialize field visibility from database when columns are loaded (only once)
   useEffect(() => {
@@ -590,6 +673,75 @@ const TaskListV2Section: React.FC = () => {
       });
     }
   }, [columns, fields, dispatch, initializedFromDatabase]);
+
+  // Capture scroll container for GroupedVirtuoso.
+  // Must depend on loading/loadingColumns: the contentScrollRef div only mounts
+  // after loading finishes (skeleton is returned early), so the empty-deps variant
+  // would always capture null. Re-running when loading transitions to false ensures
+  // contentScrollRef.current is the real DOM element by the time this effect fires.
+  useEffect(() => {
+    if (contentScrollRef.current) {
+      setScrollContainer(contentScrollRef.current);
+    }
+  }, [loading, loadingColumns]);
+
+  // Fix sticky group headers positioning - they should stick below column headers
+  // GroupedVirtuoso creates wrapper divs with position: sticky and top: 0px
+  // We need to adjust them to top: 40px (column header height) with proper z-index
+  useEffect(() => {
+    if (!contentScrollRef.current) return;
+
+    const scrollContainer = contentScrollRef.current;
+    
+    // Function to update sticky group header styles
+    const updateStickyHeaders = () => {
+      // GroupedVirtuoso wraps each group in a div with position: sticky
+      // We need to find all elements with position: sticky that are group wrappers
+      const allElements = scrollContainer.querySelectorAll('*');
+      
+      allElements.forEach(element => {
+        const htmlElement = element as HTMLElement;
+        const computedStyle = window.getComputedStyle(htmlElement);
+        
+        // Check if this is a sticky element (group header wrapper created by virtuoso)
+        if (computedStyle.position === 'sticky') {
+          // Check if it's a group wrapper by looking for our TaskGroupHeader inside
+          const hasGroupHeader = htmlElement.querySelector('[class*="inline-flex"][class*="w-max"]');
+          
+          if (hasGroupHeader && !htmlElement.classList.contains('virtuoso-group-header-wrapper')) {
+            // This is a group wrapper - add our custom class
+            htmlElement.classList.add('virtuoso-group-header-wrapper');
+            
+            // Set background to match the scroll container to prevent content showing through
+            // Get the computed background color from the scroll container
+            const containerBg = window.getComputedStyle(scrollContainer).backgroundColor;
+            htmlElement.style.backgroundColor = containerBg;
+          }
+        }
+      });
+    };
+
+    // Initial update after a short delay to ensure virtuoso has rendered
+    const timeoutId = setTimeout(updateStickyHeaders, 100);
+
+    // Create a MutationObserver to watch for DOM changes
+    // GroupedVirtuoso dynamically creates/removes elements as you scroll
+    const observer = new MutationObserver(() => {
+      updateStickyHeaders();
+    });
+
+    // Observe the scroll container for child list changes
+    observer.observe(scrollContainer, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [contentScrollRef.current, loading, loadingColumns]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -627,9 +779,122 @@ const TaskListV2Section: React.FC = () => {
     [dispatch]
   );
 
+  const navigationTaskIds = useMemo(() => {
+    return groups.flatMap(group => group.taskIds);
+  }, [groups]);
+
+  const openDrawerForTask = useCallback(
+    (taskId: string) => {
+      if (!urlProjectId || !taskId) return;
+      if (showTaskDrawer && selectedTaskId === taskId) return;
+
+      const currentIndex = navigationTaskIds.indexOf(taskId);
+
+      dispatch(
+        setNavigationContext({
+          taskIds: navigationTaskIds,
+          currentIndex: currentIndex >= 0 ? currentIndex : 0,
+          sourceView: 'task-list',
+          projectId: urlProjectId,
+        })
+      );
+      dispatch(setSelectedTaskId(taskId));
+      dispatch(setShowTaskDrawer(true));
+      dispatch(fetchTaskDrawer({ taskId, projectId: urlProjectId }));
+    },
+    [dispatch, navigationTaskIds, selectedTaskId, showTaskDrawer, urlProjectId]
+  );
+
+  const handleActivateAddRow = useCallback((groupId: string) => {
+    setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: true }));
+  }, []);
+
+  const handleDeactivateAddRow = useCallback(
+    (groupId: string) => {
+      setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: false }));
+      setInsertAnchor(current => (current?.groupId === groupId ? null : current));
+    },
+    [setInsertAnchor]
+  );
+
+  const emitSortOrderUpdate = useCallback(
+    (groupId: string, orderedGroupTaskIds: string[], createdTask: Task) => {
+      if (!socket || !connected || !urlProjectId) return;
+
+      const updatedGroups = groups.map(group => ({
+        ...group,
+        taskIds: group.id === groupId ? orderedGroupTaskIds : [...group.taskIds],
+      }));
+
+      const taskUpdates: Array<{ task_id: string; sort_order: number }> = [];
+      let currentSortOrder = 0;
+
+      updatedGroups.forEach(group => {
+        group.taskIds.forEach(taskId => {
+          taskUpdates.push({ task_id: taskId, sort_order: currentSortOrder });
+          currentSortOrder += 1;
+        });
+      });
+
+      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+        project_id: urlProjectId,
+        group_by: currentGrouping || 'status',
+        task_updates: taskUpdates,
+        from_group: groupId,
+        to_group: groupId,
+        task: {
+          id: createdTask.id,
+          project_id: urlProjectId,
+          status: createdTask.status || '',
+          priority: createdTask.priority || '',
+        },
+        team_id: currentSession?.team_id || '',
+      });
+    },
+    [connected, socket, urlProjectId, groups, currentGrouping, currentSession?.team_id]
+  );
+
+  const handleTaskCreated = useCallback(
+    (task: Task, groupId: string, openDrawer: boolean, insertedAfterTaskId?: string | null) => {
+      if (!task?.id) return;
+
+      setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: true }));
+
+      if (insertedAfterTaskId) {
+        setInsertAnchor({ groupId, afterTaskId: task.id });
+        const targetGroup = groups.find(group => group.id === groupId);
+        if (!targetGroup) return;
+
+        const taskIds = targetGroup.taskIds.includes(task.id)
+          ? [...targetGroup.taskIds]
+          : [...targetGroup.taskIds, task.id];
+
+        const filteredIds = taskIds.filter(id => id !== task.id);
+        const anchorIndex = filteredIds.indexOf(insertedAfterTaskId);
+        const insertIndex = anchorIndex >= 0 ? anchorIndex + 1 : filteredIds.length;
+        filteredIds.splice(insertIndex, 0, task.id);
+
+        // Keep realtime UI consistent immediately (before backend/socket round-trip finishes).
+        dispatch(reorderTasks({ groupId, taskIds: filteredIds }));
+        emitSortOrderUpdate(groupId, filteredIds, task);
+
+        // Insert-mode is one-shot: close the inline input to avoid visible re-anchoring jumps.
+        setActiveAddRowsByGroup(prev => ({ ...prev, [groupId]: false }));
+        setInsertAnchor(current => (current?.groupId === groupId ? null : current));
+      } else {
+        setInsertAnchor(current => (current?.groupId === groupId ? null : current));
+      }
+
+      if (showTaskDrawer || openDrawer) {
+        openDrawerForTask(task.id);
+      }
+    },
+    [dispatch, emitSortOrderUpdate, groups, openDrawerForTask, showTaskDrawer]
+  );
+
   // Function to update custom column values
   const updateTaskCustomColumnValue = useCallback(
-    (taskId: string, columnKey: string, value: string) => {
+    (taskId: string, columnKey: string, value: string | number | boolean | string[] | null) => {
       try {
         if (!urlProjectId) {
           console.error('Project ID is missing');
@@ -748,26 +1013,34 @@ const TaskListV2Section: React.FC = () => {
         originalIndex: allTasks.indexOf(task),
       }));
 
-      // Get add task rows for this group
-      const addTaskItems = !isCurrentGroupCollapsed
-        ? [
-            // Single add task row per group - reused for all tasks
-            {
-              id: `add-task-${group.id}-0`,
-              isAddTaskRow: true,
-              groupId: group.id,
-              groupType: currentGrouping || 'status',
-              groupValue: group.id, // Send the UUID that backend expects
-              projectId: urlProjectId,
-              rowId: `add-task-${group.id}-0`,
-              autoFocus: false,
-            },
-          ]
-        : [];
+      const addTaskItem = {
+        id: `add-task-${group.id}-0`,
+        isAddTaskRow: true,
+        groupId: group.id,
+        groupType: currentGrouping || 'status',
+        groupValue: group.id, // Send the UUID that backend expects
+        projectId: urlProjectId,
+        rowId: `add-task-${group.id}-0`,
+        autoFocus: false,
+        isInsertMode: insertAnchor?.groupId === group.id && !!insertAnchor?.afterTaskId,
+        insertAfterTaskId:
+          insertAnchor?.groupId === group.id ? (insertAnchor.afterTaskId ?? null) : null,
+      };
 
-      const itemsWithAddTask = !isCurrentGroupCollapsed
-        ? [...tasksForVirtuoso, ...addTaskItems]
-        : tasksForVirtuoso;
+      let itemsWithAddTask = tasksForVirtuoso;
+      if (!isCurrentGroupCollapsed) {
+        if (insertAnchor?.groupId === group.id && insertAnchor.afterTaskId) {
+          const anchorIndex = tasksForVirtuoso.findIndex(task => task.id === insertAnchor.afterTaskId);
+          if (anchorIndex >= 0) {
+            itemsWithAddTask = [...tasksForVirtuoso];
+            itemsWithAddTask.splice(anchorIndex + 1, 0, addTaskItem as any);
+          } else {
+            itemsWithAddTask = [...tasksForVirtuoso, addTaskItem as any];
+          }
+        } else {
+          itemsWithAddTask = [...tasksForVirtuoso, addTaskItem as any];
+        }
+      }
 
       const groupData = {
         ...group,
@@ -780,7 +1053,7 @@ const TaskListV2Section: React.FC = () => {
       currentTaskIndex += itemsWithAddTask.length;
       return groupData;
     });
-  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId]);
+  }, [groups, allTasks, collapsedGroups, currentGrouping, urlProjectId, insertAnchor]);
 
   const virtuosoGroupCounts = useMemo(() => {
     return virtuosoGroups.map(group => group.count);
@@ -835,6 +1108,19 @@ const TaskListV2Section: React.FC = () => {
             visibleColumns={visibleColumns}
             rowId={item.rowId}
             autoFocus={item.autoFocus}
+            isActive={!!activeAddRowsByGroup[item.groupId]}
+            isInsertMode={!!item.isInsertMode}
+            insertAfterTaskId={item.insertAfterTaskId || null}
+            onActivate={() => handleActivateAddRow(item.groupId)}
+            onDeactivate={() => handleDeactivateAddRow(item.groupId)}
+            onTaskCreated={(task, options) =>
+              handleTaskCreated(
+                task,
+                item.groupId,
+                !!options?.openDrawer,
+                options?.insertAfterTaskId || null
+              )
+            }
           />
         );
       }
@@ -849,7 +1135,16 @@ const TaskListV2Section: React.FC = () => {
         />
       );
     },
-    [virtuosoItems, visibleColumns, urlProjectId, updateTaskCustomColumnValue]
+    [
+      virtuosoItems,
+      visibleColumns,
+      urlProjectId,
+      updateTaskCustomColumnValue,
+      activeAddRowsByGroup,
+      handleActivateAddRow,
+      handleDeactivateAddRow,
+      handleTaskCreated,
+    ]
   );
 
   // Render column headers
@@ -870,7 +1165,7 @@ const TaskListV2Section: React.FC = () => {
           strategy={horizontalListSortingStrategy}
         >
           <div
-            className="border-b border-gray-200 dark:border-gray-700"
+            className="border-b border-gray-200 dark:border-gray-700 tasklist-v2-column-headers"
             style={{
               width: '100%',
               minWidth: 'max-content',
@@ -879,13 +1174,13 @@ const TaskListV2Section: React.FC = () => {
           >
             <div
               className="flex items-center px-1 py-3 w-full"
-              style={{ minWidth: 'max-content', height: '44px' }}
+              style={{ minWidth: 'max-content', height: '40px' }}
             >
               {visibleColumns.map((column, index) => {
                 const isDropTarget = overColumnId === column.id && column.id !== activeColumnId;
 
                 // Calculate left position for sticky columns
-                let leftPosition = 4; // Account for px-1 (4px) padding on container
+                let leftPosition = 0; // Start at 0 to cover the row's left padding
                 if (column.isSticky) {
                   // For sticky columns, we need to account for ALL previous columns
                   // because non-sticky columns between sticky ones still take up space
@@ -905,6 +1200,9 @@ const TaskListV2Section: React.FC = () => {
                     left: leftPosition,
                     zIndex: 15,
                     backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+                    height: '100%', // Fill the header height
+                    display: 'flex', // Use flex to contain child
+                    alignItems: 'center', // Center content vertically
                   }),
                 };
 
@@ -916,15 +1214,15 @@ const TaskListV2Section: React.FC = () => {
                 }) => (
                   <div
                     data-column-id={column.id}
-                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell ${
+                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell h-full w-full ${
                       column.id === 'dragHandle'
-                        ? 'flex items-center justify-center'
+                        ? 'flex items-center justify-center pl-1'
                         : column.id === 'checkbox'
                           ? 'flex items-center justify-center'
                           : column.id === 'taskKey'
                             ? 'flex items-center pl-3'
                             : column.id === 'title'
-                              ? 'flex items-center justify-between'
+                              ? 'flex items-center justify-between px-2'
                               : column.id === 'description'
                                 ? 'flex items-center pl-2'
                                 : column.id === 'labels'
@@ -946,6 +1244,21 @@ const TaskListV2Section: React.FC = () => {
                       <CustomColumnHeader
                         column={column}
                         onSettingsClick={handleCustomColumnSettings}
+                        dragHandle={
+                          !column.isSticky ? (
+                            <span
+                              className="column-drag-handle-inline"
+                              ref={dragParams?.setActivatorNodeRef}
+                              {...dragParams?.attributes}
+                              {...dragParams?.listeners}
+                              aria-label={t('moveColumnHandle')}
+                              title={t('moveColumnHandle')}
+                              style={{ cursor: 'grab', display: 'inline-flex', alignItems: 'center' }}
+                            >
+                            <HolderOutlined style={{ fontSize: 14, color: 'currentColor' }} />
+                            </span>
+                          ) : undefined
+                        }
                       />
                     ) : (
                       <span
@@ -961,8 +1274,8 @@ const TaskListV2Section: React.FC = () => {
                       </span>
                     )}
 
-                    {/* Column drag handle */}
-                    {!column.isSticky && (
+                    {/* Column drag handle - only for non-custom, non-sticky columns */}
+                    {!column.isSticky && !column.isCustom && (
                       <span
                         className="column-drag-handle"
                         ref={dragParams?.setActivatorNodeRef}
@@ -971,7 +1284,7 @@ const TaskListV2Section: React.FC = () => {
                         aria-label={t('moveColumnHandle')}
                         title={t('moveColumnHandle')}
                       >
-                        <HolderOutlined style={{ fontSize: 12 }} />
+                        <HolderOutlined style={{ fontSize: 14 }} />
                       </span>
                     )}
 
@@ -1084,22 +1397,22 @@ const TaskListV2Section: React.FC = () => {
                           // Create resize indicator line
                           const indicator = document.createElement('div');
                           indicator.className = 'column-resize-indicator';
-                          
+
                           // Ensure the container has position relative for absolute positioning
                           const originalPosition = tableContainer.style.position;
                           if (!originalPosition || originalPosition === 'static') {
                             tableContainer.style.position = 'relative';
                           }
-                          
+
                           // Calculate the full scrollable height to span entire table
                           const scrollHeight = tableContainer.scrollHeight;
                           const scrollTop = tableContainer.scrollTop;
-                          
+
                           // Set indicator to span from current scroll position to end of content
                           // Use fixed positioning from top of visible area to bottom of scrollable content
                           indicator.style.top = '0px';
                           indicator.style.height = `${scrollHeight}px`;
-                          
+
                           tableContainer.appendChild(indicator);
 
                           // Create tooltip
@@ -1112,9 +1425,12 @@ const TaskListV2Section: React.FC = () => {
                           document.body.classList.add('column-resizing');
 
                           const updateIndicator = (x: number, width: number) => {
-                            // Calculate position relative to table container
+                            // Calculate position relative to table container's scroll origin.
+                            // scrollLeft must be added because the indicator uses position:absolute
+                            // inside the scrollable container — without it the line drifts left
+                            // by exactly the horizontal scroll offset.
                             const containerRect = tableContainer.getBoundingClientRect();
-                            const relativeX = x - containerRect.left;
+                            const relativeX = x - containerRect.left + tableContainer.scrollLeft;
                             indicator.style.left = `${relativeX}px`;
                             indicator.style.opacity = '1';
                             tooltip.textContent = `${width}px`;
@@ -1137,15 +1453,15 @@ const TaskListV2Section: React.FC = () => {
                               minWidth,
                               Math.min(maxWidth, startWidth + diff)
                             );
-
                             // Update CSS variable once - all elements update together
                             document.documentElement.style.setProperty(
                               `--col-width-${columnId}`,
                               `${newWidth}px`
                             );
-
-                            // Update indicator and tooltip
-                            updateIndicator(moveEvent.clientX, newWidth);
+                            // FIX: clamp indicator X to match clamped width so the
+                            // blue line stops at the min/max boundary
+                            const clampedClientX = startX + (newWidth - startWidth);
+                            updateIndicator(clampedClientX, newWidth);
                           };
 
                           const handleMouseUp = (upEvent: MouseEvent) => {
@@ -1177,7 +1493,7 @@ const TaskListV2Section: React.FC = () => {
                             document.body.style.cursor = '';
                             document.body.style.userSelect = '';
                             document.body.classList.remove('column-resizing');
-                            
+
                             // Restore original position style
                             if (originalPosition) {
                               tableContainer.style.position = originalPosition;
@@ -1267,7 +1583,7 @@ const TaskListV2Section: React.FC = () => {
   ]);
 
   // Loading and error states
-  if (loading || loadingColumns) {
+  if (loading || loadingColumns || shouldShowInitialSkeleton) {
     return <TaskListSkeleton visibleColumns={visibleColumns} />;
   }
   if (error)
@@ -1376,6 +1692,13 @@ const TaskListV2Section: React.FC = () => {
           .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
             background-color: var(--hover-bg) !important;
           }
+          
+          /* Sticky group headers positioning */
+          .virtuoso-group-header-wrapper {
+            position: sticky !important;
+            top: 40px !important;
+            z-index: 25 !important;
+          }
         `}
       </style>
 
@@ -1426,58 +1749,67 @@ const TaskListV2Section: React.FC = () => {
                   .filter((id): id is string => id !== undefined)}
                 strategy={verticalListSortingStrategy}
               >
-                <div style={{ minWidth: 'max-content' }}>
-                  {/* Render groups manually for debugging */}
-                  {virtuosoGroups.map((group, groupIndex) => (
-                    <div key={group.id}>
-                      {/* Group Header */}
-                      {renderGroup(groupIndex)}
+                <GroupedVirtuoso
+                  customScrollParent={scrollContainer || undefined}
+                  overscan={800}
+                  groupCounts={virtuosoGroupCounts}
+                  groupContent={renderGroup}
+                  itemContent={(index, groupIndex) => {
+                    const item = virtuosoItems[index];
+                    if (!item) return <div />;
+                    const group = virtuosoGroups[groupIndex];
 
-                      {/* Group Tasks */}
-                      {!collapsedGroups.has(group.id) &&
-                        (group.tasks.length > 0
-                          ? group.tasks.map((task, taskIndex) => {
-                              const globalTaskIndex =
-                                virtuosoGroups
-                                  .slice(0, groupIndex)
-                                  .reduce((sum, g) => sum + g.count, 0) + taskIndex;
+                    const groupOffset = virtuosoGroupCounts
+                      .slice(0, groupIndex)
+                      .reduce((sum, c) => sum + c, 0);
+                    const indexInGroup = index - groupOffset;
+                    const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
+                    const previousItem = indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
+                    const showInsertDivider =
+                      indexInGroup > 0 &&
+                      !('isAddTaskRow' in item) &&
+                      previousItem &&
+                      !('isAddTaskRow' in previousItem);
 
-                              // Check if this is the first actual task in the group (not AddTaskRow)
-                              const isFirstTaskInGroup =
-                                taskIndex === 0 && !('isAddTaskRow' in task);
+                    const isOverThisTask =
+                      activeId && overId === item.id && !('isAddTaskRow' in item);
+                    const showBefore = isOverThisTask && dropPosition === 'before';
+                    const showAfter = isOverThisTask && dropPosition === 'after';
 
-                              // Check if we should show drop spacer
-                              const isOverThisTask =
-                                activeId && overId === task.id && !('isAddTaskRow' in task);
-                              const showDropSpacerBefore =
-                                isOverThisTask && dropPosition === 'before';
-                              const showDropSpacerAfter =
-                                isOverThisTask && dropPosition === 'after';
-
-                              return (
-                                <div key={task.id || `add-task-${group.id}-${taskIndex}`}>
-                                  {showDropSpacerBefore && (
-                                    <DropSpacer
-                                      isVisible={true}
-                                      visibleColumns={visibleColumns}
-                                      isDarkMode={isDarkMode}
-                                    />
-                                  )}
-                                  {renderTask(globalTaskIndex, isFirstTaskInGroup)}
-                                  {showDropSpacerAfter && (
-                                    <DropSpacer
-                                      isVisible={true}
-                                      visibleColumns={visibleColumns}
-                                      isDarkMode={isDarkMode}
-                                    />
-                                  )}
-                                </div>
-                              );
-                            })
-                          : null)}
-                    </div>
-                  ))}
-                </div>
+                    return (
+                      <div style={{ minWidth: 'max-content' }} className="relative">
+                        {showBefore && !activeId && (
+                          <DropSpacer
+                            isVisible={true}
+                            visibleColumns={visibleColumns}
+                            isDarkMode={isDarkMode}
+                          />
+                        )}
+                        {showInsertDivider && previousItem && (
+                          <InsertTaskDivider
+                            title={t('insertTaskText', { defaultValue: 'Insert Task' })}
+                            onInsert={() => {
+                              setInsertAnchor({
+                                groupId: group.id,
+                                afterTaskId: previousItem.id,
+                              });
+                              setActiveAddRowsByGroup(prev => ({ ...prev, [group.id]: true }));
+                            }}
+                          />
+                        )}
+                        {renderTask(index, isFirstInGroup)}
+                        {showAfter && !activeId && (
+                          <DropSpacer
+                            isVisible={true}
+                            visibleColumns={visibleColumns}
+                            isDarkMode={isDarkMode}
+                          />
+                        )}
+                      </div>
+                    );
+                  }}
+                  style={{ minWidth: 'max-content' }}
+                />
               </SortableContext>
             </div>
           </div>
@@ -1534,6 +1866,7 @@ const TaskListV2Section: React.FC = () => {
                 onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
                 onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
                 onBulkSetDueDate={date => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
+                onBulkSetStartDate={date => bulkActions.handleBulkSetStartDate(date, selectedTaskIds)}
               />
             </div>
           )}

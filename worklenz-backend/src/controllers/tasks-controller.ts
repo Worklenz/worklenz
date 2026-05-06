@@ -33,11 +33,134 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase from "./tasks-controller-base";
 import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
-import { IActivityLog } from "../services/activity-logs/interfaces";
+import {
+  IActivityLog,
+  IActivityLogAttributeTypes,
+  IActivityLogChangeType,
+} from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
+  private static async getTaskDrawerCustomColumns(projectId: string | null) {
+    if (!projectId) return [];
+
+    const q = `
+      WITH column_data AS (
+        SELECT 
+          cc.id,
+          cc.key,
+          cc.name,
+          cc.field_type,
+          cc.width,
+          cc.is_visible,
+          cc.created_at,
+          cf.field_title,
+          cf.number_type,
+          cf.decimals,
+          cf.label,
+          cf.label_position,
+          cf.preview_value,
+          cf.expression,
+          cf.first_numeric_column_key,
+          cf.second_numeric_column_key,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'selection_id', so.selection_id,
+                'selection_name', so.selection_name,
+                'selection_color', so.selection_color
+              )
+              ORDER BY so.selection_order
+            )
+            FROM cc_selection_options so
+            WHERE so.column_id = cc.id
+          ) as selections_list,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'label_id', lo.label_id,
+                'label_name', lo.label_name,
+                'label_color', lo.label_color
+              )
+              ORDER BY lo.label_order
+            )
+            FROM cc_label_options lo
+            WHERE lo.column_id = cc.id
+          ) as labels_list
+        FROM cc_custom_columns cc
+        LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+        WHERE cc.project_id = $1
+      )
+      SELECT COALESCE(
+        json_agg(
+          json_build_object(
+            'key', cd.key,
+            'id', cd.id,
+            'name', cd.name,
+            'width', cd.width,
+            'pinned', cd.is_visible,
+            'custom_column', true,
+            'custom_column_obj', json_build_object(
+              'fieldType', cd.field_type,
+              'fieldTitle', cd.field_title,
+              'numberType', cd.number_type,
+              'decimals', cd.decimals,
+              'label', cd.label,
+              'labelPosition', cd.label_position,
+              'previewValue', cd.preview_value,
+              'expression', cd.expression,
+              'firstNumericColumnKey', cd.first_numeric_column_key,
+              'secondNumericColumnKey', cd.second_numeric_column_key,
+              'selectionsList', COALESCE(cd.selections_list, '[]'::json),
+              'labelsList', COALESCE(cd.labels_list, '[]'::json)
+            )
+          )
+          ORDER BY cd.created_at
+        ),
+        '[]'::json
+      ) AS columns
+      FROM column_data cd;
+    `;
+
+    const result = await db.query(q, [projectId]);
+    return result.rows[0]?.columns || [];
+  }
+
+  private static async getTaskDrawerCustomColumnValues(
+    taskId: string | null,
+    projectId: string | null,
+  ) {
+    if (!taskId || !projectId) return {};
+
+    const q = `
+      SELECT COALESCE(
+        jsonb_object_agg(custom_cols.key, custom_cols.value),
+        '{}'::jsonb
+      ) AS custom_column_values
+      FROM (
+        SELECT
+          cc.key,
+          CASE
+            WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+            WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+            WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+            WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+            WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+            ELSE NULL::jsonb
+          END AS value
+        FROM cc_column_values ccv
+        JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+        WHERE ccv.task_id = $1
+          AND cc.project_id = $2
+      ) AS custom_cols
+      WHERE custom_cols.value IS NOT NULL;
+    `;
+
+    const result = await db.query(q, [taskId, projectId]);
+    return result.rows[0]?.custom_column_values || {};
+  }
+
   private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
     // Emit to the sender's socket directly
     const socket = IO.getSocketById(socketId);
@@ -519,20 +642,45 @@ export default class TasksController extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    // Get project_id before deleting the task so we can notify other clients
-    const getProjectQuery = `SELECT project_id FROM tasks WHERE id = $1;`;
-    const projectResult = await db.query(getProjectQuery, [req.params.id]);
-    const projectId = projectResult.rows[0]?.project_id;
+    const taskId = req.params.id;
+    const userId = req.user?.id as string;
 
+    // First, get task details before deletion to log the activity
+    const taskDetailsQuery = `
+      SELECT t.id, t.project_id, p.team_id, t.name
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      WHERE t.id = $1;
+    `;
+    const taskDetailsResult = await db.query(taskDetailsQuery, [taskId]);
+
+    if (taskDetailsResult.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Task not found"));
+    }
+
+    const taskDetails = taskDetailsResult.rows[0];
+
+    // Log the task deletion activity
+    const activityLog: IActivityLog = {
+      task_id: taskId,
+      team_id: taskDetails.team_id,
+      project_id: taskDetails.project_id,
+      attribute_type: IActivityLogAttributeTypes.NAME,
+      user_id: userId,
+      log_type: IActivityLogChangeType.DELETE,
+      old_value: taskDetails.name,
+      new_value: null,
+    };
+
+    await insertToActivityLogs(activityLog);
+
+    // Now delete the task
     const q = `DELETE
                FROM tasks
                WHERE id = $1;`;
-    const result = await db.query(q, [req.params.id]);
-
-    // Notify other clients about the task deletion if we have a project_id
-    if (projectId && req.user?.socket_id) {
-      TasksController.notifyProjectUpdates(req.user.socket_id, projectId);
-    }
+    const result = await db.query(q, [taskId]);
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -557,6 +705,7 @@ export default class TasksController extends TasksControllerBase {
       projects: [],
       statuses: [],
       team_members: [],
+      custom_columns: [],
     };
 
     const task = data.view_model.task || null;
@@ -585,6 +734,19 @@ export default class TasksController extends TasksControllerBase {
       task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
     }
 
+    const projectId =
+      ((req.query.project_id as string) || task?.project_id || null);
+    const [customColumns, customColumnValues] = await Promise.all([
+      TasksController.getTaskDrawerCustomColumns(projectId),
+      TasksController.getTaskDrawerCustomColumnValues(task?.id || null, projectId),
+    ]);
+
+    data.view_model.custom_columns = customColumns;
+
+    if (task) {
+      task.custom_column_values = customColumnValues;
+    }
+
     for (const member of data.view_model?.team_members || []) {
       member.color_code = getColor(member.name);
     }
@@ -599,6 +761,10 @@ export default class TasksController extends TasksControllerBase {
       t.completed_count = info.total_completed;
       t.total_tasks_count = info.total_tasks;
     }
+
+    // Ensure task drawer always receives the latest custom column values
+    // even if helper transformations overwrite task properties.
+    t.custom_column_values = customColumnValues;
 
     data.view_model.task = t;
 
@@ -714,6 +880,25 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
+  public static async bulkChangeStartDate(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT bulk_change_tasks_start_date($1, $2) AS result;`;
+    const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
+    const [data] = result.rows;
+
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
+
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data?.result || { updated_count: 0 }));
+  }
+
+  @HandleExceptions()
   public static async bulkDelete(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
@@ -722,13 +907,17 @@ export default class TasksController extends TasksControllerBase {
 
     const result: any = { deleted_tasks: deletedTasks };
 
+    // Add user_id to body for activity log tracking
+    const bodyWithUser = {
+      ...req.body,
+      user_id: req.user?.id,
+    };
+
     const q = `SELECT bulk_delete_tasks($1) AS task;`;
-    await db.query(q, [JSON.stringify(req.body)]);
-    // Don't notify the sender — the frontend already removes the task locally via dispatch(deleteTask)
+    await db.query(q, [JSON.stringify(bodyWithUser)]);
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
-      false,
     );
     return res.status(200).send(new ServerResponse(true, result));
   }

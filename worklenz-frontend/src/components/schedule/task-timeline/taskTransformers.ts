@@ -56,16 +56,21 @@ const calculateProgress = (task: TaskTimelineItem): number => {
 /**
  * Get default dates for tasks without dates
  */
-const getDefaultDates = (startDate: string | null, endDate: string | null): { start: Date; end: Date } => {
+const getDefaultDates = (
+  startDate: string | null,
+  endDate: string | null
+): { start: Date; end: Date } => {
   const today = new Date();
   const defaultStart = startDate ? new Date(startDate) : today;
-  const defaultEnd = endDate ? new Date(endDate) : new Date(defaultStart.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days later
-  
+  const defaultEnd = endDate
+    ? new Date(endDate)
+    : new Date(defaultStart.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days later
+
   // Ensure end is after start
   if (defaultEnd <= defaultStart) {
     defaultEnd.setDate(defaultStart.getDate() + 1);
   }
-  
+
   return { start: defaultStart, end: defaultEnd };
 };
 
@@ -74,7 +79,7 @@ const getDefaultDates = (startDate: string | null, endDate: string | null): { st
  */
 const adjustColorForTheme = (color: string, isDarkMode: boolean): string => {
   if (!color) return isDarkMode ? '#4a5568' : '#e2e8f0';
-  
+
   // Add alpha for background
   if (color.startsWith('#') && color.length === 7) {
     return isDarkMode ? `${color}40` : `${color}30`;
@@ -93,7 +98,7 @@ export const transformTasksToGanttFormat = (
 
   // Group tasks by project for project-level grouping
   const projectGroups = new Map<string, TaskTimelineItem[]>();
-  
+
   tasks.forEach(task => {
     const projectId = task.project_id;
     if (!projectGroups.has(projectId)) {
@@ -109,7 +114,7 @@ export const transformTasksToGanttFormat = (
     if (projectTasks.length === 0) return;
 
     const firstTask = projectTasks[0];
-    
+
     // Calculate project date range from tasks
     const taskDates = projectTasks
       .filter(t => t.start_date || t.end_date)
@@ -124,7 +129,7 @@ export const transformTasksToGanttFormat = (
     if (taskDates.length > 0) {
       const validStarts = taskDates.filter(d => d.start).map(d => d.start!.getTime());
       const validEnds = taskDates.filter(d => d.end).map(d => d.end!.getTime());
-      
+
       if (validStarts.length > 0) {
         projectStart = new Date(Math.min(...validStarts));
       }
@@ -245,9 +250,7 @@ export const filterTasksByAssignee = (
   memberId: string | null
 ): TaskTimelineItem[] => {
   if (!memberId) return tasks;
-  return tasks.filter(task => 
-    task.assignees.some(assignee => assignee.id === memberId)
-  );
+  return tasks.filter(task => task.assignees.some(assignee => assignee.id === memberId));
 };
 
 /**

@@ -451,6 +451,7 @@ export default class ReportingAllocationController extends ReportingControllerBa
         WHERE ${projectsFilter} ${durationClause} ${archivedClause} ${categoriesFilter} ${billableQuery}
         GROUP BY p.id, p.name, p.color_code
         ORDER BY logged_time DESC;`;
+    
     const result = await db.query(q, [...projectIdsParams, ...durationParams, ...archivedParams, ...categoryParams]);
 
     const utilization = (req.body.utilization || []) as string[];

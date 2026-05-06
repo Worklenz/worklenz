@@ -92,21 +92,21 @@ export const TrialDaysBadge = () => {
   };
 
   return (
-    <Tooltip 
+    <Tooltip
       title={
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>{trialInfo.tooltip}</div>
           <div style={{ fontSize: 12, opacity: 0.9 }}>Click to upgrade now</div>
         </div>
-      } 
+      }
       placement="bottom"
     >
-      <div 
+      <div
         className={`trial-badge trial-badge-${trialInfo.type}`}
         onClick={handleClick}
         role="button"
         tabIndex={0}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
             handleClick();
           }

@@ -15,12 +15,7 @@ import {
   Checkbox,
   InputNumber,
 } from '@/shared/antd-imports';
-import {
-  FilterOutlined,
-  FilterFilled,
-  ReloadOutlined,
-  DownOutlined,
-} from '@ant-design/icons';
+import { FilterOutlined, FilterFilled, ReloadOutlined, DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -45,13 +40,23 @@ interface WorkloadFiltersProps {
   isFetching?: boolean;
 }
 
-const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: WorkloadFiltersProps) => {
+const WorkloadFilters = ({
+  onRefresh,
+  isLoading = false,
+  isFetching = false,
+}: WorkloadFiltersProps) => {
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
-  const { dateRange, filters, timeScale, capacityUnit, showWeekends, workingHoursPerDay, workingDays } = useAppSelector(
-    state => state.projectWorkload
-  );
+  const {
+    dateRange,
+    filters,
+    timeScale,
+    capacityUnit,
+    showWeekends,
+    workingHoursPerDay,
+    workingDays,
+  } = useAppSelector(state => state.projectWorkload);
 
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false);
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
@@ -83,10 +88,10 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     if (customRange) {
       setSelectedTimeFrame('custom');
       setIsDateDropdownOpen(false);
-      
+
       // Invalidate cache before setting new date range to ensure fresh data
       dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
-      
+
       dispatch(
         setDateRange({
           startDate: dayjs(customRange[0]).format('YYYY-MM-DD'),
@@ -182,10 +187,10 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
     setSelectedTimeFrame(item.label);
     setCustomRange(null);
     const [startDate, endDate] = item.dates.split(' - ');
-    
+
     // Invalidate cache before setting new date range to ensure fresh data
     dispatch(projectWorkloadApi.util.invalidateTags(['ProjectWorkload']));
-    
+
     dispatch(
       setDateRange({
         startDate,
@@ -214,7 +219,7 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
   };
 
   // Check if values have changed from defaults
-  const workingDaysChanged = 
+  const workingDaysChanged =
     workingDays.monday !== defaultWorkingDays.monday ||
     workingDays.tuesday !== defaultWorkingDays.tuesday ||
     workingDays.wednesday !== defaultWorkingDays.wednesday ||
@@ -259,7 +264,9 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
       </div>
 
       <div>
-        <label style={{ display: 'block', marginBottom: 8 }}>{t('filters.workingHoursPerDay')}</label>
+        <label style={{ display: 'block', marginBottom: 8 }}>
+          {t('filters.workingHoursPerDay')}
+        </label>
         <InputNumber
           value={workingHoursPerDay}
           onChange={value => dispatch(setWorkingHoursPerDay(value || 8))}
@@ -356,28 +363,28 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
         />
       </Flex>
 
-             <Button
-         type="text"
-         danger
-         onClick={() => {
-           dispatch(clearFilters());
-           // Reset all values to defaults
-           dispatch(setWorkingDays(defaultWorkingDays));
-           dispatch(setTimeScale(defaultTimeScale));
-           dispatch(setWorkingHoursPerDay(defaultWorkingHoursPerDay));
-           // Reset showWeekends to false only if it's currently true
-           if (showWeekends) {
-             dispatch(toggleWeekends());
-           }
-           dispatch(setDateRange(defaultDateRange));
-           // Reset local state
-           setSelectedTimeFrame('thisWeek');
-           setCustomRange(null);
-         }}
-         disabled={activeFiltersCount === 0}
-       >
-         {t('filters.clearAll')}
-       </Button>
+      <Button
+        type="text"
+        danger
+        onClick={() => {
+          dispatch(clearFilters());
+          // Reset all values to defaults
+          dispatch(setWorkingDays(defaultWorkingDays));
+          dispatch(setTimeScale(defaultTimeScale));
+          dispatch(setWorkingHoursPerDay(defaultWorkingHoursPerDay));
+          // Reset showWeekends to false only if it's currently true
+          if (showWeekends) {
+            dispatch(toggleWeekends());
+          }
+          dispatch(setDateRange(defaultDateRange));
+          // Reset local state
+          setSelectedTimeFrame('thisWeek');
+          setCustomRange(null);
+        }}
+        disabled={activeFiltersCount === 0}
+      >
+        {t('filters.clearAll')}
+      </Button>
     </Flex>
   );
 
@@ -469,13 +476,14 @@ const WorkloadFilters = ({ onRefresh, isLoading = false, isFetching = false }: W
         onOpenChange={setFilterPopoverOpen}
         placement="bottomRight"
       >
-          <Button 
-          icon={activeFiltersCount > 0 ? <FilterFilled/> : <FilterOutlined />}>{t('filters.filters')}</Button>
+        <Button icon={activeFiltersCount > 0 ? <FilterFilled /> : <FilterOutlined />}>
+          {t('filters.filters')}
+        </Button>
       </Popover>
 
-      <Button 
-        icon={<ReloadOutlined spin={isRefreshing} />} 
-        onClick={handleRefresh} 
+      <Button
+        icon={<ReloadOutlined spin={isRefreshing} />}
+        onClick={handleRefresh}
         title={t('filters.refresh')}
         loading={isRefreshing}
         disabled={isRefreshing}

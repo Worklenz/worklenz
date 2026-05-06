@@ -45,7 +45,10 @@
     },
     "description": {
       "title": "Përshkrimi",
-      "placeholder": "Shto një përshkrim më të detajuar..."
+      "placeholder": "Shto një përshkrim më të detajuar...",
+      "clickToAdd": "Klikoni për të shtuar një përshkrim...",
+      "readMore": "Lexo më shumë",
+      "showLess": "Shfaq më pak"
     },
     "subTasks": {
       "title": "Nëndetyrat",
@@ -98,17 +101,27 @@
     "exportToExcel": "Eksporto në Excel",
     "noTimeLogsFound": "Nuk u gjetën regjistrime kohe",
     "timeLogForm": {
+      "inputMode": "Mënyra e hyrjes",
+      "durationMode": "Kohëzgjatja",
+      "timeRangeMode": "Intervali kohor",
       "date": "Data",
       "startTime": "Ora e fillimit",
       "endTime": "Ora e përfundimit",
+      "hours": "Orë",
+      "minutes": "Minuta",
       "workDescription": "Përshkrimi i punës",
       "descriptionPlaceholder": "Shto një përshkrim",
       "logTime": "Regjistro kohën",
       "updateTime": "Përditëso kohën",
       "cancel": "Anulo",
+      "durationHelper": "Regjistro kohën totale me orë dhe minuta.",
+      "timeRangeHelper": "Regjistro kohën duke zgjedhur orën e fillimit dhe përfundimit.",
       "selectDateError": "Ju lutemi zgjidhni një datë",
       "selectStartTimeError": "Ju lutemi zgjidhni orën e fillimit",
       "selectEndTimeError": "Ju lutemi zgjidhni orën e përfundimit",
+      "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
+      "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
+      "durationGreaterThanZeroError": "Kohëzgjatja duhet të jetë më e madhe se 0 minuta",
       "endTimeAfterStartError": "Ora e përfundimit duhet të jetë pas orës së fillimit"
     }
   },

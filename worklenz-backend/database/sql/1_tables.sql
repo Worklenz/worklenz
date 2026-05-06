@@ -4,7 +4,7 @@ CREATE DOMAIN WL_EMAIL AS TEXT CHECK (value ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]
 
 -- Enumerated Types
 -- Add new values using "ALTER TYPE WL_TASK_LIST_COL_KEY ADD VALUE 'NEW_VALUE_NAME' AFTER 'REPORTER';"
-CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
+CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'DUE_TIME', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
 
 CREATE TYPE REACTION_TYPES AS ENUM ('like');
 
@@ -77,11 +77,24 @@ ALTER TABLE bounced_emails
         PRIMARY KEY (id);
 
 CREATE TABLE IF NOT EXISTS clients (
-    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                                                NOT NULL,
-    team_id    UUID                                                NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+    id                    UUID                     DEFAULT uuid_generate_v4()                         NOT NULL,
+    name                  TEXT                                                                    NOT NULL,
+    team_id               UUID                                                                    NOT NULL,
+    email                 WL_EMAIL,
+    company_name          TEXT,
+    phone                 TEXT,
+    address               TEXT,
+    address_line_1        TEXT,
+    city                  TEXT,
+    state                 TEXT,
+    zip_code              TEXT,
+    country               TEXT,
+    contact_person        TEXT,
+    client_portal_enabled BOOLEAN                  DEFAULT FALSE,
+    client_portal_access_code TEXT,
+    status                TEXT                     DEFAULT 'active'::TEXT,
+    created_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
+    updated_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL
 );
 
 ALTER TABLE clients
@@ -91,6 +104,10 @@ ALTER TABLE clients
 ALTER TABLE clients
     ADD CONSTRAINT clients_name_check
         CHECK (CHAR_LENGTH(name) <= 60);
+
+ALTER TABLE clients
+    ADD CONSTRAINT clients_status_check
+        CHECK (status = ANY (ARRAY ['active'::TEXT, 'inactive'::TEXT, 'pending'::TEXT]));
 
 CREATE TABLE IF NOT EXISTS cpt_phases (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
@@ -1112,7 +1129,7 @@ ALTER TABLE pt_task_statuses
 
 CREATE TABLE IF NOT EXISTS task_activity_logs (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    task_id        UUID                                                NOT NULL,
+    task_id        UUID,
     team_id        UUID                                                NOT NULL,
     attribute_type TEXT                                                NOT NULL,
     user_id        UUID                                                NOT NULL,
@@ -1351,11 +1368,30 @@ CREATE TABLE IF NOT EXISTS task_updates (
     project_id  UUID                                                NOT NULL,
     is_sent     BOOLEAN                  DEFAULT FALSE              NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    retry_count INTEGER                  DEFAULT 0
+    retry_count INTEGER                  DEFAULT 0,
+    attempts    INTEGER                  DEFAULT 0
 );
 
 ALTER TABLE task_updates
     ADD CONSTRAINT task_updates_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS failed_task_notifications (
+    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_update_id UUID                                                UNIQUE,
+    user_id        UUID,
+    task_id        UUID,
+    project_id     UUID,
+    type           VARCHAR(50),
+    email          VARCHAR(255),
+    attempts       INTEGER,
+    last_error     TEXT,
+    failed_at      TIMESTAMP                DEFAULT NOW(),
+    created_at     TIMESTAMP
+);
+
+ALTER TABLE failed_task_notifications
+    ADD CONSTRAINT failed_task_notifications_pk
         PRIMARY KEY (id);
 
 ALTER TABLE task_updates
@@ -1424,7 +1460,7 @@ ALTER TABLE tasks
 ALTER TABLE task_activity_logs
     ADD CONSTRAINT task_activity_logs_tasks_id_fk
         FOREIGN KEY (task_id) REFERENCES tasks
-            ON DELETE CASCADE;
+            ON DELETE SET NULL;
 
 ALTER TABLE task_attachments
     ADD CONSTRAINT task_attachments_task_id_fk

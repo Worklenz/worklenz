@@ -45,7 +45,10 @@
     },
     "description": {
       "title": "Beschreibung",
-      "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu..."
+      "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu...",
+      "clickToAdd": "Klicken um eine Beschreibung hinzuzufügen...",
+      "readMore": "Mehr lesen",
+      "showLess": "Weniger anzeigen"
     },
     "subTasks": {
       "title": "Unteraufgaben",
@@ -98,17 +101,27 @@
     "exportToExcel": "Nach Excel exportieren",
     "noTimeLogsFound": "Keine Zeitprotokolle gefunden",
     "timeLogForm": {
+      "inputMode": "Eingabemodus",
+      "durationMode": "Dauer",
+      "timeRangeMode": "Zeitspanne",
       "date": "Datum",
       "startTime": "Startzeit",
       "endTime": "Endzeit",
+      "hours": "Stunden",
+      "minutes": "Minuten",
       "workDescription": "Arbeitsbeschreibung",
       "descriptionPlaceholder": "Beschreibung hinzufügen",
       "logTime": "Zeit protokollieren",
       "updateTime": "Zeit aktualisieren",
       "cancel": "Abbrechen",
+      "durationHelper": "Gesamtzeit mit Stunden und Minuten erfassen.",
+      "timeRangeHelper": "Zeit durch Auswahl von Start- und Endzeit erfassen.",
       "selectDateError": "Bitte wählen Sie ein Datum",
       "selectStartTimeError": "Bitte wählen Sie eine Startzeit",
       "selectEndTimeError": "Bitte wählen Sie eine Endzeit",
+      "hoursMinError": "Stunden müssen 0 oder größer sein",
+      "minutesRangeError": "Minuten müssen zwischen 0 und 59 liegen",
+      "durationGreaterThanZeroError": "Die Dauer muss größer als 0 Minuten sein",
       "endTimeAfterStartError": "Endzeit muss nach der Startzeit liegen"
     }
   },

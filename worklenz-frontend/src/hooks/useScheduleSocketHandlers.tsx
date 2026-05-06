@@ -20,12 +20,12 @@ export const useScheduleSocketHandlers = () => {
 
       // Invalidate schedule-related cache
       dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'MemberProjects', 'Workload']));
-      
+
       // If it's a project member task query, also invalidate that specific cache
       if (data.project_id) {
-        dispatch(scheduleApi.util.invalidateTags([
-          { type: 'MemberProjects', id: data.project_id }
-        ]));
+        dispatch(
+          scheduleApi.util.invalidateTags([{ type: 'MemberProjects', id: data.project_id }])
+        );
       }
     },
     [dispatch]
@@ -57,19 +57,23 @@ export const useScheduleSocketHandlers = () => {
       if (!data) return;
 
       // Invalidate all schedule-related cache as date changes affect timeline positioning
-      dispatch(scheduleApi.util.invalidateTags([
-        'TaskTimeline', 
-        'MemberProjects', 
-        'Workload', 
-        'Capacity',
-        'CapacityReport'
-      ]));
+      dispatch(
+        scheduleApi.util.invalidateTags([
+          'TaskTimeline',
+          'MemberProjects',
+          'Workload',
+          'Capacity',
+          'CapacityReport',
+        ])
+      );
 
       // Also invalidate specific member project cache if we have project info
       if (data.project_id) {
-        dispatch(scheduleApi.util.invalidateTags([
-          { type: 'TaskTimeline', id: `project-${data.project_id}` }
-        ]));
+        dispatch(
+          scheduleApi.util.invalidateTags([
+            { type: 'TaskTimeline', id: `project-${data.project_id}` },
+          ])
+        );
       }
 
       // Force refetch of all member projects to ensure immediate updates
@@ -84,19 +88,23 @@ export const useScheduleSocketHandlers = () => {
       if (!data) return;
 
       // Invalidate all schedule-related cache as date changes affect timeline positioning
-      dispatch(scheduleApi.util.invalidateTags([
-        'TaskTimeline', 
-        'MemberProjects', 
-        'Workload', 
-        'Capacity',
-        'CapacityReport'
-      ]));
+      dispatch(
+        scheduleApi.util.invalidateTags([
+          'TaskTimeline',
+          'MemberProjects',
+          'Workload',
+          'Capacity',
+          'CapacityReport',
+        ])
+      );
 
       // Also invalidate specific member project cache if we have project info
       if (data.project_id) {
-        dispatch(scheduleApi.util.invalidateTags([
-          { type: 'TaskTimeline', id: `project-${data.project_id}` }
-        ]));
+        dispatch(
+          scheduleApi.util.invalidateTags([
+            { type: 'TaskTimeline', id: `project-${data.project_id}` },
+          ])
+        );
       }
 
       // Force refetch of all member projects to ensure immediate updates
@@ -111,13 +119,15 @@ export const useScheduleSocketHandlers = () => {
       if (!data) return;
 
       // Estimation changes affect workload and capacity calculations
-      dispatch(scheduleApi.util.invalidateTags([
-        'TaskTimeline', 
-        'MemberProjects', 
-        'Workload', 
-        'Capacity',
-        'CapacityReport'
-      ]));
+      dispatch(
+        scheduleApi.util.invalidateTags([
+          'TaskTimeline',
+          'MemberProjects',
+          'Workload',
+          'Capacity',
+          'CapacityReport',
+        ])
+      );
     },
     [dispatch]
   );
@@ -148,13 +158,15 @@ export const useScheduleSocketHandlers = () => {
       if (!data) return;
 
       // Assignee changes affect member workload and project assignments
-      dispatch(scheduleApi.util.invalidateTags([
-        'TaskTimeline', 
-        'MemberProjects', 
-        'Members', 
-        'Workload',
-        'Capacity'
-      ]));
+      dispatch(
+        scheduleApi.util.invalidateTags([
+          'TaskTimeline',
+          'MemberProjects',
+          'Members',
+          'Workload',
+          'Capacity',
+        ])
+      );
 
       // Force immediate refetch of all member projects
       dispatch(scheduleApi.util.invalidateTags(['MemberProjects']));
@@ -198,13 +210,15 @@ export const useScheduleSocketHandlers = () => {
       if (!data) return;
 
       // New tasks affect all schedule views
-      dispatch(scheduleApi.util.invalidateTags([
-        'TaskTimeline', 
-        'MemberProjects', 
-        'Members', 
-        'Workload',
-        'Capacity'
-      ]));
+      dispatch(
+        scheduleApi.util.invalidateTags([
+          'TaskTimeline',
+          'MemberProjects',
+          'Members',
+          'Workload',
+          'Capacity',
+        ])
+      );
     },
     [dispatch]
   );
@@ -250,7 +264,9 @@ export const useScheduleSocketHandlers = () => {
       // - MemberProjects cache (to update task logged time in project view)
       // - TaskTimeline cache (to update task list with new logged time)
       // - Workload cache (logged time affects workload calculations)
-      dispatch(scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload']));
+      dispatch(
+        scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload'])
+      );
     },
     [dispatch]
   );
@@ -265,7 +281,9 @@ export const useScheduleSocketHandlers = () => {
       // - MemberProjects cache (to update task logged time in project view)
       // - TaskTimeline cache (to update task list with new logged time)
       // - Workload cache (logged time affects workload calculations)
-      dispatch(scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload']));
+      dispatch(
+        scheduleApi.util.invalidateTags(['Members', 'MemberProjects', 'TaskTimeline', 'Workload'])
+      );
     },
     [dispatch]
   );

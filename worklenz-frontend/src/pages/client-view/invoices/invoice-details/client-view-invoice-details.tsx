@@ -1,15 +1,33 @@
-import { Card, Descriptions, Flex, Typography, Button, Tag, Divider, Modal, message } from '@/shared/antd-imports';
+import {
+  Card,
+  Descriptions,
+  Flex,
+  Typography,
+  Button,
+  Tag,
+  Divider,
+  Modal,
+  message,
+} from '@/shared/antd-imports';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../../hooks/useAppSelector';
 import { durationDateFormat } from '../../../../utils/durationDateFormat';
-import { DownloadOutlined, PrinterOutlined, DollarOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  DownloadOutlined,
+  PrinterOutlined,
+  DollarOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
+import { useDeleteInvoiceMutation } from '@/api/client-portal/client-portal-api';
 
 const ClientViewInvoiceDetails = () => {
   const { t } = useTranslation('client-view-invoices');
   const { id } = useParams();
   const navigate = useNavigate();
+  const [deleteInvoice, { isLoading: isDeleting }] = useDeleteInvoiceMutation();
 
   // Get invoice details from Redux (replace with API call)
   const invoiceDetails = useAppSelector(state =>
@@ -62,21 +80,26 @@ const ClientViewInvoiceDetails = () => {
   };
 
   const handleEditInvoice = () => {
-    // Navigate to edit page - this would need to be implemented
-    message.info('Edit functionality would be implemented here');
+    navigate(`/worklenz/client-portal/invoices/${id}/edit`);
   };
 
   const handleDeleteInvoice = () => {
     Modal.confirm({
       title: t('deleteInvoice', { defaultValue: 'Delete Invoice' }),
-      content: t('confirmDeleteInvoice', { defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.' }),
+      content: t('confirmDeleteInvoice', {
+        defaultValue: 'Are you sure you want to delete this invoice? This action cannot be undone.',
+      }),
       okText: t('delete', { defaultValue: 'Delete' }),
       okType: 'danger',
       cancelText: t('cancel', { defaultValue: 'Cancel' }),
-      onOk: () => {
-        // Delete functionality would be implemented here
-        message.success('Invoice deleted successfully');
-        navigate('/client-portal/invoices');
+      onOk: async () => {
+        try {
+          await deleteInvoice(id!).unwrap();
+          message.success(t('deleteSuccess', { defaultValue: 'Invoice deleted successfully' }));
+          navigate('/client-portal/invoices');
+        } catch {
+          message.error(t('deleteError', { defaultValue: 'Failed to delete invoice' }));
+        }
       },
     });
   };
@@ -88,10 +111,23 @@ const ClientViewInvoiceDetails = () => {
           {t('invoiceDetails')} - {invoiceDetails.invoice_no || 'INV-001'}
         </Typography.Title>
         <Flex gap={8}>
-          <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>{t('download')}</Button>
-          <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>{t('print')}</Button>
-          <Button icon={<EditOutlined />} onClick={handleEditInvoice}>{t('edit', { defaultValue: 'Edit' })}</Button>
-          <Button icon={<DeleteOutlined />} danger onClick={handleDeleteInvoice}>{t('delete', { defaultValue: 'Delete' })}</Button>
+          <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>
+            {t('download')}
+          </Button>
+          <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>
+            {t('print')}
+          </Button>
+          <Button icon={<EditOutlined />} onClick={handleEditInvoice}>
+            {t('edit', { defaultValue: 'Edit' })}
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            danger
+            loading={isDeleting}
+            onClick={handleDeleteInvoice}
+          >
+            {t('delete', { defaultValue: 'Delete' })}
+          </Button>
           <Button onClick={() => navigate('/client-portal/invoices')}>{t('backToInvoices')}</Button>
         </Flex>
       </Flex>

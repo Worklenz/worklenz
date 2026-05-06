@@ -71,25 +71,24 @@
   transform: translateY(0);
 }
 
-
 /* Dark theme support */
-[data-theme='dark'] .projects-grouped-view .ant-collapse-item {
+[data-theme="dark"] .projects-grouped-view .ant-collapse-item {
   border-color: #303030;
 }
 
-[data-theme='dark'] .projects-grouped-view .ant-collapse-header {
+[data-theme="dark"] .projects-grouped-view .ant-collapse-header {
   background: #1f1f1f;
 }
 
-[data-theme='dark'] .projects-grouped-view .ant-collapse-content {
+[data-theme="dark"] .projects-grouped-view .ant-collapse-content {
   border-top-color: #303030;
 }
 
-[data-theme='dark'] .grouped-project-item {
+[data-theme="dark"] .grouped-project-item {
   border-bottom-color: #303030;
 }
 
-[data-theme='dark'] .grouped-project-item:hover {
+[data-theme="dark"] .grouped-project-item:hover {
   background-color: #262626;
 }
 

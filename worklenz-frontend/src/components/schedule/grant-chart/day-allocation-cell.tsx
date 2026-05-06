@@ -2,7 +2,13 @@ import React from 'react';
 import { Tooltip } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { toggleScheduleDrawer, setSelectedMember, setSelectedDate, setSelectedProject, setSelectedDateRange } from '../../../features/schedule/scheduleSliceRTK';
+import {
+  toggleScheduleDrawer,
+  setSelectedMember,
+  setSelectedDate,
+  setSelectedProject,
+  setSelectedDateRange,
+} from '../../../features/schedule/scheduleSliceRTK';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 
 interface DailyCapacityData {
@@ -66,7 +72,7 @@ const DayAllocationCell = ({
 
   const getStatusColors = () => {
     const isDark = themeMode === 'dark';
-    
+
     switch (effectiveData.status) {
       case 'available':
         return {
@@ -221,9 +227,7 @@ const DayAllocationCell = ({
           )}
 
           {/* Time-off indicator */}
-          {effectiveData.is_time_off && (
-            <div style={{ fontSize: '24px' }}>🔵</div>
-          )}
+          {effectiveData.is_time_off && <div style={{ fontSize: '24px' }}>🔵</div>}
 
           {/* Weekend indicator */}
           {effectiveData.is_weekend && !effectiveData.is_time_off && (

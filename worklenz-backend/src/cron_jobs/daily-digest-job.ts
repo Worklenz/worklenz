@@ -12,9 +12,24 @@ const TIME = "0 11 */1 * 1-5";
 // const TIME = "* * * * *";
 
 const log = (value: any) => console.log("daily-digest-cron-job:", value);
+let isRunning = false;
 
 async function onDailyDigestJobTick() {
+  if (isRunning) {
+    log("(cron) Previous daily digest job is still running, skipping tick.");
+    return;
+  }
+
+  let hasLock = false;
+  isRunning = true;
   try {
+    const lockResult = await db.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-daily-digest"]);
+    hasLock = !!lockResult.rows[0]?.locked;
+    if (!hasLock) {
+      log("(cron) Another instance is running daily digest job, skipping tick.");
+      return;
+    }
+
     log("(cron) Daily digest job started.");
     const q = "SELECT get_daily_digest() AS digest;";
     const result = await db.query(q, []);
@@ -36,13 +51,22 @@ async function onDailyDigestJobTick() {
 
       if (digest.recently_assigned?.length || digest.overdue?.length || digest.recently_completed?.length) {
         sentCount++;
-        void sendDailyDigest(digest.email as string, digest);
+        await sendDailyDigest(digest.email as string, digest);
       }
     }
     log(`(cron) Daily digest job ended with ${sentCount} emails.`);
   } catch (error) {
     log_error(error);
     log("(cron) Daily digest job ended with errors.");
+  } finally {
+    if (hasLock) {
+      try {
+        await db.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-daily-digest"]);
+      } catch (error) {
+        log_error(error);
+      }
+    }
+    isRunning = false;
   }
 }
 

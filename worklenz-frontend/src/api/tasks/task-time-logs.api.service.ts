@@ -14,6 +14,7 @@ export interface IRunningTimer {
   project_name: string;
   parent_task_id?: string;
   parent_task_name?: string;
+  total_time_logged?: number; // Total previously logged time in seconds
 }
 
 export interface IRecentTimeLog {

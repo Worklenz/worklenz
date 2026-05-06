@@ -19,7 +19,8 @@ export interface LogActivityParams {
  * Centralized service for handling activity logging with i18n support
  */
 export class ActivityLoggingService {
-  
+  private static projectActivityFnMissingWarned = false;
+
   /**
    * Log a project-related activity
    */
@@ -29,7 +30,7 @@ export class ActivityLoggingService {
     userId,
     i18nKey,
     i18nParams = {},
-    projectName
+    projectName,
   }: LogActivityParams): Promise<void> {
     if (!projectId || !teamId || !userId) {
       console.warn("Missing required parameters for project activity logging");
@@ -44,9 +45,18 @@ export class ActivityLoggingService {
         userId,
         i18nKey,
         JSON.stringify(i18nParams),
-        projectName
+        projectName,
       ]);
     } catch (error) {
+      if ((error as any)?.code === "42883") {
+        if (!this.projectActivityFnMissingWarned) {
+          console.warn(
+            "log_project_activity_i18n is missing; run migration 20250910000002-add-i18n-logging-support.sql"
+          );
+          this.projectActivityFnMissingWarned = true;
+        }
+        return;
+      }
       console.error("Failed to log project activity:", error);
     }
   }
@@ -64,7 +74,7 @@ export class ActivityLoggingService {
     i18nKey,
     i18nParams = {},
     oldValue,
-    newValue
+    newValue,
   }: LogActivityParams): Promise<void> {
     if (!taskId || !teamId || !projectId || !userId) {
       console.warn("Missing required parameters for task activity logging");
@@ -83,7 +93,7 @@ export class ActivityLoggingService {
         i18nKey,
         JSON.stringify(i18nParams),
         oldValue,
-        newValue
+        newValue,
       ]);
     } catch (error) {
       console.error("Failed to log task activity:", error);
@@ -93,51 +103,71 @@ export class ActivityLoggingService {
   /**
    * Convenience methods for common project activities
    */
-  static async logProjectCreated(teamId: string, projectId: string, userId: string, projectName: string) {
+  static async logProjectCreated(
+    teamId: string,
+    projectId: string,
+    userId: string,
+    projectName: string
+  ) {
     await this.logProjectActivity({
       teamId,
       projectId,
       userId,
       i18nKey: LOG_I18N_KEYS.PROJECT_CREATED,
-      projectName
+      projectName,
     });
   }
 
-  static async logProjectUpdated(teamId: string, projectId: string, userId: string, projectName: string) {
+  static async logProjectUpdated(
+    teamId: string,
+    projectId: string,
+    userId: string,
+    projectName: string
+  ) {
     await this.logProjectActivity({
       teamId,
       projectId,
       userId,
       i18nKey: LOG_I18N_KEYS.PROJECT_UPDATED,
-      projectName
+      projectName,
     });
   }
 
-  static async logProjectDeleted(teamId: string, projectId: string, userId: string, projectName: string) {
+  static async logProjectDeleted(
+    teamId: string,
+    projectId: string,
+    userId: string,
+    projectName: string
+  ) {
     await this.logProjectActivity({
       teamId,
       projectId,
       userId,
       i18nKey: LOG_I18N_KEYS.PROJECT_DELETED,
-      projectName
+      projectName,
     });
   }
 
-  static async logProjectArchived(teamId: string, projectId: string, userId: string, projectName: string) {
+  static async logProjectArchived(
+    teamId: string,
+    projectId: string,
+    userId: string,
+    projectName: string
+  ) {
     await this.logProjectActivity({
       teamId,
       projectId,
       userId,
       i18nKey: LOG_I18N_KEYS.PROJECT_ARCHIVED,
-      projectName
+      projectName,
     });
   }
 
   static async logProjectMemberAdded(
-    teamId: string, 
-    projectId: string, 
-    userId: string, 
-    projectName: string, 
+    teamId: string,
+    projectId: string,
+    userId: string,
+    projectName: string,
     memberName: string
   ) {
     await this.logProjectActivity({
@@ -146,15 +176,15 @@ export class ActivityLoggingService {
       userId,
       i18nKey: LOG_I18N_KEYS.PROJECT_MEMBER_ADDED,
       i18nParams: { memberName },
-      projectName
+      projectName,
     });
   }
 
   static async logProjectMemberRemoved(
-    teamId: string, 
-    projectId: string, 
-    userId: string, 
-    projectName: string, 
+    teamId: string,
+    projectId: string,
+    userId: string,
+    projectName: string,
     memberName: string
   ) {
     await this.logProjectActivity({
@@ -163,7 +193,7 @@ export class ActivityLoggingService {
       userId,
       i18nKey: LOG_I18N_KEYS.PROJECT_MEMBER_REMOVED,
       i18nParams: { memberName },
-      projectName
+      projectName,
     });
   }
 
@@ -185,7 +215,7 @@ export class ActivityLoggingService {
       attributeType: "name",
       logType: "create",
       i18nKey: LOG_I18N_KEYS.TASK_CREATED,
-      i18nParams: { taskName }
+      i18nParams: { taskName },
     });
   }
 
@@ -209,7 +239,7 @@ export class ActivityLoggingService {
       i18nKey: LOG_I18N_KEYS.TASK_UPDATED,
       i18nParams: { taskName },
       oldValue,
-      newValue
+      newValue,
     });
   }
 }

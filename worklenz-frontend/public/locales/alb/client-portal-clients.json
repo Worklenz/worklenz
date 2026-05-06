@@ -162,6 +162,12 @@
     "not_invited": "Nuk është Ftuar",
     "expired": "Ka Skaduar"
   },
+  "portalStatusHelp": {
+    "active": "Aktiv: Klienti e ka pranuar ftesën dhe mund të hyjë në portal.",
+    "invited": "I ftuar: Ftesa është dërguar dhe është ende e vlefshme, por ende nuk është pranuar.",
+    "notInvited": "Nuk është ftuar: Ende nuk është dërguar asnjë ftesë.",
+    "expired": "Ka skaduar: Ftesa e mëparshme ka skaduar dhe duhet ridërguar."
+  },
 
   "inviteToPortalTooltip": "Fto në Portal",
   "resendInvitationTooltip": "Ridërgo Ftesën",

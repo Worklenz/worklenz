@@ -148,6 +148,12 @@ const CustomColumnModal = () => {
       disabled: false,
     },
     {
+      key: 'text',
+      value: 'text',
+      label: t('customColumns.fieldTypes.text'),
+      disabled: false,
+    },
+    {
       key: 'number',
       value: 'number',
       label: t('customColumns.fieldTypes.number'),

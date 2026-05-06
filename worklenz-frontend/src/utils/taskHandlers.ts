@@ -25,11 +25,15 @@ interface HandleNewTaskReceivedOptions {
  * Handles both subtask and regular task creation
  * Updates both task-management slice (task list) and enhanced kanban slice independently
  */
-export const handleNewTaskReceived = (
-  response: any,
-  options: HandleNewTaskReceivedOptions
-) => {
-  const { dispatch, currentGroupingV3, enhancedKanbanGroupBy, trackEvent, subtaskEventName, taskEventName } = options;
+export const handleNewTaskReceived = (response: any, options: HandleNewTaskReceivedOptions) => {
+  const {
+    dispatch,
+    currentGroupingV3,
+    enhancedKanbanGroupBy,
+    trackEvent,
+    subtaskEventName,
+    taskEventName,
+  } = options;
 
   // Handle array format response [index, taskData]
   const data = Array.isArray(response) ? response[1] : response;
@@ -205,12 +209,12 @@ export const handleNewTaskReceived = (
         groupId = data.status;
       } else if (grouping === 'priority') {
         groupId = data.priority_id || data.priority || 'Unmapped';
-        
+
         if (!groupId || groupId === 'Unmapped') {
           const state = store.getState();
           const priorityList = state.priorityReducer?.priorities || [];
           const priorityValue = data.priority_value;
-          
+
           if (priorityValue !== undefined && priorityValue !== null) {
             const matchedPriority = priorityList.find((p: any) => p.value === priorityValue);
             if (matchedPriority) {
@@ -220,12 +224,12 @@ export const handleNewTaskReceived = (
         }
       } else if (grouping === 'phase') {
         groupId = data.phase_id;
-        
+
         if (!groupId || groupId === 'Unmapped') {
           const state = store.getState();
           const phaseList = state.phaseReducer?.phaseList || [];
           const phaseName = data.phase_name;
-          
+
           if (phaseName) {
             const matchedPhase = phaseList.find((p: any) => p.name === phaseName);
             if (matchedPhase) {
@@ -238,14 +242,13 @@ export const handleNewTaskReceived = (
           }
         }
       }
-      
+
       return groupId || '';
     };
 
     // Update task-management slice (for task list) with its own grouping
     const taskListGroupId = getGroupIdForGrouping(currentGroupingV3);
     dispatch(addTaskToGroup({ task, groupId: taskListGroupId }));
-
 
     // Update enhanced kanban slice with its own grouping (if provided)
     const kanbanGroupId = getGroupIdForGrouping(enhancedKanbanGroupBy || currentGroupingV3);

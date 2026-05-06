@@ -20,7 +20,6 @@ export default abstract class ReportingControllerBase extends WorklenzController
    */
   public static async getTeamLeadProjects(userId: string, teamId: string): Promise<string[]> {
     if (!userId || !teamId) return [];
-    
     const q = `
       SELECT DISTINCT pm.project_id 
       FROM project_members pm
@@ -36,7 +35,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
    */
   public static async canAccessProject(userId: string, teamId: string, projectId: string): Promise<boolean> {
     if (!userId || !teamId || !projectId) return false;
-    
+
     const q = `
       SELECT EXISTS(
         SELECT 1 FROM project_members pm
@@ -56,19 +55,19 @@ export default abstract class ReportingControllerBase extends WorklenzController
   public static async buildProjectFilterForTeamLead(req: IWorkLenzRequest): Promise<string> {
     const userId = req.user?.id;
     const teamId = req.user?.team_id;
-    
+
     if (!userId || !teamId) return "";
-    
+
     // Check if user is Team Lead
     const isUserTeamLead = await isTeamLead(userId, teamId);
     const isOwner = req.user?.owner;
     const isAdmin = req.user?.is_admin && !isUserTeamLead; // Admin but not Team Lead
-    
+
     // Owners and Admins see all projects
     if (isOwner || isAdmin) {
       return "";
     }
-    
+
     // Team Leads see only assigned projects
     if (isUserTeamLead) {
       const assignedProjects = await this.getTeamLeadProjects(userId, teamId);
@@ -77,7 +76,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       }
       return `AND p.id = ANY(ARRAY[${assignedProjects.map(id => `'${id}'::UUID`).join(',')}])`;
     }
-    
+
     return "";
   }
 
@@ -168,7 +167,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
     sortOrder: string = "desc"
   ) {
     const offset = (page - 1) * pageSize;
-    
+
     let whereClause = "WHERE project_id = $1";
     const params: any[] = [projectId];
     let paramIndex = 2;
@@ -266,7 +265,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
     `;
     params.push(pageSize, offset);
-    
+
     const result = await db.query(q, params);
 
     for (const item of result.rows) {
@@ -336,7 +335,61 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
   protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
-    // Predefined ranges take priority - check these first
+    // Custom date range takes PRIORITY - check this FIRST
+    // This ensures that when a user selects a custom date range, it overrides any predefined range key
+    if (dateRange && dateRange.length === 2) {
+      // Use parameterized queries for custom date ranges
+      // CRITICAL: Parse dates without timezone conversion to preserve the user's intended date
+      // The dates come from the client in their local timezone (e.g., "2024-04-30")
+      // We need to compare against the DATE part of the timestamp, not convert timezones
+      
+      // Parse the date strings - handle both ISO strings and Date.toString() format
+      let start: string;
+      let end: string;
+      
+      try {
+        // Extract just the date part (YYYY-MM-DD) without time or timezone
+        if (dateRange[0].includes("GMT") || dateRange[0].includes("(")) {
+          // JavaScript Date toString() format - parse WITHOUT timezone conversion
+          // Example: "Mon Apr 27 2026 00:00:00 GMT+0530 (India Standard Time)"
+          // Use moment.parseZone() to parse without converting to local timezone
+          start = moment.parseZone(dateRange[0]).format("YYYY-MM-DD");
+          end = moment.parseZone(dateRange[1]).format("YYYY-MM-DD");
+        } else if (dateRange[0].includes("T")) {
+          // ISO format with time - extract just the date part
+          start = dateRange[0].split("T")[0];
+          end = dateRange[1].split("T")[0];
+        } else {
+          // Already in YYYY-MM-DD format
+          start = dateRange[0];
+          end = dateRange[1];
+        }
+      } catch (error) {
+        console.error("Error parsing date range:", error, { dateRange });
+        // Fallback to parseZone
+        start = moment.parseZone(dateRange[0]).format("YYYY-MM-DD");
+        end = moment.parseZone(dateRange[1]).format("YYYY-MM-DD");
+      }
+
+      let query: string;
+      const params: any[] = [];
+
+      if (start === end) {
+        // Single day: compare the DATE part of the timestamp
+        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        params.push(start);
+      } else {
+        // Date range: inclusive comparison on DATE part
+        // Using ::DATE cast ensures we compare dates without time/timezone issues
+        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
+        params.push(start, end);
+      }
+
+      return { clause: query, params };
+    }
+
+    // Predefined ranges - only use if no custom date range is provided
+    // These use server's current date, which is appropriate for predefined ranges
     if (key === DATE_RANGES.YESTERDAY)
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
     if (key === DATE_RANGES.LAST_WEEK)
@@ -346,33 +399,12 @@ export default abstract class ReportingControllerBase extends WorklenzController
     if (key === DATE_RANGES.LAST_QUARTER)
       return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
 
-    // Custom date range - only use if no predefined range is specified
-    if (dateRange && dateRange.length === 2) {
-      // Use parameterized queries for custom date ranges
-      // Parse dates - handle both ISO strings and Date.toString() format
-      const start = moment(new Date(dateRange[0])).format("YYYY-MM-DD");
-      const end = moment(new Date(dateRange[1])).format("YYYY-MM-DD");
-      
-      let query: string;
-      const params: any[] = [];
-      
-      if (start === end) {
-        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
-        params.push(start);
-      } else {
-        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at < $${paramOffset + 1}::DATE + INTERVAL '1 day'`;
-        params.push(start, end);
-      }
-
-      return { clause: query, params };
-    }
-
     return { clause: "", params: [] };
   }
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
     const { billable, nonBillable } = selectedStatuses;
-  
+
     if (billable && nonBillable) {
       // Both are enabled, no need to filter
       return "";
@@ -382,14 +414,19 @@ export default abstract class ReportingControllerBase extends WorklenzController
     } else if (nonBillable) {
       // Only non-billable is enabled
       return " AND tasks.billable IS FALSE";
-    } 
+    }
 
     return "";
   }
 
+  // protected static formatEndDate(endDate: string) {
+  //   const end = moment(endDate).format("YYYY-MM-DD");
+  //   const fEndDate = moment(end);
+  //   return fEndDate;
+  // }
   protected static formatEndDate(endDate: string) {
-    const end = moment(endDate).format("YYYY-MM-DD");
-    const fEndDate = moment(end);
+    const end = moment.utc(endDate).format("YYYY-MM-DD");
+    const fEndDate = moment.utc(end);
     return fEndDate;
   }
 
@@ -470,8 +507,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            ps.color_code AS status_color,
                            ps.icon AS status_icon,
 
-                           start_date,
-                           end_date,
+                           TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+                           TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
 
                            (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
                            FROM (SELECT team_member_id AS id,
@@ -577,7 +614,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                LEFT JOIN project_categories pc ON pc.id = p.category_id
                LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
       WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause};`;
-    
+
     // Build final params: teamId ($1), size ($2), offset ($3), then filter params ($4+)
     const finalParams = [teamId, size, offset, ...queryParams];
     const result = await db.query(q, finalParams);
@@ -618,8 +655,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                        (SELECT name FROM clients WHERE id = p.client_id) AS client,
                        (SELECT name FROM teams WHERE id = p.team_id) AS team_name,
                        ps.name AS status_name,
-                       start_date,
-                       end_date,
+                   TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
                        (SELECT COALESCE(SUM(total_minutes), 0)
                         FROM tasks
                         WHERE project_id = p.id) AS estimated_time,
@@ -758,8 +795,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                        (SELECT name FROM clients WHERE id = p.client_id) AS client,
                        (SELECT name FROM teams WHERE id = p.team_id) AS team_name,
                        ps.name AS status_name,
-                       start_date,
-                       end_date,
+                    TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
                        (SELECT COALESCE(SUM(total_minutes), 0)
                         FROM tasks
                         WHERE project_id = p.id) AS estimated_time,

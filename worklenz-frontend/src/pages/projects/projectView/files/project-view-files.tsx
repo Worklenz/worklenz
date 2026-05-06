@@ -5,6 +5,7 @@ import {
   Input,
   Modal,
   Popconfirm,
+  Segmented,
   Space,
   Table,
   TableProps,
@@ -23,11 +24,13 @@ import {
   CloseCircleTwoTone,
   ClockCircleOutlined,
 } from '@/shared/antd-imports';
+import { FilePreviewModal } from '@/components/common/FilePreviewModal';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import projectFilesApiService from '@/api/projects/project-files.api.service';
+import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
 import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -38,6 +41,7 @@ import {
   ProjectFilesSortField,
   ProjectFilesSortOrder,
 } from '@/types/projects/project-files.types';
+import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import { getFileType } from '@/types/mixpanel-events.types';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import logger from '@/utils/errorLogger';
@@ -111,6 +115,22 @@ const ProjectViewFiles = () => {
     pageSize: DEFAULT_PAGE_SIZE,
   });
 
+  const [activeTab, setActiveTab] = useState<'project' | 'task'>('project');
+  const [taskAttachments, setTaskAttachments] = useState<ITaskAttachmentViewModel[]>([]);
+  const [taskAttachmentsLoading, setTaskAttachmentsLoading] = useState(false);
+  const [deletingTaskAttachmentId, setDeletingTaskAttachmentId] = useState<string | null>(null);
+  const [taskAttachmentsPagination, setTaskAttachmentsPagination] = useState({
+    total: 0,
+    pageIndex: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string | null>(null);
+  const [previewUrlLoading, setPreviewUrlLoading] = useState(false);
+  const [previewDownloadFn, setPreviewDownloadFn] = useState<(() => void) | null>(null);
+
   const formattedStorage = useMemo(
     () =>
       t('storageUsage', {
@@ -154,6 +174,99 @@ const ProjectViewFiles = () => {
     }
   };
 
+  const fetchTaskAttachments = async () => {
+    if (!projectId) return;
+    setTaskAttachmentsLoading(true);
+    try {
+      const response = await taskAttachmentsApiService.getProjectAttachments(
+        projectId,
+        taskAttachmentsPagination.pageIndex,
+        taskAttachmentsPagination.pageSize
+      );
+      if (response.done && response.body) {
+        setTaskAttachments(response.body.data || []);
+        setTaskAttachmentsPagination(prev => ({ ...prev, total: response.body.total || 0 }));
+      }
+    } catch (error) {
+      logger.error('Error fetching task attachments', error);
+      message.error(t('loadError', { defaultValue: 'Unable to load files. Please try again.' }));
+    } finally {
+      setTaskAttachmentsLoading(false);
+    }
+  };
+
+  const deleteTaskAttachment = async (attachmentId?: string) => {
+    if (!attachmentId) return;
+    try {
+      setDeletingTaskAttachmentId(attachmentId);
+      const response = await taskAttachmentsApiService.deleteTaskAttachment(attachmentId);
+      if (response.done) {
+        setTaskAttachmentsPagination(prev => ({ ...prev, pageIndex: 1 }));
+        void fetchTaskAttachments();
+      }
+    } catch (error) {
+      logger.error('Error deleting task attachment', error);
+    } finally {
+      setDeletingTaskAttachmentId(null);
+    }
+  };
+
+  const downloadTaskAttachment = async (attachment: ITaskAttachmentViewModel) => {
+    if (!attachment.id || !attachment.name) return;
+    try {
+      const response = await taskAttachmentsApiService.downloadTaskAttachment(
+        attachment.id,
+        attachment.name
+      );
+      if (response.done && response.body?.url) {
+        const link = document.createElement('a');
+        link.href = response.body.url;
+        link.download = attachment.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    } catch (error) {
+      logger.error('Error downloading task attachment', error);
+      message.error(t('downloadFailed', { defaultValue: 'Unable to download file.' }));
+    }
+  };
+
+  const openProjectFilePreview = async (file: ProjectFile) => {
+    if (!projectId || !file.id) return;
+    setPreviewName(file.name);
+    setPreviewUrl(null);
+    setPreviewUrlLoading(true);
+    setPreviewOpen(true);
+    try {
+      const response = await projectFilesApiService.download(projectId, file.id, file.name);
+      if (response.done && response.body?.url) {
+        setPreviewUrl(response.body.url);
+        setPreviewDownloadFn(() => () => void downloadFile(file));
+      }
+    } catch (error) {
+      logger.error('Error loading preview', error);
+      message.error(t('downloadFailed', { defaultValue: 'Unable to download file.' }));
+      setPreviewOpen(false);
+    } finally {
+      setPreviewUrlLoading(false);
+    }
+  };
+
+  const openTaskAttachmentPreview = (attachment: ITaskAttachmentViewModel) => {
+    setPreviewName(attachment.name || null);
+    setPreviewUrl(attachment.url || null);
+    setPreviewDownloadFn(() => () => void downloadTaskAttachment(attachment));
+    setPreviewOpen(true);
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setPreviewUrl(null);
+    setPreviewName(null);
+    setPreviewDownloadFn(null);
+  };
+
   useEffect(() => {
     trackMixpanelEvent(evt_project_files_visit);
   }, [trackMixpanelEvent]);
@@ -168,6 +281,17 @@ const ProjectViewFiles = () => {
     sorter.order,
     searchValue,
     refreshTimestamp,
+  ]);
+
+  useEffect(() => {
+    if (activeTab === 'task') {
+      void fetchTaskAttachments();
+    }
+  }, [
+    activeTab,
+    projectId,
+    taskAttachmentsPagination.pageIndex,
+    taskAttachmentsPagination.pageSize,
   ]);
 
   const isBlockedExtension = (fileName: string) => {
@@ -396,13 +520,18 @@ const ProjectViewFiles = () => {
       dataIndex: 'name',
       sorter: true,
       render: (_: string, record) => (
-        <Flex align="center" gap={6} style={{ cursor: 'pointer' }}>
+        <Flex
+          align="center"
+          gap={6}
+          style={{ cursor: 'pointer' }}
+          onClick={() => void openProjectFilePreview(record)}
+        >
           <img
             src={`/file-types/${getFileTypeIcon(record.type)}`}
             alt={t('fileIconAlt')}
             style={{ width: '100%', maxWidth: 24 }}
           />
-          <Typography.Text>{record.name}</Typography.Text>
+          <Typography.Link>{record.name}</Typography.Link>
         </Flex>
       ),
     },
@@ -481,60 +610,205 @@ const ProjectViewFiles = () => {
     },
   ];
 
+  const taskAttachmentColumns: TableProps<ITaskAttachmentViewModel>['columns'] = [
+    {
+      key: 'name',
+      title: t('nameColumn', { defaultValue: 'Name' }),
+      dataIndex: 'name',
+      render: (_: string, record) => (
+        <Flex
+          align="center"
+          gap={6}
+          style={{ cursor: 'pointer' }}
+          onClick={() => openTaskAttachmentPreview(record)}
+        >
+          <img
+            src={`/file-types/${getFileTypeIcon(record.type)}`}
+            alt={t('fileIconAlt')}
+            style={{ width: '100%', maxWidth: 24 }}
+          />
+          <Typography.Link>{record.name}</Typography.Link>
+        </Flex>
+      ),
+    },
+    {
+      key: 'task',
+      title: t('taskColumn', { defaultValue: 'Task' }),
+      width: 220,
+      render: (_: unknown, record) => (
+        <Typography.Text>
+          {record.task_key && record.task_name
+            ? `${record.task_key} - ${record.task_name}`
+            : record.task_name || '--'}
+        </Typography.Text>
+      ),
+    },
+    {
+      key: 'size',
+      title: t('sizeColumn', { defaultValue: 'Size' }),
+      dataIndex: 'size',
+      width: 120,
+      render: (size: string) => <Typography.Text>{size || '--'}</Typography.Text>,
+    },
+    {
+      key: 'uploader_name',
+      title: t('uploadedByColumn', { defaultValue: 'Uploaded By' }),
+      dataIndex: 'uploader_name',
+      width: 180,
+      render: (name: string | undefined) => (
+        <Typography.Text>
+          {name || t('unknownUploader', { defaultValue: 'Unknown' })}
+        </Typography.Text>
+      ),
+    },
+    {
+      key: 'created_at',
+      title: t('uploadedAtColumn', { defaultValue: 'Date' }),
+      dataIndex: 'created_at',
+      width: 140,
+      render: (date: string) => (
+        <Tooltip title={date}>
+          <Typography.Text>{durationDateFormat(date)}</Typography.Text>
+        </Tooltip>
+      ),
+    },
+    {
+      key: 'actions',
+      title: t('actionsColumn', { defaultValue: 'Actions' }),
+      width: 120,
+      render: (_: unknown, record: ITaskAttachmentViewModel) => (
+        <Flex gap={8} align="center">
+          <Tooltip title={t('downloadTooltip', { defaultValue: 'Download' })}>
+            <Button
+              size="small"
+              icon={<CloudDownloadOutlined />}
+              onClick={event => {
+                event.stopPropagation();
+                void downloadTaskAttachment(record);
+              }}
+            />
+          </Tooltip>
+          <Popconfirm
+            title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
+            okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
+            cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
+            icon={<DeleteOutlined style={{ color: colors.vibrantOrange }} />}
+            onConfirm={event => {
+              event?.stopPropagation();
+              void deleteTaskAttachment(record.id);
+            }}
+          >
+            <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                loading={deletingTaskAttachmentId === record.id}
+                onClick={event => event.stopPropagation()}
+              />
+            </Tooltip>
+          </Popconfirm>
+        </Flex>
+      ),
+    },
+  ];
+
   return (
     <Card
       style={{ width: '100%' }}
       title={
         <Flex justify="space-between" align="center">
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {t('title', { defaultValue: 'Project Files' })}
-          </Typography.Title>
+          <Segmented
+            options={[
+              {
+                label: t('projectFilesTab', { defaultValue: 'Project Files' }),
+                value: 'project',
+              },
+              {
+                label: t('taskAttachmentsTab', { defaultValue: 'Task Attachments' }),
+                value: 'task',
+              },
+            ]}
+            value={activeTab}
+            onChange={v => setActiveTab(v as 'project' | 'task')}
+          />
 
-          <Space size={8}>
-            <Input
-              allowClear
-              placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
-              style={{ width: 280 }}
-              onChange={e => handleSearch(e.target.value)}
-              value={searchValue}
-              suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
-              onPressEnter={e => handleSearch((e.target as HTMLInputElement).value)}
-            />
-            <Button
-              type="primary"
-              icon={<ImportOutlined />}
-              onClick={openUploader}
-              disabled={!projectId}
-            >
-              {t('uploadButton', { defaultValue: 'Upload' })}
-            </Button>
-          </Space>
+          {activeTab === 'project' && (
+            <Space size={8}>
+              <Input
+                allowClear
+                placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
+                style={{ width: 280 }}
+                onChange={e => handleSearch(e.target.value)}
+                value={searchValue}
+                suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
+                onPressEnter={e => handleSearch((e.target as HTMLInputElement).value)}
+              />
+              <Button
+                type="primary"
+                icon={<ImportOutlined />}
+                onClick={openUploader}
+                disabled={!projectId}
+              >
+                {t('uploadButton', { defaultValue: 'Upload' })}
+              </Button>
+            </Space>
+          )}
         </Flex>
       }
     >
-      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-        {formattedStorage}
-      </Typography.Text>
+      {activeTab === 'project' ? (
+        <>
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+            {formattedStorage}
+          </Typography.Text>
 
-      <Table<ProjectFile>
-        dataSource={files}
-        columns={columns}
-        rowKey={record => record.id}
-        loading={loading}
-        locale={{ emptyText: t('emptyText', { defaultValue: 'There are no files yet.' }) }}
-        pagination={{
-          total: paginationConfig.total,
-          current: paginationConfig.pageIndex,
-          pageSize: paginationConfig.pageSize,
-          showSizeChanger: true,
-          onChange: (page, pageSize) =>
-            setPaginationConfig(prev => ({ ...prev, pageIndex: page, pageSize })),
-        }}
-        onChange={handleTableChange}
-        onRow={record => ({
-          onClick: () => void downloadFile(record),
-          style: { cursor: 'pointer' },
-        })}
+          <Table<ProjectFile>
+            dataSource={files}
+            columns={columns}
+            rowKey={record => record.id}
+            loading={loading}
+            locale={{ emptyText: t('emptyText', { defaultValue: 'There are no files yet.' }) }}
+            pagination={{
+              total: paginationConfig.total,
+              current: paginationConfig.pageIndex,
+              pageSize: paginationConfig.pageSize,
+              showSizeChanger: true,
+              onChange: (page, pageSize) =>
+                setPaginationConfig(prev => ({ ...prev, pageIndex: page, pageSize })),
+            }}
+            onChange={handleTableChange}
+          />
+        </>
+      ) : (
+        <Table<ITaskAttachmentViewModel>
+          dataSource={taskAttachments}
+          columns={taskAttachmentColumns}
+          rowKey={record => record.id || ''}
+          loading={taskAttachmentsLoading}
+          locale={{
+            emptyText: t('taskAttachmentsEmptyText', {
+              defaultValue: 'No task attachments found.',
+            }),
+          }}
+          pagination={{
+            total: taskAttachmentsPagination.total,
+            current: taskAttachmentsPagination.pageIndex,
+            pageSize: taskAttachmentsPagination.pageSize,
+            showSizeChanger: true,
+            onChange: (page, pageSize) =>
+              setTaskAttachmentsPagination(prev => ({ ...prev, pageIndex: page, pageSize })),
+          }}
+        />
+      )}
+
+      <FilePreviewModal
+        open={previewOpen}
+        name={previewName || undefined}
+        url={previewUrl || undefined}
+        isLoading={previewUrlLoading}
+        onClose={closePreview}
+        onDownload={previewDownloadFn || undefined}
       />
 
       <Modal

@@ -50,14 +50,14 @@ const categoriesSlice = createSlice({
       );
     },
     // clear error
-    clearError: (state) => {
+    clearError: state => {
       state.error = null;
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       // Delete category async
-      .addCase(deleteCategoryAsync.pending, (state) => {
+      .addCase(deleteCategoryAsync.pending, state => {
         state.loading = true;
         state.error = null;
       })

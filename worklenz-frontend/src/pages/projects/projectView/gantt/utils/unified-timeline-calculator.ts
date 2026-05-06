@@ -24,31 +24,29 @@ export class UnifiedTimelineCalculator {
   private viewMode: GanttViewMode;
   private columnWidth: number;
 
-  constructor(
-    viewMode: GanttViewMode,
-    dateRange: { start: Date; end: Date },
-    columnWidth: number
-  ) {
+  constructor(viewMode: GanttViewMode, dateRange: { start: Date; end: Date }, columnWidth: number) {
     console.log('UnifiedTimelineCalculator constructor:', {
       viewMode,
       dateRange: {
         start: dateRange.start,
         end: dateRange.end,
-        daysDiff: Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24))
+        daysDiff: Math.ceil(
+          (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24)
+        ),
       },
-      columnWidth
+      columnWidth,
     });
-    
+
     this.viewMode = viewMode;
     this.columnWidth = columnWidth;
     this.config = this.generateTimelineConfiguration(viewMode, dateRange, columnWidth);
-    
+
     console.log('Generated timeline config:', {
       columnsCount: this.config.columns.length,
       totalWidth: this.config.totalWidth,
       pixelsPerDay: this.config.pixelsPerDay,
       firstColumn: this.config.columns[0],
-      lastColumn: this.config.columns[this.config.columns.length - 1]
+      lastColumn: this.config.columns[this.config.columns.length - 1],
     });
   }
 
@@ -191,7 +189,10 @@ export class UnifiedTimelineCalculator {
   /**
    * Calculate task bar position and width based on timeline columns
    */
-  calculateTaskPosition(startDate: Date | null, endDate: Date | null): {
+  calculateTaskPosition(
+    startDate: Date | null,
+    endDate: Date | null
+  ): {
     left: number;
     width: number;
     isValid: boolean;
@@ -222,7 +223,10 @@ export class UnifiedTimelineCalculator {
   /**
    * Calculate precise position for day view by finding exact column matches
    */
-  private calculateDayViewPosition(startDate: Date, endDate: Date): {
+  private calculateDayViewPosition(
+    startDate: Date,
+    endDate: Date
+  ): {
     left: number;
     width: number;
     isValid: boolean;
@@ -230,7 +234,7 @@ export class UnifiedTimelineCalculator {
     // Normalize dates to start of day for comparison
     const startDay = new Date(startDate);
     startDay.setHours(0, 0, 0, 0);
-    
+
     const endDay = new Date(endDate);
     endDay.setHours(0, 0, 0, 0);
 
@@ -246,31 +250,31 @@ export class UnifiedTimelineCalculator {
       if (startColumnIndex === -1 && columnDate.getTime() === startDay.getTime()) {
         startColumnIndex = i;
       }
-      
+
       // Find the last column that matches the end date
       if (columnDate.getTime() === endDay.getTime()) {
         endColumnIndex = i;
       }
     }
-    
+
     // If we didn't find exact matches, find the closest columns
     if (startColumnIndex === -1) {
       for (let i = 0; i < this.config.columns.length; i++) {
         const columnDate = new Date(this.config.columns[i].date);
         columnDate.setHours(0, 0, 0, 0);
-        
+
         if (columnDate.getTime() >= startDay.getTime()) {
           startColumnIndex = i;
           break;
         }
       }
     }
-    
+
     if (endColumnIndex === -1) {
       for (let i = this.config.columns.length - 1; i >= 0; i--) {
         const columnDate = new Date(this.config.columns[i].date);
         columnDate.setHours(0, 0, 0, 0);
-        
+
         if (columnDate.getTime() <= endDay.getTime()) {
           endColumnIndex = i;
         } else {
@@ -283,7 +287,7 @@ export class UnifiedTimelineCalculator {
     if (startColumnIndex === -1 || endColumnIndex === -1) {
       const startPosition = this.dateToPixelPosition(startDate);
       const endPosition = this.dateToPixelPosition(endDate);
-      
+
       return {
         left: Math.max(0, startPosition),
         width: Math.max(this.columnWidth * 0.1, endPosition - startPosition),
@@ -292,7 +296,10 @@ export class UnifiedTimelineCalculator {
     }
 
     const left = startColumnIndex * this.columnWidth;
-    const width = Math.max(this.columnWidth, (endColumnIndex - startColumnIndex + 1) * this.columnWidth);
+    const width = Math.max(
+      this.columnWidth,
+      (endColumnIndex - startColumnIndex + 1) * this.columnWidth
+    );
 
     return {
       left,
@@ -311,10 +318,10 @@ export class UnifiedTimelineCalculator {
 
     // Clamp date to timeline bounds
     const clampedTime = Math.max(timelineStartTime, Math.min(timelineEndTime, targetTime));
-    
+
     // Calculate position as percentage of total timeline
     const timeProgress = (clampedTime - timelineStartTime) / (timelineEndTime - timelineStartTime);
-    
+
     return timeProgress * this.config.totalWidth;
   }
 
@@ -324,8 +331,8 @@ export class UnifiedTimelineCalculator {
   pixelPositionToDate(pixelPosition: number): Date {
     const progress = Math.max(0, Math.min(1, pixelPosition / this.config.totalWidth));
     const timelineSpan = this.config.endDate.getTime() - this.config.startDate.getTime();
-    const targetTime = this.config.startDate.getTime() + (progress * timelineSpan);
-    
+    const targetTime = this.config.startDate.getTime() + progress * timelineSpan;
+
     return new Date(targetTime);
   }
 
@@ -333,10 +340,10 @@ export class UnifiedTimelineCalculator {
    * Find which column a pixel position falls into
    */
   pixelToColumnIndex(pixelPosition: number): number {
-    return Math.max(0, Math.min(
-      this.config.columns.length - 1,
-      Math.floor(pixelPosition / this.columnWidth)
-    ));
+    return Math.max(
+      0,
+      Math.min(this.config.columns.length - 1, Math.floor(pixelPosition / this.columnWidth))
+    );
   }
 
   /**
@@ -414,13 +421,13 @@ export class UnifiedTimelineCalculator {
       tasksCount: tasks.length,
       earliestDate,
       latestDate,
-      viewMode
+      viewMode,
     });
 
     // Ensure we have valid start and end dates, with proper fallback handling
     let start: Date;
     let end: Date;
-    
+
     if (earliestDate && latestDate) {
       start = new Date(earliestDate);
       end = new Date(latestDate);

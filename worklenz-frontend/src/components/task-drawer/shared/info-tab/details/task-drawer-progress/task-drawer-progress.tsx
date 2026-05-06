@@ -120,7 +120,7 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             })
           );
         }
-        
+
         // Update old tasks slice (for backward compatibility)
         if (tab === 'tasks-list') {
           dispatch(
@@ -132,7 +132,7 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             })
           );
         }
-        
+
         // Update enhanced kanban slice
         if (tab === 'board') {
           dispatch(

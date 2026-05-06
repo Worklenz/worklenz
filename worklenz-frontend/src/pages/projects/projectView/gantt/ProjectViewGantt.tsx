@@ -56,8 +56,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     isLoading: tasksLoading,
     refetch: refetchTasks,
   } = useGetRoadmapTasksQuery(
-    { projectId: projectId || '' }, 
-    { 
+    { projectId: projectId || '' },
+    {
       skip: !projectId,
       pollingInterval: 30000,
     }
@@ -69,8 +69,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     isLoading: phasesLoading,
     refetch: refetchPhases,
   } = useGetProjectPhasesQuery(
-    { projectId: projectId || '' }, 
-    { 
+    { projectId: projectId || '' },
+    {
       skip: !projectId,
       pollingInterval: 30000,
     }
@@ -90,16 +90,16 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           console.log(`Adding phase to result: ${task.name}`, {
             start_date: task.start_date,
             end_date: task.end_date,
-            phase_id: task.phase_id
+            phase_id: task.phase_id,
           });
-          
+
           const taskCopy = {
             ...task,
             start_date: task.start_date ? new Date(task.start_date) : null,
             end_date: task.end_date ? new Date(task.end_date) : null,
             children: task.children ? [...task.children] : undefined,
           };
-          
+
           result.push(taskCopy);
 
           const phaseId =
@@ -140,7 +140,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
         start: range.start,
         end: range.end,
         viewMode,
-        tasksCount: tasks.length
+        tasksCount: tasks.length,
       });
       return range;
     }
@@ -156,15 +156,15 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     if (!dateRange) return null;
     const baseColumnWidth = getColumnWidth(viewMode);
     const calculator = new UnifiedTimelineCalculator(viewMode, dateRange, baseColumnWidth);
-    
+
     console.log('Created timeline calculator:', {
       viewMode,
       baseColumnWidth,
       dateRange,
       columnsCount: calculator.getColumns().length,
-      totalWidth: calculator.getConfiguration().totalWidth
+      totalWidth: calculator.getConfiguration().totalWidth,
     });
-    
+
     return calculator;
   }, [viewMode, dateRange]);
 
@@ -278,6 +278,8 @@ const ProjectViewGantt: React.FC = React.memo(() => {
 
   const handleClosePhaseModal = useCallback(() => {
     setShowPhaseModal(false);
+    refetchTasks();
+    refetchPhases();
   }, []);
 
   const handlePhaseClick = useCallback((phase: any) => {
@@ -415,7 +417,10 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           flexDirection: 'column',
         }}
       >
-        <div className="flex flex-col bg-gray-50 dark:bg-gray-900" style={{ paddingBottom: '24px' }}>
+        <div
+          className="flex flex-col bg-gray-50 dark:bg-gray-900"
+          style={{ paddingBottom: '24px' }}
+        >
           <GanttToolbar
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}

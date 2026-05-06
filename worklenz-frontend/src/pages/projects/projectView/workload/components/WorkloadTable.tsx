@@ -46,7 +46,7 @@ const calculateWorkingDaysInPeriod = (
 ): number => {
   const start = new Date(startDate);
   const end = new Date(endDate);
-  
+
   if (end < start) return 0;
 
   const workingDays = workingDaysConfig || {
@@ -69,11 +69,11 @@ const calculateWorkingDaysInPeriod = (
   while (currentDate <= end) {
     const dayOfWeek = currentDate.getDay();
     const dayName = dayMapping[dayOfWeek];
-    
+
     if (workingDays[dayName]) {
       workingDaysCount++;
     }
-    
+
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
@@ -83,13 +83,13 @@ const calculateWorkingDaysInPeriod = (
 // Helper function to calculate workload from tasks for a specific date range
 const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: string): number => {
   if (!Array.isArray(tasks)) return 0;
-  
+
   let totalHours = 0;
-  
+
   // Use provided date range or default to current/next month
   let startOfPeriod: Date;
   let endOfPeriod: Date;
-  
+
   if (startDate && endDate) {
     startOfPeriod = new Date(startDate);
     endOfPeriod = new Date(endDate);
@@ -101,17 +101,20 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
     startOfPeriod = new Date(currentYear, currentMonth, 1);
     endOfPeriod = new Date(currentYear, currentMonth + 2, 0);
   }
-  
+
   tasks.forEach(task => {
     if (task?.start_date && task?.end_date) {
       const startDate = new Date(task.start_date);
       const endDate = new Date(task.end_date);
-      
+
       if (startDate <= endOfPeriod && endDate >= startOfPeriod) {
         const overlapStart = new Date(Math.max(startDate.getTime(), startOfPeriod.getTime()));
         const overlapEnd = new Date(Math.min(endDate.getTime(), endOfPeriod.getTime()));
-        const overlapDays = Math.max(1, Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24)));
-        
+        const overlapDays = Math.max(
+          1,
+          Math.ceil((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24))
+        );
+
         const baseHours = Math.min(6, Math.max(3, overlapDays * 0.5));
         totalHours += baseHours;
       }
@@ -124,11 +127,11 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
       totalHours += 2;
     }
   });
-  
+
   if (totalHours === 0 && tasks.length > 0) {
     totalHours = Math.min(20, tasks.length * 2);
   }
-  
+
   return Math.round(totalHours);
 };
 
@@ -139,7 +142,9 @@ interface WorkloadTableProps {
 const WorkloadTable = ({ data }: WorkloadTableProps) => {
   const { t } = useTranslation('workload');
   const dispatch = useAppDispatch();
-  const { capacityUnit, alertThresholds, dateRange } = useAppSelector(state => state.projectWorkload);
+  const { capacityUnit, alertThresholds, dateRange } = useAppSelector(
+    state => state.projectWorkload
+  );
   const { token } = theme.useToken();
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [reassignModalVisible, setReassignModalVisible] = useState(false);
@@ -151,19 +156,20 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       // Data is already in the expected format
       return data.members;
     }
-    
+
     const members = data?.body || [];
     if (!Array.isArray(members)) {
       return [];
     }
-    
+
     return members.map((member: any) => {
       const dailyHours = Number(member.org_working_hours) || 8;
       const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
       const weeklyCapacity = dailyHours * workingDaysPerWeek;
-      
-      const currentWorkload = calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
-      
+
+      const currentWorkload =
+        calculateWorkloadFromTasks(member.tasks, dateRange.startDate, dateRange.endDate) || 0;
+
       // Calculate capacity for the same date range period based on actual working days
       const startDate = dateRange.startDate || new Date().toISOString().split('T')[0];
       const endDate = dateRange.endDate || new Date().toISOString().split('T')[0];
@@ -173,18 +179,19 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         member.org_working_days
       );
       let periodCapacity = workingDaysInPeriod * dailyHours;
-      
+
       // Fallback: if periodCapacity is 0, use weekly capacity as fallback
       if (periodCapacity === 0) {
         periodCapacity = weeklyCapacity;
       }
-      
-      const utilizationPercentage = periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
-      
-        return {
-          id: member.project_member_id || member.team_member_id || member.user_id,
-          name: member.name || t('table.unknown'),
-          email: member.email || '',
+
+      const utilizationPercentage =
+        periodCapacity > 0 ? Math.round((currentWorkload / periodCapacity) * 100) : 0;
+
+      return {
+        id: member.project_member_id || member.team_member_id || member.user_id,
+        name: member.name || t('table.unknown'),
+        email: member.email || '',
         avatar: member.avatar_url,
         role: member.role,
         teamId: member.team_member_id,
@@ -240,9 +247,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
             })}
             placement="top"
           >
-            <Typography.Text>
-              {formatTime(capacity)}
-            </Typography.Text>
+            <Typography.Text>{formatTime(capacity)}</Typography.Text>
           </Tooltip>
         );
       },
@@ -254,9 +259,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       width: 120,
       render: (workload, record) => (
         <Flex vertical gap={4}>
-          <Typography.Text>
-            {formatTime(workload)}
-          </Typography.Text>
+          <Typography.Text>{formatTime(workload)}</Typography.Text>
           {record.isOverallocated && (
             <Tag
               color="red"
@@ -381,8 +384,8 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       key: 'tasks',
       width: 100,
       render: (_, record) => {
-        const memberData = data?.body?.find((m: any) => 
-          (m.project_member_id || m.team_member_id || m.user_id) === record.id
+        const memberData = data?.body?.find(
+          (m: any) => (m.project_member_id || m.team_member_id || m.user_id) === record.id
         );
         const tasksCount = memberData?.tasks?.length || 0;
         return (
@@ -417,8 +420,8 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
                 label: t('actions.reassignTasks'),
                 icon: <SwapOutlined />,
                 disabled: (() => {
-                  const memberData = data?.body?.find((m: any) => 
-                    (m.project_member_id || m.team_member_id || m.user_id) === record.id
+                  const memberData = data?.body?.find(
+                    (m: any) => (m.project_member_id || m.team_member_id || m.user_id) === record.id
                   );
                   return !memberData?.tasks?.length;
                 })(),
@@ -442,8 +445,8 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
   ];
 
   const expandedRowRender = (record: IWorkloadMember) => {
-    const memberData = data?.body?.find((m: any) => 
-      (m.project_member_id || m.team_member_id || m.user_id) === record.id
+    const memberData = data?.body?.find(
+      (m: any) => (m.project_member_id || m.team_member_id || m.user_id) === record.id
     );
     const memberTasks = memberData?.tasks || [];
 
@@ -461,9 +464,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         title: t('table.project'),
         key: 'projectName',
         render: (_, task) => (
-          <Typography.Text>
-            {task.project_name || t('table.currentProject')}
-          </Typography.Text>
+          <Typography.Text>{task.project_name || t('table.currentProject')}</Typography.Text>
         ),
       },
       {
@@ -471,7 +472,8 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         key: 'duration',
         render: (_, task) => (
           <Typography.Text type="secondary" style={{ color: token.colorTextSecondary }}>
-            {task.start_date ? task.start_date.split('T')[0] : t('table.noStart')} - {task.end_date ? task.end_date.split('T')[0] : t('table.noEnd')}
+            {task.start_date ? task.start_date.split('T')[0] : t('table.noStart')} -{' '}
+            {task.end_date ? task.end_date.split('T')[0] : t('table.noEnd')}
           </Typography.Text>
         ),
       },
@@ -505,11 +507,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
         title: t('table.progress'),
         key: 'progress',
         render: (_, task) => (
-          <Progress 
-            percent={task.complete_ratio || 0} 
-            size="small" 
-            style={{ width: 60 }} 
-          />
+          <Progress percent={task.complete_ratio || 0} size="small" style={{ width: 60 }} />
         ),
       },
       {
@@ -554,7 +552,7 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
       <Table
         columns={taskColumns}
         dataSource={memberTasks}
-        rowKey={(task) => task.id || `task-${Math.random()}`}
+        rowKey={task => task.id || `task-${Math.random()}`}
         pagination={false}
         size="small"
       />

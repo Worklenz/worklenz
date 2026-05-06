@@ -1,12 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import {
-  Modal,
-  Input,
-  Button,
-  Typography,
-  ColorPicker,
-  Tooltip,
-} from '@/shared/antd-imports';
+import { Modal, Input, Button, Typography, ColorPicker, Tooltip } from '@/shared/antd-imports';
 import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -153,7 +146,7 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
             // onChangeComplete={handleColorChangeComplete}
             size="small"
             className="phase-color-picker"
-            // disabledAlpha
+            disabledAlpha
             panelRender={panel => (
               <div className="flex flex-col gap-2">
                 {panel}
@@ -181,6 +174,8 @@ const SortablePhaseItem: React.FC<PhaseItemProps & { id: string }> = ({
               onChange={e => setEditName(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
+              maxLength={50}
+              showCount
               className={`font-medium text-xs border-0 px-1 py-1 shadow-none ${
                 isDarkMode
                   ? 'bg-transparent text-gray-200 placeholder-gray-400'
@@ -508,12 +503,15 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
             >
               {t('phaseLabel')}
             </Text>
+            {/* Input 3 — Phase label */}
             <Input
               placeholder={t('enterPhaseName')}
               value={phaseName}
               onChange={e => setPhaseName(e.currentTarget.value)}
               onPressEnter={handlePhaseNameBlur}
               onBlur={handlePhaseNameBlur}
+              maxLength={50}
+              showCount
               disabled={isSaving}
               size="small"
             />
@@ -547,11 +545,14 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
             } shadow-sm`}
           >
             <div className="flex gap-2">
+              {/* Input 2 — Add new phase */}
               <Input
                 placeholder={t('enterNewPhaseName')}
                 value={newPhaseName}
                 onChange={e => setNewPhaseName(e.target.value)}
                 onKeyDown={handleKeyDown}
+                maxLength={50}
+                showCount
                 className={`flex-1 ${
                   isDarkMode
                     ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400'

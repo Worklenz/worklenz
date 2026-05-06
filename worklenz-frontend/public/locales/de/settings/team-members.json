@@ -40,8 +40,8 @@
   "adminText": "Administrator",
   "guestText": "Gast (Nur Lesen)",
   "ownerText": "Team-Besitzer",
-  "addedText": "Hinzugefügt",
-  "updatedText": "Aktualisiert",
+  "addedText": "Hinzugefügt ",
+  "updatedText": "Aktualisiert ",
   "noResultFound": "Geben Sie eine E-Mail-Adresse ein und drücken Sie Enter...",
   "jobTitlesFetchError": "Fehler beim Abrufen der Jobtitel",
   "invitationResent": "Einladung erfolgreich erneut gesendet!",
@@ -97,5 +97,6 @@
   "managerTooltip": "Weisen Sie einen Teamleiter zu, um dieses Mitglied zu verwalten. Nur Mitglieder können Managern zugewiesen werden.",
   "selectManagerPlaceholder": "Wählen Sie einen Teamleiter als Manager",
   "manager_removed_successfully": "Managerzuweisung erfolgreich entfernt",
-  "updateError": "Fehler beim Aktualisieren des Teammitglieds. Bitte versuchen Sie es erneut."
+  "updateError": "Fehler beim Aktualisieren des Teammitglieds. Bitte versuchen Sie es erneut.",
+  "noTeamLeadsAvailable": "Keine Teamleiter verfügbar"
 }

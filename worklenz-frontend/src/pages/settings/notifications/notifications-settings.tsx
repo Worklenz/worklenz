@@ -34,40 +34,46 @@ const NotificationsSettings = () => {
     }
   }, []);
 
-  const updateNotificationSettings = useCallback(async (settings: INotificationSettings) => {
-    try {
-      const res = await profileSettingsApiService.updateNotificationSettings(settings);
-      if (res.done) {
-        // Update with server response if available
-        setNotificationsSettings(prev => res.body || prev);
-        return true;
+  const updateNotificationSettings = useCallback(
+    async (settings: INotificationSettings) => {
+      try {
+        const res = await profileSettingsApiService.updateNotificationSettings(settings);
+        if (res.done) {
+          // Update with server response if available
+          setNotificationsSettings(prev => res.body || prev);
+          return true;
+        }
+        return false;
+      } catch (error) {
+        logger.error('Error updating notifications settings', error);
+        // On error, refetch to revert to server state
+        await fetchNotificationsSettings();
+        return false;
       }
-      return false;
-    } catch (error) {
-      logger.error('Error updating notifications settings', error);
-      // On error, refetch to revert to server state
-      await fetchNotificationsSettings();
-      return false;
-    }
-  }, [fetchNotificationsSettings]);
+    },
+    [fetchNotificationsSettings]
+  );
 
-  const toggleNotificationSetting = useCallback(async (key: keyof INotificationSettings) => {
-    // Optimistic update - update UI immediately using functional update
-    setNotificationsSettings(prev => {
-      const newValue = !prev[key];
-      const newSettings = { ...prev, [key]: newValue };
-      
-      // Sync with server in the background (don't block UI)
-      updateNotificationSettings(newSettings);
-      
-      return newSettings;
-    });
-    
-    // Handle push notification permission
-    if (key === 'popup_notifications_enabled') {
-      askPushPermission();
-    }
-  }, [updateNotificationSettings]);
+  const toggleNotificationSetting = useCallback(
+    async (key: keyof INotificationSettings) => {
+      // Optimistic update - update UI immediately using functional update
+      setNotificationsSettings(prev => {
+        const newValue = !prev[key];
+        const newSettings = { ...prev, [key]: newValue };
+
+        // Sync with server in the background (don't block UI)
+        updateNotificationSettings(newSettings);
+
+        return newSettings;
+      });
+
+      // Handle push notification permission
+      if (key === 'popup_notifications_enabled') {
+        askPushPermission();
+      }
+    },
+    [updateNotificationSettings]
+  );
 
   const askPushPermission = () => {
     if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {

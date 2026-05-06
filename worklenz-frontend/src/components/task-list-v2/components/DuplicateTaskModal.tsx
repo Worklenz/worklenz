@@ -1,17 +1,17 @@
 import React, { useState, useCallback } from 'react';
-import {
-  Modal,
-  Button,
-  Typography,
-  Checkbox,
-  Space,
-  message,
-} from '@/shared/antd-imports';
+import { Modal, Button, Typography, Checkbox, Space, message } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { duplicateTask, selectCurrentGroupingV3, setDuplicateTask } from '@/features/task-management/task-management.slice';
-import { evt_project_sub_task_duplicate, evt_project_task_duplicate } from '@/shared/worklenz-analytics-events';
+import {
+  duplicateTask,
+  selectCurrentGroupingV3,
+  setDuplicateTask,
+} from '@/features/task-management/task-management.slice';
+import {
+  evt_project_sub_task_duplicate,
+  evt_project_task_duplicate,
+} from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { handleNewTaskReceived as handleTaskReceived } from '@/utils/taskHandlers';
 import logger from '@/utils/errorLogger';
@@ -89,13 +89,21 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
         });
         onClose();
       }
-
     } catch (error) {
       logger.error('Failed to duplicate task', error);
     } finally {
       setLoading(false);
     }
-  }, [dispatch, task.taskId, projectId, options, onClose, t, currentGroupingV3, trackMixpanelEvent]);
+  }, [
+    dispatch,
+    task.taskId,
+    projectId,
+    options,
+    onClose,
+    t,
+    currentGroupingV3,
+    trackMixpanelEvent,
+  ]);
 
   // Your exact list in the order you wrote
   const checkboxItems = [
@@ -136,10 +144,7 @@ const DuplicateTaskModal: React.FC<DuplicateTaskModalProps> = ({
       </Text>
 
       <div className="mt-6">
-        <Checkbox.Group
-          value={Object.keys(options).filter(k => options[k])}
-          className="w-full"
-        >
+        <Checkbox.Group value={Object.keys(options).filter(k => options[k])} className="w-full">
           <Space direction="vertical" size={12} className="w-full">
             {checkboxItems.map(item => (
               <Checkbox

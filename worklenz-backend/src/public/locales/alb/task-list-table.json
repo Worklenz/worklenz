@@ -109,6 +109,7 @@
     },
     
     "fieldTypes": {
+      "text": "Tekst",
       "people": "Njerëz",
       "number": "Numër",
       "date": "Data",

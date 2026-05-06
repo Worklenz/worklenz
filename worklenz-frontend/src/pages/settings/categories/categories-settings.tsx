@@ -133,7 +133,7 @@ const CategoriesSettings = () => {
       key: 'actionBtns',
       width: 80,
       render: (record: IProjectCategoryViewModel) => (
-        <div className="row-action-buttons" onClick={(e) => e.stopPropagation()}>
+        <div className="row-action-buttons" onClick={e => e.stopPropagation()}>
           {/* Edit Button */}
           <Tooltip title={t('editCategory', 'Edit')}>
             <Button
@@ -153,13 +153,13 @@ const CategoriesSettings = () => {
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
             okText={t('deleteConfirmationOk')}
             cancelText={t('deleteConfirmationCancel')}
-            onConfirm={(e) => {
+            onConfirm={e => {
               e?.stopPropagation();
               if (record.id) {
                 handleDeleteCategory(record.id);
               }
             }}
-            onCancel={(e) => e?.stopPropagation()}
+            onCancel={e => e?.stopPropagation()}
           >
             <Tooltip title={t('deleteCategory', 'Delete')}>
               <Button
@@ -196,9 +196,7 @@ const CategoriesSettings = () => {
         style={{ width: '100%' }}
         title={
           <Flex justify="space-between" align="center">
-            <Typography.Text strong>
-              {t('title', { defaultValue: 'Categories' })}
-            </Typography.Text>
+            <Typography.Text strong>{t('title', { defaultValue: 'Categories' })}</Typography.Text>
             <Flex
               gap={8}
               align="center"

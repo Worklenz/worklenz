@@ -127,8 +127,13 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
 
     const isSubtask = !!selectedTask.parent_task_id;
     const confirmMessage = isSubtask
-      ? t('contextMenu.deleteSubtaskConfirmMessage', { defaultValue: 'Are you sure you want to delete this subtask? This action cannot be undone.' })
-      : t('contextMenu.deleteConfirmMessage', { defaultValue: 'Are you sure you want to delete this task? This action cannot be undone.' });
+      ? t('contextMenu.deleteSubtaskConfirmMessage', {
+          defaultValue:
+            'Are you sure you want to delete this subtask? This action cannot be undone.',
+        })
+      : t('contextMenu.deleteConfirmMessage', {
+          defaultValue: 'Are you sure you want to delete this task? This action cannot be undone.',
+        });
 
     Modal.confirm({
       title: t('contextMenu.deleteConfirmTitle', { defaultValue: 'Delete Task' }),
@@ -139,7 +144,7 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
       onOk: async () => {
         const taskId = selectedTask.id;
         if (!taskId) return;
-        
+
         try {
           const res = await taskListBulkActionsApiService.deleteTasks(
             { tasks: [taskId] },
@@ -282,16 +287,12 @@ const TaskContextMenu = ({ visible, position, selectedTask, onClose, t }: TaskCo
       label: t('contextMenu.moveTo'),
       children: getMoveToOptions(),
     },
-    ...(!selectedTask?.parent_task_id
-      ? [
-          {
-            key: '3',
-            icon: <InboxOutlined />,
-            label: archived ? t('contextMenu.unarchive') : t('contextMenu.archive'),
-            onClick: handleArchive,
-          },
-        ]
-      : []),
+    {
+      key: '3',
+      icon: <InboxOutlined />,
+      label: archived ? t('contextMenu.unarchive') : t('contextMenu.archive'),
+      onClick: handleArchive,
+    },
     ...(selectedTask?.sub_tasks_count === 0 && !selectedTask?.parent_task_id
       ? [
           {
