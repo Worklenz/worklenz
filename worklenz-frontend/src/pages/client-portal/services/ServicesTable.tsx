@@ -12,6 +12,7 @@ import {
   Modal,
   Tag,
 } from '@/shared/antd-imports';
+import { useState } from 'react';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
 import { TableProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
@@ -27,8 +28,14 @@ const ServicesTable = () => {
   // localization
   const { t } = useTranslation('client-portal-services');
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Fetch services from API
-  const { data: servicesData, isLoading, error } = useGetOrganizationServicesQuery({});
+  const { data: servicesData, isLoading, error } = useGetOrganizationServicesQuery({
+    page: currentPage,
+    limit: pageSize,
+  });
 
   // Debug logging
   const [deleteService] = useDeleteOrganizationServiceMutation();
@@ -230,8 +237,13 @@ const ServicesTable = () => {
         pagination={{
           size: 'small',
           total: servicesData.body.total,
-          current: 1, // Backend doesn't return current page info
-          pageSize: 10, // Default page size
+          current: currentPage,
+          pageSize,
+          showSizeChanger: true,
+          onChange: (page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          },
         }}
         scroll={{
           x: 'max-content',
