@@ -22,7 +22,7 @@ interface AuthenticatedClientRequest {
 }
 
 export default class ClientPortalAttachmentController {
-  
+
   // File upload with environment-based S3 storage and database tracking
   static async uploadFile(req: AuthenticatedClientRequest, res: IWorkLenzResponse) {
     try {
@@ -125,16 +125,6 @@ export default class ClientPortalAttachmentController {
         ]);
 
         const attachment = insertResult.rows[0];
-
-        // Log file upload for audit purposes
-        console.log(`File uploaded by client ${clientId}:`, {
-          attachmentId: attachment.id,
-          fileName,
-          fileType,
-          purpose: normalizedPurpose,
-          storageKey,
-          fileSizeBytes
-        });
 
         return res.json(new ServerResponse(true, {
           id: attachment.id,
@@ -244,8 +234,6 @@ export default class ClientPortalAttachmentController {
       const result = await db.query(updateQuery, [requestId, attachmentIds, clientId, organizationId]);
       const linkedCount = result.rows.length;
 
-      console.log(`Linked ${linkedCount} attachments to request ${requestId}`);
-
       return res.json(new ServerResponse(true, {
         linkedCount,
         requestId
@@ -297,7 +285,6 @@ export default class ClientPortalAttachmentController {
       // Delete from S3
       try {
         await deleteObject(attachment.storage_key);
-        console.log(`Deleted file from storage: ${attachment.storage_key}`);
       } catch (deleteError) {
         console.error("Error deleting file from storage:", deleteError);
         // Continue even if S3 delete fails - the DB record is soft deleted
