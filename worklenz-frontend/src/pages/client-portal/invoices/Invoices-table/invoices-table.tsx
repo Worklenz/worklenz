@@ -10,6 +10,7 @@ import {
   Empty,
   theme,
 } from '@/shared/antd-imports';
+import { useState } from 'react';
 import { TableProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -22,9 +23,14 @@ export const InvoicesTable = () => {
   const { t } = useTranslation('client-portal-invoices');
   const navigate = useNavigate();
   const { token } = theme.useToken();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch invoices from API
-  const { data: invoicesData, isLoading, error } = useGetInvoicesQuery();
+  const { data: invoicesData, isLoading, error } = useGetInvoicesQuery({
+    page: currentPage,
+    limit: pageSize,
+  });
 
   // Function to get status color
   const getStatusColor = (status: string) => {
@@ -213,8 +219,13 @@ export const InvoicesTable = () => {
         pagination={{
           size: 'small',
           total: invoicesResponse.total || invoices.length,
-          current: invoicesResponse.page || 1,
-          pageSize: invoicesResponse.limit || 10,
+          current: currentPage,
+          pageSize,
+          showSizeChanger: true,
+          onChange: (page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          },
         }}
         scroll={{
           x: 'max-content',
