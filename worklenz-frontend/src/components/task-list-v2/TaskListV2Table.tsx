@@ -243,7 +243,7 @@ const SortableHeader: React.FC<{
     setActivatorNodeRef: (element: HTMLElement | null) => void;
     isDragging: boolean;
   }) => React.ReactNode;
-}> = ({ column, isDropTarget, children }) => {
+}> = React.memo(({ column, isDropTarget, children }) => {
   const {
     setNodeRef,
     setActivatorNodeRef,
@@ -252,12 +252,32 @@ const SortableHeader: React.FC<{
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: column.id });
+  } = useSortable({ 
+    id: column.id,
+    // Disable the automatic scaling that dnd-kit applies during drag
+    animateLayoutChanges: () => false,
+  });
+
+  // Get the actual pixel width from the column object, not CSS variable
+  const explicitWidth = column.width; // This is already a string like "120px"
+
+  // Remove scale from transform to prevent width changes during drag
+  const transformWithoutScale = transform ? {
+    ...transform,
+    scaleX: 1,
+    scaleY: 1,
+  } : null;
 
   const style = {
-    transform: transform ? CSS.Transform.toString(transform) : undefined,
+    transform: transformWithoutScale ? CSS.Transform.toString(transformWithoutScale) : undefined,
     transition,
     zIndex: isDragging ? 25 : undefined,
+    willChange: isDragging ? 'transform' : undefined,
+    // Use explicit pixel width, not CSS variable, to prevent width changes during drag
+    width: explicitWidth,
+    minWidth: explicitWidth,
+    maxWidth: explicitWidth,
+    flexShrink: 0,
   };
 
   return (
@@ -270,7 +290,7 @@ const SortableHeader: React.FC<{
       {children({ attributes, listeners, setActivatorNodeRef, isDragging })}
     </div>
   );
-};
+});
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -575,11 +595,15 @@ const TaskListV2Section: React.FC = () => {
   }, [rawVisibleColumns, columnOrder]);
 
   // Create CSS style object with column width variables for instant resizing
+  // Apply to document root so CSS variables are globally accessible
   const containerStyle = useMemo(() => {
     const style: any = {};
     visibleColumns.forEach(col => {
       style[`--col-width-${col.id}`] = col.width;
+      // Also set on document root for global access
+      document.documentElement.style.setProperty(`--col-width-${col.id}`, col.width);
     });
+    
     return style;
   }, [visibleColumns]);
 
@@ -968,11 +992,14 @@ const TaskListV2Section: React.FC = () => {
 
   // Column drag-and-drop handlers
   const handleColumnDragStart = useCallback((event: any) => {
-    setActiveColumnId(event?.active?.id || null);
+    const columnId = event?.active?.id || null;
+    setActiveColumnId(columnId);
   }, []);
 
   const handleColumnDragOver = useCallback((event: any) => {
-    setOverColumnId(event?.over?.id || null);
+    // Throttle state updates during drag to reduce re-renders
+    const newOverId = event?.over?.id || null;
+    setOverColumnId(prev => prev === newOverId ? prev : newOverId);
   }, []);
 
   const handleColumnDragEnd = useCallback(
@@ -1147,10 +1174,13 @@ const TaskListV2Section: React.FC = () => {
     ]
   );
 
+  // Memoize reorderable column IDs to prevent unnecessary recalculations
+  const reorderableColumnIds = useMemo(() => {
+    return visibleColumns.filter(column => !column.isSticky).map(c => c.id);
+  }, [visibleColumns]);
+
   // Render column headers
   const renderColumnHeaders = useCallback(() => {
-    const reorderableColumns = visibleColumns.filter(column => !column.isSticky);
-
     return (
       <DndContext
         sensors={columnSensors}
@@ -1161,7 +1191,7 @@ const TaskListV2Section: React.FC = () => {
         onDragEnd={handleColumnDragEnd}
       >
         <SortableContext
-          items={reorderableColumns.map(column => column.id)}
+          items={reorderableColumnIds}
           strategy={horizontalListSortingStrategy}
         >
           <div
@@ -1232,7 +1262,9 @@ const TaskListV2Section: React.FC = () => {
                                     : 'flex items-center justify-center px-2'
                     } ${isDropTarget ? 'column-drop-target' : ''}`}
                     style={{
-                      ...columnStyle,
+                      // For sticky columns, apply the full columnStyle here
+                      // For non-sticky columns, the SortableHeader wrapper handles width
+                      ...(column.isSticky ? columnStyle : {}),
                       // Add position relative for resize handle positioning, but don't override sticky
                       ...(!column.isSticky && { position: 'relative' }),
                       ...(dragParams?.isDragging ? { opacity: 0.85 } : {}),
@@ -1580,6 +1612,7 @@ const TaskListV2Section: React.FC = () => {
     handleColumnDragOver,
     handleColumnDragEnd,
     columnWidths,
+    reorderableColumnIds,
   ]);
 
   // Loading and error states
@@ -1698,6 +1731,16 @@ const TaskListV2Section: React.FC = () => {
             position: sticky !important;
             top: 40px !important;
             z-index: 25 !important;
+          }
+          
+          /* Column drag performance optimization */
+          .column-header-cell {
+            will-change: auto;
+          }
+          
+          [data-column-id] {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
           }
         `}
       </style>
