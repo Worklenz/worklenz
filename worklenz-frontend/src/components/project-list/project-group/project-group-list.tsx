@@ -30,6 +30,7 @@ import { themeWiseColor } from '@/utils/themeWiseColor';
 import {
   fetchProjectData,
   setProjectId,
+  setProjectData,
   toggleProjectDrawer,
 } from '@/features/project/project-drawer.slice';
 import {
@@ -123,24 +124,39 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   };
 
   // Action handlers
-  const handleSettingsClick = (e: React.MouseEvent, projectId: string) => {
+  const handleSettingsClick = (
+    e: React.MouseEvent,
+    project: ProjectGroupListProps['groups'][number]['projects'][number]
+  ) => {
     e.stopPropagation();
-    console.log('Opening project drawer from project group for project:', projectId);
+    if (!project.id) return;
+
+    console.log('Opening project drawer from project group for project:', project.id);
     trackMixpanelEvent(evt_projects_settings_click);
 
     // Set project ID first
-    dispatch(setProjectId(projectId));
+    dispatch(setProjectId(project.id));
 
     // Then fetch project data
-    dispatch(fetchProjectData(projectId))
+    dispatch(fetchProjectData(project.id))
       .unwrap()
       .then(projectData => {
         console.log('Project data fetched successfully from project group:', projectData);
+        dispatch(
+          setProjectData({
+            ...projectData,
+            priority_id: projectData.priority_id || project.priority_id,
+            priority_name: projectData.priority_name || project.priority_name,
+            priority_color: projectData.priority_color || project.priority_color,
+            priority_color_dark: projectData.priority_color_dark || project.priority_color_dark,
+          })
+        );
         // Open drawer after data is fetched
         dispatch(toggleProjectDrawer());
       })
       .catch(error => {
         console.error('Failed to fetch project data from project group:', error);
+        dispatch(setProjectData(project));
         // Still open drawer even if fetch fails, so user can see error state
         dispatch(toggleProjectDrawer());
       });
@@ -405,7 +421,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
             }
           }}
           onClick={() =>
-            onProjectSelect(project.id || '', project.team_member_default_view || project.default_view)
+            onProjectSelect(
+              project.id || '',
+              project.team_member_default_view || project.default_view
+            )
           }
           styles={{ body: { padding: 0 } }}
         >
@@ -414,7 +433,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
             <Tooltip title={t('setting')}>
               <button
                 style={styles.actionButton}
-                onClick={e => handleSettingsClick(e, project.id)}
+                onClick={e => handleSettingsClick(e, project)}
                 onMouseEnter={e => {
                   Object.assign(e.currentTarget.style, {
                     background: getThemeAwareColor(token.colorPrimary, token.colorPrimaryActive),

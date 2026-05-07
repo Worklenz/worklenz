@@ -594,6 +594,10 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.end_date,
              projects.status_id,
              projects.health_id,
+             projects.priority_id,
+             tp.name AS priority_name,
+             tp.color_code AS priority_color,
+             tp.color_code_dark AS priority_color_dark,
              projects.created_at,
              projects.updated_at,
              projects.folder_id,
@@ -642,6 +646,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                             AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager
       FROM projects
              LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
+             LEFT JOIN task_priorities tp ON projects.priority_id = tp.id
       WHERE projects.id = $1
         AND team_id = $2;
     `;
