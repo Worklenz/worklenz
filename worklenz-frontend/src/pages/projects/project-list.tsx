@@ -88,6 +88,8 @@ const SEARCH_DEBOUNCE_MS = 500;
 const MAX_SEARCH_LENGTH = 100;
 const DEFAULT_PROJECT_SORT_FIELD = 'name';
 const DEFAULT_PROJECT_SORT_ORDER = 'ascend';
+const DEFAULT_GROUPED_PROJECT_SORT_FIELD = 'priority';
+const DEFAULT_GROUPED_PROJECT_SORT_ORDER = 'descend';
 const SEARCH_QUERY_PARAM = 'search';
 const PAGE_QUERY_PARAM = 'page';
 const SIZE_QUERY_PARAM = 'size';
@@ -166,7 +168,7 @@ const ProjectList: React.FC = () => {
       ...groupedRequestParams,
       ...overrides,
       groupBy:
-        overrides.groupBy || groupedRequestParams.groupBy || groupBy || ProjectGroupBy.CATEGORY,
+        overrides.groupBy || groupedRequestParams.groupBy || groupBy || ProjectGroupBy.PRIORITY,
     }),
     [groupedRequestParams, groupBy]
   );
@@ -193,7 +195,7 @@ const ProjectList: React.FC = () => {
               ...(currentGroupedParams || {}),
               search: searchTerm,
               index: 1,
-              groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
+              groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.PRIORITY,
             };
             dispatch(setGroupedRequestParams(newGroupedParams));
             dispatch(fetchGroupedProjects(newGroupedParams));
@@ -280,6 +282,10 @@ const ProjectList: React.FC = () => {
 
   const groupByOptions = useMemo(
     () => [
+      {
+        value: ProjectGroupBy.PRIORITY,
+        label: t('groupBy.priority', { defaultValue: 'Priority' }),
+      },
       {
         value: ProjectGroupBy.CATEGORY,
         label: t('groupBy.category', { defaultValue: 'Category' }),
@@ -535,7 +541,9 @@ const ProjectList: React.FC = () => {
       dispatch(setViewMode(value));
       if (value === ProjectViewType.GROUP) {
         const newGroupedParams = buildGroupedParams({
-          groupBy: groupBy || ProjectGroupBy.CATEGORY,
+          groupBy: groupBy || ProjectGroupBy.PRIORITY,
+          field: DEFAULT_GROUPED_PROJECT_SORT_FIELD,
+          order: DEFAULT_GROUPED_PROJECT_SORT_ORDER,
           search: requestParams.search,
           filter: requestParams.filter,
           statuses: requestParams.statuses,
@@ -553,6 +561,14 @@ const ProjectList: React.FC = () => {
       dispatch(setGroupBy(value));
       const newGroupedParams = buildGroupedParams({
         groupBy: value,
+        field:
+          value === ProjectGroupBy.PRIORITY
+            ? DEFAULT_GROUPED_PROJECT_SORT_FIELD
+            : DEFAULT_PROJECT_SORT_FIELD,
+        order:
+          value === ProjectGroupBy.PRIORITY
+            ? DEFAULT_GROUPED_PROJECT_SORT_ORDER
+            : DEFAULT_PROJECT_SORT_ORDER,
         index: 1,
       });
       dispatch(setGroupedRequestParams(newGroupedParams));
@@ -664,7 +680,8 @@ const ProjectList: React.FC = () => {
           if (!record.priority_name) {
             return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
           }
-          const themeMode = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+          const themeMode =
+            document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
           const color = themeMode === 'dark' ? record.priority_color_dark : record.priority_color;
           return (
             <span
@@ -724,7 +741,7 @@ const ProjectList: React.FC = () => {
     }
 
     if (!groupedRequestParams.groupBy) {
-      const initialGroupBy = groupBy || ProjectGroupBy.CATEGORY;
+      const initialGroupBy = groupBy || ProjectGroupBy.PRIORITY;
       dispatch(
         setGroupedRequestParams({
           filter: filterIndex,
@@ -736,6 +753,14 @@ const ProjectList: React.FC = () => {
           groupBy: initialGroupBy,
           statuses: null,
           categories: null,
+          field:
+            initialGroupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_FIELD
+              : DEFAULT_PROJECT_SORT_FIELD,
+          order:
+            initialGroupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_ORDER
+              : DEFAULT_PROJECT_SORT_ORDER,
         })
       );
     }
@@ -813,13 +838,7 @@ const ProjectList: React.FC = () => {
     if (Object.keys(groupedUpdates).length > 0) {
       dispatch(setGroupedRequestParams(buildGroupedParams(groupedUpdates)));
     }
-  }, [
-    dispatch,
-    urlSearchParams,
-    requestParams.index,
-    requestParams.size,
-    buildGroupedParams,
-  ]);
+  }, [dispatch, urlSearchParams, requestParams.index, requestParams.size, buildGroupedParams]);
 
   // Separate effect for tracking page visits - only run once
   useEffect(() => {
@@ -837,8 +856,16 @@ const ProjectList: React.FC = () => {
           groupBy: groupBy,
           index: groupedRequestParams.index || 1,
           size: groupedRequestParams.size || DEFAULT_PAGE_SIZE,
-          field: groupedRequestParams.field || DEFAULT_PROJECT_SORT_FIELD,
-          order: groupedRequestParams.order || DEFAULT_PROJECT_SORT_ORDER,
+          field:
+            groupedRequestParams.field ||
+            (groupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_FIELD
+              : DEFAULT_PROJECT_SORT_FIELD),
+          order:
+            groupedRequestParams.order ||
+            (groupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_ORDER
+              : DEFAULT_PROJECT_SORT_ORDER),
         });
         dispatch(setGroupedRequestParams(updatedParams));
         dispatch(fetchGroupedProjects(updatedParams));
@@ -886,7 +913,8 @@ const ProjectList: React.FC = () => {
   // Keep URL search query in sync with the active view search
   useEffect(() => {
     const activeSearch =
-      (viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search) || '';
+      (viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search) ||
+      '';
     const normalizedSearch = activeSearch.trim();
     const currentUrlSearch = (urlSearchParams.get(SEARCH_QUERY_PARAM) || '').trim();
 
@@ -920,7 +948,8 @@ const ProjectList: React.FC = () => {
   useEffect(() => {
     const activeIndex =
       viewMode === ProjectViewType.LIST ? requestParams.index : groupedRequestParams.index;
-    const activeSize = viewMode === ProjectViewType.LIST ? requestParams.size : groupedRequestParams.size;
+    const activeSize =
+      viewMode === ProjectViewType.LIST ? requestParams.size : groupedRequestParams.size;
 
     const normalizedPage = activeIndex || 1;
     const normalizedSize = activeSize || DEFAULT_PAGE_SIZE;

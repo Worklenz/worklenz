@@ -101,6 +101,7 @@ export enum ProjectViewType {
 }
 
 export enum ProjectGroupBy {
+  PRIORITY = 'priority',
   CLIENT = 'client',
   CATEGORY = 'category',
 }
