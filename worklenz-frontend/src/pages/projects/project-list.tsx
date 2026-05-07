@@ -30,14 +30,12 @@ import { ProjectDrawer } from '@/components/projects/project-drawer/project-draw
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import { ColumnsType } from 'antd/es/table';
 import { ColumnFilterItem } from 'antd/es/table/interface';
-import Avatars from '@/components/avatars/avatars';
 import { ActionButtons } from '@/components/project-list/project-list-table/project-list-actions/project-list-actions';
 import { CategoryCell } from '@/components/project-list/project-list-table/project-list-category/project-list-category';
 import { ProgressListProgress } from '@/components/project-list/project-list-table/project-list-progress/progress-list-progress';
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 import { ProjectNameCell } from '@/components/project-list/project-list-table/project-name/project-name-cell';
 import { ProjectRateCell } from '@/components/project-list/project-list-table/project-list-favorite/project-rate-cell';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 
@@ -651,7 +649,7 @@ const ProjectList: React.FC = () => {
         render: (_: string, record: IProjectViewModel) => <ProgressListProgress record={record} />,
       },
       {
-        title: t('updated_at'),
+        title: t('updated_at', { defaultValue: 'Last Updated' }),
         dataIndex: 'updated_at',
         key: 'updated_at',
         sorter: true,
@@ -659,10 +657,34 @@ const ProjectList: React.FC = () => {
         render: (_: string, record: IProjectViewModel) => <ProjectListUpdatedAt record={record} />,
       },
       {
-        title: t('members'),
-        dataIndex: 'names',
-        key: 'members',
-        render: (members: InlineMember[]) => <Avatars members={members} />,
+        title: t('priority', { defaultValue: 'Priority' }),
+        dataIndex: 'priority_name',
+        key: 'priority_name',
+        render: (_: string, record: IProjectViewModel) => {
+          if (!record.priority_name) {
+            return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
+          }
+          const themeMode = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+          const color = themeMode === 'dark' ? record.priority_color_dark : record.priority_color;
+          return (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '2px 8px',
+                borderRadius: 4,
+                backgroundColor: color ? `${color}22` : undefined,
+                color: color || undefined,
+                fontWeight: 500,
+                fontSize: 13,
+                border: `1px solid ${color ? `${color}55` : 'transparent'}`,
+              }}
+            >
+              {record.priority_name}
+            </span>
+          );
+        },
       },
       {
         title: '',

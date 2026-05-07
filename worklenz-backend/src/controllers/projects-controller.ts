@@ -461,6 +461,10 @@ export default class ProjectsController extends WorklenzControllerBase {
                                  (SELECT color_code
                                   FROM project_categories
                                   WHERE id = projects.category_id) AS category_color,
+                                 projects.priority_id,
+                                 (SELECT name FROM task_priorities WHERE id = projects.priority_id) AS priority_name,
+                                 (SELECT color_code FROM task_priorities WHERE id = projects.priority_id) AS priority_color,
+                                 (SELECT color_code_dark FROM task_priorities WHERE id = projects.priority_id) AS priority_color_dark,
 
                                   ((SELECT team_member_id as team_member_id
                                     FROM project_members
