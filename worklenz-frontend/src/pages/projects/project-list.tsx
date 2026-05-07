@@ -686,16 +686,9 @@ const ProjectList: React.FC = () => {
           return (
             <span
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '2px 8px',
-                borderRadius: 4,
-                backgroundColor: color ? `${color}22` : undefined,
                 color: color || undefined,
                 fontWeight: 500,
                 fontSize: 13,
-                border: `1px solid ${color ? `${color}55` : 'transparent'}`,
               }}
             >
               {record.priority_name}
