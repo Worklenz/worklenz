@@ -606,7 +606,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
           />
           <ProjectCategorySection
-            categories={projectCategories}
             form={form}
             t={t}
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
@@ -615,7 +614,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           <Form.Item name="notes" label={t('notes')}>
             <Input.TextArea
               placeholder={t('enterNotes')}
-              disabled={!isProjectManager && !isOwnerorAdmin}
+              disabled={!isProjectManager && !isOwnerorAdmin} 
+              maxLength={500}
+              showCount
             />
           </Form.Item>
 
