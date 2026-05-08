@@ -40,6 +40,7 @@
 .description-editor-shell .description-editor-active {
   position: relative;
   border-radius: 8px;
+  overflow:visible;
 }
 
 .description-editor-shell .description-editor-loading {
@@ -64,15 +65,15 @@
   border-radius: 0 0 8px 8px;
   min-height: 200px;
   max-height:400px;
-  overflow-y:auto;
+  overflow-y:visible;
   background: #ffffff;
   color: #141414;
 }
 
 .description-editor-shell .ql-editor {
   min-height: 160px;
-  max-height:none;
-  overflow-y:visible;
+  max-height: 400px;
+  overflow-y:auto;
   font-size: 14px;
   line-height: 1.6;
   padding:12px;
@@ -263,3 +264,9 @@ ol.ql-nested-list {
  counter-reset: none !important;
 }
 
+/* FIX: prevent tooltip from rendering off-screen to the left */
+.description-editor-shell .ql-tooltip {
+  left: 0 !important;
+  transform: none !important;
+  z-index: 100;
+}
