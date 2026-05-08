@@ -76,6 +76,7 @@ const ProfileSettings = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | undefined>(
     currentSession?.last_updated ?? currentSession?.updated_at,
   );
@@ -234,6 +235,7 @@ const ProfileSettings = () => {
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_name_change, { newName: name });
         dispatch(changeUserName(name));
+        setIsDirty(false);
 
         const newUpdatedAt = res.body.updated_at || new Date().toISOString();
         const updatedUser = {
@@ -267,6 +269,10 @@ const ProfileSettings = () => {
             initialValues={{
               name: currentSession?.name,
               email: currentSession?.email,
+            }}
+            onValuesChange={(_, allValues) => {
+              const nameChanged = allValues.name !== currentSession?.name;
+              setIsDirty(nameChanged);
             }}
             style={{ width: '100%', maxWidth: 350 }}
           >
@@ -313,9 +319,11 @@ const ProfileSettings = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button type="primary" htmlType="submit" loading={updating}>
-                {t('saveChanges')}
-              </Button>
+              {isDirty && (
+                <Button type="primary" htmlType="submit" loading={updating}>
+                  {t('saveChanges')}
+                </Button>
+              )}
             </Form.Item>
           </Form>
         )}
@@ -325,8 +333,8 @@ const ProfileSettings = () => {
             title={
               currentSession?.joined_date || currentSession?.created_at
                 ? formatDateTimeWithLocale(
-                    currentSession?.joined_date || currentSession?.created_at || '',
-                  )
+                  currentSession?.joined_date || currentSession?.created_at || '',
+                )
                 : ''
             }
           >
@@ -335,8 +343,8 @@ const ProfileSettings = () => {
                 date:
                   currentSession?.joined_date || currentSession?.created_at
                     ? calculateTimeDifference(
-                        currentSession?.joined_date || currentSession?.created_at || '',
-                      )
+                      currentSession?.joined_date || currentSession?.created_at || '',
+                    )
                     : '',
               })}
             </Typography.Text>
