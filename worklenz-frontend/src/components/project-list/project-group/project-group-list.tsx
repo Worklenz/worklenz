@@ -120,10 +120,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     }
   };
 
-  // ✅ Exact same columns as list view
+  // ✅ Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
   const tableColumns = useMemo(
     () => [
-      // Favorite
+      // 1. Favorite
       {
         title: '',
         key: 'favorite',
@@ -132,7 +132,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
           <ProjectRateCell key={record.id} t={t} record={record} />
         ),
       },
-      // Name
+      // 2. Name
       {
         title: t('name', { defaultValue: 'Name' }),
         dataIndex: 'name',
@@ -155,61 +155,14 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
           </div>
         ),
       },
-      // Client
+      // 3. Client
       {
         title: t('client', { defaultValue: 'Client' }),
         dataIndex: 'client_name',
         key: 'client_name',
         render: (text: string) => text || '—',
       },
-      // Category
-      {
-        title: t('category', { defaultValue: 'Category' }),
-        dataIndex: 'category_name',
-        key: 'category_name',
-        render: (text: string, record: any) => {
-          if (!text || text === '-') return <>-</>;
-          return (
-            <Tag
-              color={record.category_color || '#ff9c3c'}
-              style={{ borderRadius: '50rem' }}
-            >
-              {text}
-            </Tag>
-          );
-        },
-      },
-      // Status
-      {
-        title: t('status', { defaultValue: 'Status' }),
-        dataIndex: 'status',
-        key: 'status',
-        render: (text: string) => text || '—',
-      },
-      // Tasks Progress
-      {
-        title: t('tasksProgress', { defaultValue: 'Tasks Progress' }),
-        key: 'tasksProgress',
-        render: (_: any, record: any) => {
-          const completed = record?.completed_tasks_count || 0;
-          const total = record?.all_tasks_count || 0;
-          const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-          return (
-            <Tooltip title={`${completed} / ${total} tasks completed.`}>
-              <Progress percent={percent} size="small" />
-            </Tooltip>
-          );
-        },
-      },
-      // Last Updated
-      {
-        title: t('updated_at', { defaultValue: 'Last Updated' }),
-        dataIndex: 'updated_at',
-        key: 'updated_at',
-        width: 160,
-        render: (_: any, record: any) => <ProjectListUpdatedAt record={record} />,
-      },
-      // Priority
+      // 4. Priority
       {
         title: t('priority', { defaultValue: 'Priority' }),
         dataIndex: 'priority_name',
@@ -227,7 +180,51 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
           );
         },
       },
-      // Action buttons
+      // 5. Status
+      {
+        title: t('status', { defaultValue: 'Status' }),
+        dataIndex: 'status',
+        key: 'status',
+        render: (text: string) => text || '—',
+      },
+      // 6. Tasks Progress
+      {
+        title: t('tasksProgress', { defaultValue: 'Tasks Progress' }),
+        key: 'tasksProgress',
+        render: (_: any, record: any) => {
+          const completed = record?.completed_tasks_count || 0;
+          const total = record?.all_tasks_count || 0;
+          const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+          return (
+            <Tooltip title={`${completed} / ${total} tasks completed.`}>
+              <Progress percent={percent} size="small" />
+            </Tooltip>
+          );
+        },
+      },
+      // 7. Category
+      {
+        title: t('category', { defaultValue: 'Category' }),
+        dataIndex: 'category_name',
+        key: 'category_name',
+        render: (text: string, record: any) => {
+          if (!text || text === '-') return <>-</>;
+          return (
+            <Tag color={record.category_color || '#ff9c3c'} style={{ borderRadius: '50rem' }}>
+              {text}
+            </Tag>
+          );
+        },
+      },
+      // 8. Last Updated
+      {
+        title: t('updated_at', { defaultValue: 'Last Updated' }),
+        dataIndex: 'updated_at',
+        key: 'updated_at',
+        width: 160,
+        render: (_: any, record: any) => <ProjectListUpdatedAt record={record} />,
+      },
+      // 9. Actions
       {
         title: '',
         key: 'actions',
@@ -236,12 +233,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
           <Space size="small" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <Tooltip title={t('setting', { defaultValue: 'Settings' })}>
               <button
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '2px 6px',
-                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
                 onClick={e => handleSettingsClick(e, record)}
               >
                 <SettingOutlined />
@@ -276,7 +268,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     [token, t, themeMode, isOwnerOrAdmin]
   );
 
-  // Loading state
   if (loading) {
     return (
       <div style={{ padding: '40px 20px' }}>
@@ -285,7 +276,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     );
   }
 
-  // Empty state
   if (!groups || groups.length === 0) {
     return (
       <div
@@ -298,9 +288,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         }}
       >
         <Empty
-          image={
-            <ProjectOutlined style={{ fontSize: 48, color: token.colorTextTertiary }} />
-          }
+          image={<ProjectOutlined style={{ fontSize: 48, color: token.colorTextTertiary }} />}
           description={<Text>{t('noProjects')}</Text>}
         />
       </div>
@@ -323,10 +311,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 padding: '10px 16px',
                 marginBottom: 8,
                 borderRadius: token.borderRadius,
-                background: getThemeAwareColor(
-                  token.colorFillAlter,
-                  token.colorFillSecondary
-                ),
+                background: getThemeAwareColor(token.colorFillAlter, token.colorFillSecondary),
                 border: `1px solid ${token.colorBorder}`,
               }}
             >
@@ -347,8 +332,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                     {group?.groupName || 'Unnamed Group'}
                   </Title>
                   <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>
-                    {projects.length}{' '}
-                    {projects.length === 1 ? 'project' : 'projects'}
+                    {projects.length} {projects.length === 1 ? 'project' : 'projects'}
                   </Text>
                 </div>
               </Space>
@@ -362,7 +346,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               />
             </div>
 
-            {/* ✅ Table with same columns as list view */}
             <Table
               columns={tableColumns}
               dataSource={projects.map((p: any) => ({ ...p, key: p?.id }))}
@@ -373,8 +356,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 onClick: () =>
                   onProjectSelect(
                     record?.id || '',
-                    (record as any)?.team_member_default_view ||
-                      (record as any)?.default_view
+                    (record as any)?.team_member_default_view || (record as any)?.default_view
                   ),
                 style: { cursor: 'pointer' },
                 onMouseEnter: () => handleProjectHover(record?.id || ''),
