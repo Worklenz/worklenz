@@ -72,6 +72,12 @@ const ProjectsGroupedView = () => {
     groupBy,
     isLoading,
     loadingTeams,
+    searchQuery,
+    selectedProjectStatuses,
+    selectedProjectHealths,
+    selectedProjectCategories,
+    selectedProjectManagers,
+    archived,
   } = useAppSelector(state => state.projectReportsReducer);
 
   // Handle project click to open modal
@@ -101,12 +107,21 @@ const ProjectsGroupedView = () => {
     [groupPagination]
   );
 
-  // Fetch grouped project data when groupBy changes
+  // Fetch grouped project data when filters change (including search)
   useEffect(() => {
     dispatch(fetchGroupedProjects());
-    // Reset group pagination when grouping changes
+    // Reset group pagination when filters change
     setGroupPagination({});
-  }, [dispatch, groupBy]);
+  }, [
+    dispatch,
+    groupBy,
+    searchQuery,
+    selectedProjectStatuses,
+    selectedProjectHealths,
+    selectedProjectCategories,
+    selectedProjectManagers,
+    archived,
+  ]);
 
   // Transform backend grouped data to component format
   const transformedGroups = useMemo(() => {

@@ -157,13 +157,13 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       }
     } catch (error) {
       console.error('Error inviting project members:', error);
-      message.error(t('projectInvite_inviteFailed'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGenerateAndCopyLink = async () => {
+  // Generate invitation link (separate from copying)
+  const handleGenerateLink = async () => {
     try {
       setLinkLoading(true);
       const linkData = {
@@ -176,24 +176,30 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
 
       const res = await projectMembersApiService.generateInvitationLink(linkData);
       if (res.done && res.body.invitation_url) {
-        // Update state with new link
         setInvitationLink(res.body.invitation_url);
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
         
-        // Copy to clipboard
-        await navigator.clipboard.writeText(res.body.invitation_url);
-        
-        setLinkCopied(true);
-        // message.success(t('projectInvite_linkCopied'));
-        
-        setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
-      console.error('Error generating and copying invitation link:', error);
-      message.error(t('projectInvite_linkCreateFailed'));
+      console.error('Error generating invitation link:', error);
+      
     } finally {
       setLinkLoading(false);
+    }
+  };
+
+  // Copy existing link to clipboard (synchronous user action)
+  const handleCopyLink = async () => {
+    if (!invitationLink) return;
+    
+    try {
+      // This works in all browsers because it's called directly from user click
+      await navigator.clipboard.writeText(invitationLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
     }
   };
 
@@ -218,18 +224,32 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       width={500}
       loading={loading}
       footer={
-        <Flex justify="space-between" align="center">
-          <Button
-            loading={linkLoading}
-            onClick={handleGenerateAndCopyLink}
-            icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
-          >
-            {linkCopied
-              ? t('projectInvite_copiedShort')
-              : hasActiveLink && !isLinkExpired(linkExpiry)
-                ? t('projectInvite_copyLinkButton')
-                : t('Copy Link', { defaultValue: 'Copy Link' })}
-          </Button>
+        <Flex justify="space-between" align="center" gap={8}>
+          {hasActiveLink && !isLinkExpired(linkExpiry) ? (
+            <>
+              <Button onClick={handleGenerateLink} loading={linkLoading}>
+                {t('projectInvite_regenerateLink', { defaultValue: 'Regenerate Link' })}
+              </Button>
+              <Button
+                type="primary"
+                onClick={handleCopyLink}
+                icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+              >
+                {linkCopied
+                  ? t('projectInvite_copiedShort')
+                  : t('projectInvite_copyLinkButton')}
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="primary"
+              loading={linkLoading}
+              onClick={handleGenerateLink}
+              icon={<CopyOutlined />}
+            >
+              {t('projectInvite_generateLink', { defaultValue: 'Generate Link' })}
+            </Button>
+          )}
         </Flex>
       }
     >
