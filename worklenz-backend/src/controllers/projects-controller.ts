@@ -87,6 +87,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_created_log = LOG_DESCRIPTIONS.PROJECT_CREATED;
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_manager_id = req.body.project_manager ? req.body.project_manager.id : null;
+    req.body.priority_id = req.body.priority_id || null;
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
@@ -104,6 +105,8 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     // Log project creation after successful database operation
     if (data.project?.id) {
+      await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
+
       await ActivityLoggingService.logProjectCreated(
         req.user?.team_id || "",
         data.project.id,
@@ -161,6 +164,16 @@ export default class ProjectsController extends WorklenzControllerBase {
                  AND is_member_of_project(projects.id, $2, $1)`;
     const result = await db.query(q, [req.user?.team_id, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  private static async setProjectPriority(projectId: string, priorityId: string | null, teamId: string | null) {
+    const q = `
+      UPDATE projects
+      SET priority_id = COALESCE($2::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1))
+      WHERE id = $1
+        AND team_id = $3;
+    `;
+    await db.query(q, [projectId, priorityId, teamId]);
   }
 
   @HandleExceptions()
@@ -702,19 +715,23 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_member_removed_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_REMOVED;
     req.body.team_member_id = req.body.project_manager ? req.body.project_manager.id : null;
+    req.body.priority_id = req.body.priority_id || null;
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
-      req.body.start_date = req.body.start_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+      req.body.start_date = req.body.start_date.toString().split('T')[0];
     }
     if (req.body.end_date) {
-      req.body.end_date = req.body.end_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+      req.body.end_date = req.body.end_date.toString().split('T')[0];
     }
 
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
 
-    // Log the project update using the centralized service
+    if (data.project?.id) {
+      await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
+    }
+
     await ActivityLoggingService.logProjectUpdated(
       req.user?.team_id || "",
       req.params.id,
@@ -722,7 +739,6 @@ export default class ProjectsController extends WorklenzControllerBase {
       req.body.name
     );
 
-    // Log project manager assignment if changed
     if (req.body.project_manager && req.body.project_manager.id) {
       await ActivityLoggingService.logProjectActivity({
         teamId: req.user?.team_id || "",

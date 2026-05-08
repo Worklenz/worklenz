@@ -676,7 +676,8 @@ BEGIN
                           use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id,
-            _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID, (_body ->> 'priority_id')::UUID,
+            _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
+            COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1)),
             (_body ->> 'start_date')::TIMESTAMPTZ,
             (_body ->> 'end_date')::TIMESTAMPTZ, (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
             (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER,
@@ -5846,7 +5847,7 @@ BEGIN
         color_code             = (_body ->> 'color_code')::TEXT,
         status_id              = (_body ->> 'status_id')::UUID,
         health_id              = (_body ->> 'health_id')::UUID,
-        priority_id            = (_body ->> 'priority_id')::UUID,
+        priority_id            = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1)),
         key                    = (_body ->> 'key')::TEXT,
         start_date             = (_body ->> 'start_date')::TIMESTAMPTZ,
         end_date               = (_body ->> 'end_date')::TIMESTAMPTZ,
