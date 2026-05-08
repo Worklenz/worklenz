@@ -221,6 +221,18 @@ export const billingApiService = {
   },
 
   /**
+   * Persist a DirectPay SDK card-add response when the browser receives the full payload.
+   * The server webhook remains the source of truth for return URL-only responses.
+   */
+  async saveDirectPayCardResponse(responsePayload: any): Promise<IServerResponse<any>> {
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/directpay/save-card-response`,
+      responsePayload
+    );
+    return response.data;
+  },
+
+  /**
    * List saved cards for a wallet
    * @param walletId Wallet ID from DirectPay
    */

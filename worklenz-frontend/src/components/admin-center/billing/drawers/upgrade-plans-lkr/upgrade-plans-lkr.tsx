@@ -253,6 +253,21 @@ const UpgradePlansLKR: React.FC = () => {
 
   const handleDirectPaySuccess = async (response: any) => {
     logger.info('DirectPay payment successful', response);
+
+    const hasCardPayload =
+      response?.card?.id ||
+      response?.data?.card?.id ||
+      response?.walletId ||
+      response?.card?.walletId ||
+      response?.data?.walletId;
+
+    if (hasCardPayload) {
+      try {
+        await billingApiService.saveDirectPayCardResponse(response);
+      } catch (error) {
+        logger.error('Failed to persist DirectPay card response from browser payload', error);
+      }
+    }
     
     // Close modal immediately for better UX
     setShowDirectPayModal(false);

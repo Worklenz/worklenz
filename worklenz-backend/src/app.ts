@@ -42,7 +42,15 @@ app.set("trust proxy", 1);
 // Basic middleware setup
 app.use(compression());
 app.use(logger("dev"));
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({
+  limit: "50mb",
+  verify: (req: Request & { rawBody?: string }, _res, buf) => {
+    const url = req.originalUrl || req.url || "";
+    if (url.includes("/webhook/directpay/")) {
+      req.rawBody = buf.toString("utf8");
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(hpp());
@@ -443,6 +451,7 @@ app.post("/webhook/directpay/card-response",
     if (Buffer.isBuffer(req.body)) {
       try {
         const bodyString = req.body.toString("utf8");
+        req.rawBody = bodyString;
         console.log("[DirectPay Webhook] Body string:", bodyString);
         
         // Try to parse as JSON
