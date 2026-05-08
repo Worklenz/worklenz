@@ -685,7 +685,7 @@ const TeamMembersSettings = () => {
               style={{ width: '100%', maxWidth: 500 }}
             >
               <Tooltip title={t('pinTooltip')}>
-                <Button shape="circle" icon={<SyncOutlined />} onClick={handleRefresh} />
+                <Button shape="circle" icon={<SyncOutlined spin={isLoading} />} onClick={handleRefresh} />
               </Tooltip>
               <Input
                 value={searchQuery}
