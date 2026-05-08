@@ -390,7 +390,7 @@ const TaskListV2Section: React.FC = () => {
   const columnSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 6,
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -1256,7 +1256,7 @@ const TaskListV2Section: React.FC = () => {
                               : column.id === 'description'
                                 ? 'flex items-center pl-2'
                                 : column.id === 'labels'
-                                  ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
+                                  ? 'flex items-center min-w-0 px-2'
                                   : column.id === 'assignees'
                                     ? 'flex items-center px-2'
                                     : 'flex items-center justify-center px-2'
@@ -1276,47 +1276,25 @@ const TaskListV2Section: React.FC = () => {
                       <CustomColumnHeader
                         column={column}
                         onSettingsClick={handleCustomColumnSettings}
-                        dragHandle={
-                          !column.isSticky ? (
-                            <span
-                              className="column-drag-handle-inline"
-                              ref={dragParams?.setActivatorNodeRef}
-                              {...dragParams?.attributes}
-                              {...dragParams?.listeners}
-                              aria-label={t('moveColumnHandle')}
-                              title={t('moveColumnHandle')}
-                              style={{ cursor: 'grab', display: 'inline-flex', alignItems: 'center' }}
-                            >
-                            <HolderOutlined style={{ fontSize: 14, color: 'currentColor' }} />
-                            </span>
-                          ) : undefined
-                        }
+                        dragListeners={!column.isSticky ? dragParams?.listeners : undefined}
+                        dragAttributes={!column.isSticky ? dragParams?.attributes : undefined}
+                        setDragActivatorRef={!column.isSticky ? dragParams?.setActivatorNodeRef : undefined}
                       />
                     ) : (
                       <span
+                        ref={dragParams?.setActivatorNodeRef}
+                        {...dragParams?.attributes}
+                        {...dragParams?.listeners}
                         style={{
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           paddingRight: '20px',
                           flex: 1,
+                          cursor: !column.isSticky ? 'grab' : 'default',
                         }}
                       >
                         {t(column.label || '')}
-                      </span>
-                    )}
-
-                    {/* Column drag handle - only for non-custom, non-sticky columns */}
-                    {!column.isSticky && !column.isCustom && (
-                      <span
-                        className="column-drag-handle"
-                        ref={dragParams?.setActivatorNodeRef}
-                        {...dragParams?.attributes}
-                        {...dragParams?.listeners}
-                        aria-label={t('moveColumnHandle')}
-                        title={t('moveColumnHandle')}
-                      >
-                        <HolderOutlined style={{ fontSize: 14 }} />
                       </span>
                     )}
 
@@ -1350,10 +1328,28 @@ const TaskListV2Section: React.FC = () => {
                           const currentWidthString = columnWidths[columnId] || column.width;
                           const currentWidth = parseInt(currentWidthString.replace('px', ''), 10);
 
-                          // Get min/max widths from column config or use defaults
+                          // Calculate minimum width based on header text length
+                          // Use translated label text to measure actual displayed text
+                          let headerText: string;
+                          if (column.isCustom) {
+                            // Use the same logic as CustomColumnHeader component
+                            headerText = column.name || column.custom_column_obj?.fieldTitle || column.key || column.label || '';
+                          } else {
+                            headerText = t(column.label || '');
+                          }
+                          // Approximate: 8px per character + padding for icons/spacing
+                          // Custom columns need more padding for settings icon + drag handle
+                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) + 
+                          //            drag handle padding (12px) + drag handle icon (14px) + 
+                          //            container padding (16px) + buffer (24px) = 100px
+                          // Regular columns need padding for drag handle (40px)
+                          const paddingForIcons = column.isCustom ? 100 : 40;
+                          const calculatedMinWidth = Math.max(100, (headerText.length * 8) + paddingForIcons);
+                          
+                          // Get min/max widths from column config or use calculated minimum
                           const minWidth = (column as any).minWidth
                             ? parseInt((column as any).minWidth.replace('px', ''), 10)
-                            : 100;
+                            : calculatedMinWidth;
                           const maxWidth = (column as any).maxWidth
                             ? parseInt((column as any).maxWidth.replace('px', ''), 10)
                             : 1200;
@@ -1406,10 +1402,28 @@ const TaskListV2Section: React.FC = () => {
                           const columnId = column.id;
                           const handleElement = e.currentTarget;
 
-                          // Get min/max widths from column config or use defaults
+                          // Calculate minimum width based on header text length
+                          // Use translated label text to measure actual displayed text
+                          let headerText: string;
+                          if (column.isCustom) {
+                            // Use the same logic as CustomColumnHeader component
+                            headerText = column.name || column.custom_column_obj?.fieldTitle || column.key || column.label || '';
+                          } else {
+                            headerText = t(column.label || '');
+                          }
+                          // Approximate: 8px per character + padding for icons/spacing
+                          // Custom columns need more padding for settings icon + drag handle
+                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) + 
+                          //            drag handle padding (12px) + drag handle icon (14px) + 
+                          //            container padding (16px) + buffer (24px) = 100px
+                          // Regular columns need padding for drag handle (40px)
+                          const paddingForIcons = column.isCustom ? 60 : 50;
+                          const calculatedMinWidth = Math.max(60, (headerText.length * 8) + paddingForIcons);
+                          
+                          // Get min/max widths from column config or use calculated minimum
                           const minWidth = column.minWidth
                             ? parseInt(column.minWidth.replace('px', ''), 10)
-                            : 100;
+                            : calculatedMinWidth;
                           const maxWidth = column.maxWidth
                             ? parseInt(column.maxWidth.replace('px', ''), 10)
                             : 1200;
@@ -1741,6 +1755,20 @@ const TaskListV2Section: React.FC = () => {
           [data-column-id] {
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
+          }
+          
+          /* Labels column horizontal scroll - hide scrollbar but keep functionality */
+          .overflow-x-auto,
+          .labels-scroll-container,
+          .single-line-scroll {
+            scrollbar-width: none; /* Firefox - hide scrollbar */
+            -ms-overflow-style: none; /* IE and Edge - hide scrollbar */
+          }
+          
+          .overflow-x-auto::-webkit-scrollbar,
+          .labels-scroll-container::-webkit-scrollbar,
+          .single-line-scroll::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera - hide scrollbar */
           }
         `}
       </style>

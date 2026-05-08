@@ -58,7 +58,7 @@ export const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isD
   }
 
   return (
-    <div className="flex items-center gap-0.5 flex-wrap">
+    <div className="flex items-center gap-0.5" style={{ flexShrink: 0 }}>
       {labels.map((label, index) => {
         const extendedLabel = label as any;
         return extendedLabel.end && extendedLabel.names && extendedLabel.name ? (
@@ -154,24 +154,28 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
     const plainText=stripHtml(description);
     return(
     <div
-      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width, minHeight: '30px' }}
+      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+      style={{ 
+        width, 
+        minHeight: '30px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
     >
       {plainText.trim() ? (
-        <div
-          className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
+        <span
+          className="text-sm text-gray-600 dark:text-gray-400"
           style={{
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxHeight: '24px',
-            lineHeight: '24px',
+            display: 'inline-block',
           }}
           title={plainText}
-          >
-            {plainText}
-    
-        </div>
+        >
+          {plainText}
+        </span>
       ) : (
         <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
       )}
@@ -212,16 +216,25 @@ interface AssigneesColumnProps {
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
   ({ width, task, convertedTask, isDarkMode }) => (
     <div
-      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width }}
+      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+      style={{ 
+        width,
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
     >
-      <AvatarGroup
-        members={task.assignee_names || []}
-        maxCount={3}
-        isDarkMode={isDarkMode}
-        size={24}
-      />
-      <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+      <div className="flex items-center gap-1" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+        <AvatarGroup
+          members={task.assignee_names || []}
+          maxCount={3}
+          isDarkMode={isDarkMode}
+          size={24}
+        />
+        <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+      </div>
     </div>
   )
 );
@@ -305,11 +318,20 @@ export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700"
-        style={labelsStyle}
+        className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden labels-scroll-container"
+        style={{
+          ...labelsStyle,
+          // Enable horizontal scrolling for labels - GitHub style (hidden scrollbar)
+          scrollbarWidth: 'none', // For Firefox - hide scrollbar
+          msOverflowStyle: 'none', // For IE/Edge - hide scrollbar
+          WebkitOverflowScrolling: 'touch', // For iOS smooth scrolling
+          whiteSpace: 'nowrap', // Prevent wrapping
+        }}
       >
-        <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
-        <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+        <div className="flex items-center gap-0.5" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+          <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
+          <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+        </div>
       </div>
     );
   }
@@ -431,12 +453,20 @@ interface ReporterColumnProps {
 
 export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, reporter }) => (
   <div
-    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-    style={{ width }}
+    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+    style={{ 
+      width,
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      WebkitOverflowScrolling: 'touch',
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+    }}
   >
     {reporter ? (
       <span
-        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+        className="text-sm text-gray-500 dark:text-gray-400"
+        style={{ whiteSpace: 'nowrap' }}
         title={safeTextDisplay(reporter)}
       >
         {safeTextDisplay(reporter)}
@@ -462,14 +492,23 @@ export const CustomColumn: React.FC<CustomColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-        style={{ width }}
+        className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+        style={{ 
+          width,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
       >
-        <CustomColumnCell
-          column={column}
-          task={task}
-          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-        />
+        <div style={{ width: '100%', minWidth: 0 }}>
+          <CustomColumnCell
+            column={column}
+            task={task}
+            updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+          />
+        </div>
       </div>
     );
   }
