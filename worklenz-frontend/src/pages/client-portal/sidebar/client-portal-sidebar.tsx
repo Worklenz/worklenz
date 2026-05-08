@@ -14,7 +14,7 @@ import {
   clientPortalItems,
   ClientPortalMenuItems,
 } from '@/lib/client-portal/client-portal-constants';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import {
   RightOutlined,
   MenuFoldOutlined,
@@ -29,8 +29,58 @@ import {
   MixpanelEvents,
   ClientPortalNavigationEventProps,
 } from '../../../types/mixpanel-events.types';
+import { createPortal } from 'react-dom';
 
 const { Title } = Typography;
+
+const SidebarTooltip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
+  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const ref = useRef<HTMLSpanElement>(null);
+
+  const handleMouseEnter = useCallback(() => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setPos({ top: rect.top + rect.height / 2, left: rect.right + 8 });
+    }
+    setVisible(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => setVisible(false), []);
+
+  return (
+    <>
+      <span
+        ref={ref}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        style={{ display: 'flex', alignItems: 'center' }}
+      >
+        {children}
+      </span>
+      {visible && createPortal(
+        <div style={{
+          position: 'fixed',
+          top: pos.top,
+          left: pos.left,
+          transform: 'translateY(-50%)',
+          backgroundColor: '#000000',
+          color: '#ffffff',
+          padding: '6px 10px',
+          borderRadius: '6px',
+          fontSize: '14px',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          zIndex: 99999,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        }}>
+          {label}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
 
 interface ClientPortalSidebarProps {
   items?: ClientPortalMenuItems[];
@@ -79,7 +129,14 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
     () =>
       menuSource.map(item => ({
         key: item.key,
-        icon: item.icon,
+       icon: collapsed ? (
+  <SidebarTooltip label={t(item.name)}>
+    {item.icon}
+  </SidebarTooltip>
+) : (
+  item.icon
+),
+title: undefined,
         label: collapsed ? null : (
           <Link to={`/worklenz/client-portal/${item.endpoint}`}>
             <Flex align="center" justify="space-between" style={{ width: '100%' }}>
