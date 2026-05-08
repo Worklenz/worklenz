@@ -307,10 +307,11 @@ interface LabelsColumnProps {
   labelsAdapter: any;
   isDarkMode: boolean;
   visibleColumns: any[];
+  columnId?: string;
 }
 
 export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
-  ({ width, task, labelsAdapter, isDarkMode, visibleColumns }) => {
+  ({ width, task, labelsAdapter, isDarkMode, visibleColumns, columnId = 'labels' }) => {
     const labelsStyle = {
       width,
       flexShrink: 0,
@@ -515,3 +516,7 @@ export const CustomColumn: React.FC<CustomColumnProps> = memo(
 );
 
 CustomColumn.displayName = 'CustomColumn';
+
+
+// Export the new overflow-aware labels column
+export { LabelsColumnWithOverflow } from './LabelsColumnWithOverflow';
