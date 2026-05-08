@@ -66,7 +66,7 @@ export interface CategoryCellProps {
 }
 
 export interface ActionButtonsProps {
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
   record: IProjectViewModel;
   setProjectId: (id: string) => void;
   dispatch: AppDispatch;
@@ -117,7 +117,7 @@ export interface ProjectViewControlsProps {
   viewState: ProjectViewState;
   onViewChange: (state: ProjectViewState) => void;
   availableGroupByOptions?: ProjectGroupBy[];
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface ProjectGroupCardProps {
@@ -126,7 +126,7 @@ export interface ProjectGroupCardProps {
   onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface ProjectGroupListProps {
@@ -136,7 +136,7 @@ export interface ProjectGroupListProps {
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
   loading: boolean;
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface GroupedProject {
