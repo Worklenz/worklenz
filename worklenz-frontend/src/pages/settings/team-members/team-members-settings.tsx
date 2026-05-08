@@ -698,9 +698,9 @@ const TeamMembersSettings = () => {
                 title={
                   isInviteRestricted
                     ? tCommon('license-expired-subtitle', {
-                        defaultValue:
-                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                      })
+                      defaultValue:
+                        'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                    })
                     : ''
                 }
               >
@@ -717,7 +717,7 @@ const TeamMembersSettings = () => {
               </Tooltip>
               <Tooltip title={t('pinTooltip')} trigger={'hover'}>
                 <PinRouteToNavbarButton
-                  name="teamMembers"
+                  name={t('title')}
                   path="/worklenz/settings/team-members"
                   adminOnly
                 />
