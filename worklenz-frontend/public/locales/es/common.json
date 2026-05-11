@@ -29,6 +29,7 @@
   "license-expired-upgrade": "Renovar ahora",
   "license-expired-trial-upgrade": "Actualizar ahora",
   "license-expired-custom-upgrade": "Contactar soporte",
+  "license-expired-contact-owner": "La suscripción de su equipo ha expirado. Por favor, contacte al propietario del equipo para renovarla.",
   "license-expired-contacting-support": "Contactando soporte...",
   "license-expired-message-sent": "Mensaje enviado ✓",
   "license-expired-days-remaining": "{{days}} días restantes en su período de prueba",

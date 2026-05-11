@@ -21,6 +21,7 @@
   "license-expired-feature-3": "✓ Veçori bashkëpunimi në grup",
   "license-expired-feature-4": "✓ Mbështetje me prioritet",
   "license-expired-upgrade": "Përditeso tani",
+  "license-expired-contact-owner": "Abonimi i ekipit tuaj ka skaduar. Ju lutemi kontaktoni pronarin e ekipit për rinovim.",
   "license-expired-days-remaining": "{{days}} ditë të mbetura në periudhën tuaj të provës",
   "trial-expiring-soon": "Periudhja juaj e provës skadon në {{days}} ditë",
   "trial-expiring-soon_plural": "Periudhja juaj e provës skadon në {{days}} ditë",

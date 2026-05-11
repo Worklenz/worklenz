@@ -29,6 +29,7 @@
   "license-expired-upgrade": "Jetzt erneuern",
   "license-expired-trial-upgrade": "Jetzt upgraden",
   "license-expired-custom-upgrade": "Support kontaktieren",
+  "license-expired-contact-owner": "Das Abonnement Ihres Teams ist abgelaufen. Bitte kontaktieren Sie Ihren Team-Owner zur Verlängerung.",
   "license-expired-contacting-support": "Support wird kontaktiert...",
   "license-expired-message-sent": "Nachricht gesendet ✓",
   "license-expired-days-remaining": "{{days}} Tage verbleiben in Ihrer Testversion",
