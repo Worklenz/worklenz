@@ -14,6 +14,7 @@ const attachmentsApiRouter = express.Router();
 
 attachmentsApiRouter.post("/tasks", taskAttachmentsValidator, verifyTaskAccess('body', 'task_id'), safeControllerFunction(AttachmentController.createTaskAttachment));
 attachmentsApiRouter.post("/avatar", avatarValidator, safeControllerFunction(imageToWebp), safeControllerFunction(AttachmentController.createAvatarAttachment));
+attachmentsApiRouter.delete("/avatar", safeControllerFunction(AttachmentController.deleteAvatarAttachment));
 attachmentsApiRouter.get("/tasks/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(AttachmentController.get));
 attachmentsApiRouter.get("/download", safeControllerFunction(AttachmentController.download));
 attachmentsApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(AttachmentController.getByProjectId));
