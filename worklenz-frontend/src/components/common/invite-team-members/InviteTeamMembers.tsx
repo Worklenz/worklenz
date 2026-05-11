@@ -25,6 +25,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { RolePermissionsPopover } from '@/components/settings/role-permissions-popover';
 
 interface FormValues {
   email: string[];
@@ -351,7 +352,15 @@ const InviteTeamMembers = () => {
             </Flex>
           </Form.Item>
 
-          <Form.Item label={t('memberAccessLabel')} name="access">
+          <Form.Item
+            label={
+              <Flex align="center" gap={6}>
+                <span>{t('memberAccessLabel', { defaultValue: 'Access Level' })}</span>
+                <RolePermissionsPopover />
+              </Flex>
+            }
+            name="access"
+          >
             <Select
               disabled={isInviteRestricted}
               options={translatedRoleOptions}

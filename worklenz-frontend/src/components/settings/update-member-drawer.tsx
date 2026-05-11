@@ -29,12 +29,13 @@ import logger from '@/utils/errorLogger';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
-import { ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
+import { ROLE_NAMES } from '@/types/roles/role.types';
 import {
   canManageUserRole,
   getAvailableRoleOptions,
   getSessionRoleName,
 } from '@/utils/role-permissions.utils';
+import { RolePermissionsPopover } from './role-permissions-popover';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
@@ -422,7 +423,16 @@ const UpdateMemberDrawer = ({
           />
         </Form.Item>
 
-        <Form.Item label={t('memberAccessLabel')} name="access" rules={[{ required: true }]}>
+        <Form.Item
+          label={
+            <Flex align="center" gap={6}>
+              <span>{t('memberAccessLabel', { defaultValue: 'Access Level' })}</span>
+              <RolePermissionsPopover />
+            </Flex>
+          }
+          name="access"
+          rules={[{ required: true }]}
+        >
           <Select
             disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
             options={translatedRoleOptions}
@@ -441,28 +451,6 @@ const UpdateMemberDrawer = ({
             )}
           />
         </Form.Item>
-
-        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-          {t(
-            ROLE_DEFINITIONS[
-              form.getFieldValue('access') === 'admin'
-                ? ROLE_NAMES.ADMIN
-                : form.getFieldValue('access') === 'team-lead'
-                  ? ROLE_NAMES.TEAM_LEAD
-                  : ROLE_NAMES.MEMBER
-            ].descriptionKey,
-            {
-              defaultValue:
-                ROLE_DEFINITIONS[
-                  form.getFieldValue('access') === 'admin'
-                    ? ROLE_NAMES.ADMIN
-                    : form.getFieldValue('access') === 'team-lead'
-                      ? ROLE_NAMES.TEAM_LEAD
-                      : ROLE_NAMES.MEMBER
-                ].descriptionDefaultValue,
-            }
-          )}
-        </Typography.Text>
 
         {canBeAssignedToManager && (
           <Form.Item

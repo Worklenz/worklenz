@@ -17,12 +17,10 @@ import {
   Flex,
   Input,
   MenuProps,
-  Modal,
   Popconfirm,
   Table,
   TableProps,
   Tag,
-  theme,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
@@ -55,7 +53,6 @@ import './team-members-settings.css';
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
   const { t: tCommon } = useTranslation('common');
-  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const auth = useAuthService();
@@ -72,7 +69,6 @@ const TeamMembersSettings = () => {
   const [selectedMemberName, setSelectedMemberName] = useState<string | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
-  const [isRolePermissionsModalOpen, setIsRolePermissionsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -343,28 +339,6 @@ const TeamMembersSettings = () => {
       return t(roleDefinition.labelKey, { defaultValue: roleDefinition.labelDefaultValue });
     },
     [t]
-  );
-
-  const permissionsDefaultValues: Record<string, string> = useMemo(
-    () => ({
-      permissionInviteMembers: 'Can invite and update team members',
-      permissionManageAllRoles: 'Can manage Admin, Team Lead, and Member roles',
-      permissionAssignTeamLeads: 'Can assign or remove Team Lead reporting relationships',
-      permissionAccessFinance: 'Can access finance and other admin-only workspace areas',
-      permissionManageAdmins: 'Can manage Admin, Team Lead, and Member accounts except the owner',
-      permissionManageManagedRoles: 'Can manage Team Lead and Member accounts only',
-      permissionViewManagedReports: 'Can view managed-member reporting without admin access',
-      permissionNoFinanceAccess: 'Cannot access finance settings or admin-only finance tools',
-      permissionViewAssignedWork: 'Can work on assigned projects and tasks',
-      permissionNoMemberManagement: 'Cannot invite, deactivate, delete, or reassign team members',
-      permissionNoRoleChanges: 'Cannot change roles or Team Lead assignments',
-    }),
-    []
-  );
-
-  const permissionsSummaryRoles = useMemo(
-    () => [ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD, ROLE_NAMES.MEMBER],
-    []
   );
 
   const startEditingName = useCallback(
@@ -690,59 +664,6 @@ const TeamMembersSettings = () => {
     ]
   );
 
-  const rolePermissionsContent = (
-    <>
-      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-        {t('rolePermissionsDescription', {
-          defaultValue:
-            'Access levels define who can manage team members, reporting relationships, and admin-only workspace tools.',
-        })}
-      </Typography.Text>
-      <Flex gap={12} wrap="wrap">
-        {permissionsSummaryRoles.map(roleName => {
-          const roleDefinition = ROLE_DEFINITIONS[roleName];
-
-          return (
-            <Card
-              key={roleName}
-              size="small"
-              style={{
-                flex: '1 1 240px',
-                minWidth: 240,
-                borderColor: token.colorBorderSecondary,
-                background: token.colorBgContainer,
-              }}
-            >
-              <Flex vertical gap={12}>
-                <Flex align="center" gap={8}>
-                  <Tag color={getRoleColor(roleName)} style={{ margin: 0 }}>
-                    {t(roleDefinition.labelKey, {
-                      defaultValue: roleDefinition.labelDefaultValue,
-                    })}
-                  </Tag>
-                </Flex>
-                <Typography.Text type="secondary">
-                  {t(roleDefinition.descriptionKey, {
-                    defaultValue: roleDefinition.descriptionDefaultValue,
-                  })}
-                </Typography.Text>
-                <Flex vertical gap={6}>
-                  {roleDefinition.permissionKeys.map(permissionKey => (
-                    <Typography.Text key={permissionKey}>
-                      {t(permissionKey, {
-                        defaultValue: permissionsDefaultValues[permissionKey] || permissionKey,
-                      })}
-                    </Typography.Text>
-                  ))}
-                </Flex>
-              </Flex>
-            </Card>
-          );
-        })}
-      </Flex>
-    </>
-  );
-
   return (
     <Flex vertical gap={16}>
       <Card
@@ -770,9 +691,6 @@ const TeamMembersSettings = () => {
                 style={{ maxWidth: 250 }}
                 suffix={<SearchOutlined />}
               />
-              <Button onClick={() => setIsRolePermissionsModalOpen(true)}>
-                {t('rolePermissionsButton', { defaultValue: 'Role Permissions' })}
-              </Button>
               <Tooltip
                 title={
                   isInviteRestricted
@@ -846,16 +764,6 @@ const TeamMembersSettings = () => {
           scroll={{ x: 'max-content' }}
         />
       </Card>
-
-      <Modal
-        title={t('rolePermissionsTitle', { defaultValue: 'Role Permissions' })}
-        open={isRolePermissionsModalOpen}
-        onCancel={() => setIsRolePermissionsModalOpen(false)}
-        footer={null}
-        width={900}
-      >
-        {rolePermissionsContent}
-      </Modal>
 
       {/* Floating Action Button for Bulk Assign */}
       {isPrivilegedUser && selectedMembers.length > 0 && (
