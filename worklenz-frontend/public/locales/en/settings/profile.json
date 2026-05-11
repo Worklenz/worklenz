@@ -10,5 +10,9 @@
   "profileJoinedText": "Joined {{date}}",
   "profileLastUpdatedText": "Last updated {{date}}",
   "avatarTooltip": "Click to upload an avatar",
+  "removeAvatar": "Remove photo",
+  "removeAvatarConfirmTitle": "Remove profile picture?",
+  "removeAvatarConfirmDescription": "Your avatar will be removed and your initials will be shown instead.",
+  "cancel": "Cancel",
   "title": "Profile Settings"
 }

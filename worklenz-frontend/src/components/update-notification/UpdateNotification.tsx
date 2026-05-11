@@ -2,7 +2,7 @@
 // Shows a passive banner when a new build is available
 
 import React from 'react';
-import { Alert, Button, Space, Typography } from '@/shared/antd-imports';
+import { Alert, Button, Space, Typography, theme } from '@/shared/antd-imports';
 import { ReloadOutlined, CloseOutlined, DownloadOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useServiceWorker } from '../../utils/serviceWorkerRegistration';
@@ -17,6 +17,7 @@ interface UpdateNotificationProps {
 
 const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClose, onUpdate }) => {
   const { t } = useTranslation('common');
+  const { token } = theme.useToken();
   const [isUpdating, setIsUpdating] = React.useState(false);
   const { hardReload } = useServiceWorker();
 
@@ -59,41 +60,57 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClos
       <div
         style={{
           width: '100%',
-          padding: '8px 48px',
-          background:
-            'linear-gradient(90deg, rgba(24,144,255,0.08) 0%, rgba(54,207,201,0.08) 100%)',
-          borderBottom: '1px solid rgba(24,144,255,0.22)',
-          backdropFilter: 'blur(10px)',
+          padding: '12px 24px',
+          background: token.colorBgContainer,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          boxShadow: token.boxShadowSecondary,
         }}
       >
         <Alert
           message={
             <Space
               size="large"
-              style={{ width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}
+              style={{
+                width: '100%',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                rowGap: 12,
+                columnGap: 16,
+                flexWrap: 'wrap',
+              }}
             >
-              <Space size="middle" wrap>
-                <DownloadOutlined style={{ color: '#1890ff' }} />
-                <Text strong>
+              <Space size="middle" wrap align="center">
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: token.colorInfoBg,
+                    color: token.colorInfo,
+                    flexShrink: 0,
+                  }}
+                >
+                  <DownloadOutlined />
+                </div>
+                <Text strong style={{ color: token.colorText }}>
                   {t('update-banner-message', { defaultValue: 'A new version is available.' })}
                 </Text>
-                <Text type="secondary">
+                <Text style={{ color: token.colorTextSecondary }}>
                   {t('update-banner-description', {
                     defaultValue: 'Refresh when you are ready to get the latest improvements.',
                   })}
                 </Text>
               </Space>
-              <Space>
+              <Space wrap>
                 <Button
                   type="primary"
                   size="small"
                   icon={<ReloadOutlined />}
                   loading={isUpdating}
                   onClick={handleUpdate}
-                  style={{
-                    background: 'linear-gradient(135deg, #1890ff 0%, #36cfc9 100%)',
-                    border: 'none',
-                  }}
                 >
                   {isUpdating
                     ? t('updating', { defaultValue: 'Updating...' })
@@ -105,7 +122,8 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClos
                   icon={<CloseOutlined />}
                   onClick={handleLater}
                   disabled={isUpdating}
-                  style={{ color: '#595959' }}
+                  aria-label={t('update-later', { defaultValue: 'Later' })}
+                  style={{ color: token.colorTextSecondary }}
                   title={t('update-later', { defaultValue: 'Later' })}
                 />
               </Space>
@@ -117,7 +135,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClos
           style={{
             border: 'none',
             background: 'transparent',
-            padding: '4px 0',
+            padding: 0,
           }}
         />
       </div>
