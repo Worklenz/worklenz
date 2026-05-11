@@ -93,8 +93,15 @@ export default class AuthController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data) {
-      // Compare the password
+      // Compare the current password
       if (bcrypt.compareSync(currentPassword, data.password)) {
+
+        // Prevent reusing the same password
+        const isSamePassword = bcrypt.compareSync(newPassword, data.password);
+        if (isSamePassword) {
+          return res.status(200).send(new ServerResponse(false, null, "New password must be different from your current password."));
+        }
+
         const salt = bcrypt.genSaltSync(10);
         const encryptedPassword = bcrypt.hashSync(newPassword, salt);
 
