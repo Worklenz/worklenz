@@ -395,6 +395,26 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     // Add health join only if not already included in groupJoin (to avoid duplicate table alias)
     const healthJoin = groupBy === "health" ? "" : "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
 
+    // OPTIMIZED: Pre-compute task status categories to avoid repeated function calls
+    // Cache the category IDs to avoid subquery lookups in the main query
+    const statusCategoriesQuery = `
+      SELECT 
+        id,
+        is_done,
+        is_doing,
+        is_todo
+      FROM sys_task_status_categories
+    `;
+    const statusCategoriesResult = await db.query(statusCategoriesQuery);
+    const doneCategory = statusCategoriesResult.rows.find(r => r.is_done)?.id;
+    const doingCategory = statusCategoriesResult.rows.find(r => r.is_doing)?.id;
+    const todoCategory = statusCategoriesResult.rows.find(r => r.is_todo)?.id;
+
+    // Add category IDs to filter params and update paramOffset
+    filterParams.push(doneCategory, doingCategory, todoCategory);
+    const categoryParamStart = paramOffset;
+    paramOffset += 3; // Move offset past the 3 category parameters
+
     // Build pagination clause using SqlHelper for safe parameter handling
     const { clause: paginationClause, params: paginationParams } = SqlHelper.buildPaginationClause(
       size,
@@ -403,17 +423,28 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     );
 
     // Build optimized query with group-level task aggregations and pagination
+    // OPTIMIZATION: Replace function calls with direct category_id comparisons
     const q = `
       WITH project_tasks AS (
         SELECT
           t.project_id,
           COUNT(t.id) AS total_tasks,
-          COUNT(CASE WHEN is_completed(t.status_id, t.project_id) IS TRUE THEN 1 END) AS done_tasks,
-          COUNT(CASE WHEN is_doing(t.status_id, t.project_id) IS TRUE THEN 1 END) AS doing_tasks,
-          COUNT(CASE WHEN is_todo(t.status_id, t.project_id) IS TRUE THEN 1 END) AS todo_tasks
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart} THEN 1 END) AS done_tasks,
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 1} THEN 1 END) AS doing_tasks,
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 2} THEN 1 END) AS todo_tasks
         FROM tasks t
+        INNER JOIN task_statuses ts ON t.status_id = ts.id
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
+      ),
+      total_projects AS (
+        SELECT COUNT(DISTINCT p.id) AS total_project_count
+        FROM projects p
+        LEFT JOIN project_categories pc ON p.category_id = pc.id
+        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        ${healthJoin}
+        ${groupJoin}
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
       ),
       all_groups AS (
         SELECT
@@ -465,14 +496,16 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       )
       SELECT
         ag.*,
-        tc.total as total_groups
+        tc.total as total_groups,
+        tp.total_project_count
       FROM all_groups ag
       CROSS JOIN total_count tc
+      CROSS JOIN total_projects tp
       ORDER BY ag.group_name
       ${paginationClause}
     `;
 
-    // Build final params: teamId ($1), searchParams ($2+), filter params, then LIMIT and OFFSET
+    // Build final params: teamId ($1), searchParams ($2+), filter params, category IDs, then LIMIT and OFFSET
     const finalParams = [teamId, ...filterParams, ...paginationParams];
     const result = await db.query(q, finalParams);
 
@@ -498,12 +531,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       })
     }));
 
-    // Get total_groups from first row (all rows have the same total from CROSS JOIN)
+    // Get total_groups and total_project_count from first row (all rows have the same totals from CROSS JOIN)
     const totalGroups = result.rows.length > 0 ? int(result.rows[0].total_groups) : 0;
+    const totalProjects = result.rows.length > 0 ? int(result.rows[0].total_project_count) : 0;
 
     return res.status(200).send(new ServerResponse(true, {
       groups,
-      total_groups: totalGroups
+      total_groups: totalGroups,
+      total: totalProjects
     }));
   }
 

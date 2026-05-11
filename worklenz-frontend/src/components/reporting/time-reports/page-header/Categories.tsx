@@ -95,9 +95,9 @@ const Categories: React.FC = () => {
   // Handle clear all
   const handleClearAll = async () => {
     setSelectAll(false);
-    await dispatch(setNoCategory(false));
     await dispatch(setSelectOrDeselectAllCategories(false));
-    await dispatch(fetchReportingProjects());
+    await dispatch(setNoCategory(false));
+    await dispatch(fetchReportingProjects({ categories: [], noCategory: false }));
   };
 
   const handleNoCategoryChange = async (checked: boolean) => {

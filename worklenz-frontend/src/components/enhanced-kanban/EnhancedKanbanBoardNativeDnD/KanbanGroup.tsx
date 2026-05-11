@@ -32,6 +32,7 @@ import {
   ArrowPathIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import { getContrastColor } from '@/utils/colorUtils';
 
 // Simple Portal component - removed as it's no longer used
 
@@ -84,6 +85,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
       }
       return group.color_code || '#f5f5f5';
     }, [themeMode, group.color_code, group.color_code_dark]);
+    const headerTextColor = useMemo(
+      () => getContrastColor(headerBackgroundColor),
+      [headerBackgroundColor]
+    );
 
     const updateStatus = async (category = group.category_id ?? null) => {
       if (!category || !projectId || !group.id) return;
@@ -401,9 +406,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   <input
                     ref={inputRef}
                     value={name}
-                    className={`bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px] ${
-                      themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
-                    }`}
+                    className="bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px]"
+                    style={{ color: headerTextColor }}
                     onChange={handleChange}
                     onBlur={handleBlur}
                     onKeyDown={handlePressEnter}
@@ -416,9 +420,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   />
                 ) : (
                   <div
-                    className={`min-w-[185px] text-sm font-semibold capitalize truncate ${
-                      themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'
-                    }`}
+                    className="min-w-[185px] text-sm font-semibold capitalize truncate"
+                    style={{ color: headerTextColor }}
                     onMouseDown={e => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -445,7 +448,8 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   }}
                 >
                   <svg
-                    className="w-4 h-4 text-gray-800"
+                    className="w-4 h-4"
+                    style={{ color: headerTextColor }}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -476,7 +480,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                         setDropdownVisible(!dropdownVisible);
                       }}
                     >
-                      <EllipsisHorizontalIcon className="w-4 h-4 text-gray-800" />
+                      <EllipsisHorizontalIcon className="w-4 h-4" style={{ color: headerTextColor }} />
                     </button>
                   </Dropdown>
                 )}

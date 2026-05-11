@@ -145,12 +145,14 @@ export const PriorityColorCodes: { [x: number]: string } = {
   0: "#2E8B57",
   1: "#DAA520",
   2: "#CD5C5C",
+  3: "#8B1A1A",
 };
 
 export const PriorityColorCodesDark: { [x: number]: string } = {
   0: "#3CB371",
   1: "#B8860B",
   2: "#F08080",
+  3: "#B22222",
 };
 
 export const TASK_STATUS_TODO_COLOR = "#a9a9a9";
@@ -160,6 +162,7 @@ export const TASK_STATUS_DONE_COLOR = "#75c997";
 export const TASK_PRIORITY_LOW_COLOR = "#2E8B57";
 export const TASK_PRIORITY_MEDIUM_COLOR = "#DAA520";
 export const TASK_PRIORITY_HIGH_COLOR = "#CD5C5C";
+export const TASK_PRIORITY_CRITICAL_COLOR = "#8B1A1A";
 
 export const TASK_DUE_COMPLETED_COLOR = "#75c997";
 export const TASK_DUE_UPCOMING_COLOR = "#70a6f3";

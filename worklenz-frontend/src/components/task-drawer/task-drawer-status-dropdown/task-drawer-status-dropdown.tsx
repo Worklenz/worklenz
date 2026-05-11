@@ -12,7 +12,8 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { Select } from '@/shared/antd-imports';
-import { useMemo } from 'react';
+import { CSSProperties, useMemo } from 'react';
+import './task-drawer-status-dropdown.css';
 import { updateEnhancedKanbanTaskStatus } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
@@ -117,18 +118,35 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
     [statuses]
   );
 
+  const selectedStatus = useMemo(
+    () => statuses.find(status => status.id === task.status_id),
+    [statuses, task.status_id]
+  );
+
+  const resolvedStatusBackground = useMemo(() => {
+    return selectedStatus?.color_code || task.status_color || task.status_color_dark;
+  }, [
+    selectedStatus?.color_code,
+    task.status_color,
+    task.status_color_dark,
+  ]);
+
   return (
     <>
       {task.status_id && (
         <Select
+          className="task-drawer-status-select"
           variant="borderless"
           value={task.status_id}
           onChange={handleStatusChange}
           dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}
-          style={{
-            backgroundColor: themeMode === 'dark' ? task.status_color_dark : task.status_color,
-            borderRadius: 16,
-          }}
+          style={
+            {
+              backgroundColor: resolvedStatusBackground,
+              borderRadius: 16,
+              '--task-drawer-status-bg': resolvedStatusBackground,
+            } as CSSProperties
+          }
           labelRender={status => {
             return <span style={{ fontSize: 13 }}>{status.label}</span>;
           }}

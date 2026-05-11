@@ -1,4 +1,3 @@
-import { PlusOutlined } from '@/shared/antd-imports';
 import {
   Badge,
   Button,
@@ -12,6 +11,7 @@ import {
   List,
   Tag,
   Typography,
+  theme,
 } from '@/shared/antd-imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -31,6 +31,7 @@ import { setBoardLabels, updateBoardTaskLabel } from '@/features/board/board-sli
 import { updateEnhancedKanbanTaskLabels } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
+import { PlusOutlined, CloseOutlined } from '@/shared/antd-imports';
 
 interface TaskDrawerLabelsProps {
   task: ITaskViewModel;
@@ -38,6 +39,27 @@ interface TaskDrawerLabelsProps {
 }
 
 const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
+  const { token } = theme.useToken();
+  const addLabelButtonStyles = {
+    width: 28,
+    height: 28,
+    minWidth: 28,
+    marginBottom: 4,
+    borderRadius: token.borderRadiusSM,
+    borderColor: token.colorPrimary,
+    color: token.colorPrimary,
+    background: token.colorPrimaryBg,
+    boxShadow: `0 0 0 1px ${token.colorPrimaryBorder}`,
+  };
+
+  const getContrastColor = (hexColor: string): string => {
+    const hex = (hexColor || '#000000').replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#FFFFFF';
+  };
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
   const labelInputRef = useRef<InputRef>(null);
@@ -192,6 +214,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
     }
   };
 
+
   return (
     <Form.Item name="labels" label={t('taskInfoTab.details.labels')}>
       <Flex gap={8} wrap="wrap" align="center">
@@ -206,8 +229,17 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
               height: 18,
               fontSize: 11,
               marginBottom: 4,
+              color: themeMode === 'dark' ? '#FFFFFF' : getContrastColor(label.color_code || '#000000'),
             }}
             closable
+            closeIcon={
+              <CloseOutlined
+                style={{
+                  color: themeMode === 'dark' ? '#FFFFFF' : getContrastColor(label.color_code || '#000000'),
+                  fontSize: 10,
+                }}
+              />
+            }
             onClose={e => {
               e.preventDefault();
               handleLabelChange(label);
@@ -223,8 +255,21 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
         >
           <Button
             type="dashed"
-            icon={<PlusOutlined style={{ fontSize: 11 }} />}
-            style={{ height: 18, marginBottom: 4 }}
+            aria-label={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
+            title={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
+            icon={
+              <PlusOutlined
+                style={{
+                  fontSize: 13,
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+            }
+            style={addLabelButtonStyles}
             size="small"
           />
         </Dropdown>

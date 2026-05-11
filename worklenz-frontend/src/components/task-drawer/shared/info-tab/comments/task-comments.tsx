@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Skeleton, Avatar, Tooltip, Popconfirm } from '@/shared/antd-imports';
+import { Skeleton, Avatar, Tooltip, Popconfirm, LikeOutlined } from '@/shared/antd-imports';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
-import { LikeOutlined, LikeTwoTone } from '@/shared/antd-imports';
-import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
+import { ITaskCommentViewModel, ReactionType } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { fromNow } from '@/utils/dateUtils';
@@ -23,6 +22,7 @@ import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sanitizeCommentContent } from '@/utils/sanitizeInput';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import CommentReactionsBar from './comment-reactions-bar';
 
 // Helper function to format date for time separators
 const formatDateForSeparator = (date: string) => {
@@ -219,18 +219,12 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     return userId === currentUserId;
   };
 
-  const alreadyLiked = (item: ITaskCommentViewModel) => {
-    const teamMemberId = auth.getCurrentSession()?.team_member_id;
-    if (!teamMemberId) return false;
-    return !!item.reactions?.likes?.liked_member_ids?.includes(teamMemberId);
-  };
-
-  const likeComment = async (item: ITaskCommentViewModel) => {
+  const handleReactionClick = async (item: ITaskCommentViewModel, reactionType: ReactionType) => {
     if (!item.id || !taskId) return;
 
     try {
       const res = await taskCommentsApiService.updateReaction(item.id, {
-        reaction_type: 'like',
+        reaction_type: reactionType,
         task_id: taskId,
       });
       if (res.done) {
@@ -241,7 +235,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
         document.dispatchEvent(new Event('task-comment-update'));
       }
     } catch (e) {
-      logger.error('Error liking comment', e);
+      logger.error('Error updating reaction', e);
     }
   };
 
@@ -374,31 +368,15 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                               />
                             </div>
                           )}
+                          {/* Reactions bar positioned at bottom-left of comment bubble */}
+                          <CommentReactionsBar
+                            comment={item}
+                            onReactionClick={(reactionType) => handleReactionClick(item, reactionType)}
+                          />
                         </>
                       )
                     }
                     actions={[
-                      <span key="like" onClick={() => likeComment(item)}>
-                        <Tooltip
-                          title={
-                            item?.reactions?.likes?.count
-                              ? item.reactions?.likes?.liked_members?.map(member => (
-                                  <div key={member}>{member}</div>
-                                ))
-                              : null
-                          }
-                        >
-                          {alreadyLiked(item) ? (
-                            <LikeTwoTone />
-                          ) : (
-                            <LikeOutlined style={actionStyle} />
-                          )}{' '}
-                          &nbsp;
-                          <span className="count like" style={actionStyle}>
-                            {item?.reactions?.likes?.count || ''}
-                          </span>
-                        </Tooltip>
-                      </span>,
                       canDelete(item.user_id) && (
                         <Popconfirm
                           key="delete"

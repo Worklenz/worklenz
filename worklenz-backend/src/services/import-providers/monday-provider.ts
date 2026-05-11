@@ -218,18 +218,10 @@ export default class MondayProvider implements ImportProvider {
     columns?: MondayColumn[],
     job?: ImportJob,
   ): Promise<FieldMappingRow[]> {
-    console.log(`[Monday Provider] buildFieldMappings called with:`, {
-      columnsCount: columns?.length || 0,
-      hasJob: !!job,
-      targetProjectId: job?.target_project_id || "undefined",
-    });
 
     const mappings = [...MONDAY_DEFAULT_FIELDS];
 
     if (columns) {
-      console.log(
-        `[Monday Provider] Processing ${columns.length} columns for field mappings`,
-      );
 
       // Define custom field types that will be handled by Monday-specific custom columns
       const customFieldTypes = [
@@ -257,15 +249,9 @@ export default class MondayProvider implements ImportProvider {
 
           // Skip custom field types that will be handled by Monday-specific custom columns
           if (customFieldTypes.includes(column.type)) {
-            console.log(
-              `[Monday Provider] Skipping custom field type: "${columnTitle}" (type: ${column.type}) - will be handled by Monday-specific custom columns`,
-            );
             return;
           }
 
-          console.log(
-            `[Monday Provider] Adding column: "${columnTitle}" -> "${targetField}" (type: ${column.type})`,
-          );
 
           // Create smart mapping based on column title and type
           let smartTargetField = targetField;
@@ -394,42 +380,17 @@ export default class MondayProvider implements ImportProvider {
             target_field: smartTargetField,
             include: true,
           });
-        } else {
-          console.log(
-            `[Monday Provider] Skipping system column: "${column.title}" (type: ${column.type})`,
-          );
         }
       });
     }
 
-    console.log(`[Monday Provider] Total field mappings:`, mappings.length);
-    mappings.forEach((mapping) => {
-      console.log(
-        `[Monday Provider] Mapping: "${mapping.source_field}" -> "${mapping.target_field}"`,
-      );
-    });
-
     // Create custom columns for Monday.com custom fields
-    console.log(`[Monday Provider] Custom column creation check:`, {
-      hasColumns: !!columns,
-      hasJob: !!job,
-      hasTargetProjectId: !!(job && job.target_project_id),
-      targetProjectId: job?.target_project_id,
-      columnsCount: columns?.length || 0,
-    });
 
     // Note: Custom column creation moved to ingest phase
     // Custom columns will be created when we have a target project ID during ingestion
     if (columns) {
-      console.log(
-        `[Monday Provider] Adding field mappings for custom columns (creation deferred to ingest)...`,
-      );
       // Add field mappings for the custom columns (creation happens in ingest)
       await this.addCustomColumnFieldMappings(columns, mappings);
-    } else {
-      console.log(
-        `[Monday Provider] No columns available for custom field mappings`,
-      );
     }
 
     return mappings;
@@ -467,9 +428,6 @@ export default class MondayProvider implements ImportProvider {
           include: true,
         });
 
-        console.log(
-          `[Monday Provider] Added field mapping for custom column: "${column.title}" -> ${columnKey}`,
-        );
       }
     }
   }
@@ -479,9 +437,6 @@ export default class MondayProvider implements ImportProvider {
     columns: MondayColumn[],
     projectId: string,
   ): Promise<void> {
-    console.log(
-      "[Monday Provider] Skipping standard custom column creation - Monday-specific columns are used instead",
-    );
     // NOTE: This method is intentionally disabled to prevent duplicate column creation
     // Monday-specific custom columns with field IDs are created via field mappings instead
     // e.g., "dropdown_mm016g8k" -> "monday_dropdown_mm016g8k_dropdown"
@@ -506,14 +461,7 @@ export default class MondayProvider implements ImportProvider {
 
         // Only create custom columns for supported custom field types
         if (customFieldTypes.includes(column.type)) {
-          console.log(
-            `[Monday Provider] Processing custom field: "${column.title}" (type: ${column.type})`,
-          );
           await this.createCustomColumnFromMondayField(projectId, column);
-        } else {
-          console.log(
-            `[Monday Provider] Skipping unsupported custom field type: "${column.title}" (type: ${column.type})`,
-          );
         }
       } catch (error) {
         console.error(
@@ -546,18 +494,12 @@ export default class MondayProvider implements ImportProvider {
 
       const mapping = typeMapping[column.type];
       if (!mapping) {
-        console.log(
-          `[Monday Custom Column] Skipping unsupported column type: ${column.type}`,
-        );
         return null;
       }
 
       const columnKey = `monday_${column.id}_${column.type}`;
       const columnName = column.title || `Monday ${column.type}`;
 
-      console.log(
-        `[Monday Custom Column] Creating custom column: ${columnName} (${column.type} -> ${mapping.fieldType})`,
-      );
 
       const client = await db.pool.connect();
       try {
@@ -570,9 +512,6 @@ export default class MondayProvider implements ImportProvider {
         );
 
         if (existingCheck.rows.length > 0) {
-          console.log(
-            `[Monday Custom Column] Column already exists: ${columnName}`,
-          );
           await client.query("ROLLBACK");
           return columnKey;
         }
@@ -639,18 +578,12 @@ export default class MondayProvider implements ImportProvider {
                 ]);
               }
             }
-          } catch (parseError) {
-            console.log(
-              `[Monday Custom Column] Failed to parse settings for dropdown:`,
-              parseError,
-            );
+          } catch {
+            // Ignore malformed settings_str from upstream Monday payloads.
           }
         }
 
         await client.query("COMMIT");
-        console.log(
-          `[Monday Custom Column] Created custom column with ID: ${columnId}`,
-        );
         return columnKey;
       } catch (error) {
         await client.query("ROLLBACK");
@@ -676,11 +609,6 @@ export default class MondayProvider implements ImportProvider {
       (job.source_reference as any) ||
       {}) as MondayOptions;
 
-    console.log("[Monday Provider] Getting auto mappings with options:", opts);
-    console.log(
-      "[Monday Provider] Payload structure:",
-      JSON.stringify(payload, null, 2),
-    );
 
     // Extract token and boardId from nested auth structure
     let token = opts.token;
@@ -691,61 +619,24 @@ export default class MondayProvider implements ImportProvider {
       const mondayAuth = (opts.auth as any).monday;
       token = mondayAuth.token;
       boardId = mondayAuth.boards?.[0]?.id; // Use first board if multiple
-      console.log("[Monday Provider] Extracted auth from opts.auth.monday:", {
-        hasToken: !!token,
-        boardId,
-        boardsCount: mondayAuth.boards?.length || 0,
-      });
     }
     // Fallback: Handle nested auth structure from payload
     else if (payload?.auth && (payload.auth as any).monday) {
       const mondayAuth = (payload.auth as any).monday;
       token = mondayAuth.token;
       boardId = mondayAuth.boards?.[0]?.id; // Use first board if multiple
-      console.log(
-        "[Monday Provider] Extracted auth from payload.auth.monday:",
-        {
-          hasToken: !!token,
-          boardId,
-          boardsCount: mondayAuth.boards?.length || 0,
-        },
-      );
-    } else {
-      console.log(
-        "[Monday Provider] No nested auth structure found in opts.auth or payload.auth",
-      );
-      console.log("[Monday Provider] Direct options check:", {
-        hasOptsToken: !!opts.token,
-        optsBoardId: opts.boardId,
-        hasOptsAuth: !!opts.auth,
-      });
     }
 
     if (!token || !boardId) {
-      console.log(
-        "[Monday Provider] Missing token or boardId for auto mappings",
-        {
-          hasToken: !!token,
-          boardId,
-          tokenExists: token !== undefined && token !== null,
-          tokenLength: token ? token.length : 0,
-          boardIdExists: boardId !== undefined && boardId !== null,
-        },
-      );
-      console.log(
-        "[Monday Provider] Fallback check - trying different payload structures...",
-      );
 
       // Try additional payload structures
       if (payload?.monday) {
-        console.log("[Monday Provider] Found payload.monday:", payload.monday);
         const mondayData = payload.monday as any;
         token = token || mondayData.token;
         boardId = boardId || mondayData.boardId || mondayData.boards?.[0]?.id;
       }
 
       if (payload?.auth) {
-        console.log("[Monday Provider] Found payload.auth:", payload.auth);
         const authData = payload.auth as any;
         token = token || authData.token || authData.monday?.token;
         boardId =
@@ -755,10 +646,6 @@ export default class MondayProvider implements ImportProvider {
           authData.monday?.boards?.[0]?.id;
       }
 
-      console.log("[Monday Provider] After fallback attempts:", {
-        hasToken: !!token,
-        boardId,
-      });
 
       if (!token || !boardId) {
         return {
@@ -785,10 +672,6 @@ export default class MondayProvider implements ImportProvider {
       }`;
       const variables = { boardId: [String(boardId)] }; // Use extracted boardId
 
-      console.log("[Monday Provider] Fetching board structure:", {
-        query,
-        variables,
-      });
 
       const { data } = await axios.post<MondayResponse>(
         "https://api.monday.com/v2",
@@ -801,10 +684,6 @@ export default class MondayProvider implements ImportProvider {
         },
       );
 
-      console.log(
-        "[Monday Provider] Board structure response:",
-        JSON.stringify(data, null, 2),
-      );
 
       const columns = data?.data?.boards?.[0]?.columns || [];
       this.columnsCache = columns;
@@ -837,13 +716,8 @@ export default class MondayProvider implements ImportProvider {
       (job.source_reference as any) ||
       {}) as MondayOptions;
 
-    console.log("[Monday Provider] Options received:", opts);
 
     if (!opts.token || !opts.boardId) {
-      console.log("[Monday Provider] Missing token or boardId:", {
-        hasToken: !!opts.token,
-        boardId: opts.boardId,
-      });
       return {
         tasks: [],
         fields: await this.buildFieldMappings(),
@@ -876,7 +750,6 @@ export default class MondayProvider implements ImportProvider {
     }`;
     const variables = { boardId: [String(opts.boardId)] };
 
-    console.log("[Monday Provider] Executing query:", { query, variables });
 
     try {
       const { data } = await axios.post<MondayResponse>(
@@ -890,10 +763,6 @@ export default class MondayProvider implements ImportProvider {
         },
       );
 
-      console.log(
-        "[Monday Provider] Raw API response:",
-        JSON.stringify(data, null, 2),
-      );
 
       const items =
         data?.data?.boards?.[0]?.items_page?.items ||
@@ -906,29 +775,13 @@ export default class MondayProvider implements ImportProvider {
       const fieldMappings = await this.buildFieldMappings(columns, job);
       const hierarchy = this.buildHierarchy(columns);
 
-      console.log("[Monday Provider] Extracted items:", items);
-      console.log("[Monday Provider] Available columns:", columns.length);
-      console.log(
-        "[Monday Provider] Column details:",
-        columns.map((c) => ({ id: c.id, title: c.title, type: c.type })),
-      );
 
       // Create custom columns for Monday.com fields during ingest phase
-      console.log(
-        "[Monday Provider] Creating custom columns for Monday fields during ingest",
-      );
       try {
         if (job.target_project_id) {
           await this.createCustomColumnsForMondayFields(
             columns,
             job.target_project_id,
-          );
-          console.log(
-            "[Monday Provider] Custom column creation completed successfully",
-          );
-        } else {
-          console.log(
-            "[Monday Provider] No target_project_id available, skipping custom column creation",
           );
         }
       } catch (error) {
@@ -941,8 +794,6 @@ export default class MondayProvider implements ImportProvider {
       const tasks: StageTaskRow[] = items.map((item: MondayItem) => {
         const rawItem = this.buildRawItem(item, columns);
 
-        console.log(`[Monday Provider] Processing item: ${item.name}`);
-        console.log(`[Monday Provider] Raw item keys:`, Object.keys(rawItem));
 
         // Helper function to find column value by type or title
         const findColumnValue = (types: string[], titles: string[]) => {
@@ -987,20 +838,13 @@ export default class MondayProvider implements ImportProvider {
             if (columnValue?.value) {
               try {
                 const data = JSON.parse(columnValue.value);
-                console.log(
-                  `[Monday Provider] Timeline data for ${timelineColumn.title}:`,
-                  data,
-                );
                 return {
                   start: data.from || null,
                   end: data.to || null,
                   text: columnValue.text || null,
                 };
-              } catch (e) {
-                console.log(
-                  `[Monday Provider] Could not parse timeline JSON:`,
-                  e,
-                );
+              } catch {
+                // Ignore malformed timeline JSON; fallback paths handle text values.
               }
             }
             if (columnValue?.text) {
@@ -1055,26 +899,15 @@ export default class MondayProvider implements ImportProvider {
                       .filter((person: any) => person.email)
                       .map((person: any) => person.email);
                     if (emails.length > 0) {
-                      console.log(
-                        `[Monday Provider] Extracted emails from ${column.title}:`,
-                        emails,
-                      );
                       return emails.join(", "); // Return comma-separated emails
                     }
                   }
-                } catch (e) {
-                  console.log(
-                    `[Monday Provider] Could not parse people JSON for ${column.title}:`,
-                    e,
-                  );
+                } catch {
+                  // Ignore malformed people JSON; fallback to text values below.
                 }
               }
               // Fallback to text value if JSON parsing fails
               if (columnValue?.text) {
-                console.log(
-                  `[Monday Provider] Using display text for ${column.title}:`,
-                  columnValue.text,
-                );
                 return columnValue.text;
               }
             }
@@ -1096,23 +929,8 @@ export default class MondayProvider implements ImportProvider {
           ["Person", "Assignee", "Owner", "Team Member"],
         );
 
-        console.log(`[Monday Provider] Extracted fields:`, {
-          title: item.name,
-          description,
-          status,
-          dueDate,
-          startDate,
-          priority,
-          assignee,
-          timelineRange: timelineData.text,
-          rawItemKeys: Object.keys(rawItem).length,
-        });
 
         // Enhanced logging for debugging field mappings
-        console.log(
-          `[Monday Provider] Available column types:`,
-          columns.map((c) => `${c.title}(${c.type})`),
-        );
 
         // Extract additional metadata for enhanced raw item
         const enhancedRawData = { ...rawItem };
@@ -1144,7 +962,6 @@ export default class MondayProvider implements ImportProvider {
         };
       });
 
-      console.log("[Monday Provider] Mapped tasks:", tasks);
 
       return { tasks, fields: fieldMappings, hierarchy };
     } catch (error: any) {
@@ -1162,7 +979,6 @@ export default class MondayProvider implements ImportProvider {
     item: MondayItem,
     columns?: MondayColumn[],
   ): Record<string, unknown> {
-    console.log(`[Monday Provider] Building raw item for: ${item.name}`);
 
     const rawItem: Record<string, unknown> = {
       "Item name": item.name || "",
@@ -1187,9 +1003,6 @@ export default class MondayProvider implements ImportProvider {
 
     // Process all column values
     if (item.column_values && columns) {
-      console.log(
-        `[Monday Provider] Processing ${item.column_values.length} column values`,
-      );
 
       columns.forEach((column) => {
         const columnValue = item.column_values?.find(
@@ -1238,9 +1051,6 @@ export default class MondayProvider implements ImportProvider {
                       rawItem[`${column.id}_names`] = names.join(", ");
                     }
 
-                    console.log(
-                      `[Monday Provider] People field "${column.title}" - Emails: ${emails.join(", ")}, Names: ${names.join(", ")}`,
-                    );
                   }
                   break;
 
@@ -1251,9 +1061,6 @@ export default class MondayProvider implements ImportProvider {
                     rawItem[`${column.id}_start`] = parsedValue.from || "";
                     rawItem[`${column.id}_end`] = parsedValue.to || "";
 
-                    console.log(
-                      `[Monday Provider] Timeline field "${column.title}" - Start: ${parsedValue.from}, End: ${parsedValue.to}`,
-                    );
                   }
                   break;
 
@@ -1264,9 +1071,6 @@ export default class MondayProvider implements ImportProvider {
                     rawItem[`${column.id}_coordinates`] =
                       `${parsedValue.lat},${parsedValue.lng}`;
 
-                    console.log(
-                      `[Monday Provider] Location field "${column.title}" - Coordinates: ${parsedValue.lat},${parsedValue.lng}`,
-                    );
                   }
                   if (parsedValue.address) {
                     rawItem[`${column.title}_address`] = parsedValue.address;
@@ -1303,15 +1107,10 @@ export default class MondayProvider implements ImportProvider {
             }
           }
 
-          console.log(
-            `[Monday Provider] Mapped column "${column.title}" (${column.type}): ${displayValue}`,
-          );
         }
       });
     }
 
-    console.log("[Monday Provider] Final raw item keys:", Object.keys(rawItem));
-    console.log("[Monday Provider] Final raw item:", rawItem);
 
     return rawItem;
   }

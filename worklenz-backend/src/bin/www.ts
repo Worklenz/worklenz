@@ -12,6 +12,7 @@ import {IO} from "../shared/io";
 import sessionMiddleware from "../middlewares/session-middleware";
 import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
+import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
@@ -106,6 +107,7 @@ function onListening() {
     : `port ${addr.port}`;
 
   process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
+  process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();

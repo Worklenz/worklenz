@@ -313,7 +313,7 @@ export interface UpdateClientRequest {
   email?: string;
   company_name?: string;
   phone?: string;
-  phone_country_code?: string;
+  phone_country_code?: string | null;
   address?: string;
   address_line_1?: string;
   city?: string;

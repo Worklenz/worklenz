@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
-  fetchProjectData,
+  fetchProjectDataForCurrentView,
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
 } from '@/features/reporting/projectReports/project-reports-slice';
@@ -62,26 +62,26 @@ const ProjectTeamFilterDropdown: React.FC = () => {
 
   const handleCheckboxChange = async (key: string, checked: boolean) => {
     dispatch(setSelectOrDeselectTeam({ id: key, selected: checked }));
-    await dispatch(fetchProjectData());
+    await dispatch(fetchProjectDataForCurrentView());
   };
 
   const handleSelectAllChange = async (e: CheckboxChangeEvent) => {
     const isChecked = e.target.checked;
     dispatch(setSelectOrDeselectAllTeams(isChecked));
-    await dispatch(fetchProjectData());
+    await dispatch(fetchProjectDataForCurrentView());
   };
 
   // Handle clear all
   const handleClearAll = async () => {
     dispatch(setSelectOrDeselectAllTeams(false));
-    await dispatch(fetchProjectData());
+    await dispatch(fetchProjectDataForCurrentView());
   };
 
   // Handle select all button click
   const handleSelectAllClick = async () => {
     const newValue = !isAllSelected;
     dispatch(setSelectOrDeselectAllTeams(newValue));
-    await dispatch(fetchProjectData());
+    await dispatch(fetchProjectDataForCurrentView());
   };
 
   const getButtonText = () => {

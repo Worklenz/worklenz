@@ -40,6 +40,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_project_board_column_setting_click } from '@/shared/worklenz-analytics-events';
 import { ALPHA_CHANNEL } from '@/shared/constants';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
+import { getContrastColor } from '@/utils/colorUtils';
 
 interface TaskListTableWrapperProps {
   taskList: IProjectTask[];
@@ -70,6 +71,8 @@ const TaskListTableWrapper = ({
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [currentCategory, setCurrentCategory] = useState<string | null>(statusCategory);
+  const groupHeaderTextColor =
+    groupBy === IGroupBy.PRIORITY ? '#ffffff' : getContrastColor(color || '#d8d7d8');
 
   const { t } = useTranslation('task-list-table');
   const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
@@ -232,7 +235,7 @@ const TaskListTableWrapper = ({
                 border: 'none',
                 borderBottomLeftRadius: isExpanded ? 0 : 4,
                 borderBottomRightRadius: isExpanded ? 0 : 4,
-                color: colors.darkGray,
+                color: groupHeaderTextColor,
               }}
               icon={<RightOutlined rotate={isExpanded ? 90 : 0} />}
               onClick={handlToggleExpand}
@@ -254,6 +257,7 @@ const TaskListTableWrapper = ({
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
+                    color: groupHeaderTextColor,
                   }}
                 >
                   {t(tableName)} ({taskList.length})

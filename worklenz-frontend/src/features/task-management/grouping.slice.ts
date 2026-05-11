@@ -7,6 +7,7 @@ type GroupingType = 'status' | 'priority' | 'phase';
 
 interface LocalGroupingState {
   currentGrouping: GroupingType | null;
+  projectId: string | null;
   customPhases: string[];
   groupOrder: {
     status: string[];
@@ -18,27 +19,36 @@ interface LocalGroupingState {
 }
 
 // Local storage constants
-const LOCALSTORAGE_GROUP_KEY = 'worklenz.tasklist.group_by';
+const LOCALSTORAGE_GROUP_KEY_PREFIX = 'worklenz.tasklist.group_by';
 
-// Utility functions for local storage
-const loadGroupingFromLocalStorage = (): GroupingType | null => {
+// Utility functions for local storage — keyed per project
+const getLocalStorageKey = (projectId?: string | null): string =>
+  projectId ? `${LOCALSTORAGE_GROUP_KEY_PREFIX}.${projectId}` : LOCALSTORAGE_GROUP_KEY_PREFIX;
+
+const loadGroupingFromLocalStorage = (projectId?: string | null): GroupingType | null => {
   try {
-    const stored = localStorage.getItem(LOCALSTORAGE_GROUP_KEY);
+    const stored = localStorage.getItem(getLocalStorageKey(projectId));
     if (stored && ['status', 'priority', 'phase'].includes(stored)) {
       return stored as GroupingType;
+    }
+    // Fallback to legacy global key for backward compatibility
+    const legacy = localStorage.getItem(LOCALSTORAGE_GROUP_KEY_PREFIX);
+    if (legacy && ['status', 'priority', 'phase'].includes(legacy)) {
+      return legacy as GroupingType;
     }
   } catch (error) {
     console.warn('Failed to load grouping from localStorage:', error);
   }
-  return 'status'; // Default to 'status' instead of null
+  return 'status';
 };
 
-const saveGroupingToLocalStorage = (grouping: GroupingType | null): void => {
+const saveGroupingToLocalStorage = (grouping: GroupingType | null, projectId?: string | null): void => {
   try {
+    const key = getLocalStorageKey(projectId);
     if (grouping) {
-      localStorage.setItem(LOCALSTORAGE_GROUP_KEY, grouping);
+      localStorage.setItem(key, grouping);
     } else {
-      localStorage.removeItem(LOCALSTORAGE_GROUP_KEY);
+      localStorage.removeItem(key);
     }
   } catch (error) {
     console.warn('Failed to save grouping to localStorage:', error);
@@ -47,6 +57,7 @@ const saveGroupingToLocalStorage = (grouping: GroupingType | null): void => {
 
 const initialState: LocalGroupingState = {
   currentGrouping: loadGroupingFromLocalStorage(),
+  projectId: null,
   customPhases: ['Planning', 'Development', 'Testing', 'Deployment'],
   groupOrder: {
     status: ['todo', 'doing', 'done'],
@@ -63,7 +74,15 @@ const groupingSlice = createSlice({
   reducers: {
     setCurrentGrouping: (state, action: PayloadAction<GroupingType | null>) => {
       state.currentGrouping = action.payload;
-      saveGroupingToLocalStorage(action.payload);
+      saveGroupingToLocalStorage(action.payload, state.projectId);
+    },
+
+    // Called on project load to initialize from server value — also updates localStorage
+    initGroupingFromServer: (state, action: PayloadAction<{ grouping: GroupingType; projectId: string }>) => {
+      const { grouping, projectId } = action.payload;
+      state.currentGrouping = grouping;
+      state.projectId = projectId;
+      saveGroupingToLocalStorage(grouping, projectId);
     },
 
     addCustomPhase: (state, action: PayloadAction<string>) => {
@@ -119,12 +138,13 @@ const groupingSlice = createSlice({
       state.collapsedGroups = [];
     },
 
-    resetGrouping: () => initialState,
+    resetGrouping: () => ({ ...initialState, projectId: null }),
   },
 });
 
 export const {
   setCurrentGrouping,
+  initGroupingFromServer,
   addCustomPhase,
   removeCustomPhase,
   updateCustomPhases,

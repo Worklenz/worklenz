@@ -18,11 +18,11 @@
 }
 
 .description-editor-shell .description-editor-preview {
-  min-height: 44px;
-  padding: 8px 12px;
+  min-height: 120px;
+  padding:12px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  cursor: pointer;
+  cursor: text;
   transition: all 0.2s ease;
   background-color: #ffffff;
   color: #000000;
@@ -40,6 +40,7 @@
 .description-editor-shell .description-editor-active {
   position: relative;
   border-radius: 8px;
+  overflow:visible;
 }
 
 .description-editor-shell .description-editor-loading {
@@ -63,14 +64,19 @@
   border: 1px solid #d9d9d9;
   border-radius: 0 0 8px 8px;
   min-height: 200px;
+  max-height:400px;
+  overflow-y:visible;
   background: #ffffff;
   color: #141414;
 }
 
 .description-editor-shell .ql-editor {
   min-height: 160px;
+  max-height: 400px;
+  overflow-y:auto;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
+  padding:12px;
 }
 
 .description-editor-shell .description-editor-footer {
@@ -141,4 +147,126 @@
 
 .description-editor-shell.is-dark .description-editor-footer {
   color: #9f9f9f;
+}
+/* ── List formatting fix for preview mode ── */
+.description-editor-shell .description-content ul,
+.description-editor-shell .description-content ol {
+ list-style: revert !important;
+ padding-left: 1.5em !important;
+margin-top: 0.4em !important;
+ margin-bottom: 0.4em !important;
+}
+
+
+.description-editor-shell .description-content ul {
+ list-style-type: disc !important;
+}
+
+
+.description-editor-shell .description-content ol {
+ list-style-type: decimal !important;
+}
+
+
+.description-editor-shell .description-content li {
+ display: list-item !important;
+ padding-left: 0 !important;
+ margin: 0.15em 0 !important;
+}
+ul.ql-nested-list,
+ol.ql-nested-list {
+ margin-left: 2.5em !important;
+ margin-top: 0 !important;
+ margin-bottom: 0 !important;
+}
+/* ── Fix list indentation inside editor mode ── */
+.description-editor-shell .ql-editor ol,
+.description-editor-shell .ql-editor ul {
+ padding-left: 1.5em !important;
+}
+
+
+.description-editor-shell .ql-editor li {
+ display: list-item !important;
+}
+
+
+/* Quill indent levels inside editor */
+.description-editor-shell .ql-editor .ql-indent-1 {
+ padding-left: 3em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-2 {
+ padding-left: 4.5em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-3 {
+ padding-left: 6em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-4 {
+ padding-left: 7.5em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-5 {
+ padding-left: 9em !important;
+}
+
+
+.description-editor-shell .ql-editor ol + ul {
+ margin-left: 2.5em !important;
+ margin-top: 0 !important;
+}
+/* ── Fix ol counter continuation in editor mode ── */
+
+
+/* Reset counter on the editor container */
+.description-editor-shell .ql-editor {
+ counter-reset: ol-counter;
+}
+
+
+/* Each ol increments but does NOT reset — so numbering continues */
+.description-editor-shell .ql-editor ol {
+ counter-reset: none !important;
+ list-style: none !important;
+ padding-left: 1.5em !important;
+}
+
+
+/* Each li uses the running counter */
+.description-editor-shell .ql-editor ol li {
+ counter-increment: ol-counter;
+ list-style: none !important;
+}
+
+
+.description-editor-shell .ql-editor ol li::before {
+ content: counter(ol-counter) ". ";
+ font-variant-numeric: tabular-nums;
+}
+
+
+/* Reset counter when a non-list element appears between ol groups */
+.description-editor-shell .ql-editor p,
+.description-editor-shell .ql-editor h2,
+.description-editor-shell .ql-editor h3 {
+ counter-reset: ol-counter;
+}
+
+
+/* ul between ol groups should NOT reset the counter */
+.description-editor-shell .ql-editor ul {
+ counter-reset: none !important;
+}
+
+/* FIX: prevent tooltip from rendering off-screen to the left */
+.description-editor-shell .ql-tooltip {
+  left: 0 !important;
+  transform: none !important;
+  z-index: 100;
 }

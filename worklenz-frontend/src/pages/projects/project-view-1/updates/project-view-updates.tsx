@@ -155,7 +155,7 @@ const ProjectViewUpdates = () => {
           value: member.name,
           label: (
             <Space>
-              <SingleAvatar avatarUrl={member.avatar_url} name={member.name} size={24} />
+              <SingleAvatar avatarUrl={member.avatar_url} name={member.name}/>
               <span>{member.name}</span>
               {member.role && (
                 <span style={{ color: '#999', fontSize: '12px' }}>({member.role})</span>
@@ -176,10 +176,10 @@ const ProjectViewUpdates = () => {
       if (!selectedMember || !selectedMember.user_id) return;
 
       const mentionObject = {
-        id: selectedMember.user_id,
-        team_member_id: selectedMember.id,
-        name: selectedMember.name,
-        user_id: selectedMember.user_id,
+        id: selectedMember.user_id!,
+        team_member_id: selectedMember.id!,
+        name: selectedMember.name!,
+        user_id: selectedMember.user_id!,
       };
 
       setSelectedMembers(prev => {
@@ -300,9 +300,10 @@ const ProjectViewUpdates = () => {
     }
   };
 
-  const startEdit = (commentId: string, content: string) => {
+  const startEdit = (commentId: string, content: string,mentions?: any[]) => {
     setEditingCommentId(commentId);
-    const textContent = content.replace(/<[^>]*>/g, '');
+    const resolved = processMentions(content, mentions || []);
+    const textContent = resolved.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     setEditContent(textContent);
   };
 
@@ -528,7 +529,7 @@ const ProjectViewUpdates = () => {
                                     size="small"
                                     icon={<EditOutlined />}
                                     className="hover-action-btn"
-                                    onClick={() => startEdit(item.id!, item.content || '')}
+                                    onClick={() => startEdit(item.id!, item.content || '',item.mentions)}
                                   />
                                 </Tooltip>
                                 <Dropdown

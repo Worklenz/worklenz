@@ -52,9 +52,6 @@ export default class AwsSesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async handleReplies(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    console.log("\n");
-    console.log(JSON.stringify(req.body));
-    console.log("\n");
     return res.status(200).send(new ServerResponse(true, null));
   }
 

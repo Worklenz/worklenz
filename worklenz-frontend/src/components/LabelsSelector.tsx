@@ -119,7 +119,6 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Labels dropdown toggle clicked, current state:', isOpen);
 
     if (!isOpen) {
       updateDropdownPosition();

@@ -105,13 +105,11 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
     >
       {visibleColumns.map((column, index) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -143,7 +141,7 @@ const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMo
         return (
           <div
             key={`spacer-${column.id}`}
-            className="border-r border-blue-300 dark:border-blue-600"
+            className={`border-r border-blue-300 dark:border-blue-600 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
             style={columnStyle}
           />
         );
@@ -164,13 +162,11 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
     >
       {visibleColumns.map((column, index) => {
         // Calculate left position for sticky columns
-        let leftPosition = 0;
+        let leftPosition = 0; // Start at 0 to cover the row's left padding
         if (column.isSticky) {
           for (let i = 0; i < index; i++) {
             const prevColumn = visibleColumns[i];
-            if (prevColumn.isSticky) {
-              leftPosition += parseInt(prevColumn.width.replace('px', ''));
-            }
+            leftPosition += parseInt(prevColumn.width.replace('px', ''));
           }
         }
 
@@ -203,7 +199,7 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
         return (
           <div
             key={`empty-${column.id}`}
-            className="border-r border-gray-200 dark:border-gray-700"
+            className={`border-r border-gray-200 dark:border-gray-700 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
             style={emptyColumnStyle}
           />
         );
@@ -247,7 +243,7 @@ const SortableHeader: React.FC<{
     setActivatorNodeRef: (element: HTMLElement | null) => void;
     isDragging: boolean;
   }) => React.ReactNode;
-}> = ({ column, isDropTarget, children }) => {
+}> = React.memo(({ column, isDropTarget, children }) => {
   const {
     setNodeRef,
     setActivatorNodeRef,
@@ -256,12 +252,32 @@ const SortableHeader: React.FC<{
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: column.id });
+  } = useSortable({ 
+    id: column.id,
+    // Disable the automatic scaling that dnd-kit applies during drag
+    animateLayoutChanges: () => false,
+  });
+
+  // Get the actual pixel width from the column object, not CSS variable
+  const explicitWidth = column.width; // This is already a string like "120px"
+
+  // Remove scale from transform to prevent width changes during drag
+  const transformWithoutScale = transform ? {
+    ...transform,
+    scaleX: 1,
+    scaleY: 1,
+  } : null;
 
   const style = {
-    transform: transform ? CSS.Transform.toString(transform) : undefined,
+    transform: transformWithoutScale ? CSS.Transform.toString(transformWithoutScale) : undefined,
     transition,
     zIndex: isDragging ? 25 : undefined,
+    willChange: isDragging ? 'transform' : undefined,
+    // Use explicit pixel width, not CSS variable, to prevent width changes during drag
+    width: explicitWidth,
+    minWidth: explicitWidth,
+    maxWidth: explicitWidth,
+    flexShrink: 0,
   };
 
   return (
@@ -274,7 +290,7 @@ const SortableHeader: React.FC<{
       {children({ attributes, listeners, setActivatorNodeRef, isDragging })}
     </div>
   );
-};
+});
 
 // Hooks and utilities
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
@@ -374,7 +390,7 @@ const TaskListV2Section: React.FC = () => {
   const columnSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 6,
+        distance: 8,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -579,11 +595,15 @@ const TaskListV2Section: React.FC = () => {
   }, [rawVisibleColumns, columnOrder]);
 
   // Create CSS style object with column width variables for instant resizing
+  // Apply to document root so CSS variables are globally accessible
   const containerStyle = useMemo(() => {
     const style: any = {};
     visibleColumns.forEach(col => {
       style[`--col-width-${col.id}`] = col.width;
+      // Also set on document root for global access
+      document.documentElement.style.setProperty(`--col-width-${col.id}`, col.width);
     });
+    
     return style;
   }, [visibleColumns]);
 
@@ -615,6 +635,31 @@ const TaskListV2Section: React.FC = () => {
     dispatch(fetchPhasesByProjectId(urlProjectId));
     dispatch(fetchStatusesCategories());
   }, [dispatch, urlProjectId, shouldFetchInitialData]);
+
+  // Re-fetch when grouping changes AFTER the initial load.
+  // This handles the case where initGroupingFromServer fires after the parallel
+  // fetchTasksV3 already completed with a stale grouping value.
+  const prevGroupingRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    // Skip on first render (undefined → initial value) to avoid double-fetching
+    // on mount alongside the shouldFetchInitialData effect above.
+    if (prevGroupingRef.current === undefined) {
+      prevGroupingRef.current = currentGrouping;
+      return;
+    }
+
+    // Only re-fetch if grouping actually changed and data for this project is loaded
+    if (
+      urlProjectId &&
+      loadedProjectId === urlProjectId &&
+      currentGrouping !== prevGroupingRef.current
+    ) {
+      prevGroupingRef.current = currentGrouping;
+      dispatch(fetchTasksV3(urlProjectId));
+    } else {
+      prevGroupingRef.current = currentGrouping;
+    }
+  }, [currentGrouping, dispatch, urlProjectId, loadedProjectId]);
 
   useEffect(() => {
     if (urlProjectId) {
@@ -663,6 +708,64 @@ const TaskListV2Section: React.FC = () => {
       setScrollContainer(contentScrollRef.current);
     }
   }, [loading, loadingColumns]);
+
+  // Fix sticky group headers positioning - they should stick below column headers
+  // GroupedVirtuoso creates wrapper divs with position: sticky and top: 0px
+  // We need to adjust them to top: 40px (column header height) with proper z-index
+  useEffect(() => {
+    if (!contentScrollRef.current) return;
+
+    const scrollContainer = contentScrollRef.current;
+    
+    // Function to update sticky group header styles
+    const updateStickyHeaders = () => {
+      // GroupedVirtuoso wraps each group in a div with position: sticky
+      // We need to find all elements with position: sticky that are group wrappers
+      const allElements = scrollContainer.querySelectorAll('*');
+      
+      allElements.forEach(element => {
+        const htmlElement = element as HTMLElement;
+        const computedStyle = window.getComputedStyle(htmlElement);
+        
+        // Check if this is a sticky element (group header wrapper created by virtuoso)
+        if (computedStyle.position === 'sticky') {
+          // Check if it's a group wrapper by looking for our TaskGroupHeader inside
+          const hasGroupHeader = htmlElement.querySelector('[class*="inline-flex"][class*="w-max"]');
+          
+          if (hasGroupHeader && !htmlElement.classList.contains('virtuoso-group-header-wrapper')) {
+            // This is a group wrapper - add our custom class
+            htmlElement.classList.add('virtuoso-group-header-wrapper');
+            
+            // Set background to match the scroll container to prevent content showing through
+            // Get the computed background color from the scroll container
+            const containerBg = window.getComputedStyle(scrollContainer).backgroundColor;
+            htmlElement.style.backgroundColor = containerBg;
+          }
+        }
+      });
+    };
+
+    // Initial update after a short delay to ensure virtuoso has rendered
+    const timeoutId = setTimeout(updateStickyHeaders, 100);
+
+    // Create a MutationObserver to watch for DOM changes
+    // GroupedVirtuoso dynamically creates/removes elements as you scroll
+    const observer = new MutationObserver(() => {
+      updateStickyHeaders();
+    });
+
+    // Observe the scroll container for child list changes
+    observer.observe(scrollContainer, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [contentScrollRef.current, loading, loadingColumns]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -889,11 +992,14 @@ const TaskListV2Section: React.FC = () => {
 
   // Column drag-and-drop handlers
   const handleColumnDragStart = useCallback((event: any) => {
-    setActiveColumnId(event?.active?.id || null);
+    const columnId = event?.active?.id || null;
+    setActiveColumnId(columnId);
   }, []);
 
   const handleColumnDragOver = useCallback((event: any) => {
-    setOverColumnId(event?.over?.id || null);
+    // Throttle state updates during drag to reduce re-renders
+    const newOverId = event?.over?.id || null;
+    setOverColumnId(prev => prev === newOverId ? prev : newOverId);
   }, []);
 
   const handleColumnDragEnd = useCallback(
@@ -1068,10 +1174,13 @@ const TaskListV2Section: React.FC = () => {
     ]
   );
 
+  // Memoize reorderable column IDs to prevent unnecessary recalculations
+  const reorderableColumnIds = useMemo(() => {
+    return visibleColumns.filter(column => !column.isSticky).map(c => c.id);
+  }, [visibleColumns]);
+
   // Render column headers
   const renderColumnHeaders = useCallback(() => {
-    const reorderableColumns = visibleColumns.filter(column => !column.isSticky);
-
     return (
       <DndContext
         sensors={columnSensors}
@@ -1082,7 +1191,7 @@ const TaskListV2Section: React.FC = () => {
         onDragEnd={handleColumnDragEnd}
       >
         <SortableContext
-          items={reorderableColumns.map(column => column.id)}
+          items={reorderableColumnIds}
           strategy={horizontalListSortingStrategy}
         >
           <div
@@ -1101,7 +1210,7 @@ const TaskListV2Section: React.FC = () => {
                 const isDropTarget = overColumnId === column.id && column.id !== activeColumnId;
 
                 // Calculate left position for sticky columns
-                let leftPosition = 4; // Account for px-1 (4px) padding on container
+                let leftPosition = 0; // Start at 0 to cover the row's left padding
                 if (column.isSticky) {
                   // For sticky columns, we need to account for ALL previous columns
                   // because non-sticky columns between sticky ones still take up space
@@ -1121,6 +1230,9 @@ const TaskListV2Section: React.FC = () => {
                     left: leftPosition,
                     zIndex: 15,
                     backgroundColor: isDarkMode ? '#141414' : '#f9fafb', // custom dark header : bg-gray-50
+                    height: '100%', // Fill the header height
+                    display: 'flex', // Use flex to contain child
+                    alignItems: 'center', // Center content vertically
                   }),
                 };
 
@@ -1132,25 +1244,27 @@ const TaskListV2Section: React.FC = () => {
                 }) => (
                   <div
                     data-column-id={column.id}
-                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell ${
+                    className={`text-sm font-semibold text-gray-600 dark:text-gray-300 border-r border-gray-200 dark:border-gray-700 column-header-cell h-full w-full ${
                       column.id === 'dragHandle'
-                        ? 'flex items-center justify-center'
+                        ? 'flex items-center justify-center pl-1'
                         : column.id === 'checkbox'
                           ? 'flex items-center justify-center'
                           : column.id === 'taskKey'
                             ? 'flex items-center pl-3'
                             : column.id === 'title'
-                              ? 'flex items-center justify-between'
+                              ? 'flex items-center justify-between px-2'
                               : column.id === 'description'
                                 ? 'flex items-center pl-2'
                                 : column.id === 'labels'
-                                  ? 'flex items-center gap-0.5 flex-wrap min-w-0 px-2'
+                                  ? 'flex items-center min-w-0 px-2'
                                   : column.id === 'assignees'
                                     ? 'flex items-center px-2'
                                     : 'flex items-center justify-center px-2'
                     } ${isDropTarget ? 'column-drop-target' : ''}`}
                     style={{
-                      ...columnStyle,
+                      // For sticky columns, apply the full columnStyle here
+                      // For non-sticky columns, the SortableHeader wrapper handles width
+                      ...(column.isSticky ? columnStyle : {}),
                       // Add position relative for resize handle positioning, but don't override sticky
                       ...(!column.isSticky && { position: 'relative' }),
                       ...(dragParams?.isDragging ? { opacity: 0.85 } : {}),
@@ -1162,32 +1276,25 @@ const TaskListV2Section: React.FC = () => {
                       <CustomColumnHeader
                         column={column}
                         onSettingsClick={handleCustomColumnSettings}
+                        dragListeners={!column.isSticky ? dragParams?.listeners : undefined}
+                        dragAttributes={!column.isSticky ? dragParams?.attributes : undefined}
+                        setDragActivatorRef={!column.isSticky ? dragParams?.setActivatorNodeRef : undefined}
                       />
                     ) : (
                       <span
+                        ref={dragParams?.setActivatorNodeRef}
+                        {...dragParams?.attributes}
+                        {...dragParams?.listeners}
                         style={{
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           paddingRight: '20px',
                           flex: 1,
+                          cursor: !column.isSticky ? 'grab' : 'default',
                         }}
                       >
                         {t(column.label || '')}
-                      </span>
-                    )}
-
-                    {/* Column drag handle */}
-                    {!column.isSticky && (
-                      <span
-                        className="column-drag-handle"
-                        ref={dragParams?.setActivatorNodeRef}
-                        {...dragParams?.attributes}
-                        {...dragParams?.listeners}
-                        aria-label={t('moveColumnHandle')}
-                        title={t('moveColumnHandle')}
-                      >
-                        <HolderOutlined style={{ fontSize: 12 }} />
                       </span>
                     )}
 
@@ -1221,10 +1328,28 @@ const TaskListV2Section: React.FC = () => {
                           const currentWidthString = columnWidths[columnId] || column.width;
                           const currentWidth = parseInt(currentWidthString.replace('px', ''), 10);
 
-                          // Get min/max widths from column config or use defaults
+                          // Calculate minimum width based on header text length
+                          // Use translated label text to measure actual displayed text
+                          let headerText: string;
+                          if (column.isCustom) {
+                            // Use the same logic as CustomColumnHeader component
+                            headerText = column.name || column.custom_column_obj?.fieldTitle || column.key || column.label || '';
+                          } else {
+                            headerText = t(column.label || '');
+                          }
+                          // Approximate: 8px per character + padding for icons/spacing
+                          // Custom columns need more padding for settings icon + drag handle
+                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) + 
+                          //            drag handle padding (12px) + drag handle icon (14px) + 
+                          //            container padding (16px) + buffer (24px) = 100px
+                          // Regular columns need padding for drag handle (40px)
+                          const paddingForIcons = column.isCustom ? 100 : 40;
+                          const calculatedMinWidth = Math.max(100, (headerText.length * 8) + paddingForIcons);
+                          
+                          // Get min/max widths from column config or use calculated minimum
                           const minWidth = (column as any).minWidth
                             ? parseInt((column as any).minWidth.replace('px', ''), 10)
-                            : 100;
+                            : calculatedMinWidth;
                           const maxWidth = (column as any).maxWidth
                             ? parseInt((column as any).maxWidth.replace('px', ''), 10)
                             : 1200;
@@ -1277,10 +1402,28 @@ const TaskListV2Section: React.FC = () => {
                           const columnId = column.id;
                           const handleElement = e.currentTarget;
 
-                          // Get min/max widths from column config or use defaults
+                          // Calculate minimum width based on header text length
+                          // Use translated label text to measure actual displayed text
+                          let headerText: string;
+                          if (column.isCustom) {
+                            // Use the same logic as CustomColumnHeader component
+                            headerText = column.name || column.custom_column_obj?.fieldTitle || column.key || column.label || '';
+                          } else {
+                            headerText = t(column.label || '');
+                          }
+                          // Approximate: 8px per character + padding for icons/spacing
+                          // Custom columns need more padding for settings icon + drag handle
+                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) + 
+                          //            drag handle padding (12px) + drag handle icon (14px) + 
+                          //            container padding (16px) + buffer (24px) = 100px
+                          // Regular columns need padding for drag handle (40px)
+                          const paddingForIcons = column.isCustom ? 60 : 50;
+                          const calculatedMinWidth = Math.max(60, (headerText.length * 8) + paddingForIcons);
+                          
+                          // Get min/max widths from column config or use calculated minimum
                           const minWidth = column.minWidth
                             ? parseInt(column.minWidth.replace('px', ''), 10)
-                            : 100;
+                            : calculatedMinWidth;
                           const maxWidth = column.maxWidth
                             ? parseInt(column.maxWidth.replace('px', ''), 10)
                             : 1200;
@@ -1328,9 +1471,12 @@ const TaskListV2Section: React.FC = () => {
                           document.body.classList.add('column-resizing');
 
                           const updateIndicator = (x: number, width: number) => {
-                            // Calculate position relative to table container
+                            // Calculate position relative to table container's scroll origin.
+                            // scrollLeft must be added because the indicator uses position:absolute
+                            // inside the scrollable container — without it the line drifts left
+                            // by exactly the horizontal scroll offset.
                             const containerRect = tableContainer.getBoundingClientRect();
-                            const relativeX = x - containerRect.left;
+                            const relativeX = x - containerRect.left + tableContainer.scrollLeft;
                             indicator.style.left = `${relativeX}px`;
                             indicator.style.opacity = '1';
                             tooltip.textContent = `${width}px`;
@@ -1480,6 +1626,7 @@ const TaskListV2Section: React.FC = () => {
     handleColumnDragOver,
     handleColumnDragEnd,
     columnWidths,
+    reorderableColumnIds,
   ]);
 
   // Loading and error states
@@ -1592,6 +1739,37 @@ const TaskListV2Section: React.FC = () => {
           .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
             background-color: var(--hover-bg) !important;
           }
+          
+          /* Sticky group headers positioning */
+          .virtuoso-group-header-wrapper {
+            position: sticky !important;
+            top: 40px !important;
+            z-index: 25 !important;
+          }
+          
+          /* Column drag performance optimization */
+          .column-header-cell {
+            will-change: auto;
+          }
+          
+          [data-column-id] {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+          }
+          
+          /* Labels column horizontal scroll - hide scrollbar but keep functionality */
+          .overflow-x-auto,
+          .labels-scroll-container,
+          .single-line-scroll {
+            scrollbar-width: none; /* Firefox - hide scrollbar */
+            -ms-overflow-style: none; /* IE and Edge - hide scrollbar */
+          }
+          
+          .overflow-x-auto::-webkit-scrollbar,
+          .labels-scroll-container::-webkit-scrollbar,
+          .single-line-scroll::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera - hide scrollbar */
+          }
         `}
       </style>
 
@@ -1671,7 +1849,7 @@ const TaskListV2Section: React.FC = () => {
 
                     return (
                       <div style={{ minWidth: 'max-content' }} className="relative">
-                        {showBefore && (
+                        {showBefore && !activeId && (
                           <DropSpacer
                             isVisible={true}
                             visibleColumns={visibleColumns}
@@ -1691,7 +1869,7 @@ const TaskListV2Section: React.FC = () => {
                           />
                         )}
                         {renderTask(index, isFirstInGroup)}
-                        {showAfter && (
+                        {showAfter && !activeId && (
                           <DropSpacer
                             isVisible={true}
                             visibleColumns={visibleColumns}

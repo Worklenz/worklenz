@@ -315,6 +315,7 @@ export const fetchTasksV3 = createAsyncThunk(
             ) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
+          due_time: task.due_time || null,
           completedAt: task.completedAt || task.completed_at || undefined,
           timeTracking: {
             estimated: task.timeTracking?.estimated || 0,

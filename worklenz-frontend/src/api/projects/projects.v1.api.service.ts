@@ -91,7 +91,10 @@ export const projectsApi = createApi({
         method: 'PUT',
         body: project,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Projects', id }],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+      ],
     }),
 
     deleteProject: builder.mutation<IServerResponse<IProjectViewModel>, string>({

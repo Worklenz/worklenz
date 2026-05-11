@@ -58,7 +58,6 @@ export default class BillingController extends WorklenzControllerBase {
     axios.request(config)
       .then((response) => {
         console.log(JSON.stringify(response.data));
-
       })
       .catch((error) => {
         console.log(error);
@@ -327,9 +326,9 @@ export default class BillingController extends WorklenzControllerBase {
       WHERE lpt.is_active = true
       ORDER BY lpt.sort_order, lpt.tier_level;
     `;
-    
+
     const result = await db.query(q);
-    
+
     // Transform the data into a format that the frontend expects
     const tiers = result.rows.map(row => ({
       id: row.id,
@@ -337,7 +336,7 @@ export default class BillingController extends WorklenzControllerBase {
       display_name: row.display_name,
       tier_level: row.tier_level,
       pricing_model: row.pricing_model,
-      
+
       // Direct tier data
       monthly_base_price: row.monthly_base_price,
       annual_base_price: row.annual_base_price,
@@ -346,7 +345,7 @@ export default class BillingController extends WorklenzControllerBase {
       min_users: row.min_users,
       max_users: row.max_users,
       included_users: row.included_users,
-      
+
       // Plan IDs for paddle integration
       plans: {
         monthly_plan_id: row.monthly_plan_id,
@@ -354,7 +353,7 @@ export default class BillingController extends WorklenzControllerBase {
         annual_plan_id: row.annual_plan_id,
         annual_paddle_id: row.annual_paddle_id
       },
-      
+
       // Features
       features: {
         max_projects: row.max_projects,
@@ -372,12 +371,12 @@ export default class BillingController extends WorklenzControllerBase {
         has_priority_support: row.has_priority_support,
         has_dedicated_account_manager: row.has_dedicated_account_manager
       },
-      
+
       // UI properties
       is_popular: row.is_popular,
       sort_order: row.sort_order
     }));
-    
+
     return res.status(200).send(new ServerResponse(true, {
       tiers: tiers
     }));

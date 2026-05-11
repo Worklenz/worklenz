@@ -2,6 +2,31 @@
   padding: 24px;
 }
 
+.upgrade-plan-card .ant-card-body {
+  gap: 0;
+}
+
+.upgrade-plan-card__header {
+  margin-bottom: 12px;
+  min-height: 64px;
+}
+
+.upgrade-plan-card__price {
+  min-height: 110px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.upgrade-plan-card__action {
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+
+.upgrade-plan-card__features {
+  flex: 1;
+}
+
 /* Plan Ribbon Styles */
 .plan-ribbon {
   position: absolute;
@@ -54,6 +79,11 @@
 }
 
 @media (max-width: 600px) {
+  .upgrade-plan-card__header,
+  .upgrade-plan-card__price {
+    min-height: auto;
+  }
+
   .upgrade-plans-responsive {
     padding: 8px;
   }

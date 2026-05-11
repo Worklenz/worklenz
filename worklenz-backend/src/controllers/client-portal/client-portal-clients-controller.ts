@@ -858,15 +858,15 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         paramIndex++;
       }
 
-      if (updateData.company_name?.trim()) {
+      if (updateData.company_name !== undefined) {
         updateFields.push(`company_name = $${paramIndex}`);
-        updateValues.push(updateData.company_name.trim());
+        updateValues.push(updateData.company_name?.trim() ? updateData.company_name.trim() : null);
         paramIndex++;
       }
 
-      if (updateData.phone?.trim()) {
+      if (updateData.phone !== undefined) {
         updateFields.push(`phone = $${paramIndex}`);
-        updateValues.push(updateData.phone.trim());
+        updateValues.push(updateData.phone?.trim() ? updateData.phone.trim() : null);
         paramIndex++;
       }
 

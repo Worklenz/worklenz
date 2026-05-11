@@ -96,4 +96,7 @@ export enum SocketEvents {
   CHAT_TYPING,
   CHAT_MESSAGE_READ,
   CHAT_MESSAGE_RECEIVED,
+
+  // Due time event
+  TASK_DUE_TIME_CHANGE,
 }

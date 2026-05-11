@@ -670,17 +670,21 @@ BEGIN
     END IF;
 
     -- insert project
-    INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, start_date,
+    INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, priority_id, start_date,
                           end_date,
                           folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
-                          use_manual_progress, use_weighted_progress, use_time_progress)
+                          use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id,
             _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
+            COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1)),
             (_body ->> 'start_date')::TIMESTAMPTZ,
             (_body ->> 'end_date')::TIMESTAMPTZ, (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
             (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER,
-            (_body ->> 'use_manual_progress')::BOOLEAN, (_body ->> 'use_weighted_progress')::BOOLEAN, (_body ->> 'use_time_progress')::BOOLEAN)
+            COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE))
     RETURNING id INTO _project_id;
 
     -- log record
@@ -2334,13 +2338,14 @@ BEGIN
                               TO_CHAR(CURRENT_DATE + INTERVAL '1 day', 'yyyy-mm-dd')) rec) AS due_tomorrow,
 
                  (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
-                  FROM (SELECT name, email
-                        FROM users
-                        WHERE id = (SELECT user_id
-                                    FROM project_subscribers
-                                    WHERE project_id = projects.id
-                                      AND user_id = users.id)
-                          AND users.is_deleted IS NOT TRUE) rec) AS subscribers
+                  FROM (SELECT u.name, u.email
+                        FROM project_subscribers ps
+                                 INNER JOIN users u ON ps.user_id = u.id
+                                 INNER JOIN notification_settings ns ON ns.user_id = u.id
+                        WHERE ps.project_id = projects.id
+                          AND ns.team_id = projects.team_id
+                          AND ns.email_notifications_enabled IS TRUE
+                          AND u.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
@@ -3745,6 +3750,7 @@ BEGIN
                  description,
                  start_date,
                  end_date,
+                 due_time,
                  done,
                  total_minutes,
                  priority_id,
@@ -3944,6 +3950,7 @@ AS
 $$
 DECLARE
     _result JSON;
+    _max_attempts INTEGER := 3;
 BEGIN
     SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
     INTO _result
@@ -3966,6 +3973,8 @@ BEGIN
                                              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(r))), '[]'::JSON) AS tasks
                                               FROM (SELECT t.id,
                                                            t.name AS name,
+                                                           task_updates.id AS update_id,
+                                                           task_updates.attempts AS attempts,
                                                            (SELECT name FROM users WHERE id = task_updates.reporter_id) AS updater_name,
                                                            (SELECT STRING_AGG(DISTINCT
                                                                               (SELECT name
@@ -3980,6 +3989,7 @@ BEGIN
                                                       AND task_updates.project_id = projects.id
                                                       AND task_updates.type = 'ASSIGN'
                                                       AND is_sent IS FALSE
+                                                      AND task_updates.attempts < _max_attempts
                                                     ORDER BY task_updates.created_at) r)
                                       FROM projects
                                       WHERE team_id = teams.id
@@ -3987,7 +3997,8 @@ BEGIN
                                                    FROM task_updates
                                                    WHERE project_id = projects.id
                                                      AND type = 'ASSIGN'
-                                                     AND is_sent IS FALSE)) r)
+                                                     AND is_sent IS FALSE
+                                                     AND attempts < _max_attempts)) r)
                         FROM teams
                         WHERE EXISTS(SELECT 1 FROM team_members WHERE team_id = teams.id AND user_id = users.id)
                           AND (SELECT email_notifications_enabled
@@ -3998,7 +4009,8 @@ BEGIN
           WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)
             AND users.is_deleted IS NOT TRUE) rec;
 
-    UPDATE task_updates SET is_sent = TRUE;
+    -- Individual task_updates will be deleted after successful email send
+    -- No batch update needed here
 
     RETURN _result;
 END
@@ -5034,13 +5046,15 @@ BEGIN
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
     VALUES (_project_id, 'Due Date', 'DUE_DATE', 12, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 13, FALSE);
+    VALUES (_project_id, 'Due Time', 'DUE_TIME', 13, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 14, FALSE);
+    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 14, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 15, FALSE);
+    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 15, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Reporter', 'REPORTER', 16, FALSE);
+    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 16, FALSE);
+    INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
+    VALUES (_project_id, 'Reporter', 'REPORTER', 17, FALSE);
 END
 $$;
 
@@ -5833,6 +5847,7 @@ BEGIN
         color_code             = (_body ->> 'color_code')::TEXT,
         status_id              = (_body ->> 'status_id')::UUID,
         health_id              = (_body ->> 'health_id')::UUID,
+        priority_id            = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1)),
         key                    = (_body ->> 'key')::TEXT,
         start_date             = (_body ->> 'start_date')::TIMESTAMPTZ,
         end_date               = (_body ->> 'end_date')::TIMESTAMPTZ,
@@ -5842,7 +5857,11 @@ BEGIN
         updated_at             = CURRENT_TIMESTAMP,
         estimated_working_days = (_body ->> 'working_days')::INTEGER,
         estimated_man_days     = (_body ->> 'man_days')::INTEGER,
-        hours_per_day          = (_body ->> 'hours_per_day')::INTEGER
+        hours_per_day          = (_body ->> 'hours_per_day')::INTEGER,
+        use_manual_progress    = COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+        use_weighted_progress  = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+        use_time_progress      = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
+        auto_assign_task_creator = COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE)
     WHERE id = (_body ->> 'id')::UUID
       AND team_id = _team_id
     RETURNING id INTO _project_id;

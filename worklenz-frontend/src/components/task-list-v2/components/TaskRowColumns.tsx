@@ -28,13 +28,18 @@ export const getTaskDisplayName = (task: Task): string => {
 // Parse date as local date to avoid timezone issues (e.g., "2024-02-10" should display as Feb 10, not Feb 9)
 export const formatDate = (dateString: string): string => {
   try {
-    // Handle both ISO date strings ("YYYY-MM-DD") and ISO timestamps ("YYYY-MM-DDTHH:mm:ss.sssZ")
-    // Extract just the date part if it's a timestamp
-    const datePart = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+    // Full ISO timestamp with timezone (e.g. "2024-02-10T22:30:00.000Z" from updated_at / created_at):
+    // Let the Date constructor parse it as UTC, then read back the local year/month/day.
+    // This correctly handles cases where the UTC date differs from the user's local date
+    // (e.g. 11:30 PM UTC = next day in UTC+5:30).
+    if (dateString.includes('T')) {
+      const d = new Date(dateString);
+      return format(d, 'MMM d, yyyy'); // date-fns formats using local timezone by default
+    }
 
-    // Parse date string as local date to avoid UTC conversion issues
-    const [year, month, day] = datePart.split('-').map(Number);
-    // Create date in local timezone (month is 0-indexed)
+    // Date-only string ("YYYY-MM-DD") from start_date / end_date (stored as DATE type in DB):
+    // Parse as local date to avoid UTC midnight shifting the date backward in negative-offset zones.
+    const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return format(date, 'MMM d, yyyy');
   } catch {
@@ -53,7 +58,7 @@ export const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isD
   }
 
   return (
-    <div className="flex items-center gap-0.5 flex-wrap">
+    <div className="flex items-center gap-0.5" style={{ flexShrink: 0 }}>
       {labels.map((label, index) => {
         const extendedLabel = label as any;
         return extendedLabel.end && extendedLabel.names && extendedLabel.name ? (
@@ -84,8 +89,7 @@ interface DragHandleColumnProps {
 export const DragHandleColumn: React.FC<DragHandleColumnProps> = memo(
   ({ width, isSubtask, attributes, listeners }) => (
     <div
-      className="flex items-center justify-center"
-      style={{ width }}
+      className="flex items-center justify-center pl-1 h-full w-full"
       {...(isSubtask ? {} : { ...attributes, ...listeners })}
     >
       {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
@@ -103,7 +107,7 @@ interface CheckboxColumnProps {
 
 export const CheckboxColumn: React.FC<CheckboxColumnProps> = memo(
   ({ width, isSelected, onCheckboxChange }) => (
-    <div className="flex items-center justify-center dark:border-gray-700" style={{ width }}>
+    <div className="flex items-center justify-center h-full w-full dark:border-gray-700">
       <Checkbox
         checked={isSelected}
         onChange={onCheckboxChange}
@@ -138,30 +142,46 @@ interface DescriptionColumnProps {
   description: string;
 }
 
+const stripHtml=(html:string):string =>{
+  if(!html)return '';
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
-  ({ width, description }) => (
+  ({ width, description }) => {
+    const plainText=stripHtml(description);
+    return(
     <div
-      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width, minHeight: '30px' }}
+      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+      style={{ 
+        width, 
+        minHeight: '30px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
     >
-      {description && description.trim() ? (
-        <div
-          className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
+      {plainText.trim() ? (
+        <span
+          className="text-sm text-gray-600 dark:text-gray-400"
           style={{
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxHeight: '24px',
-            lineHeight: '24px',
+            display: 'inline-block',
           }}
-          title={safeTextDisplay(description)}
-          dangerouslySetInnerHTML={{ __html: description }}
-        />
+          title={plainText}
+        >
+          {plainText}
+        </span>
       ) : (
         <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
       )}
     </div>
-  )
+  );
+}
 );
 
 DescriptionColumn.displayName = 'DescriptionColumn';
@@ -196,16 +216,25 @@ interface AssigneesColumnProps {
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
   ({ width, task, convertedTask, isDarkMode }) => (
     <div
-      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width }}
+      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+      style={{ 
+        width,
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
     >
-      <AvatarGroup
-        members={task.assignee_names || []}
-        maxCount={3}
-        isDarkMode={isDarkMode}
-        size={24}
-      />
-      <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+      <div className="flex items-center gap-1" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+        <AvatarGroup
+          members={task.assignee_names || []}
+          maxCount={3}
+          isDarkMode={isDarkMode}
+          size={24}
+        />
+        <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+      </div>
     </div>
   )
 );
@@ -278,10 +307,11 @@ interface LabelsColumnProps {
   labelsAdapter: any;
   isDarkMode: boolean;
   visibleColumns: any[];
+  columnId?: string;
 }
 
 export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
-  ({ width, task, labelsAdapter, isDarkMode, visibleColumns }) => {
+  ({ width, task, labelsAdapter, isDarkMode, visibleColumns, columnId = 'labels' }) => {
     const labelsStyle = {
       width,
       flexShrink: 0,
@@ -289,11 +319,20 @@ export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700"
-        style={labelsStyle}
+        className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden labels-scroll-container"
+        style={{
+          ...labelsStyle,
+          // Enable horizontal scrolling for labels - GitHub style (hidden scrollbar)
+          scrollbarWidth: 'none', // For Firefox - hide scrollbar
+          msOverflowStyle: 'none', // For IE/Edge - hide scrollbar
+          WebkitOverflowScrolling: 'touch', // For iOS smooth scrolling
+          whiteSpace: 'nowrap', // Prevent wrapping
+        }}
       >
-        <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
-        <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+        <div className="flex items-center gap-0.5" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+          <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
+          <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+        </div>
       </div>
     );
   }
@@ -415,12 +454,20 @@ interface ReporterColumnProps {
 
 export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, reporter }) => (
   <div
-    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-    style={{ width }}
+    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+    style={{ 
+      width,
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      WebkitOverflowScrolling: 'touch',
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+    }}
   >
     {reporter ? (
       <span
-        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+        className="text-sm text-gray-500 dark:text-gray-400"
+        style={{ whiteSpace: 'nowrap' }}
         title={safeTextDisplay(reporter)}
       >
         {safeTextDisplay(reporter)}
@@ -437,7 +484,7 @@ interface CustomColumnProps {
   width: string;
   column: any;
   task: Task;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string| number | boolean | string[] | null) => void;
 }
 
 export const CustomColumn: React.FC<CustomColumnProps> = memo(
@@ -446,17 +493,30 @@ export const CustomColumn: React.FC<CustomColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-        style={{ width }}
+        className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+        style={{ 
+          width,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
       >
-        <CustomColumnCell
-          column={column}
-          task={task}
-          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-        />
+        <div style={{ width: '100%', minWidth: 0 }}>
+          <CustomColumnCell
+            column={column}
+            task={task}
+            updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+          />
+        </div>
       </div>
     );
   }
 );
 
 CustomColumn.displayName = 'CustomColumn';
+
+
+// Export the new overflow-aware labels column
+export { LabelsColumnWithOverflow } from './LabelsColumnWithOverflow';

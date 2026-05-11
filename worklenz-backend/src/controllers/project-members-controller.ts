@@ -393,11 +393,11 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     }
 
     try {
-      // Check if an active link already exists for this project
+      // Check if an active and non-expired link already exists for this project
       const checkQuery = `
         SELECT id, token, expires_at, created_at, status
         FROM project_invitation_links
-        WHERE project_id = $1 AND status = 'active'
+        WHERE project_id = $1 AND status = 'active' AND expires_at > NOW()
         ORDER BY created_at DESC
         LIMIT 1
       `;
@@ -407,15 +407,15 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       let message = "Project invitation link generated successfully";
 
       if (checkResult.rows.length > 0) {
-        // Active link exists, return it
+        // Active and non-expired link exists, return it
         invitationLink = checkResult.rows[0];
         message = "Active invitation link already exists";
       } else {
-        // Check if there's an inactive link we can reactivate
+        // Check if there's an inactive or expired link we can reactivate
         const inactiveQuery = `
           SELECT id, token, expires_at, created_at, status
           FROM project_invitation_links
-          WHERE project_id = $1 AND status != 'active'
+          WHERE project_id = $1 AND (status != 'active' OR expires_at <= NOW())
           ORDER BY created_at DESC
           LIMIT 1
         `;

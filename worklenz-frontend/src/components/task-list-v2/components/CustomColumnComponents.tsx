@@ -90,7 +90,10 @@ AddCustomColumnButton.displayName = 'AddCustomColumnButton';
 export const CustomColumnHeader: React.FC<{
   column: any;
   onSettingsClick: (columnId: string) => void;
-}> = ({ column, onSettingsClick }) => {
+  dragListeners?: any;
+  dragAttributes?: any;
+  setDragActivatorRef?: (element: HTMLElement | null) => void;
+}> = ({ column, onSettingsClick, dragListeners, dragAttributes, setDragActivatorRef }) => {
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
 
@@ -101,21 +104,35 @@ export const CustomColumnHeader: React.FC<{
     <Flex
       align="center"
       justify="space-between"
-      className="w-full px-2 group cursor-pointer"
+      className="w-full px-2 group"
+      style={{ minWidth: 0 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onSettingsClick(column.key || column.id)}
     >
-      <span title={displayName} className="truncate flex-1 mr-2">
+      <span 
+        ref={setDragActivatorRef}
+        {...dragAttributes}
+        {...dragListeners}
+        title={displayName} 
+        className="truncate flex-1 mr-1" 
+        style={{ minWidth: 0, cursor: dragListeners ? 'grab' : 'default' }}
+      >
         {displayName}
       </span>
-      <Tooltip title={t('customColumns.customColumnSettings')}>
-        <SettingOutlined
-          className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex-shrink-0 ${
-            isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-          }`}
-        />
-      </Tooltip>
+      {/* Right-side icons: settings icon only */}
+      <Flex align="center" gap={4} className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+        <Tooltip title={t('customColumns.customColumnSettings')}>
+          <SettingOutlined
+            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
+              isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
+            onClick={e => {
+              e.stopPropagation();
+              onSettingsClick(column.key || column.id);
+            }}
+          />
+        </Tooltip>
+      </Flex>
     </Flex>
   );
 };
@@ -225,7 +242,7 @@ export const TextCustomColumnCell: React.FC<{
   };
 
   return (
-    <div className="px-2">
+    <div className="px-2" style={{ minWidth: 0, width: '100%' }}>
       <Input
         value={inputValue}
         onChange={e => setInputValue(e.target.value)}
@@ -237,6 +254,8 @@ export const TextCustomColumnCell: React.FC<{
         placeholder={t('customColumns.textPlaceholder', { defaultValue: 'Enter text' })}
         size="small"
         variant="borderless"
+        style={{ width: '100%', minWidth: 0 }}
+        className="custom-column-text-input"
       />
     </div>
   );
@@ -330,7 +349,7 @@ export const PeopleCustomColumnCell: React.FC<{
   }, [members]);
 
   return (
-    <div className="flex items-center gap-1 px-2 relative custom-column-cell">
+    <div className="flex items-center gap-1 px-2 relative custom-column-cell" style={{ minWidth: 0, width: '100%' }}>
       {selectedMembers.length > 0 && (
         <AvatarGroup
           members={selectedMembers.map(member => ({
@@ -353,7 +372,7 @@ export const PeopleCustomColumnCell: React.FC<{
         isLoading={isLoading}
         loadMembers={loadMembers}
         pendingChanges={pendingChanges}
-        buttonClassName="w-6 h-6"
+        buttonClassName="w-6 h-6 flex-shrink-0"
       />
     </div>
   );
@@ -385,8 +404,8 @@ export const DateCustomColumnCell: React.FC<{
   };
 
   return (
-    <div className={`px-2 relative custom-column-cell ${isOpen ? 'custom-column-focused' : ''}`}>
-      <div className="relative">
+    <div className={`px-2 relative custom-column-cell ${isOpen ? 'custom-column-focused' : ''}`} style={{ minWidth: 0, width: '100%' }}>
+      <div className="relative" style={{ minWidth: 0, width: '100%' }}>
         <DatePicker
           open={isOpen}
           onOpenChange={setIsOpen}
@@ -409,12 +428,13 @@ export const DateCustomColumnCell: React.FC<{
           `}
           popupClassName={isDarkMode ? 'dark-date-picker' : 'light-date-picker'}
           inputReadOnly
-          getPopupContainer={trigger => trigger.parentElement || document.body}
+          getPopupContainer={() => document.body}
           style={{
             backgroundColor: 'transparent',
             border: 'none',
             boxShadow: 'none',
             width: '100%',
+            minWidth: 0,
           }}
         />
       </div>
@@ -516,7 +536,7 @@ export const NumberCustomColumnCell: React.FC<{
   const addonAfter = numberType === 'withLabel' && labelPosition === 'right' ? label : undefined;
 
   return (
-    <div className="px-2">
+    <div className="px-2" style={{ minWidth: 0, width: '100%' }}>
       <Input
         value={getDisplayValue()}
         onChange={handleInputChange}
@@ -680,6 +700,7 @@ export const SelectionCustomColumnCell: React.FC<{
   return (
     <div
       className={`px-2 relative custom-column-cell ${isDropdownOpen ? 'custom-column-focused' : ''}`}
+      style={{ minWidth: 0, width: '100%' }}
     >
       <Dropdown
         open={isDropdownOpen}
@@ -688,7 +709,7 @@ export const SelectionCustomColumnCell: React.FC<{
         trigger={['click']}
         placement="bottomLeft"
         overlayClassName="custom-selection-dropdown"
-        getPopupContainer={trigger => trigger.parentElement || document.body}
+        getPopupContainer={() => document.body}
       >
         <div
           className={`
@@ -703,16 +724,17 @@ export const SelectionCustomColumnCell: React.FC<{
                 : 'hover:bg-gray-100/50'
           }
         `}
+          style={{ minWidth: 0, width: '100%' }}
         >
           {isLoading ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" style={{ minWidth: 0 }}>
               <div
                 className={`
-                w-3 h-3 rounded-full animate-spin border-2 border-transparent
+                w-3 h-3 rounded-full animate-spin border-2 border-transparent flex-shrink-0
                 ${isDarkMode ? 'border-t-gray-400' : 'border-t-gray-600'}
               `}
               />
-              <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <span className={`text-sm truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 {t('customColumns.updating', {
                   defaultValue: 'Updating...',
                 })}
@@ -721,16 +743,17 @@ export const SelectionCustomColumnCell: React.FC<{
           ) : selectedOption ? (
             <>
               <div
-                className="w-3 h-3 rounded-full border border-white/20 shadow-sm"
+                className="w-3 h-3 rounded-full border border-white/20 shadow-sm flex-shrink-0"
                 style={{ backgroundColor: selectedOption.selection_color || '#6b7280' }}
               />
               <span
-                className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}
+                className={`text-sm font-medium truncate flex-1 ${isDarkMode ? 'text-gray-200' : 'text-gray-900'}`}
+                style={{ minWidth: 0 }}
               >
                 {selectedOption.selection_name}
               </span>
               <svg
-                className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+                className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -746,15 +769,15 @@ export const SelectionCustomColumnCell: React.FC<{
           ) : (
             <>
               <div
-                className={`w-3 h-3 rounded-full border-2 border-dashed ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}
+                className={`w-3 h-3 rounded-full border-2 border-dashed flex-shrink-0 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}
               />
-              <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              <span className={`text-sm truncate flex-1 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} style={{ minWidth: 0 }}>
                 {t('selectText', {
                   defaultValue: 'Select',
                 })}
               </span>
               <svg
-                className={`w-4 h-4 ml-auto transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''} ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

@@ -4,7 +4,7 @@ CREATE DOMAIN WL_EMAIL AS TEXT CHECK (value ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]
 
 -- Enumerated Types
 -- Add new values using "ALTER TYPE WL_TASK_LIST_COL_KEY ADD VALUE 'NEW_VALUE_NAME' AFTER 'REPORTER';"
-CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
+CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'DUE_TIME', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
 
 CREATE TYPE REACTION_TYPES AS ENUM ('like');
 
@@ -794,7 +794,8 @@ CREATE TABLE IF NOT EXISTS projects (
     estimated_man_days     INTEGER                  DEFAULT 0,
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
-    estimated_working_days INTEGER                  DEFAULT 0
+    estimated_working_days INTEGER                  DEFAULT 0,
+    priority_id            UUID
 );
 
 ALTER TABLE projects
@@ -1274,6 +1275,10 @@ ALTER TABLE task_priorities
     ADD CONSTRAINT task_priorities_pk
         PRIMARY KEY (id);
 
+ALTER TABLE projects
+    ADD CONSTRAINT projects_priority_id_fk
+        FOREIGN KEY (priority_id) REFERENCES task_priorities;
+
 ALTER TABLE cpt_tasks
     ADD CONSTRAINT cpt_tasks_priority_fk
         FOREIGN KEY (priority_id) REFERENCES task_priorities;
@@ -1368,11 +1373,30 @@ CREATE TABLE IF NOT EXISTS task_updates (
     project_id  UUID                                                NOT NULL,
     is_sent     BOOLEAN                  DEFAULT FALSE              NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    retry_count INTEGER                  DEFAULT 0
+    retry_count INTEGER                  DEFAULT 0,
+    attempts    INTEGER                  DEFAULT 0
 );
 
 ALTER TABLE task_updates
     ADD CONSTRAINT task_updates_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS failed_task_notifications (
+    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_update_id UUID                                                UNIQUE,
+    user_id        UUID,
+    task_id        UUID,
+    project_id     UUID,
+    type           VARCHAR(50),
+    email          VARCHAR(255),
+    attempts       INTEGER,
+    last_error     TEXT,
+    failed_at      TIMESTAMP                DEFAULT NOW(),
+    created_at     TIMESTAMP
+);
+
+ALTER TABLE failed_task_notifications
+    ADD CONSTRAINT failed_task_notifications_pk
         PRIMARY KEY (id);
 
 ALTER TABLE task_updates

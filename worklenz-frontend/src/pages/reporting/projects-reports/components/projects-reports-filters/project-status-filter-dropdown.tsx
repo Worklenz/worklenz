@@ -1,6 +1,6 @@
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import {
-  fetchProjectData,
+  fetchProjectDataForCurrentView,
   setSelectedProjectStatuses,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -33,7 +33,7 @@ const ProjectStatusFilterDropdown = () => {
   const debouncedUpdate = useCallback(
     debounce((statuses: IProjectStatus[]) => {
       dispatch(setSelectedProjectStatuses(statuses));
-      dispatch(fetchProjectData());
+      dispatch(fetchProjectDataForCurrentView());
     }, 300),
     [dispatch]
   );

@@ -259,7 +259,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
         const hasInvalidFilters =
           selectedProjects.length === 0 || // Projects are required
           selectedTeams.length === 0 || // Teams are required
-          (selectedCategories.length === 0 && !noCategory) || // Categories required unless "No Category" is checked
+          selectedCategories.length === 0 || // Categories required unless "No Category" is checked
           selectedMembers.length === 0; // Members are required (backend line 790: members.length === 0 → show nothing)
 
         if (hasInvalidFilters) {

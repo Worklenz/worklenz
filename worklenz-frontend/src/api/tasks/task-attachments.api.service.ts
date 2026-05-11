@@ -52,7 +52,9 @@ const taskAttachmentsApiService = {
     id: string,
     filename: string
   ): Promise<IServerResponse<{ url: string; expires_in: number }>> => {
-    const response = await apiClient.get(`${rootUrl}/download?id=${id}&file=${filename}`);
+    const response = await apiClient.get(
+      `${rootUrl}/download?id=${id}&file=${encodeURIComponent(filename)}`
+    );
     return response.data;
   },
 };

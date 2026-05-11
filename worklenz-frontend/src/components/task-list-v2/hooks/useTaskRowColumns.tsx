@@ -10,6 +10,7 @@ import {
   PriorityColumn,
   ProgressColumn,
   LabelsColumn,
+  LabelsColumnWithOverflow,
   PhaseColumn,
   TimeTrackingColumn,
   EstimationColumn,
@@ -19,6 +20,7 @@ import {
 } from '../components/TaskRowColumns';
 import { TitleColumn } from '../components/TitleColumn';
 import { DatePickerColumn } from '../components/DatePickerColumn';
+import TaskListDueTimeCell from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-cells/task-list-due-time-cell/task-list-due-time-cell';
 
 interface UseTaskRowColumnsProps {
   task: Task;
@@ -35,7 +37,7 @@ interface UseTaskRowColumnsProps {
     custom_column_obj?: any;
     isCustom?: boolean;
   }>;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string| number | boolean | string[] | null) => void;
 
   // From useTaskRowState
   taskDisplayName: string;
@@ -99,7 +101,7 @@ export const useTaskRowColumns = ({
       rowBackgrounds?: any
     ) => {
       // Calculate left position for sticky columns - must account for ALL previous columns
-      let leftPosition = 4; // Account for px-1 (4px) padding on container
+      let leftPosition = 0; // Start at 0 to cover the row's left padding
       if (isSticky && typeof index === 'number') {
         for (let i = 0; i < index; i++) {
           const prevColumn = visibleColumns[i];
@@ -114,8 +116,10 @@ export const useTaskRowColumns = ({
             left: leftPosition,
             zIndex: 5, // Lower than header but above regular content
             backgroundColor: currentBg || (isDarkMode ? '#1e1e1e' : '#ffffff'), // Use dynamic background or fallback
-            overflow: 'hidden', // Prevent content from spilling over
             width: width,
+            height: '100%', // Fill the row height
+            display: 'flex', // Use flex to contain child
+            alignItems: 'center', // Center content vertically
           }
         : {
             width: width,
@@ -223,17 +227,27 @@ export const useTaskRowColumns = ({
               />
             );
 
+          case 'dueTime':
+            return (
+              <div
+                className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+                style={{ width }}
+              >
+                <TaskListDueTimeCell task={task} />
+              </div>
+            );
+
           case 'progress':
             return <ProgressColumn width={width} task={task} />;
 
           case 'labels':
             return (
-              <LabelsColumn
+              <LabelsColumnWithOverflow
                 width={width}
                 task={task}
                 labelsAdapter={labelsAdapter}
                 isDarkMode={isDarkMode}
-                visibleColumns={visibleColumns}
+                columnId={columnId}
               />
             );
 

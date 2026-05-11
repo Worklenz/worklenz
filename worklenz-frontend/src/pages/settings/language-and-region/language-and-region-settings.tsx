@@ -26,6 +26,7 @@ const LanguageAndRegionSettings = () => {
   const { lng } = useAppSelector(state => state.localesReducer);
   const [timezones, setTimezones] = useState<ITimezone[]>([]);
   const [loadingTimezones, setLoadingTimezones] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const currentSession = useAuthService().getCurrentSession();
 
   useDocumentTitle('Language & Region');
@@ -71,6 +72,7 @@ const LanguageAndRegionSettings = () => {
         setSession(authorizeResponse.user);
         dispatch(setUser(authorizeResponse.user));
       }
+      setIsDirty(false);
     }
   };
 
@@ -183,6 +185,11 @@ const LanguageAndRegionSettings = () => {
             language: lng || Language.EN,
             timezone: currentSession?.timezone,
           }}
+          onValuesChange={(_, allValues) => {
+            const langChanged = allValues.language !== (lng || Language.EN);
+            const tzChanged = allValues.timezone !== currentSession?.timezone;
+            setIsDirty(langChanged || tzChanged);
+          }}
           onFinish={onFinish}
         >
           <Form.Item
@@ -223,9 +230,11 @@ const LanguageAndRegionSettings = () => {
             />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {t('save_changes')}
-            </Button>
+            {isDirty && (
+              <Button type="primary" htmlType="submit">
+                {t('save_changes')}
+              </Button>
+            )}
           </Form.Item>
         </Form>
       ) : (

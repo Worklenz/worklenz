@@ -107,7 +107,7 @@ const ProjectsGroupedView = () => {
     [groupPagination]
   );
 
-  // Fetch grouped project data when filters or grouping changes
+  // Fetch grouped project data when filters change (including search)
   useEffect(() => {
     dispatch(fetchGroupedProjects());
     // Reset group pagination when filters change

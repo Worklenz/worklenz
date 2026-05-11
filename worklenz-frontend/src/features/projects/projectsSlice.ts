@@ -6,6 +6,7 @@ import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { IProjectManager } from '@/types/project/projectManager.types';
 import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
+import { ProjectGroupBy } from '@/types/project/project.types';
 
 interface ProjectState {
   projects: {
@@ -49,6 +50,11 @@ interface ProjectState {
   projectManagersLoading: boolean;
 }
 
+interface UpdateProjectMemberDefaultViewPayload {
+  projectId: string;
+  defaultView: 'BOARD' | 'TASK_LIST';
+}
+
 const initialState: ProjectState = {
   projects: {
     data: [],
@@ -79,10 +85,10 @@ const initialState: ProjectState = {
   groupedRequestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: 'name',
-    order: 'ascend',
+    field: 'priority',
+    order: 'descend',
     search: '',
-    groupBy: 'category',
+    groupBy: ProjectGroupBy.PRIORITY,
     filter: 0,
     statuses: null,
     categories: null,
@@ -276,6 +282,27 @@ const projectSlice = createSlice({
         ...action.payload,
       };
     },
+    setProjectMemberDefaultView: (
+      state,
+      action: PayloadAction<UpdateProjectMemberDefaultViewPayload>
+    ) => {
+      const { projectId, defaultView } = action.payload;
+
+      state.projects.data = state.projects.data.map(project =>
+        project.id === projectId ? { ...project, team_member_default_view: defaultView } : project
+      );
+
+      if (state.groupedProjects.data?.data) {
+        state.groupedProjects.data.data = state.groupedProjects.data.data.map(group => ({
+          ...group,
+          projects: group.projects.map(project =>
+            project.id === projectId
+              ? { ...project, team_member_default_view: defaultView }
+              : project
+          ),
+        }));
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -339,5 +366,6 @@ export const {
   setFilteredStatuses,
   setRequestParams,
   setGroupedRequestParams,
+  setProjectMemberDefaultView,
 } = projectSlice.actions;
 export default projectSlice.reducer;

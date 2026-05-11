@@ -232,20 +232,7 @@ export default class PlanTrialController extends WorklenzControllerBase {
 
   // Analytics helper methods
   private static logTrialStartEvent(userId: string, planName: string): void {
-    try {
-      // TODO: Integrate with Mixpanel or your analytics service
-      console.log(`[ANALYTICS] Trial started: User ${userId} - Plan ${planName}`);
-
-      // Example Mixpanel integration (uncomment when Mixpanel is available)
-      // const mixpanel = require('mixpanel');
-      // mixpanel.track('Plan Trial Started', {
-      //   distinct_id: userId,
-      //   plan_name: planName,
-      //   trial_duration_days: 3,
-      //   timestamp: new Date().toISOString()
-      // });
-
-      // Log to database for analytics
+    try {      // Log to database for analytics
       this.logTrialEvent(userId, "trial_started", { plan_name: planName });
     } catch (error) {
       // Don't fail the request if analytics fails
@@ -255,8 +242,6 @@ export default class PlanTrialController extends WorklenzControllerBase {
 
   private static logTrialCancelEvent(userId: string, reason?: string): void {
     try {
-      console.log(`[ANALYTICS] Trial cancelled: User ${userId} - Reason: ${reason || "Not specified"}`);
-
       // Log to database for analytics
       this.logTrialEvent(userId, "trial_cancelled", {
         reason: reason || "Not specified"
@@ -268,8 +253,6 @@ export default class PlanTrialController extends WorklenzControllerBase {
 
   private static logTrialConversionEvent(userId: string, trialId: string): void {
     try {
-      console.log(`[ANALYTICS] Trial converted: User ${userId} - Trial ${trialId}`);
-
       // Log to database for analytics
       this.logTrialEvent(userId, "trial_converted", {
         trial_id: trialId
@@ -294,14 +277,6 @@ export default class PlanTrialController extends WorklenzControllerBase {
         timestamp: new Date().toISOString(),
         source: "backend"
       };
-
-      console.log(`[TRIAL_ANALYTICS] ${JSON.stringify(analyticsEvent)}`);
-
-      // TODO: Store in analytics database table
-      // await db.query(
-      //   'INSERT INTO analytics_events (user_id, event_type, event_category, metadata) VALUES ($1, $2, $3, $4)',
-      //   [userId, eventType, 'plan_trial', JSON.stringify(metadata)]
-      // );
     } catch (error) {
       console.error("Failed to log trial analytics event:", error);
     }

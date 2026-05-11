@@ -77,8 +77,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
+  const [showMoveToSubmenu, setShowMoveToSubmenu] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const moveToRef = useRef<HTMLDivElement>(null);
 
   // Calculate optimal position to prevent overflow
   useEffect(() => {
@@ -525,7 +527,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       items.push({
         key: 'moveTo',
         label: (
-          <div className="relative group">
+          <div
+            ref={moveToRef}
+            className="relative"
+            onMouseEnter={() => setShowMoveToSubmenu(true)}
+            onMouseLeave={() => setShowMoveToSubmenu(false)}
+          >
             <button className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left">
               <div className="flex items-center gap-2">
                 <RetweetOutlined className="text-gray-500 dark:text-gray-400" />
@@ -546,18 +553,28 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                 ></path>
               </svg>
             </button>
-            <ul className="absolute left-full top-0 mt-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20 hidden group-hover:block">
-              {moveToOptions.map(option => (
-                <li key={option.key}>
-                  <button
-                    onClick={option.onClick}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                  >
-                    {option.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            {showMoveToSubmenu && (
+              <ul
+                className="fixed w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-[10000]"
+                style={{
+                  left: moveToRef.current
+                    ? moveToRef.current.getBoundingClientRect().right
+                    : 0,
+                  top: moveToRef.current ? moveToRef.current.getBoundingClientRect().top : 0,
+                }}
+              >
+                {moveToOptions.map(option => (
+                  <li key={option.key}>
+                    <button
+                      onClick={option.onClick}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                    >
+                      {option.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         ),
       });
