@@ -10,6 +10,7 @@ import {
   PriorityColumn,
   ProgressColumn,
   LabelsColumn,
+  LabelsColumnWithOverflow,
   PhaseColumn,
   TimeTrackingColumn,
   EstimationColumn,
@@ -241,12 +242,12 @@ export const useTaskRowColumns = ({
 
           case 'labels':
             return (
-              <LabelsColumn
+              <LabelsColumnWithOverflow
                 width={width}
                 task={task}
                 labelsAdapter={labelsAdapter}
                 isDarkMode={isDarkMode}
-                visibleColumns={visibleColumns}
+                columnId={columnId}
               />
             );
 
