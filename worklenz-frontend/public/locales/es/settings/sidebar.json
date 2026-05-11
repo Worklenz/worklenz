@@ -1,4 +1,9 @@
 {
+  "personal": "Personal",
+  "team": "Equipo",
+  "project": "Proyecto",
+  "finance": "Finanzas",
+  "danger-zone": "Zona de peligro",
   "profile": "Perfil",
   "notifications": "Notificaciones",
   "clients": "Clientes",
@@ -12,6 +17,7 @@
   "change-password": "Cambiar contraseña",
   "language-and-region": "Idioma y región",
   "appearance": "Apariencia",
+  "ratecard": "Tarifa",
   "integrations": "Integraciones",
   "account-deletion": "Eliminar cuenta",
   "team-hierarchy": "Jerarquía del equipo"

@@ -1,4 +1,9 @@
 {
+  "personal": "Personal",
+  "team": "Team",
+  "project": "Project",
+  "finance": "Finance",
+  "danger-zone": "Danger Zone",
   "profile": "Profile",
   "notifications": "Notifications",
   "clients": "Clients",
@@ -13,6 +18,7 @@
   "change-password": "Change Password",
   "language-and-region": "Language and Region",
   "appearance": "Appearance",
+  "ratecard": "Rate Card",
   "integrations": "Integrations",
   "account-deletion": "Delete Account"
 }

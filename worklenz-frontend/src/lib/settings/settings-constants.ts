@@ -15,7 +15,6 @@ import {
   BulbOutlined,
   DeleteOutlined,
   DollarCircleOutlined,
-  SlackOutlined,
   ApiOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
@@ -56,11 +55,14 @@ type SettingMenuItem = {
   name: string;
   defaultValue: string;
   endpoint: string;
+  groupKey?: string;
+  groupDefaultValue?: string;
   icon: ReactNode;
   element: ReactNode;
   adminOnly?: boolean;
   isDangerous?: boolean;
   businessPlanRequired?: boolean;
+  showInSidebar?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const settingsItems: SettingMenuItem[] = [
@@ -70,6 +72,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'profile',
     defaultValue: 'Profile',
     endpoint: 'profile',
+    groupKey: 'personal',
+    groupDefaultValue: 'Personal',
     icon: React.createElement(UserOutlined),
     element: React.createElement(ProfileSettings),
   },
@@ -78,6 +82,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'notifications',
     defaultValue: 'Notifications',
     endpoint: 'notifications',
+    groupKey: 'personal',
+    groupDefaultValue: 'Personal',
     icon: React.createElement(NotificationOutlined),
     element: React.createElement(NotificationsSettings),
   },
@@ -86,6 +92,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'appearance',
     defaultValue: 'Appearance',
     endpoint: 'appearance',
+    groupKey: 'personal',
+    groupDefaultValue: 'Personal',
     icon: React.createElement(BulbOutlined),
     element: React.createElement(AppearanceSettings),
   },
@@ -94,6 +102,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'change-password',
     defaultValue: 'Change Password',
     endpoint: 'password',
+    groupKey: 'personal',
+    groupDefaultValue: 'Personal',
     icon: React.createElement(LockOutlined),
     element: React.createElement(ChangePassword),
   },
@@ -102,6 +112,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'language-and-region',
     defaultValue: 'Language and Region',
     endpoint: 'language-and-region',
+    groupKey: 'personal',
+    groupDefaultValue: 'Personal',
     icon: React.createElement(GlobalOutlined),
     element: React.createElement(LanguageAndRegionSettings),
   },
@@ -111,6 +123,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'clients',
     defaultValue: 'Clients',
     endpoint: 'clients',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(UserSwitchOutlined),
     element: React.createElement(ClientsSettings),
     adminOnly: true,
@@ -120,6 +134,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'job-titles',
     defaultValue: 'Job Titles',
     endpoint: 'job-titles',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(IdcardOutlined),
     element: React.createElement(JobTitlesSettings),
     adminOnly: true,
@@ -129,6 +145,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'labels',
     defaultValue: 'Labels',
     endpoint: 'labels',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(TagsOutlined),
     element: React.createElement(LabelsSettings),
     adminOnly: true,
@@ -138,6 +156,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'categories',
     defaultValue: 'Categories',
     endpoint: 'categories',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(GroupOutlined),
     element: React.createElement(CategoriesSettings),
     adminOnly: true,
@@ -147,6 +167,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'project-templates',
     defaultValue: 'Project Templates',
     endpoint: 'project-templates',
+    groupKey: 'project',
+    groupDefaultValue: 'Project',
     icon: React.createElement(FileZipOutlined),
     element: React.createElement(ProjectTemplatesSettings),
     adminOnly: true,
@@ -156,6 +178,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'task-templates',
     defaultValue: 'Task Templates',
     endpoint: 'task-templates',
+    groupKey: 'project',
+    groupDefaultValue: 'Project',
     icon: React.createElement(ProfileOutlined),
     element: React.createElement(TaskTemplatesSettings),
     adminOnly: true,
@@ -165,6 +189,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'team-members',
     defaultValue: 'Team Members',
     endpoint: 'team-members',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamMembersSettings),
     adminOnly: true,
@@ -174,15 +200,19 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'team-hierarchy',
     defaultValue: 'Team Hierarchy',
     endpoint: 'team-hierarchy',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamHierarchy),
     adminOnly: true,
   },
   {
     key: 'ratecard',
-    name: 'Rate Card',
+    name: 'ratecard',
     defaultValue: 'Rate Card',
     endpoint: 'ratecard',
+    groupKey: 'finance',
+    groupDefaultValue: 'Finance',
     icon: React.createElement(DollarCircleOutlined),
     element: React.createElement(RateCardSettings),
     businessPlanRequired: true,
@@ -192,6 +222,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'teams',
     defaultValue: 'Teams',
     endpoint: 'teams',
+    groupKey: 'team',
+    groupDefaultValue: 'Team',
     icon: React.createElement(BankOutlined),
     element: React.createElement(TeamsSettings),
     adminOnly: true,
@@ -204,6 +236,7 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(ApiOutlined),
     element: React.createElement(IntegrationsSettings),
     adminOnly: true,
+    showInSidebar: false,
   },
   // Danger zone - always at the bottom
   {
@@ -211,6 +244,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'account-deletion',
     defaultValue: 'Account Deletion',
     endpoint: 'account-deletion',
+    groupKey: 'danger-zone',
+    groupDefaultValue: 'Danger Zone',
     icon: React.createElement(DeleteOutlined),
     element: React.createElement(AccountDeletion),
     isDangerous: true,
