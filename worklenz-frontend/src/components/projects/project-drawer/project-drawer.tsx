@@ -198,6 +198,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       try {
         const formValues: any = {
           ...project,
+          notes: project.notes ? project.notes.slice(0, 500) : '',
           start_date: project.start_date ? dayjs(project.start_date) : null,
           end_date: project.end_date ? dayjs(project.end_date) : null,
           working_days: project.working_days || 0,
@@ -625,7 +626,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
           />
           <ProjectCategorySection
-            categories={projectCategories}
             form={form}
             t={t}
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
@@ -640,7 +640,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           <Form.Item name="notes" label={t('notes')}>
             <Input.TextArea
               placeholder={t('enterNotes')}
-              disabled={!isProjectManager && !isOwnerorAdmin}
+              disabled={!isProjectManager && !isOwnerorAdmin} 
+              maxLength={500}
+              showCount
             />
           </Form.Item>
 

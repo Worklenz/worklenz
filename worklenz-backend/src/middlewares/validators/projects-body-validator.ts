@@ -25,7 +25,7 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
   if (req.body.name.length > 100)
     return res.status(200).send(new ServerResponse(false, null, "Project name length exceeded!"));
 
-  if (req.body.notes && req.body.notes.length > 200)
+  if (req.body.notes && req.body.notes.length > 500)
     return res.status(200).send(new ServerResponse(false, null, "Project note length exceeded!"));
 
   if (req.body.working_days && !(Number.isInteger(req.body.working_days)))

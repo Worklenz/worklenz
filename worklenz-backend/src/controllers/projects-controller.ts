@@ -705,6 +705,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     if (key.length > 5)
       return res.status(200).send(new ServerResponse(false, null, "The project key length cannot exceed 5 characters."));
 
+    if (req.body.notes && req.body.notes.length > 500) {
+      req.body.notes = req.body.notes.substring(0, 500);
+    }
+
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
     req.body.user_id = req.user?.id || null;
