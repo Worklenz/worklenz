@@ -379,11 +379,9 @@ const ProfileSettings = () => {
             </Form.Item>
 
             <Form.Item>
-              {isDirty && (
-                <Button type="primary" htmlType="submit" loading={updating}>
-                  {t('saveChanges')}
-                </Button>
-              )}
+              <Button type="primary" htmlType="submit" loading={updating}>
+                {isDirty ? t('saveChanges') : t('save')}
+              </Button>
             </Form.Item>
           </Form>
         )}
