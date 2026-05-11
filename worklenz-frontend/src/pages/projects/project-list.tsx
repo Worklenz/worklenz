@@ -382,16 +382,16 @@ const ProjectList: React.FC = () => {
       const newOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
       const newField = (Array.isArray(sorter) ? sorter[0].columnKey : sorter.columnKey) as string;
 
-      if (newOrder && newField && (newOrder !== requestParams.order || newField !== requestParams.field)) {
-        updates.order = newOrder ?? DEFAULT_PROJECT_SORT_ORDER;
-        updates.field = newField ?? DEFAULT_PROJECT_SORT_FIELD;
-        setSortingValues(updates.field, updates.order);
+      if (!newOrder && requestParams.order) {
+        updates.order = DEFAULT_PROJECT_SORT_ORDER;   // 'ascend'
+        updates.field = DEFAULT_PROJECT_SORT_FIELD;   // 'name'
+        setSortingValues(DEFAULT_PROJECT_SORT_FIELD, DEFAULT_PROJECT_SORT_ORDER);
         hasChanges = true;
-      }
 
-      if (newPagination.current !== requestParams.index || newPagination.pageSize !== requestParams.size) {
-        updates.index = newPagination.current || 1;
-        updates.size = newPagination.pageSize || DEFAULT_PAGE_SIZE;
+      } else if (newOrder && newField && (newOrder !== requestParams.order || newField !== requestParams.field)) {
+        updates.order = newOrder;
+        updates.field = newField;
+        setSortingValues(newField, newOrder);
         hasChanges = true;
       }
 
