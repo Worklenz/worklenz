@@ -25,7 +25,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -46,7 +46,11 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { colors } from '@/styles/colors';
 import { getRoleColor, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
-import { canManageUserRole, getSessionRoleName, normalizeRoleName } from '@/utils/role-permissions.utils';
+import {
+  canManageUserRole,
+  getSessionRoleName,
+  normalizeRoleName,
+} from '@/utils/role-permissions.utils';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import './team-members-settings.css';
 
@@ -76,15 +80,6 @@ const TeamMembersSettings = () => {
     field: 'name',
     order: 'asc',
   });
-
-  // ── Inline name editing state ────────────────────────────────────────────
-  // Which row is currently being edited (by member id)
-  const [editingNameId, setEditingNameId] = useState<string | null>(null);
-  // Live value of the name input
-  const [editingNameValue, setEditingNameValue] = useState<string>('');
-  // Prevents blur from double-committing after Enter/Escape
-  const committingRef = useRef(false);
-  // ────────────────────────────────────────────────────────────────────────
 
   const getTeamMembers = useCallback(async () => {
     try {
@@ -160,88 +155,13 @@ const TeamMembersSettings = () => {
 
   const handleMemberClick = useCallback(
     (memberId: string, roleName?: string, memberName?: string) => {
-      // Don't open the drawer if we're currently editing a name inline
-      if (editingNameId) return;
       setSelectedMemberId(memberId);
       setSelectedMemberRole(roleName || null);
       setSelectedMemberName(memberName || null);
       dispatch(toggleUpdateMemberDrawer());
     },
-    [dispatch, editingNameId]
+    [dispatch]
   );
-
-  // ── Inline name editing helpers ──────────────────────────────────────────
-
-  const commitNameEdit = useCallback(
-    async (memberId: string) => {
-      committingRef.current = true;
-      const trimmed = editingNameValue.trim();
-
-      if (trimmed) {
-        try {
-          // Optimistically update the local model for instant feedback
-          setModel(prev => ({
-            ...prev,
-            data: prev.data?.map(m => (m.id === memberId ? { ...m, name: trimmed } : m)),
-          }));
-
-          const res = await teamMembersApiService.updateMemberName(memberId, trimmed);
-
-          // Always refresh from server so the persisted value (from team_member_info_view)
-          // is what's shown — the optimistic update above just prevents a visible flash
-          if (res.done) {
-            await getTeamMembers();
-          } else {
-            // API returned done: false — revert to server state
-            await getTeamMembers();
-          }
-        } catch (err) {
-          console.error('Failed to update member name', err);
-          // Revert on any error
-          await getTeamMembers();
-        }
-      }
-
-      setEditingNameId(null);
-      setEditingNameValue('');
-      setTimeout(() => {
-        committingRef.current = false;
-      }, 0);
-    },
-    [editingNameValue, getTeamMembers]
-  );
-
-  const cancelNameEdit = useCallback(() => {
-    committingRef.current = true;
-    setEditingNameId(null);
-    setEditingNameValue('');
-    setTimeout(() => {
-      committingRef.current = false;
-    }, 0);
-  }, []);
-
-  const handleNameBlur = useCallback(
-    (memberId: string) => {
-      if (committingRef.current) return;
-      commitNameEdit(memberId);
-    },
-    [commitNameEdit]
-  );
-
-  const handleNameKeyDown = useCallback(
-    (e: React.KeyboardEvent, memberId: string) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        commitNameEdit(memberId);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancelNameEdit();
-      }
-    },
-    [commitNameEdit, cancelNameEdit]
-  );
-
-  // ────────────────────────────────────────────────────────────────────────
 
   const handleBulkAssignManager = () => {
     setBulkAssignDrawerVisible(true);
@@ -330,8 +250,7 @@ const TeamMembersSettings = () => {
     },
     [effectiveRole, currentUser?.owner]
   );
-  const isPrivilegedUser =
-    effectiveRole === ROLE_NAMES.OWNER || effectiveRole === ROLE_NAMES.ADMIN;
+  const isPrivilegedUser = effectiveRole === ROLE_NAMES.OWNER || effectiveRole === ROLE_NAMES.ADMIN;
 
   const getRoleLabel = useCallback(
     (roleName?: string) => {
@@ -341,18 +260,17 @@ const TeamMembersSettings = () => {
     [t]
   );
 
-  const startEditingName = useCallback(
-    (e: React.MouseEvent, record: ITeamMemberViewModel) => {
-      // Only owners and admins can edit names
-      if (!isPrivilegedUser) return;
-      // Pending invitations have no confirmed name to edit yet
-      if (record.pending_invitation) return;
-
-      e.stopPropagation();
-      setEditingNameId(record.id || null);
-      setEditingNameValue(record.name || '');
+  const handleMemberNameUpdate = useCallback(
+    (memberId: string, newName: string) => {
+      setModel(prevModel => ({
+        ...prevModel,
+        data: prevModel.data?.map(member =>
+          member.id === memberId ? { ...member, name: newName } : member
+        ),
+      }));
+      setSelectedMemberName(currentName => (selectedMemberId === memberId ? newName : currentName));
     },
-    [isPrivilegedUser]
+    [selectedMemberId]
   );
 
   const getActionMenuItems = useCallback(
@@ -405,9 +323,7 @@ const TeamMembersSettings = () => {
         title: t('nameColumn'),
         defaultSortOrder: 'ascend',
         sorter: true,
-        // Row-level click is handled inside the cell to avoid conflicts with inline editing
         render: (_, record: ITeamMemberViewModel) => {
-          const isEditing = editingNameId === record.id;
           const isPending = record.pending_invitation;
           const canEdit = isPrivilegedUser && !isPending;
 
@@ -419,7 +335,7 @@ const TeamMembersSettings = () => {
                 display: 'flex',
                 width: '100%',
               }}
-              onClick={() => !isEditing && handleMemberClick(record.id || '', record.role_name, record.name)}
+              onClick={() => handleMemberClick(record.id || '', record.role_name, record.name)}
             >
               <Avatar
                 size={28}
@@ -430,42 +346,44 @@ const TeamMembersSettings = () => {
               </Avatar>
 
               <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
-                {isEditing ? (
-                  <Input
-                    autoFocus
-                    size="small"
-                    value={editingNameValue}
-                    style={{ width: 160, textTransform: 'none' }}
-                    onChange={e => setEditingNameValue(e.target.value)}
-                    onBlur={() => handleNameBlur(record.id || '')}
-                    onKeyDown={e => handleNameKeyDown(e, record.id || '')}
-                    onClick={e => e.stopPropagation()}
-                  />
-                ) : (
+                <Flex align="center" gap={4} className="team-member-name-row">
                   <Tooltip
                     title={
-                      canEdit
-                        ? t('clickToEditName', { defaultValue: 'Click name to edit' })
-                        : isPending
-                          ? t('pendingInvitationText', { defaultValue: '(Invitation pending)' })
-                          : undefined
+                      isPending
+                        ? t('pendingInvitationText', { defaultValue: '(Invitation pending)' })
+                        : undefined
                     }
                     mouseEnterDelay={0.6}
                   >
                     <span
                       style={{
-                        cursor: canEdit ? 'text' : 'pointer',
-                        borderBottom: canEdit ? '1px dashed #d9d9d9' : 'none',
-                        paddingBottom: canEdit ? 1 : 0,
+                        cursor: 'pointer',
                         textTransform: 'capitalize',
                         width: 'fit-content',
                       }}
-                      onClick={e => canEdit && startEditingName(e, record)}
                     >
                       {record.name}
                     </span>
                   </Tooltip>
-                )}
+                  {canEdit ? (
+                    <Tooltip
+                      title={t('renameMemberTooltip', {
+                        defaultValue: 'Rename member',
+                      })}
+                    >
+                      <Button
+                        size="small"
+                        type="text"
+                        className="team-member-name-edit-button"
+                        icon={<EditOutlined />}
+                        onClick={event => {
+                          event.stopPropagation();
+                          handleMemberClick(record.id || '', record.role_name, record.name);
+                        }}
+                      />
+                    </Tooltip>
+                  ) : null}
+                </Flex>
 
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                   {record.job_title || t('jobTitleEmpty', { defaultValue: 'Select a job title' })}
@@ -656,11 +574,6 @@ const TeamMembersSettings = () => {
       handleStatusChange,
       handleDeleteMember,
       handleMemberClick,
-      editingNameId,
-      editingNameValue,
-      startEditingName,
-      handleNameBlur,
-      handleNameKeyDown,
     ]
   );
 
@@ -680,7 +593,11 @@ const TeamMembersSettings = () => {
               style={{ width: '100%', maxWidth: 500 }}
             >
               <Tooltip title={t('pinTooltip')}>
-                <Button shape="circle" icon={<SyncOutlined spin={isLoading} />} onClick={handleRefresh} />
+                <Button
+                  shape="circle"
+                  icon={<SyncOutlined spin={isLoading} />}
+                  onClick={handleRefresh}
+                />
               </Tooltip>
               <Input
                 value={searchQuery}
@@ -695,9 +612,9 @@ const TeamMembersSettings = () => {
                 title={
                   isInviteRestricted
                     ? tCommon('license-expired-subtitle', {
-                      defaultValue:
-                        'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                    })
+                        defaultValue:
+                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                      })
                     : ''
                 }
               >
@@ -808,6 +725,7 @@ const TeamMembersSettings = () => {
         <UpdateMemberDrawer
           selectedMemberId={selectedMemberId}
           selectedMemberName={selectedMemberName}
+          onNameUpdate={handleMemberNameUpdate}
           onRoleUpdate={handleRoleUpdate}
           onJobTitleUpdate={handleJobTitleUpdate}
           initialRoleName={selectedMemberRole || undefined}

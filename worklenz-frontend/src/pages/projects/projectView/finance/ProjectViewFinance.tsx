@@ -14,7 +14,7 @@ import {
   Input,
   Modal,
   CaretDownFilled,
-  DownOutlined,
+  DownloadOutlined,
   CalculatorOutlined,
   SettingOutlined,
   EditOutlined,
@@ -546,26 +546,43 @@ const ProjectViewFinance = () => {
           </Flex>
 
           {activeTab === 'finance' ? (
-            <Tooltip
-              title={
-                !hasBusinessAccess
-                  ? t('tooltips.availableOnlyOnBusinessPlan', {
-                      defaultValue: 'Available only on Business plan',
-                    })
-                  : ''
-              }
-            >
-              <Button
-                type="primary"
-                icon={<DownOutlined />}
-                iconPosition="end"
-                loading={exporting}
-                onClick={handleExport}
-                disabled={!hasBusinessAccess}
+            <Flex gap={8} align="center">
+              {hasEditPermission && (
+                <Tooltip
+                  title={t('tooltips.budgetCalculationSettings', {
+                    defaultValue: 'Budget & Calculation Settings',
+                  })}
+                >
+                  <Button
+                    icon={<SettingOutlined />}
+                    onClick={() => setBudgetSettingsDrawerVisible(true)}
+                    disabled={!hasBusinessAccess}
+                    aria-label={t('budgetSettingsDrawer.title', {
+                      defaultValue: 'Project Budget Settings',
+                    })}
+                  />
+                </Tooltip>
+              )}
+              <Tooltip
+                title={
+                  !hasBusinessAccess
+                    ? t('tooltips.availableOnlyOnBusinessPlan', {
+                        defaultValue: 'Available only on Business plan',
+                      })
+                    : ''
+                }
               >
-                {t('exportButton', { defaultValue: 'Export' })}
-              </Button>
-            </Tooltip>
+                <Button
+                  type="primary"
+                  icon={<DownloadOutlined />}
+                  loading={exporting}
+                  onClick={handleExport}
+                  disabled={!hasBusinessAccess}
+                >
+                  {t('exportAsExcelButton', { defaultValue: 'Export as Excel' })}
+                </Button>
+              </Tooltip>
+            </Flex>
           ) : (
             <Flex gap={8} align="center">
               <Flex gap={8} align="center">
@@ -645,21 +662,6 @@ const ProjectViewFinance = () => {
                       </Typography.Text>
                     )}
                   </Flex>
-                  {hasEditPermission && (
-                    <Tooltip
-                      title={t('tooltips.budgetCalculationSettings', {
-                        defaultValue: 'Budget & Calculation Settings',
-                      })}
-                    >
-                      <Button
-                        type="text"
-                        icon={<SettingOutlined />}
-                        size="small"
-                        onClick={() => setBudgetSettingsDrawerVisible(true)}
-                        style={{ color: '#666' }}
-                      />
-                    </Tooltip>
-                  )}
                 </Flex>
               }
               style={{ marginBottom: 16 }}

@@ -6,6 +6,7 @@ import {
   Drawer,
   Flex,
   Form,
+  Input,
   message,
   Select,
   Spin,
@@ -42,6 +43,7 @@ type UpdateMemberDrawerProps = {
   // Pass the current name from the table row so the drawer title shows
   // the correct (already-updated) name instantly, without waiting for getById
   selectedMemberName?: string | null;
+  onNameUpdate?: (memberId: string, newName: string) => void;
   onRoleUpdate?: (memberId: string, newRoleName: string) => void;
   onJobTitleUpdate?: (memberId: string, newJobTitle: string) => void;
   initialRoleName?: string;
@@ -50,6 +52,7 @@ type UpdateMemberDrawerProps = {
 const UpdateMemberDrawer = ({
   selectedMemberId,
   selectedMemberName,
+  onNameUpdate,
   onRoleUpdate,
   onJobTitleUpdate,
   initialRoleName,
@@ -67,7 +70,7 @@ const UpdateMemberDrawer = ({
   const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
   const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
   const [loadingTeamLeads, setLoadingTeamLeads] = useState(false);
-  
+
   // Job titles pagination state
   const [jobTitlesLoading, setJobTitlesLoading] = useState(false);
   const [jobTitlesTotal, setJobTitlesTotal] = useState(0);
@@ -137,7 +140,7 @@ const UpdateMemberDrawer = ({
       if (res.done) {
         const newJobTitles = res.body.data || [];
         const total = res.body.total || 0;
-        
+
         setJobTitles(prev => (append ? [...prev, ...newJobTitles] : newJobTitles));
         setJobTitlesTotal(total);
       }
@@ -211,6 +214,7 @@ const UpdateMemberDrawer = ({
 
         setTimeout(() => {
           form.setFieldsValue({
+            name: res.body?.name,
             jobTitle: res.body?.job_title,
             access: accessLevel,
             manager: res.body?.reports_to_member_id || null,
@@ -227,8 +231,20 @@ const UpdateMemberDrawer = ({
   const handleFormSubmit = async (values: any) => {
     if (!selectedMemberId || !teamMember?.email) return;
     const accessValue = form.getFieldValue('access') ?? values.access;
+    const trimmedName = (values.name || '').trim();
 
     try {
+      if (trimmedName && trimmedName !== teamMember.name) {
+        const nameResponse = await teamMembersApiService.updateMemberName(
+          selectedMemberId,
+          trimmedName
+        );
+
+        if (!nameResponse.done) {
+          throw new Error(nameResponse.message || t('updateMemberNameErrorMessage'));
+        }
+      }
+
       const body: ITeamMemberCreateRequest = {
         job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
@@ -262,6 +278,7 @@ const UpdateMemberDrawer = ({
         form.resetFields();
         setSelectedJobTitle(null);
         dispatch(toggleUpdateMemberDrawer());
+        const resolvedName = trimmedName || teamMember.name || '';
 
         const newRoleName =
           accessValue === 'owner'
@@ -271,8 +288,10 @@ const UpdateMemberDrawer = ({
               : accessValue === 'admin'
                 ? 'Admin'
                 : 'Member';
+        onNameUpdate?.(selectedMemberId, resolvedName);
         onRoleUpdate?.(selectedMemberId, newRoleName);
         onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
+        setTeamMember(prev => (prev ? { ...prev, name: resolvedName } : prev));
 
         const authorizeResponse = await authApiService.verify();
         if (authorizeResponse.authenticated) {
@@ -311,7 +330,7 @@ const UpdateMemberDrawer = ({
       setJobTitlesPage(1);
       setJobTitlesTotal(0);
       scrollPositionRef.current = 0;
-      
+
       await Promise.all([getJobTitles(1, false), getTeamMember(), getTeamLeads()]);
     } else {
       setTeamMember(null);
@@ -334,6 +353,7 @@ const UpdateMemberDrawer = ({
       }
 
       form.setFieldsValue({
+        name: teamMember.name,
         jobTitle: teamMember.job_title,
         access: accessLevel,
         manager: teamMember.reports_to_member_id || null,
@@ -388,14 +408,36 @@ const UpdateMemberDrawer = ({
       destroyOnClose
     >
       <Form form={form} onFinish={handleFormSubmit} layout="vertical">
+        <Form.Item
+          label={t('nameColumn', { defaultValue: 'Name' })}
+          name="name"
+          rules={[
+            {
+              required: true,
+              whitespace: true,
+              message: t('memberNameRequiredError', {
+                defaultValue: 'Please enter a member name.',
+              }),
+            },
+          ]}
+        >
+          <Input
+            placeholder={t('memberNamePlaceholder', {
+              defaultValue: 'Enter member name',
+            })}
+            disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+          />
+        </Form.Item>
+
         <Form.Item label={t('jobTitleLabel')} name="jobTitle">
           <Select
             optionLabelProp="label"
             size="middle"
             placeholder={t('jobTitlePlaceholder')}
             showSearch
-            filterOption={(input,option) =>(option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-  }
+            filterOption={(input, option) =>
+              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+            }
             options={jobTitles.map(job => ({
               label: job.name,
               value: job.id,
@@ -409,7 +451,9 @@ const UpdateMemberDrawer = ({
             onSelect={value => setSelectedJobTitle(value)}
             onPopupScroll={handleJobTitleScroll}
             loading={jobTitlesLoading && jobTitles.length === 0}
-            notFoundContent={jobTitlesLoading && jobTitles.length === 0 ? <Spin size="small" /> : null}
+            notFoundContent={
+              jobTitlesLoading && jobTitles.length === 0 ? <Spin size="small" /> : null
+            }
             dropdownRender={menu => (
               <div>
                 {menu}
@@ -513,13 +557,15 @@ const UpdateMemberDrawer = ({
             </Button>
             <Flex vertical style={{ marginBlockStart: 8 }}>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
-                {t('addedText')}{''}
+                {t('addedText')}
+                {''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
                   {calculateTimeDifference(teamMember?.created_at || '')}
                 </Tooltip>
               </Typography.Text>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
-                {t('updatedText')}{''}
+                {t('updatedText')}
+                {''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
                   {calculateTimeDifference(teamMember?.updated_at || '')}
                 </Tooltip>

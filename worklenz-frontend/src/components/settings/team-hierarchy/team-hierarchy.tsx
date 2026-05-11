@@ -448,7 +448,7 @@ const TeamHierarchy = () => {
 
         <Row gutter={[12, 12]}>
           {members.map(member => (
-            <Col key={member.id} xs={24} md={12} xl={12}>
+            <Col key={member.id} xs={24} sm={12} xl={12}>
               <MemberCard
                 member={member}
                 accentColor={accentColor}
