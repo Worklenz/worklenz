@@ -33,10 +33,11 @@ import {
   toggleUpgradeModal,
   fetchOrganizationDetails,
 } from '@/features/admin-center/admin-center.slice';
-import { isTeamLeadRole } from '@/types/roles/role.types';
+import { isTeamLeadRole, ROLE_DEFINITIONS } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -52,6 +53,8 @@ const Navbar = () => {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
+  const currentRole = useMemo(() => getSessionRoleName(currentSession), [currentSession]);
+  const canInviteMembers = ROLE_DEFINITIONS[currentRole].canInviteMembers;
 
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
@@ -271,7 +274,7 @@ const Navbar = () => {
                       showUpgradeTypes.includes(
                         currentSession?.subscription_type as ISUBSCRIPTION_TYPE
                       ) && <UpgradePlanButton showModal redirectToBilling={false} />}
-                    {isOwnerOrAdmin && <InviteButton />}
+                    {canInviteMembers && <InviteButton />}
                     <Flex align="center">
                       <ConnectionStatusIndicator />
                       <SwitchTeamButton />
@@ -305,7 +308,7 @@ const Navbar = () => {
         </Flex>
       </Flex>
 
-      {isOwnerOrAdmin && createPortal(<InviteTeamMembers />, document.body, 'invite-team-members')}
+      {canInviteMembers && createPortal(<InviteTeamMembers />, document.body, 'invite-team-members')}
       {createPortal(<NotificationDrawer />, document.body, 'notification-drawer')}
     </Col>
   );

@@ -29,6 +29,8 @@
       "show-start-date": "Shfaq datën e fillimit",
       "hours": "Orë",
       "minutes": "Minuta",
+      "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
+      "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
       "progressValue": "Vlera e progresit",
       "progressValueTooltip": "Vendos përqindjen e progresit (0-100%)",
       "progressValueRequired": "Ju lutemi vendosni një vlerë progresi",

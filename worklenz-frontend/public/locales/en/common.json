@@ -29,6 +29,7 @@
   "license-expired-upgrade": "Renew Now",
   "license-expired-trial-upgrade": "Upgrade Now",
   "license-expired-custom-upgrade": "Contact Support",
+  "license-expired-contact-owner": "Your team's subscription has expired. Please contact your team owner to renew.",
   "license-expired-contacting-support": "Contacting Support...",
   "license-expired-message-sent": "Message Sent ✓",
   "license-expired-days-remaining": "{{days}} days remaining in your trial",

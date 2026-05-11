@@ -21,6 +21,7 @@
   "license-expired-feature-3": "✓ 团队协作功能",
   "license-expired-feature-4": "✓ 优先支持",
   "license-expired-upgrade": "立即升级",
+  "license-expired-contact-owner": "您的团队订阅已过期。请联系团队所有者完成续费。",
   "license-expired-days-remaining": "试用期剩余 {{days}} 天",
   "trial-expiring-soon": "您的试用期还有 {{days}} 天到期",
   "trial-expiring-soon_plural": "您的试用期还有 {{days}} 天到期",

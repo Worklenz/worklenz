@@ -23,9 +23,59 @@ import {
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
+import {
+  canAssignRole,
+  canManageTargetRole,
+  getTeamMemberRoleName,
+  TEAM_ROLE_NAMES,
+} from "../shared/team-permissions";
 import { NotificationsService } from "../services/notifications/notifications.service";
 
 export default class TeamMembersController extends WorklenzControllerBase {
+  private static async ensureAssignableRole(
+    req: IWorkLenzRequest,
+    roleName?: string | null,
+  ): Promise<IWorkLenzResponse | null> {
+    if (roleName && !canAssignRole(req.user, roleName)) {
+      return new ServerResponse(
+        false,
+        null,
+        "You are not authorized to assign this role.",
+      ) as unknown as IWorkLenzResponse;
+    }
+
+    return null;
+  }
+
+  private static async ensureManageableTarget(
+    req: IWorkLenzRequest,
+    teamMemberId?: string,
+  ): Promise<IWorkLenzResponse | null> {
+    if (!teamMemberId || !req.user?.team_id) {
+      return new ServerResponse(
+        false,
+        null,
+        "Required fields are missing.",
+      ) as unknown as IWorkLenzResponse;
+    }
+
+    const targetRoleName = await getTeamMemberRoleName(teamMemberId, req.user.team_id);
+
+    if (!targetRoleName) {
+      return new ServerResponse(false, null, "Team member not found.") as unknown as IWorkLenzResponse;
+    }
+
+    if (!canManageTargetRole(req.user, targetRoleName)) {
+      return new ServerResponse(
+        false,
+        null,
+        "You are not authorized to manage this team member.",
+      ) as unknown as IWorkLenzResponse;
+    }
+
+    return null;
+  }
+
   public static async checkIfUserAlreadyExists(
     owner_id: string,
     email: string,
@@ -100,6 +150,18 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.user?.team_id || null;
+
+    const requestedRoleName =
+      req.body.role_name ||
+      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+
+    if (roleAssignmentError) {
+      return res.status(200).send(roleAssignmentError);
+    }
 
     if (!req.user?.team_id) {
       return res
@@ -448,6 +510,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.params.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
     const q = `
       SELECT id,
             created_at,
@@ -513,6 +584,27 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.params.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
+    const requestedRoleName =
+      req.body.role_name ||
+      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+
+    if (roleAssignmentError) {
+      return res.status(200).send(roleAssignmentError);
+    }
+
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
     req.body.is_admin = !!req.body.is_admin;
@@ -530,6 +622,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { name } = req.body;
+
+    const targetManagementError = await this.ensureManageableTarget(req, id);
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
  
     if (!id || !name?.trim()) {
       return res
@@ -597,6 +695,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.user?.team_id || null;
 
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.body.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
     const q = `SELECT resend_team_invitation($1) AS invitation;`;
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
@@ -643,6 +750,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
+
+    const targetManagementError = await this.ensureManageableTarget(req, id);
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
 
     if (!id || !req.user?.team_id)
       return res
@@ -1416,6 +1529,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ) {
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.params.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
     if (!req.user?.team_id)
       return res
         .status(200)

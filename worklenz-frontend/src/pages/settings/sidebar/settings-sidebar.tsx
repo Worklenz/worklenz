@@ -152,12 +152,11 @@ const SettingSidebar: React.FC = () => {
                       style={{
                         textDecoration: 'none',
                         color: item.isDangerous ? token.colorError : token.colorText,
-                        borderRadius: 8,
                         background: isActive ? token.colorPrimaryBg : colors.transparent,
                         borderLeft: isActive
                           ? `3px solid ${token.colorPrimary}`
                           : '3px solid transparent',
-                        padding: '10px 12px',
+                        padding: '8px 12px',
                       }}
                     >
                       <Flex gap={10} align="center">

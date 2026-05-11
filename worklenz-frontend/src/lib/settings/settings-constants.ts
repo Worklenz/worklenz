@@ -18,6 +18,8 @@ import {
   ApiOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
@@ -253,15 +255,14 @@ export const settingsItems: SettingMenuItem[] = [
   },
 ];
 
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import { ILocalSession } from '@/types/auth/local-session.types';
-
 export const getAccessibleSettings = (isAdmin: boolean, session: ILocalSession | null) => {
   const hasBusinessAccess = hasBusinessFeatureAccess(session);
 
   return settingsItems.filter(item => {
     // Check admin requirement
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin) {
+      return false;
+    }
 
     // Check business plan requirement
     if (item.businessPlanRequired && !hasBusinessAccess) return false;

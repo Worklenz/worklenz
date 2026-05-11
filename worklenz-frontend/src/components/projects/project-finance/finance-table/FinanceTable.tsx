@@ -500,7 +500,7 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
         return (
           <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>
-            {task.total_time_logged}
+            {formatSecondsToHoursAndMinutes(task.total_time_logged_seconds || 0)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.ESTIMATED_COST:
@@ -607,18 +607,16 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
     }
   };
 
-  // Utility function to format seconds to time string
-  const formatSecondsToTimeString = (totalSeconds: number): string => {
-    if (!totalSeconds || totalSeconds === 0) return '0s';
+  // Utility function to format seconds to "h m" without seconds
+  const formatSecondsToHoursAndMinutes = (totalSeconds: number): string => {
+    if (!totalSeconds || totalSeconds === 0) return '0m';
 
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
 
     const parts = [];
     if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+    if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
 
     return parts.join(' ');
   };
@@ -692,9 +690,9 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
   // Format the totals for display
   const formattedTotals = useMemo(
     () => ({
-      hours: formatSecondsToTimeString(totals.hours),
+      hours: formatSecondsToHoursAndMinutes(totals.hours),
       man_days: totals.man_days,
-      total_time_logged: formatSecondsToTimeString(totals.total_time_logged),
+      total_time_logged: formatSecondsToHoursAndMinutes(totals.total_time_logged),
       estimated_cost: totals.estimated_cost,
       actual_cost_from_logs: totals.actual_cost_from_logs,
       fixed_cost: totals.fixed_cost,

@@ -31,6 +31,8 @@
       "show-start-date": "Show Start Date",
       "hours": "Hours",
       "minutes": "Minutes",
+      "hoursMinError": "Hours must be 0 or greater",
+      "minutesRangeError": "Minutes must be between 0 and 59",
       "progressValue": "Progress Value",
       "progressValueTooltip": "Set the progress percentage (0-100%)",
       "progressValueRequired": "Please enter a progress value",

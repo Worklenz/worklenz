@@ -21,6 +21,7 @@
   "license-expired-feature-3": "✓ Recursos de colaboração em equipe",
   "license-expired-feature-4": "✓ Suporte prioritário",
   "license-expired-upgrade": "Atualizar agora",
+  "license-expired-contact-owner": "A assinatura da sua equipe expirou. Entre em contato com o proprietário da equipe para renovar.",
   "license-expired-days-remaining": "{{days}} dias restantes no seu período de teste",
   "trial-expiring-soon": "Seu período de teste expira em {{days}} dia",
   "trial-expiring-soon_plural": "Seu período de teste expira em {{days}} dias",
