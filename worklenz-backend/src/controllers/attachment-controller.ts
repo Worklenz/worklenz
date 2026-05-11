@@ -16,6 +16,7 @@ import {
 } from "../shared/storage";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import path from "path";
 
 export default class AttachmentController extends WorklenzControllerBase {
 
@@ -67,6 +68,35 @@ export default class AttachmentController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
 
     return res.status(200).send(new ServerResponse(true, { url: data.avatar_url, updated_at: data.updated_at }, "Avatar updated."));
+  }
+
+  @HandleExceptions()
+  public static async deleteAvatarAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const currentAvatarQuery = "SELECT avatar_url FROM users WHERE id = $1;";
+    const currentAvatarResult = await db.query(currentAvatarQuery, [req.user?.id]);
+    const currentAvatarUrl = currentAvatarResult.rows[0]?.avatar_url as string | null;
+
+    const q =
+      "UPDATE users SET avatar_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING updated_at;";
+    const result = await db.query(q, [req.user?.id]);
+    const [data] = result.rows;
+
+    if (!data)
+      return res.status(200).send(new ServerResponse(false, null, "Avatar removal failed."));
+
+    if (currentAvatarUrl) {
+      const sanitizedUrl = currentAvatarUrl.split("?")[0];
+      const fileExtension = path.extname(sanitizedUrl).replace(".", "");
+
+      if (fileExtension) {
+        const key = getAvatarKey(req.user?.id as string, fileExtension);
+        void deleteObject(key);
+      }
+    }
+
+    return res
+      .status(200)
+      .send(new ServerResponse(true, { url: null, updated_at: data.updated_at }, "Avatar removed."));
   }
 
   @HandleExceptions()

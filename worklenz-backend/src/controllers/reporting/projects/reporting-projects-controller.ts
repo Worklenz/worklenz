@@ -395,6 +395,26 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     // Add health join only if not already included in groupJoin (to avoid duplicate table alias)
     const healthJoin = groupBy === "health" ? "" : "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
 
+    // OPTIMIZED: Pre-compute task status categories to avoid repeated function calls
+    // Cache the category IDs to avoid subquery lookups in the main query
+    const statusCategoriesQuery = `
+      SELECT 
+        id,
+        is_done,
+        is_doing,
+        is_todo
+      FROM sys_task_status_categories
+    `;
+    const statusCategoriesResult = await db.query(statusCategoriesQuery);
+    const doneCategory = statusCategoriesResult.rows.find(r => r.is_done)?.id;
+    const doingCategory = statusCategoriesResult.rows.find(r => r.is_doing)?.id;
+    const todoCategory = statusCategoriesResult.rows.find(r => r.is_todo)?.id;
+
+    // Add category IDs to filter params and update paramOffset
+    filterParams.push(doneCategory, doingCategory, todoCategory);
+    const categoryParamStart = paramOffset;
+    paramOffset += 3; // Move offset past the 3 category parameters
+
     // Build pagination clause using SqlHelper for safe parameter handling
     const { clause: paginationClause, params: paginationParams } = SqlHelper.buildPaginationClause(
       size,
@@ -403,15 +423,17 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     );
 
     // Build optimized query with group-level task aggregations and pagination
+    // OPTIMIZATION: Replace function calls with direct category_id comparisons
     const q = `
       WITH project_tasks AS (
         SELECT
           t.project_id,
           COUNT(t.id) AS total_tasks,
-          COUNT(CASE WHEN is_completed(t.status_id, t.project_id) IS TRUE THEN 1 END) AS done_tasks,
-          COUNT(CASE WHEN is_doing(t.status_id, t.project_id) IS TRUE THEN 1 END) AS doing_tasks,
-          COUNT(CASE WHEN is_todo(t.status_id, t.project_id) IS TRUE THEN 1 END) AS todo_tasks
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart} THEN 1 END) AS done_tasks,
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 1} THEN 1 END) AS doing_tasks,
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 2} THEN 1 END) AS todo_tasks
         FROM tasks t
+        INNER JOIN task_statuses ts ON t.status_id = ts.id
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
       ),
@@ -483,7 +505,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       ${paginationClause}
     `;
 
-    // Build final params: teamId ($1), searchParams ($2+), filter params, then LIMIT and OFFSET
+    // Build final params: teamId ($1), searchParams ($2+), filter params, category IDs, then LIMIT and OFFSET
     const finalParams = [teamId, ...filterParams, ...paginationParams];
     const result = await db.query(q, finalParams);
 

@@ -5,12 +5,14 @@ import {
   Flex,
   Form,
   Input,
+  Popconfirm,
   Tooltip,
   Typography,
   Spin,
   Skeleton,
   Modal,
   Slider,
+  theme,
 } from '@/shared/antd-imports';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -69,6 +71,7 @@ const getCroppedImg = (imageSrc: string, pixelCrop: Area): Promise<string> => {
 // ─── Component ───────────────────────────────────────────────────────────────
 const ProfileSettings = () => {
   const { t } = useTranslation('settings/profile');
+  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const currentSession = useAuthService().getCurrentSession();
@@ -76,6 +79,7 @@ const ProfileSettings = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | undefined>(
     currentSession?.last_updated ?? currentSession?.updated_at,
   );
@@ -93,6 +97,7 @@ const ProfileSettings = () => {
   const [imageUrl, setImageUrl] = useState<string>();
   const [form] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasAvatar = Boolean(imageUrl || currentSession?.avatar_url);
 
   useDocumentTitle(t('title') || 'Profile Settings');
 
@@ -179,6 +184,35 @@ const ProfileSettings = () => {
     if (!uploading) fileInputRef.current?.click();
   };
 
+  const handleRemoveAvatar = async () => {
+    if (uploading) return;
+
+    setUploading(true);
+
+    try {
+      const res = await taskAttachmentsApiService.deleteAvatarAttachment();
+
+      if (res.done) {
+        const updatedAt = res.body?.updated_at || new Date().toISOString();
+        const updatedUser = {
+          ...currentSession,
+          avatar_url: '',
+          last_updated: updatedAt,
+          updated_at: updatedAt,
+        };
+
+        setSession(updatedUser);
+        dispatch(setUser(updatedUser));
+        setImageUrl(undefined);
+        setLastUpdatedAt(updatedAt);
+      }
+    } catch (e) {
+      logger.error('Error removing avatar', e);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // ── Avatar preview button ─────────────────────────────────────────────────
   const avatarPreview = (
     <div
@@ -189,6 +223,11 @@ const ProfileSettings = () => {
         height: '104px',
         cursor: uploading ? 'wait' : 'pointer',
         position: 'relative',
+        border: `1px dashed ${token.colorBorder}`,
+        background: token.colorFillAlter,
+        borderRadius: token.borderRadius,
+        color: token.colorTextSecondary,
+        transition: 'border-color 0.2s ease, background-color 0.2s ease',
       }}
     >
       {uploading && (
@@ -209,7 +248,7 @@ const ProfileSettings = () => {
       )}
       {loading ? (
         <LoadingOutlined />
-      ) : imageUrl || currentSession?.avatar_url ? (
+      ) : hasAvatar ? (
         <img
           src={imageUrl || currentSession?.avatar_url}
           alt="avatar"
@@ -218,7 +257,9 @@ const ProfileSettings = () => {
       ) : (
         <Flex align="center" justify="center" vertical gap={8} style={{ height: '100%' }}>
           <PlusOutlined />
-          <Typography.Text>{t('upload')}</Typography.Text>
+          <Typography.Text style={{ color: token.colorTextSecondary }}>
+            {t('upload')}
+          </Typography.Text>
         </Flex>
       )}
     </div>
@@ -234,6 +275,7 @@ const ProfileSettings = () => {
       if (res.done) {
         trackMixpanelEvent(evt_settings_profile_name_change, { newName: name });
         dispatch(changeUserName(name));
+        setIsDirty(false);
 
         const newUpdatedAt = res.body.updated_at || new Date().toISOString();
         const updatedUser = {
@@ -268,14 +310,38 @@ const ProfileSettings = () => {
               name: currentSession?.name,
               email: currentSession?.email,
             }}
+            onValuesChange={(_, allValues) => {
+              const nameChanged = allValues.name !== currentSession?.name;
+              setIsDirty(nameChanged);
+            }}
             style={{ width: '100%', maxWidth: 350 }}
           >
             <Form.Item>
               <Tooltip
-                title={t('avatarTooltip') || 'Click to upload an avatar'}
+                title={t('avatarTooltip', { defaultValue: 'Click to upload an avatar' })}
                 placement="topLeft"
               >
-                {avatarPreview}
+                <Flex vertical gap={8} align="flex-start">
+                  {avatarPreview}
+                  {hasAvatar && (
+                    <Popconfirm
+                      title={t('removeAvatarConfirmTitle', {
+                        defaultValue: 'Remove profile picture?',
+                      })}
+                      description={t('removeAvatarConfirmDescription', {
+                        defaultValue: 'Your avatar will be removed and your initials will be shown instead.',
+                      })}
+                      okText={t('removeAvatar', { defaultValue: 'Remove' })}
+                      cancelText={t('cancel', { defaultValue: 'Cancel' })}
+                      okButtonProps={{ danger: true, loading: uploading }}
+                      onConfirm={handleRemoveAvatar}
+                    >
+                      <Button type="text" danger size="small" disabled={uploading}>
+                        {t('removeAvatar', { defaultValue: 'Remove photo' })}
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </Flex>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -314,7 +380,7 @@ const ProfileSettings = () => {
 
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={updating}>
-                {t('saveChanges')}
+                {isDirty ? t('saveChanges') : t('save')}
               </Button>
             </Form.Item>
           </Form>
@@ -325,8 +391,8 @@ const ProfileSettings = () => {
             title={
               currentSession?.joined_date || currentSession?.created_at
                 ? formatDateTimeWithLocale(
-                    currentSession?.joined_date || currentSession?.created_at || '',
-                  )
+                  currentSession?.joined_date || currentSession?.created_at || '',
+                )
                 : ''
             }
           >
@@ -335,8 +401,8 @@ const ProfileSettings = () => {
                 date:
                   currentSession?.joined_date || currentSession?.created_at
                     ? calculateTimeDifference(
-                        currentSession?.joined_date || currentSession?.created_at || '',
-                      )
+                      currentSession?.joined_date || currentSession?.created_at || '',
+                    )
                     : '',
               })}
             </Typography.Text>
