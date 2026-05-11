@@ -7,8 +7,25 @@ import { IO } from "../../shared/io";
 import { getBaseUrl } from "../../cron_jobs/helpers";
 import { sendClientPortalNewRequestNotification } from "../../shared/email-notifications";
 import crypto from "crypto";
+import moment from "moment-timezone";
 
 export default class ClientPortalRequestsController extends ClientPortalControllerBase {
+  private static async getOrganizationTimezone(organizationId: string) {
+    try {
+      const timezoneQuery = await db.query(
+        `SELECT tz.name as timezone
+         FROM teams t
+         JOIN timezones tz ON t.timezone_id = tz.id
+         WHERE t.id = $1`,
+        [organizationId]
+      );
+
+      return timezoneQuery.rows[0]?.timezone || "UTC";
+    } catch (error) {
+      console.error("Error fetching organization timezone:", error);
+      return "UTC";
+    }
+  }
 
   static async getRequests(
     req: AuthenticatedClientRequest,
@@ -270,6 +287,8 @@ export default class ClientPortalRequestsController extends ClientPortalControll
           const adminEmails = teamQuery.rows.map((row: any) => row.email).filter(Boolean);
 
           if (adminEmails.length > 0) {
+            const organizationTimezone =
+              await ClientPortalRequestsController.getOrganizationTimezone(organizationId!);
             const baseUrl = getBaseUrl();
             const requestUrl = `${baseUrl}/worklenz/client-portal/requests/${newRequest.id}`;
 
@@ -285,7 +304,9 @@ export default class ClientPortalRequestsController extends ClientPortalControll
               requestNumber: newRequest.req_no,
               serviceName: service.name,
               clientName: clientName,
-              submittedAt: new Date(newRequest.created_at).toLocaleString(),
+              submittedAt: moment
+                .tz(newRequest.created_at, organizationTimezone)
+                .format("M/D/YYYY, h:mm:ss A z"),
               requestTitle: requestTitle,
               requestUrl: requestUrl,
               teamName: teamName
