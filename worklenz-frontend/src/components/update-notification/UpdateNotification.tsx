@@ -49,7 +49,7 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClos
     <div
       style={{
         position: 'fixed',
-        top: 'calc(env(safe-area-inset-top, 0px) + 64px)',
+        top: 'env(safe-area-inset-top, 0px)',
         left: 0,
         right: 0,
         width: '100%',
