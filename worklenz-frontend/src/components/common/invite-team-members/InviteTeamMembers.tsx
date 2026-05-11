@@ -28,14 +28,15 @@ import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { RolePermissionsPopover } from '@/components/settings/role-permissions-popover';
 
 interface FormValues {
-  email: string[];
+  emails: string[];
   jobTitle: string;
   access: 'member' | 'team-lead' | 'admin';
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const InviteTeamMembers = () => {
   // Email invitation states
-  const [emails, setEmails] = useState<string[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -238,9 +239,11 @@ const InviteTeamMembers = () => {
 
     try {
       setLoading(true);
+      const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
+
       const body: ITeamMemberCreateRequest = {
         job_title: selectedJobTitle,
-        emails: emails,
+        emails: normalizedEmails,
         is_admin: values.access === 'admin',
         role_name:
           values.access === 'team-lead'
@@ -254,13 +257,12 @@ const InviteTeamMembers = () => {
         // Track team invitation via email
         trackMixpanelEvent(evt_team_invite_sent, {
           invite_method: 'email',
-          invite_count: emails.length,
+          invite_count: normalizedEmails.length,
           role: values.access,
           has_job_title: !!selectedJobTitle,
         });
 
         form.resetFields();
-        setEmails([]);
         setSelectedJobTitle(null);
         dispatch(triggerTeamMembersRefresh()); // Trigger refresh in TeamMembersSettings
         dispatch(toggleInviteMemberDrawer());
@@ -274,7 +276,6 @@ const InviteTeamMembers = () => {
 
   const handleClose = () => {
     form.resetFields();
-    setEmails([]);
     setSelectedJobTitle(null);
     setActiveTab('email');
     setLinkCopied(false);
@@ -282,7 +283,9 @@ const InviteTeamMembers = () => {
   };
 
   const handleEmailChange = (value: string[]) => {
-    setEmails(value);
+    const normalizedEmails = (value || []).map(email => String(email).trim()).filter(Boolean);
+    form.setFieldValue('emails', normalizedEmails);
+    void form.validateFields(['emails']).catch(() => undefined);
   };
 
   const formatExpiryDate = (dateString: string) => {
@@ -325,10 +328,19 @@ const InviteTeamMembers = () => {
             label={t('memberEmailLabel')}
             rules={[
               {
-                type: 'array',
-                required: true,
                 validator: (_, value) => {
-                  if (!value?.length) return Promise.reject(t('memberEmailRequiredError'));
+                  const normalizedEmails = Array.isArray(value)
+                    ? value
+                    : typeof value === 'string' && value
+                      ? [value]
+                      : [];
+                  if (!normalizedEmails.length) {
+                    return Promise.reject(t('memberEmailRequiredError'));
+                  }
+                  const hasInvalidEmail = normalizedEmails.some(
+                    (email: string) => !EMAIL_REGEX.test(String(email).trim())
+                  );
+                  if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError'));
                   return Promise.resolve();
                 },
               },
