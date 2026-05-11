@@ -13,7 +13,8 @@
   "scripts": {
     "test": "jest",
     "start": "node build/bin/www.js",
-    "dev": "npm run build:dev && npm run watch",
+    "dev": "npm run build:dev && concurrently \"npm run watch\" \"npm run dev:server\"",
+    "dev:server": "nodemon --watch build --ext js,json,pug --delay 300ms build/bin/www.js",
     "build": "npm run clean && npm run compile && npm run copy && npm run compress",
     "build:dev": "npm run clean && npm run compile:dev && npm run copy",
     "build:prod": "npm run clean && npm run compile:prod && npm run copy && npm run minify && npm run compress",
@@ -173,7 +174,7 @@
     "jest-sonar-reporter": "^2.0.0",
     "ncp": "^2.0.0",
     "node-pg-migrate": "^8.0.4",
-    "nodeman": "^1.1.2",
+    "nodemon": "^3.1.10",
     "rimraf": "^6.0.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
