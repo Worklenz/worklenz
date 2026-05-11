@@ -29,8 +29,12 @@ import logger from '@/utils/errorLogger';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
-import { ROLE_NAMES } from '@/types/roles/role.types';
-import { canManageUserRole, getAvailableRoleOptions } from '@/utils/role-permissions.utils';
+import { ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
+import {
+  canManageUserRole,
+  getAvailableRoleOptions,
+  getSessionRoleName,
+} from '@/utils/role-permissions.utils';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
@@ -82,23 +86,44 @@ const UpdateMemberDrawer = ({
   }, [auth, teamMember?.email]);
 
   const currentUser = auth.getCurrentSession();
+  const currentUserRole = getSessionRoleName(currentUser);
   const canManageTarget = useMemo(() => {
-    if (currentUser?.is_admin && !currentUser?.owner) {
+    if (currentUserRole === ROLE_NAMES.ADMIN) {
       return teamMember?.role_name?.toLowerCase() !== 'owner';
     }
     return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
-  }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin, teamMember?.role_name]);
+  }, [currentUser?.role_name, currentUser?.owner, currentUserRole, teamMember?.role_name]);
 
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount && currentUser?.owner;
   }, [isOwnAccount, currentUser?.owner]);
 
   const availableRoles = useMemo(() => {
-    if (currentUser?.is_admin && !currentUser?.owner) {
-      return getAvailableRoleOptions('admin', true);
-    }
     return getAvailableRoleOptions(currentUser?.role_name, currentUser?.owner);
-  }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin]);
+  }, [currentUser?.role_name, currentUser?.owner]);
+
+  const translatedRoleOptions = useMemo(
+    () =>
+      availableRoles.map(role => ({
+        value:
+          role.value === ROLE_NAMES.MEMBER
+            ? 'member'
+            : role.value === ROLE_NAMES.TEAM_LEAD
+              ? 'team-lead'
+              : role.value === ROLE_NAMES.ADMIN
+                ? 'admin'
+                : role.value.toLowerCase(),
+        label: t(role.labelKey || 'memberText', {
+          defaultValue: role.labelDefaultValue || role.label,
+        }),
+        description: role.descriptionKey
+          ? t(role.descriptionKey, {
+              defaultValue: role.descriptionDefaultValue || role.description,
+            })
+          : undefined,
+      })),
+    [availableRoles, t]
+  );
 
   const isResendAvailable = useMemo(() => {
     return teamMember?.pending_invitation && selectedMemberId && !resentSuccess;
@@ -400,19 +425,44 @@ const UpdateMemberDrawer = ({
         <Form.Item label={t('memberAccessLabel')} name="access" rules={[{ required: true }]}>
           <Select
             disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
-            options={availableRoles.map(role => ({
-              value:
-                role.value === 'Member'
-                  ? 'member'
-                  : role.value === 'Team Lead'
-                    ? 'team-lead'
-                    : role.value === 'Admin'
-                      ? 'admin'
-                      : role.value.toLowerCase(),
-              label: role.label,
-            }))}
+            options={translatedRoleOptions}
+            optionRender={option => (
+              <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
+                <Typography.Text>{String(option.data.label)}</Typography.Text>
+                {option.data.description && (
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.4 }}
+                  >
+                    {option.data.description}
+                  </Typography.Text>
+                )}
+              </Flex>
+            )}
           />
         </Form.Item>
+
+        <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          {t(
+            ROLE_DEFINITIONS[
+              form.getFieldValue('access') === 'admin'
+                ? ROLE_NAMES.ADMIN
+                : form.getFieldValue('access') === 'team-lead'
+                  ? ROLE_NAMES.TEAM_LEAD
+                  : ROLE_NAMES.MEMBER
+            ].descriptionKey,
+            {
+              defaultValue:
+                ROLE_DEFINITIONS[
+                  form.getFieldValue('access') === 'admin'
+                    ? ROLE_NAMES.ADMIN
+                    : form.getFieldValue('access') === 'team-lead'
+                      ? ROLE_NAMES.TEAM_LEAD
+                      : ROLE_NAMES.MEMBER
+                ].descriptionDefaultValue,
+            }
+          )}
+        </Typography.Text>
 
         {canBeAssignedToManager && (
           <Form.Item
@@ -421,7 +471,7 @@ const UpdateMemberDrawer = ({
                 <span>{t('managerLabel')}</span>
                 <Tooltip title={t('managerTooltip')}>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                    (Optional)
+                    {t('optionalFieldLabel', { defaultValue: '(Optional)' })}
                   </Typography.Text>
                 </Tooltip>
               </Flex>

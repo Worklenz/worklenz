@@ -20,10 +20,11 @@ import { useState, useEffect } from 'react';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
-import { ROLE_NAMES } from '@/types/roles/role.types';
+import { ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
 import { useAuthService } from '@/hooks/useAuth';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
 
 interface FormValues {
   email: string[];
@@ -58,8 +59,22 @@ const InviteTeamMembers = () => {
     defaultValue:
       'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
   });
-  // Check if current user is admin or owner
-  const isAdmin = currentSession?.is_admin === true || currentSession?.owner === true;
+  const currentRole = getSessionRoleName(currentSession);
+  const translatedRoleOptions = [
+    ROLE_DEFINITIONS[ROLE_NAMES.MEMBER],
+    ROLE_DEFINITIONS[ROLE_NAMES.TEAM_LEAD],
+    ROLE_DEFINITIONS[ROLE_NAMES.ADMIN],
+  ].map(role => ({
+    value:
+      role.value === ROLE_NAMES.MEMBER
+        ? 'member'
+        : role.value === ROLE_NAMES.TEAM_LEAD
+          ? 'team-lead'
+          : 'admin',
+    label: t(role.labelKey, { defaultValue: role.labelDefaultValue }),
+    description: t(role.descriptionKey, { defaultValue: role.descriptionDefaultValue }),
+  }));
+  const isAdmin = currentRole === ROLE_NAMES.ADMIN || currentRole === ROLE_NAMES.OWNER;
 
   // Debug logging
   useEffect(() => {
@@ -339,11 +354,20 @@ const InviteTeamMembers = () => {
           <Form.Item label={t('memberAccessLabel')} name="access">
             <Select
               disabled={isInviteRestricted}
-              options={[
-                { value: 'member', label: t('memberText') },
-                { value: 'team-lead', label: 'Team Lead' },
-                { value: 'admin', label: t('adminText') },
-              ]}
+              options={translatedRoleOptions}
+              optionRender={option => (
+                <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
+                  <Typography.Text style={{ whiteSpace: 'normal' }}>
+                    {String(option.data.label)}
+                  </Typography.Text>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.4 }}
+                  >
+                    {option.data.description}
+                  </Typography.Text>
+                </Flex>
+              )}
             />
           </Form.Item>
         </Form>
@@ -443,7 +467,7 @@ const InviteTeamMembers = () => {
     <Modal
       title={
         <Typography.Text strong style={{ fontSize: 16 }}>
-          {t('addMemberDrawerTitle')}
+          {t('addMemberDrawerTitle', { defaultValue: 'Invite Team Members' })}
         </Typography.Text>
       }
       open={isDrawerOpen}
@@ -455,7 +479,7 @@ const InviteTeamMembers = () => {
         activeTab === 'email' ? (
           <Flex justify="end">
             <Button onClick={form.submit} disabled={isInviteRestricted}>
-              {t('addToTeamButton', { defaultValue: 'Add to Team' })}
+              {t('addToTeamButton', { defaultValue: 'Send Invitation' })}
             </Button>
           </Flex>
         ) : null

@@ -1,23 +1,20 @@
 import { ILocalSession } from '@/types/auth/local-session.types';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 
 /**
  * Check if the current user is a Team Lead
  */
 export const isCurrentUserTeamLead = (session: ILocalSession | null): boolean => {
-  if (!session) return false;
-
-  // Check if user has Team Lead role
-  return session.role_name?.toLowerCase() === 'team lead';
+  return getSessionRoleName(session) === ROLE_NAMES.TEAM_LEAD;
 };
 
 /**
  * Check if the current user is an Admin (Owner or Admin role)
  */
 export const isCurrentUserAdmin = (session: ILocalSession | null): boolean => {
-  if (!session) return false;
-
-  // Owner or Admin role
-  return session.owner || session.is_admin || session.role_name?.toLowerCase() === 'admin';
+  const currentRole = getSessionRoleName(session);
+  return currentRole === ROLE_NAMES.OWNER || currentRole === ROLE_NAMES.ADMIN;
 };
 
 /**
@@ -33,17 +30,7 @@ export const canSeeAllMembers = (session: ILocalSession | null): boolean => {
 export const getMemberFilterStrategy = (
   session: ILocalSession | null
 ): 'all' | 'managed' | 'none' => {
-  if (!session) return 'none';
-
-  if (isCurrentUserAdmin(session)) {
-    return 'all'; // Admins see all members
-  }
-
-  if (isCurrentUserTeamLead(session)) {
-    return 'managed'; // Team Leads see only their managed members
-  }
-
-  return 'none'; // Regular members see no filtering options
+  return ROLE_DEFINITIONS[getSessionRoleName(session)].memberScope;
 };
 
 /**

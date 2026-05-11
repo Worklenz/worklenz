@@ -17,10 +17,12 @@ import {
   Flex,
   Input,
   MenuProps,
+  Modal,
   Popconfirm,
   Table,
   TableProps,
   Tag,
+  theme,
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
@@ -45,14 +47,15 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { colors } from '@/styles/colors';
-import { getRoleColor } from '@/types/roles/role.types';
-import { canManageUserRole } from '@/utils/role-permissions.utils';
+import { getRoleColor, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
+import { canManageUserRole, getSessionRoleName, normalizeRoleName } from '@/utils/role-permissions.utils';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
   const { t: tCommon } = useTranslation('common');
+  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const auth = useAuthService();
@@ -60,7 +63,7 @@ const TeamMembersSettings = () => {
   const isInviteRestricted = Boolean(currentSession?.is_expired);
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
 
-  useDocumentTitle(t('title') || 'Team Members');
+  useDocumentTitle(t('title', { defaultValue: 'Team Members' }));
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -69,6 +72,7 @@ const TeamMembersSettings = () => {
   const [selectedMemberName, setSelectedMemberName] = useState<string | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
+  const [isRolePermissionsModalOpen, setIsRolePermissionsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -320,20 +324,48 @@ const TeamMembersSettings = () => {
   }, []);
 
   const currentUser = auth.getCurrentSession();
-  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
-    ?.role_name;
-  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
+  const effectiveRole = getSessionRoleName(currentUser);
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
-      if (currentUser?.is_admin && !currentUser?.owner) {
+      if (effectiveRole === ROLE_NAMES.ADMIN) {
         return targetRole?.toLowerCase() !== 'owner';
       }
       return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
     },
-    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
+    [effectiveRole, currentUser?.owner]
   );
   const isPrivilegedUser =
-    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
+    effectiveRole === ROLE_NAMES.OWNER || effectiveRole === ROLE_NAMES.ADMIN;
+
+  const getRoleLabel = useCallback(
+    (roleName?: string) => {
+      const roleDefinition = ROLE_DEFINITIONS[normalizeRoleName(roleName)];
+      return t(roleDefinition.labelKey, { defaultValue: roleDefinition.labelDefaultValue });
+    },
+    [t]
+  );
+
+  const permissionsDefaultValues: Record<string, string> = useMemo(
+    () => ({
+      permissionInviteMembers: 'Can invite and update team members',
+      permissionManageAllRoles: 'Can manage Admin, Team Lead, and Member roles',
+      permissionAssignTeamLeads: 'Can assign or remove Team Lead reporting relationships',
+      permissionAccessFinance: 'Can access finance and other admin-only workspace areas',
+      permissionManageAdmins: 'Can manage Admin, Team Lead, and Member accounts except the owner',
+      permissionManageManagedRoles: 'Can manage Team Lead and Member accounts only',
+      permissionViewManagedReports: 'Can view managed-member reporting without admin access',
+      permissionNoFinanceAccess: 'Cannot access finance settings or admin-only finance tools',
+      permissionViewAssignedWork: 'Can work on assigned projects and tasks',
+      permissionNoMemberManagement: 'Cannot invite, deactivate, delete, or reassign team members',
+      permissionNoRoleChanges: 'Cannot change roles or Team Lead assignments',
+    }),
+    []
+  );
+
+  const permissionsSummaryRoles = useMemo(
+    () => [ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD, ROLE_NAMES.MEMBER],
+    []
+  );
 
   const startEditingName = useCallback(
     (e: React.MouseEvent, record: ITeamMemberViewModel) => {
@@ -406,14 +438,13 @@ const TeamMembersSettings = () => {
           const canEdit = isPrivilegedUser && !isPending;
 
           return (
-            <Typography.Text
+            <Flex
+              align="center"
+              gap={8}
               style={{
-                textTransform: 'capitalize',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 8,
+                width: '100%',
               }}
-              // Open drawer when clicking non-editable parts of the row
               onClick={() => !isEditing && handleMemberClick(record.id || '', record.role_name, record.name)}
             >
               <Avatar
@@ -424,50 +455,57 @@ const TeamMembersSettings = () => {
                 {record.name?.charAt(0)}
               </Avatar>
 
-              {isEditing ? (
-                // ── Inline edit input ──
-                <Input
-                  autoFocus
-                  size="small"
-                  value={editingNameValue}
-                  style={{ width: 160, textTransform: 'none' }}
-                  onChange={e => setEditingNameValue(e.target.value)}
-                  onBlur={() => handleNameBlur(record.id || '')}
-                  onKeyDown={e => handleNameKeyDown(e, record.id || '')}
-                  onClick={e => e.stopPropagation()}
-                />
-              ) : (
-                // ── Display name (click to edit if privileged) ──
-                <Tooltip
-                  title={
-                    canEdit
-                      ? t('clickToEditName', { defaultValue: 'Click name to edit' })
-                      : isPending
-                        ? t('pendingInvitationText')
-                        : undefined
-                  }
-                  mouseEnterDelay={0.6}
-                >
-                  <span
-                    style={{
-                      cursor: canEdit ? 'text' : 'pointer',
-                      borderBottom: canEdit ? '1px dashed #d9d9d9' : 'none',
-                      paddingBottom: canEdit ? 1 : 0,
-                    }}
-                    onClick={e => canEdit && startEditingName(e, record)}
+              <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
+                {isEditing ? (
+                  <Input
+                    autoFocus
+                    size="small"
+                    value={editingNameValue}
+                    style={{ width: 160, textTransform: 'none' }}
+                    onChange={e => setEditingNameValue(e.target.value)}
+                    onBlur={() => handleNameBlur(record.id || '')}
+                    onKeyDown={e => handleNameKeyDown(e, record.id || '')}
+                    onClick={e => e.stopPropagation()}
+                  />
+                ) : (
+                  <Tooltip
+                    title={
+                      canEdit
+                        ? t('clickToEditName', { defaultValue: 'Click name to edit' })
+                        : isPending
+                          ? t('pendingInvitationText', { defaultValue: '(Invitation pending)' })
+                          : undefined
+                    }
+                    mouseEnterDelay={0.6}
                   >
-                    {record.name}
-                  </span>
-                </Tooltip>
-              )}
+                    <span
+                      style={{
+                        cursor: canEdit ? 'text' : 'pointer',
+                        borderBottom: canEdit ? '1px dashed #d9d9d9' : 'none',
+                        paddingBottom: canEdit ? 1 : 0,
+                        textTransform: 'capitalize',
+                        width: 'fit-content',
+                      }}
+                      onClick={e => canEdit && startEditingName(e, record)}
+                    >
+                      {record.name}
+                    </span>
+                  </Tooltip>
+                )}
+
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {record.job_title || t('jobTitleEmpty', { defaultValue: 'Select a job title' })}
+                </Typography.Text>
+
+                {!record.active && (
+                  <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
+                    {t('deactivatedText')}
+                  </Typography.Text>
+                )}
+              </Flex>
 
               {record.is_online && <Badge color={colors.limeGreen} />}
-              {!record.active && (
-                <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
-                  {t('deactivatedText')}
-                </Typography.Text>
-              )}
-            </Typography.Text>
+            </Flex>
           );
         },
       },
@@ -505,23 +543,6 @@ const TeamMembersSettings = () => {
         ),
       },
       {
-        key: 'job_title',
-        dataIndex: 'job_title',
-        title: t('jobTitleColumn'),
-        sorter: true,
-        onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
-          style: { cursor: 'pointer' },
-        }),
-        render: (_, record: ITeamMemberViewModel) => (
-          <Typography.Text>
-            {record.job_title || (
-              <Typography.Text type="secondary">Select a Job Title</Typography.Text>
-            )}
-          </Typography.Text>
-        ),
-      },
-      {
         key: 'role_name',
         dataIndex: 'role_name',
         title: t('teamAccessColumn'),
@@ -538,14 +559,14 @@ const TeamMembersSettings = () => {
                 textTransform: 'capitalize',
               }}
             >
-              {record.role_name}
+              {getRoleLabel(record.role_name)}
             </Typography.Text>
           </Flex>
         ),
       },
       {
         key: 'team_lead_assignment',
-        title: 'Team Lead',
+        title: t('teamLeadColumn', { defaultValue: 'Team Lead' }),
         render: (_, record: ITeamMemberViewModel) => {
           if (
             record.role_name === 'Team Lead' ||
@@ -581,7 +602,7 @@ const TeamMembersSettings = () => {
 
           return (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-              Unassigned
+              {t('unassignedText', { defaultValue: 'Unassigned' })}
             </Typography.Text>
           );
         },
@@ -654,10 +675,10 @@ const TeamMembersSettings = () => {
     [
       t,
       isPrivilegedUser,
-      effectiveRole,
       currentUser?.owner,
       getActionMenuItems,
       canManageUser,
+      getRoleLabel,
       handleStatusChange,
       handleDeleteMember,
       handleMemberClick,
@@ -669,8 +690,61 @@ const TeamMembersSettings = () => {
     ]
   );
 
-  return (
+  const rolePermissionsContent = (
     <>
+      <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        {t('rolePermissionsDescription', {
+          defaultValue:
+            'Access levels define who can manage team members, reporting relationships, and admin-only workspace tools.',
+        })}
+      </Typography.Text>
+      <Flex gap={12} wrap="wrap">
+        {permissionsSummaryRoles.map(roleName => {
+          const roleDefinition = ROLE_DEFINITIONS[roleName];
+
+          return (
+            <Card
+              key={roleName}
+              size="small"
+              style={{
+                flex: '1 1 240px',
+                minWidth: 240,
+                borderColor: token.colorBorderSecondary,
+                background: token.colorBgContainer,
+              }}
+            >
+              <Flex vertical gap={12}>
+                <Flex align="center" gap={8}>
+                  <Tag color={getRoleColor(roleName)} style={{ margin: 0 }}>
+                    {t(roleDefinition.labelKey, {
+                      defaultValue: roleDefinition.labelDefaultValue,
+                    })}
+                  </Tag>
+                </Flex>
+                <Typography.Text type="secondary">
+                  {t(roleDefinition.descriptionKey, {
+                    defaultValue: roleDefinition.descriptionDefaultValue,
+                  })}
+                </Typography.Text>
+                <Flex vertical gap={6}>
+                  {roleDefinition.permissionKeys.map(permissionKey => (
+                    <Typography.Text key={permissionKey}>
+                      {t(permissionKey, {
+                        defaultValue: permissionsDefaultValues[permissionKey] || permissionKey,
+                      })}
+                    </Typography.Text>
+                  ))}
+                </Flex>
+              </Flex>
+            </Card>
+          );
+        })}
+      </Flex>
+    </>
+  );
+
+  return (
+    <Flex vertical gap={16}>
       <Card
         style={{ width: '100%' }}
         title={
@@ -690,10 +764,15 @@ const TeamMembersSettings = () => {
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={t('search', { defaultValue: 'Search' })}
+                placeholder={t('searchPlaceholder', {
+                  defaultValue: 'Search members by name',
+                })}
                 style={{ maxWidth: 250 }}
                 suffix={<SearchOutlined />}
               />
+              <Button onClick={() => setIsRolePermissionsModalOpen(true)}>
+                {t('rolePermissionsButton', { defaultValue: 'Role Permissions' })}
+              </Button>
               <Tooltip
                 title={
                   isInviteRestricted
@@ -719,7 +798,7 @@ const TeamMembersSettings = () => {
                 <PinRouteToNavbarButton
                   name={t('title')}
                   path="/worklenz/settings/team-members"
-                  adminOnly
+                  adminOnly={false}
                 />
               </Tooltip>
             </Flex>
@@ -756,11 +835,27 @@ const TeamMembersSettings = () => {
             pageSizeOptions: PAGE_SIZE_OPTIONS,
             size: 'small',
             total: model.total,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            showTotal: (total, range) =>
+              t('paginationTotal', {
+                defaultValue: '{{start}}-{{end}} of {{total}} items',
+                start: range[0],
+                end: range[1],
+                total,
+              }),
           }}
           scroll={{ x: 'max-content' }}
         />
       </Card>
+
+      <Modal
+        title={t('rolePermissionsTitle', { defaultValue: 'Role Permissions' })}
+        open={isRolePermissionsModalOpen}
+        onCancel={() => setIsRolePermissionsModalOpen(false)}
+        footer={null}
+        width={900}
+      >
+        {rolePermissionsContent}
+      </Modal>
 
       {/* Floating Action Button for Bulk Assign */}
       {isPrivilegedUser && selectedMembers.length > 0 && (
@@ -811,7 +906,7 @@ const TeamMembersSettings = () => {
         />,
         document.body
       )}
-    </>
+    </Flex>
   );
 };
 

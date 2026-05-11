@@ -2,6 +2,11 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import db from "../config/db";
+import {
+  canAssignManagerRelationship,
+  canManageTargetRole,
+  getTeamMemberRoleName,
+} from "../shared/team-permissions";
 
 export default class TeamManagementController {
   public static async assignManager(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -33,8 +38,8 @@ export default class TeamManagementController {
       }
 
       const [member] = memberResult.rows;
-      if (["Owner", "Admin", "Team Lead"].includes(member.role_name)) {
-        return res.status(200).send(new ServerResponse(false, null, `Cannot assign ${member.role_name} to report to Team Lead`));
+      if (!canManageTargetRole(req.user, member.role_name)) {
+        return res.status(200).send(new ServerResponse(false, null, "You are not authorized to manage this team member."));
       }
 
       // Allow reassignment - no need to check if already assigned to another manager
@@ -56,7 +61,7 @@ export default class TeamManagementController {
       }
 
       const [manager] = managerResult.rows;
-      if (manager.role_name !== "Team Lead") {
+      if (!canAssignManagerRelationship(req.user, member.role_name, manager.role_name)) {
         return res.status(400).send(new ServerResponse(false, null, `Cannot assign member to ${manager.role_name}. Only Team Leads can manage team members.`));
       }
 
@@ -125,7 +130,7 @@ export default class TeamManagementController {
 
       // Check if any of the members have roles that shouldn't report to Team Leads
       const invalidRoles = memberResult.rows.filter(member => 
-        ["Owner", "Admin", "Team Lead"].includes(member.role_name)
+        !canAssignManagerRelationship(req.user, member.role_name, teamLeadData.role_name)
       );
       
       if (invalidRoles.length > 0) {
@@ -237,6 +242,12 @@ export default class TeamManagementController {
       }
 
       const [member] = memberResult.rows;
+
+      const memberRoleName = await getTeamMemberRoleName(teamMemberId, teamId);
+
+      if (!memberRoleName || !canManageTargetRole(req.user, memberRoleName)) {
+        return res.status(400).send(new ServerResponse(false, null, "You are not authorized to manage this team member."));
+      }
       
       if (!member.reports_to_member_id) {
         return res.status(400).send(new ServerResponse(false, null, "Member is not currently assigned to any Team Lead"));
