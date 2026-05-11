@@ -77,7 +77,7 @@ const LanguageAndRegionSettings = () => {
   };
 
   const onFinish = (values: { language?: ILanguageType; timezone?: string }) => {
-    if (values.language && values.timezone) {
+    if (values.language && values.timezone && isDirty) {
       handleLanguageChange(values);
       trackMixpanelEvent(evt_settings_language_changed, { language: values.language });
     }
@@ -230,11 +230,9 @@ const LanguageAndRegionSettings = () => {
             />
           </Form.Item>
           <Form.Item>
-            {isDirty && (
-              <Button type="primary" htmlType="submit">
-                {t('save_changes')}
-              </Button>
-            )}
+            <Button type="primary" htmlType="submit">
+              {isDirty ? t('save_changes') : t('save')}
+            </Button>
           </Form.Item>
         </Form>
       ) : (
