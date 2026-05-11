@@ -1,4 +1,9 @@
 {
+  "personal": "Personale",
+  "team": "Ekipi",
+  "project": "Projekti",
+  "finance": "Financa",
+  "danger-zone": "Zona e rrezikut",
   "profile": "Profili",
   "notifications": "Njoftimet",
   "clients": "Klientët",
@@ -12,6 +17,7 @@
   "change-password": "Ndrysho Fjalëkalimin",
   "language-and-region": "Gjuha dhe Rajoni",
   "appearance": "Pamja",
+  "ratecard": "Karta e tarifave",
   "integrations": "Integrimet",
   "account-deletion": "Fshij Llogarinë",
   "team-hierarchy": "Hierarkia e Ekipit"
