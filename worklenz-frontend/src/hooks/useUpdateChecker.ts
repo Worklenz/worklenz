@@ -4,6 +4,9 @@
 import React from 'react';
 import { useServiceWorker } from '../utils/serviceWorkerRegistration';
 
+const LATEST_VERSION_STORAGE_KEY = 'app_latest_version';
+const DISMISSED_UPDATE_VERSION_STORAGE_KEY = 'app_dismissed_update_version';
+
 interface UseUpdateCheckerOptions {
   checkInterval?: number; // Check interval in milliseconds (default: 5 minutes)
   enableAutoCheck?: boolean; // Enable automatic checking (default: true)
@@ -33,7 +36,9 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
   const [isChecking, setIsChecking] = React.useState(false);
   const [lastChecked, setLastChecked] = React.useState<Date | null>(null);
   const [showUpdateNotification, setShowUpdateNotification] = React.useState(false);
-  const [updateDismissed, setUpdateDismissed] = React.useState(false);
+  const [dismissedVersion, setDismissedVersion] = React.useState<string | null>(() =>
+    localStorage.getItem(DISMISSED_UPDATE_VERSION_STORAGE_KEY)
+  );
   const isCheckingRef = React.useRef(false);
 
   // Check for updates function
@@ -44,12 +49,15 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     setIsChecking(true);
     try {
       const hasUpdates = await serviceWorkerCheckUpdates();
+      const latestVersion = localStorage.getItem(LATEST_VERSION_STORAGE_KEY);
       setHasUpdate(hasUpdates);
       setLastChecked(new Date());
 
       // Show notification if update found and user hasn't dismissed it
-      if (hasUpdates && showNotificationOnUpdate && !updateDismissed) {
+      if (hasUpdates && showNotificationOnUpdate && latestVersion !== dismissedVersion) {
         setShowUpdateNotification(true);
+      } else if (!hasUpdates) {
+        setShowUpdateNotification(false);
       }
     } catch (error) {
       console.error('Error checking for updates:', error);
@@ -57,11 +65,15 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
       isCheckingRef.current = false;
       setIsChecking(false);
     }
-  }, [serviceWorkerCheckUpdates, showNotificationOnUpdate, updateDismissed]);
+  }, [serviceWorkerCheckUpdates, showNotificationOnUpdate, dismissedVersion]);
 
   // Dismiss update notification
   const dismissUpdate = React.useCallback(() => {
-    setUpdateDismissed(true);
+    const latestVersion = localStorage.getItem(LATEST_VERSION_STORAGE_KEY);
+    if (latestVersion) {
+      localStorage.setItem(DISMISSED_UPDATE_VERSION_STORAGE_KEY, latestVersion);
+    }
+    setDismissedVersion(latestVersion);
     setShowUpdateNotification(false);
   }, []);
 
@@ -123,12 +135,12 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     };
   }, [enableAutoCheck, swManager, checkForUpdates]);
 
-  // Reset dismissed state when new update is found
   React.useEffect(() => {
-    if (hasUpdate && updateDismissed) {
-      setUpdateDismissed(false);
+    if (!hasUpdate && dismissedVersion) {
+      localStorage.removeItem(DISMISSED_UPDATE_VERSION_STORAGE_KEY);
+      setDismissedVersion(null);
     }
-  }, [hasUpdate, updateDismissed]);
+  }, [hasUpdate, dismissedVersion]);
 
   return {
     hasUpdate,
