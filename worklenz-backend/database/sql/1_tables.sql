@@ -794,7 +794,8 @@ CREATE TABLE IF NOT EXISTS projects (
     estimated_man_days     INTEGER                  DEFAULT 0,
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
-    estimated_working_days INTEGER                  DEFAULT 0
+    estimated_working_days INTEGER                  DEFAULT 0,
+    priority_id            UUID
 );
 
 ALTER TABLE projects
@@ -1273,6 +1274,10 @@ CREATE TABLE IF NOT EXISTS task_priorities (
 ALTER TABLE task_priorities
     ADD CONSTRAINT task_priorities_pk
         PRIMARY KEY (id);
+
+ALTER TABLE projects
+    ADD CONSTRAINT projects_priority_id_fk
+        FOREIGN KEY (priority_id) REFERENCES task_priorities;
 
 ALTER TABLE cpt_tasks
     ADD CONSTRAINT cpt_tasks_priority_fk
