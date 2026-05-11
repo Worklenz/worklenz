@@ -10,5 +10,9 @@
   "profileJoinedText": "Entrou em {{date}}",
   "profileLastUpdatedText": "Última atualização em {{date}}",
   "avatarTooltip": "Clique para carregar um avatar",
+  "removeAvatar": "Remover foto",
+  "removeAvatarConfirmTitle": "Remover foto de perfil?",
+  "removeAvatarConfirmDescription": "Seu avatar será removido e suas iniciais serão exibidas no lugar.",
+  "cancel": "Cancelar",
   "title": "Configurações do Perfil"
 }

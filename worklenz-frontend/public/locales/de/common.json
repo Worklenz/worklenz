@@ -7,6 +7,8 @@
   "update-available": "Worklenz aktualisiert!",
   "update-description": "Eine neue Version von Worklenz ist verfügbar mit den neuesten Funktionen und Verbesserungen.",
   "update-instruction": "Für die beste Erfahrung laden Sie bitte die Seite neu, um die neuen Änderungen zu übernehmen.",
+  "update-banner-message": "Eine neue Version ist verfügbar.",
+  "update-banner-description": "Laden Sie neu, wenn Sie bereit sind, die neuesten Verbesserungen zu erhalten.",
   "update-whats-new": "💡 <1>Was ist neu:</1> Verbesserte Leistung, Fehlerbehebungen und verbesserte Benutzererfahrung",
   "update-now": "Neu laden",
   "update-later": "Später",

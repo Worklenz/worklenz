@@ -16,6 +16,41 @@ type Config = {
   onError?: (error: Error) => void;
 };
 
+const APP_VERSION_STORAGE_KEY = 'app_version';
+const LATEST_VERSION_STORAGE_KEY = 'app_latest_version';
+const PENDING_UPDATE_VERSION_STORAGE_KEY = 'app_pending_update_version';
+const UPDATE_REQUESTED_AT_STORAGE_KEY = 'app_update_requested_at';
+const UPDATE_RELOAD_GRACE_PERIOD_MS = 60 * 1000;
+
+declare global {
+  interface Window {
+    buildTimestamp?: string;
+  }
+}
+
+const getLoadedBuildVersion = (): string | null => {
+  return window.buildTimestamp ? window.buildTimestamp.toString() : null;
+};
+
+const syncStoredVersionWithLoadedBuild = (): string | null => {
+  const loadedBuildVersion = getLoadedBuildVersion();
+
+  if (!loadedBuildVersion) {
+    return localStorage.getItem(APP_VERSION_STORAGE_KEY);
+  }
+
+  if (localStorage.getItem(APP_VERSION_STORAGE_KEY) !== loadedBuildVersion) {
+    localStorage.setItem(APP_VERSION_STORAGE_KEY, loadedBuildVersion);
+  }
+
+  if (localStorage.getItem(PENDING_UPDATE_VERSION_STORAGE_KEY) === loadedBuildVersion) {
+    localStorage.removeItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
+    localStorage.removeItem(UPDATE_REQUESTED_AT_STORAGE_KEY);
+  }
+
+  return loadedBuildVersion;
+};
+
 // Track registration state to prevent double registration
 let isRegistering = false;
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
@@ -338,8 +373,7 @@ export class ServiceWorkerManager {
   // Check for updates by comparing version.json
   async checkForUpdates(): Promise<boolean> {
     try {
-      // Get current version from localStorage
-      const currentVersion = localStorage.getItem('app_version');
+      const currentVersion = syncStoredVersionWithLoadedBuild();
 
       // Fetch latest version.json (bypassing all caches)
       const response = await fetch('/version.json?' + Date.now(), {
@@ -365,15 +399,33 @@ export class ServiceWorkerManager {
         return false;
       }
 
+      const latestVersionString = latestVersion.toString();
+      localStorage.setItem(LATEST_VERSION_STORAGE_KEY, latestVersionString);
+
       // First time check - store current version
       if (!currentVersion) {
-        localStorage.setItem('app_version', latestVersion.toString());
+        localStorage.setItem(APP_VERSION_STORAGE_KEY, latestVersionString);
         console.log('Initial version stored:', latestVersion);
         return false;
       }
 
-      // Compare versions
-      const hasUpdate = currentVersion !== latestVersion.toString();
+      const pendingVersion = localStorage.getItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
+      const reloadRequestedAt = Number(
+        localStorage.getItem(UPDATE_REQUESTED_AT_STORAGE_KEY) || '0'
+      );
+      const isWaitingForRequestedReload =
+        pendingVersion === latestVersionString &&
+        Date.now() - reloadRequestedAt < UPDATE_RELOAD_GRACE_PERIOD_MS;
+
+      if (isWaitingForRequestedReload) {
+        return false;
+      }
+
+      const loadedBuildVersion = getLoadedBuildVersion();
+
+      // Compare versions against both the stored baseline and the currently loaded build.
+      const hasUpdate =
+        currentVersion !== latestVersionString && loadedBuildVersion !== latestVersionString;
 
       if (hasUpdate) {
         console.log('New version detected:', {
@@ -404,7 +456,11 @@ export class ServiceWorkerManager {
         const versionData = await response.json();
         const latestVersion = versionData.buildId || versionData.buildTime;
         if (latestVersion) {
-          localStorage.setItem('app_version', latestVersion.toString());
+          const latestVersionString = latestVersion.toString();
+          localStorage.setItem(APP_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(LATEST_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(PENDING_UPDATE_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(UPDATE_REQUESTED_AT_STORAGE_KEY, Date.now().toString());
         }
       }
 
@@ -430,7 +486,11 @@ export class ServiceWorkerManager {
         const versionData = await response.json();
         const latestVersion = versionData.buildId || versionData.buildTime;
         if (latestVersion) {
-          localStorage.setItem('app_version', latestVersion.toString());
+          const latestVersionString = latestVersion.toString();
+          localStorage.setItem(APP_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(LATEST_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(PENDING_UPDATE_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(UPDATE_REQUESTED_AT_STORAGE_KEY, Date.now().toString());
         }
       }
 

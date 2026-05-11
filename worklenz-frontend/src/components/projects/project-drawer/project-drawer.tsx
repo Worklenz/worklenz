@@ -37,6 +37,7 @@ import { setProject, setProjectId } from '@/features/project/project.slice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 
 import ProjectManagerDropdown from '../project-manager-dropdown/project-manager-dropdown';
 import ProjectBasicInfo from './project-basic-info/project-basic-info';
@@ -44,6 +45,7 @@ import ProjectHealthSection from './project-health-section/project-health-sectio
 import ProjectStatusSection from './project-status-section/project-status-section';
 import ProjectCategorySection from './project-category-section/project-category-section';
 import ProjectClientSection from './project-client-section/project-client-section';
+import ProjectPrioritySection from './project-priority-section/project-priority-section';
 import { ProjectDatePicker } from './components/ProjectDatePicker';
 
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
@@ -95,6 +97,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
+  const { priorities } = useAppSelector(state => state.priorityReducer);
+  const defaultPriorityId = useMemo(
+    () => priorities.find(priority => priority.name === 'Medium')?.id,
+    [priorities]
+  );
 
   // API Hooks
   const { refetch: refetchProjects } = useGetProjectsQuery(requestParams);
@@ -113,6 +120,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       client_id: project?.client_id || null,
       client: project?.client_name || null,
       category_id: project?.category_id || null,
+      priority_id: project?.priority_id || defaultPriorityId,
       working_days: project?.working_days || 0,
       man_days: project?.man_days || 0,
       hours_per_day: project?.hours_per_day || 8,
@@ -122,7 +130,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       auto_assign_task_creator: project?.auto_assign_task_creator || false,
       health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
-  }, [project, projectStatuses, projectHealths]);
+  }, [project, projectStatuses, projectHealths, defaultPriorityId]);
 
   /**
    * Calculate working days between two dates (excluding weekends)
@@ -170,6 +178,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       if (projectStatuses.length === 0) fetchPromises.push(dispatch(fetchProjectStatuses()));
       if (projectCategories.length === 0) fetchPromises.push(dispatch(fetchProjectCategories()));
       if (projectHealths.length === 0) fetchPromises.push(dispatch(fetchProjectHealth()));
+      if (priorities.length === 0) fetchPromises.push(dispatch(fetchPriorities()));
       if (!clients.data?.length) {
         fetchPromises.push(
           dispatch(fetchClients({ index: 1, size: 5, field: null, order: null, search: null }))
@@ -179,7 +188,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
     };
 
     loadInitialData();
-  }, [dispatch]);
+  }, [dispatch, priorities.length]);
 
   useEffect(() => {
     if (drawerVisible && projectId && project && !projectLoading) {
@@ -256,6 +265,15 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       setLoading(true);
     }
   }, [drawerVisible, projectId, projectLoading]);
+
+  useEffect(() => {
+    if (!drawerVisible || projectId || !defaultPriorityId) return;
+
+    const currentPriorityId = form.getFieldValue('priority_id');
+    if (!currentPriorityId) {
+      form.setFieldValue('priority_id', defaultPriorityId);
+    }
+  }, [defaultPriorityId, drawerVisible, form, projectId]);
 
   // Socket event handlers
   const handleStartDateChangeResponse = useCallback(
@@ -424,6 +442,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         color_code: values.color_code,
         status_id: values.status_id,
         category_id: values.category_id || null,
+        priority_id: values.priority_id || defaultPriorityId || null,
         notes: values.notes,
         key: values.key,
         client_id: values.client_id,
@@ -609,6 +628,12 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             form={form}
             t={t}
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
+          />
+          <ProjectPrioritySection
+            priorities={priorities}
+            form={form}
+            t={t}
+            disabled={!isProjectManager && !isOwnerorAdmin}
           />
 
           <Form.Item name="notes" label={t('notes')}>

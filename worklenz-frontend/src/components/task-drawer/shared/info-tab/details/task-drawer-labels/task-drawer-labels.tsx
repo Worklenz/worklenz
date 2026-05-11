@@ -11,6 +11,7 @@ import {
   List,
   Tag,
   Typography,
+  theme,
 } from '@/shared/antd-imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -38,6 +39,18 @@ interface TaskDrawerLabelsProps {
 }
 
 const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
+  const { token } = theme.useToken();
+  const addLabelButtonStyles = {
+    width: 28,
+    height: 28,
+    minWidth: 28,
+    marginBottom: 4,
+    borderRadius: token.borderRadiusSM,
+    borderColor: token.colorPrimary,
+    color: token.colorPrimary,
+    background: token.colorPrimaryBg,
+    boxShadow: `0 0 0 1px ${token.colorPrimaryBorder}`,
+  };
 
   const getContrastColor = (hexColor: string): string => {
     const hex = (hexColor || '#000000').replace('#', '');
@@ -242,8 +255,21 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
         >
           <Button
             type="dashed"
-            icon={<PlusOutlined style={{ fontSize: 11 }} />}
-            style={{ height: 18, marginBottom: 4 }}
+            aria-label={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
+            title={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
+            icon={
+              <PlusOutlined
+                style={{
+                  fontSize: 13,
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+            }
+            style={addLabelButtonStyles}
             size="small"
           />
         </Dropdown>
