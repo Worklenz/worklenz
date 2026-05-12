@@ -23,15 +23,16 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 
 interface FormValues {
-  email: string[];
+  emails: string[];
   jobTitle: string;
   access: 'member' | 'admin';
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const InviteTeamMembers = () => {
   const [searching, setSearching] = useState(false);
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
-  const [emails, setEmails] = useState<string[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -67,15 +68,16 @@ const InviteTeamMembers = () => {
   const handleFormSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
+      const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
+
       const body: ITeamMemberCreateRequest = {
         job_title: selectedJobTitle,
-        emails: emails,
+        emails: normalizedEmails,
         is_admin: values.access === 'admin',
       };
       const res = await teamMembersApiService.createTeamMember(body);
       if (res.done) {
         form.resetFields();
-        setEmails([]);
         setSelectedJobTitle(null);
         dispatch(triggerTeamMembersRefresh()); // Trigger refresh in TeamMembersSettings
         dispatch(toggleInviteMemberDrawer());
@@ -93,7 +95,9 @@ const InviteTeamMembers = () => {
   };
 
   const handleEmailChange = (value: string[]) => {
-    setEmails(value);
+    const normalizedEmails = (value || []).map(email => String(email).trim()).filter(Boolean);
+    form.setFieldValue('emails', normalizedEmails);
+    void form.validateFields(['emails']).catch(() => undefined);
   };
 
   return (
@@ -128,10 +132,17 @@ const InviteTeamMembers = () => {
           label={t('memberEmailLabel')}
           rules={[
             {
-              type: 'array',
-              required: true,
               validator: (_, value) => {
-                if (!value?.length) return Promise.reject(t('memberEmailRequiredError'));
+                const normalizedEmails = Array.isArray(value)
+                  ? value
+                  : typeof value === 'string' && value
+                    ? [value]
+                    : [];
+                if (!normalizedEmails.length) return Promise.reject(t('memberEmailRequiredError'));
+                const hasInvalidEmail = normalizedEmails.some(
+                  (email: string) => !EMAIL_REGEX.test(String(email).trim())
+                );
+                if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError'));
                 return Promise.resolve();
               },
             },
