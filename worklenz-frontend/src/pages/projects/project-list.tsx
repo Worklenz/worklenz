@@ -389,19 +389,19 @@ const ProjectList: React.FC = () => {
 
       if (filters?.status_id !== filteredInfo.status_id) {
         if (!filters?.status_id) { updates.statuses = null; dispatch(setFilteredStatuses([])); }
-        else { updates.statuses = filters.status_id.join(' '); }
+        else { updates.statuses = filters.status_id.join(' '); dispatch(setFilteredStatuses(filters.status_id as string[])); }
         hasChanges = true;
       }
 
       if (filters?.category_id !== filteredInfo.category_id) {
         if (!filters?.category_id) { updates.categories = null; dispatch(setFilteredCategories([])); }
-        else { updates.categories = filters.category_id.join(' '); }
+        else { updates.categories = filters.category_id.join(' '); dispatch(setFilteredCategories(filters.category_id as string[])); }
         hasChanges = true;
       }
 
       if (filters?.priority_name !== filteredInfo.priority_name) {
         if (!filters?.priority_name) { updates.priorities = null; dispatch(setFilteredPriorities([])); }
-        else { updates.priorities = filters.priority_name.join(' '); }
+        else { updates.priorities = filters.priority_name.join(' '); dispatch(setFilteredPriorities(filters.priority_name as string[])); }
         hasChanges = true;
       }
 
