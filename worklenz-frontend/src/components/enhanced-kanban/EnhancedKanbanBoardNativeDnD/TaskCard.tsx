@@ -46,6 +46,10 @@ import {
   DeleteOutlined,
   InboxOutlined,
   UserAddOutlined,
+  DoubleLeftOutlined,
+  ExclamationOutlined,
+  MinusOutlined,
+  PauseOutlined,
 } from '@/shared/antd-imports';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
@@ -396,6 +400,75 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     }
     const [isDown, setIsDown] = useState(false);
 
+    // Helper function to render priority icon based on priority_value
+    const renderPriorityIcon = (priorityValue: number | undefined, priorityColor: string | undefined, priorityColorDark: string | undefined) => {
+      if (priorityValue === undefined || priorityValue === null) return null;
+      
+      // Remove alpha channel from color for better visibility (last 2 characters if hex color)
+      const cleanColor = (color: string | undefined) => {
+        if (!color) return '#d9d9d9';
+        // If color has alpha channel (8 characters like #RRGGBBAA), remove it
+        if (color.length === 9 && color.startsWith('#')) {
+          return color.substring(0, 7);
+        }
+        return color;
+      };
+      
+      const color = themeMode === 'dark' 
+        ? cleanColor(priorityColorDark || priorityColor) 
+        : cleanColor(priorityColor);
+      
+      const iconStyle = { 
+        color, 
+        fontSize: 14, // Increased from 12 for better visibility
+        fontWeight: 600, // Make icon bolder
+      };
+
+      // Map priority_value to icon and tooltip text
+      // 0 = Low, 1 = Medium, 2 = High, 3 = Critical
+      let icon = null;
+      let tooltipText = '';
+
+      switch (priorityValue) {
+        case 0: // Low
+          icon = <MinusOutlined style={iconStyle} />;
+          tooltipText = t('low', { defaultValue: 'Low' });
+          break;
+        case 1: // Medium
+          icon = <PauseOutlined style={{ ...iconStyle, transform: 'rotate(90deg)' }} />;
+          tooltipText = t('medium', { defaultValue: 'Medium' });
+          break;
+        case 2: // High
+          icon = <DoubleLeftOutlined style={{ ...iconStyle, transform: 'rotate(90deg)' }} />;
+          tooltipText = t('high', { defaultValue: 'High' });
+          break;
+        case 3: // Critical
+          icon = <ExclamationOutlined style={iconStyle} />;
+          tooltipText = t('critical', { defaultValue: 'Critical' });
+          break;
+        default:
+          return null;
+      }
+
+      return (
+        <span 
+          title={tooltipText} 
+          style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            cursor: 'help',
+            padding: '2px 4px',
+            borderRadius: '3px',
+            backgroundColor: themeMode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)',
+            marginRight: '6px',
+          }}
+        >
+          {icon}
+        </span>
+      );
+    };
+
     return (
       <>
         {/* Context menu for archive and delete */}
@@ -537,18 +610,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 })}
               </div>
               <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
-                {!task.is_parent_container && (
-                  <span
-                    className="w-2 h-2 rounded-full inline-block"
-                    style={{
-                      backgroundColor:
-                        themeMode === 'dark'
-                          ? task.priority_color_dark || task.priority_color || '#d9d9d9'
-                          : task.priority_color || '#d9d9d9',
-                    }}
-                  ></span>
-                )}
-                <div className="task-title" title={task.name} style={{ marginLeft: 8 }}>
+                {!task.is_parent_container && renderPriorityIcon(task.priority_value, task.priority_color, task.priority_color_dark)}
+                <div className="task-title" title={task.name} style={{ marginLeft: 0 }}>
                   {task.name}
                 </div>
               </div>
@@ -808,17 +871,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                           setSelectedTask(sub);
                         }}
                       >
-                        {!sub.is_parent_container && (sub.priority_color || sub.priority_color_dark) ? (
-                          <span
-                            className="w-2 h-2 rounded-full inline-block"
-                            style={{
-                              backgroundColor:
-                                themeMode === 'dark'
-                                  ? sub.priority_color_dark || sub.priority_color || '#d9d9d9'
-                                  : sub.priority_color || '#d9d9d9',
-                            }}
-                          ></span>
-                        ) : null}
+                        {!sub.is_parent_container && renderPriorityIcon(sub.priority_value, sub.priority_color, sub.priority_color_dark)}
                         <span
                           className="flex-1 truncate text-xs text-gray-800 dark:text-gray-100"
                           title={sub.name}
