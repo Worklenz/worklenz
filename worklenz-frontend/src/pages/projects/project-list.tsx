@@ -544,6 +544,8 @@ const ProjectList: React.FC = () => {
         title: t('priority', { defaultValue: 'Priority' }),
         dataIndex: 'priority_name',
         key: 'priority_name',
+        sorter: true,
+        showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => {
           if (!record.priority_name) {
             return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
@@ -583,10 +585,11 @@ const ProjectList: React.FC = () => {
         filters: categoryFilters,
         filteredValue: filteredInfo.category_id || filteredCategories || [],
         filterMultiple: true,
+        sorter: true,
+        showSorterTooltip: false,
         render: (text: string, record: IProjectViewModel) => (
           <CategoryCell key={record.id} t={t} record={record} />
         ),
-        sorter: true,
       },
       // 8. Last Updated
       {

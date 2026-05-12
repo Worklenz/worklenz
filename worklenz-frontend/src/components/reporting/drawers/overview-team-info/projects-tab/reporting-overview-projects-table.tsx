@@ -196,6 +196,8 @@ const ReportingOverviewProjectsTable = ({
       {
         key: 'category',
         title: <CustomTableTitle title={t('categoryColumn')} />,
+        dataIndex: 'category_name',
+        sorter: true,
         render: (_, record: IRPTProject) => (
           <ProjectCategoryCell
             projectId={record.id}
