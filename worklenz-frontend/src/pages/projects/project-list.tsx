@@ -353,9 +353,11 @@ const ProjectList: React.FC = () => {
     return <Empty description={t('noProjects', { defaultValue: 'No Projects' })} />;
   }, [errorMessage, handleRefresh, isLoading, t]);
 
+  // FIX #5 (cosmetic): dynamic label based on groupBy value
   const paginationShowTotal = useMemo(
-    () => (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} groups`,
-    []
+    () => (total: number, range: [number, number]) =>
+      `${range[0]}-${range[1]} of ${total} ${groupBy ? groupBy.toLowerCase() + 's' : 'groups'}`,
+    [groupBy]
   );
 
   const handleTableChange = useCallback(
@@ -366,6 +368,15 @@ const ProjectList: React.FC = () => {
     ) => {
       const updates: Partial<typeof requestParams> = {};
       let hasChanges = false;
+
+      // FIX #1 & #2: handle page and page-size changes that were previously ignored
+      const newPage = newPagination.current ?? 1;
+      const newSize = newPagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      if (newPage !== requestParams.index || newSize !== requestParams.size) {
+        updates.index = newPage;
+        updates.size = newSize;
+        hasChanges = true;
+      }
 
       if (filters?.status_id !== filteredInfo.status_id) {
         if (!filters?.status_id) { updates.statuses = null; dispatch(setFilteredStatuses([])); }
@@ -383,8 +394,10 @@ const ProjectList: React.FC = () => {
       const newField = (Array.isArray(sorter) ? sorter[0].columnKey : sorter.columnKey) as string;
 
       if (!newOrder && requestParams.order) {
-        updates.order = DEFAULT_PROJECT_SORT_ORDER;   // 'ascend'
-        updates.field = DEFAULT_PROJECT_SORT_FIELD;   // 'name'
+        updates.order = DEFAULT_PROJECT_SORT_ORDER;
+        updates.field = DEFAULT_PROJECT_SORT_FIELD;
+        // FIX #3: reset page index to 1 when sort is cleared
+        updates.index = 1;
         setSortingValues(DEFAULT_PROJECT_SORT_FIELD, DEFAULT_PROJECT_SORT_ORDER);
         hasChanges = true;
 
@@ -407,17 +420,21 @@ const ProjectList: React.FC = () => {
 
   const handleGroupedTableChange = useCallback(
     (newPagination: TablePaginationConfig) => {
-      const newParams: Partial<typeof groupedRequestParams> = {
-        index: newPagination.current || 1,
-        size: newPagination.pageSize || DEFAULT_PAGE_SIZE,
-      };
-      if (newParams.index !== groupedRequestParams.index || newParams.size !== groupedRequestParams.size) {
-        const updatedParams = buildGroupedParams(newParams);
+      const newIndex = newPagination.current || 1;
+      const newSize = newPagination.pageSize || DEFAULT_PAGE_SIZE;
+
+      if (newIndex !== groupedRequestParams.index || newSize !== groupedRequestParams.size) {
+        // FIX #4: spread full current params to avoid race with stale Redux state
+        const updatedParams = {
+          ...groupedRequestParams,
+          index: newIndex,
+          size: newSize,
+        };
         dispatch(setGroupedRequestParams(updatedParams));
         dispatch(fetchGroupedProjects(updatedParams));
       }
     },
-    [dispatch, groupedRequestParams, buildGroupedParams]
+    [dispatch, groupedRequestParams]
   );
 
   const handleSegmentChange = useCallback(
@@ -490,7 +507,7 @@ const ProjectList: React.FC = () => {
     }
   }, []);
 
-  // ✅ Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
+  // Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
   const tableColumns: ColumnsType<IProjectViewModel> = useMemo(
     () => [
       // 1. Favorite
