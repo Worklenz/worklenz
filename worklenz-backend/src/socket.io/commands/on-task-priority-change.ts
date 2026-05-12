@@ -36,7 +36,8 @@ export async function on_task_priority_change(_io: Server, socket: Socket, data?
       parent_task: body.parent_task,
       color_code: d.color_code,
       color_code_dark: d.color_code_dark,
-      priority_id: body.priority_id
+      priority_id: body.priority_id,
+      priority_value: parseInt(d.value) || 0
     });
 
     logPriorityChange({

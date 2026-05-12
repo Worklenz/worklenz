@@ -110,9 +110,13 @@ const taskDrawerSlice = createSlice({
     },
     setTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       if (!action.payload) return;
-      const { priority_id, id: taskId } = action.payload;
+      const { priority_id, id: taskId, color_code, color_code_dark, priority_value } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.priority_id = priority_id;
+        // Update priority_value if available (for icon rendering)
+        if (priority_value !== undefined && state.taskFormViewModel.task.priority_value !== undefined) {
+          (state.taskFormViewModel.task as any).priority_value = priority_value;
+        }
       }
     },
     setTaskPhase: (state, action: PayloadAction<{ phase_id: string | null; id: string }>) => {

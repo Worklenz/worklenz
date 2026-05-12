@@ -204,14 +204,19 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   status_id: task.originalStatusId || task.status,
   status_color: task.statusColor,
   priority: task.is_parent_container ? undefined : (task.originalPriorityId || task.priority),
-  priority_color: task.is_parent_container ? undefined : task.priorityColor,
+  priority_color: task.is_parent_container ? undefined : (task.priorityColor || task.priority_color),
+  priority_color_dark: task.is_parent_container ? undefined : (task.priority_color_dark),
   priority_value: task.is_parent_container
     ? undefined
-    : task.priority === 'high'
-      ? 2
-      : task.priority === 'medium'
-        ? 1
-        : 0,
+    : task.priority_value !== undefined
+      ? task.priority_value
+      : task.priority === 'critical'
+        ? 3
+        : task.priority === 'high'
+          ? 2
+          : task.priority === 'medium'
+            ? 1
+            : 0,
   phase_id: task.phase_id || null,
   phase_name: task.phase || '',
   end_date: task.dueDate || task.end_date,
@@ -817,7 +822,7 @@ const enhancedKanbanSlice = createSlice({
       action: PayloadAction<ITaskListPriorityChangeResponse>
     ) => {
       if (!action.payload) return;
-      const { id, priority_id, color_code, color_code_dark } = action.payload;
+      const { id, priority_id, color_code, color_code_dark, priority_value } = action.payload;
       // Find the task in any group
       const taskInfo = findTaskInAllGroups(state.taskGroups, id);
       if (!taskInfo || !priority_id) return;
@@ -828,6 +833,10 @@ const enhancedKanbanSlice = createSlice({
       task.priority = priority_id;
       task.priority_color = color_code;
       task.priority_color_dark = color_code_dark;
+      // Update priority_value to ensure icon updates correctly
+      if (priority_value !== undefined) {
+        task.priority_value = priority_value;
+      }
 
       // If grouped by priority and not a subtask, move the task to the new priority group
       if (state.groupBy === IGroupBy.PRIORITY && !task.is_sub_task && groupId !== priority_id) {
