@@ -58,6 +58,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   setFilteredCategories,
   setFilteredStatuses,
+  setFilteredPriorities,
   setRequestParams,
   setGroupedRequestParams,
   fetchGroupedProjects,
@@ -65,6 +66,7 @@ import {
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { setProjectId } from '@/features/project/project.slice';
 import { setProject } from '@/features/project/project.slice';
 import { createPortal } from 'react-dom';
@@ -124,7 +126,8 @@ const ProjectList: React.FC = () => {
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
-  const { filteredCategories, filteredStatuses } = useAppSelector(state => state.projectsReducer);
+  const { priorities } = useAppSelector(state => state.priorityReducer);
+  const { filteredCategories, filteredStatuses, filteredPriorities } = useAppSelector(state => state.projectsReducer);
 
   const optimizedQueryParams = useMemo(
     () => ({
@@ -136,6 +139,7 @@ const ProjectList: React.FC = () => {
       filter: requestParams.filter,
       statuses: requestParams.statuses,
       categories: requestParams.categories,
+      priorities: requestParams.priorities,
     }),
     [requestParams]
   );
@@ -267,6 +271,11 @@ const ProjectList: React.FC = () => {
     [projectStatuses]
   );
 
+  const priorityFilters = useMemo(
+    () => createFilters(priorities.map(p => ({ id: p.id || '', name: p.name || '' }))),
+    [priorities]
+  );
+
   const paginationConfig = useMemo(
     () => ({
       current: requestParams.index,
@@ -387,6 +396,12 @@ const ProjectList: React.FC = () => {
       if (filters?.category_id !== filteredInfo.category_id) {
         if (!filters?.category_id) { updates.categories = null; dispatch(setFilteredCategories([])); }
         else { updates.categories = filters.category_id.join(' '); }
+        hasChanges = true;
+      }
+
+      if (filters?.priority_name !== filteredInfo.priority_name) {
+        if (!filters?.priority_name) { updates.priorities = null; dispatch(setFilteredPriorities([])); }
+        else { updates.priorities = filters.priority_name.join(' '); }
         hasChanges = true;
       }
 
@@ -544,6 +559,9 @@ const ProjectList: React.FC = () => {
         title: t('priority', { defaultValue: 'Priority' }),
         dataIndex: 'priority_name',
         key: 'priority_name',
+        filters: priorityFilters,
+        filteredValue: filteredInfo.priority_name || filteredPriorities || [],
+        filterMultiple: true,
         sorter: true,
         showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => {
@@ -614,9 +632,11 @@ const ProjectList: React.FC = () => {
       t,
       categoryFilters,
       statusFilters,
+      priorityFilters,
       filteredInfo,
       filteredCategories,
       filteredStatuses,
+      filteredPriorities,
       navigate,
       dispatch,
       isOwnerOrAdmin,
@@ -638,6 +658,7 @@ const ProjectList: React.FC = () => {
           groupBy: initialGroupBy,
           statuses: null,
           categories: null,
+          priorities: null,
           field: initialGroupBy === ProjectGroupBy.PRIORITY ? DEFAULT_GROUPED_PROJECT_SORT_FIELD : DEFAULT_PROJECT_SORT_FIELD,
           order: initialGroupBy === ProjectGroupBy.PRIORITY ? DEFAULT_GROUPED_PROJECT_SORT_ORDER : DEFAULT_PROJECT_SORT_ORDER,
         })
