@@ -13,7 +13,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useTranslation } from 'react-i18next';
 import { TimeLogsSummary } from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { theme } from '@/shared/antd-imports';
-import { formatSecondsToCompactHoursMinutes } from '@/utils/time-format.utils';
+import { formatSecondsToPaddedHoursMinutes } from '@/utils/time-format.utils';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -41,7 +41,7 @@ const TeamLeadTimeChart = forwardRef<TeamLeadTimeChartRef, TeamLeadTimeChartProp
     // Helper function to format time duration
     const formatDuration = (seconds: number | string | null | undefined) => {
       const numSeconds = typeof seconds === 'number' ? seconds : parseFloat(seconds as string) || 0;
-      return formatSecondsToCompactHoursMinutes(numSeconds);
+      return formatSecondsToPaddedHoursMinutes(numSeconds);
     };
 
     // Helper function to format hours to "X hours Y mins"

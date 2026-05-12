@@ -132,11 +132,11 @@
     "budgetSettingsUpdateFailed": "Failed to update budget settings"
   },
   "columnTooltips": {
-    "hours": "Total estimated hours for all tasks. Calculated from task time estimates.",
+    "hours": "Total estimated hours for all tasks. Calculated from task time estimates. Display format: Xh Ym.",
     "manDays": "Total estimated man days for all tasks. Based on {{hoursPerDay}} hours per working day.",
     "actualManDays": "Actual man days spent based on time logged. Calculated as: Total Time Logged ÷ {{hoursPerDay}} hours per day.",
     "effortVariance": "Difference between estimated and actual man days. Positive values indicate over-estimation, negative values indicate under-estimation.",
-    "totalTimeLogged": "Total time actually logged by team members across all tasks.",
+    "totalTimeLogged": "Total time actually logged by team members across all tasks. Display format: Xh Ym.",
     "estimatedCostHourly": "Estimated cost calculated as: Estimated Hours × Hourly Rates for assigned team members.",
     "estimatedCostManDays": "Estimated cost calculated as: Estimated Man Days × Daily Rates for assigned team members.",
     "actualCost": "Actual cost based on time logged. Calculated as: Time Logged × Hourly Rates for team members.",

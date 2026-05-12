@@ -132,11 +132,11 @@
     "budgetSettingsUpdateFailed": "更新预算设置失败"
   },
   "columnTooltips": {
-    "hours": "所有任务的总预估工时。根据任务时间估算计算。",
+    "hours": "所有任务的总预估工时。根据任务时间估算计算。显示格式：Xh Ym。",
     "manDays": "所有任务的总预估人天。基于每个工作日 {{hoursPerDay}} 小时。",
     "actualManDays": "基于记录时间花费的实际人天。计算方式：总记录时间 ÷ {{hoursPerDay}} 小时/天。",
     "effortVariance": "预估人天与实际人天之间的差异。正值表示过度估算，负值表示估算不足。",
-    "totalTimeLogged": "团队成员在所有任务中实际记录的总时间。",
+    "totalTimeLogged": "团队成员在所有任务中实际记录的总时间。显示格式：Xh Ym。",
     "estimatedCostHourly": "预估成本计算方式：预估工时 × 分配团队成员的小时费率。",
     "estimatedCostManDays": "预估成本计算方式：预估人天 × 分配团队成员的日费率。",
     "actualCost": "基于记录时间的实际成本。计算方式：记录时间 × 团队成员的小时费率。",

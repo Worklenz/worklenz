@@ -739,8 +739,7 @@ const ProjectViewFinance = () => {
                       title={t('budgetStatistics.variance', { defaultValue: 'Variance' })}
                       value={Math.abs(budgetStatistics.totalVariance)}
                       precision={2}
-                      prefix={budgetStatistics.totalVariance >= 0 ? '+' : '-'}
-                      suffix={` ${projectCurrency.toUpperCase()}`}
+                      prefix={`${budgetStatistics.totalVariance >= 0 ? '+' : '-'} ${projectCurrency.toUpperCase()}`}
                       valueStyle={{
                         color:
                           budgetStatistics.totalVariance < 0
@@ -845,8 +844,7 @@ const ProjectViewFinance = () => {
                       })}
                       value={Math.abs(budgetStatistics.totalVariance)}
                       precision={2}
-                      prefix={budgetStatistics.totalVariance >= 0 ? '+' : '-'}
-                      suffix={` ${projectCurrency.toUpperCase()}`}
+                      prefix={`${budgetStatistics.totalVariance >= 0 ? '+' : '-'} ${projectCurrency.toUpperCase()}`}
                       valueStyle={{
                         color: budgetStatistics.totalVariance >= 0 ? '#52c41a' : '#ff4d4f',
                         fontSize: '16px',

@@ -31,6 +31,7 @@ import { canEditFixedCost } from '@/utils/finance-permissions';
 import './finance-table.css';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
+import { formatSecondsToHoursMinutesText } from '@/utils/time-format.utils';
 
 type FinanceTableProps = {
   table: IProjectFinanceGroup;
@@ -480,9 +481,13 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
           )
         );
       case FinanceTableColumnKeys.HOURS:
+        const estimatedHoursSeconds =
+          Number(task.estimated_seconds || 0) > 0
+            ? Number(task.estimated_seconds || 0)
+            : Math.round(Number(task.estimated_hours || 0) * 3600);
         return (
           <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>
-            {task.estimated_hours}
+            {formatSecondsToHoursMinutesText(estimatedHoursSeconds)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.MAN_DAYS:
@@ -500,7 +505,7 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
         return (
           <Typography.Text style={{ fontSize: Math.max(12, 14 - level * 0.5) }}>
-            {formatSecondsToHoursAndMinutes(task.total_time_logged_seconds || 0)}
+            {formatSecondsToHoursMinutesText(task.total_time_logged_seconds || 0)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.ESTIMATED_COST:
@@ -607,20 +612,6 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
     }
   };
 
-  // Utility function to format seconds to "h m" without seconds
-  const formatSecondsToHoursAndMinutes = (totalSeconds: number): string => {
-    if (!totalSeconds || totalSeconds === 0) return '0m';
-
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-    const parts = [];
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
-
-    return parts.join(' ');
-  };
-
   // Generate flattened task list with all nested levels
   const flattenedTasks = useMemo(() => {
     const flattened: React.ReactElement[] = [];
@@ -690,9 +681,9 @@ const FinanceTable = ({ table, loading, onTaskClick, columns }: FinanceTableProp
   // Format the totals for display
   const formattedTotals = useMemo(
     () => ({
-      hours: formatSecondsToHoursAndMinutes(totals.hours),
+      hours: formatSecondsToHoursMinutesText(totals.hours),
       man_days: totals.man_days,
-      total_time_logged: formatSecondsToHoursAndMinutes(totals.total_time_logged),
+      total_time_logged: formatSecondsToHoursMinutesText(totals.total_time_logged),
       estimated_cost: totals.estimated_cost,
       actual_cost_from_logs: totals.actual_cost_from_logs,
       fixed_cost: totals.fixed_cost,
