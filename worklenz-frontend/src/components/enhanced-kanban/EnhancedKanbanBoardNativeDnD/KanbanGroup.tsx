@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useRef } from 'react';
+import React, { memo, useMemo, useState, useRef, useEffect } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
 import TaskCard from './TaskCard';
@@ -23,6 +23,7 @@ import {
 import {
   fetchEnhancedKanbanGroups,
   IGroupBy,
+  toggleGroupCollapse,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { Modal, Dropdown, Badge } from '@/shared/antd-imports';
 // @ts-ignore: Heroicons module types
@@ -31,6 +32,8 @@ import {
   PencilIcon,
   ArrowPathIcon,
   TrashIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { getContrastColor } from '@/utils/colorUtils';
 
@@ -72,12 +75,74 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const themeMode = useAppSelector(state => state.themeReducer.mode);
     const dispatch = useAppDispatch();
     const { projectId } = useAppSelector(state => state.projectReducer);
-    const { groupBy } = useAppSelector(state => state.enhancedKanbanReducer);
+    const { groupBy, collapsedGroups } = useAppSelector(state => state.enhancedKanbanReducer);
     const { statusCategories, status } = useAppSelector(state => state.taskStatusReducer);
     const { trackMixpanelEvent } = useMixpanelTracking();
     const [showNewCardTop, setShowNewCardTop] = useState(false);
     const [showNewCardBottom, setShowNewCardBottom] = useState(false);
     const { t } = useTranslation('kanban-board');
+    
+    // Track if user is dragging (to prevent click-to-expand during drag)
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+    const dragTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Check if this group is collapsed
+    const isCollapsed = collapsedGroups[group.id] || false;
+
+    const handleToggleCollapse = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      dispatch(toggleGroupCollapse(group.id));
+    };
+    
+    // Handle drag start - track position and set dragging state
+    const handleHeaderDragStart = (e: React.DragEvent) => {
+      setIsDragging(true);
+      dragStartPos.current = { x: e.clientX, y: e.clientY };
+      onGroupDragStart(e, group.id);
+    };
+    
+    // Handle drag end - reset dragging state after a small delay
+    const handleHeaderDragEnd = (e: React.DragEvent) => {
+      onDragEnd(e);
+      
+      // Clear any existing timeout
+      if (dragTimeoutRef.current) {
+        clearTimeout(dragTimeoutRef.current);
+      }
+      
+      // Reset dragging state after a small delay to prevent click event
+      dragTimeoutRef.current = setTimeout(() => {
+        setIsDragging(false);
+        dragStartPos.current = null;
+      }, 100);
+    };
+    
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (dragTimeoutRef.current) {
+          clearTimeout(dragTimeoutRef.current);
+        }
+      };
+    }, []);
+    
+    // Handle click - only expand if not dragging
+    const handleHeaderClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      
+      // Don't expand if user was dragging
+      if (isDragging) {
+        return;
+      }
+      
+      // When collapsed, clicking anywhere expands
+      if (isCollapsed) {
+        handleToggleCollapse(e);
+      } else if ((isProjectManager || isOwnerOrAdmin) && group.name !== t('unmapped')) {
+        setIsEditable(true);
+      }
+    };
 
     const headerBackgroundColor = useMemo(() => {
       if (themeMode === 'dark') {
@@ -353,29 +418,38 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     // }, [showDropdown]);
 
     return (
-      <div className="enhanced-kanban-group" style={{ position: 'relative' }}>
-        {/* Background layer - z-index 0 */}
-        <div
-          className="enhanced-kanban-group-background"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            border: `0.1px solid ${themeMode === 'dark' ? '#404040' : '#e0e0e0'}`,
-            borderRadius: '8px',
-            zIndex: 0,
-          }}
-          onDragOver={e => {
-            e.preventDefault();
-            onTaskDragOver(e, group.id, null);
-          }}
-          onDrop={e => {
-            e.preventDefault();
-            onTaskDrop(e, group.id, null);
-          }}
-        />
+      <div 
+        className={`enhanced-kanban-group ${isCollapsed ? 'collapsed' : ''}`}
+        style={{ 
+          position: 'relative',
+          // When collapsed, make the group much more compact
+          minHeight: isCollapsed ? 'auto' : undefined,
+        }}
+      >
+        {/* Background layer - only show when expanded */}
+        {!isCollapsed && (
+          <div
+            className="enhanced-kanban-group-background"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: `0.1px solid ${themeMode === 'dark' ? '#404040' : '#e0e0e0'}`,
+              borderRadius: '8px',
+              zIndex: 0,
+            }}
+            onDragOver={e => {
+              e.preventDefault();
+              onTaskDragOver(e, group.id, null);
+            }}
+            onDrop={e => {
+              e.preventDefault();
+              onTaskDrop(e, group.id, null);
+            }}
+          />
+        )}
 
         {/* Content layer - z-index 1 */}
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -384,25 +458,35 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             style={{
               backgroundColor: headerBackgroundColor,
             }}
-            draggable
-            onDragStart={e => onGroupDragStart(e, group.id)}
+            draggable={true} // Always draggable for group reordering
+            onDragStart={handleHeaderDragStart}
             onDragOver={onGroupDragOver}
             onDrop={e => onGroupDrop(e, group.id)}
-            onDragEnd={onDragEnd}
+            onDragEnd={handleHeaderDragEnd}
           >
             <div className="flex items-center justify-between w-full font-semibold rounded-md">
               <div
-                className="flex items-center gap-2 cursor-pointer"
-                onClick={e => {
-                  e.stopPropagation();
-                  if ((isProjectManager || isOwnerOrAdmin) && group.name !== t('unmapped'))
-                    setIsEditable(true);
-                }}
+                className="flex items-center gap-2 cursor-pointer flex-1"
+                onClick={handleHeaderClick}
                 onMouseDown={e => {
                   e.stopPropagation();
                 }}
               >
-                {isEditable ? (
+                {/* Collapse/Expand Icon */}
+                <button
+                  type="button"
+                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-black/10 transition-colors flex-shrink-0"
+                  onClick={handleToggleCollapse}
+                  title={isCollapsed ? t('expand', { defaultValue: 'Expand' }) : t('collapse', { defaultValue: 'Collapse' })}
+                >
+                  {isCollapsed ? (
+                    <ChevronRightIcon className="w-4 h-4" style={{ color: headerTextColor }} />
+                  ) : (
+                    <ChevronDownIcon className="w-4 h-4" style={{ color: headerTextColor }} />
+                  )}
+                </button>
+
+                {isEditable && !isCollapsed ? (
                   <input
                     ref={inputRef}
                     value={name}
@@ -420,8 +504,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   />
                 ) : (
                   <div
-                    className="min-w-[185px] text-sm font-semibold capitalize truncate"
-                    style={{ color: headerTextColor }}
+                    className="text-sm font-semibold capitalize truncate"
+                    style={{ 
+                      color: headerTextColor,
+                    }}
                     onMouseDown={e => {
                       e.stopPropagation();
                       e.preventDefault();
@@ -438,67 +524,73 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                 )}
               </div>
 
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                  onClick={() => {
-                    setShowNewCardTop(true);
-                    setShowNewCardBottom(false);
-                  }}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    style={{ color: headerTextColor }}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+              {/* Only show action buttons when expanded */}
+              {!isCollapsed && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                    onClick={() => {
+                      setShowNewCardTop(true);
+                      setShowNewCardBottom(false);
+                    }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 4v16m8-8H4"
-                    />
-                  </svg>
-                </button>
-
-                {(isOwnerOrAdmin || isProjectManager) && menuItems.length > 0 && (
-                  <Dropdown
-                    menu={{ items: menuItems }}
-                    trigger={['click']}
-                    open={dropdownVisible}
-                    onOpenChange={setDropdownVisible}
-                    placement="bottomRight"
-                    overlayStyle={{ zIndex: 1000 }}
-                  >
-                    <button
-                      type="button"
-                      className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setDropdownVisible(!dropdownVisible);
-                      }}
+                    <svg
+                      className="w-4 h-4"
+                      style={{ color: headerTextColor }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <EllipsisHorizontalIcon className="w-4 h-4" style={{ color: headerTextColor }} />
-                    </button>
-                  </Dropdown>
-                )}
-              </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </button>
+
+                  {(isOwnerOrAdmin || isProjectManager) && menuItems.length > 0 && (
+                    <Dropdown
+                      menu={{ items: menuItems }}
+                      trigger={['click']}
+                      open={dropdownVisible}
+                      onOpenChange={setDropdownVisible}
+                      placement="bottomRight"
+                      overlayStyle={{ zIndex: 1000 }}
+                    >
+                      <button
+                        type="button"
+                        className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setDropdownVisible(!dropdownVisible);
+                        }}
+                      >
+                        <EllipsisHorizontalIcon className="w-4 h-4" style={{ color: headerTextColor }} />
+                      </button>
+                    </Dropdown>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Simple Delete Confirmation */}
           {/* Portal-based confirmation removed, now handled by Modal.confirm */}
-          <div className="enhanced-kanban-group-tasks">
-            {/* Create card at top */}
-            {showNewCardTop && (
-              <EnhancedKanbanCreateTaskCard
-                sectionId={group.id}
-                setShowNewCard={setShowNewCardTop}
-                position="top"
-              />
-            )}
+          
+          {/* Tasks section - hidden when collapsed */}
+          {!isCollapsed && (
+            <div className="enhanced-kanban-group-tasks">
+              {/* Create card at top */}
+              {showNewCardTop && (
+                <EnhancedKanbanCreateTaskCard
+                  sectionId={group.id}
+                  setShowNewCard={setShowNewCardTop}
+                  position="top"
+                />
+              )}
 
             {/* If group is empty, render a drop zone */}
             {group.tasks.length === 0 &&
@@ -647,6 +739,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
               </button>
             )}
           </div>
+          )}
         </div>
       </div>
     );

@@ -119,6 +119,7 @@ interface EnhancedKanbanState {
   // UI state
   selectedTaskIds: string[];
   expandedSubtasks: Record<string, boolean>;
+  collapsedGroups: Record<string, boolean>; // Track collapsed state by group ID
   columnOrder: string[];
   editableSectionId: string | null;
 }
@@ -162,6 +163,7 @@ const initialState: EnhancedKanbanState = {
   },
   selectedTaskIds: [],
   expandedSubtasks: {},
+  collapsedGroups: {}, // Initialize empty collapsed groups
   columnOrder: [],
   editableSectionId: null,
 };
@@ -670,6 +672,28 @@ const enhancedKanbanSlice = createSlice({
       } else {
         state.expandedSubtasks[taskId] = true;
       }
+    },
+
+    // Group collapse/expand
+    toggleGroupCollapse: (state, action: PayloadAction<string>) => {
+      const groupId = action.payload;
+      if (state.collapsedGroups[groupId]) {
+        delete state.collapsedGroups[groupId];
+      } else {
+        state.collapsedGroups[groupId] = true;
+      }
+    },
+
+    // Collapse all groups
+    collapseAllGroups: (state) => {
+      state.taskGroups.forEach(group => {
+        state.collapsedGroups[group.id] = true;
+      });
+    },
+
+    // Expand all groups
+    expandAllGroups: (state) => {
+      state.collapsedGroups = {};
     },
 
     // Column reordering
@@ -1414,6 +1438,9 @@ export const {
   deselectTask,
   clearSelection,
   toggleSubtaskExpansion,
+  toggleGroupCollapse,
+  collapseAllGroups,
+  expandAllGroups,
   reorderColumns,
   updateTaskCache,
   updateGroupCache,
