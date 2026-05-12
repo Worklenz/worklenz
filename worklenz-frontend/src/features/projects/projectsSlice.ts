@@ -72,6 +72,7 @@ const initialState: ProjectState = {
   isSaveAsTemplateDrawerOpen: false,
   filteredCategories: [],
   filteredStatuses: [],
+  filteredPriorities: [],
   requestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
@@ -81,6 +82,7 @@ const initialState: ProjectState = {
     filter: 0,
     statuses: null,
     categories: null,
+    priorities: null,
   },
   groupedRequestParams: {
     index: 1,
@@ -92,6 +94,7 @@ const initialState: ProjectState = {
     filter: 0,
     statuses: null,
     categories: null,
+    priorities: null,
   },
   projectManagers: [],
   projectManagersLoading: false,
@@ -110,6 +113,7 @@ export const fetchProjects = createAsyncThunk(
       filter: number;
       statuses: string | null;
       categories: string | null;
+      priorities: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -122,7 +126,8 @@ export const fetchProjects = createAsyncThunk(
         params.search,
         params.filter,
         params.statuses,
-        params.categories
+        params.categories,
+        params.priorities
       );
       return projectsResponse.body;
     } catch (error) {
@@ -149,6 +154,7 @@ export const fetchGroupedProjects = createAsyncThunk(
       filter: number;
       statuses: string | null;
       categories: string | null;
+      priorities: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -162,7 +168,8 @@ export const fetchGroupedProjects = createAsyncThunk(
         params.groupBy,
         params.filter,
         params.statuses,
-        params.categories
+        params.categories,
+        params.priorities
       );
       return groupedProjectsResponse.body;
     } catch (error) {
@@ -267,6 +274,9 @@ const projectSlice = createSlice({
     setFilteredStatuses: (state, action: PayloadAction<string[]>) => {
       state.filteredStatuses = action.payload;
     },
+    setFilteredPriorities: (state, action: PayloadAction<string[]>) => {
+      state.filteredPriorities = action.payload;
+    },
     setRequestParams: (state, action: PayloadAction<Partial<ProjectState['requestParams']>>) => {
       state.requestParams = {
         ...state.requestParams,
@@ -364,6 +374,7 @@ export const {
   setCategories,
   setFilteredCategories,
   setFilteredStatuses,
+  setFilteredPriorities,
   setRequestParams,
   setGroupedRequestParams,
   setProjectMemberDefaultView,
