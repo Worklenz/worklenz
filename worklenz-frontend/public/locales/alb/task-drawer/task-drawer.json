@@ -79,6 +79,7 @@
       "title": "Komentet",
       "addComment": "+ Shto koment të ri",
       "noComments": "Ende pa komente. Bëhu i pari që komentoni!",
+      "edit": "Redakto",
       "delete": "Fshi",
       "confirmDeleteComment": "Jeni i sigurt që dëshironi ta fshini këtë koment?",
       "addCommentPlaceholder": "Shto një koment...",
