@@ -87,21 +87,7 @@ const InviteTeamMembers = () => {
   }));
   const isAdmin = currentRole === ROLE_NAMES.ADMIN || currentRole === ROLE_NAMES.OWNER;
 
-  // Debug logging
-  useEffect(() => {
-    if (isDrawerOpen && activeTab === 'link') {
-      console.log('🔍 Deactivate Button Debug:', {
-        isAdmin,
-        hasActiveLink,
-        linkExpiry,
-        isExpired: linkExpiry ? isLinkExpired(linkExpiry) : 'no expiry',
-        currentSession: {
-          is_admin: currentSession?.is_admin,
-          owner: currentSession?.owner,
-        },
-      });
-    }
-  }, [isDrawerOpen, activeTab, isAdmin, hasActiveLink, linkExpiry, currentSession]);
+
 
   // Check existing link when modal opens and tab changes to link
   useEffect(() => {
@@ -125,7 +111,6 @@ const InviteTeamMembers = () => {
   const checkExistingInvitationLink = async () => {
     try {
       const res = await teamMembersApiService.getInvitationLinkStatus();
-      console.log('📡 Link Status Response:', res.body);
       
       if (res.done && res.body.has_active_link && res.body.expires_at) {
         // Keep the link in state even if expired (for deactivate button)
@@ -134,12 +119,11 @@ const InviteTeamMembers = () => {
         setLinkExpiry(res.body.expires_at);
         
         if (isLinkExpired(res.body.expires_at)) {
-          console.log('⏰ Link is expired by date but keeping in state');
+          setHasActiveLink(false);
         } else {
-          console.log('✅ Link is active and valid');
+          setHasActiveLink(true);
         }
       } else {
-        console.log('❌ No active link found');
         setHasActiveLink(false);
         setInvitationLink('');
         setLinkExpiry('');
@@ -212,7 +196,6 @@ const InviteTeamMembers = () => {
         setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
-      console.error('Error generating and copying invitation link:', error);
       message.error(
         t('Failed to generate invitation link', {
           defaultValue: 'Failed to generate invitation link',

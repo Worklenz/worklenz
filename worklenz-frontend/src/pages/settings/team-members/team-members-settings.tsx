@@ -97,7 +97,7 @@ const TeamMembersSettings = () => {
         setModel(res.body);
       }
     } catch (error) {
-      console.error('Error fetching team members:', error);
+      // Error fetching team members
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +127,7 @@ const TeamMembersSettings = () => {
               localStorage.removeItem('pendingTeamInvite');
             }
           } catch (error) {
-            console.error('Error sending pending invite:', error);
+            // Error sending pending invite
             localStorage.removeItem('pendingTeamInvite');
           }
         }
@@ -153,7 +153,7 @@ const TeamMembersSettings = () => {
             }));
             localStorage.removeItem('pendingProjectInvite');
           } catch (error) {
-            console.error('Error sending pending project invite:', error);
+            // Error sending pending project invite
             localStorage.removeItem('pendingProjectInvite');
           }
         }
@@ -235,7 +235,7 @@ const TeamMembersSettings = () => {
         await getTeamMembers();
       }
     } catch (error) {
-      console.error('Error removing team lead assignment:', error);
+      // Error removing team lead assignment
     } finally {
       setIsLoading(false);
     }
