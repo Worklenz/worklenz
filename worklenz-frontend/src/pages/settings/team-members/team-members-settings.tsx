@@ -43,6 +43,7 @@ import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { colors } from '@/styles/colors';
 import { getRoleColor, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
@@ -52,6 +53,7 @@ import {
   normalizeRoleName,
 } from '@/utils/role-permissions.utils';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
+import { message } from '@/shared/antd-imports';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
@@ -111,6 +113,50 @@ const TeamMembersSettings = () => {
       );
       if (res.done) {
         await getTeamMembers();
+        
+        // Check for pending team invite and auto-send after deactivation
+        const pendingTeamInvite = localStorage.getItem('pendingTeamInvite');
+        if (pendingTeamInvite && !record.active) {
+          try {
+            const inviteData = JSON.parse(pendingTeamInvite);
+            const inviteRes = await teamMembersApiService.createTeamMember(inviteData);
+            if (inviteRes.done) {
+              message.success(t('memberDeactivatedInviteSent', { 
+                defaultValue: 'Member deactivated. Your invite has been sent.' 
+              }));
+              localStorage.removeItem('pendingTeamInvite');
+            }
+          } catch (error) {
+            console.error('Error sending pending invite:', error);
+            localStorage.removeItem('pendingTeamInvite');
+          }
+        }
+        
+        // Check for pending project invite and auto-send after deactivation
+        const pendingProjectInvite = localStorage.getItem('pendingProjectInvite');
+        if (pendingProjectInvite && !record.active) {
+          try {
+            const inviteData = JSON.parse(pendingProjectInvite);
+            // Send invites for each email in the pending project invite
+            const invitePromises = inviteData.emails.map((email: string) => 
+              projectMembersApiService.inviteByEmail({
+                email: email.trim(),
+                project_id: inviteData.projectId,
+                role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' : 
+                          inviteData.access === 'admin' ? 'ADMIN' : 'MEMBER',
+                is_admin: inviteData.access === 'admin',
+              })
+            );
+            await Promise.all(invitePromises);
+            message.success(t('memberDeactivatedProjectInviteSent', { 
+              defaultValue: `Member deactivated. Project invite sent for "${inviteData.projectName}".` 
+            }));
+            localStorage.removeItem('pendingProjectInvite');
+          } catch (error) {
+            console.error('Error sending pending project invite:', error);
+            localStorage.removeItem('pendingProjectInvite');
+          }
+        }
       }
     } finally {
       setIsLoading(false);

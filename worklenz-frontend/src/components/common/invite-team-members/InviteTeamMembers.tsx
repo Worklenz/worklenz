@@ -26,6 +26,9 @@ import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { RolePermissionsPopover } from '@/components/settings/role-permissions-popover';
+import { SeatLimitModal } from '@/components/common/seat-limit-modal';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useNavigate } from 'react-router-dom';
 
 interface FormValues {
   emails: string[];
@@ -48,7 +51,13 @@ const InviteTeamMembers = () => {
   const [hasActiveLink, setHasActiveLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Seat limit modal states
+  const [seatLimitModalOpen, setSeatLimitModalOpen] = useState(false);
+  const [seatLimitData, setSeatLimitData] = useState<any>(null);
+  const [pendingInvite, setPendingInvite] = useState<ITeamMemberCreateRequest | null>(null);
+
   const [form] = Form.useForm<FormValues>();
+  const navigate = useNavigate();
 
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
@@ -164,6 +173,19 @@ const InviteTeamMembers = () => {
 
       const res = await teamMembersApiService.generateInvitationLink(linkData);
       
+      // Check for seat limit exceeded error
+      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(res.body);
+        setPendingInvite({
+          job_title: selectedJobTitle,
+          emails: [], // Link generation doesn't have emails yet
+          is_admin: linkData.is_admin,
+          role_name: linkData.role_name,
+        });
+        setSeatLimitModalOpen(true);
+        return;
+      }
+      
       if (res.done && res.body.invitation_url) {
         // Update state with new link
         setInvitationLink(res.body.invitation_url);
@@ -253,6 +275,15 @@ const InviteTeamMembers = () => {
               : ROLE_NAMES.MEMBER,
       };
       const res = await teamMembersApiService.createTeamMember(body);
+      
+      // Check for seat limit exceeded error
+      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(res.body);
+        setPendingInvite(body);
+        setSeatLimitModalOpen(true);
+        return;
+      }
+      
       if (res.done) {
         // Track team invitation via email
         trackMixpanelEvent(evt_team_invite_sent, {
@@ -280,6 +311,27 @@ const InviteTeamMembers = () => {
     setActiveTab('email');
     setLinkCopied(false);
     dispatch(toggleInviteMemberDrawer());
+  };
+
+  const handleSeatLimitUpgrade = () => {
+    setSeatLimitModalOpen(false);
+    dispatch(toggleUpgradeModal());
+  };
+
+  const handleSeatLimitDeactivate = () => {
+    setSeatLimitModalOpen(false);
+    // Store pending invite in localStorage for auto-send after deactivation
+    if (pendingInvite) {
+      localStorage.setItem('pendingTeamInvite', JSON.stringify(pendingInvite));
+    }
+    // Navigate to Settings > Members
+    navigate('/worklenz/settings/team-members');
+  };
+
+  const handleSeatLimitModalClose = () => {
+    setSeatLimitModalOpen(false);
+    setPendingInvite(null);
+    setSeatLimitData(null);
   };
 
   const handleEmailChange = (value: string[]) => {
@@ -485,29 +537,45 @@ const InviteTeamMembers = () => {
   ];
 
   return (
-    <Modal
-      title={
-        <Typography.Text strong style={{ fontSize: 16 }}>
-          {t('addMemberDrawerTitle', { defaultValue: 'Invite Team Members' })}
-        </Typography.Text>
-      }
-      open={isDrawerOpen}
-      onCancel={handleClose}
-      destroyOnHidden={false}
-      width={500}
-      loading={loading && activeTab === 'email'}
-      footer={
-        activeTab === 'email' ? (
-          <Flex justify="end">
-            <Button onClick={form.submit} disabled={isInviteRestricted}>
-              {t('addToTeamButton', { defaultValue: 'Send Invitation' })}
-            </Button>
-          </Flex>
-        ) : null
-      }
-    >
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="small" />
-    </Modal>
+    <>
+      <Modal
+        title={
+          <Typography.Text strong style={{ fontSize: 16 }}>
+            {t('addMemberDrawerTitle', { defaultValue: 'Invite Team Members' })}
+          </Typography.Text>
+        }
+        open={isDrawerOpen}
+        onCancel={handleClose}
+        destroyOnHidden={false}
+        width={500}
+        loading={loading && activeTab === 'email'}
+        footer={
+          activeTab === 'email' ? (
+            <Flex justify="end">
+              <Button onClick={form.submit} disabled={isInviteRestricted}>
+                {t('addToTeamButton', { defaultValue: 'Send Invitation' })}
+              </Button>
+            </Flex>
+          ) : null
+        }
+      >
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="small" />
+      </Modal>
+
+      {/* Seat Limit Modal */}
+      {seatLimitData && (
+        <SeatLimitModal
+          open={seatLimitModalOpen}
+          onClose={handleSeatLimitModalClose}
+          currentMembers={seatLimitData.current_members}
+          planLimit={seatLimitData.plan_seat_limit}
+          businessLimit={seatLimitData.business_plan_limit}
+          isAppSumoUser={seatLimitData.is_appsumo_user}
+          onUpgrade={handleSeatLimitUpgrade}
+          onDeactivate={handleSeatLimitDeactivate}
+        />
+      )}
+    </>
   );
 };
 
