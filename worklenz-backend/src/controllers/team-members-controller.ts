@@ -1939,12 +1939,22 @@ export default class TeamMembersController extends WorklenzControllerBase {
           const currentTrialMembers =
             parseInt(subscriptionData.current_count) || 0;
           if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
+            const obj = {
+              error_code: 'SEAT_LIMIT_EXCEEDED',
+              seats_enough: false,
+              current_members: currentTrialMembers,
+              plan_seat_limit: TRIAL_MEMBER_LIMIT,
+              business_plan_limit: 25,
+              is_appsumo_user: false,
+              subscription_type: subscriptionData.subscription_type,
+              current_seat_amount: TRIAL_MEMBER_LIMIT,
+            };
             return res
               .status(200)
               .send(
                 new ServerResponse(
                   false,
-                  null,
+                  obj,
                   `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
                 ),
               );
@@ -1962,9 +1972,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
         if (currentCount >= effectiveUserLimit) {
           const requiredSeats = 1; // At least 1 more seat needed
+          const isAppSumoUser = subscriptionData.is_ltd === true;
+          
           const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
             required_count: requiredSeats,
+            current_members: currentCount,
+            plan_seat_limit: effectiveUserLimit,
+            business_plan_limit: 25,
+            is_appsumo_user: isAppSumoUser,
+            subscription_type: subscriptionData.subscription_type,
             current_seat_amount: effectiveUserLimit,
           };
           return res
@@ -1973,7 +1991,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
               new ServerResponse(
                 false,
                 obj,
-                "Insufficient seats available. Please upgrade your subscription before generating invitation links.",
+                isAppSumoUser 
+                  ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
+                  : "Insufficient seats available. Please upgrade your subscription before generating invitation links.",
               ),
             );
         }
@@ -1994,13 +2014,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
         if (currentCount >= ltdLimit) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentCount,
+            plan_seat_limit: ltdLimit,
+            business_plan_limit: 25,
+            is_appsumo_user: true,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: ltdLimit,
+          };
           return res
             .status(200)
             .send(
               new ServerResponse(
                 false,
-                null,
-                "Cannot exceed the maximum number of lifetime users.",
+                obj,
+                `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`,
               ),
             );
         }

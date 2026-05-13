@@ -1,4 +1,4 @@
-import { Button, Flex, Modal, Typography } from '@/shared/antd-imports';
+import { Button, Divider, Flex, Modal, theme, Typography } from '@/shared/antd-imports';
 import { TeamOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
@@ -24,6 +24,7 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
   onDeactivate,
 }) => {
   const { t } = useTranslation('settings/team-members');
+  const { token } = theme.useToken();
 
   return (
     <Modal
@@ -33,69 +34,95 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
       maskClosable={false} // Cannot dismiss by clicking outside
       keyboard={false} // Cannot dismiss with Escape
       footer={null}
-      width={500}
+      width={540}
       centered
     >
-      <Flex vertical gap={20} style={{ padding: '8px 0' }}>
-        {/* Icon */}
-        <Flex justify="center">
-          <TeamOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+      <Flex vertical gap={24} style={{ padding: '12px 8px 8px' }}>
+        {/* Icon and Title Section */}
+        <Flex vertical gap={16} align="center">
+          <div
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: '50%',
+              backgroundColor: token.colorPrimaryBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <TeamOutlined style={{ fontSize: 32, color: token.colorPrimary }} />
+          </div>
+          <Typography.Title level={3} style={{ margin: 0, textAlign: 'center' }}>
+            {t('seatLimitReached', { defaultValue: 'Seat Limit Reached' })}
+          </Typography.Title>
         </Flex>
 
-        {/* Title */}
-        <Typography.Title level={4} style={{ textAlign: 'center', margin: 0 }}>
-          {t('seatLimitReached', { defaultValue: 'Seat Limit Reached' })}
-        </Typography.Title>
-
-        {/* Description */}
-        <Flex vertical gap={12}>
-          <Typography.Text style={{ fontSize: 15 }}>
+        {/* Description Section */}
+        <Flex vertical gap={16} style={{ textAlign: 'center' }}>
+          <Typography.Paragraph style={{ fontSize: 15, margin: 0, lineHeight: 1.6 }}>
             {isAppSumoUser
               ? t('seatLimitAppSumoMessage', {
-                  defaultValue: `Your AppSumo plan includes ${planLimit} members.`,
+                  defaultValue: `Your AppSumo plan includes ${planLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${businessLimit} members.`,
                   planLimit,
+                  businessLimit,
                 })
               : t('seatLimitMessage', {
-                  defaultValue: `Your plan includes ${planLimit} members.`,
+                  defaultValue: `Your plan includes ${planLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${businessLimit} members.`,
                   planLimit,
+                  businessLimit,
                 })}
-          </Typography.Text>
-          <Typography.Text style={{ fontSize: 15 }}>
-            {t('seatLimitCurrentUsage', {
-              defaultValue: `You are currently using ${currentMembers} of ${planLimit} seats.`,
-              currentMembers,
-              planLimit,
-            })}
-          </Typography.Text>
-          <Typography.Text style={{ fontSize: 15 }}>
-            {t('seatLimitOptions', {
-              defaultValue: 'To invite a new member, you can:',
-            })}
-          </Typography.Text>
+          </Typography.Paragraph>
+
+          {/* Seat Usage Stats */}
+          <Flex
+            justify="center"
+            gap={24}
+            style={{
+              padding: '16px 24px',
+              backgroundColor: token.colorBgLayout,
+              borderRadius: token.borderRadius,
+              border: `1px solid ${token.colorBorder}`,
+            }}
+          >
+            <Flex vertical align="center" gap={4}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('currentMembers', { defaultValue: 'Current Members' })}
+              </Typography.Text>
+              <Typography.Title level={4} style={{ margin: 0, color: token.colorError }}>
+                {currentMembers}
+              </Typography.Title>
+            </Flex>
+            <Divider type="vertical" style={{ height: 'auto', margin: 0 }} />
+            <Flex vertical align="center" gap={4}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('planLimit', { defaultValue: 'Plan Limit' })}
+              </Typography.Text>
+              <Typography.Title level={4} style={{ margin: 0 }}>
+                {planLimit}
+              </Typography.Title>
+            </Flex>
+            <Divider type="vertical" style={{ height: 'auto', margin: 0 }} />
+            <Flex vertical align="center" gap={4}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                {t('afterUpgrade', { defaultValue: 'After Upgrade' })}
+              </Typography.Text>
+              <Typography.Title level={4} style={{ margin: 0, color: token.colorSuccess }}>
+                {businessLimit}
+              </Typography.Title>
+            </Flex>
+          </Flex>
         </Flex>
 
         {/* Action Buttons */}
-        <Flex gap={12} justify="center">
-          <Button size="large" onClick={onDeactivate}>
-            {t('deactivateMember', { defaultValue: 'Deactivate a Member' })}
-          </Button>
-          <Button type="primary" size="large" onClick={onUpgrade}>
+        <Flex vertical gap={12}>
+          <Button type="primary" size="large" block onClick={onUpgrade}>
             {t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })}
           </Button>
+          <Button size="large" block onClick={onDeactivate}>
+            {t('deactivateMember', { defaultValue: 'Deactivate a Member' })}
+          </Button>
         </Flex>
-
-        {/* Footer Info */}
-        <Typography.Text
-          type="secondary"
-          style={{ fontSize: 12, textAlign: 'center', marginTop: 8 }}
-        >
-          {t('seatLimitFooter', {
-            defaultValue: `Current members: ${currentMembers} | Plan limit: ${planLimit} | After upgrade: ${businessLimit}`,
-            currentMembers,
-            planLimit,
-            businessLimit,
-          })}
-        </Typography.Text>
       </Flex>
     </Modal>
   );
