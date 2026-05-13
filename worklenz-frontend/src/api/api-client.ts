@@ -110,6 +110,20 @@ apiClient.interceptors.request.use(
       config.timeout = Math.max(Number(config.timeout || 0), IMPORT_TIMEOUT_MS);
     }
 
+    // Attachment uploads send the file as a base64-encoded JSON body, which is
+    // significantly larger than the raw file (base64 inflates by ~33%). On slower
+    // connections a file just over 1 MB can easily exceed the default 30 s timeout
+    // before the backend finishes writing to S3/Azure and responds.
+    // Give attachment POSTs a generous 5-minute window to accommodate large files
+    // and variable network/storage latency.
+    const ATTACHMENT_UPLOAD_TIMEOUT_MS = 300_000; // 5 minutes
+    const isAttachmentUpload =
+      config.method?.toLowerCase() === 'post' &&
+      (config.url || '').includes('/attachments/tasks');
+    if (isAttachmentUpload) {
+      config.timeout = Math.max(Number(config.timeout || 0), ATTACHMENT_UPLOAD_TIMEOUT_MS);
+    }
+
     // Skip CSRF token for GET requests to /csrf-token endpoint (circular dependency)
     const isCsrfTokenEndpoint = config.url?.includes('/csrf-token');
     const isGetRequest = config.method?.toLowerCase() === 'get';
