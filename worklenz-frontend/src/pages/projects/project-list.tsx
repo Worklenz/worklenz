@@ -818,7 +818,7 @@ const ProjectList: React.FC = () => {
             })}
           />
         ) : (
-          <div>
+          <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto' }}>
             <ProjectGroupList
               groups={transformedGroupedProjects}
               navigate={navigate}
@@ -829,7 +829,7 @@ const ProjectList: React.FC = () => {
               t={t}
             />
             {!groupedProjects.loading && groupedProjects.data?.data && groupedProjects.data.data.length > 0 && (
-              <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <div style={{ marginTop: '24px', textAlign: 'center', paddingBottom: 16 }}>
                 <Pagination
                   {...groupedPaginationConfig}
                   onChange={(page, pageSize) => handleGroupedTableChange({ current: page, pageSize })}
