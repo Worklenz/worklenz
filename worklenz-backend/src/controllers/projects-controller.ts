@@ -169,7 +169,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   private static async setProjectPriority(projectId: string, priorityId: string | null, teamId: string | null) {
     const q = `
       UPDATE projects
-      SET priority_id = COALESCE($2::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1))
+      SET priority_id = $2::UUID
       WHERE id = $1
         AND team_id = $3;
     `;
@@ -321,9 +321,9 @@ export default class ProjectsController extends WorklenzControllerBase {
         WHERE id = projects.category_id
       )`,
       'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
-      'priority': `(SELECT COALESCE(value, -1) FROM task_priorities WHERE id = projects.priority_id)`,
-      'priority_id': `(SELECT COALESCE(value, -1) FROM task_priorities WHERE id = projects.priority_id)`,
-      'priority_name': `(SELECT COALESCE(value, -1) FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority_id': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority_name': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
       'project_owner': 'owner_id',
     };
 
@@ -519,7 +519,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                            ELSE updated_at END) AS updated_at
                           FROM projects
                           WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
-                          ORDER BY ${safeSortField} ${safeSortOrder}
+                          ORDER BY ${safeSortField} ${safeSortOrder} NULLS LAST
                           LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
             WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
