@@ -810,6 +810,8 @@ const ProjectList: React.FC = () => {
             onChange={handleTableChange}
             pagination={paginationConfig}
             locale={{ emptyText: emptyContent }}
+            scroll={{ y: 'calc(100vh - 280px)' }}
+            sticky
             onRow={record => ({
               onClick: () => navigateToProject(record.id, record.team_member_default_view),
               onMouseEnter: () => handleProjectHover(record.id),
