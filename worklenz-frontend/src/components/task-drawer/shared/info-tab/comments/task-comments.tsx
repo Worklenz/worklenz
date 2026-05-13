@@ -12,7 +12,7 @@ import { EditOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
-import { ITaskCommentViewModel, ReactionType } from '@/types/tasks/task-comments.types';
+import { ITaskComment, ITaskCommentViewModel, ReactionType } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { fromNow } from '@/utils/dateUtils';
@@ -60,12 +60,10 @@ const hasProcessedMentions = (content: string): boolean => {
 const processMentions = (content: string) => {
   if (!content) return '';
 
-  // Check if content already contains mentions spans
   if (hasProcessedMentions(content)) {
-    return content; // Already processed, return as is
+    return content;
   }
 
-  // Match @mentions with multiple words (e.g., @saman navoda, @john doe)
   return content.replace(/@([\w]+(?:\s+[\w]+)*)/g, '<span class="mentions">@$1</span>');
 };
 
@@ -96,15 +94,12 @@ const linkifyUrls = (content: string): string => {
 const processContent = (content: string) => {
   if (!content) return '';
 
-  // Step 1 — sanitize to prevent XSS
   let processed = sanitizeCommentContent(content);
 
-  // Step 2 — highlight @mentions (re-run if sanitizer stripped the spans)
   if (!hasProcessedMentions(processed)) {
     processed = processMentions(processed);
   }
 
-  // Step 3 — linkify plain-text URLs into safe <a> tags
   processed = linkifyUrls(processed);
 
   return processed;
@@ -154,21 +149,23 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
 
         const res = await taskCommentsApiService.getByTaskId(taskId);
         if (res.done) {
-          // Sort comments by date (oldest first)
           const sortedComments = [...res.body].sort((a, b) => {
             return dayjs(a.created_at).isBefore(dayjs(b.created_at)) ? -1 : 1;
           });
 
-          // Process content for each comment
+          // Process content for display but preserve task_id from response
           sortedComments.forEach(comment => {
             if (comment.content) {
               comment.content = processContent(comment.content);
+            }
+            // Ensure task_id is always set — fall back to the prop if backend omits it
+            if (!comment.task_id) {
+              comment.task_id = taskId;
             }
           });
 
           setComments(sortedComments);
 
-          // Update Redux state with the current comment count
           dispatch(
             updateTaskCounts({
               taskId,
@@ -245,13 +242,11 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     }
   };
 
-  // Check if current user has already reacted with this type on a comment
   const hasUserReacted = (item: ITaskCommentViewModel, reactionType: ReactionType): boolean => {
     if (!teamMemberId || !item?.reactions) return false;
     return item.reactions[reactionType]?.reacted_member_ids?.includes(teamMemberId) || false;
   };
 
-  // Get existing reactions with counts for a comment
   const getExistingReactions = (item: ITaskCommentViewModel) => {
     if (!item.reactions) return [];
     return Object.entries(item.reactions)
@@ -296,14 +291,18 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
   };
 
   const saveEdit = async (item: ITaskCommentViewModel) => {
-    if (!item.id || !item.task_id || !editContent.trim()) return;
+    // ✅ Use taskId prop as fallback — backend list endpoint may not return task_id on each comment
+    const resolvedTaskId = item.task_id || taskId;
+
+    if (!item.id || !resolvedTaskId || !editContent.trim()) return;
 
     try {
       setEditLoading(true);
+
       const res = await taskCommentsApiService.update(item.id, {
-        ...item,
+        task_id: resolvedTaskId,
         content: editContent,
-      });
+      } as ITaskComment);
 
       if (res.done) {
         setEditingCommentId(null);
@@ -311,7 +310,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
         getComments(false);
         document.dispatchEvent(
           new CustomEvent('task-comment-update', {
-            detail: { taskId: item.task_id },
+            detail: { taskId: resolvedTaskId },
           })
         );
       }
@@ -321,6 +320,8 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
       setEditLoading(false);
     }
   };
+
+  // ─── Delete Attachment ────────────────────────────────────────────────────
 
   const deleteAttachment = async (attachmentId: string) => {
     if (!attachmentId || !taskId) return;
@@ -351,7 +352,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     fontSize: '11px',
   };
 
-  // Render time separator between comments from different days
   const renderTimeSeparator = (date: string) => (
     <div className="comment-time-separator">
       <span
@@ -364,7 +364,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     </div>
   );
 
-  // Check if the comment is from the current user
   const isCurrentUser = (userId?: string) => {
     return userId === currentUserId;
   };
@@ -381,7 +380,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
 
               return (
                 <div key={item.id}>
-                  {/* Add time separator if this is the first comment or from a different day */}
                   {(index === 0 ||
                     (index > 0 &&
                       isDifferentDay(
@@ -393,7 +391,24 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                   <Comment
                     key={item.id}
                     author={<span style={authorStyle}>{item.member_name}</span>}
-                    datetime={<span style={dateStyle}>{fromNow(item.created_at || '')}</span>}
+                    datetime={
+                      <span style={dateStyle}>
+                        {fromNow(item.created_at || '')}
+                        {/* ── Edited indicator ── */}
+                        {item.is_edited && (
+                          <span
+                            style={{
+                              marginLeft: 6,
+                              fontSize: '10px',
+                              color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {t('taskInfoTab.comments.edited', { defaultValue: '(edited)' })}
+                          </span>
+                        )}
+                      </span>
+                    }
                     avatar={<SingleAvatar name={item.member_name} avatarUrl={item.avatar_url} />}
                     content={
                       <div className="comment-wrapper">
@@ -479,7 +494,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                         {/* ── Comment body ───────────────────────────────── */}
                         <div className={`comment-content-${themeMode}`}>
                           {isEditing ? (
-                            /* Inline edit form */
                             <div>
                               <Input.TextArea
                                 value={editContent}
@@ -504,9 +518,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                             </div>
                           ) : (
                             <>
-                              <p
-                                dangerouslySetInnerHTML={{ __html: item.content || '' }}
-                              />
+                              <p dangerouslySetInnerHTML={{ __html: item.content || '' }} />
                               {item.attachments && item.attachments.length > 0 && (
                                 <div className="ant-upload-list ant-upload-list-picture-card">
                                   <AttachmentsGrid
