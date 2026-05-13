@@ -818,18 +818,22 @@ const ProjectList: React.FC = () => {
             })}
           />
         ) : (
-          <div style={{ height: 'calc(100vh - 280px)', overflowY: 'auto' }}>
-            <ProjectGroupList
-              groups={transformedGroupedProjects}
-              navigate={navigate}
-              onProjectSelect={(id, defaultView) => navigateToProject(id, defaultView)}
-              onArchive={() => {}}
-              isOwnerOrAdmin={isOwnerOrAdmin}
-              loading={groupedProjects.loading}
-              t={t}
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 280px)' }}>
+            {/* Scrollable groups list */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <ProjectGroupList
+                groups={transformedGroupedProjects}
+                navigate={navigate}
+                onProjectSelect={(id, defaultView) => navigateToProject(id, defaultView)}
+                onArchive={() => {}}
+                isOwnerOrAdmin={isOwnerOrAdmin}
+                loading={groupedProjects.loading}
+                t={t}
+              />
+            </div>
+            {/* Pagination stays fixed below — never scrolls */}
             {!groupedProjects.loading && groupedProjects.data?.data && groupedProjects.data.data.length > 0 && (
-              <div style={{ marginTop: '24px', textAlign: 'center', paddingBottom: 16 }}>
+              <div style={{ flexShrink: 0, padding: '8px 0', textAlign: 'right', borderTop: '1px solid var(--ant-color-border)' }}>
                 <Pagination
                   {...groupedPaginationConfig}
                   onChange={(page, pageSize) => handleGroupedTableChange({ current: page, pageSize })}
