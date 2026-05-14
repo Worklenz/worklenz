@@ -25,6 +25,7 @@ interface ProjectState {
   isSaveAsTemplateDrawerOpen: boolean;
   filteredCategories: string[];
   filteredStatuses: string[];
+  filteredPriorities: string[]; // FIX #1: was missing from interface
   requestParams: {
     index: number;
     size: number;
@@ -34,6 +35,7 @@ interface ProjectState {
     filter: number;
     statuses: string | null;
     categories: string | null;
+    priorities: string | null; // FIX #2: was missing from interface
   };
   groupedRequestParams: {
     index: number;
@@ -45,6 +47,7 @@ interface ProjectState {
     filter: number;
     statuses: string | null;
     categories: string | null;
+    priorities: string | null; // FIX #2: was missing from interface
   };
   projectManagers: IProjectManager[];
   projectManagersLoading: boolean;
@@ -72,12 +75,12 @@ const initialState: ProjectState = {
   isSaveAsTemplateDrawerOpen: false,
   filteredCategories: [],
   filteredStatuses: [],
-  filteredPriorities: [],
+  filteredPriorities: [], // FIX #1: now properly typed
   requestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: 'name',
-    order: 'ascend',
+    field: '',
+    order: '',
     search: '',
     filter: 0,
     statuses: null,
@@ -94,13 +97,12 @@ const initialState: ProjectState = {
     filter: 0,
     statuses: null,
     categories: null,
-    priorities: null,
+    priorities: null, // FIX #2: now properly typed
   },
   projectManagers: [],
   projectManagersLoading: false,
 };
 
-// Create async thunk for fetching teams
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
   async (
@@ -140,7 +142,6 @@ export const fetchProjects = createAsyncThunk(
   }
 );
 
-// Create async thunk for fetching grouped projects
 export const fetchGroupedProjects = createAsyncThunk(
   'projects/fetchGroupedProjects',
   async (
@@ -251,6 +252,7 @@ export const fetchProjectManagers = createAsyncThunk(
     return response.body;
   }
 );
+
 const projectSlice = createSlice({
   name: 'projectReducer',
   initialState,
@@ -277,6 +279,8 @@ const projectSlice = createSlice({
     setFilteredPriorities: (state, action: PayloadAction<string[]>) => {
       state.filteredPriorities = action.payload;
     },
+    // FIX #2: priorities is now properly typed in the interface so it
+    // will be included in the spread and never silently dropped
     setRequestParams: (state, action: PayloadAction<Partial<ProjectState['requestParams']>>) => {
       state.requestParams = {
         ...state.requestParams,
