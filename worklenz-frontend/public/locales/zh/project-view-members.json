@@ -13,5 +13,14 @@
   "deleteButtonTooltip": "从项目中移除",
   "memberCount": "成员",
   "membersCountPlural": "成员",
-  "emptyText": "项目中没有附件。"
+  "emptyText": "项目中没有附件。",
+  "seatUsageText": "{{used}} seats used",
+  "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
+  "seatLimitPopoverTitle": "Seat Limit Reached",
+  "seatLimitPopoverBody": "You are using {{used}} of {{total}} seats on your current plan. Upgrade to add more members to your projects.",
+  "seatRemainingText": "{{remaining}} seats remaining.",
+  "seatLimitPopoverCta": "Upgrade Now",
+  "addMoreSeats": "Add More Seats",
+  "closePopover": "Close popover",
+  "searchPlaceholder": "Search members"
 }

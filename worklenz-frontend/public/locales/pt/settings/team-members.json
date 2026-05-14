@@ -157,5 +157,21 @@
   "teamHierarchyEmptyTitle": "Nenhuma hierarquia de equipe encontrada",
   "teamHierarchyEmptyDescription": "Atribua membros a líderes de equipe para construir a estrutura de reporte.",
   "teamHierarchyNoResultsTitle": "Nenhum membro correspondente",
-  "teamHierarchyNoResultsDescription": "Tente um termo de pesquisa diferente."
+  "teamHierarchyNoResultsDescription": "Tente um termo de pesquisa diferente.",
+  "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
+  "seatLimitPopoverTitle": "Seat Limit Reached",
+  "workspaceSeatLimitPopoverBody": "Your workspace is using {{used}} of {{total}} available seats. Upgrade your plan to add more members.",
+  "seatLimitPopoverCta": "Upgrade Now",
+  "addMoreSeats": "Add More Seats",
+  "closePopover": "Close popover",
+  "guestText": "Guest (Read-only)",
+  "memberDeactivatedInviteSent": "Member deactivated. Your invite has been sent.",
+  "memberDeactivatedProjectInviteSent": "Member deactivated. Project invite sent for \"{{projectName}}\".",
+  "emailsStepDescription": "Enter email addresses for team members you'd like to invite",
+  "personalMessageLabel": "Personal Message",
+  "personalMessagePlaceholder": "Add a personal message to your invitation (optional)",
+  "optionalFieldLabel": "(Optional)",
+  "inviteTeamMembersModalTitle": "Invite team members",
+  "saveMemberNameTooltip": "Save name",
+  "cancelRenameTooltip": "Cancel rename"
 }

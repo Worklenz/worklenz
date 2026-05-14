@@ -96,5 +96,14 @@
   "availableOnPaidPlans": "Available on paid plans",
   "logoAltText": "Organization logo",
   "logoSupportedFormats": "PNG, JPG, WEBP",
-  "organizationProfile": "Organization Profile"
+  "organizationProfile": "Organization Profile",
+  "customLogoUpgradePopoverTitle": "Custom Organization Logo",
+  "customLogoUpgradePopoverBody": "Upload your logo to replace the Worklenz branding across the app and in all emails sent to your team.",
+  "customLogoUpgradePopoverCta": "Upgrade Now",
+  "closePopover": "Close popover",
+  "customLogoUpgradeModalHeadline": "Make Worklenz yours",
+  "customLogoUpgradeModalSubCopy": "Upgrade to Business to upload your organization logo. Your logo will replace the Worklenz logo everywhere in the app and in all system emails sent to your team and clients.",
+  "customLogoUpgradeModalBenefitApp": "Custom logo across the full app",
+  "customLogoUpgradeModalBenefitEmails": "Branded emails to team and clients",
+  "customLogoUpgradeModalBenefitProfessional": "Professional look for your organization"
 }

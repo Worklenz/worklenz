@@ -48,5 +48,9 @@
     "timerRunning_other": "{{count}} 个计时器运行中",
     "recentLog": "{{count}} 条最近记录",
     "recentLog_other": "{{count}} 条最近记录"
-  }
+  },
+  "clientPortalUpgradePopoverTitle": "Client Portal",
+  "clientPortalUpgradePopoverBody": "Share project progress with your clients through a branded portal. Available on the Business plan.",
+  "clientPortalUpgradePopoverCta": "Upgrade Now",
+  "closePopover": "Close popover"
 }

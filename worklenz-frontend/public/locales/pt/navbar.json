@@ -47,5 +47,10 @@
     "timerRunning_other": "{{count}} temporizadores em execução",
     "recentLog": "{{count}} registro recente",
     "recentLog_other": "{{count}} registros recentes"
-  }
+  },
+  "reporting": "Reports",
+  "clientPortalUpgradePopoverTitle": "Client Portal",
+  "clientPortalUpgradePopoverBody": "Share project progress with your clients through a branded portal. Available on the Business plan.",
+  "clientPortalUpgradePopoverCta": "Upgrade Now",
+  "closePopover": "Close popover"
 }

@@ -13,11 +13,14 @@ import {
   ICountryWithStates,
   IHolidayCalendarEvent,
 } from '@/types/holiday/holiday.types';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+export type UpgradeModalVariant = 'default' | 'customOrganizationLogo';
 
 interface adminCenterState {
   isRedeemCodeDrawerOpen: boolean;
   isUpgradeModalOpen: boolean;
+  upgradeModalVariant: UpgradeModalVariant;
   loadingBillingInfo: boolean;
   billingInfo: IBillingAccountInfo | null;
   freePlanSettings: IFreePlanSettings | null;
@@ -39,6 +42,7 @@ interface adminCenterState {
 const initialState: adminCenterState = {
   isRedeemCodeDrawerOpen: false,
   isUpgradeModalOpen: false,
+  upgradeModalVariant: 'default',
   loadingBillingInfo: false,
   billingInfo: null,
   freePlanSettings: null,
@@ -168,9 +172,16 @@ const adminCenterSlice = createSlice({
         : (state.isRedeemCodeDrawerOpen = true);
     },
     toggleUpgradeModal: state => {
-      state.isUpgradeModalOpen
-        ? (state.isUpgradeModalOpen = false)
-        : (state.isUpgradeModalOpen = true);
+      if (state.isUpgradeModalOpen) {
+        state.isUpgradeModalOpen = false;
+        state.upgradeModalVariant = 'default';
+      } else {
+        state.isUpgradeModalOpen = true;
+      }
+    },
+    openUpgradeModal: (state, action: PayloadAction<UpgradeModalVariant | undefined>) => {
+      state.isUpgradeModalOpen = true;
+      state.upgradeModalVariant = action.payload || 'default';
     },
     clearHolidaysCache: state => {
       state.holidays = [];
@@ -287,7 +298,7 @@ const adminCenterSlice = createSlice({
   },
 });
 
-export const { toggleRedeemCodeDrawer, toggleUpgradeModal, clearHolidaysCache } =
+export const { toggleRedeemCodeDrawer, toggleUpgradeModal, openUpgradeModal, clearHolidaysCache } =
   adminCenterSlice.actions;
 
 // Selectors for optimized access

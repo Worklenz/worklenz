@@ -163,5 +163,15 @@
   "teamHierarchyEmptyTitle": "No se encontró jerarquía de equipo",
   "teamHierarchyEmptyDescription": "Asigna miembros a líderes de equipo para construir la estructura de reporte.",
   "teamHierarchyNoResultsTitle": "No hay miembros que coincidan",
-  "teamHierarchyNoResultsDescription": "Prueba con un término de búsqueda diferente."
+  "teamHierarchyNoResultsDescription": "Prueba con un término de búsqueda diferente.",
+  "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
+  "seatLimitPopoverTitle": "Seat Limit Reached",
+  "workspaceSeatLimitPopoverBody": "Your workspace is using {{used}} of {{total}} available seats. Upgrade your plan to add more members.",
+  "seatLimitPopoverCta": "Upgrade Now",
+  "addMoreSeats": "Add More Seats",
+  "closePopover": "Close popover",
+  "memberDeactivatedInviteSent": "Member deactivated. Your invite has been sent.",
+  "memberDeactivatedProjectInviteSent": "Member deactivated. Project invite sent for \"{{projectName}}\".",
+  "saveMemberNameTooltip": "Save name",
+  "cancelRenameTooltip": "Cancel rename"
 }

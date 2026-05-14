@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, Tooltip, Button } from '@/shared/antd-imports';
+import { Col, ConfigProvider, Flex, Menu, Tooltip, Button, Popover, Typography } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 
@@ -43,6 +43,7 @@ const Navbar = () => {
   const dispatch = useAppDispatch();
   const [current, setCurrent] = useState<string>('home');
   const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | null>(null);
+  const [isClientPortalPopoverOpen, setIsClientPortalPopoverOpen] = useState(false);
 
   const location = useLocation();
   const { isDesktop, isMobile, isTablet } = useResponsive();
@@ -142,35 +143,84 @@ const Navbar = () => {
         const shouldDisable =
           (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
 
+        const defaultLabel = t(route.name);
+
+        const clientPortalPopoverContent = (
+          <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+            <Typography.Text>
+              {t('clientPortalUpgradePopoverBody', {
+                defaultValue: t('clientPortalUpgradePopoverBody'),
+              })}
+            </Typography.Text>
+            <Button
+              type="primary"
+              onClick={() => {
+                setIsClientPortalPopoverOpen(false);
+                dispatch(toggleUpgradeModal());
+              }}
+            >
+              {t('clientPortalUpgradePopoverCta', { defaultValue: t('clientPortalUpgradePopoverCta') })}
+            </Button>
+          </Flex>
+        );
+
         return {
           key: route.path.split('/').pop() || route.name,
           disabled: false,
           label: shouldDisable ? (
-            <Tooltip
-              title={
-                isFreePlanRoute && isFreePlan
-                  ? tCommon('upgrade-plan')
-                  : tCommon('business-plan-upgrade')
-              }
-              placement="bottom"
-            >
-              <span style={{ cursor: 'pointer', fontWeight: 600 }}>
-                {t(route.name, {
-                  defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1),
-                })}
-                <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
-              </span>
-            </Tooltip>
+            route.name === 'client-portal' ? (
+              <Popover
+                trigger="click"
+                open={isClientPortalPopoverOpen}
+                onOpenChange={setIsClientPortalPopoverOpen}
+                placement="bottom"
+                title={
+                  <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                    <Typography.Text strong>
+                      {t('clientPortalUpgradePopoverTitle', { defaultValue: t('clientPortalUpgradePopoverTitle') })}
+                    </Typography.Text>
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                      onClick={event => {
+                        event.stopPropagation();
+                        setIsClientPortalPopoverOpen(false);
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </Flex>
+                }
+                content={clientPortalPopoverContent}
+              >
+                <span style={{ cursor: 'pointer', fontWeight: 600 }}>{defaultLabel}</span>
+              </Popover>
+            ) : (
+              <Tooltip
+                title={
+                  isFreePlanRoute && isFreePlan
+                    ? tCommon('upgrade-plan')
+                    : tCommon('business-plan-upgrade')
+                }
+                placement="bottom"
+              >
+                <span style={{ cursor: 'pointer', fontWeight: 600 }}>
+                  {defaultLabel}
+                  <CrownOutlined
+                    style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }}
+                  />
+                </span>
+              </Tooltip>
+            )
           ) : (
             <Link to={route.path} style={{ fontWeight: 600 }}>
-              {t(route.name, {
-                defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1),
-              })}
+              {defaultLabel}
             </Link>
           ),
         };
       });
-  }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch]);
+  }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch, isClientPortalPopoverOpen]);
 
   const currentRoute = useMemo(() => {
     const afterWorklenzString = location.pathname.split('/worklenz/')[1];
@@ -208,6 +258,10 @@ const Navbar = () => {
         const isFreePlanRoute = !clickedRoute.freePlanFeature;
         const shouldOpenModal =
           (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
+
+        if (clickedRoute.name === 'client-portal' && shouldOpenModal) {
+          return;
+        }
 
         if (shouldOpenModal) {
           if (isLicenseExpired && clickedRoute.name === 'client-portal') {

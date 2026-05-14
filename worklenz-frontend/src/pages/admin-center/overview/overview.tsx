@@ -25,8 +25,9 @@ const Overview: React.FC = () => {
   const dispatch = useAppDispatch();
 
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const { organization, organizationAdmins, loadingOrganizationAdmins, billingInfo } =
-    useAppSelector((state: RootState) => state.adminCenterReducer);
+  const { organization, organizationAdmins, loadingOrganizationAdmins } = useAppSelector(
+    (state: RootState) => state.adminCenterReducer
+  );
 
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const { t } = useTranslation('admin-center/overview');
@@ -88,7 +89,6 @@ const Overview: React.FC = () => {
                 organization={organization}
                 t={t}
                 refetch={getOrganizationDetails}
-                billingInfo={billingInfo}
               />
             </Col>
             <Col xs={24} sm={24} md={12} lg={8}>

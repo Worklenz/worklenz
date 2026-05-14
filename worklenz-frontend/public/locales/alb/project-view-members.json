@@ -14,5 +14,13 @@
   "memberCount": "Anëtar",
   "membersCountPlural": "Anëtarë",
   "emptyText": "Nuk ka bashkëngjitje në projekt.",
-  "searchPlaceholder": "Kërko anëtarë"
+  "searchPlaceholder": "Kërko anëtarë",
+  "seatUsageText": "{{used}} seats used",
+  "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
+  "seatLimitPopoverTitle": "Seat Limit Reached",
+  "seatLimitPopoverBody": "You are using {{used}} of {{total}} seats on your current plan. Upgrade to add more members to your projects.",
+  "seatRemainingText": "{{remaining}} seats remaining.",
+  "seatLimitPopoverCta": "Upgrade Now",
+  "addMoreSeats": "Add More Seats",
+  "closePopover": "Close popover"
 }

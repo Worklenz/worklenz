@@ -93,5 +93,17 @@
   "availableOnPaidPlans": "在付费计划中可用",
   "logoAltText": "组织徽标",
   "logoSupportedFormats": "PNG, JPG, WEBP",
-  "organizationProfile": "组织资料"
+  "organizationProfile": "组织资料",
+  "customLogoUpgradePopoverTitle": "自定义组织徽标",
+  "customLogoUpgradePopoverBody": "上传您的徽标，以替换整个应用以及所有发送给团队的邮件中的 Worklenz 品牌标识。",
+  "customLogoUpgradePopoverCta": "立即升级",
+  "customLogoUpgradeModalHeadline": "让 Worklenz 成为您的专属",
+  "customLogoUpgradeModalSubCopy": "升级到 Business 以上传组织徽标。您的徽标将替换应用各处以及所有发送给团队和客户的系统邮件中的 Worklenz 徽标。",
+  "customLogoUpgradeModalBenefitApp": "全应用自定义徽标",
+  "customLogoUpgradeModalBenefitEmails": "面向团队和客户的品牌化邮件",
+  "customLogoUpgradeModalBenefitProfessional": "为您的组织打造专业形象",
+  "emailAddress": "Email Address",
+  "enterOrganizationName": "Enter organization name",
+  "ownerSuffix": " (Owner)",
+  "closePopover": "Close popover"
 }

@@ -14,5 +14,13 @@
   "memberCount": "Mitglied",
   "membersCountPlural": "Mitglieder",
   "emptyText": "Es gibt keine Anhänge in diesem Projekt.",
-  "searchPlaceholder": "Mitglieder suchen"
+  "searchPlaceholder": "Mitglieder suchen",
+  "seatUsageText": "{{used}} seats used",
+  "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
+  "seatLimitPopoverTitle": "Seat Limit Reached",
+  "seatLimitPopoverBody": "You are using {{used}} of {{total}} seats on your current plan. Upgrade to add more members to your projects.",
+  "seatRemainingText": "{{remaining}} seats remaining.",
+  "seatLimitPopoverCta": "Upgrade Now",
+  "addMoreSeats": "Add More Seats",
+  "closePopover": "Close popover"
 }

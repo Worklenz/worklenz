@@ -18,6 +18,7 @@ import {
   Input,
   MenuProps,
   Popconfirm,
+  Popover,
   Table,
   TableProps,
   Tag,
@@ -54,6 +55,8 @@ import {
 } from '@/utils/role-permissions.utils';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { message } from '@/shared/antd-imports';
+import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
@@ -65,8 +68,9 @@ const TeamMembersSettings = () => {
   const currentSession = auth.getCurrentSession();
   const isInviteRestricted = Boolean(currentSession?.is_expired);
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
+  const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
 
-  useDocumentTitle(t('title', { defaultValue: 'Team Members' }));
+  useDocumentTitle(t('title', { defaultValue: t('title') }));
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -76,12 +80,20 @@ const TeamMembersSettings = () => {
   const [selectedMembers, setSelectedMembers] = useState<ITeamMemberViewModel[]>([]);
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
     field: 'name',
     order: 'asc',
   });
+
+  const totalUsedSeats = billingInfo?.total_used ?? model.total ?? 0;
+  const totalAvailableSeats = billingInfo?.total_seats ?? 0;
+  const hasReachedSeatLimit =
+    !hasBusinessFeatureAccess(currentSession) &&
+    totalAvailableSeats > 0 &&
+    totalUsedSeats >= totalAvailableSeats;
 
   const getTeamMembers = useCallback(async () => {
     try {
@@ -103,6 +115,12 @@ const TeamMembersSettings = () => {
     }
   }, [pagination, searchQuery]);
 
+  useEffect(() => {
+    if (!billingInfo) {
+      dispatch(fetchBillingInfo());
+    }
+  }, [billingInfo, dispatch]);
+
   const handleStatusChange = async (record: ITeamMemberViewModel) => {
     try {
       setIsLoading(true);
@@ -122,7 +140,7 @@ const TeamMembersSettings = () => {
             const inviteRes = await teamMembersApiService.createTeamMember(inviteData);
             if (inviteRes.done) {
               message.success(t('memberDeactivatedInviteSent', { 
-                defaultValue: 'Member deactivated. Your invite has been sent.' 
+                defaultValue: t('memberDeactivatedInviteSent')
               }));
               localStorage.removeItem('pendingTeamInvite');
             }
@@ -149,7 +167,8 @@ const TeamMembersSettings = () => {
             );
             await Promise.all(invitePromises);
             message.success(t('memberDeactivatedProjectInviteSent', { 
-              defaultValue: `Member deactivated. Project invite sent for "${inviteData.projectName}".` 
+              defaultValue: t('memberDeactivatedProjectInviteSent'),
+              projectName: inviteData.projectName,
             }));
             localStorage.removeItem('pendingProjectInvite');
           } catch (error) {
@@ -396,7 +415,7 @@ const TeamMembersSettings = () => {
                   <Tooltip
                     title={
                       isPending
-                        ? t('pendingInvitationText', { defaultValue: '(Invitation pending)' })
+                        ? t('pendingInvitationText', { defaultValue: t('pendingInvitationText') })
                         : undefined
                     }
                     mouseEnterDelay={0.6}
@@ -414,7 +433,7 @@ const TeamMembersSettings = () => {
                   {canEdit ? (
                     <Tooltip
                       title={t('renameMemberTooltip', {
-                        defaultValue: 'Rename member',
+                        defaultValue: t('renameMemberTooltip'),
                       })}
                     >
                       <Button
@@ -432,7 +451,7 @@ const TeamMembersSettings = () => {
                 </Flex>
 
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {record.job_title || t('jobTitleEmpty', { defaultValue: 'Select a job title' })}
+                  {record.job_title || t('jobTitleEmpty', { defaultValue: t('jobTitleEmpty') })}
                 </Typography.Text>
 
                 {!record.active && (
@@ -504,7 +523,7 @@ const TeamMembersSettings = () => {
       },
       {
         key: 'team_lead_assignment',
-        title: t('teamLeadColumn', { defaultValue: 'Team Lead' }),
+        title: t('teamLeadColumn', { defaultValue: t('teamLeadColumn') }),
         render: (_, record: ITeamMemberViewModel) => {
           if (
             record.role_name === 'Team Lead' ||
@@ -540,7 +559,7 @@ const TeamMembersSettings = () => {
 
           return (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-              {t('unassignedText', { defaultValue: 'Unassigned' })}
+              {t('unassignedText', { defaultValue: t('unassignedText') })}
             </Typography.Text>
           );
         },
@@ -638,6 +657,13 @@ const TeamMembersSettings = () => {
               justify="flex-end"
               style={{ width: '100%', maxWidth: 500 }}
             >
+              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                {t('seatUsageWithLimitText', {
+                  defaultValue: t('seatUsageWithLimitText'),
+                  used: totalUsedSeats,
+                  total: totalAvailableSeats || totalUsedSeats,
+                })}
+              </Typography.Text>
               <Tooltip title={t('pinTooltip')}>
                 <Button
                   shape="circle"
@@ -649,32 +675,84 @@ const TeamMembersSettings = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={t('searchPlaceholder', {
-                  defaultValue: 'Search members by name',
+                  defaultValue: t('searchPlaceholder'),
                 })}
                 style={{ maxWidth: 250 }}
                 suffix={<SearchOutlined />}
               />
-              <Tooltip
+              <Popover
+                trigger="click"
+                placement="bottomRight"
+                open={isSeatLimitPopoverOpen}
+                onOpenChange={setIsSeatLimitPopoverOpen}
                 title={
-                  isInviteRestricted
-                    ? tCommon('license-expired-subtitle', {
+                  <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                    <Typography.Text strong>
+                      {t('seatLimitPopoverTitle', { defaultValue: t('seatLimitPopoverTitle') })}
+                    </Typography.Text>
+                    <Button
+                      type="text"
+                      size="small"
+                      aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                      onClick={event => {
+                        event.stopPropagation();
+                        setIsSeatLimitPopoverOpen(false);
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </Flex>
+                }
+                content={
+                  <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                    <Typography.Text>
+                      {t('workspaceSeatLimitPopoverBody', {
                         defaultValue:
-                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                      })
-                    : ''
+                          t('workspaceSeatLimitPopoverBody'),
+                        used: totalUsedSeats,
+                        total: totalAvailableSeats,
+                      })}
+                    </Typography.Text>
+                    <Button
+                      type="primary"
+                      onClick={() => {
+                        setIsSeatLimitPopoverOpen(false);
+                        dispatch(toggleUpgradeModal());
+                      }}
+                    >
+                      {t('seatLimitPopoverCta', { defaultValue: t('seatLimitPopoverCta') })}
+                    </Button>
+                  </Flex>
                 }
               >
-                <Button
-                  type="primary"
-                  disabled={isInviteRestricted}
-                  onClick={() => {
-                    if (isInviteRestricted) return;
-                    dispatch(toggleInviteMemberDrawer());
-                  }}
+                <Tooltip
+                  title={
+                    isInviteRestricted
+                      ? tCommon('license-expired-subtitle', {
+                          defaultValue:
+                            'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                        })
+                      : ''
+                  }
                 >
-                  {t('addMemberButton', { defaultValue: 'Add New Member' })}
-                </Button>
-              </Tooltip>
+                  <Button
+                    type="primary"
+                    disabled={isInviteRestricted}
+                    onClick={() => {
+                      if (isInviteRestricted) return;
+
+                      if (hasReachedSeatLimit) {
+                        setIsSeatLimitPopoverOpen(true);
+                        return;
+                      }
+
+                      dispatch(toggleInviteMemberDrawer());
+                    }}
+                  >
+                    {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
+                  </Button>
+                </Tooltip>
+              </Popover>
               <Tooltip title={t('pinTooltip')} trigger={'hover'}>
                 <PinRouteToNavbarButton
                   name={t('title')}
@@ -718,7 +796,7 @@ const TeamMembersSettings = () => {
             total: model.total,
             showTotal: (total, range) =>
               t('paginationTotal', {
-                defaultValue: '{{start}}-{{end}} of {{total}} items',
+                defaultValue: t('paginationTotal'),
                 start: range[0],
                 end: range[1],
                 total,

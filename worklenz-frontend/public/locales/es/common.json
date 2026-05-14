@@ -104,5 +104,15 @@
     "rejectButton": "Rechazar",
     "accept": "Aceptar cookies de análisis",
     "reject": "Rechazar cookies de análisis"
-  }
+  },
+  "projectFinanceTitle": "Project Finance",
+  "projectFinanceUpgradeBody": "Track budgets, costs, and billable time across your projects. Requires the Business plan.",
+  "seeSpends": "See Spends",
+  "closePopover": "Close popover",
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing"
 }
