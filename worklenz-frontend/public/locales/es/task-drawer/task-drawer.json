@@ -77,6 +77,7 @@
       "title": "Comentarios",
       "addComment": "+ Añadir nuevo comentario",
       "noComments": "Aún no hay comentarios. ¡Sé el primero en comentar!",
+      "edit": "Editar",
       "delete": "Eliminar",
       "confirmDeleteComment": "¿Estás seguro de que quieres eliminar este comentario?",
       "addCommentPlaceholder": "Añadir un comentario...",

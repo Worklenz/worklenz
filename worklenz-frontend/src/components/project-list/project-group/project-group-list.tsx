@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import {
   Table,
   Empty,
@@ -18,6 +18,8 @@ import {
   ProjectOutlined,
   SettingOutlined,
   InboxOutlined,
+  DownOutlined,
+  RightOutlined,
 } from '@/shared/antd-imports';
 
 import { ProjectGroupListProps } from '@/types/project/project.types';
@@ -66,6 +68,44 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   const dispatch = useAppDispatch();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
+
+  // Track which groups are collapsed. Default: all collapsed on first load.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const hasInitialized = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!hasInitialized.current && groups.length > 0) {
+      hasInitialized.current = true;
+      setCollapsedGroups(new Set(groups.map((g, i) => g?.groupKey || String(i))));
+    }
+  }, [groups]);
+
+  const toggleGroup = useCallback((groupKey: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      return next;
+    });
+  }, []);
+
+  const allKeys = useMemo(
+    () => groups.map((g, i) => g?.groupKey || String(i)),
+    [groups]
+  );
+
+  const allCollapsed = collapsedGroups.size === allKeys.length;
+
+  const handleCollapseAll = useCallback(() => {
+    setCollapsedGroups(new Set(allKeys));
+  }, [allKeys]);
+
+  const handleExpandAll = useCallback(() => {
+    setCollapsedGroups(new Set());
+  }, []);
 
   const getThemeAwareColor = (lightColor: string, darkColor: string) =>
     themeWiseColor(lightColor, darkColor, themeMode);
@@ -297,25 +337,94 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
 
   return (
     <div>
+      {/* ── Expand All / Collapse All controls ── */}
+      {groups.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12, gap: 8 }}>
+          <button
+            onClick={handleExpandAll}
+            disabled={collapsedGroups.size === 0}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: collapsedGroups.size === 0 ? 'default' : 'pointer',
+              color: collapsedGroups.size === 0 ? token.colorTextDisabled : token.colorPrimary,
+              fontSize: 12,
+              padding: '2px 4px',
+            }}
+          >
+            Expand All
+          </button>
+          <span style={{ color: token.colorTextSecondary, fontSize: 12, lineHeight: '22px' }}>|</span>
+          <button
+            onClick={handleCollapseAll}
+            disabled={allCollapsed}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: allCollapsed ? 'default' : 'pointer',
+              color: allCollapsed ? token.colorTextDisabled : token.colorPrimary,
+              fontSize: 12,
+              padding: '2px 4px',
+            }}
+          >
+            Collapse All
+          </button>
+        </div>
+      )}
+
       {groups.map((group, groupIndex) => {
+        const groupKey = group?.groupKey || String(groupIndex);
         const projects = group?.projects || [];
+        const isCollapsed = collapsedGroups.has(groupKey);
 
         return (
-          <div key={group?.groupKey || groupIndex} style={{ marginBottom: 24 }}>
-            {/* Group header */}
+          <div key={groupKey} style={{ marginBottom: 24 }}>
+            {/* ── Clickable group header ── */}
             <div
+              onClick={() => toggleGroup(groupKey)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '10px 16px',
-                marginBottom: 8,
-                borderRadius: token.borderRadius,
+                marginBottom: isCollapsed ? 0 : 8,
+                borderRadius: isCollapsed ? token.borderRadius : `${token.borderRadius}px ${token.borderRadius}px 0 0`,
                 background: getThemeAwareColor(token.colorFillAlter, token.colorFillSecondary),
                 border: `1px solid ${token.colorBorder}`,
+                cursor: 'pointer',
+                userSelect: 'none',
+                transition: 'background 0.15s',
               }}
+              // Subtle hover handled via inline onMouseEnter/Leave
+              onMouseEnter={e =>
+                ((e.currentTarget as HTMLDivElement).style.background = getThemeAwareColor(
+                  token.colorFillSecondary,
+                  token.colorFill
+                ))
+              }
+              onMouseLeave={e =>
+                ((e.currentTarget as HTMLDivElement).style.background = getThemeAwareColor(
+                  token.colorFillAlter,
+                  token.colorFillSecondary
+                ))
+              }
             >
+              {/* Left side: chevron + color dot + name + count */}
               <Space align="center">
+                {/* Chevron */}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    color: token.colorTextSecondary,
+                    fontSize: 11,
+                    transition: 'transform 0.2s',
+                    transform: isCollapsed ? 'rotate(0deg)' : 'rotate(0deg)',
+                  }}
+                >
+                  {isCollapsed ? <RightOutlined /> : <DownOutlined />}
+                </span>
+
                 {group?.groupColor && (
                   <div
                     style={{
@@ -336,6 +445,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                   </Text>
                 </div>
               </Space>
+
+              {/* Right side: badge */}
               <Badge
                 count={projects.length}
                 style={{
@@ -346,22 +457,25 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               />
             </div>
 
-            <Table
-              columns={tableColumns}
-              dataSource={projects.map((p: any) => ({ ...p, key: p?.id }))}
-              rowKey="id"
-              pagination={false}
-              size="small"
-              onRow={record => ({
-                onClick: () =>
-                  onProjectSelect(
-                    record?.id || '',
-                    (record as any)?.team_member_default_view || (record as any)?.default_view
-                  ),
-                style: { cursor: 'pointer' },
-                onMouseEnter: () => handleProjectHover(record?.id || ''),
-              })}
-            />
+            {/* ── Collapsible table ── */}
+            {!isCollapsed && (
+              <Table
+                columns={tableColumns}
+                dataSource={projects.map((p: any) => ({ ...p, key: p?.id }))}
+                rowKey="id"
+                pagination={false}
+                size="small"
+                onRow={record => ({
+                  onClick: () =>
+                    onProjectSelect(
+                      record?.id || '',
+                      (record as any)?.team_member_default_view || (record as any)?.default_view
+                    ),
+                  style: { cursor: 'pointer' },
+                  onMouseEnter: () => handleProjectHover(record?.id || ''),
+                })}
+              />
+            )}
 
             {groupIndex < groups.length - 1 && (
               <Divider style={{ margin: '24px 0 0 0', opacity: 0.4 }} />

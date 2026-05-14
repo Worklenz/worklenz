@@ -26,6 +26,11 @@ const taskAttachmentsApiService = {
     return response.data;
   },
 
+  deleteAvatarAttachment: async (): Promise<IServerResponse<{ url: null; updated_at?: string }>> => {
+    const response = await apiClient.delete(`${rootUrl}/avatar`);
+    return response.data;
+  },
+
   getTaskAttachments: async (
     taskId: string
   ): Promise<IServerResponse<ITaskAttachmentViewModel[]>> => {

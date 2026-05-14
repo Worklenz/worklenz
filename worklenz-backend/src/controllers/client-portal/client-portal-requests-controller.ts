@@ -7,8 +7,25 @@ import { IO } from "../../shared/io";
 import { getBaseUrl } from "../../cron_jobs/helpers";
 import { sendClientPortalNewRequestNotification } from "../../shared/email-notifications";
 import crypto from "crypto";
+import moment from "moment-timezone";
 
 export default class ClientPortalRequestsController extends ClientPortalControllerBase {
+  private static async getUserTimezone(userId: string) {
+    try {
+      const timezoneQuery = await db.query(
+        `SELECT tz.name as timezone
+         FROM users u
+         JOIN timezones tz ON u.timezone_id = tz.id
+         WHERE u.id = $1`,
+        [userId]
+      );
+
+      return timezoneQuery.rows[0]?.timezone || "UTC";
+    } catch (error) {
+      console.error("Error fetching user timezone:", error);
+      return "UTC";
+    }
+  }
 
   static async getRequests(
     req: AuthenticatedClientRequest,
@@ -257,7 +274,7 @@ export default class ClientPortalRequestsController extends ClientPortalControll
 
         // Get team name and admin emails
         const teamQuery = await db.query(
-          `SELECT t.name as team_name, u.email, u.name as user_name
+          `SELECT t.name as team_name, u.id as user_id, u.email, u.name as user_name
            FROM teams t
            JOIN team_members tm ON tm.team_id = t.id
            JOIN users u ON u.id = tm.user_id
@@ -267,9 +284,9 @@ export default class ClientPortalRequestsController extends ClientPortalControll
 
         if (teamQuery.rows.length > 0) {
           const teamName = teamQuery.rows[0].team_name;
-          const adminEmails = teamQuery.rows.map((row: any) => row.email).filter(Boolean);
+          const adminRecipients = teamQuery.rows.filter((row: any) => row.email);
 
-          if (adminEmails.length > 0) {
+          if (adminRecipients.length > 0) {
             const baseUrl = getBaseUrl();
             const requestUrl = `${baseUrl}/worklenz/client-portal/requests/${newRequest.id}`;
 
@@ -280,16 +297,24 @@ export default class ClientPortalRequestsController extends ClientPortalControll
               requestTitle = parsedData.title || parsedData.name || "";
             }
 
-            await sendClientPortalNewRequestNotification(adminEmails, {
-              greeting: "Hello",
-              requestNumber: newRequest.req_no,
-              serviceName: service.name,
-              clientName: clientName,
-              submittedAt: new Date(newRequest.created_at).toLocaleString(),
-              requestTitle: requestTitle,
-              requestUrl: requestUrl,
-              teamName: teamName
-            });
+            for (const recipient of adminRecipients) {
+              const userTimezone = recipient.user_id
+                ? await ClientPortalRequestsController.getUserTimezone(recipient.user_id)
+                : "UTC";
+
+              await sendClientPortalNewRequestNotification([recipient.email], {
+                greeting: "Hello",
+                requestNumber: newRequest.req_no,
+                serviceName: service.name,
+                clientName: clientName,
+                submittedAt: moment
+                  .tz(newRequest.created_at, userTimezone)
+                  .format("M/D/YYYY, h:mm:ss A z"),
+                requestTitle: requestTitle,
+                requestUrl: requestUrl,
+                teamName: teamName
+              });
+            }
           }
         }
       } catch (emailError) {

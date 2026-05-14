@@ -16,13 +16,12 @@ const UpdateNotificationProvider: React.FC<UpdateNotificationProviderProps> = ({
   checkInterval = 5 * 60 * 1000, // 5 minutes
   enableAutoCheck = true,
 }) => {
-  // Temporarily disable the "new update available" reload popup.
-  const enableUpdateNotificationPopup = false;
+  const enableUpdateNotificationBanner = true;
 
   const { showUpdateNotification, setShowUpdateNotification, dismissUpdate } = useUpdateChecker({
     checkInterval,
     enableAutoCheck,
-    showNotificationOnUpdate: enableUpdateNotificationPopup,
+    showNotificationOnUpdate: enableUpdateNotificationBanner,
   });
 
   const handleClose = () => {
@@ -37,7 +36,7 @@ const UpdateNotificationProvider: React.FC<UpdateNotificationProviderProps> = ({
   return (
     <>
       {children}
-      {enableUpdateNotificationPopup && (
+      {enableUpdateNotificationBanner && (
         <UpdateNotification
           visible={showUpdateNotification}
           onClose={handleClose}

@@ -77,6 +77,7 @@
       "title": "评论",
       "addComment": "+ 添加新评论",
       "noComments": "还没有评论。成为第一个评论者！",
+      "edit": "编辑",
       "delete": "删除",
       "confirmDeleteComment": "您确定要删除此评论吗？",
       "addCommentPlaceholder": "添加评论...",

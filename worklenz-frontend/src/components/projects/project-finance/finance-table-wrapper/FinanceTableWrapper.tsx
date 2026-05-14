@@ -14,27 +14,12 @@ import { IProjectFinanceGroup, IProjectFinanceTask } from '@/types/project/proje
 import { createPortal } from 'react-dom';
 import FinanceTable from '../finance-table/FinanceTable';
 import FinanceDrawer from '../finance-drawer/FinanceDrawer';
+import { formatSecondsToHoursMinutesText } from '@/utils/time-format.utils';
 
 interface FinanceTableWrapperProps {
   activeTablesList: IProjectFinanceGroup[];
   loading: boolean;
 }
-
-// Utility function to format seconds to time string
-const formatSecondsToTimeString = (totalSeconds: number): string => {
-  if (!totalSeconds || totalSeconds === 0) return '0s';
-
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  const parts = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}m`);
-  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-
-  return parts.join(' ');
-};
 
 const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesList, loading }) => {
   const [isScrolling, setIsScrolling] = useState(false);
@@ -199,7 +184,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
       case FinanceTableColumnKeys.HOURS:
         return (
           <Typography.Text style={{ fontSize: 18 }}>
-            {formatSecondsToTimeString(totals.hours)}
+            {formatSecondsToHoursMinutesText(totals.hours)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.MAN_DAYS:
@@ -243,7 +228,7 @@ const FinanceTableWrapper: React.FC<FinanceTableWrapperProps> = ({ activeTablesL
       case FinanceTableColumnKeys.TOTAL_TIME_LOGGED:
         return (
           <Typography.Text style={{ fontSize: 18 }}>
-            {formatSecondsToTimeString(totals.total_time_logged)}
+            {formatSecondsToHoursMinutesText(totals.total_time_logged)}
           </Typography.Text>
         );
       case FinanceTableColumnKeys.ESTIMATED_COST:

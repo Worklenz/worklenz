@@ -80,7 +80,12 @@ const ChangePassword: React.FC = () => {
           <Form.Item
             name="newPassword"
             label={t('newPassword')}
-            rules={[{ validator: validatePassword }]}
+            rules={[
+              {
+                required: true,
+                message: t('newPasswordRequired'),
+              },
+            ]}
           >
             <Input.Password {...getPasswordInputProps(t('newPasswordPlaceholder'))} />
           </Form.Item>

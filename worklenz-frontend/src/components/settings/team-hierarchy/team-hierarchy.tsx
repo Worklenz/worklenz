@@ -1,28 +1,31 @@
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Card,
-  Typography,
-  Spin,
   Alert,
   Avatar,
-  Tag,
-  Space,
-  Tooltip,
-  Row,
-  Col,
-  Divider,
   Badge,
+  Button,
+  Card,
+  Col,
   Empty,
   Flex,
+  Input,
+  Row,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
   theme,
 } from '@/shared/antd-imports';
 import {
-  UserOutlined,
-  TeamOutlined,
   CrownOutlined,
-  UsergroupAddOutlined,
-  UserSwitchOutlined,
   MailOutlined,
+  ReloadOutlined,
+  SearchOutlined,
+  TeamOutlined,
+  UserOutlined,
+  UserSwitchOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
@@ -45,436 +48,709 @@ interface HierarchyGroup {
   teamLead: TeamMember | null;
   directReports: TeamMember[];
   indirectReports: TeamMember[];
+  title: string;
+  titleKey: string;
+  description: string;
+  type: 'management' | 'team' | 'unassigned';
 }
 
-const TeamHierarchy: React.FC = () => {
+interface MemberCardProps {
+  member: TeamMember;
+  accentColor: string;
+  badgeLabel: string;
+  isTeamLead?: boolean;
+  isIndirect?: boolean;
+}
+
+interface SummaryCardProps {
+  icon: ReactNode;
+  label: string;
+  value: number;
+  accentColor: string;
+}
+
+const LEADERSHIP_ROLES = new Set(['Owner', 'Admin']);
+const TEAM_LEAD_ROLE = 'Team Lead';
+
+const normalizeSearchValue = (value: string) =>
+  value
+    .toLocaleLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+const sortMembersByName = (members: TeamMember[]) =>
+  [...members].sort((memberA, memberB) => memberA.name.localeCompare(memberB.name));
+
+const TeamHierarchy = () => {
   const { t } = useTranslation('settings/team-members');
   const { token } = theme.useToken();
   const [hierarchyData, setHierarchyData] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Detect dark mode
-  const isDarkMode = useMemo(
-    () =>
-      token.colorBgContainer === '#1f1f1f' ||
-      token.colorBgBase === '#141414' ||
-      token.colorBgElevated === '#1f1f1f' ||
-      document.documentElement.getAttribute('data-theme') === 'dark' ||
-      document.body.classList.contains('dark'),
-    [token]
-  );
+  const [searchValue, setSearchValue] = useState('');
 
   const fetchHierarchy = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+
       const response = await teamManagementApiService.getTeamHierarchy();
 
       if (response.done && response.body) {
         setHierarchyData(response.body);
-      } else {
-        setError('Failed to fetch team hierarchy');
+        return;
       }
-    } catch (err) {
-      console.error('Error fetching team hierarchy:', err);
-      setError('Error loading team hierarchy');
+
+      setError(
+        t('teamHierarchyLoadFailed', {
+          defaultValue: 'Failed to fetch team hierarchy.',
+        })
+      );
+    } catch (fetchError) {
+      console.error('Error fetching team hierarchy:', fetchError);
+      setError(
+        t('teamHierarchyLoadError', {
+          defaultValue: 'Something went wrong while loading the team hierarchy.',
+        })
+      );
     } finally {
       setLoading(false);
     }
-  }, []);
-
-  const organizeHierarchy = useCallback((members: TeamMember[]): HierarchyGroup[] => {
-    const memberMap = new Map<string, TeamMember>();
-    members.forEach(member => memberMap.set(member.id, member));
-
-    // Get all team leads
-    const teamLeads = members.filter(member => member.role_name === 'Team Lead');
-
-    // Get unassigned members (no team lead)
-    const unassignedMembers = members.filter(
-      member =>
-        !member.reports_to_member_id &&
-        member.role_name !== 'Team Lead' &&
-        member.role_name !== 'Owner' &&
-        member.role_name !== 'Admin'
-    );
-
-    // Get leadership (Owner, Admin)
-    const leadership = members.filter(
-      member => member.role_name === 'Owner' || member.role_name === 'Admin'
-    );
-
-    const groups: HierarchyGroup[] = [];
-
-    // Add leadership group
-    if (leadership.length > 0) {
-      groups.push({
-        teamLead: null,
-        directReports: leadership,
-        indirectReports: [],
-      });
-    }
-
-    // Add team lead groups
-    teamLeads.forEach(teamLead => {
-      const directReports = members.filter(
-        member =>
-          member.reports_to_member_id === teamLead.id &&
-          member.role_name !== 'Team Lead' &&
-          member.role_name !== 'Owner' &&
-          member.role_name !== 'Admin'
-      );
-
-      const indirectReports = members.filter(member => {
-        if (!member.reports_to_member_id) return false;
-        if (
-          member.role_name === 'Team Lead' ||
-          member.role_name === 'Owner' ||
-          member.role_name === 'Admin'
-        )
-          return false;
-        const manager = memberMap.get(member.reports_to_member_id);
-        return manager && manager.reports_to_member_id === teamLead.id;
-      });
-
-      groups.push({
-        teamLead,
-        directReports,
-        indirectReports,
-      });
-    });
-
-    // Add unassigned members group
-    if (unassignedMembers.length > 0) {
-      groups.push({
-        teamLead: null,
-        directReports: unassignedMembers,
-        indirectReports: [],
-      });
-    }
-
-    return groups;
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchHierarchy();
   }, [fetchHierarchy]);
 
-  const MemberCard: React.FC<{
-    member: TeamMember;
-    isTeamLead?: boolean;
-    isIndirect?: boolean;
-  }> = ({ member, isTeamLead = false, isIndirect = false }) => {
-    const cardStyle = useMemo(
-      () => ({
-        marginBottom: 4,
-        border: isTeamLead
-          ? `2px solid ${token.colorPrimary}`
-          : isIndirect
-            ? `1px dashed ${isDarkMode ? '#434343' : '#d9d9d9'}`
-            : `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-        backgroundColor: isTeamLead
-          ? isDarkMode
-            ? '#162312'
-            : '#f6ffed'
-          : isIndirect
-            ? isDarkMode
-              ? '#1a1a1a'
-              : '#fafafa'
-            : isDarkMode
-              ? '#1f1f1f'
-              : '#ffffff',
-      }),
-      [isTeamLead, isIndirect, isDarkMode, token.colorPrimary]
-    );
+  const organizeHierarchy = useCallback(
+    (members: TeamMember[]): HierarchyGroup[] => {
+      const memberMap = new Map<string, TeamMember>();
+      members.forEach(member => memberMap.set(member.id, member));
 
-    return (
-      <Card size="small" style={cardStyle} styles={{ body: { padding: '8px' } }}>
-        <Flex align="center" gap={8}>
+      const leadership = sortMembersByName(
+        members.filter(member => LEADERSHIP_ROLES.has(member.role_name))
+      );
+
+      const teamLeads = sortMembersByName(
+        members.filter(member => member.role_name === TEAM_LEAD_ROLE)
+      );
+
+      const unassignedMembers = sortMembersByName(
+        members.filter(
+          member =>
+            !member.reports_to_member_id &&
+            member.role_name !== TEAM_LEAD_ROLE &&
+            !LEADERSHIP_ROLES.has(member.role_name)
+        )
+      );
+
+      const groups: HierarchyGroup[] = [];
+
+      if (leadership.length > 0) {
+        groups.push({
+          teamLead: null,
+          directReports: leadership,
+          indirectReports: [],
+          titleKey: 'teamHierarchyManagementTitle',
+          title: t('teamHierarchyManagementTitle', { defaultValue: 'Management' }),
+          description: t('teamHierarchyManagementDescription', {
+            defaultValue: 'Owners and admins who oversee the workspace.',
+          }),
+          type: 'management',
+        });
+      }
+
+      teamLeads.forEach(teamLead => {
+        const directReports = sortMembersByName(
+          members.filter(
+            member =>
+              member.reports_to_member_id === teamLead.id &&
+              member.role_name !== TEAM_LEAD_ROLE &&
+              !LEADERSHIP_ROLES.has(member.role_name)
+          )
+        );
+
+        const indirectReports = sortMembersByName(
+          members.filter(member => {
+            if (!member.reports_to_member_id) {
+              return false;
+            }
+
+            if (member.role_name === TEAM_LEAD_ROLE || LEADERSHIP_ROLES.has(member.role_name)) {
+              return false;
+            }
+
+            const manager = memberMap.get(member.reports_to_member_id);
+            return manager?.reports_to_member_id === teamLead.id;
+          })
+        );
+
+        groups.push({
+          teamLead,
+          directReports,
+          indirectReports,
+          titleKey: 'teamHierarchyTeamTitle',
+          title: t('teamHierarchyTeamTitle', {
+            defaultValue: "{{name}}'s team",
+            name: teamLead.name,
+          }),
+          description: t('teamHierarchyTeamDescription', {
+            defaultValue: 'Direct and indirect reports for this team lead.',
+          }),
+          type: 'team',
+        });
+      });
+
+      if (unassignedMembers.length > 0) {
+        groups.push({
+          teamLead: null,
+          directReports: unassignedMembers,
+          indirectReports: [],
+          titleKey: 'teamHierarchyUnassignedTitle',
+          title: t('teamHierarchyUnassignedTitle', { defaultValue: 'Unassigned members' }),
+          description: t('teamHierarchyUnassignedDescription', {
+            defaultValue: 'Members who are not assigned to a team lead yet.',
+          }),
+          type: 'unassigned',
+        });
+      }
+
+      return groups;
+    },
+    [t]
+  );
+
+  const hierarchyGroups = useMemo(
+    () => organizeHierarchy(hierarchyData),
+    [hierarchyData, organizeHierarchy]
+  );
+
+  const filteredGroups = useMemo(() => {
+    const normalizedQuery = normalizeSearchValue(searchValue);
+
+    if (!normalizedQuery) {
+      return hierarchyGroups;
+    }
+
+    const memberMatchesQuery = (member: TeamMember) =>
+      [
+        member.name,
+        member.email,
+        member.role_name,
+        member.hierarchy_path,
+        member.level.toString(),
+        member.reports_to_member_id ?? '',
+      ].some(value => normalizeSearchValue(value).includes(normalizedQuery));
+
+    return hierarchyGroups
+      .map(group => {
+        const matchesGroupMetadata = [group.title, group.description, group.type].some(value =>
+          normalizeSearchValue(value).includes(normalizedQuery)
+        );
+
+        const teamLeadMatches = group.teamLead ? memberMatchesQuery(group.teamLead) : false;
+        const filteredDirectReports = group.directReports.filter(memberMatchesQuery);
+        const filteredIndirectReports = group.indirectReports.filter(memberMatchesQuery);
+
+        if (
+          matchesGroupMetadata ||
+          teamLeadMatches ||
+          filteredDirectReports.length > 0 ||
+          filteredIndirectReports.length > 0
+        ) {
+          return {
+            ...group,
+            directReports: matchesGroupMetadata ? group.directReports : filteredDirectReports,
+            indirectReports: matchesGroupMetadata ? group.indirectReports : filteredIndirectReports,
+          };
+        }
+
+        return null;
+      })
+      .filter((group): group is HierarchyGroup => Boolean(group));
+  }, [hierarchyGroups, searchValue]);
+
+  const summary = useMemo(() => {
+    const totalMembers = hierarchyData.length;
+    const teamLeadsCount = hierarchyData.filter(
+      member => member.role_name === TEAM_LEAD_ROLE
+    ).length;
+    const assignedMembersCount = hierarchyData.filter(member => member.reports_to_member_id).length;
+    const unassignedMembersCount = hierarchyData.filter(
+      member =>
+        !member.reports_to_member_id &&
+        member.role_name !== TEAM_LEAD_ROLE &&
+        !LEADERSHIP_ROLES.has(member.role_name)
+    ).length;
+
+    return {
+      totalMembers,
+      teamLeadsCount,
+      assignedMembersCount,
+      unassignedMembersCount,
+    };
+  }, [hierarchyData]);
+
+  const getGroupAccentColor = useCallback(
+    (group: HierarchyGroup) => {
+      if (group.type === 'management') {
+        return token.colorWarning;
+      }
+
+      if (group.type === 'unassigned') {
+        return token.colorInfo;
+      }
+
+      return token.colorPrimary;
+    },
+    [token.colorInfo, token.colorPrimary, token.colorWarning]
+  );
+
+  const SummaryCard = ({ icon, label, value, accentColor }: SummaryCardProps) => (
+    <Card
+      size="small"
+      styles={{ body: { padding: 16 } }}
+      style={{
+        height: '100%',
+        borderColor: token.colorBorderSecondary,
+        background: token.colorBgContainer,
+      }}
+    >
+      <Flex align="center" gap={12}>
+        <Flex
+          align="center"
+          justify="center"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            color: accentColor,
+            background: token.colorFillAlter,
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </Flex>
+        <Flex vertical gap={2}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {label}
+          </Text>
+          <Text strong style={{ fontSize: 22, lineHeight: 1.1 }}>
+            {value}
+          </Text>
+        </Flex>
+      </Flex>
+    </Card>
+  );
+
+  const MemberCard = ({
+    member,
+    accentColor,
+    badgeLabel,
+    isTeamLead = false,
+    isIndirect = false,
+  }: MemberCardProps) => (
+    <Card
+      size="small"
+      styles={{ body: { padding: 12 } }}
+      style={{
+        height: '100%',
+        borderColor: isTeamLead ? accentColor : token.colorBorderSecondary,
+        borderStyle: isIndirect ? 'dashed' : 'solid',
+        background: isTeamLead ? token.colorPrimaryBg : token.colorBgContainer,
+        boxShadow: 'none',
+      }}
+    >
+      <Flex vertical gap={10}>
+        <Flex align="flex-start" gap={12}>
           <Avatar
-            size={isTeamLead ? 'default' : 'small'}
+            size={isTeamLead ? 44 : 36}
             icon={<UserOutlined />}
             style={{
               backgroundColor: getRoleColor(member.role_name),
               flexShrink: 0,
             }}
           />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Flex align="center" gap={6} wrap>
-              <Text strong style={{ fontSize: isTeamLead ? '14px' : '13px' }}>
+          <Flex vertical gap={4} style={{ minWidth: 0, flex: 1 }}>
+            <Flex align="center" gap={8} wrap>
+              <Text strong ellipsis style={{ fontSize: isTeamLead ? 15 : 14, margin: 0 }}>
                 {member.name}
               </Text>
-              {isTeamLead && <CrownOutlined style={{ color: '#faad14', fontSize: '12px' }} />}
-              <Tag color={getRoleColor(member.role_name)} size="small" style={{ margin: 0 }}>
+              {isTeamLead ? (
+                <Tooltip
+                  title={t('teamHierarchyLeadBadge', {
+                    defaultValue: 'Team lead',
+                  })}
+                >
+                  <CrownOutlined style={{ color: token.colorWarning }} />
+                </Tooltip>
+              ) : null}
+              <Tag color={getRoleColor(member.role_name)} style={{ marginInlineEnd: 0 }}>
                 {member.role_name}
               </Tag>
             </Flex>
-            <Flex align="center" gap={3} style={{ marginTop: 2 }}>
-              <MailOutlined
-                style={{ fontSize: '11px', color: isDarkMode ? '#8c8c8c' : '#8c8c8c' }}
-              />
-              <Text type="secondary" style={{ fontSize: '11px' }}>
+
+            <Flex align="center" gap={6} wrap>
+              <MailOutlined style={{ color: token.colorTextTertiary }} />
+              <Text ellipsis type="secondary" style={{ minWidth: 0 }}>
                 {member.email}
               </Text>
             </Flex>
-          </div>
+          </Flex>
         </Flex>
-      </Card>
-    );
-  };
 
-  const HierarchyGroupCard: React.FC<{
-    group: HierarchyGroup;
-    title: string;
-    icon: React.ReactNode;
-  }> = ({ group, title, icon }) => {
-    const headStyle = useMemo(
-      () => ({
-        backgroundColor: isDarkMode ? '#1a1a1a' : '#fafafa',
-        padding: '8px 12px',
-        minHeight: 'auto',
-        borderBottom: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-      }),
-      [isDarkMode]
-    );
+        <Flex align="center" justify="space-between" gap={8} wrap>
+          <Tag
+            bordered={false}
+            style={{
+              margin: 0,
+              color: accentColor,
+              background: token.colorFillAlter,
+            }}
+          >
+            {badgeLabel}
+          </Tag>
 
-    const cardStyle = useMemo(
-      () => ({
-        marginBottom: 12,
-        backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-        border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-      }),
-      [isDarkMode]
-    );
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {t('teamHierarchyLevelLabel', {
+              defaultValue: 'Level {{level}}',
+              level: member.level,
+            })}
+          </Text>
+        </Flex>
+      </Flex>
+    </Card>
+  );
+
+  const renderMembersSection = (
+    members: TeamMember[],
+    accentColor: string,
+    badgeLabel: string,
+    sectionTitle: string,
+    isIndirectSection = false
+  ) => {
+    if (!members.length) {
+      return null;
+    }
 
     return (
-      <Card
-        title={
-          <Space size="small">
-            {icon}
-            <span style={{ fontSize: '14px' }}>{title}</span>
-            <Badge
-              count={group.directReports.length + group.indirectReports.length}
-              style={{ backgroundColor: '#52c41a' }}
-              size="small"
-            />
-          </Space>
-        }
-        size="small"
-        style={cardStyle}
-        headStyle={headStyle}
-        styles={{ body: { padding: '8px' } }}
-      >
-        {group.teamLead && (
-          <>
-            <MemberCard member={group.teamLead} isTeamLead />
-            {(group.directReports.length > 0 || group.indirectReports.length > 0) && (
-              <Divider orientation="left" orientationMargin={0} style={{ margin: '8px 0' }}>
-                <Text type="secondary" style={{ fontSize: '11px' }}>
-                  Reports to {group.teamLead.name}
-                </Text>
-              </Divider>
-            )}
-          </>
-        )}
+      <Flex vertical gap={12}>
+        <Flex align="center" justify="space-between" gap={12} wrap>
+          <Text strong>{sectionTitle}</Text>
+          <Badge
+            count={members.length}
+            style={{
+              backgroundColor: accentColor,
+            }}
+          />
+        </Flex>
 
-        {group.directReports.length > 0 && (
-          <div style={{ marginBottom: group.indirectReports.length > 0 ? 8 : 0 }}>
-            {group.directReports.map(member => (
-              <MemberCard key={member.id} member={member} />
-            ))}
-          </div>
-        )}
-
-        {group.indirectReports.length > 0 && (
-          <>
-            <Divider orientation="left" orientationMargin={0} style={{ margin: '8px 0' }}>
-              <Text type="secondary" style={{ fontSize: '11px' }}>
-                Indirect Reports
-              </Text>
-            </Divider>
-            {group.indirectReports.map(member => (
-              <MemberCard key={member.id} member={member} isIndirect />
-            ))}
-          </>
-        )}
-
-        {group.directReports.length === 0 &&
-          group.indirectReports.length === 0 &&
-          !group.teamLead && (
-            <Empty description="No members in this group" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-          )}
-      </Card>
+        <Row gutter={[12, 12]}>
+          {members.map(member => (
+            <Col key={member.id} xs={24} sm={12} xl={12}>
+              <MemberCard
+                member={member}
+                accentColor={accentColor}
+                badgeLabel={badgeLabel}
+                isIndirect={isIndirectSection}
+              />
+            </Col>
+          ))}
+        </Row>
+      </Flex>
     );
   };
 
   if (loading) {
     return (
-      <Card>
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+      <Card style={{ borderColor: token.colorBorderSecondary }}>
+        <Flex vertical align="center" justify="center" gap={12} style={{ paddingBlock: 48 }}>
           <Spin size="large" />
-          <div style={{ marginTop: 16 }}>
-            <Text>Loading team hierarchy...</Text>
-          </div>
-        </div>
+          <Text type="secondary">
+            {t('teamHierarchyLoading', {
+              defaultValue: 'Loading team hierarchy...',
+            })}
+          </Text>
+        </Flex>
       </Card>
     );
   }
 
   if (error) {
     return (
-      <Card>
+      <Card style={{ borderColor: token.colorBorderSecondary }}>
         <Alert
-          message="Error"
+          message={t('teamHierarchyErrorTitle', {
+            defaultValue: 'Unable to load team hierarchy',
+          })}
           description={error}
           type="error"
           showIcon
           action={
-            <button
-              onClick={fetchHierarchy}
-              style={{
-                border: 'none',
-                background: 'none',
-                color: token.colorPrimary,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-              }}
-            >
-              Retry
-            </button>
+            <Button type="link" icon={<ReloadOutlined />} onClick={fetchHierarchy}>
+              {t('teamHierarchyRetry', {
+                defaultValue: 'Retry',
+              })}
+            </Button>
           }
         />
       </Card>
     );
   }
 
-  const hierarchyGroups = organizeHierarchy(hierarchyData);
-  const totalMembers = hierarchyData.length;
-  const teamLeadsCount = hierarchyData.filter(m => m.role_name === 'Team Lead').length;
-  const assignedMembersCount = hierarchyData.filter(m => m.reports_to_member_id).length;
-
   return (
-    <div style={{ width: '100%' }}>
-      <div style={{ marginBottom: 16 }}>
-        <Title level={4} style={{ marginBottom: 4 }}>
-          <TeamOutlined /> Team Hierarchy
-        </Title>
-        <Text type="secondary" style={{ fontSize: '12px' }}>
-          Organizational structure showing reporting relationships and team assignments
-        </Text>
-      </div>
+    <Flex vertical gap={20} style={{ width: '100%' }}>
+      <Card
+        styles={{ body: { padding: 20 } }}
+        style={{
+          borderColor: token.colorBorderSecondary,
+          background: token.colorBgContainer,
+        }}
+      >
+        <Flex vertical gap={20}>
+          <Flex justify="space-between" align="flex-start" gap={16} wrap>
+            <Flex vertical gap={6}>
+              <Space size={10} align="center">
+                <Flex
+                  align="center"
+                  justify="center"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    color: token.colorPrimary,
+                    background: token.colorPrimaryBg,
+                  }}
+                >
+                  <TeamOutlined style={{ fontSize: 18 }} />
+                </Flex>
+                <Title level={4} style={{ margin: 0 }}>
+                  {t('teamHierarchyTitle', {
+                    defaultValue: 'Team hierarchy',
+                  })}
+                </Title>
+              </Space>
 
-      {/* Summary Stats */}
-      <Row gutter={12} style={{ marginBottom: 16 }}>
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            styles={{ body: { padding: '8px' } }}
-            style={{
-              backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: token.colorPrimary }}>
-                {totalMembers}
-              </div>
-              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>
-                Total Members
-              </div>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            styles={{ body: { padding: '8px' } }}
-            style={{
-              backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#52c41a' }}>
-                {teamLeadsCount}
-              </div>
-              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>
-                Team Leads
-              </div>
-            </div>
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            styles={{ body: { padding: '8px' } }}
-            style={{
-              backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-              border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#faad14' }}>
-                {assignedMembersCount}
-              </div>
-              <div style={{ color: isDarkMode ? '#8c8c8c' : '#8c8c8c', fontSize: '11px' }}>
-                Assigned Members
-              </div>
-            </div>
-          </Card>
-        </Col>
-      </Row>
+              <Text type="secondary">
+                {t('teamHierarchyDescription', {
+                  defaultValue:
+                    'Explore reporting lines, team lead coverage, and members who still need assignments.',
+                })}
+              </Text>
+            </Flex>
 
-      {/* Hierarchy Groups */}
-      {hierarchyGroups.length > 0 ? (
-        <div>
-          {hierarchyGroups.map((group, index) => {
-            let title = '';
-            let icon = <TeamOutlined />;
+            <Button icon={<ReloadOutlined />} onClick={fetchHierarchy}>
+              {t('teamHierarchyRefresh', {
+                defaultValue: 'Refresh',
+              })}
+            </Button>
+          </Flex>
 
-            if (group.teamLead) {
-              title = `${group.teamLead.name}'s Team`;
-              icon = <UsergroupAddOutlined />;
-            } else if (
-              group.directReports.some(m => m.role_name === 'Owner' || m.role_name === 'Admin')
-            ) {
-              title = 'Management';
-              icon = <CrownOutlined />;
-            } else {
-              title = 'Unassigned Members';
-              icon = <UserSwitchOutlined />;
-            }
-
-            return <HierarchyGroupCard key={index} group={group} title={title} icon={icon} />;
-          })}
-        </div>
-      ) : (
-        <Card
-          style={{
-            backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-            border: `1px solid ${isDarkMode ? '#303030' : '#f0f0f0'}`,
-          }}
-        >
-          <Empty
-            image={
-              <TeamOutlined
-                style={{ fontSize: '64px', color: isDarkMode ? '#434343' : '#d9d9d9' }}
+          <Row gutter={[12, 12]}>
+            <Col xs={24} sm={12} xl={6}>
+              <SummaryCard
+                icon={<TeamOutlined />}
+                label={t('teamHierarchySummaryTotalMembers', {
+                  defaultValue: 'Total members',
+                })}
+                value={summary.totalMembers}
+                accentColor={token.colorPrimary}
               />
-            }
+            </Col>
+            <Col xs={24} sm={12} xl={6}>
+              <SummaryCard
+                icon={<UsergroupAddOutlined />}
+                label={t('teamHierarchySummaryTeamLeads', {
+                  defaultValue: 'Team leads',
+                })}
+                value={summary.teamLeadsCount}
+                accentColor={token.colorSuccess}
+              />
+            </Col>
+            <Col xs={24} sm={12} xl={6}>
+              <SummaryCard
+                icon={<CrownOutlined />}
+                label={t('teamHierarchySummaryAssignedMembers', {
+                  defaultValue: 'Assigned members',
+                })}
+                value={summary.assignedMembersCount}
+                accentColor={token.colorWarning}
+              />
+            </Col>
+            <Col xs={24} sm={12} xl={6}>
+              <SummaryCard
+                icon={<UserSwitchOutlined />}
+                label={t('teamHierarchySummaryUnassignedMembers', {
+                  defaultValue: 'Unassigned members',
+                })}
+                value={summary.unassignedMembersCount}
+                accentColor={token.colorInfo}
+              />
+            </Col>
+          </Row>
+
+          <Input
+            allowClear
+            value={searchValue}
+            onChange={event => setSearchValue(event.target.value)}
+            prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+            placeholder={t('teamHierarchySearchPlaceholder', {
+              defaultValue: 'Search by name, email, role, or team',
+            })}
+            aria-label={t('teamHierarchySearchLabel', {
+              defaultValue: 'Search team hierarchy',
+            })}
+          />
+        </Flex>
+      </Card>
+
+      {hierarchyGroups.length === 0 ? (
+        <Card style={{ borderColor: token.colorBorderSecondary }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
-              <div>
-                <Text type="secondary">No team hierarchy found</Text>
-                <br />
-                <Text type="secondary" style={{ fontSize: '12px' }}>
-                  Assign members to Team Leads to see the hierarchy here
+              <Flex vertical align="center" gap={4}>
+                <Text strong>
+                  {t('teamHierarchyEmptyTitle', {
+                    defaultValue: 'No team hierarchy found',
+                  })}
                 </Text>
-              </div>
+                <Text type="secondary">
+                  {t('teamHierarchyEmptyDescription', {
+                    defaultValue: 'Assign members to team leads to build the reporting structure.',
+                  })}
+                </Text>
+              </Flex>
             }
           />
         </Card>
+      ) : filteredGroups.length === 0 ? (
+        <Card style={{ borderColor: token.colorBorderSecondary }}>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Flex vertical align="center" gap={4}>
+                <Text strong>
+                  {t('teamHierarchyNoResultsTitle', {
+                    defaultValue: 'No matching members',
+                  })}
+                </Text>
+                <Text type="secondary">
+                  {t('teamHierarchyNoResultsDescription', {
+                    defaultValue: 'Try a different search term.',
+                  })}
+                </Text>
+              </Flex>
+            }
+          />
+        </Card>
+      ) : (
+        <Row gutter={[16, 16]}>
+          {filteredGroups.map(group => {
+            const accentColor = getGroupAccentColor(group);
+
+            return (
+              <Col key={`${group.type}-${group.teamLead?.id ?? group.titleKey}`} xs={24} xxl={12}>
+                <Card
+                  title={
+                    <Flex align="center" justify="space-between" gap={12} wrap>
+                      <Flex vertical gap={2}>
+                        <Space size={8}>
+                          {group.type === 'management' ? (
+                            <CrownOutlined style={{ color: accentColor }} />
+                          ) : group.type === 'unassigned' ? (
+                            <UserSwitchOutlined style={{ color: accentColor }} />
+                          ) : (
+                            <UsergroupAddOutlined style={{ color: accentColor }} />
+                          )}
+                          <Text strong>{group.title}</Text>
+                        </Space>
+                        <Text type="secondary" style={{ fontWeight: 400 }}>
+                          {group.description}
+                        </Text>
+                      </Flex>
+                      <Badge
+                        count={
+                          (group.teamLead ? 1 : 0) +
+                          group.directReports.length +
+                          group.indirectReports.length
+                        }
+                        style={{ backgroundColor: accentColor }}
+                      />
+                    </Flex>
+                  }
+                  styles={{ body: { padding: 16 } }}
+                  style={{
+                    height: '100%',
+                    borderColor: token.colorBorderSecondary,
+                  }}
+                >
+                  <Flex vertical gap={16}>
+                    {group.teamLead ? (
+                      <Flex vertical gap={12}>
+                        <Text strong>
+                          {t('teamHierarchyLeadSectionTitle', {
+                            defaultValue: 'Team lead',
+                          })}
+                        </Text>
+                        <MemberCard
+                          member={group.teamLead}
+                          accentColor={accentColor}
+                          badgeLabel={t('teamHierarchyLeadBadge', {
+                            defaultValue: 'Team lead',
+                          })}
+                          isTeamLead
+                        />
+                      </Flex>
+                    ) : null}
+
+                    {renderMembersSection(
+                      group.directReports,
+                      accentColor,
+                      group.type === 'management'
+                        ? t('teamHierarchyLeadershipBadge', {
+                            defaultValue: 'Workspace leader',
+                          })
+                        : group.type === 'unassigned'
+                          ? t('teamHierarchyUnassignedBadge', {
+                              defaultValue: 'Needs assignment',
+                            })
+                          : t('teamHierarchyDirectBadge', {
+                              defaultValue: 'Direct report',
+                            }),
+                      group.type === 'management'
+                        ? t('teamHierarchyLeadershipSectionTitle', {
+                            defaultValue: 'Leadership members',
+                          })
+                        : group.type === 'unassigned'
+                          ? t('teamHierarchyUnassignedSectionTitle', {
+                              defaultValue: 'Members awaiting assignment',
+                            })
+                          : t('teamHierarchyDirectSectionTitle', {
+                              defaultValue: 'Direct reports',
+                            })
+                    )}
+
+                    {renderMembersSection(
+                      group.indirectReports,
+                      accentColor,
+                      t('teamHierarchyIndirectBadge', {
+                        defaultValue: 'Indirect report',
+                      }),
+                      t('teamHierarchyIndirectSectionTitle', {
+                        defaultValue: 'Indirect reports',
+                      }),
+                      true
+                    )}
+                  </Flex>
+                </Card>
+              </Col>
+            );
+          })}
+        </Row>
       )}
-    </div>
+    </Flex>
   );
 };
 

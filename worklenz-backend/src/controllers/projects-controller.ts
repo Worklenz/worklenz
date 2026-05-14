@@ -169,7 +169,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   private static async setProjectPriority(projectId: string, priorityId: string | null, teamId: string | null) {
     const q = `
       UPDATE projects
-      SET priority_id = COALESCE($2::UUID, (SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1))
+      SET priority_id = $2::UUID
       WHERE id = $1
         AND team_id = $3;
     `;
@@ -275,6 +275,13 @@ export default class ProjectsController extends WorklenzControllerBase {
     return { clause: `AND status_id IN (${clause})`, params: statusIds };
   }
 
+  private static getFilterByPriorityWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const priorityIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(priorityIds, paramOffset);
+    return { clause: `AND priority_id IN (${clause})`, params: priorityIds };
+  }
+
   /**
    * Validates and maps sort field
    * Maps frontend field names to safe database column names
@@ -314,9 +321,9 @@ export default class ProjectsController extends WorklenzControllerBase {
         WHERE id = projects.category_id
       )`,
       'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
-      'priority': `(SELECT COALESCE(value, -1) FROM task_priorities WHERE id = projects.priority_id)`,
-      'priority_id': `(SELECT COALESCE(value, -1) FROM task_priorities WHERE id = projects.priority_id)`,
-      'priority_name': `(SELECT COALESCE(value, -1) FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority_id': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority_name': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
       'project_owner': 'owner_id',
     };
 
@@ -417,6 +424,12 @@ export default class ProjectsController extends WorklenzControllerBase {
       paramOffset += statusesResult.params.length;
     }
 
+    const prioritiesResult = this.getFilterByPriorityWhereClosure(req.query.priorities as string, paramOffset);
+    if (prioritiesResult.params.length > 0) {
+      queryParams.push(...prioritiesResult.params);
+      paramOffset += prioritiesResult.params.length;
+    }
+
     // Now get search query with correct paramOffset
     const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, paramOffset);
     
@@ -432,6 +445,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     const categories = categoriesResult.clause;
     const statuses = statusesResult.clause;
+    const priorities = prioritiesResult.clause;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
@@ -504,11 +518,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                                      AND project_id = projects.id)
                                            ELSE updated_at END) AS updated_at
                           FROM projects
-                          WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
-                          ORDER BY ${safeSortField} ${safeSortOrder}
+                          WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                          ORDER BY ${safeSortField} ${safeSortOrder} NULLS LAST
                           LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
-            WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
+            WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
     `;
     
     // Add pagination parameters at the end
@@ -704,6 +718,10 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     if (key.length > 5)
       return res.status(200).send(new ServerResponse(false, null, "The project key length cannot exceed 5 characters."));
+
+    if (req.body.notes && req.body.notes.length > 500) {
+      req.body.notes = req.body.notes.substring(0, 500);
+    }
 
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
@@ -1144,6 +1162,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     const statuses = statusesResult.clause;
     paramOffset += statusesResult.params.length;
     
+    const prioritiesResult = this.getFilterByPriorityWhereClosure(req.query.priorities as string, paramOffset);
+    const priorities = prioritiesResult.clause;
+    paramOffset += prioritiesResult.params.length;
+    
     const userIdParam = paramOffset;
     paramOffset++;
     
@@ -1293,6 +1315,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               AND ${groupField.replace("projects.", "p2.")} = ${groupField}
                               ${categories.replace("projects.", "p2.")}
                               ${statuses.replace("projects.", "p2.")}
+                              ${priorities.replace("projects.", "p2.")}
                               ${isArchived.replace("projects.", "p2.")}
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
@@ -1302,7 +1325,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                          ) AS projects
                   FROM projects
                   ${groupJoin}
-                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                   GROUP BY ${groupByFields}
                   ORDER BY ${groupOrderBy}
                   LIMIT $${sizeParam}::INTEGER OFFSET $${offsetParam}::INTEGER
@@ -1320,6 +1343,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       ...searchParams,
       ...categoriesResult.params,
       ...statusesResult.params,
+      ...prioritiesResult.params,
       userId
     ];
     queryParams.push(size, offset);

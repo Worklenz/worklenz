@@ -25,7 +25,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -43,11 +43,17 @@ import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { colors } from '@/styles/colors';
-import { getRoleColor } from '@/types/roles/role.types';
-import { canManageUserRole } from '@/utils/role-permissions.utils';
+import { getRoleColor, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
+import {
+  canManageUserRole,
+  getSessionRoleName,
+  normalizeRoleName,
+} from '@/utils/role-permissions.utils';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
+import { message } from '@/shared/antd-imports';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
@@ -60,7 +66,7 @@ const TeamMembersSettings = () => {
   const isInviteRestricted = Boolean(currentSession?.is_expired);
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
 
-  useDocumentTitle(t('title') || 'Team Members');
+  useDocumentTitle(t('title', { defaultValue: 'Team Members' }));
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -77,15 +83,6 @@ const TeamMembersSettings = () => {
     order: 'asc',
   });
 
-  // ── Inline name editing state ────────────────────────────────────────────
-  // Which row is currently being edited (by member id)
-  const [editingNameId, setEditingNameId] = useState<string | null>(null);
-  // Live value of the name input
-  const [editingNameValue, setEditingNameValue] = useState<string>('');
-  // Prevents blur from double-committing after Enter/Escape
-  const committingRef = useRef(false);
-  // ────────────────────────────────────────────────────────────────────────
-
   const getTeamMembers = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -100,7 +97,7 @@ const TeamMembersSettings = () => {
         setModel(res.body);
       }
     } catch (error) {
-      console.error('Error fetching team members:', error);
+      // Error fetching team members
     } finally {
       setIsLoading(false);
     }
@@ -116,6 +113,50 @@ const TeamMembersSettings = () => {
       );
       if (res.done) {
         await getTeamMembers();
+        
+        // Check for pending team invite and auto-send after deactivation
+        const pendingTeamInvite = localStorage.getItem('pendingTeamInvite');
+        if (pendingTeamInvite && !record.active) {
+          try {
+            const inviteData = JSON.parse(pendingTeamInvite);
+            const inviteRes = await teamMembersApiService.createTeamMember(inviteData);
+            if (inviteRes.done) {
+              message.success(t('memberDeactivatedInviteSent', { 
+                defaultValue: 'Member deactivated. Your invite has been sent.' 
+              }));
+              localStorage.removeItem('pendingTeamInvite');
+            }
+          } catch (error) {
+            // Error sending pending invite
+            localStorage.removeItem('pendingTeamInvite');
+          }
+        }
+        
+        // Check for pending project invite and auto-send after deactivation
+        const pendingProjectInvite = localStorage.getItem('pendingProjectInvite');
+        if (pendingProjectInvite && !record.active) {
+          try {
+            const inviteData = JSON.parse(pendingProjectInvite);
+            // Send invites for each email in the pending project invite
+            const invitePromises = inviteData.emails.map((email: string) => 
+              projectMembersApiService.inviteByEmail({
+                email: email.trim(),
+                project_id: inviteData.projectId,
+                role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' : 
+                          inviteData.access === 'admin' ? 'ADMIN' : 'MEMBER',
+                is_admin: inviteData.access === 'admin',
+              })
+            );
+            await Promise.all(invitePromises);
+            message.success(t('memberDeactivatedProjectInviteSent', { 
+              defaultValue: `Member deactivated. Project invite sent for "${inviteData.projectName}".` 
+            }));
+            localStorage.removeItem('pendingProjectInvite');
+          } catch (error) {
+            // Error sending pending project invite
+            localStorage.removeItem('pendingProjectInvite');
+          }
+        }
       }
     } finally {
       setIsLoading(false);
@@ -160,88 +201,13 @@ const TeamMembersSettings = () => {
 
   const handleMemberClick = useCallback(
     (memberId: string, roleName?: string, memberName?: string) => {
-      // Don't open the drawer if we're currently editing a name inline
-      if (editingNameId) return;
       setSelectedMemberId(memberId);
       setSelectedMemberRole(roleName || null);
       setSelectedMemberName(memberName || null);
       dispatch(toggleUpdateMemberDrawer());
     },
-    [dispatch, editingNameId]
+    [dispatch]
   );
-
-  // ── Inline name editing helpers ──────────────────────────────────────────
-
-  const commitNameEdit = useCallback(
-    async (memberId: string) => {
-      committingRef.current = true;
-      const trimmed = editingNameValue.trim();
-
-      if (trimmed) {
-        try {
-          // Optimistically update the local model for instant feedback
-          setModel(prev => ({
-            ...prev,
-            data: prev.data?.map(m => (m.id === memberId ? { ...m, name: trimmed } : m)),
-          }));
-
-          const res = await teamMembersApiService.updateMemberName(memberId, trimmed);
-
-          // Always refresh from server so the persisted value (from team_member_info_view)
-          // is what's shown — the optimistic update above just prevents a visible flash
-          if (res.done) {
-            await getTeamMembers();
-          } else {
-            // API returned done: false — revert to server state
-            await getTeamMembers();
-          }
-        } catch (err) {
-          console.error('Failed to update member name', err);
-          // Revert on any error
-          await getTeamMembers();
-        }
-      }
-
-      setEditingNameId(null);
-      setEditingNameValue('');
-      setTimeout(() => {
-        committingRef.current = false;
-      }, 0);
-    },
-    [editingNameValue, getTeamMembers]
-  );
-
-  const cancelNameEdit = useCallback(() => {
-    committingRef.current = true;
-    setEditingNameId(null);
-    setEditingNameValue('');
-    setTimeout(() => {
-      committingRef.current = false;
-    }, 0);
-  }, []);
-
-  const handleNameBlur = useCallback(
-    (memberId: string) => {
-      if (committingRef.current) return;
-      commitNameEdit(memberId);
-    },
-    [commitNameEdit]
-  );
-
-  const handleNameKeyDown = useCallback(
-    (e: React.KeyboardEvent, memberId: string) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        commitNameEdit(memberId);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        cancelNameEdit();
-      }
-    },
-    [commitNameEdit, cancelNameEdit]
-  );
-
-  // ────────────────────────────────────────────────────────────────────────
 
   const handleBulkAssignManager = () => {
     setBulkAssignDrawerVisible(true);
@@ -269,7 +235,7 @@ const TeamMembersSettings = () => {
         await getTeamMembers();
       }
     } catch (error) {
-      console.error('Error removing team lead assignment:', error);
+      // Error removing team lead assignment
     } finally {
       setIsLoading(false);
     }
@@ -320,33 +286,37 @@ const TeamMembersSettings = () => {
   }, []);
 
   const currentUser = auth.getCurrentSession();
-  const currentUserRoleName: string | undefined = (currentUser as unknown as { role_name?: string })
-    ?.role_name;
-  const effectiveRole = (currentUserRoleName || auth.role || '').toLowerCase();
+  const effectiveRole = getSessionRoleName(currentUser);
   const canManageUser = useCallback(
     (targetRole: string | undefined) => {
-      if (currentUser?.is_admin && !currentUser?.owner) {
+      if (effectiveRole === ROLE_NAMES.ADMIN) {
         return targetRole?.toLowerCase() !== 'owner';
       }
       return canManageUserRole(effectiveRole, targetRole, currentUser?.owner);
     },
-    [effectiveRole, currentUser?.owner, currentUser?.is_admin]
+    [effectiveRole, currentUser?.owner]
   );
-  const isPrivilegedUser =
-    !!currentUser?.owner || ['admin', 'owner', 'team lead'].includes(effectiveRole);
+  const isPrivilegedUser = effectiveRole === ROLE_NAMES.OWNER || effectiveRole === ROLE_NAMES.ADMIN;
 
-  const startEditingName = useCallback(
-    (e: React.MouseEvent, record: ITeamMemberViewModel) => {
-      // Only owners and admins can edit names
-      if (!isPrivilegedUser) return;
-      // Pending invitations have no confirmed name to edit yet
-      if (record.pending_invitation) return;
-
-      e.stopPropagation();
-      setEditingNameId(record.id || null);
-      setEditingNameValue(record.name || '');
+  const getRoleLabel = useCallback(
+    (roleName?: string) => {
+      const roleDefinition = ROLE_DEFINITIONS[normalizeRoleName(roleName)];
+      return t(roleDefinition.labelKey, { defaultValue: roleDefinition.labelDefaultValue });
     },
-    [isPrivilegedUser]
+    [t]
+  );
+
+  const handleMemberNameUpdate = useCallback(
+    (memberId: string, newName: string) => {
+      setModel(prevModel => ({
+        ...prevModel,
+        data: prevModel.data?.map(member =>
+          member.id === memberId ? { ...member, name: newName } : member
+        ),
+      }));
+      setSelectedMemberName(currentName => (selectedMemberId === memberId ? newName : currentName));
+    },
+    [selectedMemberId]
   );
 
   const getActionMenuItems = useCallback(
@@ -399,22 +369,19 @@ const TeamMembersSettings = () => {
         title: t('nameColumn'),
         defaultSortOrder: 'ascend',
         sorter: true,
-        // Row-level click is handled inside the cell to avoid conflicts with inline editing
         render: (_, record: ITeamMemberViewModel) => {
-          const isEditing = editingNameId === record.id;
           const isPending = record.pending_invitation;
           const canEdit = isPrivilegedUser && !isPending;
 
           return (
-            <Typography.Text
+            <Flex
+              align="center"
+              gap={8}
               style={{
-                textTransform: 'capitalize',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 8,
+                width: '100%',
               }}
-              // Open drawer when clicking non-editable parts of the row
-              onClick={() => !isEditing && handleMemberClick(record.id || '', record.role_name, record.name)}
+              onClick={() => handleMemberClick(record.id || '', record.role_name, record.name)}
             >
               <Avatar
                 size={28}
@@ -424,50 +391,59 @@ const TeamMembersSettings = () => {
                 {record.name?.charAt(0)}
               </Avatar>
 
-              {isEditing ? (
-                // ── Inline edit input ──
-                <Input
-                  autoFocus
-                  size="small"
-                  value={editingNameValue}
-                  style={{ width: 160, textTransform: 'none' }}
-                  onChange={e => setEditingNameValue(e.target.value)}
-                  onBlur={() => handleNameBlur(record.id || '')}
-                  onKeyDown={e => handleNameKeyDown(e, record.id || '')}
-                  onClick={e => e.stopPropagation()}
-                />
-              ) : (
-                // ── Display name (click to edit if privileged) ──
-                <Tooltip
-                  title={
-                    canEdit
-                      ? t('clickToEditName', { defaultValue: 'Click name to edit' })
-                      : isPending
-                        ? t('pendingInvitationText')
+              <Flex vertical gap={2} style={{ minWidth: 0, flex: 1 }}>
+                <Flex align="center" gap={4} className="team-member-name-row">
+                  <Tooltip
+                    title={
+                      isPending
+                        ? t('pendingInvitationText', { defaultValue: '(Invitation pending)' })
                         : undefined
-                  }
-                  mouseEnterDelay={0.6}
-                >
-                  <span
-                    style={{
-                      cursor: canEdit ? 'text' : 'pointer',
-                      borderBottom: canEdit ? '1px dashed #d9d9d9' : 'none',
-                      paddingBottom: canEdit ? 1 : 0,
-                    }}
-                    onClick={e => canEdit && startEditingName(e, record)}
+                    }
+                    mouseEnterDelay={0.6}
                   >
-                    {record.name}
-                  </span>
-                </Tooltip>
-              )}
+                    <span
+                      style={{
+                        cursor: 'pointer',
+                        textTransform: 'capitalize',
+                        width: 'fit-content',
+                      }}
+                    >
+                      {record.name}
+                    </span>
+                  </Tooltip>
+                  {canEdit ? (
+                    <Tooltip
+                      title={t('renameMemberTooltip', {
+                        defaultValue: 'Rename member',
+                      })}
+                    >
+                      <Button
+                        size="small"
+                        type="text"
+                        className="team-member-name-edit-button"
+                        icon={<EditOutlined />}
+                        onClick={event => {
+                          event.stopPropagation();
+                          handleMemberClick(record.id || '', record.role_name, record.name);
+                        }}
+                      />
+                    </Tooltip>
+                  ) : null}
+                </Flex>
+
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {record.job_title || t('jobTitleEmpty', { defaultValue: 'Select a job title' })}
+                </Typography.Text>
+
+                {!record.active && (
+                  <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
+                    {t('deactivatedText')}
+                  </Typography.Text>
+                )}
+              </Flex>
 
               {record.is_online && <Badge color={colors.limeGreen} />}
-              {!record.active && (
-                <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
-                  {t('deactivatedText')}
-                </Typography.Text>
-              )}
-            </Typography.Text>
+            </Flex>
           );
         },
       },
@@ -505,23 +481,6 @@ const TeamMembersSettings = () => {
         ),
       },
       {
-        key: 'job_title',
-        dataIndex: 'job_title',
-        title: t('jobTitleColumn'),
-        sorter: true,
-        onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
-          style: { cursor: 'pointer' },
-        }),
-        render: (_, record: ITeamMemberViewModel) => (
-          <Typography.Text>
-            {record.job_title || (
-              <Typography.Text type="secondary">Select a Job Title</Typography.Text>
-            )}
-          </Typography.Text>
-        ),
-      },
-      {
         key: 'role_name',
         dataIndex: 'role_name',
         title: t('teamAccessColumn'),
@@ -538,14 +497,14 @@ const TeamMembersSettings = () => {
                 textTransform: 'capitalize',
               }}
             >
-              {record.role_name}
+              {getRoleLabel(record.role_name)}
             </Typography.Text>
           </Flex>
         ),
       },
       {
         key: 'team_lead_assignment',
-        title: 'Team Lead',
+        title: t('teamLeadColumn', { defaultValue: 'Team Lead' }),
         render: (_, record: ITeamMemberViewModel) => {
           if (
             record.role_name === 'Team Lead' ||
@@ -581,7 +540,7 @@ const TeamMembersSettings = () => {
 
           return (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-              Unassigned
+              {t('unassignedText', { defaultValue: 'Unassigned' })}
             </Typography.Text>
           );
         },
@@ -654,23 +613,18 @@ const TeamMembersSettings = () => {
     [
       t,
       isPrivilegedUser,
-      effectiveRole,
       currentUser?.owner,
       getActionMenuItems,
       canManageUser,
+      getRoleLabel,
       handleStatusChange,
       handleDeleteMember,
       handleMemberClick,
-      editingNameId,
-      editingNameValue,
-      startEditingName,
-      handleNameBlur,
-      handleNameKeyDown,
     ]
   );
 
   return (
-    <>
+    <Flex vertical gap={16}>
       <Card
         style={{ width: '100%' }}
         title={
@@ -685,12 +639,18 @@ const TeamMembersSettings = () => {
               style={{ width: '100%', maxWidth: 500 }}
             >
               <Tooltip title={t('pinTooltip')}>
-                <Button shape="circle" icon={<SyncOutlined spin={isLoading} />} onClick={handleRefresh} />
+                <Button
+                  shape="circle"
+                  icon={<SyncOutlined spin={isLoading} />}
+                  onClick={handleRefresh}
+                />
               </Tooltip>
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={t('search', { defaultValue: 'Search' })}
+                placeholder={t('searchPlaceholder', {
+                  defaultValue: 'Search members by name',
+                })}
                 style={{ maxWidth: 250 }}
                 suffix={<SearchOutlined />}
               />
@@ -698,9 +658,9 @@ const TeamMembersSettings = () => {
                 title={
                   isInviteRestricted
                     ? tCommon('license-expired-subtitle', {
-                      defaultValue:
-                        'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
-                    })
+                        defaultValue:
+                          'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
+                      })
                     : ''
                 }
               >
@@ -719,7 +679,7 @@ const TeamMembersSettings = () => {
                 <PinRouteToNavbarButton
                   name={t('title')}
                   path="/worklenz/settings/team-members"
-                  adminOnly
+                  adminOnly={false}
                 />
               </Tooltip>
             </Flex>
@@ -756,7 +716,13 @@ const TeamMembersSettings = () => {
             pageSizeOptions: PAGE_SIZE_OPTIONS,
             size: 'small',
             total: model.total,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            showTotal: (total, range) =>
+              t('paginationTotal', {
+                defaultValue: '{{start}}-{{end}} of {{total}} items',
+                start: range[0],
+                end: range[1],
+                total,
+              }),
           }}
           scroll={{ x: 'max-content' }}
         />
@@ -805,13 +771,14 @@ const TeamMembersSettings = () => {
         <UpdateMemberDrawer
           selectedMemberId={selectedMemberId}
           selectedMemberName={selectedMemberName}
+          onNameUpdate={handleMemberNameUpdate}
           onRoleUpdate={handleRoleUpdate}
           onJobTitleUpdate={handleJobTitleUpdate}
           initialRoleName={selectedMemberRole || undefined}
         />,
         document.body
       )}
-    </>
+    </Flex>
   );
 };
 

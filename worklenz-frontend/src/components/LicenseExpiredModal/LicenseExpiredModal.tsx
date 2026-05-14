@@ -49,6 +49,7 @@ export const LicenseExpiredModal = ({
   const { t } = useTranslation('common');
   const authService = useAuthService();
   const authServiceInstance = createAuthService(navigate);
+  const isOwnerOrAdmin = authService?.isOwnerOrAdmin() ?? false;
   const [visible, setVisible] = useState(open);
   const [isContactingSupport, setIsContactingSupport] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
@@ -295,31 +296,44 @@ export const LicenseExpiredModal = ({
             </Space>
           </Card>
 
-          {/* Upgrade Button */}
-          <Button
-            type="primary"
-            size="large"
-            onClick={handleUpgrade}
-            loading={isContactingSupport && subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM}
-            icon={!isContactingSupport ? getUpgradeIcon() : undefined}
-            className="license-modal-upgrade-btn"
-          >
-            {subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
-              ? messageSent
-                ? t('license-expired-message-sent')
-                : isContactingSupport
-                  ? t('license-expired-contacting-support')
-                  : getUpgradeText()
-              : getUpgradeText()}
-          </Button>
+          {/* Upgrade Button (billing-authorized roles only) */}
+          {isOwnerOrAdmin ? (
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleUpgrade}
+              loading={isContactingSupport && subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM}
+              icon={!isContactingSupport ? getUpgradeIcon() : undefined}
+              className="license-modal-upgrade-btn"
+            >
+              {subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
+                ? messageSent
+                  ? t('license-expired-message-sent', { defaultValue: 'Message Sent ✓' })
+                  : isContactingSupport
+                    ? t('license-expired-contacting-support', {
+                        defaultValue: 'Contacting Support...',
+                      })
+                    : getUpgradeText()
+                : getUpgradeText()}
+            </Button>
+          ) : (
+            <Paragraph type="secondary" style={{ textAlign: 'center', marginBottom: 0 }}>
+              {t('license-expired-contact-owner', {
+                defaultValue:
+                  "Your team's subscription has expired. Please contact your team owner to renew.",
+              })}
+            </Paragraph>
+          )}
 
           {/* Note */}
           <div className="license-modal-note">
             <Tag color="blue" style={{ marginRight: 8 }}>
-              Note
+              {t('note', { defaultValue: 'Note' })}
             </Tag>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {t('trial-alert-admin-note')}
+              {t('trial-alert-admin-note', {
+                defaultValue: 'You can still access the Admin Center to manage your subscription',
+              })}
             </Text>
           </div>
         </div>

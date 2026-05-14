@@ -23,9 +23,59 @@ import {
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
+import {
+  canAssignRole,
+  canManageTargetRole,
+  getTeamMemberRoleName,
+  TEAM_ROLE_NAMES,
+} from "../shared/team-permissions";
 import { NotificationsService } from "../services/notifications/notifications.service";
 
 export default class TeamMembersController extends WorklenzControllerBase {
+  private static async ensureAssignableRole(
+    req: IWorkLenzRequest,
+    roleName?: string | null,
+  ): Promise<IWorkLenzResponse | null> {
+    if (roleName && !canAssignRole(req.user, roleName)) {
+      return new ServerResponse(
+        false,
+        null,
+        "You are not authorized to assign this role.",
+      ) as unknown as IWorkLenzResponse;
+    }
+
+    return null;
+  }
+
+  private static async ensureManageableTarget(
+    req: IWorkLenzRequest,
+    teamMemberId?: string,
+  ): Promise<IWorkLenzResponse | null> {
+    if (!teamMemberId || !req.user?.team_id) {
+      return new ServerResponse(
+        false,
+        null,
+        "Required fields are missing.",
+      ) as unknown as IWorkLenzResponse;
+    }
+
+    const targetRoleName = await getTeamMemberRoleName(teamMemberId, req.user.team_id);
+
+    if (!targetRoleName) {
+      return new ServerResponse(false, null, "Team member not found.") as unknown as IWorkLenzResponse;
+    }
+
+    if (!canManageTargetRole(req.user, targetRoleName)) {
+      return new ServerResponse(
+        false,
+        null,
+        "You are not authorized to manage this team member.",
+      ) as unknown as IWorkLenzResponse;
+    }
+
+    return null;
+  }
+
   public static async checkIfUserAlreadyExists(
     owner_id: string,
     email: string,
@@ -100,6 +150,18 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.user?.team_id || null;
+
+    const requestedRoleName =
+      req.body.role_name ||
+      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+
+    if (roleAssignmentError) {
+      return res.status(200).send(roleAssignmentError);
+    }
 
     if (!req.user?.team_id) {
       return res
@@ -187,9 +249,18 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
         const requiredSeats = updatedCount - effectiveUserLimit;
         if (updatedCount > effectiveUserLimit) {
+          // Check if this is an AppSumo user for specialized modal
+          const isAppSumoUser = subscriptionData.is_ltd === true;
+          
           const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
             required_count: requiredSeats,
+            current_members: parseInt(subscriptionData.current_count),
+            plan_seat_limit: effectiveUserLimit,
+            business_plan_limit: 25,
+            is_appsumo_user: isAppSumoUser,
+            subscription_type: subscriptionData.subscription_type,
             current_seat_amount: effectiveUserLimit,
           };
           return res
@@ -198,7 +269,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
               new ServerResponse(
                 false,
                 obj,
-                "Insufficient seats available. Please upgrade your subscription to add more team members.",
+                isAppSumoUser 
+                  ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
+                  : "Insufficient seats available. Please upgrade your subscription to add more team members.",
               ),
             );
         }
@@ -223,13 +296,24 @@ export default class TeamMembersController extends WorklenzControllerBase {
         parseInt(subscriptionData.current_count) + req.body.emails.length >
           parseInt(subscriptionData.ltd_users)
       ) {
+        const ltdLimit = parseInt(subscriptionData.ltd_users);
+        const obj = {
+          error_code: 'SEAT_LIMIT_EXCEEDED',
+          seats_enough: false,
+          current_members: parseInt(subscriptionData.current_count),
+          plan_seat_limit: ltdLimit,
+          business_plan_limit: 25,
+          is_appsumo_user: true,
+          subscription_type: subscriptionData.subscription_type,
+          current_seat_amount: ltdLimit,
+        };
         return res
           .status(200)
           .send(
             new ServerResponse(
               false,
-              null,
-              "Cannot exceed the maximum number of life time users.",
+              obj,
+              `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`,
             ),
           );
       }
@@ -241,13 +325,24 @@ export default class TeamMembersController extends WorklenzControllerBase {
         parseInt(subscriptionData.current_count) + incrementBy >
           parseInt(subscriptionData.ltd_users)
       ) {
+        const ltdLimit = parseInt(subscriptionData.ltd_users);
+        const obj = {
+          error_code: 'SEAT_LIMIT_EXCEEDED',
+          seats_enough: false,
+          current_members: parseInt(subscriptionData.current_count),
+          plan_seat_limit: ltdLimit,
+          business_plan_limit: 25,
+          is_appsumo_user: true,
+          subscription_type: subscriptionData.subscription_type,
+          current_seat_amount: ltdLimit,
+        };
         return res
           .status(200)
           .send(
             new ServerResponse(
               false,
-              null,
-              "Cannot exceed the maximum number of life time users.",
+              obj,
+              `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`,
             ),
           );
       }
@@ -259,12 +354,22 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
 
         if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentTrialMembers,
+            plan_seat_limit: TRIAL_MEMBER_LIMIT,
+            business_plan_limit: 25,
+            is_appsumo_user: false,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: TRIAL_MEMBER_LIMIT,
+          };
           return res
             .status(200)
             .send(
               new ServerResponse(
                 false,
-                null,
+                obj,
                 `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
               ),
             );
@@ -448,6 +553,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.params.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
     const q = `
       SELECT id,
             created_at,
@@ -513,6 +627,27 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.params.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
+    const requestedRoleName =
+      req.body.role_name ||
+      (req.body.is_admin ? TEAM_ROLE_NAMES.ADMIN : TEAM_ROLE_NAMES.MEMBER);
+    const roleAssignmentError = await this.ensureAssignableRole(
+      req,
+      requestedRoleName,
+    );
+
+    if (roleAssignmentError) {
+      return res.status(200).send(roleAssignmentError);
+    }
+
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
     req.body.is_admin = !!req.body.is_admin;
@@ -530,6 +665,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { name } = req.body;
+
+    const targetManagementError = await this.ensureManageableTarget(req, id);
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
  
     if (!id || !name?.trim()) {
       return res
@@ -597,6 +738,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.user?.team_id || null;
 
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.body.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
     const q = `SELECT resend_team_invitation($1) AS invitation;`;
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
@@ -643,6 +793,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
+
+    const targetManagementError = await this.ensureManageableTarget(req, id);
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
 
     if (!id || !req.user?.team_id)
       return res
@@ -1416,6 +1572,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ) {
+    const targetManagementError = await this.ensureManageableTarget(
+      req,
+      req.params.id,
+    );
+
+    if (targetManagementError) {
+      return res.status(200).send(targetManagementError);
+    }
+
     if (!req.user?.team_id)
       return res
         .status(200)
@@ -1774,12 +1939,22 @@ export default class TeamMembersController extends WorklenzControllerBase {
           const currentTrialMembers =
             parseInt(subscriptionData.current_count) || 0;
           if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
+            const obj = {
+              error_code: 'SEAT_LIMIT_EXCEEDED',
+              seats_enough: false,
+              current_members: currentTrialMembers,
+              plan_seat_limit: TRIAL_MEMBER_LIMIT,
+              business_plan_limit: 25,
+              is_appsumo_user: false,
+              subscription_type: subscriptionData.subscription_type,
+              current_seat_amount: TRIAL_MEMBER_LIMIT,
+            };
             return res
               .status(200)
               .send(
                 new ServerResponse(
                   false,
-                  null,
+                  obj,
                   `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
                 ),
               );
@@ -1797,9 +1972,17 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
         if (currentCount >= effectiveUserLimit) {
           const requiredSeats = 1; // At least 1 more seat needed
+          const isAppSumoUser = subscriptionData.is_ltd === true;
+          
           const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
             required_count: requiredSeats,
+            current_members: currentCount,
+            plan_seat_limit: effectiveUserLimit,
+            business_plan_limit: 25,
+            is_appsumo_user: isAppSumoUser,
+            subscription_type: subscriptionData.subscription_type,
             current_seat_amount: effectiveUserLimit,
           };
           return res
@@ -1808,7 +1991,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
               new ServerResponse(
                 false,
                 obj,
-                "Insufficient seats available. Please upgrade your subscription before generating invitation links.",
+                isAppSumoUser 
+                  ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
+                  : "Insufficient seats available. Please upgrade your subscription before generating invitation links.",
               ),
             );
         }
@@ -1829,13 +2014,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const currentCount = parseInt(subscriptionData.current_count) || 0;
         const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
         if (currentCount >= ltdLimit) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentCount,
+            plan_seat_limit: ltdLimit,
+            business_plan_limit: 25,
+            is_appsumo_user: true,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: ltdLimit,
+          };
           return res
             .status(200)
             .send(
               new ServerResponse(
                 false,
-                null,
-                "Cannot exceed the maximum number of lifetime users.",
+                obj,
+                `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`,
               ),
             );
         }

@@ -12,6 +12,7 @@ import {
   Input,
   notification,
   Popconfirm,
+  Select,
   Skeleton,
   Space,
   Switch,
@@ -64,10 +65,12 @@ import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useAuthService } from '@/hooks/useAuth';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { isFreeUser } from '@/utils/subscription-utils';
-import { CrownOutlined } from '@ant-design/icons';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
+import { CrownOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
+import { CURRENCY_OPTIONS } from '@/shared/currencies';
+import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 
 export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
@@ -170,6 +173,8 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const isOwnerorAdmin = useAuthService().isOwnerOrAdmin();
   const isEditable = isProjectManager || isOwnerorAdmin;
   const isFree = isFreeUser(currentSession);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const canManageBudgetSettings = hasBusinessAccess && (isProjectManager || isOwnerorAdmin);
 
   // Effects
   useEffect(() => {
@@ -198,6 +203,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       try {
         const formValues: any = {
           ...project,
+          notes: project.notes ? project.notes.slice(0, 500) : '',
           start_date: project.start_date ? dayjs(project.start_date) : null,
           end_date: project.end_date ? dayjs(project.end_date) : null,
           working_days: project.working_days || 0,
@@ -205,6 +211,8 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_weighted_progress: project.use_weighted_progress || false,
           use_time_progress: project.use_time_progress || false,
           auto_assign_task_creator: project.auto_assign_task_creator || false,
+          budget: project.budget ?? 0,
+          currency: project.currency || 'USD',
         };
 
         form.setFieldsValue(formValues);
@@ -236,7 +244,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const currentValues = form.getFieldsValue();
       const isFormPristine = !form.isFieldsTouched(true);
       if (isFormPristine && !currentValues.color_code) {
-        form.setFieldsValue(defaultFormValues);
+        form.setFieldsValue({
+          ...defaultFormValues,
+          budget: 0,
+          currency: 'USD',
+        });
       }
       setSelectedProjectManager(null);
 
@@ -432,7 +444,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       if (!csrfToken) {
         notification.error({
           message: tCommon('error'),
-          description: 'Security token validation failed. Please try again.',
+          description: t('securityTokenValidationFailed', {
+            defaultValue: 'Security token validation failed. Please try again.',
+          }),
         });
         return;
       }
@@ -442,7 +456,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         color_code: values.color_code,
         status_id: values.status_id,
         category_id: values.category_id || null,
-        priority_id: values.priority_id || defaultPriorityId || null,
+        priority_id: values.priority_id || null,
         notes: values.notes,
         key: values.key,
         client_id: values.client_id,
@@ -468,6 +482,21 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       const response = await action;
 
       if (response?.data?.done) {
+        if (editMode && projectId && hasBusinessAccess) {
+          const selectedBudget = Number(values.budget ?? 0);
+          const selectedCurrency = (values.currency || 'USD').toUpperCase();
+          const currentBudget = Number(project?.budget ?? 0);
+          const currentCurrency = (project?.currency || 'USD').toUpperCase();
+
+          if (selectedBudget !== currentBudget) {
+            await projectFinanceApiService.updateProjectBudget(projectId, selectedBudget);
+          }
+
+          if (selectedCurrency !== currentCurrency) {
+            await projectFinanceApiService.updateProjectCurrency(projectId, selectedCurrency);
+          }
+        }
+
         if (!editMode) {
           trackMixpanelEvent(evt_projects_create);
           navigate(
@@ -625,7 +654,6 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
           />
           <ProjectCategorySection
-            categories={projectCategories}
             form={form}
             t={t}
             disabled={isFree || (!isProjectManager && !isOwnerorAdmin)}
@@ -640,7 +668,9 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           <Form.Item name="notes" label={t('notes')}>
             <Input.TextArea
               placeholder={t('enterNotes')}
-              disabled={!isProjectManager && !isOwnerorAdmin}
+              disabled={!isProjectManager && !isOwnerorAdmin} 
+              maxLength={500}
+              showCount
             />
           </Form.Item>
 
@@ -865,7 +895,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <Space>
                 <Typography.Text>{t('manualProgress')}</Typography.Text>
                 <Tooltip title={t('manualProgressTooltip')}>
-                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                  <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
                 </Tooltip>
               </Space>
             }
@@ -883,7 +913,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <Space>
                 <Typography.Text>{t('weightedProgress')}</Typography.Text>
                 <Tooltip title={t('weightedProgressTooltip')}>
-                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                  <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
                 </Tooltip>
               </Space>
             }
@@ -901,7 +931,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <Space>
                 <Typography.Text>{t('timeProgress')}</Typography.Text>
                 <Tooltip title={t('timeProgressTooltip')}>
-                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                  <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
                 </Tooltip>
               </Space>
             }
@@ -930,13 +960,112 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
               <Space>
                 <Typography.Text>{t('autoAssignTaskCreator')}</Typography.Text>
                 <Tooltip title={t('autoAssignTaskCreatorTooltip')}>
-                  <Button type="text" size="small" icon={<Typography.Text>ⓘ</Typography.Text>} />
+                  <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
                 </Tooltip>
               </Space>
             }
             valuePropName="checked"
           >
             <Switch disabled={!isProjectManager && !isOwnerorAdmin} />
+          </Form.Item>
+        </>
+      ),
+    },
+    {
+      key: 'budget',
+      label: t('budgetSettingsTab', { defaultValue: 'Budget Settings' }),
+      children: (
+        <>
+          {!hasBusinessAccess && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={t('budgetBusinessPlanTitle', { defaultValue: 'Business Plan Required' })}
+              description={
+                <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+                  <Typography.Text>
+                    {t('budgetBusinessPlanDescription', {
+                      defaultValue:
+                        'Project budget settings are available on Business and Enterprise plans.',
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    icon={<CrownOutlined />}
+                    onClick={handleUpgradeClick}
+                    aria-label={tCommon('upgrade-plan')}
+                  >
+                    {tCommon('upgrade-plan')}
+                  </Button>
+                </Flex>
+              }
+            />
+          )}
+
+          {!editMode && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={t('budgetCreateFirstTitle', { defaultValue: 'Create Project First' })}
+              description={t('budgetCreateFirstDescription', {
+                defaultValue:
+                  'Save the project first, then return to configure budget and currency settings.',
+              })}
+            />
+          )}
+
+          <Form.Item
+            name="budget"
+            label={t('budgetAmountLabel', { defaultValue: 'Project Budget' })}
+            rules={[
+              {
+                validator: (_, value) => {
+                  if (value === undefined || value === null || Number(value) >= 0) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error(
+                      t('budgetValidationMessage', {
+                        defaultValue: 'Budget must be 0 or greater',
+                      })
+                    )
+                  );
+                },
+              },
+            ]}
+          >
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              disabled={!canManageBudgetSettings || !editMode}
+              placeholder={t('budgetAmountPlaceholder', { defaultValue: 'Enter project budget' })}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="currency"
+            label={t('budgetCurrencyLabel', { defaultValue: 'Currency' })}
+            rules={[
+              {
+                required: true,
+                message: t('budgetCurrencyRequired', { defaultValue: 'Please select a currency' }),
+              },
+            ]}
+          >
+            <Select
+              showSearch
+              options={CURRENCY_OPTIONS}
+              disabled={!canManageBudgetSettings || !editMode}
+              placeholder={t('budgetCurrencyPlaceholder', { defaultValue: 'Select currency' })}
+              filterOption={(input, option) =>
+                String(option?.label || '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+            />
           </Form.Item>
         </>
       ),
@@ -950,6 +1079,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           {projectId ? t('editProject') : t('createProject')}
         </Typography.Text>
       }
+      width={560}
       open={isProjectDrawerOpen}
       onClose={handleDrawerClose}
       destroyOnClose

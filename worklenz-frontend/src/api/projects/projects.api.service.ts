@@ -25,10 +25,11 @@ export const projectsApiService = {
     search: string | null,
     filter: number | null = null,
     statuses: string | null = null,
-    categories: string | null = null
+    categories: string | null = null,
+    priorities: string | null = null
   ): Promise<IServerResponse<IProjectsViewModel>> => {
     const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories })}`;
+    const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories, priorities })}`;
     const response = await apiClient.get<IServerResponse<IProjectsViewModel>>(`${url}`);
     return response.data;
   },
@@ -42,10 +43,11 @@ export const projectsApiService = {
     groupBy: string,
     filter: number | null = null,
     statuses: string | null = null,
-    categories: string | null = null
+    categories: string | null = null,
+    priorities: string | null = null
   ): Promise<IServerResponse<IGroupedProjectsViewModel>> => {
     const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories })}`;
+    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories, priorities })}`;
     const response = await apiClient.get<IServerResponse<IGroupedProjectsViewModel>>(`${url}`);
     return response.data;
   },
