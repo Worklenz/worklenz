@@ -19,6 +19,8 @@ import {
   statusExclude,
   TEAM_MEMBER_TREE_MAP_COLOR_ALPHA,
   TRIAL_MEMBER_LIMIT,
+  BUSINESS_PLAN_LIMIT,
+  APPSUMO_PLAN_LIMIT,
 } from "../shared/constants";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
@@ -251,14 +253,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
         if (updatedCount > effectiveUserLimit) {
           // Check if this is an AppSumo user for specialized modal
           const isAppSumoUser = subscriptionData.is_ltd === true;
-          
+
           const obj = {
             error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
             required_count: requiredSeats,
             current_members: parseInt(subscriptionData.current_count),
             plan_seat_limit: effectiveUserLimit,
-            business_plan_limit: 25,
+            business_plan_limit: BUSINESS_PLAN_LIMIT,
             is_appsumo_user: isAppSumoUser,
             subscription_type: subscriptionData.subscription_type,
             current_seat_amount: effectiveUserLimit,
@@ -269,8 +271,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
               new ServerResponse(
                 false,
                 obj,
-                isAppSumoUser 
-                  ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
+                isAppSumoUser
+                  ? `Your AppSumo plan includes ${effectiveUserLimit} members. Upgrade to Business for 25 members invite someone new, or deactivate an inactive member to.`
                   : "Insufficient seats available. Please upgrade your subscription to add more team members.",
               ),
             );
@@ -294,7 +296,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         subscriptionData.current_count &&
         !isBusinessPlan &&
         parseInt(subscriptionData.current_count) + req.body.emails.length >
-          parseInt(subscriptionData.ltd_users)
+        parseInt(subscriptionData.ltd_users)
       ) {
         const ltdLimit = parseInt(subscriptionData.ltd_users);
         const obj = {
@@ -302,7 +304,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
           seats_enough: false,
           current_members: parseInt(subscriptionData.current_count),
           plan_seat_limit: ltdLimit,
-          business_plan_limit: 25,
+          business_plan_limit: BUSINESS_PLAN_LIMIT,
           is_appsumo_user: true,
           subscription_type: subscriptionData.subscription_type,
           current_seat_amount: ltdLimit,
@@ -323,7 +325,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         subscriptionData.current_count &&
         !isBusinessPlan &&
         parseInt(subscriptionData.current_count) + incrementBy >
-          parseInt(subscriptionData.ltd_users)
+        parseInt(subscriptionData.ltd_users)
       ) {
         const ltdLimit = parseInt(subscriptionData.ltd_users);
         const obj = {
@@ -331,7 +333,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
           seats_enough: false,
           current_members: parseInt(subscriptionData.current_count),
           plan_seat_limit: ltdLimit,
-          business_plan_limit: 25,
+          business_plan_limit: BUSINESS_PLAN_LIMIT,
           is_appsumo_user: true,
           subscription_type: subscriptionData.subscription_type,
           current_seat_amount: ltdLimit,
@@ -359,7 +361,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
             seats_enough: false,
             current_members: currentTrialMembers,
             plan_seat_limit: TRIAL_MEMBER_LIMIT,
-            business_plan_limit: 25,
+            business_plan_limit: BUSINESS_PLAN_LIMIT,
             is_appsumo_user: false,
             subscription_type: subscriptionData.subscription_type,
             current_seat_amount: TRIAL_MEMBER_LIMIT,
@@ -371,6 +373,36 @@ export default class TeamMembersController extends WorklenzControllerBase {
                 false,
                 obj,
                 `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
+              ),
+            );
+        }
+      }
+
+      /**
+       * Checks life_time_deal (AppSumo) user team member limit based on redeemed coupon codes
+       */
+      if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+        const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+        const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+        if (currentLtdMembers + incrementBy > ltdLimit) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentLtdMembers,
+            plan_seat_limit: ltdLimit,
+            business_plan_limit: APPSUMO_PLAN_LIMIT,
+            is_appsumo_user: true,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: ltdLimit,
+          };
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                obj,
+                `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${APPSUMO_PLAN_LIMIT} members.`,
               ),
             );
         }
@@ -671,21 +703,21 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (targetManagementError) {
       return res.status(200).send(targetManagementError);
     }
- 
+
     if (!id || !name?.trim()) {
       return res
         .status(200)
         .send(new ServerResponse(false, null, "Required fields are missing."));
     }
- 
+
     if (!req.user?.team_id) {
       return res
         .status(200)
         .send(new ServerResponse(false, null, "Team not found."));
     }
- 
+
     const trimmedName = name.trim();
- 
+
     // First, resolve whether this team member has a linked user account
     // or is still a pending invitation (no user_id yet).
     // This mirrors exactly what team_member_info_view does:
@@ -697,16 +729,16 @@ export default class TeamMembersController extends WorklenzControllerBase {
         AND tm.team_id = $2;
     `;
     const resolveResult = await db.query(resolveQ, [id, req.user.team_id]);
- 
+
     if (resolveResult.rowCount === 0) {
       return res
         .status(200)
         .send(new ServerResponse(false, null, "Team member not found."));
     }
- 
+
     // eslint-disable-next-line prefer-destructuring
     const { user_id } = resolveResult.rows[0];
- 
+
     if (user_id) {
       // Active member — update users.name (what the view reads via COALESCE first branch)
       const updateUserQ = `
@@ -725,7 +757,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       `;
       await db.query(updateInviteQ, [trimmedName, id, req.user.team_id]);
     }
- 
+
     return res
       .status(200)
       .send(new ServerResponse(true, null, "Member name updated successfully."));
@@ -899,9 +931,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
       object.progress =
         object.assigned_task_count > 0
           ? (
-              (object.done_task_count / object.assigned_task_count) *
-              100
-            ).toFixed(0)
+            (object.done_task_count / object.assigned_task_count) *
+            100
+          ).toFixed(0)
           : 0;
     }
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -1088,14 +1120,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
           label:
             selected === "time"
               ? formatDuration(
-                  moment.duration(element.time_logged || "0", "seconds"),
-                )
+                moment.duration(element.time_logged || "0", "seconds"),
+              )
               : `<br>${element.task_count} total tasks`,
           labelToolTip:
             selected === "time"
               ? formatDuration(
-                  moment.duration(element.time_logged || "0", "seconds"),
-                )
+                moment.duration(element.time_logged || "0", "seconds"),
+              )
               : `<b><br> - ${element.projects_count} projects <br> - ${element.task_count} total tasks</br>`,
         });
         if (element.projects.length) {
@@ -1108,8 +1140,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
               label:
                 selected === "time"
                   ? formatDuration(
-                      moment.duration(item.value || "0", "seconds"),
-                    )
+                    moment.duration(item.value || "0", "seconds"),
+                  )
                   : `${item.value} tasks`,
             });
           });
@@ -1434,8 +1466,8 @@ export default class TeamMembersController extends WorklenzControllerBase {
             selected === "tasks"
               ? `${element.value} tasks`
               : formatDuration(
-                  moment.duration(element.value || "0", "seconds"),
-                ),
+                moment.duration(element.value || "0", "seconds"),
+              ),
         });
       },
     );
@@ -1637,11 +1669,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanAccept = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
-                                     subscriptionData.plan_name?.toLowerCase().includes("business") ||
-                                     subscriptionData.business_plan_override === true ||
-                                     subscriptionData.appsumo_business_eligible === true;
-        
+        const isBusinessPlanAccept = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
+          subscriptionData.plan_name?.toLowerCase().includes("business") ||
+          subscriptionData.business_plan_override === true ||
+          subscriptionData.appsumo_business_eligible === true;
+
         if (
           subscriptionData.is_ltd &&
           subscriptionData.ltd_users &&
@@ -1747,11 +1779,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
         // Check AppSumo lifetime deal limit - only applies if not on Business plan
         // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-        const isBusinessPlanReactivate = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
-                                         subscriptionData.plan_name?.toLowerCase().includes("business") ||
-                                         subscriptionData.business_plan_override === true ||
-                                         subscriptionData.appsumo_business_eligible === true;
-        
+        const isBusinessPlanReactivate = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
+          subscriptionData.plan_name?.toLowerCase().includes("business") ||
+          subscriptionData.business_plan_override === true ||
+          subscriptionData.appsumo_business_eligible === true;
+
         if (
           subscriptionData.is_ltd &&
           subscriptionData.ltd_users &&
@@ -1932,33 +1964,57 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
       // Check trial user limit - warn if close to limit (skip for Business plan trials)
       if (subscriptionData.subscription_status === "trialing") {
-        const isBusinessPlanTrial = subscriptionData.plan_name
-          ?.toLowerCase()
-          .includes("business");
-        if (!isBusinessPlanTrial) {
-          const currentTrialMembers =
-            parseInt(subscriptionData.current_count) || 0;
-          if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
-            const obj = {
-              error_code: 'SEAT_LIMIT_EXCEEDED',
-              seats_enough: false,
-              current_members: currentTrialMembers,
-              plan_seat_limit: TRIAL_MEMBER_LIMIT,
-              business_plan_limit: 25,
-              is_appsumo_user: false,
-              subscription_type: subscriptionData.subscription_type,
-              current_seat_amount: TRIAL_MEMBER_LIMIT,
-            };
-            return res
-              .status(200)
-              .send(
-                new ServerResponse(
-                  false,
-                  obj,
-                  `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
-                ),
-              );
-          }
+        const currentTrialMembers =
+          parseInt(subscriptionData.current_count) || 0;
+        if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentTrialMembers,
+            plan_seat_limit: TRIAL_MEMBER_LIMIT,
+            business_plan_limit: BUSINESS_PLAN_LIMIT,
+            is_appsumo_user: false,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: TRIAL_MEMBER_LIMIT,
+          };
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                obj,
+                `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
+              ),
+            );
+        }
+
+      }
+
+      // Check life_time_deal (AppSumo) user limit for link generation
+      if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+        const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+        const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+        if (currentLtdMembers >= ltdLimit) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentLtdMembers,
+            plan_seat_limit: ltdLimit,
+            business_plan_limit: APPSUMO_PLAN_LIMIT,
+            is_appsumo_user: true,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: ltdLimit,
+          };
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                obj,
+                `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`,
+              ),
+            );
         }
       }
 
@@ -1973,7 +2029,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         if (currentCount >= effectiveUserLimit) {
           const requiredSeats = 1; // At least 1 more seat needed
           const isAppSumoUser = subscriptionData.is_ltd === true;
-          
+
           const obj = {
             error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
@@ -1991,7 +2047,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
               new ServerResponse(
                 false,
                 obj,
-                isAppSumoUser 
+                isAppSumoUser
                   ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
                   : "Insufficient seats available. Please upgrade your subscription before generating invitation links.",
               ),
@@ -2356,6 +2412,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
                   false,
                   null,
                   `Trial teams cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please ask the team owner to upgrade.`,
+                ),
+              );
+          }
+        }
+
+        if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+          const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+          const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+          if (currentLtdMembers >= ltdLimit) {
+            return res
+              .status(200)
+              .send(
+                new ServerResponse(
+                  false,
+                  null,
+                  `The team cannot exceed ${ltdLimit} team members.Please ask the team owner to upgrade.`,
                 ),
               );
           }
