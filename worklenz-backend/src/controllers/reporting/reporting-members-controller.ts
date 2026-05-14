@@ -11,7 +11,27 @@ import ReportingControllerBaseWithTimezone from "./reporting-controller-base-wit
 import ReportingControllerBase from "./reporting-controller-base";
 import Excel from "exceljs";
 
+interface TimelogFlatExportRow {
+  log_day: string | Date | null;
+  user_name: string | null;
+  project_name: string | null;
+  task_name: string | null;
+  time_spent: number | null;
+  description: string | null;
+}
+
+interface ParsedTimelogExportQueryParams {
+  teamMemberId?: string;
+  duration?: string;
+  dateRange?: string;
+  billable?: string;
+  search?: string;
+}
+
 export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
+  private static readonly TIME_LOG_EXPORT_SHEET_NAME = "Time Logs";
+  private static readonly TIME_LOG_EXPORT_DATE_FORMAT = "MMM-DD-YYYY";
+  private static readonly TIME_LOG_EXPORT_FILE_PREFIX = "Time-Logs";
 
   protected static getPercentage(n: number, total: number) {
     return +(n ? (n / total) * 100 : 0).toFixed();
@@ -1609,38 +1629,26 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async exportTimelogsFlatCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
-    let { team_member_id, duration, date_range, billable, search } = req.query;
-
-    // Convert query parameters to strings or undefined
-    const teamMemberIdStr = this.convertQueryParam(team_member_id);
-    const durationStr = this.convertQueryParam(duration);
-    const dateRangeStr = this.convertQueryParam(date_range);
-    const billableStr = this.convertQueryParam(billable);
-    const searchStr = this.convertQueryParam(search);
+    const { teamMemberId, duration, dateRange, billable, search } = this.parseTimelogExportQueryParams(req);
 
     // Get data using shared helper method
-    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+    const rows = await this.getTimelogsFlatData(req, teamMemberId, duration, dateRange, billable, search);
 
     // Prepare CSV data
-    const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `Time-Logs-${exportDate}`;
+    const fileName = this.getTimelogExportFileName("csv");
 
     // Build CSV content
     const csvRows: string[] = [];
 
     // Add headers
-    csvRows.push("Date,Member,Project,Task,Description,Duration");
+    csvRows.push("Date,Member,Project,Task,Description,Duration (Minutes)");
 
     // Add data rows
-    for (const row of rows.rows) {
-      const date = row.log_day || "";
-      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
-      const project = (row.project_name || "").replace(/"/g, '""');
-      const task = (row.task_name || "").replace(/"/g, '""');
-      const description = (row.description || "").replace(/"/g, '""');
-      const duration = this.secondsToReadable(row.time_spent || 0);
-
-      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+    for (const row of rows.rows as TimelogFlatExportRow[]) {
+      const csvRecord = this.mapTimelogExportRow(row);
+      csvRows.push(
+        `"${this.escapeCsvValue(csvRecord.date)}","${this.escapeCsvValue(csvRecord.member)}","${this.escapeCsvValue(csvRecord.project)}","${this.escapeCsvValue(csvRecord.task)}","${this.escapeCsvValue(csvRecord.description)}","${csvRecord.durationMinutes}"`
+      );
     }
 
     const csvContent = csvRows.join("\n");
@@ -1660,6 +1668,50 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const minutes = Math.floor((sec % 3600) / 60);
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
+  }
+
+  private static secondsToMinutes(totalSeconds: number): number {
+    const sec = Math.max(0, Math.floor(totalSeconds || 0));
+    return Math.floor(sec / 60);
+  }
+
+  private static parseTimelogExportQueryParams(req: IWorkLenzRequest): ParsedTimelogExportQueryParams {
+    const { team_member_id, duration, date_range, billable, search } = req.query;
+
+    return {
+      teamMemberId: this.convertQueryParam(team_member_id),
+      duration: this.convertQueryParam(duration),
+      dateRange: this.convertQueryParam(date_range),
+      billable: this.convertQueryParam(billable),
+      search: this.convertQueryParam(search),
+    };
+  }
+
+  private static escapeCsvValue(value: string): string {
+    return value.replace(/"/g, '""');
+  }
+
+  private static getTimelogExportFileName(extension: "csv" | "xlsx"): string {
+    const exportDate = moment().format(this.TIME_LOG_EXPORT_DATE_FORMAT);
+    return `${this.TIME_LOG_EXPORT_FILE_PREFIX}-${exportDate}.${extension}`;
+  }
+
+  private static mapTimelogExportRow(row: TimelogFlatExportRow): {
+    date: string;
+    member: string;
+    project: string;
+    task: string;
+    description: string;
+    durationMinutes: number;
+  } {
+    return {
+      date: row.log_day ? String(row.log_day) : "",
+      member: row.user_name || "",
+      project: row.project_name || "",
+      task: row.task_name || "",
+      description: row.description || "",
+      durationMinutes: this.secondsToMinutes(row.time_spent || 0),
+    };
   }
 
   /**
@@ -1774,21 +1826,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async exportTimelogsFlatExcel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
-    let { team_member_id, duration, date_range, billable, search } = req.query;
-
-    // Convert query parameters to strings or undefined
-    const teamMemberIdStr = this.convertQueryParam(team_member_id);
-    const durationStr = this.convertQueryParam(duration);
-    const dateRangeStr = this.convertQueryParam(date_range);
-    const billableStr = this.convertQueryParam(billable);
-    const searchStr = this.convertQueryParam(search);
+    const { teamMemberId, duration, dateRange, billable, search } = this.parseTimelogExportQueryParams(req);
 
     // Get data using shared helper method
-    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+    const rows = await this.getTimelogsFlatData(req, teamMemberId, duration, dateRange, billable, search);
 
     // Create Excel workbook
     const workbook = new Excel.Workbook();
-    const worksheet = workbook.addWorksheet('Time Logs');
+    const worksheet = workbook.addWorksheet(this.TIME_LOG_EXPORT_SHEET_NAME);
 
     // Add headers
     worksheet.columns = [
@@ -1797,7 +1842,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       { header: 'Project', key: 'project', width: 25 },
       { header: 'Task', key: 'task', width: 30 },
       { header: 'Description', key: 'description', width: 40 },
-      { header: 'Duration', key: 'duration', width: 15 }
+      { header: 'Duration (Minutes)', key: 'duration', width: 20 }
     ];
 
     // Style the header row
@@ -1809,23 +1854,23 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     };
 
     // Add data rows
-    for (const row of rows.rows) {
+    for (const row of rows.rows as TimelogFlatExportRow[]) {
+      const exportRow = this.mapTimelogExportRow(row);
       worksheet.addRow({
-        date: moment(row.log_day).format('MMM DD, YYYY'),
-        member: row.user_name || '',
-        project: row.project_name || '',
-        task: row.task_name || '',
-        description: row.description || '',
-        duration: this.secondsToReadable(row.time_spent || 0)
+        date: exportRow.date ? moment(exportRow.date).format("MMM DD, YYYY") : "",
+        member: exportRow.member,
+        project: exportRow.project,
+        task: exportRow.task,
+        description: exportRow.description,
+        duration: exportRow.durationMinutes
       });
     }
 
     // Set response headers for Excel
-    const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `Time-Logs-${exportDate}.xlsx`;
+    const fileName = this.getTimelogExportFileName("xlsx");
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
     // Write Excel file to response
     await workbook.xlsx.write(res);

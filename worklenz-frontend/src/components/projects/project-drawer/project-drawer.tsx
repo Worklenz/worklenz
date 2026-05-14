@@ -456,7 +456,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         color_code: values.color_code,
         status_id: values.status_id,
         category_id: values.category_id || null,
-        priority_id: values.priority_id || defaultPriorityId || null,
+        priority_id: values.priority_id || null,
         notes: values.notes,
         key: values.key,
         client_id: values.client_id,
