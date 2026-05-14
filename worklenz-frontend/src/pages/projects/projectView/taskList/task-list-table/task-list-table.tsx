@@ -98,6 +98,7 @@ import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/mem
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { DragEndEvent } from '@/types/task-management.types';
 import { useColumnResize } from '@/hooks/useColumnResize';
+import { useCustomColumnVisibility } from '@/hooks/useCustomColumnVisibility';
 import '../../../project-view-1/taskList/taskListTable/column-resize.css';
 
 interface TaskListTableProps {
@@ -1486,6 +1487,7 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
+  const { isHidden } = useCustomColumnVisibility();
   const { socket } = useSocket();
 
   // Handler for opening task with navigation context
@@ -1626,8 +1628,16 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
       column => !orderedIds.includes(column.id || column.key || '')
     );
 
-    return [...keyColumn, ...orderedReorderable, ...missingColumns];
-  }, [pinnedColumns, columnOrder]);
+    const all = [...keyColumn, ...orderedReorderable, ...missingColumns];
+
+    // Filter out custom columns the user has hidden
+    return all.filter(column => {
+      if (!column.custom_column) return true;
+      const id = column.id || column.key || '';
+      return !isHidden(id);
+    });
+  }, [pinnedColumns, columnOrder, isHidden]);
+
   const taskGroups = useAppSelector(state => state.taskReducer.taskGroups);
   const { project } = useAppSelector(state => state.projectReducer);
   const { selectedTaskIdsList, selectedTasks } = useAppSelector(state => state.bulkActionReducer);
