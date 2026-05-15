@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { log_error } from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
+import { isValidUuid } from "../../shared/validation-helpers";
 
 interface CustomColumnPinnedChangeData {
   column_id: string;
@@ -21,18 +22,33 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
       return;
     }
 
-    // Update the is_visible status in the database
-    const updateQuery = `
-      UPDATE cc_custom_columns 
-      SET is_visible = $1, 
-          updated_at = NOW() 
-      WHERE id = $2 AND project_id = $3
-      RETURNING id, key
-    `;
-    
-    const result = await db.query(updateQuery, [is_visible, column_id, project_id]);
-    
-    if (result.rowCount === 0) {
+    let result: any = null;
+
+    // Try to update by UUID first when the payload contains a valid UUID.
+    if (isValidUuid(column_id)) {
+      const updateQuery = `
+        UPDATE cc_custom_columns 
+        SET is_visible = $1, 
+            updated_at = NOW() 
+        WHERE id = $2 AND project_id = $3
+        RETURNING id, key
+      `;
+      result = await db.query(updateQuery, [is_visible, column_id, project_id]);
+    }
+
+    // Fallback to updating by column key when the payload is not a UUID or the UUID did not match.
+    if (!result || result.rowCount === 0) {
+      const updateByKeyQuery = `
+        UPDATE cc_custom_columns 
+        SET is_visible = $1, 
+            updated_at = NOW() 
+        WHERE key = $2 AND project_id = $3
+        RETURNING id, key
+      `;
+      result = await db.query(updateByKeyQuery, [is_visible, column_id, project_id]);
+    }
+
+    if (!result || result.rowCount === 0) {
       log_error("Custom column not found or not updated");
       return;
     }
@@ -43,9 +59,9 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
     socket.to(`project:${project_id}`).emit(
       SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(),
       JSON.stringify({
-        column_id,
+        column_id: updatedColumn.id,
         column_key: updatedColumn.key,
-        is_visible
+        is_visible,
       })
     );
 
@@ -53,9 +69,9 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
     socket.emit(
       SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(),
       JSON.stringify({
-        column_id,
+        column_id: updatedColumn.id,
         column_key: updatedColumn.key,
-        is_visible
+        is_visible,
       })
     );
   } catch (error) {
