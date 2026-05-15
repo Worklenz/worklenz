@@ -173,6 +173,25 @@ export const reportingExportApiService = {
     window.location.href = `${rootUrl}/member-activity-log-breakdown/export${params}`;
   },
 
+  exportProjectMemberTasks(
+    memberId: string,
+    memberName: string,
+    projectId: string,
+    projectName: string,
+    teamName: string | null | undefined,
+    archived: boolean
+  ) {
+    const params = toQueryString({
+      team_member_id: memberId,
+      team_member_name: memberName,
+      project_id: projectId,
+      project_name: projectName,
+      team_name: teamName ? teamName : null,
+      archived: archived,
+    });
+    window.location.href = `${rootUrl}/project-member-tasks/export${params}`;
+  },
+
   exportTimelogsFlatCSV(body: {
     team_member_id?: string;
     duration?: string;
