@@ -131,6 +131,9 @@
       "updateSuccessMessage": "Custom column updated successfully",
       "deleteSuccessMessage": "Custom column deleted successfully",
       "deleteErrorMessage": "Failed to delete custom column",
+      "deleteErrorMissingId": "Cannot delete column: Missing UUID",
+      "hideFromTaskList": "Hide from task list",
+      "showInTaskList": "Show in task list",
       "createErrorMessage": "Failed to create custom column",
       "updateErrorMessage": "Failed to update custom column"
     },
