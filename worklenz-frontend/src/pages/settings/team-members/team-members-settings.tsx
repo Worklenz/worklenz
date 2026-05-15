@@ -88,8 +88,8 @@ const TeamMembersSettings = () => {
     order: 'asc',
   });
 
-  const totalUsedSeats = billingInfo?.total_used ?? model.total ?? 0;
-  const totalAvailableSeats = billingInfo?.total_seats ?? 0;
+  const totalUsedSeats = Math.max(billingInfo?.total_used ?? 0, model.total ?? 0);
+  const totalAvailableSeats = billingInfo?.total_seats;
   const hasReachedSeatLimit =
     !hasBusinessFeatureAccess(currentSession) &&
     totalAvailableSeats > 0 &&
@@ -116,10 +116,8 @@ const TeamMembersSettings = () => {
   }, [pagination, searchQuery]);
 
   useEffect(() => {
-    if (!billingInfo) {
-      dispatch(fetchBillingInfo());
-    }
-  }, [billingInfo, dispatch]);
+    dispatch(fetchBillingInfo());
+  }, [dispatch]);
 
   const handleStatusChange = async (record: ITeamMemberViewModel) => {
     try {
@@ -658,11 +656,20 @@ const TeamMembersSettings = () => {
               style={{ width: '100%', maxWidth: 500 }}
             >
               <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                {t('seatUsageWithLimitText', {
-                  defaultValue: t('seatUsageWithLimitText'),
-                  used: totalUsedSeats,
-                  total: totalAvailableSeats || totalUsedSeats,
-                })}
+                {totalAvailableSeats && totalAvailableSeats > 0
+                  ? t('seatUsageWithLimitText', {
+                      defaultValue: t('seatUsageWithLimitText'),
+                      used: totalUsedSeats,
+                      total: totalAvailableSeats,
+                    })
+                  : totalUsedSeats >= 0
+                    ? t('seatUsageText', {
+                        defaultValue: t('seatUsageText'),
+                        used: totalUsedSeats,
+                      })
+                    : t('seatUsageLoading', {
+                        defaultValue: t('seatUsageLoading'),
+                      })}
               </Typography.Text>
               <Tooltip title={t('pinTooltip')}>
                 <Button

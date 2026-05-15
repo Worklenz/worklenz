@@ -21,9 +21,9 @@ function hasBusinessPlanAccess(user: any): boolean {
     return true;
   }
 
-  // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
-  if (isTruthy(user.appsumo_business_eligible) || (user.redeemed_codes_count ?? 0) >= 5) {
-    return true;
+  // Strict LTD rule: LTD users should not have Business feature access
+  if (String(user.subscription_status || "").toLowerCase() === "life_time_deal") {
+    return false;
   }
 
   const subscriptionType = user.subscription_type;

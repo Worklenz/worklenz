@@ -49,8 +49,8 @@
     "recentLog_other": "{{count}} registros recientes"
   },
   "reporting": "Reports",
-  "clientPortalUpgradePopoverTitle": "Client Portal",
-  "clientPortalUpgradePopoverBody": "Share project progress with your clients through a branded portal. Available on the Business plan.",
-  "clientPortalUpgradePopoverCta": "Upgrade Now",
-  "closePopover": "Close popover"
+  "clientPortalUpgradePopoverTitle": "Portal del Cliente",
+  "clientPortalUpgradePopoverBody": "Comparte el progreso del proyecto con tus clientes mediante un portal con marca. Disponible en el plan Business.",
+  "clientPortalUpgradePopoverCta": "Actualizar ahora",
+  "closePopover": "Cerrar ventana emergente"
 }

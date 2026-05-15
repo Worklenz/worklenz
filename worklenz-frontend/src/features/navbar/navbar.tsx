@@ -154,9 +154,13 @@ const Navbar = () => {
             </Typography.Text>
             <Button
               type="primary"
-              onClick={() => {
+              onClick={event => {
+                event.preventDefault();
+                event.stopPropagation();
                 setIsClientPortalPopoverOpen(false);
-                dispatch(toggleUpgradeModal());
+                setTimeout(() => {
+                  dispatch(toggleUpgradeModal());
+                }, 0);
               }}
             >
               {t('clientPortalUpgradePopoverCta', { defaultValue: t('clientPortalUpgradePopoverCta') })}
@@ -175,26 +179,20 @@ const Navbar = () => {
                 onOpenChange={setIsClientPortalPopoverOpen}
                 placement="bottom"
                 title={
-                  <Flex align="center" justify="space-between" style={{ width: 240 }}>
-                    <Typography.Text strong>
-                      {t('clientPortalUpgradePopoverTitle', { defaultValue: t('clientPortalUpgradePopoverTitle') })}
-                    </Typography.Text>
-                    <Button
-                      type="text"
-                      size="small"
-                      aria-label={t('closePopover', { defaultValue: t('closePopover') })}
-                      onClick={event => {
-                        event.stopPropagation();
-                        setIsClientPortalPopoverOpen(false);
-                      }}
-                    >
-                      ×
-                    </Button>
-                  </Flex>
+                  <Typography.Text strong>
+                    {t('clientPortalUpgradePopoverTitle', {
+                      defaultValue: t('clientPortalUpgradePopoverTitle'),
+                    })}
+                  </Typography.Text>
                 }
                 content={clientPortalPopoverContent}
               >
-                <span style={{ cursor: 'pointer', fontWeight: 600 }}>{defaultLabel}</span>
+                <span style={{ cursor: 'pointer', fontWeight: 600 }}>
+                  {defaultLabel}
+                  <CrownOutlined
+                    style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }}
+                  />
+                </span>
               </Popover>
             ) : (
               <Tooltip
@@ -260,8 +258,11 @@ const Navbar = () => {
           (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
 
         if (clickedRoute.name === 'client-portal' && shouldOpenModal) {
+          setIsClientPortalPopoverOpen(true);
           return;
         }
+
+        setIsClientPortalPopoverOpen(false);
 
         if (shouldOpenModal) {
           if (isLicenseExpired && clickedRoute.name === 'client-portal') {

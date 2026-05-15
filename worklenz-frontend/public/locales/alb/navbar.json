@@ -49,8 +49,8 @@
     "recentLog_other": "{{count}} regjistrat e fundit"
   },
   "reporting": "Reports",
-  "clientPortalUpgradePopoverTitle": "Client Portal",
-  "clientPortalUpgradePopoverBody": "Share project progress with your clients through a branded portal. Available on the Business plan.",
-  "clientPortalUpgradePopoverCta": "Upgrade Now",
-  "closePopover": "Close popover"
+  "clientPortalUpgradePopoverTitle": "Portali i Klientit",
+  "clientPortalUpgradePopoverBody": "Ndani progresin e projektit me klientët tuaj përmes një portali të markuar. I disponueshëm në planin Business.",
+  "clientPortalUpgradePopoverCta": "Përmirëso Tani",
+  "closePopover": "Mbyll dritaren"
 }
