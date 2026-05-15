@@ -79,6 +79,7 @@ export const projectMembersApiService = {
       expires_at: string;
       expires_in_days: number;
       created_at: string;
+      error_code: string;
     }>
   > => {
     const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/invitation-link`, body);
