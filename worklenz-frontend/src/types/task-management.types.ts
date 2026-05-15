@@ -44,6 +44,7 @@ export interface Task {
   attachments_count?: number;
   has_dependencies?: boolean;
   has_subscribers?: boolean;
+  billable?: boolean;
   schedule_id?: string | null;
   order?: number;
   status_sort_order?: number; // Sort order when grouped by status

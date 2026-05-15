@@ -195,7 +195,8 @@ const taskDrawerSlice = createSlice({
       }>
     ) => {
       const { id, name } = action.payload;
-      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id) {
+      // Only update if name is provided and not undefined
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id && name !== undefined) {
         state.taskFormViewModel.task.name = name;
       }
     },
