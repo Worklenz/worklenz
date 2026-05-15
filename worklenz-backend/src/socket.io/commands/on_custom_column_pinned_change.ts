@@ -24,25 +24,32 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
 
     let result: any = null;
 
-    // Try to update by UUID first when the payload contains a valid UUID.
-    if (isValidUuid(column_id)) {
-      const updateQuery = `
-        UPDATE cc_custom_columns 
-        SET is_visible = $1, 
-            updated_at = NOW() 
-        WHERE id = $2 AND project_id = $3
-        RETURNING id, key
-      `;
-      result = await db.query(updateQuery, [is_visible, column_id, project_id]);
+    // Only attempt the UUID query when BOTH column_id and project_id are valid UUIDs.
+    // If either is a nanoid/key string the PostgreSQL UUID cast will throw, so we skip
+    // straight to the key-based fallback in that case.
+    if (isValidUuid(column_id) && isValidUuid(project_id)) {
+      try {
+        const updateQuery = `
+          UPDATE cc_custom_columns 
+          SET is_visible = $1, 
+              updated_at = NOW() 
+          WHERE id = $2 AND project_id = $3
+          RETURNING id, key
+        `;
+        result = await db.query(updateQuery, [is_visible, column_id, project_id]);
+      } catch (uuidQueryError) {
+        // Swallow UUID cast errors and fall through to the key-based query below.
+        result = null;
+      }
     }
 
-    // Fallback to updating by column key when the payload is not a UUID or the UUID did not match.
+    // Fallback: update by column key (text column — safe for both UUIDs and nanoid keys).
     if (!result || result.rowCount === 0) {
       const updateByKeyQuery = `
         UPDATE cc_custom_columns 
         SET is_visible = $1, 
             updated_at = NOW() 
-        WHERE key = $2 AND project_id = $3
+        WHERE key = $2 AND project_id = $3::uuid
         RETURNING id, key
       `;
       result = await db.query(updateByKeyQuery, [is_visible, column_id, project_id]);

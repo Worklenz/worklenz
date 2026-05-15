@@ -48,6 +48,7 @@ import {
   fetchTaskListColumns,
   addCustomColumn,
   deleteCustomColumn as deleteCustomColumnFromTaskManagement,
+  toggleColumnVisibility as toggleColumnVisibilityV2,
 } from '@/features/task-management/task-management.slice';
 import { useParams } from 'react-router-dom';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
@@ -95,7 +96,9 @@ const CustomColumnModal = () => {
 
   const openedColumn = currentColumnData;
   const { isHidden, toggleVisibility } = useCustomColumnVisibility();
-  const currentColumnIdentifier = openedColumn?.id || openedColumn?.key || customColumnId || '';
+  // Prefer uuid (set by TaskListV2Table) → customColumnId (always UUID) → id → key
+  const currentColumnIdentifier =
+    (openedColumn as any)?.uuid || customColumnId || openedColumn?.id || openedColumn?.key || '';
   const isCurrentlyVisible = currentColumnIdentifier ? !isHidden(currentColumnIdentifier) : true;
 
   const resetModalData = () => {
@@ -145,42 +148,42 @@ const CustomColumnModal = () => {
 
     const col = openedColumn;
     const newVisibility = !isCurrentlyVisible;
-    const columnIdentifier = col.id || col.key || customColumnId;
 
-    if (columnIdentifier) {
-      toggleVisibility(columnIdentifier);
+    // The column key (nanoid) is the shared identifier across both Redux slices.
+    // col.key is always the nanoid key; col.id may be the UUID (tasks.slice) or
+    // the nanoid key (task-management.slice / V2 table), so we use col.key for
+    // key-based matching and customColumnId (always UUID) for id-based matching.
+    const colKey = col.key as string | undefined;
+    const colUUID: string = (col as any).uuid || customColumnId;
+
+    // Update localStorage visibility tracker
+    toggleVisibility(colUUID);
+
+    // Update tasks.slice (used by the old task-list-table)
+    if (colKey) {
+      dispatch(toggleColumnVisibility(colKey));
+    }
+    dispatch(
+      updateCustomColumnPinned({
+        columnId: colUUID,
+        columnKey: colKey,
+        isVisible: newVisibility,
+      })
+    );
+
+    // Update task-management.slice (used by TaskListV2Table)
+    if (colKey) {
+      dispatch(toggleColumnVisibilityV2(colKey));
     }
 
-    // Step 1 — toggle pinned in Redux (same as Fields dropdown)
-    if (col.key) {
-      dispatch(toggleColumnVisibility(col.key));
-    }
+    // Emit socket event so the backend persists is_visible
+    socket?.emit(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), {
+      column_id: colUUID,
+      project_id: projectId,
+      is_visible: newVisibility,
+    });
 
-    // Step 2 — update custom column pinned state
-    if (col.id) {
-      dispatch(
-        updateCustomColumnPinned({
-          columnId: col.id,
-          columnKey: col.key,
-          isVisible: newVisibility,
-        })
-      );
-      // Step 3 — emit socket event (same as Fields dropdown)
-      socket?.emit(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), {
-        column_id: col.id,
-        project_id: projectId,
-        is_visible: newVisibility,
-      });
-    } else {
-      dispatch(
-        updateCustomColumnPinned({
-          columnKey: col.key,
-          isVisible: newVisibility,
-        })
-      );
-    }
-
-    // Step 4 — close modal
+    // Close modal
     dispatch(toggleCustomColumnModalOpen(false));
     resetModalData();
   };
