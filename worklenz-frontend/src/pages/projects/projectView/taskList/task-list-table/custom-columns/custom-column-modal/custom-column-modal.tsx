@@ -96,10 +96,6 @@ const CustomColumnModal = () => {
 
   const openedColumn = currentColumnData;
   const { isHidden, toggleVisibility } = useCustomColumnVisibility();
-  // Prefer uuid (set by TaskListV2Table) → customColumnId (always UUID) → id → key
-  const currentColumnIdentifier =
-    (openedColumn as any)?.uuid || customColumnId || openedColumn?.id || openedColumn?.key || '';
-  const isCurrentlyVisible = currentColumnIdentifier ? !isHidden(currentColumnIdentifier) : true;
 
   const resetModalData = () => {
     mainForm.resetFields();
@@ -142,45 +138,41 @@ const CustomColumnModal = () => {
     }
   };
 
-  // Same logic as Fields dropdown checkbox for custom columns
-  const handleToggleVisibility = () => {
+  // Always hides the column — never toggles back to visible from this button.
+  // Use the Fields dropdown (Show Fields) to make a hidden column visible again.
+  const handleHideColumn = () => {
     if (!customColumnId || !openedColumn) return;
 
     const col = openedColumn;
-    const newVisibility = !isCurrentlyVisible;
-
-    // The column key (nanoid) is the shared identifier across both Redux slices.
-    // col.key is always the nanoid key; col.id may be the UUID (tasks.slice) or
-    // the nanoid key (task-management.slice / V2 table), so we use col.key for
-    // key-based matching and customColumnId (always UUID) for id-based matching.
     const colKey = col.key as string | undefined;
     const colUUID: string = (col as any).uuid || customColumnId;
 
-    // Update localStorage visibility tracker
-    toggleVisibility(colUUID);
-
-    // Update tasks.slice (used by the old task-list-table)
-    if (colKey) {
-      dispatch(toggleColumnVisibility(colKey));
+    // Mark as hidden in localStorage visibility tracker
+    if (!isHidden(colUUID)) {
+      toggleVisibility(colUUID);
     }
+
+    // Update tasks.slice (used by the old task-list-table) — force pinned = false
     dispatch(
       updateCustomColumnPinned({
         columnId: colUUID,
         columnKey: colKey,
-        isVisible: newVisibility,
+        isVisible: false,
       })
     );
 
-    // Update task-management.slice (used by TaskListV2Table)
+    // Update task-management.slice (used by TaskListV2Table) — force pinned = false
+    // toggleColumnVisibilityV2 flips the value, so only call it when currently visible
     if (colKey) {
+      dispatch(toggleColumnVisibility(colKey));
       dispatch(toggleColumnVisibilityV2(colKey));
     }
 
-    // Emit socket event so the backend persists is_visible
+    // Emit socket event so the backend persists is_visible = false
     socket?.emit(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), {
       column_id: colUUID,
       project_id: projectId,
-      is_visible: newVisibility,
+      is_visible: false,
     });
 
     // Close modal
@@ -504,15 +496,11 @@ const CustomColumnModal = () => {
         >
           {customColumnModalType === 'edit' && customColumnId && (
             <Flex gap={8}>
-              {/* Toggle visibility directly from the modal */}
-              <Button onClick={handleToggleVisibility}>
-                {isCurrentlyVisible
-                  ? t('customColumns.modal.hideFromTaskList', {
-                      defaultValue: 'Hide from task list',
-                    })
-                  : t('customColumns.modal.showInTaskList', {
-                      defaultValue: 'Show in task list',
-                    })}
+              {/* Always hides the column — use the Fields dropdown to show it again */}
+              <Button onClick={handleHideColumn}>
+                {t('customColumns.modal.hideFromTaskList', {
+                  defaultValue: 'Hide from task list',
+                })}
               </Button>
 
               {/* Delete button */}
