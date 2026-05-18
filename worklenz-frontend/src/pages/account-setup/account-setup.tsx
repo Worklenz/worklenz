@@ -470,7 +470,8 @@ const AccountSetup: React.FC = () => {
     { key: Language.PT, label: 'Português', flag: '🇵🇹' },
     { key: Language.DE, label: 'Deutsch', flag: '🇩🇪' },
     { key: Language.ALB, label: 'Shqip', flag: '🇦🇱' },
-    { key: Language.ZH_CN, label: '简体中文', flag: '🇨🇳' }
+    { key: Language.ZH_CN, label: '简体中文', flag: '🇨🇳' },
+    { key: Language.ZH_TW, label: '繁體中文（台灣）', flag: '🇹🇼' }
   ];
 
   const handleLanguageChange = (languageKey: ILanguageType) => {

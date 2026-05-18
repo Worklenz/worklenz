@@ -1,0 +1,53 @@
+{
+  "rename": "重新命名",
+  "delete": "刪除",
+  "addTask": "新增任務",
+  "addSectionButton": "新增區段",
+  "changeCategory": "變更類別",
+
+  "deleteTooltip": "刪除",
+  "deleteConfirmationTitle": "確定要執行嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+
+  "deleteTaskTitle": "刪除任務",
+  "deleteTaskContent": "確定要刪除此任務嗎？此操作無法復原。",
+  "deleteTaskConfirm": "刪除",
+  "deleteTaskCancel": "取消",
+
+  "deleteStatusTitle": "刪除狀態",
+  "deleteStatusContent": "確定要刪除此狀態嗎？此操作無法復原。",
+
+  "deletePhaseTitle": "刪除階段",
+  "deletePhaseContent": "確定要刪除此階段嗎？此操作無法復原。",
+
+  "dueDate": "到期日",
+  "cancel": "取消",
+
+  "today": "今天",
+  "tomorrow": "明天",
+  "assignToMe": "指派給我",
+  "archive": "封存",
+
+  "newTaskNamePlaceholder": "請輸入任務名稱",
+  "newSubtaskNamePlaceholder": "請輸入子任務名稱",
+  "untitledSection": "未命名區段",
+  "unmapped": "未對應",
+  "clickToChangeDate": "按一下以變更日期",
+  "noDueDate": "無到期日",
+  "save": "儲存",
+  "clear": "清除",
+  "nextWeek": "下週",
+  "noSubtasks": "沒有子任務",
+  "showSubtasks": "顯示子任務",
+  "hideSubtasks": "隱藏子任務",
+
+  "errorLoadingTasks": "載入任務時發生錯誤",
+  "noTasksFound": "找不到任何任務",
+  "loadingFilters": "正在載入篩選條件…",
+  "failedToUpdateColumnOrder": "無法更新欄位順序",
+  "failedToUpdatePhaseOrder": "無法更新階段順序",
+  "pleaseTryAgain": "請再試一次",
+  "taskNotCompleted": "任務尚未完成",
+  "completeTaskDependencies": "請先完成相依任務再繼續"
+}

@@ -1,0 +1,57 @@
+{
+  "includeArchivedProjects": "包含已封存專案",
+  "export": "匯出",
+  "timeSheet": "工時表",
+
+  "searchByName": "依名稱搜尋",
+  "selectAll": "全選",
+  "teams": "團隊",
+
+  "searchByProject": "依專案名稱搜尋",
+  "projects": "專案",
+
+  "searchByCategory": "依類別名稱搜尋",
+  "categories": "類別",
+
+  "billable": "可計費",
+  "nonBillable": "不可計費",
+
+  "total": "合計",
+
+  "projectsTimeSheet": "專案工時表",
+
+  "loggedTime": "已記錄時間 (小時)",
+
+  "exportToExcel": "匯出至 Excel",
+  "logged": "記錄了",
+  "for": "用於",
+
+  "membersTimeSheet": "成員工時表",
+  "member": "成員",
+
+  "estimatedVsActual": "估計與實際",
+  "workingDays": "工作天",
+  "manDays": "人天",
+  "days": "天",
+  "estimatedDays": "估計天數",
+  "actualDays": "實際天數",
+
+  "noCategories": "找不到任何類別",
+  "noCategory": "無類別",
+  "noProjects": "找不到任何專案",
+  "noTeams": "找不到任何團隊",
+  "noData": "找不到任何資料",
+
+  "groupBy": "群組依據",
+  "groupByCategory": "類別",
+  "groupByTeam": "團隊",
+  "groupByStatus": "狀態",
+  "groupByNone": "無",
+  "clearSearch": "清除搜尋",
+  "selectedProjects": "已選取專案",
+  "projectsSelected": "個專案已選取",
+  "showSelected": "僅顯示已選取",
+  "expandAll": "全部展開",
+  "collapseAll": "全部收合",
+  "ungrouped": "未分組"
+}

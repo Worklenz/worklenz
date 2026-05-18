@@ -1,0 +1,35 @@
+{
+  "yesterdayText": "昨天",
+  "lastSevenDaysText": "過去 7 天",
+  "lastWeekText": "上週",
+  "lastThirtyDaysText": "過去 30 天",
+  "lastMonthText": "上個月",
+  "lastThreeMonthsText": "過去 3 個月",
+  "allTimeText": "所有時間",
+  "customRangeText": "自訂範圍",
+  "startDateInputPlaceholder": "開始日期",
+  "EndDateInputPlaceholder": "結束日期",
+  "filterButton": "篩選",
+
+  "membersTitle": "成員",
+  "includeArchivedButton": "包含已封存專案",
+  "exportButton": "匯出",
+  "excelButton": "Excel",
+  "searchByNameInputPlaceholder": "依名稱搜尋",
+
+  "memberColumn": "成員",
+  "tasksProgressColumn": "任務進度",
+  "tasksAssignedColumn": "已指派任務",
+  "completedTasksColumn": "已完成任務",
+  "overdueTasksColumn": "逾期任務",
+  "ongoingTasksColumn": "進行中任務",
+
+  "tasksAssignedColumnTooltip": "在所選日期範圍內指派的任務",
+  "overdueTasksColumnTooltip": "在所選日期範圍結束時逾期的任務",
+  "completedTasksColumnTooltip": "在所選日期範圍內完成的任務",
+  "ongoingTasksColumnTooltip": "已開始但尚未完成的任務",
+
+  "todoText": "待辦",
+  "doingText": "進行中",
+  "doneText": "已完成"
+}

@@ -1,0 +1,129 @@
+{
+  "taskHeader": {
+    "taskNamePlaceholder": "請輸入任務名稱",
+    "deleteTask": "刪除任務",
+    "parentTask": "父任務",
+    "currentTask": "目前任務",
+    "back": "回到上一頁",
+    "backToParent": "回到父任務",
+    "toParentTask": "到父任務",
+    "loadingHierarchy": "正在載入層級結構…"
+  },
+  "taskInfoTab": {
+    "title": "資訊",
+    "details": {
+      "title": "詳細資料",
+      "task-key": "任務編號",
+      "phase": "階段",
+      "assignees": "指派對象",
+      "due-date": "到期日",
+      "time-estimation": "時間估計",
+      "priority": "優先順序",
+      "labels": "標籤",
+      "billable": "可計費",
+      "notify": "通知",
+      "when-done-notify": "完成時通知",
+      "start-date": "開始日期",
+      "end-date": "結束日期",
+      "hide-start-date": "隱藏開始日期",
+      "show-start-date": "顯示開始日期",
+      "hours": "小時",
+      "minutes": "分鐘",
+      "progressValue": "進度值",
+      "progressValueTooltip": "設定進度百分比 (0-100%)",
+      "progressValueRequired": "請輸入進度值",
+      "progressValueRange": "進度必須介於 0 到 100 之間",
+      "taskWeight": "任務權重",
+      "taskWeightTooltip": "設定此子任務的權重（百分比）",
+      "taskWeightRequired": "請輸入任務權重",
+      "taskWeightRange": "權重必須介於 0 到 100 之間",
+      "recurring": "週期性"
+    },
+    "labels": {
+      "labelInputPlaceholder": "搜尋或建立",
+      "labelsSelectorInputTip": "按 Enter 鍵即可建立"
+    },
+    "description": {
+      "title": "描述",
+      "placeholder": "新增更詳細的描述…"
+    },
+    "subTasks": {
+      "title": "子任務",
+      "addSubTask": "新增子任務",
+      "addSubTaskInputPlaceholder": "輸入任務名稱並按 Enter 鍵",
+      "refreshSubTasks": "重新整理子任務",
+      "edit": "編輯",
+      "delete": "刪除",
+      "confirmDeleteSubTask": "確定要刪除此子任務嗎？",
+      "deleteSubTask": "刪除子任務"
+    },
+    "dependencies": {
+      "title": "相依任務",
+      "addDependency": "+ 新增相依任務",
+      "blockedBy": "被阻擋於",
+      "searchTask": "輸入以搜尋任務",
+      "noTasksFound": "找不到任何任務",
+      "confirmDeleteDependency": "確定要刪除嗎？"
+    },
+    "attachments": {
+      "title": "附件",
+      "chooseOrDropFileToUpload": "選擇或拖放檔案以上傳",
+      "uploading": "上傳中…"
+    },
+    "comments": {
+      "title": "留言",
+      "addComment": "+ 新增留言",
+      "noComments": "尚無留言，搶先留言吧！",
+      "delete": "刪除",
+      "confirmDeleteComment": "確定要刪除此留言嗎？",
+      "addCommentPlaceholder": "新增留言…",
+      "cancel": "取消",
+      "commentButton": "發表留言",
+      "attachFiles": "附加檔案",
+      "addMoreFiles": "新增更多檔案",
+      "selectedFiles": "已選取檔案（最大 25MB，最多 {{count}} 個）",
+      "maxFilesError": "最多只能上傳 {{count}} 個檔案",
+      "processFilesError": "處理檔案失敗",
+      "addCommentError": "請新增留言或附加檔案",
+      "createdBy": "由 {{user}} 於 {{time}} 建立",
+      "updatedTime": "更新於 {{time}}"
+    },
+    "searchInputPlaceholder": "依名稱搜尋",
+    "pendingInvitation": "待接受邀請"
+  },
+  "taskTimeLogTab": {
+    "title": "時間記錄",
+    "addTimeLog": "新增時間記錄",
+    "totalLogged": "總記錄時間",
+    "exportToExcel": "匯出至 Excel",
+    "noTimeLogsFound": "找不到任何時間記錄",
+    "timeLogForm": {
+      "date": "日期",
+      "startTime": "開始時間",
+      "endTime": "結束時間",
+      "workDescription": "工作描述",
+      "descriptionPlaceholder": "新增描述",
+      "logTime": "記錄時間",
+      "updateTime": "更新時間",
+      "cancel": "取消",
+      "selectDateError": "請選擇日期",
+      "selectStartTimeError": "請選擇開始時間",
+      "selectEndTimeError": "請選擇結束時間",
+      "endTimeAfterStartError": "結束時間必須晚於開始時間"
+    }
+  },
+  "taskActivityLogTab": {
+    "title": "活動記錄",
+    "add": "新增",
+    "remove": "移除",
+    "none": "無",
+    "weight": "權重",
+    "createdTask": "建立了任務。"
+  },
+  "taskProgress": {
+    "markAsDoneTitle": "將任務標記為完成？",
+    "confirmMarkAsDone": "是的，標記為完成",
+    "cancelMarkAsDone": "否，維持目前狀態",
+    "markAsDoneDescription": "進度已設為 100%，是否要將任務狀態更新為「已完成」？"
+  }
+}

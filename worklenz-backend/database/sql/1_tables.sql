@@ -12,7 +12,7 @@ CREATE TYPE DEPENDENCY_TYPE AS ENUM ('blocked_by');
 
 CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'every_x_days', 'every_x_weeks', 'every_x_months');
 
-CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko');
+CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'zh_tw', 'ko');
 
 CREATE TYPE PROGRESS_MODE_TYPE AS ENUM ('manual', 'weighted', 'time', 'default');
 

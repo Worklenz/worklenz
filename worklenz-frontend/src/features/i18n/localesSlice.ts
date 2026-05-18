@@ -8,6 +8,7 @@ export enum Language {
   ALB = 'alb',
   DE = 'de',
   ZH_CN = 'zh_cn',
+  ZH_TW = 'zh_tw',
   KO = 'ko',
 }
 
@@ -18,17 +19,31 @@ type LocalesState = {
 };
 
 const STORAGE_KEY = 'i18nextLng';
+const ZH_TW_ALIASES = ['zh-tw', 'zh_tw', 'zh-hant', 'zh_hant', 'zh-hant-tw', 'zh_hant_tw'];
+
+const normalizeLanguage = (language?: string | null): ILanguageType | null => {
+  const normalizedLanguage = language?.trim().toLowerCase();
+
+  if (!normalizedLanguage) return null;
+  if (ZH_TW_ALIASES.includes(normalizedLanguage)) return Language.ZH_TW;
+  if (Object.values(Language).includes(normalizedLanguage as Language)) {
+    return normalizedLanguage as ILanguageType;
+  }
+
+  const browserLang = normalizedLanguage.split('-')[0];
+  if (Object.values(Language).includes(browserLang as Language)) {
+    return browserLang as ILanguageType;
+  }
+
+  return null;
+};
 
 /**
  * Gets the user's browser language and returns it if supported, otherwise returns English
  * @returns The detected supported language or English as fallback
  */
 const getDefaultLanguage = (): ILanguageType => {
-  const browserLang = navigator.language.split('-')[0];
-  if (Object.values(Language).includes(browserLang as Language)) {
-    return browserLang as ILanguageType;
-  }
-  return Language.EN;
+  return normalizeLanguage(navigator.language) || Language.EN;
 };
 
 const DEFAULT_LANGUAGE: ILanguageType = getDefaultLanguage();

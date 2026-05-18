@@ -18,15 +18,17 @@ const LanguageSelector = () => {
     { key: 'alb', label: 'Shqip' },
     { key: 'de', label: 'Deutsch' },
     { key: 'zh_cn', label: '简体中文' },
+    { key: 'zh_tw', label: '繁體中文（台灣）' },
   ];
 
-  const languageLabels = {
+  const languageLabels: Record<string, string> = {
     en: 'En',
     es: 'Es',
     pt: 'Pt',
     alb: 'Sq',
     de: 'de',
     zh_cn: 'zh_cn',
+    zh_tw: 'zh_tw',
   };
 
   return (

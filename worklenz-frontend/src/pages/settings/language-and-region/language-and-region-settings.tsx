@@ -60,6 +60,10 @@ const LanguageAndRegionSettings = () => {
       label: '简体中文',
     },
     {
+      value: Language.ZH_TW,
+      label: '繁體中文（台灣）',
+    },
+    {
       value: Language.KO,
       label: '한국어',
     },

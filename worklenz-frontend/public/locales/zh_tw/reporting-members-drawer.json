@@ -1,0 +1,90 @@
+{
+  "exportButton": "匯出",
+  "timeLogsButton": "時間記錄",
+  "activityLogsButton": "活動記錄",
+  "tasksButton": "任務",
+  "searchByNameInputPlaceholder": "依名稱搜尋",
+
+  "overviewTab": "總覽",
+  "timeLogsTab": "時間記錄",
+  "activityLogsTab": "活動記錄",
+  "tasksTab": "任務",
+
+  "projectsText": "專案",
+  "totalTasksText": "總任務數",
+  "assignedTasksText": "已指派任務",
+  "completedTasksText": "已完成任務",
+  "ongoingTasksText": "進行中任務",
+  "overdueTasksText": "逾期任務",
+  "loggedHoursText": "已記錄時數",
+
+  "tasksText": "任務",
+  "allText": "全部",
+
+  "tasksByProjectsText": "依專案分類的任務",
+  "tasksByStatusText": "依狀態分類的任務",
+  "tasksByPriorityText": "依優先順序分類的任務",
+
+  "todoText": "待辦",
+  "doingText": "進行中",
+  "doneText": "已完成",
+  "lowText": "低",
+  "mediumText": "中",
+  "highText": "高",
+
+  "billableButton": "可計費",
+  "billableText": "可計費",
+  "nonBillableText": "不可計費",
+
+  "timeLogsEmptyPlaceholder": "沒有可顯示的時間記錄",
+  "loggedText": "記錄了",
+  "forText": "用於",
+  "inText": "在",
+  "updatedText": "已更新",
+  "fromText": "從",
+  "toText": "至",
+  "withinText": "在…期間",
+
+  "activityLogsEmptyPlaceholder": "沒有可顯示的活動記錄",
+
+  "filterByText": "篩選條件：",
+  "selectProjectPlaceholder": "選擇專案",
+
+  "taskColumn": "任務",
+  "nameColumn": "名稱",
+  "projectColumn": "專案",
+  "statusColumn": "狀態",
+  "priorityColumn": "優先順序",
+  "dueDateColumn": "到期日",
+  "completedDateColumn": "完成日期",
+  "estimatedTimeColumn": "估計時間",
+  "loggedTimeColumn": "已記錄時間",
+  "overloggedTimeColumn": "超時記錄",
+  "daysLeftColumn": "剩餘天數 / 逾期天數",
+  "startDateColumn": "開始日期",
+  "endDateColumn": "結束日期",
+  "actualTimeColumn": "實際時間",
+  "projectHealthColumn": "專案健康度",
+  "categoryColumn": "類別",
+  "projectManagerColumn": "專案經理",
+
+  "tasksStatsOverviewDrawerTitle": " 的任務",
+  "projectsStatsOverviewDrawerTitle": " 的專案",
+
+  "cancelledText": "已取消",
+  "blockedText": "受阻",
+  "onHoldText": "暫停",
+  "proposedText": "提議中",
+  "inPlanningText": "規劃中",
+  "inProgressText": "進行中",
+  "completedText": "已完成",
+  "continuousText": "持續進行",
+
+  "daysLeftText": "天剩餘",
+  "daysOverdueText": "天逾期",
+
+  "notSetText": "未設定",
+  "needsAttentionText": "需要關注",
+  "atRiskText": "有風險",
+  "goodText": "良好"
+}
