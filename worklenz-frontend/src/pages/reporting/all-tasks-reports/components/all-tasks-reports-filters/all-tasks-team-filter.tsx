@@ -8,6 +8,7 @@ import {
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
   fetchAllTasks,
+  setTeamsAndFetch,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 
 const AllTasksTeamFilter = () => {
@@ -18,14 +19,21 @@ const AllTasksTeamFilter = () => {
   const selectedCount = useMemo(() => teams.filter(t => t.selected).length, [teams]);
   const allSelected = selectedCount === teams.length && teams.length > 0;
 
+  // BUG FIX: Previously, dispatch(setSelectOrDeselectAllTeams(checked)) and
+  // dispatch(fetchAllTasks()) were called back-to-back. Because fetchAllTasks
+  // reads from Redux state via getState(), and the state update from
+  // setSelectOrDeselectAllTeams had not yet been committed when fetchAllTasks
+  // ran, the thunk always read the *old* team selection — so unchecking all
+  // teams still sent the previously-selected team IDs (or all IDs) to the API.
+  //
+  // Fix: use a single thunk (setTeamsAndFetch) that updates the teams state
+  // first and then reads the fresh state before building the API request.
   const handleSelectAll = (checked: boolean) => {
-    dispatch(setSelectOrDeselectAllTeams(checked));
-    dispatch(fetchAllTasks());
+    dispatch(setTeamsAndFetch({ type: 'all', selected: checked }));
   };
 
   const handleTeamToggle = (id: string, selected: boolean) => {
-    dispatch(setSelectOrDeselectTeam({ id, selected }));
-    dispatch(fetchAllTasks());
+    dispatch(setTeamsAndFetch({ type: 'single', id, selected }));
   };
 
   const dropdownContent = (

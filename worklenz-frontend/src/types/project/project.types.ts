@@ -91,7 +91,7 @@ export interface ProjectListTableProps {
     filters: Record<string, FilterValue | null>,
     sorter: SorterResult<IProjectViewModel> | SorterResult<IProjectViewModel>[]
   ) => void;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
 }
 
@@ -122,7 +122,7 @@ export interface ProjectViewControlsProps {
 export interface ProjectGroupCardProps {
   group: GroupedProject;
   navigate: NavigateFunction;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
   t: (key: string) => string;
@@ -131,7 +131,7 @@ export interface ProjectGroupCardProps {
 export interface ProjectGroupListProps {
   groups: GroupedProject[];
   navigate: NavigateFunction;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
   loading: boolean;

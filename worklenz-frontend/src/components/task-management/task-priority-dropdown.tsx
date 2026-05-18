@@ -4,7 +4,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
-import { MinusOutlined, PauseOutlined, DoubleRightOutlined } from '@/shared/antd-imports';
+import { ExclamationOutlined, MinusOutlined, PauseOutlined, DoubleRightOutlined } from '@/shared/antd-imports';
 
 interface TaskPriorityDropdownProps {
   task: Task;
@@ -103,6 +103,8 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
   const getPriorityIcon = useCallback((priorityName: string) => {
     const name = priorityName?.toLowerCase();
     switch (name) {
+      case 'critical':
+        return <ExclamationOutlined className="w-3 h-3" />;
       case 'low':
         return <MinusOutlined className="w-3 h-3" />;
       case 'medium':

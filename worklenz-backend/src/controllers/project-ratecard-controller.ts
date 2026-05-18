@@ -14,16 +14,16 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
     if (!project_id || !job_title_id || typeof rate !== "number") {
       return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
     }
-    
+
     // Handle both rate and man_day_rate fields
     const columns = ["project_id", "job_title_id", "rate"];
     const values = [project_id, job_title_id, rate];
-    
+
     if (typeof man_day_rate !== "undefined") {
       columns.push("man_day_rate");
       values.push(man_day_rate);
     }
-    
+
     const q = `
     INSERT INTO finance_project_rate_card_roles (${columns.join(", ")})
     VALUES (${values.map((_, i) => `$${i + 1}`).join(", ")})
@@ -42,7 +42,7 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
     if (!Array.isArray(roles) || !project_id) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid input"));
     }
-    
+
     // Handle both rate and man_day_rate fields for each role
     const columns = ["project_id", "job_title_id", "rate", "man_day_rate"];
     const values = roles.map((role: any) => [
@@ -51,7 +51,7 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
       typeof role.rate !== "undefined" ? role.rate : 0,
       typeof role.man_day_rate !== "undefined" ? role.man_day_rate : 0
     ]);
-    
+
     const q = `
       INSERT INTO finance_project_rate_card_roles (${columns.join(", ")})
       VALUES ${values.map((_, i) => `($${i * 4 + 1}, $${i * 4 + 2}, $${i * 4 + 3}, $${i * 4 + 4})`).join(",")}
@@ -114,21 +114,16 @@ export default class ProjectRateCardController extends WorklenzControllerBase {
   public static async updateById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { job_title_id, rate, man_day_rate } = req.body;
-    let setClause = "job_title_id = $1, updated_at = NOW()";
-    const values = [job_title_id];
-    if (typeof man_day_rate !== "undefined") {
-      setClause += ", man_day_rate = $2";
-      values.push(man_day_rate);
-    } else {
-      setClause += ", rate = $2";
-      values.push(rate);
-    }
-    values.push(id);
+    const values = [job_title_id, rate ?? 0, man_day_rate ?? 0, id];
     const q = `
       WITH updated AS (
       UPDATE finance_project_rate_card_roles
-      SET ${setClause}
-      WHERE id = $3
+     SET
+  job_title_id = $1,
+  rate = $2,
+  man_day_rate = $3,
+  updated_at = NOW()
+WHERE id = $4
       RETURNING *
       ),
       jobtitles AS (

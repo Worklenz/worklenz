@@ -39,7 +39,7 @@ export const useImportDerivedData = ({
     return Array.from(values);
   }, [csvRows, statusColumnKey]);
 
-  const workTypeOptions = React.useMemo(() => {
+  const statusOptions = React.useMemo(() => {
     const sourceStatuses = worklenzStatuses.length ? worklenzStatuses : defaultWorkTypes;
     return sourceStatuses.map(status => ({
       key: status.id || status.name || 'status',
@@ -106,7 +106,7 @@ export const useImportDerivedData = ({
   return {
     statusColumnKey,
     statusValues,
-    workTypeOptions,
+    statusOptions,
     csvUserRows,
     mappedFieldCount,
     modalDims,

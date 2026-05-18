@@ -40,6 +40,7 @@ import {
   addTask,
   addTaskToGroup,
   updateTask,
+  reorderTasks,
   moveTaskToGroup,
   moveTaskBetweenGroups,
   selectCurrentGroupingV3,
@@ -69,6 +70,7 @@ import {
   setTaskPriority,
   setTaskStatus,
   setTaskSubscribers,
+  updateSelectedTaskName,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
@@ -112,6 +114,8 @@ export const useTaskSocketHandlers = () => {
           };
           dispatch(updateTask(updatedTask));
         }
+
+        dispatch(updateSelectedTaskName({ id: data.id, name: data.name }));
       }
 
       // Update the old task slice (for backward compatibility)
@@ -456,6 +460,17 @@ export const useTaskSocketHandlers = () => {
     [dispatch, currentGroupingV3]
   );
 
+  const handleDueTimeChange = useCallback(
+    (data: { id: string; due_time: string | null } | null) => {
+      if (!data) return;
+      const currentTask = store.getState().taskManagement.entities[data.id];
+      if (currentTask) {
+        dispatch(updateTask({ ...currentTask, due_time: data.due_time }));
+      }
+    },
+    [dispatch]
+  );
+
   const handleEndDateChange = useCallback(
     (task: { id: string; parent_task: string | null; end_date: string }) => {
       if (!task) return;
@@ -708,8 +723,14 @@ export const useTaskSocketHandlers = () => {
 
   const handleNewTaskReceived = useCallback(
     (response: any) => {
-      // Update BOTH task-management slice (for task list) AND enhanced kanban slice
-      // They should work independently with their own grouping settings
+      // Get current sort field from Redux state
+      const sortField = store.getState().taskManagement.sortField;
+
+      // If sorting by task_key, refetch to maintain correct sort order
+      if (sortField === 'task_key' && projectId) {
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
 
       handleTaskReceivedUtil(response, {
         dispatch,
@@ -720,7 +741,7 @@ export const useTaskSocketHandlers = () => {
         taskEventName: evt_project_task_create,
       });
     },
-    [dispatch, trackMixpanelEvent, currentGroupingV3, enhancedKanbanGroupBy]
+    [dispatch, trackMixpanelEvent, currentGroupingV3, enhancedKanbanGroupBy, projectId]
   );
 
   const handleTaskProgressUpdated = useCallback(
@@ -950,13 +971,18 @@ export const useTaskSocketHandlers = () => {
         const phaseList = state.phaseReducer?.phaseList || [];
         const statusList = state.taskStatusReducer?.status || [];
 
+        const nextOrderByTaskId = new Map<string, number>();
+
         // The backend sends an array of tasks with updated sort orders and possibly grouping fields
         data.forEach((taskData: any) => {
           const currentTask = state.taskManagement.entities[taskData.id];
           if (currentTask) {
+            const nextOrder = taskData.current_sort_order ?? taskData.sort_order ?? currentTask.order;
+            nextOrderByTaskId.set(taskData.id, nextOrder);
+
             let updatedTask: Task = {
               ...currentTask,
-              order: taskData.sort_order || taskData.current_sort_order || currentTask.order,
+              order: nextOrder,
               updatedAt: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             };
@@ -991,6 +1017,22 @@ export const useTaskSocketHandlers = () => {
             dispatch(updateTask(updatedTask));
           }
         });
+
+        const groups = state.taskManagement.groups || [];
+        groups.forEach((group: any) => {
+          if (!Array.isArray(group?.taskIds) || group.taskIds.length < 2) return;
+
+          const sortedTaskIds = [...group.taskIds].sort((taskIdA: string, taskIdB: string) => {
+            const orderA = nextOrderByTaskId.get(taskIdA) ?? state.taskManagement.entities[taskIdA]?.order ?? 0;
+            const orderB = nextOrderByTaskId.get(taskIdB) ?? state.taskManagement.entities[taskIdB]?.order ?? 0;
+            return orderA - orderB;
+          });
+
+          const hasOrderChanged = sortedTaskIds.some((taskId, index) => taskId !== group.taskIds[index]);
+          if (hasOrderChanged) {
+            dispatch(reorderTasks({ taskIds: sortedTaskIds, groupId: group.id }));
+          }
+        });
       } catch (error) {
         logger.error('Error handling task sort order change event:', error);
       }
@@ -1021,6 +1063,7 @@ export const useTaskSocketHandlers = () => {
       { event: SocketEvents.TASK_PROGRESS_UPDATED.toString(), handler: handleTaskProgress },
       { event: SocketEvents.TASK_PRIORITY_CHANGE.toString(), handler: handlePriorityChange },
       { event: SocketEvents.TASK_END_DATE_CHANGE.toString(), handler: handleEndDateChange },
+      { event: SocketEvents.TASK_DUE_TIME_CHANGE.toString(), handler: handleDueTimeChange },
       { event: SocketEvents.TASK_NAME_CHANGE.toString(), handler: handleTaskNameChange },
       { event: SocketEvents.TASK_PHASE_CHANGE.toString(), handler: handlePhaseChange },
       { event: SocketEvents.TASK_START_DATE_CHANGE.toString(), handler: handleStartDateChange },
@@ -1072,6 +1115,7 @@ export const useTaskSocketHandlers = () => {
     handleTaskProgress,
     handlePriorityChange,
     handleEndDateChange,
+    handleDueTimeChange,
     handleTaskNameChange,
     handlePhaseChange,
     handleStartDateChange,

@@ -314,6 +314,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Map frontend field names to backend column names
     const fieldMapping: Record<string, string> = {
+      'task_key': 'CAST(t.task_no AS INTEGER)',
       'name': 't.name',
       'status': '(SELECT sort_order FROM task_statuses WHERE id = t.status_id)',
       'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',
@@ -631,6 +632,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
               FROM tasks p
               WHERE p.id = t.parent_task_id) AS parent_task_key,
              (SELECT archived FROM tasks WHERE id = t.parent_task_id) AS parent_task_archived,
+             (SELECT status_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_status_id,
+             (SELECT LOWER(REPLACE(name, ' ', '_')) FROM task_statuses WHERE id = (SELECT status_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_status_name,
              (SELECT priority_id FROM tasks WHERE id = t.parent_task_id) AS parent_task_priority_id,
              (SELECT value
               FROM task_priorities
@@ -720,7 +723,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
              start_date,
              billable,
              schedule_id,
-             END_DATE ${customColumnsQuery} ${statusesQuery}
+             END_DATE,
+             due_time ${customColumnsQuery} ${statusesQuery}
       FROM tasks t
       WHERE ${filters} ${enhancedSearchQuery}
       ORDER BY ${sortFields}
@@ -1692,6 +1696,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         all_labels: task.all_labels || [],
         dueDate: task.end_date || task.END_DATE,
         startDate: task.start_date,
+        due_time: task.due_time ? String(task.due_time).substring(0, 5) : null,
         completed_at: task.completed_at || undefined,
         timeTracking: {
           estimated: convertToHours(task.total_minutes, false), // total_minutes is in minutes
@@ -1716,6 +1721,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         parent_task_name: task.parent_task_name || null,
         parent_task_key: task.parent_task_key || null,
         parent_task_archived: task.parent_task_archived ?? null,
+        parent_task_status_id: task.parent_task_status_id || null,
+        parent_task_status_name: task.parent_task_status_name || null,
         parent_task_priority_id: task.parent_task_priority_id || null,
         parent_task_priority_value: task.parent_task_priority_value ?? null,
         parent_task_priority_color: task.parent_task_priority_color || null,
@@ -1772,6 +1779,39 @@ export default class TasksControllerV2 extends TasksControllerBase {
         }
 
         const [firstSubtask] = subtasks;
+        
+        // Fetch the real parent task's progress value from database
+        const parentTaskQuery = `
+          SELECT 
+            progress_value,
+            COALESCE(progress_value, 0) AS complete_ratio,
+            (SELECT is_completed(status_id, project_id)) AS is_complete
+          FROM tasks
+          WHERE id = $1
+        `;
+        const parentTaskResult = await db.query(parentTaskQuery, [parentId]);
+        const realParentData = parentTaskResult.rows[0];
+        
+        // Calculate the actual progress value for the synthetic parent
+        // Use the real parent task's progress from database
+        let parentProgress = 0;
+        let parentCompleteRatio = 0;
+        let parentProgressValue = 0;
+        
+        if (realParentData) {
+          // If parent task is marked as complete, show 100%
+          if (realParentData.is_complete) {
+            parentProgress = 100;
+            parentCompleteRatio = 100;
+            parentProgressValue = 100;
+          } else {
+            // Otherwise use the calculated progress value from database
+            parentProgress = realParentData.progress_value || 0;
+            parentCompleteRatio = realParentData.complete_ratio || 0;
+            parentProgressValue = realParentData.progress_value || 0;
+          }
+        }
+        
         const syntheticParent = {
           ...firstSubtask,
           id: `archived-parent-container-${parentId}`,
@@ -1783,6 +1823,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
           archived: false,
           is_parent_container: true,
           parent_task_not_archived: true,
+          // Synthetic rows should reflect the real parent task's status when available.
+          // Without this override the spread from firstSubtask would carry the subtask's
+          // status (e.g. "Doing") onto the parent container row.
+          status: firstSubtask.parent_task_status_name
+            || (firstSubtask.parent_task_status_id
+              ? statusCategoryMap[firstSubtask.parent_task_status_id] || firstSubtask.parent_task_status_id
+              : firstSubtask.status),
           // Synthetic rows should reflect the real parent task's priority when available.
           priority:
             priorityMap[firstSubtask.parent_task_priority_value?.toString()] ||
@@ -1792,6 +1839,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
           priorityColor: firstSubtask.parent_task_priority_color || null,
           priority_color: firstSubtask.parent_task_priority_color || null,
           priority_value: firstSubtask.parent_task_priority_value ?? null,
+          // CRITICAL FIX: Use the real parent task's actual progress value from database
+          // This ensures consistency between archived and non-archived views
+          // If parent is "Done", it shows 100%; otherwise shows calculated progress (0 if all subtasks archived)
+          progress: parentProgress,
+          complete_ratio: parentCompleteRatio,
+          progress_value: parentProgressValue,
           show_sub_tasks: true,
           sub_tasks: subtasks,
           sub_tasks_count: subtasks.length,

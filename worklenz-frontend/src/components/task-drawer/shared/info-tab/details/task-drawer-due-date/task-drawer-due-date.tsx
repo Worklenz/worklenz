@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { Flex, DatePicker, Typography, Button, Form, FormInstance } from '@/shared/antd-imports';
-import { t, TFunction } from 'i18next';
+import { useState, useCallback } from 'react';
+import { Flex, DatePicker, Typography, Button, Form, FormInstance, TimePicker } from '@/shared/antd-imports';
+import { TFunction } from 'i18next';
 import dayjs, { Dayjs } from 'dayjs';
-import { useTranslation } from 'react-i18next';
 
 import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
@@ -13,12 +12,14 @@ import { getUserSession } from '@/utils/session-helper';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setStartDate, setTaskEndDate } from '@/features/task-drawer/task-drawer.slice';
+import { setStartDate, setTaskEndDate, setTaskDueTime } from '@/features/task-drawer/task-drawer.slice';
 import {
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanTaskEndDate,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { updateTask } from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
 interface TaskDrawerDueDateProps {
   task: ITaskViewModel;
   t: TFunction;
@@ -103,6 +104,47 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
     }
   };
 
+  // Due time handling
+  const timeValue = task?.due_time ? dayjs(task.due_time, 'HH:mm') : null;
+
+  const handleDueTimeChange = useCallback(
+    (_time: dayjs.Dayjs | null, timeString: string | string[]) => {
+      try {
+        const value = Array.isArray(timeString) ? timeString[0] : timeString;
+
+        socket?.emit(
+          SocketEvents.TASK_DUE_TIME_CHANGE.toString(),
+          JSON.stringify({
+            task_id: task.id,
+            due_time: value || null,
+          })
+        );
+
+        socket?.once(
+          SocketEvents.TASK_DUE_TIME_CHANGE.toString(),
+          (data: { id: string; due_time: string | null }) => {
+            if (!data) return;
+
+            // Update task drawer slice
+            dispatch(setTaskDueTime({ id: data.id, due_time: data.due_time }));
+
+            // Update task-management slice
+            const currentTask = store.getState().taskManagement.entities[data.id];
+            if (currentTask) {
+              dispatch(updateTask({ ...currentTask, due_time: data.due_time }));
+            }
+
+            // Update form field
+            form.setFieldsValue({ dueTime: data.due_time });
+          }
+        );
+      } catch (error) {
+        logger.error('Failed to update due time:', error);
+      }
+    },
+    [socket, dispatch, form]
+  );
+
   return (
     <Form.Item name="dueDate" label={t('taskInfoTab.details.due-date')}>
       <Flex align="center" gap={8}>
@@ -125,6 +167,16 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
           onChange={handleEndDateChange}
           value={isValidDueDate ? dueDayjs : null}
           format={'MMM DD, YYYY'}
+        />
+        <TimePicker
+          format="HH:mm"
+          value={timeValue}
+          onChange={handleDueTimeChange}
+          changeOnScroll
+          needConfirm={false}
+          placeholder={t('taskInfoTab.details.set-due-time', { defaultValue: 'Set due time' })}
+          style={{ width: '120px' }}
+          allowClear
         />
         <Button
           type="text"

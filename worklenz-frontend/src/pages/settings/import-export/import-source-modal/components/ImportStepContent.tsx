@@ -44,14 +44,8 @@ interface ImportStepContentProps {
   setSelectedJiraProject: React.Dispatch<React.SetStateAction<string>>;
   persistAsanaSelection: (projectId: string, workspaceId?: string, projectName?: string) => Promise<void>;
   selectedProject: string;
-  spaceType: string;
-  setSpaceType: React.Dispatch<React.SetStateAction<string>>;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
-  showAdvancedSpaceOptions: boolean;
-  setShowAdvancedSpaceOptions: React.Dispatch<React.SetStateAction<boolean>>;
-  spaceTemplate: string;
-  setSpaceTemplate: React.Dispatch<React.SetStateAction<string>>;
   reviewSubScreen: 'main' | 'hierarchy' | 'fieldMapping';
   setReviewSubScreen: React.Dispatch<React.SetStateAction<'main' | 'hierarchy' | 'fieldMapping'>>;
   hierarchyCount: number;
@@ -90,9 +84,9 @@ interface ImportStepContentProps {
   filter: string;
   setFilter: React.Dispatch<React.SetStateAction<string>>;
   statusColumnKey?: string;
-  workTypeOptions: Array<{ key: string; label: string; icon: React.ReactNode; level: number }>;
-  workTypeMapping: Record<string, string>;
-  setWorkTypeMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  statusOptions: Array<{ key: string; label: string; icon: React.ReactNode; level: number }>;
+  statusValueMapping: Record<string, string>;
+  setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -135,14 +129,8 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     setSelectedJiraProject,
     persistAsanaSelection,
     selectedProject,
-    spaceType,
-    setSpaceType,
     spaceName,
     setSpaceName,
-    showAdvancedSpaceOptions,
-    setShowAdvancedSpaceOptions,
-    spaceTemplate,
-    setSpaceTemplate,
     reviewSubScreen,
     setReviewSubScreen,
     hierarchyCount,
@@ -175,9 +163,9 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     filter,
     setFilter,
     statusColumnKey,
-    workTypeOptions,
-    workTypeMapping,
-    setWorkTypeMapping,
+    statusOptions,
+    statusValueMapping,
+    setStatusValueMapping,
     csvUserRows,
     userEmails,
     setUserEmails,
@@ -221,14 +209,8 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
         setSelectedJiraProject={setSelectedJiraProject}
         persistAsanaSelection={persistAsanaSelection}
         selectedProject={selectedProject}
-        spaceType={spaceType}
-        setSpaceType={setSpaceType}
         spaceName={spaceName}
         setSpaceName={setSpaceName}
-        showAdvancedSpaceOptions={showAdvancedSpaceOptions}
-        setShowAdvancedSpaceOptions={setShowAdvancedSpaceOptions}
-        spaceTemplate={spaceTemplate}
-        setSpaceTemplate={setSpaceTemplate}
         reviewSubScreen={reviewSubScreen}
         setReviewSubScreen={setReviewSubScreen}
         hierarchyCount={hierarchyCount}
@@ -263,10 +245,6 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           csvSettingsOpen={csvSettingsOpen}
           setCsvSettingsOpen={setCsvSettingsOpen}
           sourceLabel={sourceLabel || t('importStep.yourApp', { defaultValue: 'your app' })}
-          spaceType={spaceType}
-          setSpaceType={setSpaceType}
-          spaceTemplate={spaceTemplate}
-          setSpaceTemplate={setSpaceTemplate}
           spaceName={spaceName}
           setSpaceName={setSpaceName}
         />
@@ -291,9 +269,9 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           filter={filter}
           setFilter={setFilter}
           statusColumnKey={statusColumnKey}
-          workTypeOptions={workTypeOptions}
-          workTypeMapping={workTypeMapping}
-          setWorkTypeMapping={setWorkTypeMapping}
+          statusOptions={statusOptions}
+          statusValueMapping={statusValueMapping}
+          setStatusValueMapping={setStatusValueMapping}
           csvUserRows={csvUserRows}
           userEmails={userEmails}
           setUserEmails={setUserEmails}
@@ -307,9 +285,11 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           t={t}
           themeToken={themeToken}
           spaceName={spaceName}
+          providerKey={lowerKey}
+          sourceLabel={sourceLabel}
           fieldMappings={fieldMappings}
           csvColumns={csvColumns}
-          workTypeMapping={workTypeMapping}
+          statusValueMapping={statusValueMapping}
           csvUserRows={csvUserRows}
           userEmails={userEmails}
           addUsers={addUsers}

@@ -21,8 +21,11 @@ import {
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
 import { useTranslation } from 'react-i18next';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
 
 const { Title, Paragraph } = Typography;
 
@@ -37,6 +40,7 @@ const ProjectInvitePage: React.FC = () => {
   const authService = useAuthService();
   const currentUser = authService.getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('invitation');
 
   const [status, setStatus] = useState<'loading' | 'form' | 'success' | 'error' | 'invalid'>(
@@ -55,10 +59,8 @@ const ProjectInvitePage: React.FC = () => {
     }
 
     // Store invitation context immediately before any API calls
-    // This ensures we preserve the context even if 401 redirect happens
     const currentPath = window.location.pathname;
     invitationRedirectService.storePendingInvitation(token, 'project', currentPath);
-    console.log('[ProjectInvite] Stored invitation context on mount');
 
     validateInvitation();
   }, [token]);
@@ -75,6 +77,9 @@ const ProjectInvitePage: React.FC = () => {
         setErrorMessage(response.message || 'Invalid invitation link');
       }
     } catch (error: any) {
+      if (error?.response?.status === 401) {
+        return;
+      }
       setStatus('error');
       setErrorMessage(error?.response?.data?.message || 'Failed to validate invitation');
     }
@@ -93,33 +98,21 @@ const ProjectInvitePage: React.FC = () => {
 
         // Clear the stored invitation context since we successfully joined
         invitationRedirectService.clearPendingInvitation();
-        console.log('[ProjectInvite] Cleared invitation context after successful join');
 
-        const teamId = response.body?.team_id;
         const projectId = response.body?.project_id || projectInfo?.project?.id;
 
-        // Redirect to login or project after a delay
-        setTimeout(() => {
-          if (currentUser && teamId) {
-            // Force full page reload to refresh session with new active team
-            // Backend has already set the active team, so reload will pick it up
-            console.log(
-              '[ProjectInvite] Reloading to refresh session with new active team:',
-              teamId
-            );
-            window.location.href = `/worklenz/projects/${projectId}`;
-          } else if (currentUser) {
-            // Fallback: reload to pick up the active team set by backend
-            window.location.href = `/worklenz/projects/${projectId}`;
-          } else {
-            navigate('/auth/login', {
-              state: {
-                message: t('projectLoginPrompt'),
-                email: values.email,
-              },
-            });
+        // Refresh the session so it picks up the new active team set by the backend
+        setTimeout(async () => {
+          try {
+            const authResult = await dispatch(verifyAuthentication()).unwrap();
+            if (authResult.authenticated) {
+              dispatch(setUser(authResult.user));
+            }
+          } catch {
+            // session refresh failed, proceed anyway
           }
-        }, 2000);
+          window.location.href = `/worklenz/projects/${projectId}`;
+        }, 1500);
       } else {
         message.error(response.message || t('joinFailed'));
         // Navigate to home page if join failed (using window.location to bypass auth guards)
@@ -139,15 +132,8 @@ const ProjectInvitePage: React.FC = () => {
   };
 
   const handleSkipInvitation = async () => {
-    // Clear the stored invitation context
     invitationRedirectService.clearPendingInvitation();
-    console.log('[ProjectInvite] Cleared invitation context after skip');
-
-    // Clear the session
     await authService.signOut();
-    console.log('[ProjectInvite] Cleared session after skip');
-
-    // Redirect to authenticating page
     navigate('/auth/authenticating');
   };
 
@@ -303,9 +289,9 @@ const ProjectInvitePage: React.FC = () => {
       case 'error':
         return (
           <Result
-            status="error"
-            title={t('errorNotLoggedIn') || errorMessage}
-            subTitle={errorMessage}
+            status="warning"
+            title={errorMessage}
+            subTitle={t('invalidInvitationSubtitle')}
             extra={[
               <Button key="home" onClick={() => navigate('/')}>
                 {t('goToHome')}

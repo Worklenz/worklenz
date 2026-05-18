@@ -59,7 +59,10 @@
     },
     "description": {
       "title": "Description",
-      "placeholder": "Add a more detailed description..."
+      "placeholder": "Add a more detailed description...",
+      "clickToAdd": "Click to add description...",
+      "readMore": "Read more",
+      "showLess": "Show less"
     },
     "subTasks": {
       "title": "Sub Tasks",

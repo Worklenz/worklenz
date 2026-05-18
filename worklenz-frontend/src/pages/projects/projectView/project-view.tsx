@@ -32,9 +32,9 @@ import ProjectViewHeader from './project-view-header';
 import './project-view.css';
 import { resetTaskListData } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
-import { resetTaskManagement } from '@/features/task-management/task-management.slice';
-import { setActiveTeam } from '@/features/teams/teamSlice';
-import { resetGrouping } from '@/features/task-management/grouping.slice';
+import { resetTaskManagement, fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
+import { resetGrouping, initGroupingFromServer, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
@@ -49,7 +49,7 @@ import {
   setShowTaskDrawer,
   resetTaskDrawer,
 } from '@/features/task-drawer/task-drawer.slice';
-import { resetState as resetEnhancedKanbanState } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { resetState as resetEnhancedKanbanState, initKanbanGroupingFromServer, IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ProjectViewSkeleton from './project-view-skeleton';
@@ -59,11 +59,15 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { setUser } from '@/features/user/userSlice';
+import { projectsApi } from '@/api/projects/projects.v1.api.service';
+import { setProjectMemberDefaultView } from '@/features/projects/projectsSlice';
 
 // Import critical components synchronously to avoid suspense interruptions
 import TaskDrawer from '@components/task-drawer/task-drawer';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { fetchTaskListColumns, fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTaskListColumns } from '@/features/task-management/task-management.slice';
 
 // Lazy load non-critical components with better error handling
 const DeleteStatusDrawer = React.lazy(
@@ -115,6 +119,9 @@ const ProjectView = React.memo(() => {
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
   const [taskid, setTaskId] = useState<string>(urlParams.taskId);
   const [isInitialized, setIsInitialized] = useState(false);
+  // Track whether pinnedTab has been initialised from the URL at least once.
+  // After that we own the state locally and must not let urlParams overwrite it.
+  const pinnedTabInitializedRef = useRef(false);
 
   // Use ref to prevent duplicate API calls and error messages
   const isLoadingRef = useRef(false);
@@ -143,7 +150,15 @@ const ProjectView = React.memo(() => {
       setActiveTab(urlParams.tab);
     }
 
-    setPinnedTab(urlParams.pinnedTab);
+    // Only initialise pinnedTab from the URL once — after that pinToDefaultTab
+    // owns the state directly. Overwriting on every urlParams change causes the
+    // first pin click to be silently reverted (the navigate() in pinToDefaultTab
+    // triggers urlParams to recompute before the new pinnedTab state settles).
+    if (!pinnedTabInitializedRef.current) {
+      setPinnedTab(urlParams.pinnedTab);
+      pinnedTabInitializedRef.current = true;
+    }
+
     setTaskId(urlParams.taskId);
   }, [urlParams, currentSession, selectedProject, dispatch]);
 
@@ -203,6 +218,8 @@ const ProjectView = React.memo(() => {
     setIsInitialized(false);
     isLoadingRef.current = false;
     hasShownErrorRef.current = false;
+    // Allow pinnedTab to be re-read from the URL for the new project
+    pinnedTabInitializedRef.current = false;
   }, [projectId]);
 
   // Optimized project data loading with better error handling and performance tracking
@@ -264,68 +281,9 @@ const ProjectView = React.memo(() => {
 
               // Check if it's a 403 error (access denied)
               if (payload?.statusCode === 403) {
-                // Check if user needs to switch teams (backend has already verified project access)
-                // The backend only sets requiresTeamSwitch=true if the user actually has access to the project
-                if (payload.requiresTeamSwitch && payload.projectTeamId) {
-                  console.log(
-                    'Project belongs to different team, switching teams...',
-                    payload.projectTeamId
-                  );
-
-                  // Show message that we're switching teams (only once)
-                  if (!hasShownErrorRef.current) {
-                    hasShownErrorRef.current = true;
-                    message.info(
-                      t('Switching to project team...', {
-                        defaultValue: 'Switching to project team...',
-                      })
-                    );
-                  }
-
-                  try {
-                    // Switch to the project's team
-                    const switchResult = await dispatch(setActiveTeam(payload.projectTeamId));
-
-                    if (setActiveTeam.fulfilled.match(switchResult)) {
-                      // Team switched successfully, reload the page to refresh session
-                      message.success(
-                        t('Team switched successfully', {
-                          defaultValue: 'Team switched successfully',
-                        })
-                      );
-
-                      // Reload the page to get new session with correct team
-                      window.location.reload();
-                      return;
-                    } else {
-                      // Team switch failed
-                      if (!hasShownErrorRef.current) {
-                        hasShownErrorRef.current = true;
-                        message.error(
-                          t('Failed to switch teams', {
-                            defaultValue: 'Failed to switch teams',
-                          })
-                        );
-                      }
-                      navigate('/worklenz/projects');
-                      return;
-                    }
-                  } catch (switchError) {
-                    console.error('Error switching teams:', switchError);
-                    if (!hasShownErrorRef.current) {
-                      hasShownErrorRef.current = true;
-                      message.error(
-                        t('Failed to switch teams', {
-                          defaultValue: 'Failed to switch teams',
-                        })
-                      );
-                    }
-                    navigate('/worklenz/projects');
-                    return;
-                  }
-                }
-
                 // Access denied (user doesn't have access to the project)
+                // Note: Backend now handles team switching automatically, so if we get 403,
+                // it means the user truly doesn't have access
                 console.log('Access denied to project:', projectId);
                 if (!hasShownErrorRef.current) {
                   hasShownErrorRef.current = true;
@@ -358,6 +316,57 @@ const ProjectView = React.memo(() => {
               navigate('/worklenz/projects');
               return;
             }
+
+            // Initialize grouping preferences from server data.
+            // If the server value differs from what was already in Redux (loaded from
+            // localStorage before the project data arrived), re-fetch tasks so the
+            // task list reflects the correct saved grouping without requiring a refresh.
+            const projectData = result.payload as any;
+            const validGroupings = ['status', 'priority', 'phase'] as const;
+            type GroupingType = typeof validGroupings[number];
+
+            const taskListGroupBy: GroupingType = validGroupings.includes(projectData?.task_list_group_by)
+              ? projectData.task_list_group_by
+              : 'status';
+
+            const boardGroupBy: GroupingType = validGroupings.includes(projectData?.board_group_by)
+              ? projectData.board_group_by
+              : 'status';
+
+            // Read current Redux grouping BEFORE dispatching the init action
+            const currentListGrouping = selectCurrentGrouping(store.getState());
+
+            dispatch(initGroupingFromServer({ grouping: taskListGroupBy, projectId }));
+            dispatch(initKanbanGroupingFromServer({ groupBy: boardGroupBy as IGroupBy, projectId }));
+
+            // If the task list was already fetched in parallel but with the wrong grouping,
+            // re-fetch now that the correct grouping is in Redux state
+            if (shouldPreloadTaskList && currentListGrouping !== taskListGroupBy) {
+              dispatch(fetchTasksV3(projectId));
+            }
+          }
+
+          // After successful project load, refresh session to update team info in UI
+          // This handles cases where backend automatically switched teams
+          try {
+            // Store current team ID before refresh
+            const currentTeamId = currentSession?.team_id;
+            
+            const authResult = await dispatch(verifyAuthentication()).unwrap();
+            if (authResult.authenticated) {
+              dispatch(setUser(authResult.user));
+              authService.setCurrentSession(authResult.user);
+              
+              // Check if team switched - if so, force page reload to update all components
+              const newTeamId = authResult.user?.team_id;
+              if (currentTeamId && newTeamId && currentTeamId !== newTeamId) {
+                window.location.reload();
+                return;
+              }
+            }
+          } catch (authError) {
+            console.error('Failed to refresh session:', authError);
+            // Continue anyway - project is loaded
           }
 
           setIsInitialized(true);
@@ -394,29 +403,38 @@ const ProjectView = React.memo(() => {
         });
 
         if (res.done) {
+          // Keep local state and URL in sync immediately after pinning.
           setPinnedTab(itemKey);
 
-          // Optimize tab items update
+          navigate(
+            {
+              pathname: location.pathname,
+              search: new URLSearchParams({
+                tab: activeTab,
+                pinned_tab: itemKey,
+                ...(taskid ? { task: taskid } : {}),
+              }).toString(),
+            },
+            { replace: true }
+          );
+
           tabItems.forEach(item => {
             item.isPinned = item.key === itemKey;
           });
 
-          navigate(
-            {
-              pathname: `/worklenz/projects/${projectId}`,
-              search: new URLSearchParams({
-                tab: activeTab,
-                pinned_tab: itemKey,
-              }).toString(),
-            },
-            { replace: true }
-          ); // Use replace to avoid history pollution
+          dispatch(
+            setProjectMemberDefaultView({
+              projectId,
+              defaultView,
+            })
+          );
+          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
         }
       } catch (error) {
         console.error('Error updating default tab:', error);
       }
     },
-    [projectId, activeTab, navigate]
+    [activeTab, dispatch, location.pathname, navigate, projectId, taskid]
   );
 
   // Optimized tab change handler

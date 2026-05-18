@@ -90,7 +90,8 @@ AddCustomColumnButton.displayName = 'AddCustomColumnButton';
 export const CustomColumnHeader: React.FC<{
   column: any;
   onSettingsClick: (columnId: string) => void;
-}> = ({ column, onSettingsClick }) => {
+  dragHandle?: React.ReactNode;
+}> = ({ column, onSettingsClick, dragHandle }) => {
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
 
@@ -102,20 +103,38 @@ export const CustomColumnHeader: React.FC<{
       align="center"
       justify="space-between"
       className="w-full px-2 group cursor-pointer"
+      style={{ minWidth: 0 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onSettingsClick(column.key || column.id)}
     >
-      <span title={displayName} className="truncate flex-1 mr-2">
+      <span title={displayName} className="truncate flex-1 mr-1" style={{ minWidth: 0 }}>
         {displayName}
       </span>
-      <Tooltip title={t('customColumns.customColumnSettings')}>
-        <SettingOutlined
-          className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 flex-shrink-0 ${
-            isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-          }`}
-        />
-      </Tooltip>
+      {/* Right-side icons: settings + drag handle sit side by side, no overlap */}
+      <Flex align="center" gap={4} className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+        <Tooltip title={t('customColumns.customColumnSettings')}>
+          <SettingOutlined
+            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
+              isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
+            onClick={e => {
+              e.stopPropagation();
+              onSettingsClick(column.key || column.id);
+            }}
+          />
+        </Tooltip>
+        {dragHandle && (
+          <span
+            className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded-full transition-all duration-200 cursor-grab
+              text-gray-400 dark:text-gray-500
+              hover:bg-blue-500/10 hover:text-blue-500 dark:hover:bg-blue-500/15 dark:hover:text-blue-400
+              ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+          >
+            {dragHandle}
+          </span>
+        )}
+      </Flex>
     </Flex>
   );
 };

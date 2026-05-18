@@ -195,17 +195,29 @@ const CommonPhaseSection: React.FC<CommonPhaseSectionProps> = ({
                 </Button>
               )}
               {isEditable ? (
-                <Input
-                  ref={inputRef}
-                  value={name}
-                  variant="borderless"
-                  style={{
-                    backgroundColor: themeMode === 'dark' ? 'black' : 'white',
-                  }}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  onPressEnter={handleBlur}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <Input
+                    ref={inputRef}
+                    value={name}
+                    variant="borderless"
+                    maxLength={50}
+                    style={{
+                      backgroundColor: themeMode === 'dark' ? 'black' : 'white',
+                    }}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    onPressEnter={handleBlur}
+                  />
+                  <span style={{
+                    fontSize: '11px',
+                    color: name.length >= 50 ? '#ff4d4f' : '#8c8c8c',
+                    textAlign: 'right',
+                    paddingRight: '4px',
+                    lineHeight: 1,
+                  }}>
+                    {name.length}/50
+                  </span>
+                </div>
               ) : (
                 <Typography.Text
                   style={{

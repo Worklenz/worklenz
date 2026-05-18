@@ -33,6 +33,33 @@ const CustomMentionsInput = ({
   const isComposingRef = useRef(false);
   const isUpdatingRef = useRef(false);
 
+  // Guard selection mutations because contentEditable updates can detach range nodes.
+  const safelyAddRange = (selection: Selection, range: Range): boolean => {
+    if (!selection || !range || !editableRef.current) return false;
+
+    try {
+      if (!range.startContainer || !range.endContainer) return false;
+
+      if (!document.contains(editableRef.current)) return false;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return false;
+      }
+
+      if (
+        !editableRef.current.contains(range.startContainer) ||
+        !editableRef.current.contains(range.endContainer)
+      ) {
+        return false;
+      }
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
   // Process text to create HTML with highlighted mentions
   const createHighlightedHTML = (text: string) => {
     if (!text) return '';
@@ -128,6 +155,10 @@ const CustomMentionsInput = ({
     let range;
     try {
       range = selection.getRangeAt(0);
+      if (!range.startContainer || !range.endContainer) return 0;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return 0;
+      }
     } catch (e) {
       return 0;
     }
@@ -182,6 +213,10 @@ const CustomMentionsInput = ({
     let range;
     try {
       range = selection.getRangeAt(0);
+      if (!range.startContainer || !range.endContainer) return false;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return false;
+      }
     } catch (e) {
       return false;
     }
@@ -215,6 +250,10 @@ const CustomMentionsInput = ({
     let range;
     try {
       range = selection.getRangeAt(0);
+      if (!range.startContainer || !range.endContainer) return;
+      if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+        return;
+      }
     } catch (e) {
       return;
     }
@@ -251,8 +290,7 @@ const CustomMentionsInput = ({
     }
 
     newRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(newRange);
+    safelyAddRange(selection, newRange);
   };
 
   // Handle input changes - MODIFIED TO FIX BUG
@@ -352,6 +390,10 @@ const CustomMentionsInput = ({
         let range;
         try {
           range = selection.getRangeAt(0);
+          if (!range.startContainer || !range.endContainer) return;
+          if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+            return;
+          }
         } catch (err) {
           return;
         }
@@ -360,8 +402,7 @@ const CustomMentionsInput = ({
         range.insertNode(textNode);
         range.setStartAfter(textNode);
         range.collapse(true);
-        selection.removeAllRanges();
-        selection.addRange(range);
+        safelyAddRange(selection, range);
 
         // Trigger input update
         setTimeout(() => {
@@ -388,6 +429,10 @@ const CustomMentionsInput = ({
         let range;
         try {
           range = selection.getRangeAt(0);
+          if (!range.startContainer || !range.endContainer) return;
+          if (!document.contains(range.startContainer) || !document.contains(range.endContainer)) {
+            return;
+          }
         } catch (err) {
           return;
         }
@@ -504,21 +549,32 @@ const CustomMentionsInput = ({
   const restoreCursorPosition = (offset: number) => {
     const selection = window.getSelection();
     if (!selection || !editableRef.current) return;
+    if (!document.contains(editableRef.current)) return;
 
-    selection.removeAllRanges();
+    try {
+      selection.removeAllRanges();
+    } catch (error) {
+      return;
+    }
 
     const newRange = document.createRange();
     let currentPos = 0;
     let found = false;
 
     const walkNodes = (node: Node): boolean => {
+      if (!document.contains(node)) return false;
+
       if (node.nodeType === Node.TEXT_NODE) {
         const textLength = node.textContent?.length || 0;
         if (currentPos + textLength >= offset) {
-          newRange.setStart(node, Math.min(offset - currentPos, textLength));
-          newRange.collapse(true);
-          found = true;
-          return true;
+          try {
+            newRange.setStart(node, Math.min(offset - currentPos, textLength));
+            newRange.collapse(true);
+            found = true;
+            return true;
+          } catch (error) {
+            return false;
+          }
         }
         currentPos += textLength;
         return false;
@@ -537,18 +593,26 @@ const CustomMentionsInput = ({
               nextSibling.textContent?.startsWith(' ')
             ) {
               // Place cursor after the space
-              newRange.setStart(nextSibling, 1);
-              newRange.collapse(true);
-              found = true;
-              return true;
+              try {
+                newRange.setStart(nextSibling, 1);
+                newRange.collapse(true);
+                found = true;
+                return true;
+              } catch (error) {
+                return false;
+              }
             } else {
               // Create a space after the mention
-              const spaceNode = document.createTextNode(' ');
-              node.parentNode?.insertBefore(spaceNode, node.nextSibling);
-              newRange.setStart(spaceNode, 1);
-              newRange.collapse(true);
-              found = true;
-              return true;
+              try {
+                const spaceNode = document.createTextNode(' ');
+                node.parentNode?.insertBefore(spaceNode, node.nextSibling);
+                newRange.setStart(spaceNode, 1);
+                newRange.collapse(true);
+                found = true;
+                return true;
+              } catch (error) {
+                return false;
+              }
             }
           }
           currentPos += textLength;
@@ -568,19 +632,23 @@ const CustomMentionsInput = ({
     walkNodes(editableRef.current);
 
     if (found) {
-      selection.addRange(newRange);
+      safelyAddRange(selection, newRange);
     } else {
       // Place cursor at end
       const lastNode = editableRef.current.lastChild;
-      if (lastNode) {
-        if (lastNode.nodeType === Node.TEXT_NODE) {
-          const textLength = lastNode.textContent?.length || 0;
-          newRange.setStart(lastNode, textLength);
-        } else {
-          newRange.setStartAfter(lastNode);
+      if (lastNode && document.contains(lastNode)) {
+        try {
+          if (lastNode.nodeType === Node.TEXT_NODE) {
+            const textLength = lastNode.textContent?.length || 0;
+            newRange.setStart(lastNode, textLength);
+          } else {
+            newRange.setStartAfter(lastNode);
+          }
+          newRange.collapse(true);
+          safelyAddRange(selection, newRange);
+        } catch (error) {
+          return;
         }
-        newRange.collapse(true);
-        selection.addRange(newRange);
       }
     }
   };

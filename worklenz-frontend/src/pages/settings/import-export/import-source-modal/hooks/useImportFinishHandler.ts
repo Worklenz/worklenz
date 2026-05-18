@@ -10,6 +10,7 @@ import {
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import { createAndAttachTargetProject, ensureFieldMappingsAreSaved } from '../import-finish-utils';
+import { enqueuePendingImportJob } from '@/components/imports/ImportProgressNotifier';
 
 interface UseImportFinishHandlerArgs {
   integrationType: 'direct' | 'csv';
@@ -46,7 +47,7 @@ interface UseImportFinishHandlerArgs {
   csvColumns: string[];
   includeInImport: Record<string, boolean>;
   fieldMappings: Record<string, string>;
-  workTypeMapping: Record<string, string>;
+  statusValueMapping: Record<string, string>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   ensureImportJob: () => Promise<ImportJob>;
@@ -92,7 +93,7 @@ export const useImportFinishHandler = ({
   csvColumns,
   includeInImport,
   fieldMappings,
-  workTypeMapping,
+  statusValueMapping,
   csvUserRows,
   userEmails,
   ensureImportJob,
@@ -102,7 +103,7 @@ export const useImportFinishHandler = ({
   React.useCallback(async () => {
     if (integrationType === 'direct') {
       if (!spaceName.trim()) {
-        message.error(t('importStep.spaceNameRequired', 'Please enter a space name.'));
+        message.error(t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' }));
         return;
       }
 
@@ -152,6 +153,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -216,6 +218,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -291,6 +294,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -366,6 +370,7 @@ export const useImportFinishHandler = ({
 
           const commitProgress = await commitImportJob(job.id);
           if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+          enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -390,7 +395,7 @@ export const useImportFinishHandler = ({
     }
 
     if (!spaceName.trim()) {
-      message.error(t('importStep.spaceNameRequired', 'Please enter a space name.'));
+      message.error(t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' }));
       return;
     }
 
@@ -425,7 +430,7 @@ export const useImportFinishHandler = ({
         await saveImportFields(activeJob.id, mappedFields);
       }
 
-      const mappedValues = Object.entries(workTypeMapping)
+      const mappedValues = Object.entries(statusValueMapping)
         .filter(([, target]) => !!target)
         .map(([sourceValue, targetWorktype]) => ({
           source_value: sourceValue,
@@ -453,6 +458,7 @@ export const useImportFinishHandler = ({
 
       const commitProgress = await commitImportJob(activeJob.id);
       if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+      enqueuePendingImportJob(activeJob.id);
 
       setShowCompletion(false);
       message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
@@ -502,6 +508,5 @@ export const useImportFinishHandler = ({
     trelloToken,
     tt,
     userEmails,
-    workTypeMapping,
+    statusValueMapping,
   ]);
-

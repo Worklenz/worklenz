@@ -125,10 +125,11 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
     return { totalTasks, completedTasks, pendingTasks, overdueTasks, completionPercentage };
   }, [localPhase]);
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return t('timeline.notSet');
-    return dayjs(date).format('MMM DD, YYYY');
-  };
+const formatDate = (date: Date | string | null | undefined) => {
+  if (!date) return t('timeline.notSet');
+  const d = dayjs(date);
+  return d.isValid() ? d.format('MMM DD, YYYY') : t('timeline.notSet');
+};
 
   const getDateStatus = () => {
     if (!localPhase?.start_date || !localPhase?.end_date) return 'not-set';
@@ -252,6 +253,25 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
       return;
     }
 
+    // ✅ FIX: Don't save if the value hasn't changed
+    const currentValue = localPhase[field as keyof GanttTask];
+    if (
+      currentValue === value ||
+      (value === undefined && currentValue === undefined) ||
+      // Handle null/undefined equivalence for date fields
+      (!value && !currentValue)
+    ) {
+      setEditingField(null);
+      setEditedValues({});
+      return;
+    }
+
+    // ✅ FIX: Guard against empty/whitespace name
+    if (field === 'name' && (!value || (typeof value === 'string' && value.trim() === ''))) {
+      message.warning('Phase name cannot be empty');
+      return;
+    }
+
     // Get the actual phase_id from the localPhase object
     const phaseId =
       localPhase.phase_id ||
@@ -327,7 +347,7 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
   return (
     <Modal
       title={
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ paddingRight: '40px' }}>
           <ColorPicker
             value={localPhase.color || token.colorPrimary}
             onChangeComplete={color => handleFieldSave('color', color.toHexString())}
@@ -337,14 +357,30 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
           />
           {editingField === 'name' ? (
             <Input
-              value={editedValues.name || localPhase.name}
+              // ✅ FIX: Use ?? to fall back to localPhase.name if editedValues.name is undefined
+              value={editedValues.name ?? localPhase.name}
               onChange={e => setEditedValues(prev => ({ ...prev, name: e.target.value }))}
-              onPressEnter={() => handleFieldSave('name', editedValues.name)}
-              onBlur={() => handleFieldSave('name', editedValues.name)}
+              // ✅ FIX: Pass resolved value using ?? to avoid undefined being sent
+              onPressEnter={() => handleFieldSave('name', editedValues.name ?? localPhase.name)}
+              onBlur={() => handleFieldSave('name', editedValues.name ?? localPhase.name)}
               onKeyDown={e => e.key === 'Escape' && handleFieldCancel()}
               className="font-semibold text-lg"
-              style={{ border: 'none', padding: 0, background: 'transparent' }}
+              maxLength={50}
               autoFocus
+              suffix={
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color:
+                      (editedValues.name ?? localPhase.name ?? '').length >= 50
+                        ? '#ff4d4f'
+                        : '#8c8c8c',
+                  }}
+                >
+                  {(editedValues.name ?? localPhase.name ?? '').length}/50
+                </span>
+              }
+              style={{ width: '700px' }}
             />
           ) : (
             <Title
@@ -439,7 +475,6 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                       setEditedValues(prev => ({ ...prev, start_date: newDate }));
                       handleFieldSave('start_date', newDate);
                     }}
-                    // ✅ FIX: Disable dates after the current end date
                     disabledDate={current => {
                       const endDate = localPhase.end_date;
                       if (!endDate) return false;
@@ -481,7 +516,6 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                       setEditedValues(prev => ({ ...prev, end_date: newDate }));
                       handleFieldSave('end_date', newDate);
                     }}
-                    // ✅ FIX: Disable dates before the current start date
                     disabledDate={current => {
                       const startDate = localPhase.start_date;
                       if (!startDate) return false;
@@ -715,7 +749,9 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
                                 type="secondary"
                                 className={`text-xs ${taskStatus === 'overdue' ? 'text-red-500 dark:text-red-400' : ''}`}
                               >
-                                {dayjs(task.end_date, 'YYYY-MM-DD').format('MMM DD')}
+                               {dayjs(task.end_date).isValid()
+  ? dayjs(task.end_date).format('MMM DD')
+  : 'No due date'}
                               </Text>
                             </div>
                           ) : (

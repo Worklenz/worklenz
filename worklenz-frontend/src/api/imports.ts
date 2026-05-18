@@ -4,6 +4,8 @@ export interface ImportJob {
   id: string;
   provider: string;
   flow_type: 'direct' | 'csv';
+  status?: 'pending' | 'ready' | 'running' | 'success' | 'failed';
+  error_message?: string | null;
 }
 
 export interface ImportProgress {

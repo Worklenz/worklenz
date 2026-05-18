@@ -49,6 +49,11 @@ interface ProjectState {
   projectManagersLoading: boolean;
 }
 
+interface UpdateProjectMemberDefaultViewPayload {
+  projectId: string;
+  defaultView: 'BOARD' | 'TASK_LIST';
+}
+
 const initialState: ProjectState = {
   projects: {
     data: [],
@@ -276,6 +281,25 @@ const projectSlice = createSlice({
         ...action.payload,
       };
     },
+    setProjectMemberDefaultView: (
+      state,
+      action: PayloadAction<UpdateProjectMemberDefaultViewPayload>
+    ) => {
+      const { projectId, defaultView } = action.payload;
+
+      state.projects.data = state.projects.data.map(project =>
+        project.id === projectId ? { ...project, team_member_default_view: defaultView } : project
+      );
+
+      if (state.groupedProjects.data?.data) {
+        state.groupedProjects.data.data = state.groupedProjects.data.data.map(group => ({
+          ...group,
+          projects: group.projects.map(project =>
+            project.id === projectId ? { ...project, team_member_default_view: defaultView } : project
+          ),
+        }));
+      }
+    },
   },
   extraReducers: builder => {
     builder
@@ -339,5 +363,6 @@ export const {
   setFilteredStatuses,
   setRequestParams,
   setGroupedRequestParams,
+  setProjectMemberDefaultView,
 } = projectSlice.actions;
 export default projectSlice.reducer;

@@ -524,6 +524,73 @@ export default class TeamMembersController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async updateMemberName(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const { name } = req.body;
+ 
+    if (!id || !name?.trim()) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+ 
+    if (!req.user?.team_id) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Team not found."));
+    }
+ 
+    const trimmedName = name.trim();
+ 
+    // First, resolve whether this team member has a linked user account
+    // or is still a pending invitation (no user_id yet).
+    // This mirrors exactly what team_member_info_view does:
+    //   COALESCE(u.name, email_invitations.name)
+    const resolveQ = `
+      SELECT tm.user_id
+      FROM team_members tm
+      WHERE tm.id = $1
+        AND tm.team_id = $2;
+    `;
+    const resolveResult = await db.query(resolveQ, [id, req.user.team_id]);
+ 
+    if (resolveResult.rowCount === 0) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Team member not found."));
+    }
+ 
+    // eslint-disable-next-line prefer-destructuring
+    const { user_id } = resolveResult.rows[0];
+ 
+    if (user_id) {
+      // Active member — update users.name (what the view reads via COALESCE first branch)
+      const updateUserQ = `
+        UPDATE users
+        SET name = $1
+        WHERE id = $2;
+      `;
+      await db.query(updateUserQ, [trimmedName, user_id]);
+    } else {
+      // Pending invitation — update email_invitations.name (COALESCE fallback branch)
+      const updateInviteQ = `
+        UPDATE email_invitations
+        SET name = $1
+        WHERE team_member_id = $2
+          AND team_id = $3;
+      `;
+      await db.query(updateInviteQ, [trimmedName, id, req.user.team_id]);
+    }
+ 
+    return res
+      .status(200)
+      .send(new ServerResponse(true, null, "Member name updated successfully."));
+  }
+
+  @HandleExceptions()
   public static async resend_invitation(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
@@ -1776,11 +1843,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     try {
-      // Check if an active link already exists
+      // Check if an active and non-expired link already exists for this team
       const checkQuery = `
         SELECT id, token, expires_at, created_at, status
         FROM team_invitation_links
-        WHERE team_id = $1 AND status = 'active'
+        WHERE team_id = $1 AND status = 'active' AND expires_at > NOW()
         ORDER BY created_at DESC
         LIMIT 1
       `;
@@ -1790,15 +1857,15 @@ export default class TeamMembersController extends WorklenzControllerBase {
       let message = "Team invitation link generated successfully";
 
       if (checkResult.rows.length > 0) {
-        // Active link exists, return it
+        // Active and non-expired link exists, return it
         invitationLink = checkResult.rows[0];
         message = "Active invitation link already exists";
       } else {
-        // Check if there's an inactive link we can reactivate
+        // Check if there's an inactive or expired link we can reactivate
         const inactiveQuery = `
           SELECT id, token, expires_at, created_at, status
           FROM team_invitation_links
-          WHERE team_id = $1 AND status != 'active'
+          WHERE team_id = $1 AND (status != 'active' OR expires_at <= NOW())
           ORDER BY created_at DESC
           LIMIT 1
         `;

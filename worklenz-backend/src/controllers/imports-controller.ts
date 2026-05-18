@@ -140,6 +140,54 @@ const base64UrlEncode = (buffer: Buffer) =>
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
+const getAsanaRedirectUri = (): string => {
+  if (process.env.ASANA_REDIRECT_URI) {
+    return process.env.ASANA_REDIRECT_URI;
+  }
+
+  const apiBaseUrl = process.env.API_BASE_URL?.replace(/\/+$/, "");
+  if (!apiBaseUrl) {
+    throw createHttpError(500, "ASANA_REDIRECT_URI or API_BASE_URL not configured");
+  }
+
+  return `${apiBaseUrl}/api/v1/imports/auth/asana/callback`;
+};
+
+const buildAsanaCallbackHtml = (
+  title: string,
+  message: string,
+  status: "success" | "in_progress" | "already_connected" | "failed",
+) => {
+  const shouldAutoClose = status !== "failed";
+  const autoCloseScript = shouldAutoClose
+    ? `<script>
+         (function () {
+           try {
+             if (window.opener && !window.opener.closed) {
+               window.opener.postMessage({ type: "worklenz:asana-auth", status: "${status}" }, "*");
+             }
+           } catch (_error) {}
+           setTimeout(function () {
+             try { window.close(); } catch (_error) {}
+           }, 300);
+         })();
+       </script>`
+    : "";
+
+  const closeHint = shouldAutoClose
+    ? `<p style="margin-top: 16px; color: #666;">This window should close automatically. If it stays open, you can close it manually.</p>`
+    : "";
+
+  return `<html>
+    <body style="font-family: Arial, sans-serif; padding: 24px;">
+      <h2>${title}</h2>
+      <p>${message}</p>
+      ${closeHint}
+      ${autoCloseScript}
+    </body>
+  </html>`;
+};
+
 export default class ImportsController {
   private static getUserId(req: IWorkLenzRequest): string {
     const id =
@@ -589,9 +637,19 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      await ImportsService.commit(job.id);
+
+      // Run the commit pipeline asynchronously to avoid request timeouts for large imports.
+      // Progress can be tracked via GET /api/v1/imports/:jobId/progress.
+      if (job.status !== "running") {
+        // Optimistically mark as running so the UI can reflect "in progress" immediately.
+        await ImportsService.updateJobStatus(job.id, "running");
+        void ImportsService.commit(job.id).catch(() => {
+          // Errors are persisted by the service (status + logs); avoid unhandled rejections.
+        });
+      }
+
       const data = await ImportsService.progress(job.id);
-      return res.status(200).send(new ServerResponse(true, data));
+      return res.status(202).send(new ServerResponse(true, data));
     },
   );
 
@@ -612,9 +670,7 @@ export default class ImportsController {
       const job = await this.assertJob(req.params.jobId, userId);
 
       const clientId = process.env.ASANA_CLIENT_ID;
-      const redirectUri =
-        process.env.ASANA_REDIRECT_URI ||
-        `${process.env.API_BASE_URL || ""}/api/imports/auth/asana/callback`;
+      const redirectUri = getAsanaRedirectUri();
       if (!clientId)
         throw createHttpError(500, "ASANA_CLIENT_ID not configured");
 
@@ -653,6 +709,10 @@ export default class ImportsController {
   );
 
   static asanaCallback = safeControllerFunction(async (req, res) => {
+    const preferredResponseType = req.accepts(["html", "json"]);
+    const wantsJsonResponse =
+      (req.query as any)?.format === "json" || preferredResponseType === "json";
+
     const code = req.query?.code as string | undefined;
     const stateParam = req.query?.state as string | undefined;
     if (!code || !stateParam)
@@ -667,9 +727,7 @@ export default class ImportsController {
     if (!savedState || savedState !== incomingState)
       throw createHttpError(400, "State mismatch");
 
-    const redirectUri =
-      process.env.ASANA_REDIRECT_URI ||
-      `${process.env.API_BASE_URL || ""}/api/imports/auth/asana/callback`;
+    const redirectUri = getAsanaRedirectUri();
     const clientId = process.env.ASANA_CLIENT_ID;
     const clientSecret = process.env.ASANA_CLIENT_SECRET;
     if (!clientId || !clientSecret)
@@ -692,20 +750,21 @@ export default class ImportsController {
         workspaces: (ref?.auth?.asana?.workspaces as any) || [],
         projects: (ref?.auth?.asana?.projects as any) || [],
       };
-      if (req.accepts("json") || (req.query as any)?.format === "json") {
+      if (wantsJsonResponse) {
         return res.status(200).send(new ServerResponse(true, payload));
       }
       return res.status(200).send(
-        `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
-             <h2>Asana already connected</h2>
-             <p>This import job already has Asana credentials. You can close this window and return to Worklenz.</p>
-           </body></html>`,
+        buildAsanaCallbackHtml(
+          "Asana already connected",
+          "This import job already has Asana credentials. You can close this window and return to Worklenz.",
+          "already_connected",
+        ),
       );
     }
 
     // Avoid concurrent exchanges: if another process is handling this job, return a friendly page
     if (ref?.auth?.asana?.in_progress) {
-      if (req.accepts("json") || (req.query as any)?.format === "json") {
+      if (wantsJsonResponse) {
         return res
           .status(202)
           .send(
@@ -713,10 +772,11 @@ export default class ImportsController {
           );
       }
       return res.status(200).send(
-        `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
-             <h2>Authorization in progress</h2>
-             <p>The authorization is currently being processed. Please close this window and return to Worklenz — it will update automatically shortly.</p>
-           </body></html>`,
+        buildAsanaCallbackHtml(
+          "Authorization in progress",
+          "The authorization is currently being processed. Please close this window and return to Worklenz. It will update automatically shortly.",
+          "in_progress",
+        ),
       );
     }
 
@@ -745,7 +805,7 @@ export default class ImportsController {
       const data = err?.response?.data;
       // Common cause: authorization `code` was already used or expired
       if (status === 400 && data?.error === "invalid_grant") {
-        if (req.accepts("json") || (req.query as any)?.format === "json") {
+        if (wantsJsonResponse) {
           return res.status(400).send(
             new ServerResponse(false, {
               message: "authorization_code_invalid_or_used",
@@ -753,10 +813,11 @@ export default class ImportsController {
           );
         }
         return res.status(200).send(
-          `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
-               <h2>Authorization failed</h2>
-               <p>The authorization code appears to be invalid or already used. Please close this window and retry the "Connect" flow from Worklenz (create a fresh import job and click Connect).</p>
-             </body></html>`,
+          buildAsanaCallbackHtml(
+            "Authorization failed",
+            'The authorization code appears to be invalid or already used. Please close this window and retry the "Connect" flow from Worklenz (create a fresh import job and click Connect).',
+            "failed",
+          ),
         );
       }
       throw err;
@@ -775,14 +836,15 @@ export default class ImportsController {
         workspaces: (ref?.auth?.asana?.workspaces as any) || [],
         projects: (ref?.auth?.asana?.projects as any) || [],
       };
-      if (req.accepts("json") || (req.query as any)?.format === "json") {
+      if (wantsJsonResponse) {
         return res.status(200).send(new ServerResponse(true, payload));
       }
       return res.status(200).send(
-        `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
-             <h2>Asana already connected</h2>
-             <p>This import job already has Asana credentials. You can close this window and return to Worklenz.</p>
-           </body></html>`,
+        buildAsanaCallbackHtml(
+          "Asana already connected",
+          "This import job already has Asana credentials. You can close this window and return to Worklenz.",
+          "already_connected",
+        ),
       );
     }
 
@@ -842,15 +904,16 @@ export default class ImportsController {
     });
 
     const payload = { authorized: true, workspaces, projects };
-    if (req.accepts("json") || (req.query as any)?.format === "json") {
+    if (wantsJsonResponse) {
       return res.status(200).send(new ServerResponse(true, payload));
     }
 
     return res.status(200).send(
-      `<html><body style="font-family: Arial, sans-serif; padding: 24px;">
-           <h2>Asana connected</h2>
-           <p>You can close this window and return to Worklenz.</p>
-         </body></html>`,
+      buildAsanaCallbackHtml(
+        "Asana connected",
+        "You can close this window and return to Worklenz.",
+        "success",
+      ),
     );
   });
 

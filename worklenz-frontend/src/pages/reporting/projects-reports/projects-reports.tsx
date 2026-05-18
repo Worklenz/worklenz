@@ -14,7 +14,7 @@ import {
   setArchived,
   fetchReportingTeams,
   resetAllFilters,
-  fetchProjectData,
+  fetchProjectDataForCurrentView,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
@@ -38,15 +38,13 @@ const ProjectsReports = () => {
 
   // Initial data fetch when component mounts
   useEffect(() => {
-    dispatch(fetchProjectData());
+    dispatch(fetchProjectDataForCurrentView());
   }, [dispatch]);
 
-  // Fetch data when archived state changes, but only for table view
+  // Fetch data when archived state changes
   useEffect(() => {
-    if (viewMode === 'table') {
-      dispatch(fetchProjectData());
-    }
-  }, [archived, dispatch, viewMode]);
+    dispatch(fetchProjectDataForCurrentView());
+  }, [archived, dispatch]);
 
   // Memoize the title to prevent recalculation on every render
   const pageTitle = useMemo(() => {

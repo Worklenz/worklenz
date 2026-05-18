@@ -10,6 +10,7 @@ import {
   Upload,
   message as antdMessage,
 } from '@/shared/antd-imports';
+import { decodeBuffer } from '../utils';
 
 interface CsvSetupStepsContentProps {
   step: number;
@@ -24,10 +25,6 @@ interface CsvSetupStepsContentProps {
   csvSettingsOpen: boolean;
   setCsvSettingsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   sourceLabel: string;
-  spaceType: string;
-  setSpaceType: React.Dispatch<React.SetStateAction<string>>;
-  spaceTemplate: string;
-  setSpaceTemplate: React.Dispatch<React.SetStateAction<string>>;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -69,7 +66,12 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
               'Start by finding the Download or Export option in your app and export a CSV file.',
           })}
           <br />
-          <a href="#" style={{ color: themeToken.colorPrimary }}>
+          <a
+            href="https://worklenz.com/blog/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: themeToken.colorPrimary }}
+          >
             {t('importStep.structureCsv', { defaultValue: 'Structure the CSV' })}
           </a>{' '}
           {t('importStep.structureCsvSuffix', {
@@ -90,16 +92,25 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
             setUploadedFileName(file.name || '');
             const reader = new FileReader();
             reader.onload = e => {
-              const text = e.target?.result as string;
-              const summary = parseCsvData(text || '');
-              setUploadedSummary(summary);
-              antdMessage.success(
-                t('importStep.csvLoaded', {
-                  defaultValue: 'CSV loaded: {{rows}} rows and {{columns}} columns.',
-                  rows: summary.rowsCount,
-                  columns: summary.columnsCount,
-                })
-              );
+              try {
+                const buffer = e.target?.result as ArrayBuffer;
+                const text = decodeBuffer(buffer, encoding);
+                const summary = parseCsvData(text);
+                setUploadedSummary(summary);
+                antdMessage.success(
+                  t('importStep.csvLoaded', {
+                    defaultValue: 'CSV loaded: {{rows}} rows and {{columns}} columns.',
+                    rows: summary.rowsCount,
+                    columns: summary.columnsCount,
+                  })
+                );
+              } catch {
+                antdMessage.error(
+                  t('importStep.csvReadError', {
+                    defaultValue: 'We could not read this CSV file. Please try another file.',
+                  })
+                );
+              }
             };
             reader.onerror = () => {
               antdMessage.error(
@@ -108,7 +119,7 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
                 })
               );
             };
-            reader.readAsText(file, encoding);
+            reader.readAsArrayBuffer(file);
             return false;
           }}
         >
@@ -161,10 +172,16 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
                   if (!file) return;
                   const reader = new FileReader();
                   reader.onload = e => {
-                    const summary = parseCsvData((e.target?.result as string) || '');
-                    setUploadedSummary(summary);
+                    try {
+                      const buffer = e.target?.result as ArrayBuffer;
+                      const text = decodeBuffer(buffer, value);
+                      const summary = parseCsvData(text);
+                      setUploadedSummary(summary);
+                    } catch {
+                      // silently ignore re-parse errors on encoding change
+                    }
                   };
-                  reader.readAsText(file, value);
+                  reader.readAsArrayBuffer(file);
                 }}
                 style={{ width: 120 }}
                 options={[

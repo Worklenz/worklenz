@@ -84,10 +84,10 @@ const ReportingOverviewProjectsTable = ({
         key: 'name',
         dataIndex: 'name',
         title: <CustomTableTitle title={t('projectColumn')} />,
+        fixed: 'left',
         width: 300,
         sorter: true,
         defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
-        fixed: 'left' as const,
         onCell: record => ({
           onClick: () => handleDrawerOpen(record as IRPTProject),
         }),
@@ -324,7 +324,8 @@ const ReportingOverviewProjectsTable = ({
           current: pagination.current,
           pageSizeOptions: PAGE_SIZE_OPTIONS,
         }}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 1500 }}
+        style={{ maxWidth: '100%' }} 
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={record => record.id}

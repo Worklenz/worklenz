@@ -31,6 +31,7 @@ const AllTasksShowFieldsDropdown = () => {
     { key: 'labels', label: t('labelsColumn', { defaultValue: 'Labels' }) },
     { key: 'progress', label: t('progressColumn', { defaultValue: 'Progress' }) },
     { key: 'subtasksCount', label: t('subtasksCountColumn', { defaultValue: 'Subtasks' }) },
+    { key: 'client', label: t('clientColumn', { defaultValue: 'Client' }) },
   ];
 
   const handleToggle = (columnKey: string) => {

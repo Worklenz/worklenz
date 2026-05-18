@@ -32,19 +32,37 @@ export const GROUP_BY_OPTIONS: IGroupByOption[] = [
   { label: 'Phase', value: IGroupBy.PHASE },
 ];
 
-const LOCALSTORAGE_GROUP_KEY = 'worklenz.kanban.group_by';
+const LOCALSTORAGE_GROUP_KEY_PREFIX = 'worklenz.kanban.group_by';
 
-export const getCurrentGroup = (): IGroupBy => {
-  const key = localStorage.getItem(LOCALSTORAGE_GROUP_KEY);
-  if (key && Object.values(IGroupBy).includes(key as IGroupBy)) {
-    return key as IGroupBy;
+const getKanbanLocalStorageKey = (projectId?: string | null): string =>
+  projectId ? `${LOCALSTORAGE_GROUP_KEY_PREFIX}.${projectId}` : LOCALSTORAGE_GROUP_KEY_PREFIX;
+
+export const getCurrentGroup = (projectId?: string | null): IGroupBy => {
+  try {
+    // Try project-scoped key first
+    const projectKey = getKanbanLocalStorageKey(projectId);
+    const projectScoped = localStorage.getItem(projectKey);
+    if (projectScoped && Object.values(IGroupBy).includes(projectScoped as IGroupBy)) {
+      return projectScoped as IGroupBy;
+    }
+    // Fallback to legacy global key
+    const legacy = localStorage.getItem(LOCALSTORAGE_GROUP_KEY_PREFIX);
+    if (legacy && Object.values(IGroupBy).includes(legacy as IGroupBy)) {
+      return legacy as IGroupBy;
+    }
+  } catch {
+    // ignore
   }
-  setCurrentGroup(IGroupBy.STATUS);
+  setCurrentGroup(IGroupBy.STATUS, projectId);
   return IGroupBy.STATUS;
 };
 
-export const setCurrentGroup = (groupBy: IGroupBy): void => {
-  localStorage.setItem(LOCALSTORAGE_GROUP_KEY, groupBy);
+export const setCurrentGroup = (groupBy: IGroupBy, projectId?: string | null): void => {
+  try {
+    localStorage.setItem(getKanbanLocalStorageKey(projectId), groupBy);
+  } catch {
+    // ignore
+  }
 };
 
 interface EnhancedKanbanState {
@@ -52,12 +70,14 @@ interface EnhancedKanbanState {
   search: string | null;
   archived: boolean;
   groupBy: IGroupBy;
+  projectId: string | null;
   isSubtasksInclude: boolean;
   fields: ITaskListSortableColumn[];
 
   // Task data
   taskGroups: ITaskListGroup[];
   loadingGroups: boolean;
+  loadedProjectId: string | null;
   error: string | null;
 
   // Filters - Original data (should not be filtered)
@@ -107,10 +127,12 @@ const initialState: EnhancedKanbanState = {
   search: null,
   archived: false,
   groupBy: getCurrentGroup(),
+  projectId: null,
   isSubtasksInclude: false,
   fields: [],
   taskGroups: [],
   loadingGroups: false,
+  loadedProjectId: null,
   error: null,
   originalTaskAssignees: [],
   originalLabels: [],
@@ -198,7 +220,9 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   progress: task.progress ?? task.complete_ratio ?? 0,
   progress_value: task.progress_value ?? task.complete_ratio ?? 0,
   manual_progress: false,
-  assignees: task.assignees || [],
+  assignees: (task.assignees || []).map((a: any) =>
+    typeof a === 'string' ? { team_member_id: a, id: a, project_member_id: '', name: '' } : a
+  ),
   names: task.assignee_names || task.names || [],
   labels: task.labels || [],
   all_labels: task.all_labels || [],
@@ -595,7 +619,7 @@ const enhancedKanbanSlice = createSlice({
   reducers: {
     setGroupBy: (state, action: PayloadAction<IGroupBy>) => {
       state.groupBy = action.payload;
-      setCurrentGroup(action.payload);
+      setCurrentGroup(action.payload, state.projectId);
       // Clear caches when grouping changes
       state.taskCache = {};
       state.groupCache = {};
@@ -966,7 +990,15 @@ const enhancedKanbanSlice = createSlice({
 
     // Reset state
     resetState: state => {
-      return { ...initialState, groupBy: state.groupBy };
+      return { ...initialState, groupBy: state.groupBy, projectId: state.projectId };
+    },
+
+    // Called on project load to initialize groupBy from server value
+    initKanbanGroupingFromServer: (state, action: PayloadAction<{ groupBy: IGroupBy; projectId: string }>) => {
+      const { groupBy, projectId } = action.payload;
+      state.groupBy = groupBy;
+      state.projectId = projectId;
+      setCurrentGroup(groupBy, projectId);
     },
 
     // Synchronous reorder for tasks
@@ -1217,6 +1249,7 @@ const enhancedKanbanSlice = createSlice({
       .addCase(fetchEnhancedKanbanGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
         state.taskGroups = action.payload;
+        state.loadedProjectId = action.meta.arg;
 
         // Update performance metrics
         state.performanceMetrics = calculatePerformanceMetrics(action.payload);
@@ -1363,6 +1396,7 @@ const enhancedKanbanSlice = createSlice({
 
 export const {
   setGroupBy,
+  initKanbanGroupingFromServer,
   setSearch,
   setArchived,
   setVirtualizedRendering,
@@ -1404,5 +1438,8 @@ export const {
   setEditableSection,
   deleteSection,
 } = enhancedKanbanSlice.actions;
+
+export const selectKanbanLoadedProjectId = (state: { enhancedKanbanReducer: EnhancedKanbanState }) =>
+  state.enhancedKanbanReducer.loadedProjectId;
 
 export default enhancedKanbanSlice.reducer;

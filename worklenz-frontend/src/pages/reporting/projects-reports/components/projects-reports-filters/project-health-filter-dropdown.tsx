@@ -1,6 +1,6 @@
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import {
-  fetchProjectData,
+  fetchProjectDataForCurrentView,
   setSelectedProjectHealths,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -37,7 +37,7 @@ const ProjectHealthFilterDropdown = () => {
   const debouncedUpdate = useCallback(
     debounce((healths: IProjectHealth[]) => {
       dispatch(setSelectedProjectHealths(healths));
-      dispatch(fetchProjectData());
+      dispatch(fetchProjectDataForCurrentView());
     }, 300),
     [dispatch]
   );

@@ -1,5 +1,8 @@
 import { fetchProjectManagers } from '@/features/projects/projectsSlice';
-import { setSelectedProjectManagers } from '@/features/reporting/projectReports/project-reports-slice';
+import { 
+  setSelectedProjectManagers,
+  fetchProjectDataForCurrentView 
+} from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectManager } from '@/types/project/projectManager.types';
@@ -49,6 +52,7 @@ const ProjectManagersFilterDropdown = () => {
 
   const handleProjectManagerChange = (projectManager: IProjectManager) => {
     dispatch(setSelectedProjectManagers(projectManager));
+    dispatch(fetchProjectDataForCurrentView());
   };
 
   useEffect(() => {

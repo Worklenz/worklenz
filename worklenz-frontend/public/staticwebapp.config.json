@@ -26,7 +26,6 @@
       "/version.json",
       "/locales/*",
       "/fonts/*",
-      "/tinymce/*",
       "/file-types/*",
       "/scheduler-data/*",
       "/js/*"

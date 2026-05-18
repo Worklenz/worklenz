@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Avatar,
@@ -34,6 +34,9 @@ import { canManageUserRole, getAvailableRoleOptions } from '@/utils/role-permiss
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
+  // Pass the current name from the table row so the drawer title shows
+  // the correct (already-updated) name instantly, without waiting for getById
+  selectedMemberName?: string | null;
   onRoleUpdate?: (memberId: string, newRoleName: string) => void;
   onJobTitleUpdate?: (memberId: string, newJobTitle: string) => void;
   initialRoleName?: string;
@@ -41,6 +44,7 @@ type UpdateMemberDrawerProps = {
 
 const UpdateMemberDrawer = ({
   selectedMemberId,
+  selectedMemberName,
   onRoleUpdate,
   onJobTitleUpdate,
   initialRoleName,
@@ -58,8 +62,20 @@ const UpdateMemberDrawer = ({
   const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
   const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
   const [loadingTeamLeads, setLoadingTeamLeads] = useState(false);
+  
+  // Job titles pagination state
+  const [jobTitlesLoading, setJobTitlesLoading] = useState(false);
+  const [jobTitlesTotal, setJobTitlesTotal] = useState(0);
+  const [jobTitlesPage, setJobTitlesPage] = useState(1);
+  const jobTitlesPageSize = 10;
+  const scrollPositionRef = useRef(0);
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
+
+  // Use the name from the parent table row while the drawer is loading its own fetch.
+  // Once getById completes, teamMember.name takes over (which will be the same value).
+  // This prevents the flash: updated name → old name → updated name.
+  const displayName = teamMember?.name ?? selectedMemberName ?? '';
 
   const isOwnAccount = useMemo(() => {
     return auth.getCurrentSession()?.email === teamMember?.email;
@@ -73,7 +89,6 @@ const UpdateMemberDrawer = ({
     return canManageUserRole(currentUser?.role_name, teamMember?.role_name, currentUser?.owner);
   }, [currentUser?.role_name, currentUser?.owner, currentUser?.is_admin, teamMember?.role_name]);
 
-  // Allow Owners to edit their own role (but not other roles)
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount && currentUser?.owner;
   }, [isOwnAccount, currentUser?.owner]);
@@ -89,15 +104,22 @@ const UpdateMemberDrawer = ({
     return teamMember?.pending_invitation && selectedMemberId && !resentSuccess;
   }, [teamMember?.pending_invitation, selectedMemberId, resentSuccess]);
 
-  const getJobTitles = async () => {
+  const getJobTitles = async (page: number = 1, append: boolean = false) => {
     try {
-      const res = await jobTitlesApiService.getJobTitles(1, 10, null, null, null);
+      setJobTitlesLoading(true);
+      const res = await jobTitlesApiService.getJobTitles(page, jobTitlesPageSize, null, null, null);
       if (res.done) {
-        setJobTitles(res.body.data || []);
+        const newJobTitles = res.body.data || [];
+        const total = res.body.total || 0;
+        
+        setJobTitles(prev => (append ? [...prev, ...newJobTitles] : newJobTitles));
+        setJobTitlesTotal(total);
       }
     } catch (error) {
       logger.error('Error fetching job titles:', error);
       message.error(t('jobTitlesFetchError'));
+    } finally {
+      setJobTitlesLoading(false);
     }
   };
 
@@ -106,7 +128,6 @@ const UpdateMemberDrawer = ({
       setLoadingTeamLeads(true);
       const res = await teamMembersApiService.get(1, 1000, 'name', 'asc', '', true);
       if (res.done) {
-        // Filter for Team Leads only and exclude the member being assigned
         const leads =
           res.body.data?.filter(m => m.id !== selectedMemberId && m.role_name === 'Team Lead') ||
           [];
@@ -119,6 +140,26 @@ const UpdateMemberDrawer = ({
     }
   };
 
+  // Handle scroll to load more job titles
+  const handleJobTitleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const scrollTop = target.scrollTop;
+    const scrollHeight = target.scrollHeight;
+    const clientHeight = target.clientHeight;
+
+    // Check if scrolled to the very end of the list
+    if (scrollTop + clientHeight >= scrollHeight) {
+      const hasMore = jobTitles.length < jobTitlesTotal;
+      if (hasMore && !jobTitlesLoading) {
+        const nextPage = jobTitlesPage + 1;
+        setJobTitlesPage(nextPage);
+        getJobTitles(nextPage, true);
+      }
+    }
+
+    scrollPositionRef.current = scrollTop;
+  };
+
   const getTeamMember = async () => {
     if (!selectedMemberId) return;
 
@@ -128,9 +169,7 @@ const UpdateMemberDrawer = ({
       if (res.done) {
         setTeamMember(res.body);
 
-        // Determine access level based on role_name (with fallback to initialRoleName)
         let accessLevel = 'member';
-
         const roleNameToUse = res.body.role_name || initialRoleName;
         const roleName = (roleNameToUse || '').toLowerCase().trim();
 
@@ -144,7 +183,6 @@ const UpdateMemberDrawer = ({
           accessLevel = 'member';
         }
 
-        // Set form values
         setTimeout(() => {
           form.setFieldsValue({
             jobTitle: res.body?.job_title,
@@ -162,36 +200,36 @@ const UpdateMemberDrawer = ({
 
   const handleFormSubmit = async (values: any) => {
     if (!selectedMemberId || !teamMember?.email) return;
+    const accessValue = form.getFieldValue('access') ?? values.access;
 
     try {
       const body: ITeamMemberCreateRequest = {
         job_title: form.getFieldValue('jobTitle'),
         emails: [teamMember.email],
-        is_admin: values.access === 'admin',
+        is_admin: accessValue === 'admin' || accessValue === 'owner',
         role_name:
-          values.access === 'team-lead'
-            ? ROLE_NAMES.TEAM_LEAD
-            : values.access === 'admin'
-              ? ROLE_NAMES.ADMIN
-              : ROLE_NAMES.MEMBER,
+          accessValue === 'owner'
+            ? ROLE_NAMES.OWNER
+            : accessValue === 'team-lead'
+              ? ROLE_NAMES.TEAM_LEAD
+              : accessValue === 'admin'
+                ? ROLE_NAMES.ADMIN
+                : ROLE_NAMES.MEMBER,
       };
 
       const res = await teamMembersApiService.update(selectedMemberId, body);
       if (res.done) {
-        // Handle manager assignment if changed
         const currentManagerId = teamMember?.reports_to_member_id;
         const newManagerId = values.manager;
 
         if (currentManagerId !== newManagerId) {
           if (newManagerId) {
-            // Assign new manager
             await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
           } else if (currentManagerId) {
-            // Remove manager assignment
             await teamManagementApiService.removeManagerAssignment(selectedMemberId);
           }
         }
-        const selectedJobTitleId = form.getFieldValue('jobTitle'); //  before reset
+        const selectedJobTitleId = form.getFieldValue('jobTitle');
         const resolvedJobTitle =
           jobTitles.find(j => j.id === selectedJobTitleId)?.name ?? selectedJobTitleId ?? '';
 
@@ -199,13 +237,14 @@ const UpdateMemberDrawer = ({
         setSelectedJobTitle(null);
         dispatch(toggleUpdateMemberDrawer());
 
-        // Update role_name in parent component
         const newRoleName =
-          values.access === 'team-lead'
-            ? 'Team Lead'
-            : values.access === 'admin'
-              ? 'Admin'
-              : 'Member';
+          accessValue === 'owner'
+            ? 'Owner'
+            : accessValue === 'team-lead'
+              ? 'Team Lead'
+              : accessValue === 'admin'
+                ? 'Admin'
+                : 'Member';
         onRoleUpdate?.(selectedMemberId, newRoleName);
         onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
 
@@ -241,14 +280,19 @@ const UpdateMemberDrawer = ({
   const afterOpenChange = async (visible: boolean) => {
     if (visible) {
       form.resetFields();
-      await Promise.all([getJobTitles(), getTeamMember(), getTeamLeads()]);
+      // Reset job titles pagination state
+      setJobTitles([]);
+      setJobTitlesPage(1);
+      setJobTitlesTotal(0);
+      scrollPositionRef.current = 0;
+      
+      await Promise.all([getJobTitles(1, false), getTeamMember(), getTeamLeads()]);
     } else {
       setTeamMember(null);
       setResentSuccess(false);
     }
   };
 
-  // Effect to update form when teamMember changes
   useEffect(() => {
     if (teamMember && isDrawerOpen) {
       const roleNameToUse = teamMember.role_name || initialRoleName;
@@ -271,8 +315,6 @@ const UpdateMemberDrawer = ({
     }
   }, [teamMember, isDrawerOpen, initialRoleName, form]);
 
-  // Determine if member can be assigned to a manager
-  // Only regular Members can be assigned to Team Leads
   const canBeAssignedToManager = useMemo(() => {
     const roleName = teamMember?.role_name || '';
     return !['Owner', 'Admin', 'Team Lead'].includes(roleName);
@@ -282,7 +324,7 @@ const UpdateMemberDrawer = ({
     <Drawer
       title={
         <Flex gap={8} align="center">
-          <Avatar src={teamMember?.avatar_url}>{teamMember?.name?.charAt(0).toUpperCase()}</Avatar>
+          <Avatar src={teamMember?.avatar_url}>{displayName?.charAt(0).toUpperCase()}</Avatar>
           <Flex vertical gap={4}>
             <Typography.Text
               style={{
@@ -291,7 +333,9 @@ const UpdateMemberDrawer = ({
                 textTransform: 'capitalize',
               }}
             >
-              {teamMember?.name}
+              {/* Use displayName so the correct (updated) name shows immediately
+                  while getById is still in flight, preventing the old-name flash */}
+              {displayName}
             </Typography.Text>
             <Typography.Text
               type="secondary"
@@ -323,6 +367,9 @@ const UpdateMemberDrawer = ({
             optionLabelProp="label"
             size="middle"
             placeholder={t('jobTitlePlaceholder')}
+            showSearch
+            filterOption={(input,option) =>(option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+  }
             options={jobTitles.map(job => ({
               label: job.name,
               value: job.id,
@@ -334,10 +381,17 @@ const UpdateMemberDrawer = ({
               }
             }}
             onSelect={value => setSelectedJobTitle(value)}
+            onPopupScroll={handleJobTitleScroll}
+            loading={jobTitlesLoading && jobTitles.length === 0}
+            notFoundContent={jobTitlesLoading && jobTitles.length === 0 ? <Spin size="small" /> : null}
             dropdownRender={menu => (
               <div>
-                {loading && <Spin size="small" />}
                 {menu}
+                {jobTitlesLoading && jobTitles.length > 0 && (
+                  <div style={{ textAlign: 'center', padding: '8px' }}>
+                    <Spin size="small" />
+                  </div>
+                )}
               </div>
             )}
           />
@@ -360,7 +414,6 @@ const UpdateMemberDrawer = ({
           />
         </Form.Item>
 
-        {/* Manager Assignment - Only show for Members */}
         {canBeAssignedToManager && (
           <Form.Item
             label={
@@ -421,24 +474,14 @@ const UpdateMemberDrawer = ({
               {t('resendInvitationButton')}
             </Button>
             <Flex vertical style={{ marginBlockStart: 8 }}>
-              <Typography.Text
-                style={{
-                  fontSize: 12,
-                  color: colors.lightGray,
-                }}
-              >
-                {t('addedText')}
+              <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
+                {t('addedText')}{''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
                   {calculateTimeDifference(teamMember?.created_at || '')}
                 </Tooltip>
               </Typography.Text>
-              <Typography.Text
-                style={{
-                  fontSize: 12,
-                  color: colors.lightGray,
-                }}
-              >
-                {t('updatedText')}
+              <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
+                {t('updatedText')}{''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
                   {calculateTimeDifference(teamMember?.updated_at || '')}
                 </Tooltip>

@@ -63,6 +63,7 @@ export interface ITask {
   priority: string;
   start_date: string;
   end_date: string;
+  due_time: string;
   total_hours: number;
   total_minutes: number;
   billable: boolean;

@@ -574,42 +574,56 @@ const Members: React.FC = () => {
 
           <Divider style={{ margin: '2px 0', flexShrink: 0 }} />
 
-          {/* Items */}
+        {/* Items */}
           <div
             style={{
               overflowY: 'auto',
               flex: 1,
             }}
           >
-            {filteredMembers.map(member => (
-              <div
-                key={member.id}
-                style={{
-                  padding: '4px 8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  borderRadius: '4px',
-                  transition: 'background-color 0.2s',
-                }}
-              >
-                <Avatar src={member.avatar_url} alt={member.name} size="small" />
-                <Checkbox
-                  onClick={e => e.stopPropagation()}
-                  checked={member.selected}
-                  onChange={e => handleCheckboxChange(member.id, e.target.checked)}
-                  style={{ fontSize: '14px' }}
+            {filteredMembers.map(member => {
+              
+              const hasAvatar = !!member.avatar_url && member.avatar_url.trim() !== '';
+              return (
+                <div
+                  key={member.id}
+                  style={{
+                    padding: '4px 8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    borderRadius: '4px',
+                    transition: 'background-color 0.2s',
+                  }}
                 >
-                  <span style={{ marginLeft: '2px', fontSize: '14px' }}>{member.name}</span>
-                </Checkbox>
-                {member.selected && (
-                  <CheckCircleFilled
-                    style={{ color: colors.successColor, fontSize: '10px', marginLeft: 'auto' }}
-                  />
-                )}
-              </div>
-            ))}
+                  <Avatar
+                    src={hasAvatar ? member.avatar_url : undefined}
+                    size="small"
+                   style={
+  !hasAvatar
+    ? { backgroundColor: member.color_code?.slice(0, 7), fontSize: '12px' }
+    : undefined
+}
+                  >
+                    {!hasAvatar ? member.name?.charAt(0).toUpperCase() : null}
+                  </Avatar>
+                  <Checkbox
+                    onClick={e => e.stopPropagation()}
+                    checked={member.selected}
+                    onChange={e => handleCheckboxChange(member.id, e.target.checked)}
+                    style={{ fontSize: '14px' }}
+                  >
+                    <span style={{ marginLeft: '2px', fontSize: '14px' }}>{member.name}</span>
+                  </Checkbox>
+                  {member.selected && (
+                    <CheckCircleFilled
+                      style={{ color: colors.successColor, fontSize: '10px', marginLeft: 'auto' }}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

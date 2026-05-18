@@ -123,6 +123,9 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
             onBlur={handlePhaseNameChange}
             onPressEnter={e => e.currentTarget.blur()}
             placeholder={t('enterPhaseName')}
+            maxLength={50}
+            showCount
+            style={{ flex: 1 }}
           />
           <ColorPicker
             onChange={value => setColor(value.toHexString())}

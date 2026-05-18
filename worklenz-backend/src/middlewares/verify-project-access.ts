@@ -80,20 +80,37 @@ export default function verifyProjectAccess(
           const isOwnerOfProjectTeam = userTeamRole.owner;
           const isAdminOfProjectTeam = userTeamRole.admin_role;
           
-          // Before suggesting team switch, verify user would actually have access to the project in that team
+          // Before switching teams, verify user would actually have access to the project in that team
           const hasProjectAccessInTeam = await checkProjectAccessInTeam(projectId, userId, projectTeamId, isOwnerOfProjectTeam, isAdminOfProjectTeam);
           
           if (hasProjectAccessInTeam) {
-            // User has access to the project's team AND the project itself, return info to switch teams
-            logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'WRONG_TEAM');
-            return res.status(403).send(
-              new ServerResponse(false, {
-                requiresTeamSwitch: true,
-                projectTeamId: projectTeamId,
-                isOwnerOfProjectTeam: isOwnerOfProjectTeam,
-                isAdminOfProjectTeam: isAdminOfProjectTeam
-              }, "Project belongs to a different team. Please switch teams to access this project.")
-            );
+            // User has access to the project's team AND the project itself
+            // Automatically switch teams in the backend
+            console.log(`[AUTO_TEAM_SWITCH] User ${userId} accessing project ${projectId} from team ${teamId}, switching to project team ${projectTeamId}`);
+            
+            try {
+              // Call the activate_team database function to switch teams
+              const activateTeamQuery = `SELECT activate_team($1, $2)`;
+              await db.query(activateTeamQuery, [projectTeamId, userId]);
+              
+              // Update the request user's team_id to reflect the new active team
+              if (req.user) {
+                req.user.team_id = projectTeamId;
+              }
+              
+              console.log(`[AUTO_TEAM_SWITCH] Successfully switched user ${userId} to team ${projectTeamId}`);
+              
+              // Continue with the request - user is now in the correct team
+              return next();
+            } catch (switchError) {
+              log_error(switchError);
+              console.error(`[AUTO_TEAM_SWITCH] Failed to switch user ${userId} to team ${projectTeamId}:`, switchError);
+              
+              // If team switch fails, return error
+              return res.status(500).send(
+                new ServerResponse(false, null, "Failed to switch teams. Please try again.")
+              );
+            }
           } else {
             // User has access to the team but not to the specific project
             logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'NO_PROJECT_ACCESS_IN_TEAM');

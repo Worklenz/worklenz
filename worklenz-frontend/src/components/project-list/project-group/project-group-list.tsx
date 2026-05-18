@@ -404,7 +404,9 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               actionButtons.style.opacity = '0';
             }
           }}
-          onClick={() => onProjectSelect(project.id || '')}
+          onClick={() =>
+            onProjectSelect(project.id || '', project.team_member_default_view || project.default_view)
+          }
           styles={{ body: { padding: 0 } }}
         >
           {/* Action buttons */}

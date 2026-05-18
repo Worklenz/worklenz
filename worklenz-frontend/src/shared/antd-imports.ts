@@ -133,6 +133,7 @@ export {
   DashboardOutlined,
   LinkOutlined,
   ExclamationCircleOutlined,
+  ExclamationOutlined,
   FormatPainterOutlined,
   CloseCircleOutlined,
   MailOutlined,

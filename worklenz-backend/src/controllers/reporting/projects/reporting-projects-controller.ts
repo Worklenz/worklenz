@@ -415,6 +415,15 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
       ),
+      total_projects AS (
+        SELECT COUNT(DISTINCT p.id) AS total_project_count
+        FROM projects p
+        LEFT JOIN project_categories pc ON p.category_id = pc.id
+        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        ${healthJoin}
+        ${groupJoin}
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+      ),
       all_groups AS (
         SELECT
           ${groupField} AS group_id,
@@ -465,9 +474,11 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       )
       SELECT
         ag.*,
-        tc.total as total_groups
+        tc.total as total_groups,
+        tp.total_project_count
       FROM all_groups ag
       CROSS JOIN total_count tc
+      CROSS JOIN total_projects tp
       ORDER BY ag.group_name
       ${paginationClause}
     `;
@@ -498,12 +509,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       })
     }));
 
-    // Get total_groups from first row (all rows have the same total from CROSS JOIN)
+    // Get total_groups and total_project_count from first row (all rows have the same totals from CROSS JOIN)
     const totalGroups = result.rows.length > 0 ? int(result.rows[0].total_groups) : 0;
+    const totalProjects = result.rows.length > 0 ? int(result.rows[0].total_project_count) : 0;
 
     return res.status(200).send(new ServerResponse(true, {
       groups,
-      total_groups: totalGroups
+      total_groups: totalGroups,
+      total: totalProjects
     }));
   }
 

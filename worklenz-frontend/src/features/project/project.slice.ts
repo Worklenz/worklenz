@@ -66,10 +66,6 @@ export const getProject = createAsyncThunk(
         return rejectWithValue({
           message: errorData?.message || 'You do not have permission to access this project',
           statusCode: 403,
-          requiresTeamSwitch: errorData?.body?.requiresTeamSwitch || false,
-          projectTeamId: errorData?.body?.projectTeamId || null,
-          isOwnerOfProjectTeam: errorData?.body?.isOwnerOfProjectTeam || false,
-          isAdminOfProjectTeam: errorData?.body?.isAdminOfProjectTeam || false,
         });
       }
       return rejectWithValue({
