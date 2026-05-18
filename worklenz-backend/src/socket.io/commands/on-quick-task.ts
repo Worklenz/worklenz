@@ -12,6 +12,22 @@ import { logEndDateChange, logStartDateChange, logStatusChange } from "../../ser
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
 
+/**
+ * Returns TRUE when the restrict_task_creation feature is active for the given user/project.
+ * Checks both project-level and org-level flags via the DB helper function.
+ */
+async function isTaskCreationRestricted(userId: string, projectId: string): Promise<boolean> {
+  try {
+    const result = await db.query(
+      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+      [userId, projectId]
+    );
+    return result.rows[0]?.restricted === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;
 
@@ -58,8 +74,6 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
     const q = `SELECT create_quick_task($1) AS task;`;
     const body = JSON.parse(data as string);
 
-
-
     body.name = (body.name || "").trim();
     body.priority_id = body.priority_id?.trim() || null;
     body.status_id = body.status_id?.trim() || null;
@@ -73,6 +87,19 @@ export async function on_quick_task(_io: Server, socket: Socket, data?: string) 
     if (body.is_dragged) createGaantTask(body);
 
     if (body.name.length > 0) {
+      // Check restrict_task_creation before proceeding
+      const userId = getLoggedInUserIdFromSocket(socket);
+      if (userId && body.project_id) {
+        const restricted = await isTaskCreationRestricted(userId, body.project_id);
+        if (restricted) {
+          socket.emit(SocketEvents.QUICK_TASK.toString(), {
+            error: true,
+            message: "Task creation is restricted. Please contact admin for access."
+          });
+          return;
+        }
+      }
+
       body.total_minutes = toMinutes(body.total_hours, body.total_minutes);
       const result = await db.query(q, [JSON.stringify(body)]);
       const [d] = result.rows;

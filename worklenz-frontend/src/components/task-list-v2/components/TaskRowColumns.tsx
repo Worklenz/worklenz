@@ -214,10 +214,11 @@ interface AssigneesColumnProps {
   task: Task;
   convertedTask: any;
   isDarkMode: boolean;
+  canCreateTask?: boolean;
 }
 
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
-  ({ width, task, convertedTask, isDarkMode }) => (
+  ({ width, task, convertedTask, isDarkMode, canCreateTask = true }) => (
     <div
       className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
       style={{ 
@@ -236,7 +237,9 @@ export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
           isDarkMode={isDarkMode}
           size={24}
         />
-        <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+        {canCreateTask && (
+          <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+        )}
       </div>
     </div>
   )

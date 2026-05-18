@@ -3,11 +3,13 @@ import NotificationController from "../../controllers/notification-controller";
 
 import ProfileSettingsController from "../../controllers/profile-settings-controller";
 import ClientPortalSettingsController from "../../controllers/client-portal/client-portal-settings-controller";
+import OrgConfigurationController from "../../controllers/org-configuration-controller";
 
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import profileSettingsBodyValidator from "../../middlewares/validators/profile-settings-body-validator";
 import setupValidator from "../../middlewares/validators/setup-validator";
 import teamSettingsBodyValidator from "../../middlewares/validators/team-settings-body-validator";
+import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 
 const settingsApiRouter = express.Router();
@@ -27,5 +29,9 @@ settingsApiRouter.get("/client-portal", safeControllerFunction(ClientPortalSetti
 settingsApiRouter.put("/client-portal", safeControllerFunction(ClientPortalSettingsController.updateSettings));
 settingsApiRouter.post("/client-portal/upload-logo", safeControllerFunction(ClientPortalSettingsController.uploadLogo));
 settingsApiRouter.get("/client-portal/base-url", safeControllerFunction(ClientPortalSettingsController.getClientPortalBaseUrl));
+
+// Organization Configuration Settings (Business Plan feature)
+settingsApiRouter.get("/configuration", safeControllerFunction(OrgConfigurationController.get));
+settingsApiRouter.put("/configuration", teamOwnerOrAdminValidator, safeControllerFunction(OrgConfigurationController.update));
 
 export default settingsApiRouter;

@@ -61,6 +61,29 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
     const isAssign = body.mode == 0;
     const userId = getLoggedInUserIdFromSocket(socket);
 
+    // Check restrict_task_creation before allowing assignment changes
+    if (isAssign && userId) {
+      // Resolve project_id from task if not provided
+      let projectId = body.project_id;
+      if (!projectId && body.task_id) {
+        const pResult = await db.query("SELECT project_id FROM tasks WHERE id = $1", [body.task_id]);
+        projectId = pResult.rows[0]?.project_id;
+      }
+      if (projectId) {
+        const restrictResult = await db.query(
+          "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+          [userId, projectId]
+        );
+        if (restrictResult.rows[0]?.restricted === true) {
+          socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
+            error: true,
+            message: "Task assignment is restricted to Admins and Team Leads only."
+          });
+          return;
+        }
+      }
+    }
+
     const assignment = await runAssignOrRemove(body, isAssign);
     const assignees = await getAssignees(body.task_id);
     const members = await getTeamMembers(body.team_id);

@@ -1,6 +1,6 @@
 import { Layout, Modal } from '@/shared/antd-imports';
 import { Outlet, useLocation } from 'react-router-dom';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 
 import Navbar from '@/features/navbar/navbar';
 // import BusinessPlanAnnouncement from '@/components/business-plan-announcement/BusinessPlanAnnouncement';
@@ -13,6 +13,7 @@ import UpgradePlans from '@/components/admin-center/billing/drawers/upgrade-plan
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
 import { ImportProgressNotifier } from '@/components/imports/ImportProgressNotifier';
+import { fetchOrgConfig } from '@/features/org-config/org-config.slice';
 
 const MainLayout = memo(() => {
   const dispatch = useAppDispatch();
@@ -20,6 +21,11 @@ const MainLayout = memo(() => {
   const { isUpgradeModalOpen, billingInfo } = useAppSelector(state => state.adminCenterReducer);
   const currentSession = useAuthService().getCurrentSession();
   const location = useLocation();
+
+  // Load org configuration once on mount (needed for task creation restriction feature)
+  useEffect(() => {
+    void dispatch(fetchOrgConfig());
+  }, [dispatch]);
 
   // Get browser timezone for upgrade plans
   const browserTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;

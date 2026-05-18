@@ -29,6 +29,7 @@ interface TaskRowWithSubtasksProps {
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
   depth?: number;
   maxDepth?: number;
+  canCreateTask?: boolean;
 }
 
 interface AddSubtaskRowProps {
@@ -266,6 +267,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     updateTaskCustomColumnValue,
     depth = 0,
     maxDepth = 3,
+    canCreateTask = true,
   }) => {
     const task = useAppSelector(state => selectTaskById(state, taskId));
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
@@ -404,6 +406,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
           isSubtask={depth > 0}
           depth={depth}
+          canCreateTask={canCreateTask}
         />
 
         {/* Subtasks and add subtask row when expanded */}
@@ -430,12 +433,13 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
                     updateTaskCustomColumnValue={updateTaskCustomColumnValue}
                     depth={depth + 1}
                     maxDepth={maxDepth}
+                    canCreateTask={canCreateTask}
                   />
                 </div>
               ))}
 
-            {/* Add subtask row - only show when not loading */}
-            {!isLoadingSubtasks && !task.is_parent_container && (
+            {/* Add subtask row - only show when not loading and task creation is allowed */}
+            {!isLoadingSubtasks && !task.is_parent_container && canCreateTask && (
               <div
                 className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}
               >

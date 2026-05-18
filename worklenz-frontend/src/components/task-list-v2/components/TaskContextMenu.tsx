@@ -50,6 +50,7 @@ interface TaskContextMenuProps {
   projectId: string;
   position: { x: number; y: number };
   onClose: () => void;
+  canCreateTask?: boolean;
 }
 
 const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
@@ -57,6 +58,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   projectId,
   position,
   onClose,
+  canCreateTask = true,
 }) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-list-table');
@@ -478,23 +480,27 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 
   const menuItems = useMemo(() => {
     const items = [
-      {
-        key: 'assignToMe',
-        label: (
-          <button
-            onClick={handleAssignToMe}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-            disabled={updatingAssignToMe}
-          >
-            {updatingAssignToMe ? (
-              <LoadingOutlined className="text-gray-500 dark:text-gray-400" />
-            ) : (
-              <UserAddOutlined className="text-gray-500 dark:text-gray-400" />
-            )}
-            <span>{t('contextMenu.assignToMe')}</span>
-          </button>
-        ),
-      },
+      ...(canCreateTask
+        ? [
+            {
+              key: 'assignToMe',
+              label: (
+                <button
+                  onClick={handleAssignToMe}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+                  disabled={updatingAssignToMe}
+                >
+                  {updatingAssignToMe ? (
+                    <LoadingOutlined className="text-gray-500 dark:text-gray-400" />
+                  ) : (
+                    <UserAddOutlined className="text-gray-500 dark:text-gray-400" />
+                  )}
+                  <span>{t('contextMenu.assignToMe')}</span>
+                </button>
+              ),
+            },
+          ]
+        : []),
       {
         key: 'duplicateTask',
         label: (

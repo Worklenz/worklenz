@@ -7,6 +7,7 @@ import {
   InputRef,
   Select,
   Typography,
+  notification,
 } from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -115,7 +116,16 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
     };
 
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(newTask));
-    socket?.on(SocketEvents.QUICK_TASK.toString(), (task: IMyTask) => {
+    socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IMyTask & { error?: boolean; message?: string }) => {
+      // Backend emits { error: true, message: '...' } when task creation is restricted
+      if (task?.error) {
+        notification.error({
+          message: t('home:tasks.taskCreationRestrictedTitle', { defaultValue: 'Task Creation Restricted' }),
+          description: task.message || t('home:tasks.taskCreationRestricted', { defaultValue: 'Task creation is restricted to Admins and Team Leads only. Please contact your admin for access.' }),
+          placement: 'topRight',
+        });
+        return;
+      }
       if (task) {
         const taskBody = {
           team_member_id: currentSession?.team_member_id,
@@ -127,23 +137,22 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
         socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(taskBody));
         socket?.once(
           SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
-          (response: ITaskAssigneesUpdateResponse) => {
+          (_response: ITaskAssigneesUpdateResponse) => {
             refetch();
           }
         );
+        // Reset form only on success
+        setTimeout(() => {
+          if (taskInputRef.current) {
+            taskInputRef.current.focus({ cursor: 'start' });
+          }
+          form.resetFields();
+          setIsDueDateFieldShowing(false);
+          setIsProjectFieldShowing(false);
+        }, 100);
       }
     });
 
-    setTimeout(() => {
-      if (taskInputRef.current) {
-        taskInputRef.current.focus({
-          cursor: 'start',
-        });
-      }
-      form.resetFields();
-      setIsDueDateFieldShowing(false);
-      setIsProjectFieldShowing(false);
-    }, 100);
   };
 
   useEffect(() => {

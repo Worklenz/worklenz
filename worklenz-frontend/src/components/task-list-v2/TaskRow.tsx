@@ -25,6 +25,7 @@ interface TaskRowProps {
   isFirstInGroup?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
   depth?: number;
+  canCreateTask?: boolean;
 }
 
 const TaskRow: React.FC<TaskRowProps> = memo(
@@ -36,6 +37,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     isFirstInGroup = false,
     updateTaskCustomColumnValue,
     depth = 0,
+    canCreateTask = true,
   }) => {
     // Get task data and selection state from Redux
     const task = useAppSelector(state => selectTaskById(state, taskId));
@@ -95,7 +97,6 @@ const TaskRow: React.FC<TaskRowProps> = memo(
         disabled: isSubtask || !task, // Disable drag and drop for subtasks and placeholders
       });
 
-    // Use extracted column renderer hook
     const { renderColumn } = useTaskRowColumns({
       task: safeTask,
       projectId,
@@ -121,6 +122,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       attributes,
       listeners,
       depth,
+      canCreateTask,
     });
 
     // Render null only after all hooks are called to keep hook ordering stable

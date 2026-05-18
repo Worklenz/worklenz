@@ -12,6 +12,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 import { useAuthService } from '@/hooks/useAuth';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 interface IAddTaskListRowProps {
   groupId?: string | null;
@@ -41,6 +42,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
   const customBorderColor = useMemo(() => themeMode === 'dark' && ' border-[#303030]', [themeMode]);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const currentGrouping = useAppSelector(state => state.grouping.currentGrouping);
+  const { canCreateTask } = useTaskCreationPermission();
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -231,7 +233,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
 
   return (
     <div className="add-task-row-container" ref={containerRef}>
-      {isEdit ? (
+      {!canCreateTask ? null : isEdit ? (
         <div className="add-task-input-container">
           <Input
             className="add-task-input"

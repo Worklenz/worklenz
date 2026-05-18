@@ -73,6 +73,7 @@ import {
   setShowTaskDrawer,
 } from '@/features/task-drawer/task-drawer.slice';
 import { useAuthService } from '@/hooks/useAuth';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 // Components
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
@@ -315,6 +316,9 @@ const TaskListV2Section: React.FC = () => {
   const currentSession = useAuthService().getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
+
+  // Task creation/assignment restriction (Business Plan feature)
+  const { canCreateTask } = useTaskCreationPermission();
 
   // Redux state selectors
   const allTasks = useAppSelector(selectAllTasksArray);
@@ -1126,6 +1130,8 @@ const TaskListV2Section: React.FC = () => {
       if (!item || !urlProjectId) return null;
 
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
+        // Hide the add-task row entirely when task creation is restricted
+        if (!canCreateTask) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}
@@ -1159,6 +1165,7 @@ const TaskListV2Section: React.FC = () => {
           visibleColumns={visibleColumns}
           isFirstInGroup={isFirstInGroup}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+          canCreateTask={canCreateTask}
         />
       );
     },
@@ -1171,6 +1178,7 @@ const TaskListV2Section: React.FC = () => {
       handleActivateAddRow,
       handleDeactivateAddRow,
       handleTaskCreated,
+      canCreateTask,
     ]
   );
 
@@ -1695,15 +1703,17 @@ const TaskListV2Section: React.FC = () => {
                       projectId={urlProjectId || ''}
                     />
                     {/* Single add task row - reused for all tasks */}
-                    <AddTaskRow
-                      groupId={unmappedGroupId}
-                      groupType="phase"
-                      groupValue="Unmapped"
-                      projectId={urlProjectId || ''}
-                      visibleColumns={visibleColumns}
-                      rowId={`add-task-${unmappedGroupId}-0`}
-                      autoFocus={false}
-                    />
+                    {canCreateTask && (
+                      <AddTaskRow
+                        groupId={unmappedGroupId}
+                        groupType="phase"
+                        groupValue="Unmapped"
+                        projectId={urlProjectId || ''}
+                        visibleColumns={visibleColumns}
+                        rowId={`add-task-${unmappedGroupId}-0`}
+                        autoFocus={false}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1856,7 +1866,7 @@ const TaskListV2Section: React.FC = () => {
                             isDarkMode={isDarkMode}
                           />
                         )}
-                        {showInsertDivider && previousItem && (
+                        {showInsertDivider && previousItem && canCreateTask && (
                           <InsertTaskDivider
                             title={t('insertTaskText', { defaultValue: 'Insert Task' })}
                             onInsert={() => {

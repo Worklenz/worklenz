@@ -19,6 +19,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import logger from '@/utils/errorLogger';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 interface IBoardSectionCardProps {
   taskGroup: ITaskListGroup;
@@ -31,6 +32,7 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { team_id: teamId, id: reporterId } = useAppSelector(state => state.userReducer);
   const { socket } = useSocket();
+  const { canCreateTask } = useTaskCreationPermission();
 
   const [name, setName] = useState<string>(taskGroup.name);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -209,6 +211,8 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
           }}
           icon={<PlusOutlined />}
           onClick={handleAddTaskToBottom}
+          disabled={!canCreateTask}
+          hidden={!canCreateTask}
         >
           {t('addTask')}
         </Button>

@@ -29,6 +29,7 @@ import { updateTaskAssignees as updateTasksListTaskAssignees } from '@/features/
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_task_assigned } from '@/shared/worklenz-analytics-events';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 interface TaskDrawerAssigneeSelectorProps {
   task: ITaskViewModel;
 }
@@ -43,6 +44,7 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { t } = useTranslation('task-list-table');
   const { tab } = useTabSearchParam();
+  const { canCreateTask } = useTaskCreationPermission();
 
   const dispatch = useAppDispatch();
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
@@ -206,11 +208,13 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
       trigger={['click']}
       dropdownRender={() => membersDropdownContent}
       onOpenChange={handleMembersDropdownOpen}
+      disabled={!canCreateTask}
     >
       <Button
         type="dashed"
         shape="circle"
         size="small"
+        style={{ display: canCreateTask ? undefined : 'none' }}
         icon={
           <PlusOutlined
             style={{

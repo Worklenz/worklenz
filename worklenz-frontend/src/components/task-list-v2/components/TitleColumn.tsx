@@ -44,6 +44,7 @@ interface TitleColumnProps {
   onTaskNameChange: (name: string) => void;
   onTaskNameSave: () => void;
   depth?: number;
+  canCreateTask?: boolean;
 }
 
 export const TitleColumn: React.FC<TitleColumnProps> = memo(
@@ -59,6 +60,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     onTaskNameChange,
     onTaskNameSave,
     depth = 0,
+    canCreateTask = true,
   }) => {
     const dispatch = useAppDispatch();
     const { socket, connected } = useSocket();
@@ -386,6 +388,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               projectId={projectId}
               position={contextMenuPosition}
               onClose={handleContextMenuClose}
+              canCreateTask={canCreateTask}
             />,
             document.body
           )}
