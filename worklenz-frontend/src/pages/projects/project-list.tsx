@@ -610,6 +610,8 @@ const ProjectList: React.FC = () => {
         title: '',
         dataIndex: 'favorite',
         key: 'favorite',
+        width: 56,
+        align: 'center',
         render: (text: string, record: IProjectViewModel) => (
           <ProjectRateCell key={record.id} t={t} record={record} />
         ),
@@ -619,6 +621,7 @@ const ProjectList: React.FC = () => {
         title: t('name'),
         dataIndex: 'name',
         key: 'name',
+        width: 280,
         sorter: true,
         showSorterTooltip: false,
         defaultSortOrder: DEFAULT_PROJECT_SORT_ORDER,
@@ -703,6 +706,8 @@ const ProjectList: React.FC = () => {
         title: '',
         key: 'button',
         dataIndex: '',
+        width: 76,
+        align: 'center',
         render: (record: IProjectViewModel) => (
           <ActionButtons
             t={t}
