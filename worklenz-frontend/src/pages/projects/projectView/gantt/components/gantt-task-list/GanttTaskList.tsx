@@ -26,6 +26,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { addTask } from '../../../../../../features/task-management/task-management.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 // Utility function to add alpha channel to hex color
 const addAlphaToHex = (hex: string, alpha: number): string => {
@@ -129,15 +130,15 @@ const TaskRow: React.FC<TaskRowProps & { dragAttributes?: any; dragListeners?: a
     const [taskName, setTaskName] = useState('');
     const { socket, connected } = useSocket();
     const dispatch = useAppDispatch();
-   // ✅ After
-const formatDateRange = useCallback(() => {
-  if (!task.start_date || !task.end_date) {
-    return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
-  }
-  const start = dayjs(task.start_date).isValid() ? dayjs(task.start_date).format('MMM D, YYYY') : 'Invalid';
-  const end = dayjs(task.end_date).isValid() ? dayjs(task.end_date).format('MMM D, YYYY') : 'Invalid';
-  return `${start} - ${end}`;
-}, [task.start_date, task.end_date]);
+    // ✅ After
+    const formatDateRange = useCallback(() => {
+      if (!task.start_date || !task.end_date) {
+        return <span className="text-gray-400 dark:text-gray-500">Not scheduled</span>;
+      }
+      const start = dayjs(task.start_date).isValid() ? dayjs(task.start_date).format('MMM D, YYYY') : 'Invalid';
+      const end = dayjs(task.end_date).isValid() ? dayjs(task.end_date).format('MMM D, YYYY') : 'Invalid';
+      return `${start} - ${end}`;
+    }, [task.start_date, task.end_date]);
     const isPhase = task.type === 'milestone' || task.is_milestone;
     const hasChildren = task.children && task.children.length > 0;
     // For phases, use phase_id for expansion state, for tasks use task.id
@@ -170,9 +171,8 @@ const formatDateRange = useCallback(() => {
         return (
           <button
             onClick={handleToggle}
-            className={`w-4 h-4 flex items-center justify-center rounded gantt-expand-icon ${
-              isExpanded ? 'expanded' : ''
-            } hover:bg-black/10`}
+            className={`w-4 h-4 flex items-center justify-center rounded gantt-expand-icon ${isExpanded ? 'expanded' : ''
+              } hover:bg-black/10`}
             style={task.color ? { color: task.color } : {}}
           >
             <RightOutlined className="text-xs transition-transform duration-200" />
@@ -288,19 +288,17 @@ const formatDateRange = useCallback(() => {
     return (
       <>
         <div
-          className={`group flex ${isPhase ? 'min-h-[4.5rem] gantt-phase-row' : 'h-9 gantt-task-row'} border-b border-gray-100 dark:border-gray-700 transition-colors ${
-            !isPhase
+          className={`group flex ${isPhase ? 'min-h-[4.5rem] gantt-phase-row' : 'h-9 gantt-task-row'} border-b border-gray-100 dark:border-gray-700 transition-colors ${!isPhase
               ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer'
               : ''
-          } ${isDraggable && !isPhase ? 'cursor-grab active:cursor-grabbing' : ''} ${
-            activeId === task.id ? 'opacity-50' : ''
-          } ${overId === task.id && overId !== activeId ? 'ring-2 ring-blue-500 ring-inset' : ''} ${animationClass}`}
+            } ${isDraggable && !isPhase ? 'cursor-grab active:cursor-grabbing' : ''} ${activeId === task.id ? 'opacity-50' : ''
+            } ${overId === task.id && overId !== activeId ? 'ring-2 ring-blue-500 ring-inset' : ''} ${animationClass}`}
           style={
             isPhase && task.color
               ? {
-                  backgroundColor: addAlphaToHex(task.color, 0.15),
-                  color: task.color,
-                }
+                backgroundColor: addAlphaToHex(task.color, 0.15),
+                color: task.color,
+              }
               : {}
           }
           onClick={!isPhase ? handleTaskClick : undefined}
@@ -336,11 +334,10 @@ const formatDateRange = useCallback(() => {
                 <div className="flex flex-col flex-1">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`truncate flex-1 ${
-                        task.type === 'milestone'
+                      className={`truncate flex-1 ${task.type === 'milestone'
                           ? 'font-semibold cursor-pointer hover:opacity-80'
                           : 'cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors'
-                      }`}
+                        }`}
                       onClick={isPhase ? handlePhaseClick : handleTaskNameClick}
                       title={
                         isPhase
@@ -380,19 +377,19 @@ const formatDateRange = useCallback(() => {
                         title={t('task.clickEditPhase', 'Click to edit phase details')}
                       >
                         <CalendarOutlined className="text-[10px]" />
-                     {task.start_date && task.end_date ? (
-  <>
-    {dayjs(task.start_date).isValid()
-      ? dayjs(task.start_date).format('MMM D')
-      : 'Set dates'}{' '}
-    -{' '}
-    {dayjs(task.end_date).isValid()
-      ? dayjs(task.end_date).format('MMM D, YYYY')
-      : 'Set dates'}
-  </>
-) : (
-  'Set dates'
-)}
+                        {task.start_date && task.end_date ? (
+                          <>
+                            {dayjs(task.start_date).isValid()
+                              ? dayjs(task.start_date).format('MMM D')
+                              : 'Set dates'}{' '}
+                            -{' '}
+                            {dayjs(task.end_date).isValid()
+                              ? dayjs(task.end_date).format('MMM D, YYYY')
+                              : 'Set dates'}
+                          </>
+                        ) : (
+                          'Set dates'
+                        )}
                       </button>
                     </div>
                   )}
@@ -581,6 +578,7 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
     },
     ref
   ) => {
+    const { canCreateTask } = useTaskCreationPermission();
     const [localExpandedTasks, setLocalExpandedTasks] = useState<Set<string>>(
       () => new Set(tasks.filter(t => t.expanded).map(t => t.id))
     );
@@ -857,11 +855,11 @@ const GanttTaskList = forwardRef<HTMLDivElement, GanttTaskListProps>(
 
                   return (
                     <div key={task.id} className={animationClass}>
-                      <AddTaskRow
+                      {canCreateTask && <AddTaskRow
                         task={task}
                         projectId={projectId}
                         onCreateQuickTask={onCreateQuickTask}
-                      />
+                      />}
                     </div>
                   );
                 } else if (isPhase && !isUnmappedPhase) {

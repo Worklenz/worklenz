@@ -68,6 +68,7 @@ interface TaskCardProps {
   groupId: string;
   idx: number;
   onDragEnd: (e: React.DragEvent) => void; // <-- add this
+  canCreateTask: boolean;
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -87,6 +88,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
     groupId,
     idx,
     onDragEnd, // <-- add this
+    canCreateTask,
   }) => {
     const { socket } = useSocket();
     const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
@@ -760,12 +762,12 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                     isDarkMode={themeMode === 'dark'}
                     size={24}
                   />
-                  <LazyAssigneeSelectorWrapper
+                  { canCreateTask && <LazyAssigneeSelectorWrapper
                     task={task}
                     groupId={groupId}
                     isDarkMode={themeMode === 'dark'}
                     kanbanMode={true}
-                  />
+                  />}
                   {(task.sub_tasks_count ?? 0) > 0 && (
                     <button
                       type="button"
