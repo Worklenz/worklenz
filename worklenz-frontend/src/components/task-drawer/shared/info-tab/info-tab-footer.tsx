@@ -14,6 +14,9 @@ import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
 import { fromNow } from '@/utils/dateUtils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import './info-tab-footer.css';
 
 // Utility function to convert file to base64
@@ -47,6 +50,7 @@ const escapeHtml = (text: string) => {
  * Kept outside the component so it is compiled once.
  */
 const URL_REGEX = /https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+/gi;
+const COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES = 25 * 1024 * 1024;
 
 // Component to render mentions with highlighting using contenteditable
 const CustomMentionsInput = ({
@@ -861,6 +865,8 @@ const InfoTabFooter = () => {
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
   const dispatch = useAppDispatch();
+  const currentSession = useAuthService().getCurrentSession();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
@@ -976,6 +982,21 @@ const InfoTabFooter = () => {
     }
 
     try {
+      const hasOversizedAttachment = selectedFiles.some(
+        file => Number(file.size || 0) > COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES
+      );
+
+      if (!hasBusinessAccess && hasOversizedAttachment) {
+        message.warning(
+          t('taskInfoTab.comments.fileTooLargeToSend', {
+            defaultValue:
+              'Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.',
+          })
+        );
+        dispatch(toggleUpgradeModal());
+        return;
+      }
+
       setUploading(true);
       const body: ITaskCommentsCreateRequest = {
         task_id: selectedTaskId,
@@ -1015,7 +1036,9 @@ const InfoTabFooter = () => {
     projectId,
     form,
     isCommentValid,
+    dispatch,
     t,
+    hasBusinessAccess,
   ]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {

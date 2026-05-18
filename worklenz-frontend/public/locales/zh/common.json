@@ -106,6 +106,8 @@
   "license-expired-contacting-support": "Contacting Support...",
   "license-expired-message-sent": "Message Sent ✓",
   "projectFinanceTitle": "项目财务",
+  "addCustomColumn": "添加自定义列",
+  "customFieldLimitReached": "已达到自定义字段上限。升级后可添加更多。",
   "projectFinanceUpgradeBody": "在项目中跟踪预算、成本和可计费时间。需要 Business 方案。",
   "seeSpends": "查看支出",
   "closePopover": "关闭弹出层",

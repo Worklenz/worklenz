@@ -9,6 +9,11 @@
   "yes": "Po",
   "no": "Jo",
   "emptyState": "Ende nuk ka përditësime. Filloni bisedën!",
+  "historyLockedBoundary": "Historiku i bisedës më i vjetër se 90 ditë është i bllokuar",
+  "historyLockedTitle": "Historiku i bisedës i bllokuar",
+  "historyLockedBody": "Historiku i bisedës më i vjetër se 90 ditë është i disponueshëm në planin Business.",
+  "viewFullHistory": "Shiko historikun e plotë",
+  "upgradeNow": "Bëj upgrade tani",
   "reactions": {
     "like": "Pëlqej",
     "love": "Dashuri",

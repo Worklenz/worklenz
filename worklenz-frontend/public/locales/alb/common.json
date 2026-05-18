@@ -106,6 +106,8 @@
   "license-expired-contacting-support": "Contacting Support...",
   "license-expired-message-sent": "Message Sent ✓",
   "projectFinanceTitle": "Financa e Projektit",
+  "addCustomColumn": "Shto një kolonë të personalizuar",
+  "customFieldLimitReached": "Limiti i fushave të personalizuara u arrit. Bëni upgrade për të shtuar më shumë.",
   "projectFinanceUpgradeBody": "Ndiqni buxhetet, kostot dhe kohën e faturueshme nëpër projektet tuaja. Kërkon planin Business.",
   "seeSpends": "Shiko Shpenzimet",
   "closePopover": "Mbyll dritaren",

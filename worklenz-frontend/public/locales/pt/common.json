@@ -106,6 +106,8 @@
   "license-expired-contacting-support": "Contacting Support...",
   "license-expired-message-sent": "Message Sent ✓",
   "projectFinanceTitle": "Finanças do Projeto",
+  "addCustomColumn": "Adicionar uma coluna personalizada",
+  "customFieldLimitReached": "Limite de campos personalizados atingido. Faça upgrade para adicionar mais.",
   "projectFinanceUpgradeBody": "Acompanhe orçamentos, custos e tempo faturável em seus projetos. Requer o plano Business.",
   "seeSpends": "Ver gastos",
   "closePopover": "Fechar popover",

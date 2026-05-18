@@ -6,9 +6,10 @@ import {
   toggleCustomColumnModalOpen,
 } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 const AddCustomColumnButton = () => {
   const dispatch = useAppDispatch();
@@ -16,9 +17,13 @@ const AddCustomColumnButton = () => {
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isFree = isFreeUser(currentSession);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const columnList = useAppSelector(state => state.taskColumnsReducer.columnList);
+  const customColumnsCount = columnList.filter(column => column.custom_column).length;
+  const hasReachedCustomFieldLimit = !hasBusinessAccess && customColumnsCount >= 10;
 
   const handleModalOpen = () => {
-    if (isFree) {
+    if (isFree || hasReachedCustomFieldLimit) {
       dispatch(toggleUpgradeModal());
       return;
     }
@@ -26,7 +31,11 @@ const AddCustomColumnButton = () => {
     dispatch(toggleCustomColumnModalOpen(true));
   };
 
-  const tooltipTitle = isFree ? t('upgrade-plan') : 'Add a custom column';
+  const tooltipTitle = hasReachedCustomFieldLimit
+    ? t('customFieldLimitReached', { defaultValue: 'Custom field limit reached. Upgrade to add more.' })
+    : isFree
+      ? t('upgrade-plan', { defaultValue: 'Upgrade plan' })
+      : t('addCustomColumn', { defaultValue: 'Add a custom column' });
 
   return (
     <>
@@ -39,7 +48,6 @@ const AddCustomColumnButton = () => {
             boxShadow: 'none',
           }}
           onClick={handleModalOpen}
-          disabled={isFree}
         />
       </Tooltip>
     </>

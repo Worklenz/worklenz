@@ -77,6 +77,8 @@
   "license-badge-hours": "{{hours}}h übrig",
   "business-plan-upgrade": "Auf Business-Plan upgraden, um auf diese Funktion zuzugreifen",
   "upgrade-plan": "Upgraden Sie Ihren Plan, um auf diese Funktion zuzugreifen",
+  "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+  "customFieldLimitReached": "Limit für benutzerdefinierte Felder erreicht. Für weitere Felder upgraden.",
   "disconnected": "Getrennt",
   "offline": "Offline",
   "bizPlan": {
