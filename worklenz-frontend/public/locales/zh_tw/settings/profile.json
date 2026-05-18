@@ -1,0 +1,14 @@
+{
+  "uploadError": "僅可上傳 JPG/PNG 格式的檔案！",
+  "uploadSizeError": "圖片大小不可超過 2MB！",
+  "upload": "上傳",
+  "nameLabel": "名稱",
+  "nameRequiredError": "名稱為必填",
+  "emailLabel": "電子郵件",
+  "emailRequiredError": "電子郵件為必填",
+  "saveChanges": "儲存變更",
+  "profileJoinedText": "加入日期：{{date}}",
+  "profileLastUpdatedText": "最後更新：{{date}}",
+  "avatarTooltip": "按一下以上傳大頭照",
+  "title": "個人資料設定"
+}

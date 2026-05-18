@@ -1,0 +1,14 @@
+{
+  "taskList": "任務清單",
+  "board": "看板",
+  "insights": "分析",
+  "files": "檔案",
+  "members": "成員",
+  "updates": "動態",
+  "projectView": "專案檢視",
+  "loading": "正在載入專案…",
+  "error": "載入專案時發生錯誤",
+  "pinnedTab": "已釘選為預設分頁",
+  "pinTab": "釘選為預設分頁",
+  "unpinTab": "取消釘選預設分頁"
+}

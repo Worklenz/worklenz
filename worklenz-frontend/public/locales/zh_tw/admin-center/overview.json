@@ -1,0 +1,11 @@
+{
+  "overview": "總覽",
+  "name": "組織名稱",
+  "owner": "組織擁有者",
+  "admins": "組織管理員",
+  "contactNumber": "新增聯絡電話",
+  "edit": "編輯",
+  "emailAddress": "電子郵件地址",
+  "enterOrganizationName": "請輸入組織名稱",
+  "ownerSuffix": "（擁有者）"
+}

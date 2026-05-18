@@ -1,0 +1,27 @@
+{
+  "title": "儲存為範本",
+  "templateName": "範本名稱",
+  "includes": "應將專案中的哪些內容納入範本？",
+  "includesOptions": {
+    "statuses": "狀態",
+    "phases": "階段",
+    "labels": "標籤"
+  },
+  "taskIncludes": "應將任務中的哪些內容納入範本？",
+  "taskIncludesOptions": {
+    "statuses": "狀態",
+    "phases": "階段",
+    "labels": "標籤",
+    "name": "名稱",
+    "priority": "優先順序",
+    "status": "狀態",
+    "phase": "階段",
+    "label": "標籤",
+    "timeEstimate": "時間估計",
+    "description": "描述",
+    "subTasks": "子任務"
+  },
+  "cancel": "取消",
+  "save": "儲存",
+  "templateNamePlaceholder": "請輸入範本名稱"
+}

@@ -8,13 +8,13 @@ import {
   differenceInYears,
   formatDistanceToNow,
 } from 'date-fns';
-import { enUS, es, pt } from 'date-fns/locale';
+import { enUS, es, pt, zhTW } from 'date-fns/locale';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 export function calculateTimeDifference(timestamp: string | Date): string {
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
   const localeString = getLanguageFromLocalStorage();
-  const locale = localeString === 'en' ? enUS : localeString === 'es' ? es : pt;
+  const locale = localeString === 'en' ? enUS : localeString === 'es' ? es : localeString === 'zh_tw' ? zhTW : pt;
   const now = new Date();
 
   const diffInSeconds = differenceInSeconds(now, date);

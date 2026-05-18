@@ -1,0 +1,14 @@
+{
+  "nameColumn": "名稱",
+  "attachedTaskColumn": "關聯任務",
+  "sizeColumn": "大小",
+  "uploadedByColumn": "上傳者",
+  "uploadedAtColumn": "上傳時間",
+  "fileIconAlt": "檔案圖示",
+  "titleDescriptionText": "此專案中所有任務的附件都會顯示在這裡。",
+  "deleteConfirmationTitle": "確定要執行嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "segmentedTooltip": "即將推出！可切換清單檢視與縮圖檢視。",
+  "emptyText": "此專案中沒有任何附件。"
+}

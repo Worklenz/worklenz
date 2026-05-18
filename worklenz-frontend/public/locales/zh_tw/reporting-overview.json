@@ -1,0 +1,25 @@
+{
+  "overviewTitle": "總覽",
+  "includeArchivedButton": "包含已封存專案",
+
+  "teamCount": "個團隊",
+  "teamCountPlural": "個團隊",
+  "projectCount": "個專案",
+  "projectCountPlural": "個專案",
+  "memberCount": "位成員",
+  "memberCountPlural": "位成員",
+  "activeProjectCount": "個進行中專案",
+  "activeProjectCountPlural": "個進行中專案",
+  "overdueProjectCount": "個逾期專案",
+  "overdueProjectCountPlural": "個逾期專案",
+  "unassignedMemberCount": "位未指派成員",
+  "unassignedMemberCountPlural": "位未指派成員",
+  "memberWithOverdueTaskCount": "位成員有逾期任務",
+  "memberWithOverdueTaskCountPlural": "位成員有逾期任務",
+
+  "teamsText": "團隊",
+
+  "nameColumn": "名稱",
+  "projectsColumn": "專案",
+  "membersColumn": "成員"
+}

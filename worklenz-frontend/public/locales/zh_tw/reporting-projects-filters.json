@@ -1,0 +1,35 @@
+{
+  "searchByNamePlaceholder": "依名稱搜尋",
+  "searchByCategoryPlaceholder": "依類別搜尋",
+
+  "statusText": "狀態",
+  "healthText": "健康度",
+  "categoryText": "類別",
+  "projectManagerText": "專案經理",
+  "showFieldsText": "顯示欄位",
+
+  "cancelledText": "已取消",
+  "blockedText": "受阻",
+  "onHoldText": "暫停",
+  "proposedText": "提議中",
+  "inPlanningText": "規劃中",
+  "inProgressText": "進行中",
+  "completedText": "已完成",
+  "continuousText": "持續進行",
+
+  "notSetText": "未設定",
+  "needsAttentionText": "需要關注",
+  "atRiskText": "有風險",
+  "goodText": "良好",
+
+  "nameText": "專案",
+  "estimatedVsActualText": "估計與實際",
+  "tasksProgressText": "任務進度",
+  "lastActivityText": "最近活動",
+  "datesText": "開始 / 結束日期",
+  "daysLeftText": "剩餘天數 / 逾期天數",
+  "projectHealthText": "專案健康度",
+  "projectUpdateText": "專案動態",
+  "clientText": "客戶",
+  "teamText": "團隊"
+}

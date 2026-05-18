@@ -1,0 +1,7 @@
+{
+  "language": "語言",
+  "language_required": "語言為必填",
+  "time_zone": "時區",
+  "time_zone_required": "時區為必填",
+  "save_changes": "儲存變更"
+}

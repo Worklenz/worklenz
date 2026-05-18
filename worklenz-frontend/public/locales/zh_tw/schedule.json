@@ -1,0 +1,39 @@
+{
+  "today": "今天",
+  "week": "本週",
+  "month": "本月",
+
+  "settings": "設定",
+  "workingDays": "工作天",
+  "monday": "星期一",
+  "tuesday": "星期二",
+  "wednesday": "星期三",
+  "thursday": "星期四",
+  "friday": "星期五",
+  "saturday": "星期六",
+  "sunday": "星期日",
+  "workingHours": "工作時數",
+  "hours": "小時",
+  "saveButton": "儲存",
+
+  "totalAllocation": "總分配量",
+  "timeLogged": "已記錄時間",
+  "remainingTime": "剩餘時間",
+  "total": "合計",
+  "perDay": "每天",
+  "tasks": "項任務",
+  "startDate": "開始日期",
+  "endDate": "結束日期",
+
+  "hoursPerDay": "每日時數",
+  "totalHours": "總時數",
+  "deleteButton": "刪除",
+  "cancelButton": "取消",
+
+  "tabTitle": "無開始和結束日期的任務",
+
+  "allocatedTime": "分配時間",
+  "totalLogged": "總記錄時間",
+  "loggedBillable": "已記錄可計費",
+  "loggedNonBillable": "已記錄不可計費"
+}

@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { enUS, es, pt } from 'date-fns/locale';
+import { enUS, es, pt, zhTW } from 'date-fns/locale';
 import { getLanguageFromLocalStorage } from './language-utils';
 
 /**
@@ -38,7 +38,8 @@ export const formatDateTimeWithUserTimezone = (
       const localeMap = {
         'en': 'en-US',
         'es': 'es-ES',
-        'pt': 'pt-PT'
+        'pt': 'pt-PT',
+        'zh_tw': 'zh-TW'
       };
       const locale = localeMap[localeString as keyof typeof localeMap] || 'en-US';
       
@@ -47,7 +48,7 @@ export const formatDateTimeWithUserTimezone = (
     
     // Fallback to date-fns formatting for UTC or when no timezone
     const localeString = getLanguageFromLocalStorage();
-    const locale = localeString === 'en' ? enUS : localeString === 'es' ? es : pt;
+    const locale = localeString === 'en' ? enUS : localeString === 'es' ? es : localeString === 'zh_tw' ? zhTW : pt;
     return format(date, 'MMM d, yyyy, h:mm:ss a', { locale });
   } catch (error) {
     console.error('Error formatting date with user timezone:', error);

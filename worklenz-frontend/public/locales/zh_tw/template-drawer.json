@@ -1,0 +1,19 @@
+{
+  "title": "編輯任務範本",
+  "cancelText": "取消",
+  "saveText": "儲存",
+  "templateNameText": "範本名稱",
+  "selectedTasks": "已選取任務",
+  "removeTask": "移除",
+  "description": "描述",
+  "phase": "階段",
+  "statuses": "狀態",
+  "priorities": "優先順序",
+  "labels": "標籤",
+  "tasks": "任務",
+  "noTemplateSelected": "尚未選取範本",
+  "noDescription": "無描述",
+  "worklenzTemplates": "Worklenz 範本",
+  "yourTemplatesLibrary": "我的範本庫",
+  "searchTemplates": "搜尋範本"
+}

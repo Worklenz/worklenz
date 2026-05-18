@@ -1,0 +1,9 @@
+{
+  "nameColumn": "名稱",
+  "createdColumn": "建立時間",
+  "editToolTip": "編輯",
+  "deleteToolTip": "刪除",
+  "confirmText": "確定要執行嗎？",
+  "okText": "是",
+  "cancelText": "取消"
+}

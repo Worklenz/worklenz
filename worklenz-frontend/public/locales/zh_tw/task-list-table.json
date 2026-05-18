@@ -1,0 +1,146 @@
+{
+  "keyColumn": "編號",
+  "taskColumn": "任務",
+  "descriptionColumn": "描述",
+  "progressColumn": "進度",
+  "membersColumn": "成員",
+  "assigneesColumn": "指派對象",
+  "labelsColumn": "標籤",
+  "phasesColumn": "階段",
+  "phaseColumn": "階段",
+  "statusColumn": "狀態",
+  "priorityColumn": "優先順序",
+  "timeTrackingColumn": "時間追蹤",
+  "timetrackingColumn": "時間追蹤",
+  "estimationColumn": "估計",
+  "startDateColumn": "開始日期",
+  "startdateColumn": "開始日期",
+  "dueDateColumn": "到期日",
+  "duedateColumn": "到期日",
+  "completedDateColumn": "完成日期",
+  "completeddateColumn": "完成日期",
+  "createdDateColumn": "建立日期",
+  "createddateColumn": "建立日期",
+  "lastUpdatedColumn": "最後更新",
+  "lastupdatedColumn": "最後更新",
+  "reporterColumn": "回報者",
+  "dueTimeColumn": "到期時間",
+  "todoSelectorText": "待辦",
+  "doingSelectorText": "進行中",
+  "doneSelectorText": "已完成",
+
+  "lowSelectorText": "低",
+  "mediumSelectorText": "中",
+  "highSelectorText": "高",
+
+  "selectText": "選擇",
+  "labelsSelectorInputTip": "按 Enter 鍵即可建立！",
+
+  "addTaskText": "新增任務",
+  "addSubTaskText": "新增子任務",
+  "addTaskInputPlaceholder": "輸入任務名稱並按 Enter 鍵",
+  "noTasksInGroup": "此群組中沒有任務",
+  "dropTaskHere": "將任務拖放到這裡",
+
+  "openButton": "開啟",
+  "okButton": "確定",
+
+  "noLabelsFound": "找不到任何標籤",
+  "searchInputPlaceholder": "搜尋或建立",
+  "assigneeSelectorInviteButton": "以電子郵件邀請新成員",
+  "labelInputPlaceholder": "搜尋或建立",
+  "searchLabelsPlaceholder": "搜尋標籤…",
+  "createLabelButton": "建立「{{name}}」",
+  "manageLabelsPath": "設定 → 標籤",
+
+  "pendingInvitation": "待接受邀請",
+
+  "contextMenu": {
+    "assignToMe": "指派給我",
+    "copyLink": "複製任務連結",
+    "linkCopied": "連結已複製到剪貼簿",
+    "linkCopyFailed": "複製連結失敗",
+    "moveTo": "移動至",
+    "unarchive": "解除封存",
+    "archive": "封存",
+    "convertToSubTask": "轉換為子任務",
+    "convertToTask": "轉換為任務",
+    "delete": "刪除",
+    "searchByNameInputPlaceholder": "依名稱搜尋"
+  },
+  "setDueDate": "設定到期日",
+  "setStartDate": "設定開始日期",
+  "clearDueDate": "清除到期日",
+  "clearStartDate": "清除開始日期",
+  "dueDatePlaceholder": "到期日",
+  "startDatePlaceholder": "開始日期",
+
+  "emptyStates": {
+    "noTaskGroups": "找不到任何任務群組",
+    "noTaskGroupsDescription": "當任務被建立或套用篩選條件時，任務會顯示在這裡。",
+    "errorPrefix": "錯誤：",
+    "dragTaskFallback": "任務"
+  },
+
+  "customColumns": {
+    "addCustomColumn": "新增自訂欄位",
+    "customColumnHeader": "自訂欄位",
+    "customColumnSettings": "自訂欄位設定",
+    "noCustomValue": "無值",
+    "peopleField": "人員欄位",
+    "noDate": "無日期",
+    "unsupportedField": "不支援的欄位類型",
+
+    "modal": {
+      "addFieldTitle": "新增欄位",
+      "editFieldTitle": "編輯欄位",
+      "fieldTitle": "欄位標題",
+      "fieldTitleRequired": "欄位標題為必填",
+      "columnTitlePlaceholder": "欄位標題",
+      "type": "類型",
+      "deleteConfirmTitle": "確定要刪除此自訂欄位嗎？",
+      "deleteConfirmDescription": "此操作無法復原，與此欄位相關的所有資料將被永久刪除。",
+      "deleteButton": "刪除",
+      "cancelButton": "取消",
+      "createButton": "建立",
+      "updateButton": "更新",
+      "createSuccessMessage": "自訂欄位建立成功",
+      "updateSuccessMessage": "自訂欄位更新成功",
+      "deleteSuccessMessage": "自訂欄位刪除成功",
+      "deleteErrorMessage": "刪除自訂欄位失敗",
+      "createErrorMessage": "建立自訂欄位失敗",
+      "updateErrorMessage": "更新自訂欄位失敗"
+    },
+
+    "fieldTypes": {
+      "people": "人員",
+      "number": "數字",
+      "date": "日期",
+      "selection": "選擇",
+      "checkbox": "核取方塊",
+      "labels": "標籤",
+      "key": "編號",
+      "formula": "公式"
+    }
+  },
+
+  "indicators": {
+    "tooltips": {
+      "subtasks": "{{count}} 個子任務",
+      "subtasks_plural": "{{count}} 個子任務",
+      "comments": "{{count}} 則留言",
+      "comments_plural": "{{count}} 則留言",
+      "attachments": "{{count}} 個附件",
+      "attachments_plural": "{{count}} 個附件",
+      "subscribers": "此任務有訂閱者",
+      "dependencies": "此任務有相依任務",
+      "recurring": "週期性任務"
+    }
+  },
+
+  "timer": {
+    "conflictTitle": "計時器正在執行中",
+    "conflictMessage": "您在專案「{{projectName}}」的「{{taskName}}」有一個正在執行的計時器。是否要停止該計時器並為此任務啟動新的計時器？",
+    "stopAndStart": "停止並啟動新計時器"
+  }
+}

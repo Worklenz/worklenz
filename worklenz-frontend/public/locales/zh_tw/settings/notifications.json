@@ -1,0 +1,11 @@
+{
+  "title": "通知設定",
+  "emailTitle": "寄送電子郵件通知給我",
+  "emailDescription": "包含新的任務指派通知",
+  "dailyDigestTitle": "寄送每日摘要給我",
+  "dailyDigestDescription": "每天傍晚會收到任務近期活動的摘要。",
+  "popupTitle": "Worklenz 開啟時在電腦上顯示彈出通知",
+  "popupDescription": "瀏覽器可能會停用彈出通知，請變更瀏覽器設定以允許顯示。",
+  "unreadItemsTitle": "顯示未讀數量",
+  "unreadItemsDescription": "會看到每則通知的計數。"
+}
