@@ -27,8 +27,12 @@
   "listView": "Pamja e Listës",
   "groupView": "Pamja e Grupit",
   "groupBy": {
+    "priority": "Prioriteti",
     "category": "Kategoria",
-    "client": "Klienti"
+    "client": "Klienti",
+    "priorities": "prioritetet",
+    "categories": "kategoritë",
+    "clients": "klientët"
   },
   "noPermission": "Nuk keni leje për të kryer këtë veprim"
 }

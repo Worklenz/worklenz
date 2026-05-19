@@ -389,9 +389,20 @@ const ProjectList: React.FC = () => {
   }, [errorMessage, handleRefresh, isLoading, t]);
 
   const paginationShowTotal = useMemo(
-    () => (total: number, range: [number, number]) =>
-      `${range[0]}-${range[1]} of ${total} ${groupBy ? groupBy.toLowerCase() + 's' : 'groups'}`,
-    [groupBy]
+    () => (total: number, range: [number, number]) => {
+      let groupedLabel = t('groups', { defaultValue: 'groups' });
+
+      if (groupBy === ProjectGroupBy.CATEGORY) {
+        groupedLabel = t('groupBy.categories', { defaultValue: 'categories' });
+      } else if (groupBy === ProjectGroupBy.PRIORITY) {
+        groupedLabel = t('groupBy.priorities', { defaultValue: 'priorities' });
+      } else if (groupBy === ProjectGroupBy.CLIENT) {
+        groupedLabel = t('groupBy.clients', { defaultValue: 'clients' });
+      }
+
+      return `${range[0]}-${range[1]} of ${total} ${groupedLabel}`;
+    },
+    [groupBy, t]
   );
 
   const handleTableChange = useCallback(
@@ -610,6 +621,8 @@ const ProjectList: React.FC = () => {
         title: '',
         dataIndex: 'favorite',
         key: 'favorite',
+        width: 56,
+        align: 'center',
         render: (text: string, record: IProjectViewModel) => (
           <ProjectRateCell key={record.id} t={t} record={record} />
         ),
@@ -619,6 +632,7 @@ const ProjectList: React.FC = () => {
         title: t('name'),
         dataIndex: 'name',
         key: 'name',
+        width: 280,
         sorter: true,
         showSorterTooltip: false,
         defaultSortOrder: DEFAULT_PROJECT_SORT_ORDER,
@@ -703,6 +717,8 @@ const ProjectList: React.FC = () => {
         title: '',
         key: 'button',
         dataIndex: '',
+        width: 76,
+        align: 'center',
         render: (record: IProjectViewModel) => (
           <ActionButtons
             t={t}
