@@ -55,7 +55,8 @@ const MainLayout = memo(() => {
     (location.pathname.includes('/projects/') && !location.pathname.endsWith('/projects')) ||
     location.pathname.includes('/worklenz/schedule');
 
-  const isProjectListView = location.pathname.includes('/projects?page=');
+  const isProjectListView =
+    location.pathname.includes('/projects') && location.search.includes('page=');
 
   return (
     <>
