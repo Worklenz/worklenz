@@ -355,11 +355,16 @@ const LabelsDrawer = ({ drawerOpen = false, labelId = null, drawerClosed }: Labe
           message.success(t('updateLabelSuccessMessage', 'Label updated successfully'));
           drawerClosed();
         }
-      } else {
-        // For creating new labels, we'd need a create API endpoint
-        message.info(t('createNotSupported', 'Creating new labels is done through tasks'));
-        drawerClosed();
-      }
+      }  else {
+  const response = await labelsApiService.createLabel({
+    name: values.name,
+    color: values.color_code,
+  });
+  if (response.done) {
+    message.success(t('createLabelSuccessMessage', 'Label created successfully'));
+    drawerClosed();
+  }
+}
     } catch (error) {
       message.error(
         labelId
