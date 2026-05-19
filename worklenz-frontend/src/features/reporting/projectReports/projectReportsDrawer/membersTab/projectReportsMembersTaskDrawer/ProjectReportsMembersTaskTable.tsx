@@ -1,7 +1,15 @@
 import { useTranslation } from 'react-i18next';
-import React from 'react';
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Badge, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  ConfigProvider,
+  Flex,
+  Table,
+  TableColumnsType,
+  Tag,
+  Typography,
+} from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 import { DoubleRightOutlined } from '@/shared/antd-imports';
 
@@ -9,14 +17,19 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
+import { lazy } from 'react';
 
-const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
+const TaskDrawer = lazy(() => import('@components/task-drawer/task-drawer'));
 
 type ProjectReportsMembersTasksTableProps = {
   tasksData: any[];
+  loading?: boolean;
 };
 
-const ProjectReportsMembersTasksTable = ({ tasksData }: ProjectReportsMembersTasksTableProps) => {
+const ProjectReportsMembersTasksTable = ({
+  tasksData,
+  loading = false,
+}: ProjectReportsMembersTasksTableProps) => {
   // localization
   const { t } = useTranslation('reporting-projects-drawer');
 
@@ -104,39 +117,63 @@ const ProjectReportsMembersTasksTable = ({ tasksData }: ProjectReportsMembersTas
       key: 'estimatedTime',
       title: <CustomTableTitle title={t('estimatedTimeColumn')} />,
       className: 'text-center group-hover:text-[#1890ff]',
-      dataIndex: 'estimated_string',
+      render: record => record.estimated_string || '-',
       width: 130,
     },
     {
       key: 'loggedTime',
       title: <CustomTableTitle title={t('loggedTimeColumn')} />,
       className: 'text-center group-hover:text-[#1890ff]',
-      dataIndex: 'time_spent_string',
+      render: record => record.time_spent_string || '-',
       width: 130,
     },
     {
       key: 'overloggedTime',
       title: <CustomTableTitle title={t('overloggedTimeColumn')} />,
       className: 'text-center group-hover:text-[#1890ff]',
-      dataIndex: 'overlogged_time',
+      render: record => record.overlogged_time || '-',
       width: 150,
     },
   ];
 
+  // Memoize table configuration
+  const tableConfig = useMemo(
+    () => ({
+      theme: {
+        components: {
+          Table: {
+            cellPaddingBlock: 8,
+            cellPaddingInline: 10,
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  // Memoize row props generator
+  const getRowProps = useMemo(
+    () => (record: any) => ({
+      onClick: () => handleUpdateTaskDrawer(record.id),
+      style: { height: 38, cursor: 'pointer' },
+      className: 'group even:bg-[#4e4e4e10]',
+    }),
+    [handleUpdateTaskDrawer]
+  );
+
   return (
     <>
-      <Table
-        columns={columns}
-        dataSource={tasksData}
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        onRow={record => {
-          return {
-            style: { height: 38, cursor: 'pointer' },
-            className: 'group even:bg-[#4e4e4e10]',
-          };
-        }}
-      />
+      <ConfigProvider {...tableConfig}>
+        <Table
+          columns={columns}
+          dataSource={tasksData}
+          loading={loading}
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+          rowKey={record => record.id}
+          onRow={getRowProps}
+        />
+      </ConfigProvider>
       {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
     </>
   );

@@ -11,7 +11,7 @@ import { getColor } from "../shared/utils";
 import TeamMembersController from "./team-members-controller";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
 import { updateUsers } from "../shared/paddle-requests";
-import { statusExclude, TRIAL_MEMBER_LIMIT } from "../shared/constants";
+import { statusExclude, TRIAL_MEMBER_LIMIT, APPSUMO_PLAN_LIMIT, BUSINESS_PLAN_LIMIT } from "../shared/constants";
 import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { sendInvitationEmail } from "../shared/email-templates";
@@ -113,7 +113,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
         };
         const data = await this.createOrInviteMembers(projectMemberReq);
-        
+
         // Send email invitation to existing team member for the project
         // This ensures they receive an email notification and can access the project
         if (teamMemberInfo.email && teamMemberInfo.name) {
@@ -127,7 +127,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
             req.body.project_id // projectId - this allows them to access the project directly
           );
         }
-        
+
         return res.status(200).send(new ServerResponse(true, data.member));
       }
     }
@@ -147,7 +147,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
       if (req.body.project_id)
         teamMemberReq.project_id = req.body.project_id;
-      
+
       // Pass role information for team member creation
       if (req.body.role_name)
         teamMemberReq.role_name = req.body.role_name;
@@ -190,12 +190,46 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           seats_enough: false,
           current_members: currentTrialMembers,
           plan_seat_limit: TRIAL_MEMBER_LIMIT,
-          business_plan_limit: 25,
+          business_plan_limit: BUSINESS_PLAN_LIMIT,
           is_appsumo_user: false,
           subscription_type: subscriptionData.subscription_type,
           current_seat_amount: TRIAL_MEMBER_LIMIT,
         };
-        return res.status(200).send(new ServerResponse(false, obj, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+        return res.status(200).send(new ServerResponse(false, 
+          obj, 
+          // `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`
+        )
+      );
+      }
+    }
+
+    /**
+           * Checks life_time_deal (AppSumo) user team member limit based on redeemed coupon codes
+           */
+    if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+      const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+      const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+      if (currentLtdMembers + 1 > ltdLimit) {
+        const obj = {
+          error_code: 'SEAT_LIMIT_EXCEEDED',
+          seats_enough: false,
+          current_members: currentLtdMembers,
+          plan_seat_limit: ltdLimit,
+          business_plan_limit: APPSUMO_PLAN_LIMIT,
+          is_appsumo_user: true,
+          subscription_type: subscriptionData.subscription_type,
+          current_seat_amount: ltdLimit,
+        };
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              obj,
+              // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`,
+            ),
+          );
       }
     }
 
@@ -213,33 +247,33 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         if (updatedCount > effectiveUserLimit) {
           // Check if this is an AppSumo user for specialized modal
           const isAppSumoUser = subscriptionData.is_ltd === true;
-          
+
           const obj = {
             error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
             required_count: requiredSeats,
             current_members: parseInt(subscriptionData.current_count),
             plan_seat_limit: effectiveUserLimit,
-            business_plan_limit: 25,
+            business_plan_limit: APPSUMO_PLAN_LIMIT,
             is_appsumo_user: isAppSumoUser,
             subscription_type: subscriptionData.subscription_type,
             current_seat_amount: effectiveUserLimit,
           };
           return res.status(200).send(new ServerResponse(
-            false, 
-            obj, 
-            isAppSumoUser 
-              ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
-              : `Insufficient seats available. You need ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add this member. Please upgrade your subscription.`
+            false,
+            obj,
+            // isAppSumoUser
+            //   ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
+            //   : `Insufficient seats available. You need ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add this member. Please upgrade your subscription.`
           ));
         }
       }
 
       // Check AppSumo lifetime limits - only applies if not on Business plan
       const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-                             subscriptionData.plan_name?.toLowerCase().includes("business") ||
-                             subscriptionData.business_plan_override === true ||
-                             subscriptionData.appsumo_business_eligible === true;
+        subscriptionData.plan_name?.toLowerCase().includes("business") ||
+        subscriptionData.business_plan_override === true ||
+        subscriptionData.appsumo_business_eligible === true;
       if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
         const ltdLimit = parseInt(subscriptionData.ltd_users);
         const obj = {
@@ -247,12 +281,15 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           seats_enough: false,
           current_members: parseInt(subscriptionData.current_count),
           plan_seat_limit: ltdLimit,
-          business_plan_limit: 25,
+          business_plan_limit: APPSUMO_PLAN_LIMIT,
           is_appsumo_user: true,
           subscription_type: subscriptionData.subscription_type,
           current_seat_amount: ltdLimit,
         };
-        return res.status(200).send(new ServerResponse(false, obj, `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`));
+        return res.status(200).send(new ServerResponse(false, 
+          obj, 
+          // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
+        ));
       }
     }
 
@@ -264,7 +301,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     if (req.body.project_id)
       teamMemberReq.project_id = req.body.project_id;
-    
+
     // Pass role information for team member creation
     if (req.body.role_name)
       teamMemberReq.role_name = req.body.role_name;
@@ -387,10 +424,6 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       if (subscriptionData.team_member_limit_override !== true) {
         // Check trial user limit - warn if close to limit (skip for Business plan trials)
         if (subscriptionData.subscription_status === "trialing") {
-          const isBusinessPlanTrial = subscriptionData.plan_name?.toLowerCase().includes("business") ||
-                                      subscriptionData.business_plan_override === true ||
-                                      subscriptionData.appsumo_business_eligible === true;
-          if (!isBusinessPlanTrial) {
             const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
             if (currentTrialMembers >= TRIAL_MEMBER_LIMIT) {
               const obj = {
@@ -403,8 +436,39 @@ export default class ProjectMembersController extends WorklenzControllerBase {
                 subscription_type: subscriptionData.subscription_type,
                 current_seat_amount: TRIAL_MEMBER_LIMIT,
               };
-              return res.status(200).send(new ServerResponse(false, obj, `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`));
+              return res.status(200).send(new ServerResponse(false, 
+                obj, 
+                // `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`
+              )
+            );
             }
+        }
+
+        // Check life_time_deal (AppSumo) user limit for link generation
+        if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+          const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+          const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+          if (currentLtdMembers >= ltdLimit) {
+            const obj = {
+              error_code: 'SEAT_LIMIT_EXCEEDED',
+              seats_enough: false,
+              current_members: currentLtdMembers,
+              plan_seat_limit: ltdLimit,
+              business_plan_limit: APPSUMO_PLAN_LIMIT,
+              is_appsumo_user: true,
+              subscription_type: subscriptionData.subscription_type,
+              current_seat_amount: ltdLimit,
+            };
+            return res
+              .status(200)
+              .send(
+                new ServerResponse(
+                  false,
+                  obj,
+                  // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`,
+                ),
+              );
           }
         }
 
@@ -415,33 +479,33 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           if (currentCount >= effectiveUserLimit) {
             const requiredSeats = 1; // At least 1 more seat needed
             const isAppSumoUser = subscriptionData.is_ltd === true;
-            
+
             const obj = {
               error_code: 'SEAT_LIMIT_EXCEEDED',
               seats_enough: false,
               required_count: requiredSeats,
               current_members: currentCount,
               plan_seat_limit: effectiveUserLimit,
-              business_plan_limit: 25,
+              business_plan_limit: APPSUMO_PLAN_LIMIT,
               is_appsumo_user: isAppSumoUser,
               subscription_type: subscriptionData.subscription_type,
               current_seat_amount: effectiveUserLimit,
             };
             return res.status(200).send(new ServerResponse(
-              false, 
-              obj, 
-              isAppSumoUser 
-                ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`
-                : "Insufficient seats available. Please upgrade your subscription before generating invitation links."
+              false,
+              obj,
+              // isAppSumoUser
+              //   ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
+              //   : "Insufficient seats available. Please upgrade your subscription before generating invitation links."
             ));
           }
         }
 
         // Check LTD user limits - only applies if not on Business plan (check both subscription_type and plan_name)
-        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
-                               subscriptionData.plan_name?.toLowerCase().includes("business") ||
-                               subscriptionData.business_plan_override === true ||
-                               subscriptionData.appsumo_business_eligible === true;
+        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
+          subscriptionData.plan_name?.toLowerCase().includes("business") ||
+          subscriptionData.business_plan_override === true ||
+          subscriptionData.appsumo_business_eligible === true;
         if (subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan) {
           const currentCount = parseInt(subscriptionData.current_count) || 0;
           const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
@@ -451,12 +515,15 @@ export default class ProjectMembersController extends WorklenzControllerBase {
               seats_enough: false,
               current_members: currentCount,
               plan_seat_limit: ltdLimit,
-              business_plan_limit: 25,
+              business_plan_limit: APPSUMO_PLAN_LIMIT,
               is_appsumo_user: true,
               subscription_type: subscriptionData.subscription_type,
               current_seat_amount: ltdLimit,
             };
-            return res.status(200).send(new ServerResponse(false, obj, `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for 25 members.`));
+            return res.status(200).send(new ServerResponse(false, 
+              obj, 
+              // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
+            ));
           }
         }
       }
@@ -700,11 +767,11 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
           // Check LTD user limits - only applies if not on Business plan
           // Business plans (via ANNUAL_BUSINESS subscription type OR plan_name containing "business") override LTD limits
-          const isBusinessPlanProjectLink = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' || 
-                                            subscriptionData.plan_name?.toLowerCase().includes("business") ||
-                                            subscriptionData.business_plan_override === true ||
-                                            subscriptionData.appsumo_business_eligible === true;
-          
+          const isBusinessPlanProjectLink = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
+            subscriptionData.plan_name?.toLowerCase().includes("business") ||
+            subscriptionData.business_plan_override === true ||
+            subscriptionData.appsumo_business_eligible === true;
+
           if (incrementBy > 0 && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlanProjectLink) {
             const currentCount = parseInt(subscriptionData.current_count) || 0;
             const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
@@ -718,6 +785,23 @@ export default class ProjectMembersController extends WorklenzControllerBase {
             const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
             if (currentTrialMembers + incrementBy > TRIAL_MEMBER_LIMIT) {
               return res.status(200).send(new ServerResponse(false, null, `Trial teams cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please ask the team owner to upgrade.`));
+            }
+          }
+
+          if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+            const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+            const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+            if (currentLtdMembers >= ltdLimit) {
+              return res
+                .status(200)
+                .send(
+                  new ServerResponse(
+                    false,
+                    null,
+                    `The team cannot exceed ${ltdLimit} team members.Please ask the team owner to upgrade.`,
+                  ),
+                );
             }
           }
         }

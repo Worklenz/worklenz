@@ -179,7 +179,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         dispatch(toggleProjectMemberDrawer());
       } else {
         const failedEmails = failedResults.map(r => r.email).join(', ');
-        message.error(`Failed to invite: ${failedEmails}`);
+        // message.error(`Failed to invite: ${failedEmails}`);
       }
     } catch (error) {
       console.error('Error inviting project members:', error);

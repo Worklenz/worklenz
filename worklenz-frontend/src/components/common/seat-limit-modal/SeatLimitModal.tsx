@@ -1,5 +1,5 @@
-import { Button, Divider, Flex, Modal, theme, Typography } from '@/shared/antd-imports';
-import { TeamOutlined } from '@ant-design/icons';
+import { Button, Divider, Flex, Modal, theme, Typography, Steps } from '@/shared/antd-imports';
+import { TeamOutlined, RightOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 interface SeatLimitModalProps {
@@ -63,12 +63,12 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
           <Typography.Paragraph style={{ fontSize: 15, margin: 0, lineHeight: 1.6 }}>
             {isAppSumoUser
               ? t('seatLimitAppSumoMessage', {
-                  defaultValue: `Your AppSumo plan includes ${planLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${businessLimit} members.`,
+                  defaultValue: `Your AppSumo plan includes ${planLimit} members. Upgrade to Business for ${businessLimit} members, or deactivate an inactive member to invite someone new.`,
                   planLimit,
                   businessLimit,
                 })
               : t('seatLimitMessage', {
-                  defaultValue: `Your plan includes ${planLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${businessLimit} members.`,
+                  defaultValue: `Your plan includes ${planLimit} members. Upgrade to Business for ${businessLimit} members, or deactivate an inactive member to invite someone new.`,
                   planLimit,
                   businessLimit,
                 })}
@@ -115,12 +115,9 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
         </Flex>
 
         {/* Action Buttons */}
-        <Flex vertical gap={12}>
+        <Flex vertical gap={16}>
           <Button type="primary" size="large" block onClick={onUpgrade}>
             {t('upgradeToBusiness', { defaultValue: 'Upgrade to Business' })}
-          </Button>
-          <Button size="large" block onClick={onDeactivate}>
-            {t('deactivateMember', { defaultValue: 'Deactivate a Member' })}
           </Button>
         </Flex>
       </Flex>

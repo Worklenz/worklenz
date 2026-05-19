@@ -27,8 +27,8 @@ interface TaskRowWithSubtasksProps {
   }>;
   isFirstInGroup?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
-  depth?: number; // Add depth prop to track nesting level
-  maxDepth?: number; // Add maxDepth prop to limit nesting
+  depth?: number;
+  maxDepth?: number;
 }
 
 interface AddSubtaskRowProps {
@@ -44,7 +44,7 @@ interface AddSubtaskRowProps {
   autoFocus?: boolean;
   isActive?: boolean;
   onActivate?: () => void;
-  depth?: number; // Add depth prop for proper indentation
+  depth?: number;
 }
 
 const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
@@ -76,17 +76,15 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
     const handleAddSubtask = useCallback(() => {
       if (!subtaskName.trim() || !currentSession) return;
 
-      // Create optimistic subtask immediately for better UX
       dispatch(
         createSubtask({
           parentTaskId,
           name: subtaskName.trim(),
           projectId,
-          reporterName: currentSession.name || '', // Pass current user's name for reporter field
+          reporterName: currentSession.name || '',
         })
       );
 
-      // Emit socket event for server-side creation
       if (connected && socket) {
         socket.emit(
           SocketEvents.QUICK_TASK.toString(),
@@ -100,17 +98,13 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
         );
       }
 
-      // Clear the input but keep it focused for the next subtask
       setSubtaskName('');
-      // Keep isAdding as true so the input stays visible
-      // Focus the input again after a short delay to ensure it's ready
       setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
         }
       }, 50);
 
-      // Notify parent that subtask was added
       onSubtaskAdded();
     }, [
       subtaskName,
@@ -129,7 +123,6 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
     }, []);
 
     const handleBlur = useCallback(() => {
-      // Only cancel if the input is empty, otherwise keep it active
       if (subtaskName.trim() === '') {
         handleCancel();
       }
@@ -161,9 +154,7 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
             return (
               <div className="flex items-center h-full" style={baseStyle}>
                 <div className="flex items-center w-full h-full">
-                  {/* Match subtask indentation pattern - reduced spacing for level 1 */}
                   <div className="w-2" />
-                  {/* Add additional indentation for deeper levels - increased spacing for level 2+ */}
                   {Array.from({ length: depth }).map((_, i) => (
                     <div key={i} className="w-6" />
                   ))}
@@ -205,7 +196,6 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
                       />
                     )
                   ) : (
-                    // Empty space when not active
                     <div className="h-full" />
                   )}
                 </div>
@@ -241,7 +231,6 @@ const AddSubtaskRow: React.FC<AddSubtaskRowProps> = memo(
 
 AddSubtaskRow.displayName = 'AddSubtaskRow';
 
-// Helper function to get background color based on depth
 const getSubtaskBackgroundColor = (depth: number) => {
   switch (depth) {
     case 1:
@@ -255,7 +244,6 @@ const getSubtaskBackgroundColor = (depth: number) => {
   }
 };
 
-// Helper function to get border color based on depth
 const getBorderColor = (depth: number) => {
   switch (depth) {
     case 1:
@@ -283,7 +271,6 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
     const dispatch = useAppDispatch();
 
-    // Get active filters from Redux - memoized to prevent unnecessary re-renders
     const selectedMemberIds = useAppSelector(
       state =>
         state.taskReducer?.taskAssignees?.filter((m: any) => m.selected).map((m: any) => m.id) ||
@@ -306,14 +293,11 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       [selectedMemberIds, selectedLabelIds, priorities]
     );
 
-    // Get all priorities to create ID-to-name mapping
     const allPriorities = useAppSelector(state => state.priorityReducer?.priorities || []);
 
-    // Create priority ID to name mapping
     const priorityIdToName = React.useMemo(() => {
       const map: Record<string, string> = {};
       allPriorities.forEach((p: any) => {
-        // Map priority value (0=low, 1=medium, 2=high) to name
         if (p.value === 0) map[p.id] = 'low';
         if (p.value === 1) map[p.id] = 'medium';
         if (p.value === 2) map[p.id] = 'high';
@@ -322,7 +306,57 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       return map;
     }, [allPriorities]);
 
-    // Auto-fetch subtasks when task has filtered children and is expanded
+    // FIX: Moved above the early return — hooks must always be called
+    // unconditionally. Previously this useMemo was below `if (!task) return null`,
+    // which caused React's "Rendered fewer hooks than expected" crash when a task
+    // was deleted and task became null mid-render.
+    const filteredSubtasks = React.useMemo(() => {
+      if (!task?.sub_tasks || task.sub_tasks.length === 0) return [];
+
+      const hasActiveFilters =
+        activeFilters.members.length > 0 ||
+        activeFilters.labels.length > 0 ||
+        activeFilters.priorities.length > 0;
+
+      if (!hasActiveFilters) {
+        return task.sub_tasks;
+      }
+
+      return task.sub_tasks.filter((subtask: Task) => {
+        if (subtask.has_filtered_children) return true;
+        if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) return true;
+
+        let matchesFilters = true;
+
+        if (activeFilters.members.length > 0) {
+          const hasMatchingMember = subtask.assignees?.some((a: any) => {
+            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
+            return activeFilters.members.includes(assigneeId);
+          });
+          if (!hasMatchingMember) matchesFilters = false;
+        }
+
+        if (matchesFilters && activeFilters.labels.length > 0) {
+          const hasMatchingLabel = subtask.labels?.some((l: any) =>
+            activeFilters.labels.includes(l.id)
+          );
+          if (!hasMatchingLabel) matchesFilters = false;
+        }
+
+        if (matchesFilters && activeFilters.priorities.length > 0) {
+          const filterPriorityNames = activeFilters.priorities
+            .map(id => priorityIdToName[id])
+            .filter(Boolean);
+          if (!filterPriorityNames.includes(subtask.priority)) {
+            matchesFilters = false;
+          }
+        }
+
+        return matchesFilters;
+      });
+    }, [task?.sub_tasks, activeFilters, priorityIdToName]);
+
+    // FIX: Also moved above early return for the same reason
     useEffect(() => {
       if (
         task?.has_filtered_children &&
@@ -349,86 +383,15 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
       projectId,
     ]);
 
-    const handleSubtaskAdded = useCallback(() => {
-      // After adding a subtask, the AddSubtaskRow will handle its own state reset
-      // We don't need to do anything here
-    }, []);
+    // FIX: Also moved above early return for the same reason
+    const handleSubtaskAdded = useCallback(() => {}, []);
 
+    // Safe to early return here — all hooks have been called above
     if (!task) {
       return null;
     }
 
-    // Don't render subtasks if we've reached the maximum depth
     const canHaveSubtasks = depth < maxDepth;
-
-    // Filter subtasks based on active filters
-    const filteredSubtasks = React.useMemo(() => {
-      if (!task.sub_tasks || task.sub_tasks.length === 0) return [];
-
-      // If no filters are active, show all subtasks
-      const hasActiveFilters =
-        activeFilters.members.length > 0 ||
-        activeFilters.labels.length > 0 ||
-        activeFilters.priorities.length > 0;
-
-      if (!hasActiveFilters) {
-        return task.sub_tasks;
-      }
-
-      // Filter subtasks based on active filters
-      // A subtask should be shown if:
-      // 1. It directly matches the filter, OR
-      // 2. It has descendants that match the filter (has_filtered_children is true)
-      // 3. It has descendants (sub_tasks_count > 0) that might match the filter
-      return task.sub_tasks.filter((subtask: Task) => {
-        // If subtask has filtered descendants, always show it (backend calculated this)
-        if (subtask.has_filtered_children) {
-          return true;
-        }
-
-        // If subtask has descendants with matching filters, always show it
-        // The backend's sub_tasks_count already accounts for filtered descendants
-        if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) {
-          return true;
-        }
-
-        // Check if subtask directly matches the filters
-        let matchesFilters = true;
-
-        // Check member filter
-        if (activeFilters.members.length > 0) {
-          const hasMatchingMember = subtask.assignees?.some((a: any) => {
-            // Assignees can be either strings (IDs) or objects with team_member_id/id
-            const assigneeId = typeof a === 'string' ? a : a.team_member_id || a.id;
-            return activeFilters.members.includes(assigneeId);
-          });
-          if (!hasMatchingMember) matchesFilters = false;
-        }
-
-        // Check label filter
-        if (matchesFilters && activeFilters.labels.length > 0) {
-          const hasMatchingLabel = subtask.labels?.some((l: any) =>
-            activeFilters.labels.includes(l.id)
-          );
-          if (!hasMatchingLabel) matchesFilters = false;
-        }
-
-        // Check priority filter
-        if (matchesFilters && activeFilters.priorities.length > 0) {
-          // Subtask has priority name (low/medium/high), but filter has priority IDs
-          // Convert filter IDs to names and check if subtask priority matches
-          const filterPriorityNames = activeFilters.priorities
-            .map(id => priorityIdToName[id])
-            .filter(Boolean);
-
-          if (!filterPriorityNames.includes(subtask.priority)) {
-            matchesFilters = false;
-          }
-        }
-
-        return matchesFilters;
-      });
-    }, [task.sub_tasks, activeFilters, priorityIdToName]);
 
     return (
       <>

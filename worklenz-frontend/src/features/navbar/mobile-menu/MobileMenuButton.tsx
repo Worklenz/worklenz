@@ -6,15 +6,15 @@ import {
   QuestionCircleOutlined,
   ReadOutlined,
 } from '@/shared/antd-imports';
-import { Button, Card, Dropdown, Flex, MenuProps, Space, Typography } from '@/shared/antd-imports';
+import { Card, Dropdown, Flex, MenuProps, Space, Typography } from '@/shared/antd-imports';
 import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { colors } from '../../../styles/colors';
 import { NavLink } from 'react-router-dom';
 import InviteButton from '../invite/InviteButton';
 import SwitchTeamButton from '../switch-team/SwitchTeamButton';
 // custom css
 import './mobileMenu.css';
+import { Button } from 'antd';
 
 const MobileMenuButton = () => {
   // localization
@@ -68,14 +68,6 @@ const MobileMenuButton = () => {
               marginBlock: 6,
             }}
           >
-            <Button
-              style={{
-                backgroundColor: colors.lightBeige,
-                color: 'black',
-              }}
-            >
-              {t('upgradePlan')}
-            </Button>
             <InviteButton />
             <SwitchTeamButton />
           </Flex>
