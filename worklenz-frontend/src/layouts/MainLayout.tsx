@@ -55,6 +55,8 @@ const MainLayout = memo(() => {
     (location.pathname.includes('/projects/') && !location.pathname.endsWith('/projects')) ||
     location.pathname.includes('/worklenz/schedule');
 
+  const isProjectListView = location.pathname.includes('/projects?page=');
+
   return (
     <>
       <ImportProgressNotifier />
@@ -64,15 +66,14 @@ const MainLayout = memo(() => {
         {/* <BusinessPlanAnnouncement /> */}
 
         <Layout.Header
-          className={`sticky top-0 z-[999] flex items-center p-0 shadow-md ${
-            themeMode === 'dark' ? 'border-b border-[#303030]' : 'shadow-[#18181811]'
-          }`}
+          className={`sticky top-0 z-[999] flex items-center p-0 shadow-md ${themeMode === 'dark' ? 'border-b border-[#303030]' : 'shadow-[#18181811]'
+            }`}
         >
           <Navbar />
         </Layout.Header>
 
         <Layout.Content
-          className={`px-4 sm:px-8 lg:px-12 xl:px-16 ${!isProjectView ? 'overflow-x-hidden max-w-[1400px]' : ''} mx-auto w-full`}
+          className={`px-4 sm:px-8 lg:px-12 xl:px-16 ${!isProjectView ? 'overflow-x-hidden max-w-[1400px]' : ''} ${isProjectListView ? 'overflow-x-hidden max-w-[1600px]' : ''} mx-auto w-full`}
         >
           <Outlet />
         </Layout.Content>
