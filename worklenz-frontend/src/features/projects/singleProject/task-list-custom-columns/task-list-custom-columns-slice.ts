@@ -22,7 +22,7 @@ type TaskListCustomColumnsState = {
   isCustomColumnModalOpen: boolean;
   customColumnModalType: 'create' | 'edit';
   customColumnId: string | null;
-  currentColumnData: any | null; // Store the current column data for editing
+  currentColumnData: any | null;
 
   customFieldType: CustomFieldsTypes;
   customFieldNumberType: CustomFieldNumberTypes;
@@ -35,6 +35,7 @@ type TaskListCustomColumnsState = {
   secondNumericColumn: CustomTableColumnsType | null;
   labelsList: LabelType[];
   selectionsList: SelectionType[];
+  hiddenCustomColumnIds: string[]; // IDs of custom columns the user has hidden
 };
 
 const initialState: TaskListCustomColumnsState = {
@@ -54,6 +55,7 @@ const initialState: TaskListCustomColumnsState = {
   secondNumericColumn: null,
   labelsList: [],
   selectionsList: [],
+  hiddenCustomColumnIds: [], // empty = all custom columns visible by default
 };
 
 const taskListCustomColumnsSlice = createSlice({
@@ -105,8 +107,21 @@ const taskListCustomColumnsSlice = createSlice({
     setSelectionsList: (state, action: PayloadAction<SelectionType[]>) => {
       state.selectionsList = action.payload;
     },
+    // Toggles a single custom column hidden/visible by its ID
+    toggleCustomColumnVisibility: (state, action: PayloadAction<string>) => {
+      const id = action.payload;
+      const idx = state.hiddenCustomColumnIds.indexOf(id);
+      if (idx === -1) {
+        state.hiddenCustomColumnIds.push(id); // hide it
+      } else {
+        state.hiddenCustomColumnIds.splice(idx, 1); // show it again
+      }
+    },
+    // Bulk-set hidden IDs (used when loading persisted state from localStorage)
+    setHiddenCustomColumnIds: (state, action: PayloadAction<string[]>) => {
+      state.hiddenCustomColumnIds = action.payload;
+    },
     resetCustomFieldValues: state => {
-      // Reset all field values to initial state while keeping modal state
       state.customFieldType = initialState.customFieldType;
       state.customFieldNumberType = initialState.customFieldNumberType;
       state.decimals = initialState.decimals;
@@ -136,6 +151,8 @@ export const {
   setSecondNumericColumn,
   setLabelsList,
   setSelectionsList,
+  toggleCustomColumnVisibility,
+  setHiddenCustomColumnIds,
   resetCustomFieldValues,
 } = taskListCustomColumnsSlice.actions;
 export default taskListCustomColumnsSlice.reducer;

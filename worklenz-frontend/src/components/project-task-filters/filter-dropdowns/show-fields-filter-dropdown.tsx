@@ -16,6 +16,7 @@ import {
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useCustomColumnVisibility } from '@/hooks/useCustomColumnVisibility';
 import ColumnConfigurationModal from './column-configuration-modal';
 
 // Configuration interface for column visibility
@@ -51,7 +52,7 @@ const STANDARD_COLUMN_KEYS = new Set([
 // Default column configuration - this can be customized per project or globally
 const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'KEY', label: 'Key', showInDropdown: true, order: 1, category: 'basic' },
-  { key: 'TASK', label: 'Task', showInDropdown: false, order: 2, category: 'basic' }, // Always visible, not in dropdown
+  { key: 'TASK', label: 'Task', showInDropdown: false, order: 2, category: 'basic' },
   { key: 'DESCRIPTION', label: 'Description', showInDropdown: true, order: 3, category: 'basic' },
   { key: 'PROGRESS', label: 'Progress', showInDropdown: true, order: 4, category: 'basic' },
   { key: 'STATUS', label: 'Status', showInDropdown: true, order: 5, category: 'basic' },
@@ -94,16 +95,8 @@ const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'REPORTER', label: 'Reporter', showInDropdown: true, order: 18, category: 'basic' },
 ];
 
-// Hook to get column configuration - can be extended to fetch from API or localStorage
+// Hook to get column configuration
 const useColumnConfig = (projectId?: string): ColumnConfig[] => {
-  // In the future, this could fetch from:
-  // 1. Project-specific settings from API
-  // 2. User preferences from localStorage
-  // 3. Global settings from configuration
-  // 4. Team-level settings
-
-  // For now, return default configuration
-  // You can extend this to load from localStorage or API
   const storedConfig = localStorage.getItem(`worklenz.column-config.${projectId}`);
 
   if (storedConfig) {
@@ -135,6 +128,7 @@ const ShowFieldsFilterDropdown = () => {
     useColumnConfig(projectId || undefined)
   );
   const saveColumnConfig = useSaveColumnConfig();
+  const { isHidden, toggleVisibility } = useCustomColumnVisibility(); // ← ADDED
 
   // Update config if projectId changes
   React.useEffect(() => {
@@ -143,24 +137,20 @@ const ShowFieldsFilterDropdown = () => {
 
   // Filter columns based on configuration
   const visibilityChangableColumnList = columnList.filter(column => {
-    // Always exclude selector and TASK columns from dropdown
     if (column.key === 'selector' || column.key === 'TASK') {
       return false;
     }
 
-    // Find configuration for this column
     const config = columnConfig.find(c => c.key === column.key);
 
-    // If no config found, show custom columns by default
     if (!config) {
       return column.custom_column;
     }
 
-    // Return based on configuration
     return config.showInDropdown;
   });
 
-  // Dedupe columns by id/key to avoid duplicated entries from repeated fetch merges.
+  // Dedupe columns by id/key
   const uniqueVisibilityColumns = Array.from(
     visibilityChangableColumnList
       .reduce((map, column) => {
@@ -196,6 +186,10 @@ const ShowFieldsFilterDropdown = () => {
     const column = { ...col, is_visible: !col.pinned, pinned: !col.pinned };
 
     if (isCustomColumn(col)) {
+      // Toggle per-user visibility via our hook (persisted to localStorage per user)
+      const id = col.id || col.key || '';
+      toggleVisibility(id); // ← ADDED
+
       if (col.key) {
         dispatch(toggleColumnVisibility(col.key));
       }
@@ -220,7 +214,6 @@ const ShowFieldsFilterDropdown = () => {
       try {
         await dispatch(updateColumnVisibility({ projectId, item: column })).unwrap();
       } catch (_error) {
-        // Roll back optimistic visibility change if persistence fails.
         if (col.key) {
           dispatch(toggleColumnVisibility(col.key));
         }
@@ -241,7 +234,10 @@ const ShowFieldsFilterDropdown = () => {
     type: 'item' as const,
     label: (
       <Space>
-        <Checkbox checked={col.pinned} onChange={e => handleColumnVisibilityChange(col)}>
+        <Checkbox
+          checked={isCustomColumn(col) ? !isHidden(col.id || col.key || '') : col.pinned} // ← MODIFIED
+          onChange={e => handleColumnVisibilityChange(col)}
+        >
           {col.key === 'PHASE' ? project?.phase_label : ''}
           {col.key !== 'PHASE' &&
             (isCustomColumn(col)

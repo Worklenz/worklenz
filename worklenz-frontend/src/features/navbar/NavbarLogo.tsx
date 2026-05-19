@@ -8,34 +8,49 @@ import { RootState } from '@/app/store';
 import { LOGO_LIGHT, LOGO_DARK, XMAS_LOGO_LIGHT, XMAS_LOGO_DARK } from '@/shared/constants';
 
 const NavbarLogo = () => {
-  const cachedLogo = useMemo(() => localStorage.getItem('organizationLogo'), []);
   const { t } = useTranslation('navbar');
   const themeMode = useSelector((state: RootState) => state.themeReducer.mode);
   const organization = useSelector((state: RootState) => state.adminCenterReducer.organization);
+  const loadingOrganization = useSelector(
+    (state: RootState) => state.adminCenterReducer.loadingOrganization
+  );
 
   const isChristmasSeason = useMemo(() => {
     const now = new Date();
     return now.getMonth() === 11; // December
   }, []);
 
-const logoSrc = useMemo(() => {
-  // If API logo is available, use it and save to localStorage
-  if (organization?.logo_url) {
-    localStorage.setItem('organizationLogo', organization.logo_url);
-    return organization.logo_url;
-  }
-  // Use cached logo if API logo not loaded
-  if (cachedLogo) return cachedLogo;
+  const defaultLogo = useMemo(
+    () =>
+      themeMode === 'dark'
+        ? isChristmasSeason
+          ? XMAS_LOGO_DARK
+          : LOGO_DARK
+        : isChristmasSeason
+          ? XMAS_LOGO_LIGHT
+          : LOGO_LIGHT,
+    [themeMode, isChristmasSeason]
+  );
 
-  // Fallback to default Worklenz logo (with Xmas variants)
-  return themeMode === 'dark'
-    ? isChristmasSeason
-      ? XMAS_LOGO_DARK
-      : LOGO_DARK
-    : isChristmasSeason
-      ? XMAS_LOGO_LIGHT
-      : LOGO_LIGHT;
-}, [organization?.logo_url, cachedLogo, themeMode, isChristmasSeason]);
+  const logoSrc = useMemo(() => {
+    // If API logo is available, save to localStorage and use it
+    if (organization?.logo_url) {
+      localStorage.setItem('organizationLogo', organization.logo_url);
+      return organization.logo_url;
+    }
+
+    // Organization has loaded but has no logo — clear cache and use default
+    if (organization !== null && !loadingOrganization) {
+      localStorage.removeItem('organizationLogo');
+      return defaultLogo;
+    }
+
+    // Organization not yet loaded — use cached logo to avoid flash
+    const cachedLogo = localStorage.getItem('organizationLogo');
+    if (cachedLogo) return cachedLogo;
+
+    return defaultLogo;
+  }, [organization, loadingOrganization, defaultLogo]);
 
   const logoHeight = useMemo(() => {
     // For custom logos, maintain aspect ratio but constrain to navbar height

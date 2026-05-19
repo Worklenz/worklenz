@@ -57,6 +57,7 @@ import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { message } from '@/shared/antd-imports';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { SeatLimitModal } from '@/components/common/seat-limit-modal/SeatLimitModal';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
@@ -87,6 +88,13 @@ const TeamMembersSettings = () => {
     field: 'name',
     order: 'asc',
   });
+  const [seatLimitModalOpen, setSeatLimitModalOpen] = useState(false);
+  const [seatLimitData, setSeatLimitData] = useState<{
+    current_members: number;
+    plan_seat_limit: number;
+    business_plan_limit: number;
+    is_appsumo_user: boolean;
+  } | null>(null);
 
   const totalUsedSeats = Math.max(billingInfo?.total_used ?? 0, model.total ?? 0);
   const totalAvailableSeats = billingInfo?.total_seats;
@@ -127,6 +135,14 @@ const TeamMembersSettings = () => {
         record.active as boolean,
         record.email || ''
       );
+
+      // When re-activating a member, the backend may reject due to seat limit
+      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(res.body);
+        setSeatLimitModalOpen(true);
+        return;
+      }
+
       if (res.done) {
         await getTeamMembers();
         
@@ -178,6 +194,24 @@ const TeamMembersSettings = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSeatLimitUpgrade = () => {
+    setSeatLimitModalOpen(false);
+    setSeatLimitData(null);
+    dispatch(toggleUpgradeModal());
+  };
+
+  const handleSeatLimitDeactivate = () => {
+    setSeatLimitModalOpen(false);
+    setSeatLimitData(null);
+    // Scroll to the members table so the user can deactivate someone
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSeatLimitModalClose = () => {
+    setSeatLimitModalOpen(false);
+    setSeatLimitData(null);
   };
 
   const handleDeleteMember = async (record: ITeamMemberViewModel) => {
@@ -862,6 +896,19 @@ const TeamMembersSettings = () => {
           initialRoleName={selectedMemberRole || undefined}
         />,
         document.body
+      )}
+
+      {seatLimitData && (
+        <SeatLimitModal
+          open={seatLimitModalOpen}
+          onClose={handleSeatLimitModalClose}
+          currentMembers={seatLimitData.current_members}
+          planLimit={seatLimitData.plan_seat_limit}
+          businessLimit={seatLimitData.business_plan_limit}
+          isAppSumoUser={seatLimitData.is_appsumo_user}
+          onUpgrade={handleSeatLimitUpgrade}
+          onDeactivate={handleSeatLimitDeactivate}
+        />
       )}
     </Flex>
   );

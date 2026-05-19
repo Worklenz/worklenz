@@ -187,6 +187,11 @@ const adminCenterSlice = createSlice({
       state.holidays = [];
       state.holidaysDateRange = null;
     },
+    setOrganizationLogo: (state, action: { payload: string | null }) => {
+      if (state.organization) {
+        state.organization.logo_url = action.payload ?? undefined;
+      }
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchBillingInfo.pending, (state, action) => {
@@ -298,7 +303,13 @@ const adminCenterSlice = createSlice({
   },
 });
 
-export const { toggleRedeemCodeDrawer, toggleUpgradeModal, openUpgradeModal, clearHolidaysCache } =
+export const {
+  toggleRedeemCodeDrawer,
+  toggleUpgradeModal,
+  openUpgradeModal,
+  clearHolidaysCache,
+  setOrganizationLogo,
+} =
   adminCenterSlice.actions;
 
 // Selectors for optimized access

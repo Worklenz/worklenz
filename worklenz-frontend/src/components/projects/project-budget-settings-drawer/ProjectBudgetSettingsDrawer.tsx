@@ -261,6 +261,7 @@ const ProjectBudgetSettingsDrawer: React.FC<ProjectBudgetSettingsDrawerProps> = 
                 })}
               </Text>
               <Text>
+                {' '}
                 {financeProject?.calculation_method === 'man_days'
                   ? t('manDaysText', {
                       defaultValue: 'Man Days ({hours}h/day)',

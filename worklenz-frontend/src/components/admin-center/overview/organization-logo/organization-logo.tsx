@@ -22,7 +22,7 @@ import logger from '@/utils/errorLogger';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 
 interface OrganizationLogoProps {
@@ -157,7 +157,9 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
       const res = await adminCenterApiService.uploadOrganizationLogo(base64 as string);
 
       if (res.done) {
-        setPreviewUrl(res.body?.logo_url || null);
+        const newLogoUrl = res.body?.logo_url || null;
+        setPreviewUrl(newLogoUrl);
+        dispatch(setOrganizationLogo(newLogoUrl));
         refetch();
       } else {
         logger.error('Error uploading logo', res.message);
@@ -188,6 +190,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
       if (res.done) {
         setPreviewUrl(null);
+        dispatch(setOrganizationLogo(null));
         refetch();
       } else {
         logger.error('Error deleting logo', res.message);

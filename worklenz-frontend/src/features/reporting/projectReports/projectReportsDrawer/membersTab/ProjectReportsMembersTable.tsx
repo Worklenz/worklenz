@@ -1,9 +1,8 @@
 import { Progress, Table, TableColumnsType } from '@/shared/antd-imports';
-import React from 'react';
+import { useState } from 'react';
 import CustomTableTitle from '../../../../../components/CustomTableTitle';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
-  setSelectedMember,
   toggleProjectReportsMembersTaskDrawer,
 } from '../../project-reports-slice';
 import { useTranslation } from 'react-i18next';
@@ -21,10 +20,13 @@ const ProjectReportsMembersTable = ({ membersData, loading }: ProjectReportsMemb
   const { t } = useTranslation('reporting-projects-drawer');
 
   const dispatch = useAppDispatch();
+  
+  // Use local state instead of Redux to avoid suspense fallback
+  const [selectedMember, setSelectedMember] = useState<IRPTOverviewProjectMember | null>(null);
 
   // function to handle task drawer open
   const handleProjectReportsMembersTaskDrawer = (record: IRPTOverviewProjectMember) => {
-    dispatch(setSelectedMember(record));
+    setSelectedMember(record);
     dispatch(toggleProjectReportsMembersTaskDrawer());
   };
 
@@ -111,7 +113,7 @@ const ProjectReportsMembersTable = ({ membersData, loading }: ProjectReportsMemb
         }}
       />
       {createPortal(
-        <ProjectReportsMembersTaskDrawer />,
+        <ProjectReportsMembersTaskDrawer selectedMember={selectedMember} />,
         document.body,
         'project-reports-members-task-drawer'
       )}
