@@ -27,8 +27,12 @@
   "listView": "Visualização em Lista",
   "groupView": "Visualização em Grupo",
   "groupBy": {
+    "priority": "Prioridade",
     "category": "Categoria",
-    "client": "Cliente"
+    "client": "Cliente",
+    "priorities": "prioridades",
+    "categories": "categorias",
+    "clients": "clientes"
   },
   "noPermission": "Você não tem permissão para realizar esta ação"
 }

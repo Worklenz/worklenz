@@ -93,12 +93,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   return (
-    <Space onClick={e => e.stopPropagation()}>
+    <Space size={4} onClick={e => e.stopPropagation()}>
       <Tooltip title={t('setting')}>
         <Button
           className="action-button"
+          type="text"
           size="small"
           onClick={handleSettingsClick}
+          style={{ width: 28, minWidth: 28, paddingInline: 0 }}
           icon={<SettingOutlined />}
         />
       </Tooltip>
@@ -115,7 +117,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         >
           <Button
             className="action-button"
+            type="text"
             size="small"
+            style={{ width: 28, minWidth: 28, paddingInline: 0 }}
             icon={<InboxOutlined />}
             disabled={!isEditable}
           />

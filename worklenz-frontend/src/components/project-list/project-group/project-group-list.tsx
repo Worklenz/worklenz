@@ -167,7 +167,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: '',
         key: 'favorite',
-        width: 50,
+        width: 56,
+        align: 'center' as const,
         render: (_: any, record: any) => (
           <ProjectRateCell key={record.id} t={t} record={record} />
         ),
@@ -177,6 +178,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         title: t('name', { defaultValue: 'Name' }),
         dataIndex: 'name',
         key: 'name',
+        width: 280,
         render: (text: string, record: any) => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
@@ -190,7 +192,19 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               }}
             />
             <Tooltip title={text}>
-              <span style={{ fontWeight: 500, cursor: 'pointer' }}>{text}</span>
+              <span
+                style={{
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'block',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {text}
+              </span>
             </Tooltip>
           </div>
         ),
@@ -268,7 +282,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: '',
         key: 'actions',
-        width: 80,
+        width: 76,
+        align: 'center' as const,
         render: (_: any, record: any) => (
           <Space size="small" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <Tooltip title={t('setting', { defaultValue: 'Settings' })}>
