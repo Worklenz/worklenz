@@ -99,11 +99,10 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;
 
-    // AppSumo LTD users with < 5 redeemed codes should never have Business trial access
+    // AppSumo LTD users should never have Business trial access
     if (
       data &&
       data.is_ltd === true &&
-      (data.redeemed_codes_count ?? 0) < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT &&
       data.active_plan_trial === "BUSINESS_LARGE"
     ) {
       data.active_plan_trial = null;
@@ -121,9 +120,9 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
       }
     }
 
-    // Check if AppSumo LTD user with 5+ redeemed codes should get business plan access
-    if (data && data.redeemed_codes_count >= APPSUMO_BUSINESS_UNLOCK_CODE_COUNT && data.is_ltd) {
-      data.appsumo_business_eligible = true;
+    // Enforce strict LTD behavior: no business-plan eligibility via redeemed AppSumo codes
+    if (data && data.is_ltd) {
+      data.appsumo_business_eligible = false;
     }
 
     // If this is a business plan, check if AppSumo user gets special limit

@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Bëj upgrade tani",
   "taskHeader": {
     "taskNamePlaceholder": "Shkruani detyrën tuaj",
     "deleteTask": "Fshi detyrën",
@@ -73,7 +74,9 @@
     "attachments": {
       "title": "Bashkëngjitjet",
       "chooseOrDropFileToUpload": "Zgjidh ose lësho skedarin për ta ngarkuar",
-      "uploading": "Duke ngarkuar..."
+      "uploading": "Duke ngarkuar...",
+      "maxFileSizeText": "Madhësia maksimale e skedarit: {{maxSize}}MB",
+      "upgradeLinkText": "Të duhen ngarkime më të mëdha? Bëj upgrade"
     },
     "comments": {
       "title": "Komentet",
@@ -91,6 +94,11 @@
       "maxFilesError": "Mund të ngarkoni maksimumi {count} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "fileTooLargeToSend": "Skedarët mbi 25MB në komente kërkojnë planin Business. Hiqeni këtë skedar ose bëni upgrade për të vazhduar.",
+      "historyLockedBoundary": "Komentet më të vjetra se 90 ditë janë të bllokuara",
+      "historyLockedTitle": "Historiku i komenteve i bllokuar",
+      "historyLockedBody": "Komentet më të vjetra se 90 ditë janë të disponueshme në planin Business.",
+      "viewFullComments": "Shiko të gjitha komentet",
       "createdBy": "Krijuar {{time}} nga {{user}}",
       "updatedTime": "Përditësuar {{time}}"
     },
@@ -103,6 +111,10 @@
     "totalLogged": "Totali i regjistruar",
     "exportToExcel": "Eksporto në Excel",
     "noTimeLogsFound": "Nuk u gjetën regjistrime kohe",
+    "historyLockedBoundary": "Regjistrat e kohës më të vjetër se 90 ditë janë të bllokuar",
+    "historyLockedTitle": "Historiku i regjistrit të kohës i bllokuar",
+    "historyLockedBody": "Regjistrat e kohës më të vjetër se 90 ditë janë të disponueshëm në planin Business.",
+    "viewFullTimeLog": "Shiko regjistrin e plotë",
     "timeLogForm": {
       "inputMode": "Mënyra e hyrjes",
       "durationMode": "Kohëzgjatja",
@@ -134,7 +146,11 @@
     "remove": "HIQE",
     "none": "Asnjë",
     "weight": "Pesha",
-    "createdTask": "krijoi detyrën."
+    "createdTask": "krijoi detyrën.",
+    "historyLockedBoundary": "Aktiviteti më i vjetër se 90 ditë është i bllokuar",
+    "historyLockedTitle": "Historiku i aktivitetit i bllokuar",
+    "historyLockedBody": "Aktivitetet e detyrës më të vjetra se 90 ditë janë të disponueshme në planin Business.",
+    "viewFullActivity": "Shiko aktivitetin e plotë"
   },
   "taskProgress": {
     "markAsDoneTitle": "Shëno detyrën si të përfunduar?",

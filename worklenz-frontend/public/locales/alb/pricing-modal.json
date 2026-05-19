@@ -172,6 +172,7 @@
   },
   "errors": {
     "loadingData": "Gabim në ngarkimin e të dhënave të çmimeve",
+    "loadingPlansRetry": "Ngarkimi i planeve të çmimeve dështoi. Ju lutemi rifreskoni faqen.",
     "calculating": "Duke llogaritur çmimet...",
     "selectedPlan": "Plani i zgjedhur: {{plan}}"
   },

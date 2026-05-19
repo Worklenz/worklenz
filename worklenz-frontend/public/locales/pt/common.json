@@ -94,5 +94,27 @@
     "rejectButton": "Recusar",
     "accept": "Aceitar cookies de análise",
     "reject": "Recusar cookies de análise"
-  }
+  },
+  "license-expired-trial-title": "Your Trial Has Ended",
+  "license-expired-trial-subtitle": "Upgrade to keep your projects running and your team in sync.",
+  "license-expired-custom-title": "Custom Plan Expired",
+  "license-expired-custom-subtitle": "Your custom plan has expired. Please contact support or renew to continue.",
+  "license-expired-trial-features": "Upgrade now to unlock:",
+  "license-expired-custom-features": "Contact support to continue with:",
+  "license-expired-trial-upgrade": "Upgrade Now",
+  "license-expired-custom-upgrade": "Contact Support",
+  "license-expired-contacting-support": "Contacting Support...",
+  "license-expired-message-sent": "Message Sent ✓",
+  "projectFinanceTitle": "Finanças do Projeto",
+  "addCustomColumn": "Adicionar uma coluna personalizada",
+  "customFieldLimitReached": "Limite de campos personalizados atingido. Faça upgrade para adicionar mais.",
+  "projectFinanceUpgradeBody": "Acompanhe orçamentos, custos e tempo faturável em seus projetos. Requer o plano Business.",
+  "seeSpends": "Ver gastos",
+  "closePopover": "Fechar popover",
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing"
 }

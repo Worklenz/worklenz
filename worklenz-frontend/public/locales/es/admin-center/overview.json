@@ -93,5 +93,17 @@
   "availableOnPaidPlans": "Disponible en planes de pago",
   "logoAltText": "Logo de la organización",
   "logoSupportedFormats": "PNG, JPG, WEBP",
-  "organizationProfile": "Perfil de la Organización"
+  "organizationProfile": "Perfil de la Organización",
+  "customLogoUpgradePopoverTitle": "Logo de Organización Personalizado",
+  "customLogoUpgradePopoverBody": "Sube tu logo para reemplazar la marca Worklenz en toda la aplicación y en todos los correos enviados a tu equipo.",
+  "customLogoUpgradePopoverCta": "Mejorar Ahora",
+  "customLogoUpgradeModalHeadline": "Haz Worklenz tuyo",
+  "customLogoUpgradeModalSubCopy": "Actualiza a Business para subir el logo de tu organización. Tu logo reemplazará el logo de Worklenz en toda la aplicación y en todos los correos del sistema enviados a tu equipo y clientes.",
+  "customLogoUpgradeModalBenefitApp": "Logo personalizado en toda la aplicación",
+  "customLogoUpgradeModalBenefitEmails": "Correos con marca para equipo y clientes",
+  "customLogoUpgradeModalBenefitProfessional": "Aspecto profesional para tu organización",
+  "emailAddress": "Email Address",
+  "enterOrganizationName": "Enter organization name",
+  "ownerSuffix": " (Owner)",
+  "closePopover": "Cerrar ventana emergente"
 }

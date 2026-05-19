@@ -740,8 +740,18 @@ export default class AdminCenterController extends WorklenzControllerBase {
       req.user?.team_id ?? ""
     );
 
-    data.billing_info.total_used = Math.max(teamMemberData?.user_count ?? 0, 0);
-    data.billing_info.total_seats = subscriptionData.quantity;
+    const adjustedUsedCount = Number(teamMemberData?.user_count ?? 0);
+    const freeSeatCount = Number(teamMemberData?.free_count ?? 0);
+    const actualActiveMemberCount = adjustedUsedCount + freeSeatCount;
+
+    // total_used should reflect the actual active members shown in team settings.
+    data.billing_info.total_used = Math.max(actualActiveMemberCount, 0);
+    const isLtdUser = data.billing_info?.is_ltd_user === true;
+    const ltdSeatLimit = Number(subscriptionData?.ltd_users ?? 0);
+
+    data.billing_info.total_seats = isLtdUser
+      ? Math.max(ltdSeatLimit, 0)
+      : (subscriptionData?.quantity ?? null);
     data.billing_info.redeemed_codes_count = subscriptionData?.redeemed_codes_count ?? 0;
     data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
 

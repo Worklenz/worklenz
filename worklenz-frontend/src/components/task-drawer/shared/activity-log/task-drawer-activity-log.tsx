@@ -6,6 +6,8 @@ import {
   Tag,
   Tooltip,
   Skeleton,
+  Button,
+  Popover,
 } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,13 +24,21 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import logger from '@/utils/errorLogger';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 const TaskDrawerActivityLog = () => {
+  const dispatch = useAppDispatch();
   const [activityLogs, setActivityLogs] = useState<IActivityLogsResponse>({});
   const [loading, setLoading] = useState<boolean>(false);
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
   const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
   const { t } = useTranslation('task-drawer/task-drawer');
+  const currentSession = useAuthService().getCurrentSession();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
 
   useEffect(() => {
     fetchActivityLogs();
@@ -199,6 +209,16 @@ const TaskDrawerActivityLog = () => {
     !loading && fetchActivityLogs();
   }, []);
 
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const allLogs = activityLogs.logs || [];
+  const visibleLogs = hasBusinessAccess
+    ? allLogs
+    : allLogs.filter(log => {
+        if (!log.created_at) return true;
+        return new Date(log.created_at).getTime() >= ninetyDaysAgo;
+      });
+  const lockedCount = hasBusinessAccess ? 0 : allLogs.length - visibleLogs.length;
+
   return (
     <ConfigProvider
       theme={{
@@ -208,8 +228,50 @@ const TaskDrawerActivityLog = () => {
       }}
     >
       <Skeleton active loading={loading}>
+        {lockedCount > 0 && (
+          <Flex vertical gap={8} style={{ marginTop: 8, marginBottom: 8 }}>
+            <Typography.Text type="secondary">
+              {t('taskActivityLogTab.historyLockedBoundary', {
+                defaultValue: 'Activity history beyond 90 days is locked',
+              })}
+            </Typography.Text>
+            <Popover
+              trigger="click"
+              open={isHistoryPopoverOpen}
+              onOpenChange={setIsHistoryPopoverOpen}
+              title={t('taskActivityLogTab.historyLockedTitle', {
+                defaultValue: 'Activity History Locked',
+              })}
+              content={
+                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                  <Typography.Text>
+                    {t('taskActivityLogTab.historyLockedBody', {
+                      defaultValue:
+                        'Task activity beyond 90 days is available on the Business plan.',
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsHistoryPopoverOpen(false);
+                      dispatch(toggleUpgradeModal());
+                    }}
+                  >
+                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                  </Button>
+                </Flex>
+              }
+            >
+              <Button size="small">
+                {t('taskActivityLogTab.viewFullActivity', {
+                  defaultValue: 'View Full Activity',
+                })}
+              </Button>
+            </Popover>
+          </Flex>
+        )}
         <Timeline style={{ marginBlockStart: 24 }}>
-          {activityLogs.logs?.map((activity, index) => (
+          {visibleLogs.map((activity, index) => (
             <Timeline.Item key={index}>
               <Flex gap={8} align="center">
                 <SingleAvatar

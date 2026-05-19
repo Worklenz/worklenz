@@ -4,7 +4,6 @@ import { memo, useMemo } from 'react';
 
 import Navbar from '@/features/navbar/navbar';
 // import BusinessPlanAnnouncement from '@/components/business-plan-announcement/BusinessPlanAnnouncement';
-import { BusinessPlanTrialAlert } from '@/components/BusinessPlanTrialAlert/BusinessPlanTrialAlert';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
@@ -62,7 +61,6 @@ const MainLayout = memo(() => {
       <Layout className="min-h-screen">
         {/* Trial expiration alert banner */}
         <TrialExpirationAlert />
-        <BusinessPlanTrialAlert />
         {/* <BusinessPlanAnnouncement /> */}
 
         <Layout.Header

@@ -7,7 +7,7 @@ import {
   Tooltip,
   Button,
   Popconfirm,
-  Alert,
+  Popover,
 } from '@/shared/antd-imports';
 import {
   LoadingOutlined,
@@ -19,17 +19,17 @@ import { TFunction } from 'i18next';
 import { getBase64 } from '@/utils/file-utils';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
-import { IBillingAccountInfo, IOrganization } from '@/types/admin-center/admin-center.types';
-import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { IOrganization } from '@/types/admin-center/admin-center.types';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
+import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
+import { useAuthService } from '@/hooks/useAuth';
 
 interface OrganizationLogoProps {
   themeMode: string;
   organization: IOrganization | null;
   t: TFunction;
   refetch: () => void;
-  billingInfo: IBillingAccountInfo | null;
 }
 
 const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
@@ -37,11 +37,12 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   organization,
   t,
   refetch,
-  billingInfo,
 }) => {
   const dispatch = useAppDispatch();
+  const currentSession = useAuthService().getCurrentSession();
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isUpgradePopoverOpen, setIsUpgradePopoverOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(
     null
@@ -49,7 +50,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const [fileSize, setFileSize] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isFreePlan = billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
+  const hasLogoFeatureAccess = hasBusinessFeatureAccess(currentSession);
 
   useEffect(() => {
     if (organization?.logo_url) {
@@ -84,13 +85,10 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (uploading || !event.target.files || event.target.files.length === 0) return;
 
-    // Check if user is on free plan
-    if (isFreePlan) {
+    if (!hasLogoFeatureAccess) {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-      message.warning(t('logoUpgradeToUpload'));
-      dispatch(toggleUpgradeModal());
       return;
     }
 
@@ -182,10 +180,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const handleRemoveLogo = async () => {
     if (deleting || !previewUrl) return;
 
-    // Check if user is on free plan
-    if (isFreePlan) {
-      message.warning(t('logoUpgradeToChangeOrRemove'));
-      dispatch(toggleUpgradeModal());
+    if (!hasLogoFeatureAccess) {
       return;
     }
 
@@ -211,26 +206,45 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
   const triggerFileInput = () => {
     if (uploading) return;
+    fileInputRef.current?.click();
+  };
 
-    // Check if user is on free plan
-    if (isFreePlan) {
-      message.warning(t('logoUpgradeToUpload'));
-      dispatch(toggleUpgradeModal());
+  const handleChangeLogoClick = () => {
+    if (!hasLogoFeatureAccess) {
+      setIsUpgradePopoverOpen(true);
       return;
     }
 
-    fileInputRef.current?.click();
+    triggerFileInput();
   };
+
+  const handleUpgradeNowClick = () => {
+    setIsUpgradePopoverOpen(false);
+    dispatch(openUpgradeModal('customOrganizationLogo'));
+  };
+
+  const changeLogoUpgradePopoverContent = (
+    <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+      <Typography.Text>
+        {t('customLogoUpgradePopoverBody', {
+          defaultValue: t('customLogoUpgradePopoverBody'),
+        })}
+      </Typography.Text>
+      <Button type="primary" onClick={handleUpgradeNowClick}>
+        {t('customLogoUpgradePopoverCta', { defaultValue: t('customLogoUpgradePopoverCta') })}
+      </Button>
+    </Flex>
+  );
 
   const logoPreview = (
     <div
       className="logo-uploader"
-      onClick={triggerFileInput}
+      onClick={hasLogoFeatureAccess ? triggerFileInput : undefined}
       style={{
         width: '100%',
         maxWidth: '240px',
         height: '140px',
-        cursor: uploading ? 'wait' : isFreePlan ? 'not-allowed' : 'pointer',
+        cursor: uploading ? 'wait' : hasLogoFeatureAccess ? 'pointer' : 'not-allowed',
         position: 'relative',
         border: `2px dashed ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`,
         borderRadius: '12px',
@@ -240,16 +254,16 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
         backgroundColor: themeMode === 'dark' ? '#1f1f1f' : '#fafafa',
         transition: 'all 0.3s ease',
         overflow: 'hidden',
-        opacity: isFreePlan ? 0.7 : 1,
+        opacity: hasLogoFeatureAccess ? 1 : 0.7,
       }}
       onMouseEnter={e => {
-        if (!uploading && !previewUrl && !isFreePlan) {
+        if (!uploading && !previewUrl && hasLogoFeatureAccess) {
           e.currentTarget.style.borderColor = themeMode === 'dark' ? '#595959' : '#40a9ff';
           e.currentTarget.style.backgroundColor = themeMode === 'dark' ? '#262626' : '#f0f0f0';
         }
       }}
       onMouseLeave={e => {
-        if (!previewUrl && !isFreePlan) {
+        if (!previewUrl && hasLogoFeatureAccess) {
           e.currentTarget.style.borderColor = themeMode === 'dark' ? '#434343' : '#d9d9d9';
           e.currentTarget.style.backgroundColor = themeMode === 'dark' ? '#1f1f1f' : '#fafafa';
         }
@@ -275,7 +289,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
         </div>
       )}
 
-      {isFreePlan && (
+      {!hasLogoFeatureAccess && (
         <div
           style={{
             position: 'absolute',
@@ -368,14 +382,53 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
             {previewUrl && (
               <Flex gap={8} wrap="wrap">
-                <Button
-                  size="small"
-                  onClick={triggerFileInput}
-                  disabled={uploading || deleting}
-                  type="default"
-                >
-                  {t('changeLogo')}
-                </Button>
+                {!hasLogoFeatureAccess ? (
+                  <Popover
+                    open={isUpgradePopoverOpen}
+                    trigger="click"
+                    placement="bottomLeft"
+                    onOpenChange={setIsUpgradePopoverOpen}
+                    title={
+                      <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                        <Typography.Text strong>
+                          {t('customLogoUpgradePopoverTitle', {
+                            defaultValue: t('customLogoUpgradePopoverTitle'),
+                          })}
+                        </Typography.Text>
+                        <Button
+                          type="text"
+                          size="small"
+                          aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                          onClick={event => {
+                            event.stopPropagation();
+                            setIsUpgradePopoverOpen(false);
+                          }}
+                        >
+                          ×
+                        </Button>
+                      </Flex>
+                    }
+                    content={changeLogoUpgradePopoverContent}
+                  >
+                    <Button
+                      size="small"
+                      onClick={handleChangeLogoClick}
+                      disabled={uploading || deleting}
+                      type="default"
+                    >
+                      {t('changeLogo', { defaultValue: t('changeLogo') })}
+                    </Button>
+                  </Popover>
+                ) : (
+                  <Button
+                    size="small"
+                    onClick={handleChangeLogoClick}
+                    disabled={uploading || deleting}
+                    type="default"
+                  >
+                    {t('changeLogo', { defaultValue: t('changeLogo') })}
+                  </Button>
+                )}
                 <Popconfirm
                   title={t('removeLogo')}
                   description={t('logoDeleteConfirm')}
@@ -396,6 +449,57 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
                 </Popconfirm>
               </Flex>
             )}
+
+            {!previewUrl &&
+              (!hasLogoFeatureAccess ? (
+                <Popover
+                  open={isUpgradePopoverOpen}
+                  trigger="click"
+                  placement="bottomLeft"
+                  onOpenChange={setIsUpgradePopoverOpen}
+                  title={
+                    <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                      <Typography.Text strong>
+                        {t('customLogoUpgradePopoverTitle', {
+                          defaultValue: t('customLogoUpgradePopoverTitle'),
+                        })}
+                      </Typography.Text>
+                      <Button
+                        type="text"
+                        size="small"
+                        aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                        onClick={event => {
+                          event.stopPropagation();
+                          setIsUpgradePopoverOpen(false);
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </Flex>
+                  }
+                  content={changeLogoUpgradePopoverContent}
+                >
+                  <Button
+                    size="small"
+                    onClick={handleChangeLogoClick}
+                    disabled={uploading}
+                    type="default"
+                    style={{ width: 'fit-content' }}
+                  >
+                    {t('changeLogo', { defaultValue: t('changeLogo') })}
+                  </Button>
+                </Popover>
+              ) : (
+                <Button
+                  size="small"
+                  onClick={handleChangeLogoClick}
+                  disabled={uploading}
+                  type="default"
+                  style={{ width: 'fit-content' }}
+                >
+                  {t('changeLogo', { defaultValue: t('changeLogo') })}
+                </Button>
+              ))}
 
             {imageDimensions && fileSize && (
               <div

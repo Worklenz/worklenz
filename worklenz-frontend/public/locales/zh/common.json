@@ -94,5 +94,27 @@
     "rejectButton": "拒绝",
     "accept": "接受分析 Cookie",
     "reject": "拒绝分析 Cookie"
-  }
+  },
+  "license-expired-trial-title": "Your Trial Has Ended",
+  "license-expired-trial-subtitle": "Upgrade to keep your projects running and your team in sync.",
+  "license-expired-custom-title": "Custom Plan Expired",
+  "license-expired-custom-subtitle": "Your custom plan has expired. Please contact support or renew to continue.",
+  "license-expired-trial-features": "Upgrade now to unlock:",
+  "license-expired-custom-features": "Contact support to continue with:",
+  "license-expired-trial-upgrade": "Upgrade Now",
+  "license-expired-custom-upgrade": "Contact Support",
+  "license-expired-contacting-support": "Contacting Support...",
+  "license-expired-message-sent": "Message Sent ✓",
+  "projectFinanceTitle": "项目财务",
+  "addCustomColumn": "添加自定义列",
+  "customFieldLimitReached": "已达到自定义字段上限。升级后可添加更多。",
+  "projectFinanceUpgradeBody": "在项目中跟踪预算、成本和可计费时间。需要 Business 方案。",
+  "seeSpends": "查看支出",
+  "closePopover": "关闭弹出层",
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing"
 }

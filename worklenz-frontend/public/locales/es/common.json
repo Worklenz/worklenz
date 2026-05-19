@@ -77,6 +77,8 @@
   "license-badge-hours": "{{hours}}h restantes",
   "business-plan-upgrade": "Actualizar al plan Business para acceder a esta función",
   "upgrade-plan": "Actualiza tu plan para acceder a esta función",
+  "addCustomColumn": "Agregar una columna personalizada",
+  "customFieldLimitReached": "Se alcanzó el límite de campos personalizados. Actualiza para agregar más.",
   "disconnected": "Desconectado",
   "offline": "Sin conexión",
   "bizPlan": {
@@ -104,5 +106,15 @@
     "rejectButton": "Rechazar",
     "accept": "Aceptar cookies de análisis",
     "reject": "Rechazar cookies de análisis"
-  }
+  },
+  "projectFinanceTitle": "Finanzas del Proyecto",
+  "projectFinanceUpgradeBody": "Controla presupuestos, costos y tiempo facturable en tus proyectos. Requiere el plan Business.",
+  "seeSpends": "Ver gastos",
+  "closePopover": "Cerrar ventana emergente",
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing"
 }
