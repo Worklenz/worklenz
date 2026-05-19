@@ -389,9 +389,20 @@ const ProjectList: React.FC = () => {
   }, [errorMessage, handleRefresh, isLoading, t]);
 
   const paginationShowTotal = useMemo(
-    () => (total: number, range: [number, number]) =>
-      `${range[0]}-${range[1]} of ${total} ${groupBy ? groupBy.toLowerCase() + 's' : 'groups'}`,
-    [groupBy]
+    () => (total: number, range: [number, number]) => {
+      let groupedLabel = t('groups', { defaultValue: 'groups' });
+
+      if (groupBy === ProjectGroupBy.CATEGORY) {
+        groupedLabel = t('groupBy.categories', { defaultValue: 'categories' });
+      } else if (groupBy === ProjectGroupBy.PRIORITY) {
+        groupedLabel = t('groupBy.priorities', { defaultValue: 'priorities' });
+      } else if (groupBy === ProjectGroupBy.CLIENT) {
+        groupedLabel = t('groupBy.clients', { defaultValue: 'clients' });
+      }
+
+      return `${range[0]}-${range[1]} of ${total} ${groupedLabel}`;
+    },
+    [groupBy, t]
   );
 
   const handleTableChange = useCallback(
