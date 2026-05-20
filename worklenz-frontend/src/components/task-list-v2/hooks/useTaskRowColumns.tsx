@@ -57,6 +57,7 @@ interface UseTaskRowColumnsProps {
   handleTaskNameSave: () => void;
   handleTaskNameEdit: () => void;
   handleTaskNameChangeLive: (name: string) => void;
+  handleCancelEdit: () => void;
 
   // Drag and drop
   attributes: any;
@@ -89,6 +90,7 @@ export const useTaskRowColumns = ({
   handleTaskNameSave,
   handleTaskNameEdit,
   handleTaskNameChangeLive,
+  handleCancelEdit,
   attributes,
   listeners,
   depth = 0,
@@ -163,12 +165,11 @@ export const useTaskRowColumns = ({
                 taskName={taskName}
                 onEditTaskName={setEditTaskName}
                 onTaskNameChange={(name: string) => {
-                  // Update local state immediately for responsive typing
                   setTaskName(name);
-                  // Sync to Redux (task-management + drawer) in real time
                   handleTaskNameChangeLive(name);
                 }}
                 onTaskNameSave={handleTaskNameSave}
+                onCancelEdit={handleCancelEdit}
                 depth={depth}
               />
             );

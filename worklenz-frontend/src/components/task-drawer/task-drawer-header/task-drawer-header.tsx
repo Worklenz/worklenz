@@ -204,6 +204,32 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
               value={taskName}
               onChange={e => onTaskNameChange(e)}
               onBlur={handleInputBlur}
+              onKeyDown={e => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  // Revert to the name captured when editing started
+                  const original = originalNameRef.current;
+                  setTaskName(original);
+                  if (selectedTaskId) {
+                    dispatch(updateSelectedTaskName({ id: selectedTaskId, name: original }));
+                    const currentTask = store.getState().taskManagement.entities[selectedTaskId];
+                    if (currentTask) {
+                      dispatch(
+                        updateTask({
+                          ...currentTask,
+                          title: original,
+                          updatedAt: new Date().toISOString(),
+                          updated_at: new Date().toISOString(),
+                        } as Task)
+                      );
+                    }
+                  }
+                  setIsEditing(false);
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleInputBlur();
+                }
+              }}
               placeholder={t('taskHeader.taskNamePlaceholder')}
               className="task-name-input"
               style={{

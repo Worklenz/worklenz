@@ -71,6 +71,29 @@ export const useTaskRowActions = ({
     setEditTaskName(true);
   }, [setEditTaskName, task.is_parent_container, task.title, task.name, originalTaskNameRef]);
 
+  // Handle Escape — revert to the name captured when editing started, then close
+  const handleCancelEdit = useCallback(() => {
+    const original = originalTaskNameRef.current ?? (task.title || task.name || '');
+    // Revert task-management slice back to the original name
+    const currentTask = store.getState().taskManagement.entities[task.id];
+    if (currentTask) {
+      dispatch(
+        updateTask({
+          ...currentTask,
+          title: original,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Task)
+      );
+    }
+    // Revert drawer slice if this task is open
+    const drawerState = store.getState().taskDrawerReducer;
+    if (drawerState.selectedTaskId === task.id) {
+      dispatch(updateSelectedTaskName({ id: task.id, name: original }));
+    }
+    setEditTaskName(false);
+  }, [dispatch, task.id, task.title, task.name, originalTaskNameRef, setEditTaskName]);
+
   // Handle live task name change — updates Redux immediately so the drawer reflects it in real time
   const handleTaskNameChangeLive = useCallback(
     (name: string) => {
@@ -101,5 +124,6 @@ export const useTaskRowActions = ({
     handleTaskNameSave,
     handleTaskNameEdit,
     handleTaskNameChangeLive,
+    handleCancelEdit,
   };
 };
