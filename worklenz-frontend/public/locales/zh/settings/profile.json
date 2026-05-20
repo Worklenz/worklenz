@@ -7,6 +7,7 @@
   "emailLabel": "电子邮件",
   "emailRequiredError": "电子邮件是必需的",
   "saveChanges": "保存更改",
+  "save": "保存",
   "profileJoinedText": "加入于 {{date}}",
   "profileLastUpdatedText": "最后更新于 {{date}}",
   "avatarTooltip": "点击上传头像",
