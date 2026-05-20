@@ -81,6 +81,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       task: safeTask,
       taskId,
       taskName,
+      editTaskName,
       setEditTaskName,
       originalTaskNameRef,
     });

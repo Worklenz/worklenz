@@ -1,4 +1,4 @@
-import { useCallback, RefObject } from 'react';
+import { useCallback, RefObject, useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -7,11 +7,13 @@ import { Task } from '@/types/task-management.types';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { updateSelectedTaskName } from '@/features/task-drawer/task-drawer.slice';
 import { store } from '@/app/store';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 interface UseTaskRowActionsProps {
   task: Task;
   taskId: string;
   taskName: string;
+  editTaskName: boolean;
   setEditTaskName: (editing: boolean) => void;
   originalTaskNameRef: RefObject<string>;
 }
@@ -20,11 +22,35 @@ export const useTaskRowActions = ({
   task,
   taskId,
   taskName,
+  editTaskName,
   setEditTaskName,
   originalTaskNameRef,
 }: UseTaskRowActionsProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+
+  // When the drawer closes while this row is in active inline edit, flush the save
+  // so the name change is persisted rather than silently discarded.
+  useEffect(() => {
+    if (!editTaskName || showTaskDrawer) return;
+    // Drawer just closed — emit save if the name actually changed
+    if (
+      taskName?.trim() !== '' &&
+      connected &&
+      taskName.trim() !== (originalTaskNameRef.current ?? '').trim()
+    ) {
+      socket?.emit(
+        SocketEvents.TASK_NAME_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          name: taskName.trim(),
+          parent_task: task.parent_task_id,
+        })
+      );
+    }
+    setEditTaskName(false);
+  }, [showTaskDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback(
