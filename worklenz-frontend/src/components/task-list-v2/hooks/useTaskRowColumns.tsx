@@ -56,6 +56,7 @@ interface UseTaskRowColumnsProps {
   handleCheckboxChange: (e: any) => void;
   handleTaskNameSave: () => void;
   handleTaskNameEdit: () => void;
+  handleTaskNameChangeLive: (name: string) => void;
 
   // Drag and drop
   attributes: any;
@@ -87,6 +88,7 @@ export const useTaskRowColumns = ({
   handleCheckboxChange,
   handleTaskNameSave,
   handleTaskNameEdit,
+  handleTaskNameChangeLive,
   attributes,
   listeners,
   depth = 0,
@@ -160,7 +162,12 @@ export const useTaskRowColumns = ({
                 editTaskName={editTaskName}
                 taskName={taskName}
                 onEditTaskName={setEditTaskName}
-                onTaskNameChange={setTaskName}
+                onTaskNameChange={(name: string) => {
+                  // Update local state immediately for responsive typing
+                  setTaskName(name);
+                  // Sync to Redux (task-management + drawer) in real time
+                  handleTaskNameChangeLive(name);
+                }}
                 onTaskNameSave={handleTaskNameSave}
                 depth={depth}
               />

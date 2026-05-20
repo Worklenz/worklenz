@@ -26,12 +26,16 @@ import {
   navigateToPreviousTask,
   fetchTask,
   syncNavigationIndex,
+  updateSelectedTaskName,
 } from '@/features/task-drawer/task-drawer.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
 import { deleteTask } from '@/features/tasks/tasks.slice';
-import { deleteTask as deleteTaskFromManagement } from '@/features/task-management/task-management.slice';
+import {
+  deleteTask as deleteTaskFromManagement,
+  updateTask,
+} from '@/features/task-management/task-management.slice';
 import { deselectTask } from '@/features/task-management/selection.slice';
 import { deleteBoardTask } from '@/features/board/board-slice';
 import {
@@ -42,6 +46,8 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
 import TaskDrawerNavigation from '../task-drawer-navigation/task-drawer-navigation';
 import logger from '@/utils/errorLogger';
+import { store } from '@/app/store';
+import { Task } from '@/types/task-management.types';
 
 type TaskDrawerHeaderProps = {
   inputRef: React.RefObject<InputRef | null>;
@@ -72,12 +78,35 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const isSubTask =
     taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
 
+  // Only sync from Redux when NOT actively editing, to avoid overwriting what the user is typing
   useEffect(() => {
-    setTaskName(taskFormViewModel?.task?.name ?? '');
-  }, [taskFormViewModel?.task?.name]);
+    if (!isEditing) {
+      setTaskName(taskFormViewModel?.task?.name ?? '');
+    }
+  }, [taskFormViewModel?.task?.name, isEditing]);
 
   const onTaskNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setTaskName(e.currentTarget.value);
+    const newName = e.currentTarget.value;
+    setTaskName(newName);
+
+    // Live-sync to the task list row via Redux (no socket round-trip needed)
+    if (selectedTaskId) {
+      // Update drawer slice so the name is consistent
+      dispatch(updateSelectedTaskName({ id: selectedTaskId, name: newName }));
+
+      // Update task-management slice so the inline row reflects the change immediately
+      const currentTask = store.getState().taskManagement.entities[selectedTaskId];
+      if (currentTask) {
+        dispatch(
+          updateTask({
+            ...currentTask,
+            title: newName,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as Task)
+        );
+      }
+    }
   };
 
   const handleCopyTaskLink = async () => {

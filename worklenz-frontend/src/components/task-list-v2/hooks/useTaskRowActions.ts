@@ -4,6 +4,9 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { toggleTaskSelection } from '@/features/task-management/selection.slice';
 import { Task } from '@/types/task-management.types';
+import { updateTask } from '@/features/task-management/task-management.slice';
+import { updateSelectedTaskName } from '@/features/task-drawer/task-drawer.slice';
+import { store } from '@/app/store';
 
 interface UseTaskRowActionsProps {
   task: Task;
@@ -67,15 +70,35 @@ export const useTaskRowActions = ({
     setEditTaskName(true);
   }, [setEditTaskName, task.is_parent_container]);
 
-  // Handle task name change
-  const handleTaskNameChange = useCallback((name: string) => {
-    // This will be handled by the parent component's state setter
-  }, []);
+  // Handle live task name change — updates Redux immediately so the drawer reflects it in real time
+  const handleTaskNameChangeLive = useCallback(
+    (name: string) => {
+      // Update task-management slice so the row display stays in sync
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(
+          updateTask({
+            ...currentTask,
+            title: name,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as Task)
+        );
+      }
+
+      // Update drawer slice so the open drawer reflects the change immediately
+      const drawerState = store.getState().taskDrawerReducer;
+      if (drawerState.selectedTaskId === task.id) {
+        dispatch(updateSelectedTaskName({ id: task.id, name }));
+      }
+    },
+    [dispatch, task.id]
+  );
 
   return {
     handleCheckboxChange,
     handleTaskNameSave,
     handleTaskNameEdit,
-    handleTaskNameChange,
+    handleTaskNameChangeLive,
   };
 };

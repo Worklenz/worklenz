@@ -76,7 +76,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       labelsAdapter,
     } = useTaskRowState(safeTask);
 
-    const { handleCheckboxChange, handleTaskNameSave, handleTaskNameEdit } = useTaskRowActions({
+    const { handleCheckboxChange, handleTaskNameSave, handleTaskNameEdit, handleTaskNameChangeLive } = useTaskRowActions({
       task: safeTask,
       taskId,
       taskName,
@@ -118,6 +118,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       handleCheckboxChange,
       handleTaskNameSave,
       handleTaskNameEdit,
+      handleTaskNameChangeLive,
       attributes,
       listeners,
       depth,

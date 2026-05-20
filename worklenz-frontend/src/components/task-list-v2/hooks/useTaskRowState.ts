@@ -12,10 +12,13 @@ export const useTaskRowState = (task: Task) => {
   const [editTaskName, setEditTaskName] = useState(false);
   const [taskName, setTaskName] = useState(task.title || task.name || '');
 
-  // Update local taskName state when task name changes
+  // Update local taskName state when task name changes from Redux,
+  // but only when NOT actively editing to avoid overwriting what the user is typing
   useEffect(() => {
-    setTaskName(task.title || task.name || '');
-  }, [task.title, task.name]);
+    if (!editTaskName) {
+      setTaskName(task.title || task.name || '');
+    }
+  }, [task.title, task.name, editTaskName]);
 
   // Memoize task display name
   const taskDisplayName = useMemo(
