@@ -1,14 +1,12 @@
 import {
-  Button,
   Collapse,
   CollapseProps,
   Flex,
   Skeleton,
-  Tooltip,
   Typography,
 } from '@/shared/antd-imports';
 import React, { useEffect, useState, useRef } from 'react';
-import { ReloadOutlined } from '@/shared/antd-imports';
+import { InboxOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';
 import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';
@@ -74,6 +72,16 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
   const [taskComments, setTaskComments] = useState<ITaskCommentViewModel[]>([]);
   const [loadingTaskComments, setLoadingTaskComments] = useState<boolean>(false);
 
+  // Tab-level drag-and-drop state
+  const [isTabDragOver, setIsTabDragOver] = useState(false);
+  // dragCounter tracks nested dragenter/dragleave events so the overlay
+  // doesn't flicker when the cursor moves over child elements.
+  const dragCounterRef = useRef(0);
+
+  // Controlled collapse keys so we can auto-expand attachments on drop
+  const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'comments'];
+  const [collapseActiveKeys, setCollapseActiveKeys] = useState<string[]>(defaultCollapseKeys);
+
   // FIX: Track the previous task ID so we only re-fetch when a REAL task is
   // opened (selectedTaskId is a non-null string), not when the drawer closes
   // and resets selectedTaskId to null. Without this guard, closing the drawer
@@ -119,6 +127,45 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
         fetchTaskAttachments();
       }
     }
+  };
+
+  // Tab-level drag handlers
+  const handleTabDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    if (dragCounterRef.current === 1) {
+      setIsTabDragOver(true);
+    }
+  };
+
+  const handleTabDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); // required to allow drop
+  };
+
+  const handleTabDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) {
+      setIsTabDragOver(false);
+    }
+  };
+
+  const handleTabDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsTabDragOver(false);
+
+    if (loadingTask || processingUpload) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    // Auto-expand the attachments panel if it is currently collapsed
+    setCollapseActiveKeys(prev =>
+      prev.includes('attachments') ? prev : [...prev, 'attachments']
+    );
+
+    handleFilesSelected(files);
   };
 
   const fetchTaskData = () => {
@@ -366,20 +413,30 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
 
   return (
     <Skeleton active loading={loadingTask}>
-      <Flex vertical>
-        <Collapse
-          items={infoItems}
-          bordered={false}
-          defaultActiveKey={[
-            'details',
-            'description',
-            'subTasks',
-            'dependencies',
-            'attachments',
-            'comments',
-          ]}
-        />
-      </Flex>
+      <div
+        className="task-drawer-info-tab-drop-zone"
+        onDragEnter={handleTabDragEnter}
+        onDragOver={handleTabDragOver}
+        onDragLeave={handleTabDragLeave}
+        onDrop={handleTabDrop}
+      >
+        {isTabDragOver && (
+          <div className="task-drawer-info-tab-drop-overlay">
+            <div className="task-drawer-info-tab-drop-overlay-content">
+              <InboxOutlined className="task-drawer-info-tab-drop-icon" />
+              <span>{t('taskInfoTab.attachments.dropFilesHere', { defaultValue: 'Drop files here to attach' })}</span>
+            </div>
+          </div>
+        )}
+        <Flex vertical>
+          <Collapse
+            items={infoItems}
+            bordered={false}
+            activeKey={collapseActiveKeys}
+            onChange={keys => setCollapseActiveKeys(keys as string[])}
+          />
+        </Flex>
+      </div>
     </Skeleton>
   );
 };

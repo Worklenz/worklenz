@@ -30,3 +30,39 @@
 .custom-task-drawer-info-collapse .ant-collapse-header {
   padding-block-end: 0 !important;
 }
+
+/* Tab-level drag-and-drop drop zone */
+.task-drawer-info-tab-drop-zone {
+  position: relative;
+  min-height: 100%;
+}
+
+/* Full-tab overlay shown while dragging files over the info tab */
+.task-drawer-info-tab-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  border-radius: 8px;
+  border: 2px dashed var(--ant-color-primary, #1890ff);
+  background-color: var(--ant-color-primary-bg, rgba(24, 144, 255, 0.06));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* let drag events pass through to the parent */
+}
+
+.task-drawer-info-tab-drop-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--ant-color-primary, #1890ff);
+  font-size: 15px;
+  font-weight: 500;
+  user-select: none;
+}
+
+.task-drawer-info-tab-drop-icon {
+  font-size: 48px;
+  color: var(--ant-color-primary, #1890ff);
+}

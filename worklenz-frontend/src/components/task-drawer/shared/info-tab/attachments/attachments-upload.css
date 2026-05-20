@@ -5,11 +5,6 @@
   width: 100%;
 }
 
-.task-drawer-attachments-upload.ant-upload-list.focused {
-  border-color: #1890ff;
-  background-color: rgba(24, 144, 255, 0.06);
-}
-
 .task-drawer-attachments-upload .ant-upload-select-picture-card {
   display: inline-block;
   width: 100%;
