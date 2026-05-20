@@ -60,6 +60,10 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   const isDeleting = useRef(false);
   const [isEditing, setIsEditing] = useState(false);
+  // Snapshot of the name when editing starts — used in handleInputBlur to detect
+  // actual changes. We cannot use taskFormViewModel.task.name because onTaskNameChange
+  // updates it live in Redux, making the comparison always equal.
+  const originalNameRef = useRef<string>('');
 
   const { taskFormViewModel, selectedTaskId, navigationContext, loadingTask } = useAppSelector(
     state => state.taskDrawerReducer
@@ -206,7 +210,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     if (
       !selectedTaskId ||
       !connected ||
-      taskName === taskFormViewModel?.task?.name ||
+      taskName === originalNameRef.current ||
       taskName === undefined ||
       taskName === null ||
       taskName === ''
@@ -220,8 +224,6 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
         parent_task: taskFormViewModel?.task?.parent_task_id,
       })
     );
-    // Note: Real-time updates are handled by the global useTaskSocketHandlers hook
-    // No need for local socket listeners that could interfere with global handlers
   };
 
   const handlePrevious = () => {
@@ -275,7 +277,10 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
               autoFocus
             />
           ) : (
-            <p onClick={() => setIsEditing(true)} className="task-name-display">
+            <p onClick={() => {
+              originalNameRef.current = taskName;
+              setIsEditing(true);
+            }} className="task-name-display">
               {taskName}
             </p>
           )}
