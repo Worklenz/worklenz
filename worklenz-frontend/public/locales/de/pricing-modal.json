@@ -175,6 +175,7 @@
   },
   "errors": {
     "loadingData": "Fehler beim Laden der Preisdaten",
+    "loadingPlansRetry": "Preise konnten nicht geladen werden. Bitte aktualisieren Sie die Seite.",
     "calculating": "Preise werden berechnet...",
     "selectedPlan": "Ausgewählter Plan: {{plan}}"
   },

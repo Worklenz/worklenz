@@ -3,9 +3,9 @@
   "client": "Kunde",
   "category": "Kategorie",
   "status": "Status",
+  "priority": "Priorität",
   "tasksProgress": "Aufgabenfortschritt",
   "updated_at": "Zuletzt aktualisiert",
-  "members": "Mitglieder",
   "setting": "Einstellungen",
   "projects": "Projekte",
   "refreshProjects": "Projekte aktualisieren",
@@ -27,8 +27,12 @@
   "listView": "Listenansicht",
   "groupView": "Gruppenansicht",
   "groupBy": {
+    "priority": "Priorität",
     "category": "Kategorie",
-    "client": "Kunde"
+    "client": "Kunde",
+    "priorities": "Prioritäten",
+    "categories": "Kategorien",
+    "clients": "Kunden"
   },
   "noPermission": "Sie haben keine Berechtigung, diese Aktion durchzuführen"
 }

@@ -16,6 +16,7 @@ reportingExportApiRouter.get("/projects-time-log-breakdown/export", teamOwnerOrA
 reportingExportApiRouter.get("/members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.export));
 reportingExportApiRouter.get("/project-members/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportProjectMembers));
 reportingExportApiRouter.get("/project-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportProjectTasks));
+reportingExportApiRouter.get("/project-member-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportProjectMemberTasks));
 reportingExportApiRouter.get("/member-projects/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingMembersController.exportMemberProjects));
 reportingExportApiRouter.get("/member-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportMemberTasks));
 reportingExportApiRouter.get("/flat-tasks/export", teamOwnerOrAdminValidator, safeControllerFunction(ReportingOverviewExportController.exportFlatTasks));

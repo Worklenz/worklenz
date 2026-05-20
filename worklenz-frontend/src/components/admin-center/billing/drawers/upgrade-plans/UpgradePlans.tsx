@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Col, Flex, Row, Typography, message, Space, Alert } from '@/shared/antd-imports';
+import { PictureOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
@@ -63,12 +64,12 @@ declare global {
 
 const UpgradePlans = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
+  const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal', 'admin-center/overview']);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
 
   // Redux state
-  const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
+  const { billingInfo, upgradeModalVariant } = useAppSelector(state => state.adminCenterReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -508,7 +509,11 @@ const UpgradePlans = () => {
       }
     } catch (error) {
       logger.error('Error fetching pricing plans', error);
-      message.error('Failed to load pricing plans. Please refresh the page.');
+      message.error(
+        t('pricing-modal:errors.loadingPlansRetry', {
+          defaultValue: 'Failed to load pricing plans. Please refresh the page.',
+        })
+      );
       trackMixpanelEvent(MixpanelBillingEvents.PRICING_FETCH_ERROR, {
         user_type: getUserType,
         current_plan: billingInfo?.plan_name,
@@ -593,6 +598,45 @@ const UpgradePlans = () => {
   // Main render
   return (
     <div className="upgrade-plans-responsive">
+      {upgradeModalVariant === 'customOrganizationLogo' && (
+        <Flex vertical gap={16} style={{ marginBottom: 24 }}>
+          <Flex align="center" gap={12}>
+            <PictureOutlined style={{ fontSize: 28 }} />
+            <Typography.Title level={3} style={{ margin: 0 }}>
+              {t('admin-center/overview:customLogoUpgradeModalHeadline', {
+                defaultValue: 'Make Worklenz yours',
+              })}
+            </Typography.Title>
+          </Flex>
+          <Typography.Text type="secondary">
+            {t('admin-center/overview:customLogoUpgradeModalSubCopy', {
+              defaultValue:
+                'Upgrade to Business to upload your organization logo. Your logo will replace the Worklenz logo everywhere in the app and in all system emails sent to your team and clients.',
+            })}
+          </Typography.Text>
+          <Flex vertical gap={6}>
+            <Typography.Text>
+              •{' '}
+              {t('admin-center/overview:customLogoUpgradeModalBenefitApp', {
+                defaultValue: 'Custom logo across the full app',
+              })}
+            </Typography.Text>
+            <Typography.Text>
+              •{' '}
+              {t('admin-center/overview:customLogoUpgradeModalBenefitEmails', {
+                defaultValue: 'Branded emails to team and clients',
+              })}
+            </Typography.Text>
+            <Typography.Text>
+              •{' '}
+              {t('admin-center/overview:customLogoUpgradeModalBenefitProfessional', {
+                defaultValue: 'Professional look for your organization',
+              })}
+            </Typography.Text>
+          </Flex>
+        </Flex>
+      )}
+
       <Flex justify="center" align="center">
         <Typography.Title level={2}>
           {billingInfo?.status === SUBSCRIPTION_STATUS.TRIALING

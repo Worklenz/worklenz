@@ -20,20 +20,26 @@ import { useState, useEffect } from 'react';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
-import { ROLE_NAMES } from '@/types/roles/role.types';
+import { ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_team_invite_sent } from '@/shared/worklenz-analytics-events';
 import { useAuthService } from '@/hooks/useAuth';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { RolePermissionsPopover } from '@/components/settings/role-permissions-popover';
+import { SeatLimitModal } from '@/components/common/seat-limit-modal';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useNavigate } from 'react-router-dom';
 
 interface FormValues {
-  email: string[];
+  emails: string[];
   jobTitle: string;
   access: 'member' | 'team-lead' | 'admin';
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const InviteTeamMembers = () => {
   // Email invitation states
-  const [emails, setEmails] = useState<string[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +51,13 @@ const InviteTeamMembers = () => {
   const [hasActiveLink, setHasActiveLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Seat limit modal states
+  const [seatLimitModalOpen, setSeatLimitModalOpen] = useState(false);
+  const [seatLimitData, setSeatLimitData] = useState<any>(null);
+  const [pendingInvite, setPendingInvite] = useState<ITeamMemberCreateRequest | null>(null);
+
   const [form] = Form.useForm<FormValues>();
+  const navigate = useNavigate();
 
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
@@ -58,24 +70,24 @@ const InviteTeamMembers = () => {
     defaultValue:
       'Your Worklenz subscription has ended. Please renew to continue enjoying all features.',
   });
-  // Check if current user is admin or owner
-  const isAdmin = currentSession?.is_admin === true || currentSession?.owner === true;
+  const currentRole = getSessionRoleName(currentSession);
+  const translatedRoleOptions = [
+    ROLE_DEFINITIONS[ROLE_NAMES.MEMBER],
+    ROLE_DEFINITIONS[ROLE_NAMES.TEAM_LEAD],
+    ROLE_DEFINITIONS[ROLE_NAMES.ADMIN],
+  ].map(role => ({
+    value:
+      role.value === ROLE_NAMES.MEMBER
+        ? 'member'
+        : role.value === ROLE_NAMES.TEAM_LEAD
+          ? 'team-lead'
+          : 'admin',
+    label: t(role.labelKey, { defaultValue: role.labelDefaultValue }),
+    description: t(role.descriptionKey, { defaultValue: role.descriptionDefaultValue }),
+  }));
+  const isAdmin = currentRole === ROLE_NAMES.ADMIN || currentRole === ROLE_NAMES.OWNER;
 
-  // Debug logging
-  useEffect(() => {
-    if (isDrawerOpen && activeTab === 'link') {
-      console.log('🔍 Deactivate Button Debug:', {
-        isAdmin,
-        hasActiveLink,
-        linkExpiry,
-        isExpired: linkExpiry ? isLinkExpired(linkExpiry) : 'no expiry',
-        currentSession: {
-          is_admin: currentSession?.is_admin,
-          owner: currentSession?.owner,
-        },
-      });
-    }
-  }, [isDrawerOpen, activeTab, isAdmin, hasActiveLink, linkExpiry, currentSession]);
+
 
   // Check existing link when modal opens and tab changes to link
   useEffect(() => {
@@ -99,7 +111,6 @@ const InviteTeamMembers = () => {
   const checkExistingInvitationLink = async () => {
     try {
       const res = await teamMembersApiService.getInvitationLinkStatus();
-      console.log('📡 Link Status Response:', res.body);
       
       if (res.done && res.body.has_active_link && res.body.expires_at) {
         // Keep the link in state even if expired (for deactivate button)
@@ -108,12 +119,11 @@ const InviteTeamMembers = () => {
         setLinkExpiry(res.body.expires_at);
         
         if (isLinkExpired(res.body.expires_at)) {
-          console.log('⏰ Link is expired by date but keeping in state');
+          setHasActiveLink(false);
         } else {
-          console.log('✅ Link is active and valid');
+          setHasActiveLink(true);
         }
       } else {
-        console.log('❌ No active link found');
         setHasActiveLink(false);
         setInvitationLink('');
         setLinkExpiry('');
@@ -147,6 +157,19 @@ const InviteTeamMembers = () => {
 
       const res = await teamMembersApiService.generateInvitationLink(linkData);
       
+      // Check for seat limit exceeded error
+      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(res.body);
+        setPendingInvite({
+          job_title: selectedJobTitle,
+          emails: [], // Link generation doesn't have emails yet
+          is_admin: linkData.is_admin,
+          role_name: linkData.role_name,
+        });
+        setSeatLimitModalOpen(true);
+        return;
+      }
+      
       if (res.done && res.body.invitation_url) {
         // Update state with new link
         setInvitationLink(res.body.invitation_url);
@@ -173,7 +196,6 @@ const InviteTeamMembers = () => {
         setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
-      console.error('Error generating and copying invitation link:', error);
       message.error(
         t('Failed to generate invitation link', {
           defaultValue: 'Failed to generate invitation link',
@@ -222,9 +244,11 @@ const InviteTeamMembers = () => {
 
     try {
       setLoading(true);
+      const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
+
       const body: ITeamMemberCreateRequest = {
         job_title: selectedJobTitle,
-        emails: emails,
+        emails: normalizedEmails,
         is_admin: values.access === 'admin',
         role_name:
           values.access === 'team-lead'
@@ -234,17 +258,25 @@ const InviteTeamMembers = () => {
               : ROLE_NAMES.MEMBER,
       };
       const res = await teamMembersApiService.createTeamMember(body);
+      
+      // Check for seat limit exceeded error
+      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(res.body);
+        setPendingInvite(body);
+        setSeatLimitModalOpen(true);
+        return;
+      }
+      
       if (res.done) {
         // Track team invitation via email
         trackMixpanelEvent(evt_team_invite_sent, {
           invite_method: 'email',
-          invite_count: emails.length,
+          invite_count: normalizedEmails.length,
           role: values.access,
           has_job_title: !!selectedJobTitle,
         });
 
         form.resetFields();
-        setEmails([]);
         setSelectedJobTitle(null);
         dispatch(triggerTeamMembersRefresh()); // Trigger refresh in TeamMembersSettings
         dispatch(toggleInviteMemberDrawer());
@@ -258,15 +290,37 @@ const InviteTeamMembers = () => {
 
   const handleClose = () => {
     form.resetFields();
-    setEmails([]);
     setSelectedJobTitle(null);
     setActiveTab('email');
     setLinkCopied(false);
     dispatch(toggleInviteMemberDrawer());
   };
 
+  const handleSeatLimitUpgrade = () => {
+    setSeatLimitModalOpen(false);
+    dispatch(toggleUpgradeModal());
+  };
+
+  const handleSeatLimitDeactivate = () => {
+    setSeatLimitModalOpen(false);
+    // Store pending invite in localStorage for auto-send after deactivation
+    if (pendingInvite) {
+      localStorage.setItem('pendingTeamInvite', JSON.stringify(pendingInvite));
+    }
+    // Navigate to Settings > Members
+    navigate('/worklenz/settings/team-members');
+  };
+
+  const handleSeatLimitModalClose = () => {
+    setSeatLimitModalOpen(false);
+    setPendingInvite(null);
+    setSeatLimitData(null);
+  };
+
   const handleEmailChange = (value: string[]) => {
-    setEmails(value);
+    const normalizedEmails = (value || []).map(email => String(email).trim()).filter(Boolean);
+    form.setFieldValue('emails', normalizedEmails);
+    void form.validateFields(['emails']).catch(() => undefined);
   };
 
   const formatExpiryDate = (dateString: string) => {
@@ -309,10 +363,19 @@ const InviteTeamMembers = () => {
             label={t('memberEmailLabel')}
             rules={[
               {
-                type: 'array',
-                required: true,
                 validator: (_, value) => {
-                  if (!value?.length) return Promise.reject(t('memberEmailRequiredError'));
+                  const normalizedEmails = Array.isArray(value)
+                    ? value
+                    : typeof value === 'string' && value
+                      ? [value]
+                      : [];
+                  if (!normalizedEmails.length) {
+                    return Promise.reject(t('memberEmailRequiredError'));
+                  }
+                  const hasInvalidEmail = normalizedEmails.some(
+                    (email: string) => !EMAIL_REGEX.test(String(email).trim())
+                  );
+                  if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError'));
                   return Promise.resolve();
                 },
               },
@@ -336,14 +399,31 @@ const InviteTeamMembers = () => {
             </Flex>
           </Form.Item>
 
-          <Form.Item label={t('memberAccessLabel')} name="access">
+          <Form.Item
+            label={
+              <Flex align="center" gap={6}>
+                <span>{t('memberAccessLabel', { defaultValue: 'Access Level' })}</span>
+                <RolePermissionsPopover />
+              </Flex>
+            }
+            name="access"
+          >
             <Select
               disabled={isInviteRestricted}
-              options={[
-                { value: 'member', label: t('memberText') },
-                { value: 'team-lead', label: 'Team Lead' },
-                { value: 'admin', label: t('adminText') },
-              ]}
+              options={translatedRoleOptions}
+              optionRender={option => (
+                <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
+                  <Typography.Text style={{ whiteSpace: 'normal' }}>
+                    {String(option.data.label)}
+                  </Typography.Text>
+                  <Typography.Text
+                    type="secondary"
+                    style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.4 }}
+                  >
+                    {option.data.description}
+                  </Typography.Text>
+                </Flex>
+              )}
             />
           </Form.Item>
         </Form>
@@ -440,29 +520,45 @@ const InviteTeamMembers = () => {
   ];
 
   return (
-    <Modal
-      title={
-        <Typography.Text strong style={{ fontSize: 16 }}>
-          {t('addMemberDrawerTitle')}
-        </Typography.Text>
-      }
-      open={isDrawerOpen}
-      onCancel={handleClose}
-      destroyOnHidden={false}
-      width={500}
-      loading={loading && activeTab === 'email'}
-      footer={
-        activeTab === 'email' ? (
-          <Flex justify="end">
-            <Button onClick={form.submit} disabled={isInviteRestricted}>
-              {t('addToTeamButton', { defaultValue: 'Add to Team' })}
-            </Button>
-          </Flex>
-        ) : null
-      }
-    >
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="small" />
-    </Modal>
+    <>
+      <Modal
+        title={
+          <Typography.Text strong style={{ fontSize: 16 }}>
+            {t('addMemberDrawerTitle', { defaultValue: 'Invite Team Members' })}
+          </Typography.Text>
+        }
+        open={isDrawerOpen}
+        onCancel={handleClose}
+        destroyOnHidden={false}
+        width={500}
+        loading={loading && activeTab === 'email'}
+        footer={
+          activeTab === 'email' ? (
+            <Flex justify="end">
+              <Button onClick={form.submit} disabled={isInviteRestricted}>
+                {t('addToTeamButton', { defaultValue: 'Send Invitation' })}
+              </Button>
+            </Flex>
+          ) : null
+        }
+      >
+        <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} size="small" />
+      </Modal>
+
+      {/* Seat Limit Modal */}
+      {seatLimitData && (
+        <SeatLimitModal
+          open={seatLimitModalOpen}
+          onClose={handleSeatLimitModalClose}
+          currentMembers={seatLimitData.current_members}
+          planLimit={seatLimitData.plan_seat_limit}
+          businessLimit={seatLimitData.business_plan_limit}
+          isAppSumoUser={seatLimitData.is_appsumo_user}
+          onUpgrade={handleSeatLimitUpgrade}
+          onDeactivate={handleSeatLimitDeactivate}
+        />
+      )}
+    </>
   );
 };
 

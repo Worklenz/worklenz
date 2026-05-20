@@ -3,9 +3,9 @@
   "client": "客户",
   "category": "类别",
   "status": "状态",
+  "priority": "优先级",
   "tasksProgress": "任务进度",
   "updated_at": "最后更新",
-  "members": "成员",
   "setting": "设置",
   "projects": "项目",
   "refreshProjects": "刷新项目",
@@ -27,8 +27,12 @@
   "listView": "列表视图",
   "groupView": "分组视图",
   "groupBy": {
+    "priority": "优先级",
     "category": "类别",
-    "client": "客户"
+    "client": "客户",
+    "priorities": "优先级",
+    "categories": "类别",
+    "clients": "客户"
   },
   "noPermission": "您没有权限执行此操作"
 }

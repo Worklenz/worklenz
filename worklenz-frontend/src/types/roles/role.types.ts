@@ -13,6 +13,10 @@ export interface IRoleOption {
   value: string;
   label: string;
   description?: string;
+  labelKey?: string;
+  labelDefaultValue?: string;
+  descriptionKey?: string;
+  descriptionDefaultValue?: string;
 }
 
 export const ROLE_NAMES = {
@@ -24,12 +28,99 @@ export const ROLE_NAMES = {
 
 export type RoleName = (typeof ROLE_NAMES)[keyof typeof ROLE_NAMES];
 
-export const ROLE_DESCRIPTIONS = {
-  [ROLE_NAMES.OWNER]: 'Full access to all team settings and billing',
-  [ROLE_NAMES.ADMIN]: 'Full admin access to team management and settings',
-  [ROLE_NAMES.TEAM_LEAD]: 'Admin access limited to this team only',
-  [ROLE_NAMES.MEMBER]: 'Standard team member with basic access',
-} as const;
+export interface IRoleDefinition {
+  value: RoleName;
+  labelKey: string;
+  labelDefaultValue: string;
+  descriptionKey: string;
+  descriptionDefaultValue: string;
+  manageableRoles: RoleName[];
+  assignableRoles: RoleName[];
+  permissionKeys: string[];
+  canInviteMembers: boolean;
+  canAssignManagers: boolean;
+  canAccessFinance: boolean;
+  memberScope: 'all' | 'managed' | 'none';
+}
+
+export const ROLE_DEFINITIONS: Record<RoleName, IRoleDefinition> = {
+  [ROLE_NAMES.OWNER]: {
+    value: ROLE_NAMES.OWNER,
+    labelKey: 'ownerText',
+    labelDefaultValue: 'Team Owner',
+    descriptionKey: 'roleDescriptionOwner',
+    descriptionDefaultValue: 'Full access to all team settings and billing',
+    manageableRoles: [ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD, ROLE_NAMES.MEMBER],
+    assignableRoles: [ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD, ROLE_NAMES.MEMBER],
+    permissionKeys: [
+      'permissionInviteMembers',
+      'permissionManageAllRoles',
+      'permissionAssignTeamLeads',
+      'permissionAccessFinance',
+    ],
+    canInviteMembers: true,
+    canAssignManagers: true,
+    canAccessFinance: true,
+    memberScope: 'all',
+  },
+  [ROLE_NAMES.ADMIN]: {
+    value: ROLE_NAMES.ADMIN,
+    labelKey: 'adminText',
+    labelDefaultValue: 'Admin',
+    descriptionKey: 'roleDescriptionAdmin',
+    descriptionDefaultValue: 'Can manage admins, team leads, and members across the workspace',
+    manageableRoles: [ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD, ROLE_NAMES.MEMBER],
+    assignableRoles: [ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD, ROLE_NAMES.MEMBER],
+    permissionKeys: [
+      'permissionInviteMembers',
+      'permissionManageAdmins',
+      'permissionAssignTeamLeads',
+      'permissionAccessFinance',
+    ],
+    canInviteMembers: true,
+    canAssignManagers: true,
+    canAccessFinance: true,
+    memberScope: 'all',
+  },
+  [ROLE_NAMES.TEAM_LEAD]: {
+    value: ROLE_NAMES.TEAM_LEAD,
+    labelKey: 'teamLeadText',
+    labelDefaultValue: 'Team Lead',
+    descriptionKey: 'roleDescriptionTeamLead',
+    descriptionDefaultValue: 'Can follow managed-member reporting and team coordination without admin access',
+    manageableRoles: [],
+    assignableRoles: [],
+    permissionKeys: [
+      'permissionViewManagedReports',
+      'permissionViewAssignedWork',
+      'permissionNoMemberManagement',
+      'permissionNoFinanceAccess',
+    ],
+    canInviteMembers: false,
+    canAssignManagers: false,
+    canAccessFinance: false,
+    memberScope: 'managed',
+  },
+  [ROLE_NAMES.MEMBER]: {
+    value: ROLE_NAMES.MEMBER,
+    labelKey: 'memberText',
+    labelDefaultValue: 'Member',
+    descriptionKey: 'roleDescriptionMember',
+    descriptionDefaultValue: 'Read-only for team membership management with access to assigned work',
+    manageableRoles: [],
+    assignableRoles: [],
+    permissionKeys: [
+      'permissionViewAssignedWork',
+      'permissionNoMemberManagement',
+      'permissionNoRoleChanges',
+      'permissionNoFinanceAccess',
+    ],
+    canInviteMembers: false,
+    canAssignManagers: false,
+    canAccessFinance: false,
+    memberScope: 'none',
+  },
+};
 
 export const ROLE_COLORS = {
   [ROLE_NAMES.OWNER]: colors.skyBlue, // Sky blue
@@ -43,28 +134,28 @@ export const ROLE_COLORS = {
  */
 export function getRoleOptions(includeOwner = false): IRoleOption[] {
   const options: IRoleOption[] = [
-    {
-      value: ROLE_NAMES.MEMBER,
-      label: ROLE_NAMES.MEMBER,
-      description: ROLE_DESCRIPTIONS[ROLE_NAMES.MEMBER],
-    },
-    {
-      value: ROLE_NAMES.TEAM_LEAD,
-      label: ROLE_NAMES.TEAM_LEAD,
-      description: ROLE_DESCRIPTIONS[ROLE_NAMES.TEAM_LEAD],
-    },
-    {
-      value: ROLE_NAMES.ADMIN,
-      label: ROLE_NAMES.ADMIN,
-      description: ROLE_DESCRIPTIONS[ROLE_NAMES.ADMIN],
-    },
-  ];
+    ROLE_DEFINITIONS[ROLE_NAMES.MEMBER],
+    ROLE_DEFINITIONS[ROLE_NAMES.TEAM_LEAD],
+    ROLE_DEFINITIONS[ROLE_NAMES.ADMIN],
+  ].map(role => ({
+    value: role.value,
+    label: role.labelDefaultValue,
+    description: role.descriptionDefaultValue,
+    labelKey: role.labelKey,
+    labelDefaultValue: role.labelDefaultValue,
+    descriptionKey: role.descriptionKey,
+    descriptionDefaultValue: role.descriptionDefaultValue,
+  }));
 
   if (includeOwner) {
     options.push({
       value: ROLE_NAMES.OWNER,
-      label: ROLE_NAMES.OWNER,
-      description: ROLE_DESCRIPTIONS[ROLE_NAMES.OWNER],
+      label: ROLE_DEFINITIONS[ROLE_NAMES.OWNER].labelDefaultValue,
+      description: ROLE_DEFINITIONS[ROLE_NAMES.OWNER].descriptionDefaultValue,
+      labelKey: ROLE_DEFINITIONS[ROLE_NAMES.OWNER].labelKey,
+      labelDefaultValue: ROLE_DEFINITIONS[ROLE_NAMES.OWNER].labelDefaultValue,
+      descriptionKey: ROLE_DEFINITIONS[ROLE_NAMES.OWNER].descriptionKey,
+      descriptionDefaultValue: ROLE_DEFINITIONS[ROLE_NAMES.OWNER].descriptionDefaultValue,
     });
   }
 
@@ -75,7 +166,7 @@ export function getRoleOptions(includeOwner = false): IRoleOption[] {
  * Check if role has admin privileges
  */
 export function isAdminRole(roleName: string): boolean {
-  return [ROLE_NAMES.OWNER, ROLE_NAMES.ADMIN, ROLE_NAMES.TEAM_LEAD].includes(roleName as RoleName);
+  return roleName === ROLE_NAMES.OWNER || roleName === ROLE_NAMES.ADMIN;
 }
 
 /**

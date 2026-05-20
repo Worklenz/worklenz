@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, memo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, Tooltip, Button } from '@/shared/antd-imports';
+import { Col, ConfigProvider, Flex, Menu, Tooltip, Button, Popover, Typography } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 
@@ -33,15 +33,17 @@ import {
   toggleUpgradeModal,
   fetchOrganizationDetails,
 } from '@/features/admin-center/admin-center.slice';
-import { isTeamLeadRole } from '@/types/roles/role.types';
+import { isTeamLeadRole, ROLE_DEFINITIONS } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
   const [current, setCurrent] = useState<string>('home');
   const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | null>(null);
+  const [isClientPortalPopoverOpen, setIsClientPortalPopoverOpen] = useState(false);
 
   const location = useLocation();
   const { isDesktop, isMobile, isTablet } = useResponsive();
@@ -52,6 +54,8 @@ const Navbar = () => {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
+  const currentRole = useMemo(() => getSessionRoleName(currentSession), [currentSession]);
+  const canInviteMembers = ROLE_DEFINITIONS[currentRole].canInviteMembers;
 
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
@@ -139,35 +143,82 @@ const Navbar = () => {
         const shouldDisable =
           (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
 
+        const defaultLabel = t(route.name);
+
+        const clientPortalPopoverContent = (
+          <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+            <Typography.Text>
+              {t('clientPortalUpgradePopoverBody', {
+                defaultValue: t('clientPortalUpgradePopoverBody'),
+              })}
+            </Typography.Text>
+            <Button
+              type="primary"
+              onClick={event => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsClientPortalPopoverOpen(false);
+                setTimeout(() => {
+                  dispatch(toggleUpgradeModal());
+                }, 0);
+              }}
+            >
+              {t('clientPortalUpgradePopoverCta', { defaultValue: t('clientPortalUpgradePopoverCta') })}
+            </Button>
+          </Flex>
+        );
+
         return {
           key: route.path.split('/').pop() || route.name,
           disabled: false,
           label: shouldDisable ? (
-            <Tooltip
-              title={
-                isFreePlanRoute && isFreePlan
-                  ? tCommon('upgrade-plan')
-                  : tCommon('business-plan-upgrade')
-              }
-              placement="bottom"
-            >
-              <span style={{ cursor: 'pointer', fontWeight: 600 }}>
-                {t(route.name, {
-                  defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1),
-                })}
-                <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
-              </span>
-            </Tooltip>
+            route.name === 'client-portal' ? (
+              <Popover
+                trigger="click"
+                open={isClientPortalPopoverOpen}
+                onOpenChange={setIsClientPortalPopoverOpen}
+                placement="bottom"
+                title={
+                  <Typography.Text strong>
+                    {t('clientPortalUpgradePopoverTitle', {
+                      defaultValue: t('clientPortalUpgradePopoverTitle'),
+                    })}
+                  </Typography.Text>
+                }
+                content={clientPortalPopoverContent}
+              >
+                <span style={{ cursor: 'pointer', fontWeight: 600 }}>
+                  {defaultLabel}
+                  <CrownOutlined
+                    style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }}
+                  />
+                </span>
+              </Popover>
+            ) : (
+              <Tooltip
+                title={
+                  isFreePlanRoute && isFreePlan
+                    ? tCommon('upgrade-plan')
+                    : tCommon('business-plan-upgrade')
+                }
+                placement="bottom"
+              >
+                <span style={{ cursor: 'pointer', fontWeight: 600 }}>
+                  {defaultLabel}
+                  <CrownOutlined
+                    style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }}
+                  />
+                </span>
+              </Tooltip>
+            )
           ) : (
             <Link to={route.path} style={{ fontWeight: 600 }}>
-              {t(route.name, {
-                defaultValue: route.name.charAt(0).toUpperCase() + route.name.slice(1),
-              })}
+              {defaultLabel}
             </Link>
           ),
         };
       });
-  }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch]);
+  }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch, isClientPortalPopoverOpen]);
 
   const currentRoute = useMemo(() => {
     const afterWorklenzString = location.pathname.split('/worklenz/')[1];
@@ -205,6 +256,13 @@ const Navbar = () => {
         const isFreePlanRoute = !clickedRoute.freePlanFeature;
         const shouldOpenModal =
           (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
+
+        if (clickedRoute.name === 'client-portal' && shouldOpenModal) {
+          setIsClientPortalPopoverOpen(true);
+          return;
+        }
+
+        setIsClientPortalPopoverOpen(false);
 
         if (shouldOpenModal) {
           if (isLicenseExpired && clickedRoute.name === 'client-portal') {
@@ -271,7 +329,7 @@ const Navbar = () => {
                       showUpgradeTypes.includes(
                         currentSession?.subscription_type as ISUBSCRIPTION_TYPE
                       ) && <UpgradePlanButton showModal redirectToBilling={false} />}
-                    {isOwnerOrAdmin && <InviteButton />}
+                    {canInviteMembers && <InviteButton />}
                     <Flex align="center">
                       <ConnectionStatusIndicator />
                       <SwitchTeamButton />
@@ -305,7 +363,7 @@ const Navbar = () => {
         </Flex>
       </Flex>
 
-      {isOwnerOrAdmin && createPortal(<InviteTeamMembers />, document.body, 'invite-team-members')}
+      {canInviteMembers && createPortal(<InviteTeamMembers />, document.body, 'invite-team-members')}
       {createPortal(<NotificationDrawer />, document.body, 'notification-drawer')}
     </Col>
   );

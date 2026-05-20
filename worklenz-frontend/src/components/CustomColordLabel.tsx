@@ -10,9 +10,6 @@ interface CustomColordLabelProps {
 
 const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelProps>(
   ({ label, isDarkMode = false }, ref) => {
-    const truncatedName =
-      label.name && label.name.length > 10 ? `${label.name.substring(0, 10)}...` : label.name;
-
     // Handle different color property names for different types
     const backgroundColor = (label as Label).color || (label as ITaskLabel).color_code || '#6b7280'; // Default to gray-500 if no color
 
@@ -39,14 +36,24 @@ const CustomColordLabel = React.forwardRef<HTMLSpanElement, CustomColordLabelPro
       <Tooltip title={label.name}>
         <span
           ref={ref}
-          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium shrink-0 max-w-[100px]"
+          className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium shrink-0"
           style={{
             backgroundColor,
             color: textColor,
             border: `1px solid ${backgroundColor}`,
+            maxWidth: '120px', // Asana-style max-width to prevent long labels from consuming too much space
           }}
         >
-          <span className="truncate">{truncatedName}</span>
+          <span 
+            className="truncate"
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {label.name}
+          </span>
         </span>
       </Tooltip>
     );

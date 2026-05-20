@@ -12,6 +12,9 @@ interface AttachmentsUploadProps {
   loadingTask: boolean;
   uploading: boolean;
   onFilesSelected: (files: File[]) => void;
+  onUpgradeRequested?: () => void;
+  maxFileSizeMb?: number;
+  showUpgradeLink?: boolean;
 }
 
 const AttachmentsUpload = ({
@@ -19,6 +22,9 @@ const AttachmentsUpload = ({
   loadingTask,
   uploading,
   onFilesSelected,
+  onUpgradeRequested,
+  maxFileSizeMb = 25,
+  showUpgradeLink = true,
 }: AttachmentsUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -105,6 +111,33 @@ const AttachmentsUpload = ({
               {uploading
                 ? t('taskInfoTab.attachments.uploading')
                 : t('taskInfoTab.attachments.chooseOrDropFileToUpload')}
+            </div>
+            <div style={{ marginTop: 6, fontSize: 11, color: '#8c8c8c' }}>
+              {t('taskInfoTab.attachments.maxFileSizeText', {
+                maxSize: maxFileSizeMb,
+                defaultValue: 'Max file size: {{maxSize}}MB',
+              })}{' '}
+              {showUpgradeLink && (
+                <button
+                  type="button"
+                  onClick={event => {
+                    event.stopPropagation();
+                    onUpgradeRequested?.();
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#1677ff',
+                    padding: 0,
+                    cursor: 'pointer',
+                    fontSize: 11,
+                  }}
+                >
+                  {t('taskInfoTab.attachments.upgradeLinkText', {
+                    defaultValue: 'Need larger uploads? Upgrade',
+                  })}
+                </button>
+              )}
             </div>
           </div>
         </div>

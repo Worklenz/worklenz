@@ -120,4 +120,47 @@ export const reportingProjectsApiService = {
     const response = await apiClient.get(url);
     return response.data;
   },
+
+  getMemberTasks: async (
+    teamMemberId: string,
+    projectId?: string,
+    params?: {
+      archived?: boolean;
+      search?: string;
+      duration?: string;
+      date_range?: string;
+      only_single_member?: string;
+    }
+  ): Promise<IServerResponse<any[]>> => {
+    const queryParams: Record<string, any> = {};
+    
+    if (projectId) {
+      queryParams.project = projectId;
+    }
+    
+    if (params?.archived !== undefined) {
+      queryParams.archived = params.archived;
+    }
+    
+    if (params?.search) {
+      queryParams.search = params.search;
+    }
+    
+    if (params?.duration) {
+      queryParams.duration = params.duration;
+    }
+    
+    if (params?.date_range) {
+      queryParams.date_range = params.date_range;
+    }
+    
+    if (params?.only_single_member) {
+      queryParams.only_single_member = params.only_single_member;
+    }
+
+    const q = toQueryString(queryParams);
+    const url = `${API_BASE_URL}/reporting/overview/member/tasks/${teamMemberId}${q}`;
+    const response = await apiClient.get<IServerResponse<any[]>>(url);
+    return response.data;
+  },
 };

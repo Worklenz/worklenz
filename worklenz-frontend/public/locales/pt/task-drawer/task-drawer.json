@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Fazer upgrade agora",
   "taskHeader": {
     "taskNamePlaceholder": "Digite sua tarefa",
     "deleteTask": "Excluir tarefa",
@@ -71,12 +72,15 @@
     "attachments": {
       "title": "Anexos",
       "chooseOrDropFileToUpload": "Escolha ou arraste arquivo para enviar",
-      "uploading": "Enviando..."
+      "uploading": "Enviando...",
+      "maxFileSizeText": "Tamanho máximo do arquivo: {{maxSize}}MB",
+      "upgradeLinkText": "Precisa de uploads maiores? Faça upgrade"
     },
     "comments": {
       "title": "Comentários",
       "addComment": "+ Adicionar novo comentário",
       "noComments": "Ainda não há comentários. Seja o primeiro a comentar!",
+      "edit": "Editar",
       "delete": "Excluir",
       "confirmDeleteComment": "Tem certeza de que deseja excluir este comentário?",
       "addCommentPlaceholder": "Adicionar um comentário...",
@@ -88,6 +92,11 @@
       "maxFilesError": "Você pode enviar no máximo {count} arquivos",
       "processFilesError": "Falha ao processar arquivos",
       "addCommentError": "Por favor, adicione um comentário ou anexe arquivos",
+      "fileTooLargeToSend": "Arquivos acima de 25MB em comentários exigem o plano Business. Remova este arquivo ou faça upgrade para continuar.",
+      "historyLockedBoundary": "Comentários com mais de 90 dias estão bloqueados",
+      "historyLockedTitle": "Histórico de comentários bloqueado",
+      "historyLockedBody": "Comentários com mais de 90 dias estão disponíveis no plano Business.",
+      "viewFullComments": "Ver todos os comentários",
       "createdBy": "Criado {{time}} por {{user}}",
       "updatedTime": "Atualizado {{time}}"
     },
@@ -100,6 +109,10 @@
     "totalLogged": "Total registrado",
     "exportToExcel": "Exportar para Excel",
     "noTimeLogsFound": "Nenhum registro de tempo encontrado",
+    "historyLockedBoundary": "Registros de tempo com mais de 90 dias estão bloqueados",
+    "historyLockedTitle": "Histórico de registro de tempo bloqueado",
+    "historyLockedBody": "Registros de tempo com mais de 90 dias estão disponíveis no plano Business.",
+    "viewFullTimeLog": "Ver registro completo",
     "timeLogForm": {
       "inputMode": "Modo de entrada",
       "durationMode": "Duração",
@@ -131,7 +144,11 @@
     "remove": "REMOVER",
     "none": "Nenhum",
     "weight": "Peso",
-    "createdTask": "criou a tarefa."
+    "createdTask": "criou a tarefa.",
+    "historyLockedBoundary": "Atividade com mais de 90 dias está bloqueada",
+    "historyLockedTitle": "Histórico de atividade bloqueado",
+    "historyLockedBody": "Atividades de tarefas com mais de 90 dias estão disponíveis no plano Business.",
+    "viewFullActivity": "Ver atividade completa"
   },
   "taskProgress": {
     "markAsDoneTitle": "Marcar tarefa como concluída?",

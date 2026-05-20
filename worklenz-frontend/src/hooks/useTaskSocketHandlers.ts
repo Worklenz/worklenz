@@ -115,7 +115,10 @@ export const useTaskSocketHandlers = () => {
           dispatch(updateTask(updatedTask));
         }
 
-        dispatch(updateSelectedTaskName({ id: data.id, name: data.name }));
+        // Only update task name if it's actually provided (not undefined)
+        if (data.name !== undefined) {
+          dispatch(updateSelectedTaskName({ id: data.id, name: data.name }));
+        }
       }
 
       // Update the old task slice (for backward compatibility)

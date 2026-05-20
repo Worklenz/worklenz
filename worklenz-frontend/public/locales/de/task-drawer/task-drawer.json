@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Jetzt upgraden",
   "taskHeader": {
     "taskNamePlaceholder": "Geben Sie Ihre Aufgabe ein",
     "deleteTask": "Aufgabe löschen",
@@ -71,12 +72,15 @@
     "attachments": {
       "title": "Anhänge",
       "chooseOrDropFileToUpload": "Datei zum Hochladen auswählen oder ablegen",
-      "uploading": "Wird hochgeladen..."
+      "uploading": "Wird hochgeladen...",
+      "maxFileSizeText": "Maximale Dateigröße: {{maxSize}}MB",
+      "upgradeLinkText": "Größere Uploads benötigt? Upgrade"
     },
     "comments": {
       "title": "Kommentare",
       "addComment": "+ Neuen Kommentar hinzufügen",
       "noComments": "Noch keine Kommentare. Seien Sie der Erste, der kommentiert!",
+      "edit": "Bearbeiten",
       "delete": "Löschen",
       "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
       "addCommentPlaceholder": "Kommentar hinzufügen...",
@@ -88,6 +92,11 @@
       "maxFilesError": "Sie können maximal {count} Dateien hochladen",
       "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
+      "fileTooLargeToSend": "Dateien über 25MB in Kommentaren erfordern den Business-Plan. Entfernen Sie diese Datei oder führen Sie ein Upgrade durch.",
+      "historyLockedBoundary": "Kommentare älter als 90 Tage sind gesperrt",
+      "historyLockedTitle": "Kommentarverlauf gesperrt",
+      "historyLockedBody": "Kommentare älter als 90 Tage sind im Business-Plan verfügbar.",
+      "viewFullComments": "Alle Kommentare anzeigen",
       "createdBy": "Erstellt {{time}} von {{user}}",
       "updatedTime": "Aktualisiert {{time}}"
     },
@@ -100,6 +109,10 @@
     "totalLogged": "Gesamt protokolliert",
     "exportToExcel": "Nach Excel exportieren",
     "noTimeLogsFound": "Keine Zeitprotokolle gefunden",
+    "historyLockedBoundary": "Zeitprotokolle älter als 90 Tage sind gesperrt",
+    "historyLockedTitle": "Zeitprotokollverlauf gesperrt",
+    "historyLockedBody": "Zeitprotokolle älter als 90 Tage sind im Business-Plan verfügbar.",
+    "viewFullTimeLog": "Vollständiges Zeitprotokoll anzeigen",
     "timeLogForm": {
       "inputMode": "Eingabemodus",
       "durationMode": "Dauer",
@@ -131,7 +144,11 @@
     "remove": "ENTFERNEN",
     "none": "Keine",
     "weight": "Gewicht",
-    "createdTask": "hat die Aufgabe erstellt."
+    "createdTask": "hat die Aufgabe erstellt.",
+    "historyLockedBoundary": "Aktivitätsverlauf älter als 90 Tage ist gesperrt",
+    "historyLockedTitle": "Aktivitätsverlauf gesperrt",
+    "historyLockedBody": "Aufgabenaktivitäten älter als 90 Tage sind im Business-Plan verfügbar.",
+    "viewFullActivity": "Vollständige Aktivität anzeigen"
   },
   "taskProgress": {
     "markAsDoneTitle": "Aufgabe als erledigt markieren?",

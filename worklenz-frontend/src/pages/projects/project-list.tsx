@@ -30,14 +30,12 @@ import { ProjectDrawer } from '@/components/projects/project-drawer/project-draw
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import { ColumnsType } from 'antd/es/table';
 import { ColumnFilterItem } from 'antd/es/table/interface';
-import Avatars from '@/components/avatars/avatars';
 import { ActionButtons } from '@/components/project-list/project-list-table/project-list-actions/project-list-actions';
 import { CategoryCell } from '@/components/project-list/project-list-table/project-list-category/project-list-category';
 import { ProgressListProgress } from '@/components/project-list/project-list-table/project-list-progress/progress-list-progress';
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 import { ProjectNameCell } from '@/components/project-list/project-list-table/project-name/project-name-cell';
 import { ProjectRateCell } from '@/components/project-list/project-list-table/project-list-favorite/project-rate-cell';
-import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 
 import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 
@@ -60,6 +58,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   setFilteredCategories,
   setFilteredStatuses,
+  setFilteredPriorities,
   setRequestParams,
   setGroupedRequestParams,
   fetchGroupedProjects,
@@ -67,6 +66,7 @@ import {
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { setProjectId } from '@/features/project/project.slice';
 import { setProject } from '@/features/project/project.slice';
 import { createPortal } from 'react-dom';
@@ -90,20 +90,16 @@ const SEARCH_DEBOUNCE_MS = 500;
 const MAX_SEARCH_LENGTH = 100;
 const DEFAULT_PROJECT_SORT_FIELD = 'name';
 const DEFAULT_PROJECT_SORT_ORDER = 'ascend';
+const DEFAULT_GROUPED_PROJECT_SORT_FIELD = 'priority';
+const DEFAULT_GROUPED_PROJECT_SORT_ORDER = 'descend';
 const SEARCH_QUERY_PARAM = 'search';
 const PAGE_QUERY_PARAM = 'page';
 const SIZE_QUERY_PARAM = 'size';
 
 const parsePositiveIntegerParam = (value: string | null): number | null => {
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    return null;
-  }
-
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
   return parsed;
 };
 
@@ -123,7 +119,6 @@ const ProjectList: React.FC = () => {
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  // Get view state from Redux
   const { mode: viewMode, groupBy } = useAppSelector(state => state.projectViewReducer);
   const { requestParams, groupedRequestParams, groupedProjects } = useAppSelector(
     state => state.projectsReducer
@@ -131,7 +126,10 @@ const ProjectList: React.FC = () => {
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
-  const { filteredCategories, filteredStatuses } = useAppSelector(state => state.projectsReducer);
+  const { priorities } = useAppSelector(state => state.priorityReducer);
+  const { filteredCategories, filteredStatuses, filteredPriorities } = useAppSelector(
+    state => state.projectsReducer
+  );
 
   const optimizedQueryParams = useMemo(
     () => ({
@@ -143,11 +141,11 @@ const ProjectList: React.FC = () => {
       filter: requestParams.filter,
       statuses: requestParams.statuses,
       categories: requestParams.categories,
+      priorities: requestParams.priorities, // FIX #2: now included because type is correct
     }),
     [requestParams]
   );
 
-  // Use the optimized query with better error handling and caching
   const {
     data: projectsData,
     isLoading: loadingProjects,
@@ -155,11 +153,9 @@ const ProjectList: React.FC = () => {
     refetch: refetchProjects,
     error: projectsError,
   } = useGetProjectsQuery(optimizedQueryParams, {
-    // Enable caching and reduce unnecessary refetches
-    refetchOnMountOrArgChange: 30, // Refetch if data is older than 30 seconds
-    refetchOnFocus: false, // Don't refetch on window focus
-    refetchOnReconnect: true, // Refetch on network reconnect
-    // Skip query if we're in group view mode
+    refetchOnMountOrArgChange: 30,
+    refetchOnFocus: false,
+    refetchOnReconnect: true,
     skip: viewMode === ProjectViewType.GROUP,
   });
 
@@ -168,7 +164,7 @@ const ProjectList: React.FC = () => {
       ...groupedRequestParams,
       ...overrides,
       groupBy:
-        overrides.groupBy || groupedRequestParams.groupBy || groupBy || ProjectGroupBy.CATEGORY,
+        overrides.groupBy || groupedRequestParams.groupBy || groupBy || ProjectGroupBy.PRIORITY,
     }),
     [groupedRequestParams, groupBy]
   );
@@ -182,20 +178,14 @@ const ProjectList: React.FC = () => {
           currentGroupBy: string
         ) => {
           setErrorMessage(null);
-
           if (viewMode === ProjectViewType.LIST) {
-            dispatch(
-              setRequestParams({
-                search: searchTerm,
-                index: 1, // Reset to first page on search
-              })
-            );
+            dispatch(setRequestParams({ search: searchTerm, index: 1 }));
           } else if (viewMode === ProjectViewType.GROUP) {
             const newGroupedParams = {
               ...(currentGroupedParams || {}),
               search: searchTerm,
               index: 1,
-              groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.CATEGORY,
+              groupBy: currentGroupedParams?.groupBy || currentGroupBy || ProjectGroupBy.PRIORITY,
             };
             dispatch(setGroupedRequestParams(newGroupedParams));
             dispatch(fetchGroupedProjects(newGroupedParams));
@@ -206,38 +196,27 @@ const ProjectList: React.FC = () => {
     [dispatch, viewMode]
   );
 
-  // Enhanced cleanup with better timeout management
   useEffect(() => {
     return () => {
       debouncedSearch.cancel();
     };
   }, [debouncedSearch]);
 
-  // Improved search change handler with better validation
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const newSearchValue = e.target.value;
-
-      if (newSearchValue.length > MAX_SEARCH_LENGTH) {
-        return;
-      }
-
+      if (newSearchValue.length > MAX_SEARCH_LENGTH) return;
       setSearchValue(newSearchValue);
       trackMixpanelEvent(evt_projects_search);
-
       debouncedSearch(newSearchValue, groupedRequestParams, groupBy);
     },
     [debouncedSearch, trackMixpanelEvent, groupedRequestParams, groupBy]
   );
 
-  const getFilterIndex = useCallback(() => {
-    return +(localStorage.getItem(FILTER_INDEX_KEY) || 0);
-  }, []);
-
+  const getFilterIndex = useCallback(() => +(localStorage.getItem(FILTER_INDEX_KEY) || 0), []);
   const setFilterIndex = useCallback((index: number) => {
     localStorage.setItem(FILTER_INDEX_KEY, index.toString());
   }, []);
-
   const setSortingValues = useCallback((field: string, order: string) => {
     localStorage.setItem(PROJECT_SORT_FIELD, field);
     localStorage.setItem(PROJECT_SORT_ORDER, order);
@@ -246,10 +225,7 @@ const ProjectList: React.FC = () => {
   const filters = useMemo(() => Object.values(IProjectFilter), []);
 
   const segmentOptions = useMemo(() => {
-    return filters.map(filter => ({
-      value: filter,
-      label: t(filter.toLowerCase()),
-    }));
+    return filters.map(filter => ({ value: filter, label: t(filter.toLowerCase()) }));
   }, [filters, t]);
 
   const viewToggleOptions = useMemo(
@@ -283,6 +259,10 @@ const ProjectList: React.FC = () => {
   const groupByOptions = useMemo(
     () => [
       {
+        value: ProjectGroupBy.PRIORITY,
+        label: t('groupBy.priority', { defaultValue: 'Priority' }),
+      },
+      {
         value: ProjectGroupBy.CATEGORY,
         label: t('groupBy.category', { defaultValue: 'Category' }),
       },
@@ -294,22 +274,19 @@ const ProjectList: React.FC = () => {
     [t]
   );
 
-  // Memoize category filters to prevent unnecessary recalculations
   const categoryFilters = useMemo(
-    () =>
-      createFilters(
-        projectCategories.map(category => ({ id: category.id || '', name: category.name || '' }))
-      ),
+    () => createFilters(projectCategories.map(c => ({ id: c.id || '', name: c.name || '' }))),
     [projectCategories]
   );
 
-  // Memoize status filters to prevent unnecessary recalculations
   const statusFilters = useMemo(
-    () =>
-      createFilters(
-        projectStatuses.map(status => ({ id: status.id || '', name: status.name || '' }))
-      ),
+    () => createFilters(projectStatuses.map(s => ({ id: s.id || '', name: s.name || '' }))),
     [projectStatuses]
+  );
+
+  const priorityFilters = useMemo(
+    () => createFilters(priorities.map(p => ({ id: p.id || '', name: p.name || '' }))),
+    [priorities]
   );
 
   const paginationConfig = useMemo(
@@ -338,18 +315,13 @@ const ProjectList: React.FC = () => {
     [groupedRequestParams.index, groupedRequestParams.size, groupedProjects.data?.total_groups]
   );
 
-  // Memoize the project count calculation for the header
   const projectCount = useMemo(() => {
-    if (viewMode === ProjectViewType.LIST) {
-      return projectsData?.body?.total || 0;
-    } else {
-      return (
-        groupedProjects.data?.data?.reduce((total, group) => total + group.project_count, 0) || 0
-      );
-    }
+    if (viewMode === ProjectViewType.LIST) return projectsData?.body?.total || 0;
+    return (
+      groupedProjects.data?.data?.reduce((total, group) => total + group.project_count, 0) || 0
+    );
   }, [viewMode, projectsData?.body?.total, groupedProjects.data?.data]);
 
-  // Memoize the grouped projects data transformation
   const transformedGroupedProjects = useMemo(() => {
     return (
       groupedProjects.data?.data?.map(group => ({
@@ -364,10 +336,11 @@ const ProjectList: React.FC = () => {
     );
   }, [groupedProjects.data?.data]);
 
-  // Memoize the table data source
-  const tableDataSource = useMemo(() => projectsData?.body?.data || [], [projectsData?.body?.data]);
+  const tableDataSource = useMemo(
+    () => projectsData?.body?.data || [],
+    [projectsData?.body?.data]
+  );
 
-  // Handle query errors
   useEffect(() => {
     if (projectsError) {
       setErrorMessage(
@@ -378,13 +351,11 @@ const ProjectList: React.FC = () => {
     }
   }, [projectsError, t]);
 
-  // Optimized refresh handler with better error handling
   const handleRefresh = useCallback(async () => {
     try {
       trackMixpanelEvent(evt_projects_refresh_click);
       setIsLoading(true);
       setErrorMessage(null);
-
       if (viewMode === ProjectViewType.LIST) {
         await refetchProjects();
       } else if (viewMode === ProjectViewType.GROUP && groupBy) {
@@ -399,7 +370,6 @@ const ProjectList: React.FC = () => {
     }
   }, [trackMixpanelEvent, refetchProjects, viewMode, groupBy, dispatch, groupedRequestParams, t]);
 
-  // Enhanced empty text with error handling
   const emptyContent = useMemo(() => {
     if (errorMessage) {
       return (
@@ -418,10 +388,21 @@ const ProjectList: React.FC = () => {
     return <Empty description={t('noProjects', { defaultValue: 'No Projects' })} />;
   }, [errorMessage, handleRefresh, isLoading, t]);
 
-  // Memoize the pagination show total function
   const paginationShowTotal = useMemo(
-    () => (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total} groups`,
-    []
+    () => (total: number, range: [number, number]) => {
+      let groupedLabel = t('groups', { defaultValue: 'groups' });
+
+      if (groupBy === ProjectGroupBy.CATEGORY) {
+        groupedLabel = t('groupBy.categories', { defaultValue: 'categories' });
+      } else if (groupBy === ProjectGroupBy.PRIORITY) {
+        groupedLabel = t('groupBy.priorities', { defaultValue: 'priorities' });
+      } else if (groupBy === ProjectGroupBy.CLIENT) {
+        groupedLabel = t('groupBy.clients', { defaultValue: 'clients' });
+      }
+
+      return `${range[0]}-${range[1]} of ${total} ${groupedLabel}`;
+    },
+    [groupBy, t]
   );
 
   const handleTableChange = useCallback(
@@ -430,58 +411,99 @@ const ProjectList: React.FC = () => {
       filters: Record<string, FilterValue | null>,
       sorter: SorterResult<IProjectViewModel> | SorterResult<IProjectViewModel>[]
     ) => {
-      // Batch all parameter updates to reduce re-renders
       const updates: Partial<typeof requestParams> = {};
       let hasChanges = false;
 
-      // Handle status filters
+      // Handle page and page-size changes
+      const newPage = newPagination.current ?? 1;
+      const newSize = newPagination.pageSize ?? DEFAULT_PAGE_SIZE;
+      if (newPage !== requestParams.index || newSize !== requestParams.size) {
+        updates.index = newPage;
+        updates.size = newSize;
+        hasChanges = true;
+      }
+
       if (filters?.status_id !== filteredInfo.status_id) {
         if (!filters?.status_id) {
           updates.statuses = null;
           dispatch(setFilteredStatuses([]));
         } else {
           updates.statuses = filters.status_id.join(' ');
+          dispatch(setFilteredStatuses(filters.status_id as string[]));
         }
         hasChanges = true;
       }
 
-      // Handle category filters
       if (filters?.category_id !== filteredInfo.category_id) {
         if (!filters?.category_id) {
           updates.categories = null;
           dispatch(setFilteredCategories([]));
         } else {
           updates.categories = filters.category_id.join(' ');
+          dispatch(setFilteredCategories(filters.category_id as string[]));
         }
         hasChanges = true;
       }
 
-      // Handle sorting
+      if (filters?.priority_name !== filteredInfo.priority_name) {
+        if (!filters?.priority_name) {
+          updates.priorities = null;
+          dispatch(setFilteredPriorities([]));
+        } else {
+          updates.priorities = filters.priority_name.join(' ');
+          dispatch(setFilteredPriorities(filters.priority_name as string[]));
+        }
+        hasChanges = true;
+      }
+
       const newOrder = Array.isArray(sorter) ? sorter[0].order : sorter.order;
-      const newField = (Array.isArray(sorter) ? sorter[0].columnKey : sorter.columnKey) as string;
+      const newField = (
+        Array.isArray(sorter) ? sorter[0].columnKey : sorter.columnKey
+      ) as string;
 
-      if (
-        newOrder &&
-        newField &&
-        (newOrder !== requestParams.order || newField !== requestParams.field)
-      ) {
-        updates.order = newOrder ?? DEFAULT_PROJECT_SORT_ORDER;
-        updates.field = newField ?? DEFAULT_PROJECT_SORT_FIELD;
-        setSortingValues(updates.field, updates.order);
+      // Detect whether this onChange was triggered by a sort interaction or a
+      // pagination interaction. Ant Design calls onChange for both — we must
+      // not reset the page to 1 when the user is simply navigating pages.
+      //
+      // A sort interaction is happening when:
+      //   - newOrder is truthy AND it differs from the stored order/field  (sort applied/changed)
+      //   - newOrder is falsy  AND requestParams.order is a *user-applied* sort (sort cleared)
+      //
+      // The loop bug: previously, clearing a sort stored order='ascend'/field='name' in Redux,
+      // but the table UI had no active sort arrow. Every subsequent pagination click arrived
+      // with newOrder=undefined, hitting the !newOrder branch again and again, forcing
+      // index=1 on every page click.
+      //
+      // Fix: use a sentinel value '' (empty string) to represent "no active sort" in Redux.
+      // When order==='' we know no sort is active, so !newOrder no longer incorrectly
+      // triggers the sort-cleared branch during a plain pagination click.
+      const isSortCleared = !newOrder && !!requestParams.order;
+      const isSortChanged =
+        !!newOrder &&
+        !!newField &&
+        (newOrder !== requestParams.order || newField !== requestParams.field);
+
+      if (isSortCleared) {
+        // Sort was just removed by the user — reset to default and go back to page 1.
+        // Use '' as sentinel so subsequent pagination clicks don't re-enter this branch.
+        updates.order = '';
+        updates.field = '';
+        updates.index = 1;
+        setSortingValues('', '');
+        hasChanges = true;
+      } else if (isSortChanged) {
+        // Sort column or direction changed — reset to page 1 so the user sees
+        // the first page of the newly sorted result set.
+        updates.order = newOrder!;
+        updates.field = newField;
+        updates.index = 1;
+        setSortingValues(newField, newOrder!);
         hasChanges = true;
       }
+      // else: no sort change — this is a pure pagination or filter event.
+      // Do not touch order/field/index here; the pagination block above
+      // already set updates.index and updates.size if they changed.
 
-      // Handle pagination
-      if (
-        newPagination.current !== requestParams.index ||
-        newPagination.pageSize !== requestParams.size
-      ) {
-        updates.index = newPagination.current || 1;
-        updates.size = newPagination.pageSize || DEFAULT_PAGE_SIZE;
-        hasChanges = true;
-      }
-
-      // Only dispatch if there are actual changes
       if (hasChanges) {
         dispatch(setRequestParams(updates));
         dispatch(setGroupedRequestParams(buildGroupedParams(updates)));
@@ -492,39 +514,34 @@ const ProjectList: React.FC = () => {
     [dispatch, setSortingValues, filteredInfo, requestParams, buildGroupedParams]
   );
 
-  // Optimized grouped table change handler
+  // FIX #3: removed the stale-closure guard that was blocking valid page changes.
+  // Previously, if groupedRequestParams hadn't updated in Redux yet (stale closure),
+  // newIndex !== groupedRequestParams.index could evaluate to false even though the
+  // user clicked a different page, silently swallowing the pagination event.
+  // Now we always dispatch with the full current params spread to avoid losing any field.
   const handleGroupedTableChange = useCallback(
     (newPagination: TablePaginationConfig) => {
-      const newParams: Partial<typeof groupedRequestParams> = {
-        index: newPagination.current || 1,
-        size: newPagination.pageSize || DEFAULT_PAGE_SIZE,
-      };
+      const newIndex = newPagination.current || 1;
+      const newSize = newPagination.pageSize || DEFAULT_PAGE_SIZE;
 
-      // Only update if values actually changed
-      if (
-        newParams.index !== groupedRequestParams.index ||
-        newParams.size !== groupedRequestParams.size
-      ) {
-        const updatedParams = buildGroupedParams(newParams);
-        dispatch(setGroupedRequestParams(updatedParams));
-        dispatch(fetchGroupedProjects(updatedParams));
-      }
+      const updatedParams = {
+        ...groupedRequestParams,
+        index: newIndex,
+        size: newSize,
+      };
+      dispatch(setGroupedRequestParams(updatedParams));
+      dispatch(fetchGroupedProjects(updatedParams));
     },
-    [dispatch, groupedRequestParams, buildGroupedParams]
+    [dispatch, groupedRequestParams]
   );
 
-  // Optimized segment change handler with better state management
   const handleSegmentChange = useCallback(
     (value: IProjectFilter) => {
       const newFilterIndex = filters.indexOf(value);
       setFilterIndex(newFilterIndex);
-
-      // Batch updates to reduce re-renders
       const baseUpdates = { filter: newFilterIndex, index: 1 };
-
       dispatch(setRequestParams(baseUpdates));
       dispatch(setGroupedRequestParams(buildGroupedParams(baseUpdates)));
-
       if (viewMode === ProjectViewType.GROUP && groupBy) {
         dispatch(fetchGroupedProjects(buildGroupedParams(baseUpdates)));
       }
@@ -537,7 +554,9 @@ const ProjectList: React.FC = () => {
       dispatch(setViewMode(value));
       if (value === ProjectViewType.GROUP) {
         const newGroupedParams = buildGroupedParams({
-          groupBy: groupBy || ProjectGroupBy.CATEGORY,
+          groupBy: groupBy || ProjectGroupBy.PRIORITY,
+          field: DEFAULT_GROUPED_PROJECT_SORT_FIELD,
+          order: DEFAULT_GROUPED_PROJECT_SORT_ORDER,
           search: requestParams.search,
           filter: requestParams.filter,
           statuses: requestParams.statuses,
@@ -555,6 +574,14 @@ const ProjectList: React.FC = () => {
       dispatch(setGroupBy(value));
       const newGroupedParams = buildGroupedParams({
         groupBy: value,
+        field:
+          value === ProjectGroupBy.PRIORITY
+            ? DEFAULT_GROUPED_PROJECT_SORT_FIELD
+            : DEFAULT_PROJECT_SORT_FIELD,
+        order:
+          value === ProjectGroupBy.PRIORITY
+            ? DEFAULT_GROUPED_PROJECT_SORT_ORDER
+            : DEFAULT_PROJECT_SORT_ORDER,
         index: 1,
       });
       dispatch(setGroupedRequestParams(newGroupedParams));
@@ -579,36 +606,33 @@ const ProjectList: React.FC = () => {
     [navigate]
   );
 
-  // Preload project view components on hover for smoother navigation
   const handleProjectHover = useCallback((project_id: string | undefined) => {
     if (project_id) {
-      // Preload the project view route to reduce loading time
-      import('@/pages/projects/projectView/project-view').catch(() => {
-        // Silently fail if preload doesn't work
-      });
-
-      // Also preload critical task management components
-      import('@/components/task-management/task-list-board').catch(() => {
-        // Silently fail if preload doesn't work
-      });
+      import('@/pages/projects/projectView/project-view').catch(() => {});
+      import('@/components/task-management/task-list-board').catch(() => {});
     }
   }, []);
 
-  // Define table columns directly in the component to avoid hooks order issues
+  // Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
   const tableColumns: ColumnsType<IProjectViewModel> = useMemo(
     () => [
+      // 1. Favorite
       {
         title: '',
         dataIndex: 'favorite',
         key: 'favorite',
+        width: 56,
+        align: 'center',
         render: (text: string, record: IProjectViewModel) => (
           <ProjectRateCell key={record.id} t={t} record={record} />
         ),
       },
+      // 2. Name
       {
         title: t('name'),
         dataIndex: 'name',
         key: 'name',
+        width: 280,
         sorter: true,
         showSorterTooltip: false,
         defaultSortOrder: DEFAULT_PROJECT_SORT_ORDER,
@@ -616,6 +640,7 @@ const ProjectList: React.FC = () => {
           <ProjectNameCell navigate={navigate} key={record.id} t={t} record={record} />
         ),
       },
+      // 3. Client
       {
         title: t('client'),
         dataIndex: 'client_name',
@@ -623,18 +648,31 @@ const ProjectList: React.FC = () => {
         sorter: true,
         showSorterTooltip: false,
       },
+      // 4. Priority
       {
-        title: t('category'),
-        dataIndex: 'category_name',
-        key: 'category_id',
-        filters: categoryFilters,
-        filteredValue: filteredInfo.category_id || filteredCategories || [],
+        title: t('priority', { defaultValue: 'Priority' }),
+        dataIndex: 'priority_name',
+        key: 'priority_name',
+        filters: priorityFilters,
+        filteredValue: filteredInfo.priority_name || filteredPriorities || [],
         filterMultiple: true,
-        render: (text: string, record: IProjectViewModel) => (
-          <CategoryCell key={record.id} t={t} record={record} />
-        ),
         sorter: true,
+        showSorterTooltip: false,
+        render: (_: string, record: IProjectViewModel) => {
+          if (!record.priority_name) {
+            return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
+          }
+          const themeMode =
+            document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+          const color = themeMode === 'dark' ? record.priority_color_dark : record.priority_color;
+          return (
+            <span style={{ color: color || undefined, fontWeight: 500, fontSize: 13 }}>
+              {record.priority_name}
+            </span>
+          );
+        },
       },
+      // 5. Status
       {
         title: t('status'),
         dataIndex: 'status',
@@ -644,30 +682,43 @@ const ProjectList: React.FC = () => {
         filterMultiple: true,
         sorter: true,
       },
+      // 6. Tasks Progress
       {
         title: t('tasksProgress'),
         dataIndex: 'tasksProgress',
         key: 'tasksProgress',
         render: (_: string, record: IProjectViewModel) => <ProgressListProgress record={record} />,
       },
+      // 7. Category
       {
-        title: t('updated_at'),
+        title: t('category'),
+        dataIndex: 'category_name',
+        key: 'category_id',
+        filters: categoryFilters,
+        filteredValue: filteredInfo.category_id || filteredCategories || [],
+        filterMultiple: true,
+        sorter: true,
+        showSorterTooltip: false,
+        render: (text: string, record: IProjectViewModel) => (
+          <CategoryCell key={record.id} t={t} record={record} />
+        ),
+      },
+      // 8. Last Updated
+      {
+        title: t('updated_at', { defaultValue: 'Last Updated' }),
         dataIndex: 'updated_at',
         key: 'updated_at',
         sorter: true,
         showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => <ProjectListUpdatedAt record={record} />,
       },
-      {
-        title: t('members'),
-        dataIndex: 'names',
-        key: 'members',
-        render: (members: InlineMember[]) => <Avatars members={members} />,
-      },
+      // 9. Actions
       {
         title: '',
         key: 'button',
         dataIndex: '',
+        width: 76,
+        align: 'center',
         render: (record: IProjectViewModel) => (
           <ActionButtons
             t={t}
@@ -682,76 +733,55 @@ const ProjectList: React.FC = () => {
       t,
       categoryFilters,
       statusFilters,
+      priorityFilters,
       filteredInfo,
       filteredCategories,
       filteredStatuses,
+      filteredPriorities,
       navigate,
       dispatch,
       isOwnerOrAdmin,
     ]
   );
 
-  // Optimize useEffect hooks to reduce unnecessary API calls
   useEffect(() => {
     const filterIndex = getFilterIndex();
     const initialParams = { filter: filterIndex };
-
-    // Only update if values are different
-    if (requestParams.filter !== filterIndex) {
-      dispatch(setRequestParams(initialParams));
-    }
-
+    if (requestParams.filter !== filterIndex) dispatch(setRequestParams(initialParams));
     if (!groupedRequestParams.groupBy) {
-      const initialGroupBy = groupBy || ProjectGroupBy.CATEGORY;
+      const initialGroupBy = groupBy || ProjectGroupBy.PRIORITY;
       dispatch(
         setGroupedRequestParams({
           filter: filterIndex,
           index: 1,
           size: DEFAULT_PAGE_SIZE,
-          field: DEFAULT_PROJECT_SORT_FIELD,
-          order: DEFAULT_PROJECT_SORT_ORDER,
           search: '',
           groupBy: initialGroupBy,
           statuses: null,
           categories: null,
+          priorities: null,
+          field:
+            initialGroupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_FIELD
+              : DEFAULT_PROJECT_SORT_FIELD,
+          order:
+            initialGroupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_ORDER
+              : DEFAULT_PROJECT_SORT_ORDER,
         })
       );
     }
   }, [dispatch, getFilterIndex, groupBy, groupedRequestParams.groupBy, requestParams.filter]);
 
-  // Hydrate search from URL once on initial load
   useEffect(() => {
-    if (hasHydratedSearchFromUrl.current) {
-      return;
-    }
+    if (hasHydratedSearchFromUrl.current) return;
     hasHydratedSearchFromUrl.current = true;
-
     const searchFromUrl = (urlSearchParams.get(SEARCH_QUERY_PARAM) || '').trim();
-
-    if (!searchFromUrl) {
-      return;
-    }
-
-    if (requestParams.search !== searchFromUrl) {
-      dispatch(
-        setRequestParams({
-          search: searchFromUrl,
-          index: 1,
-        })
-      );
-    }
-
-    if (groupedRequestParams.search !== searchFromUrl) {
-      dispatch(
-        setGroupedRequestParams(
-          buildGroupedParams({
-            search: searchFromUrl,
-            index: 1,
-          })
-        )
-      );
-    }
-
+    if (!searchFromUrl) return;
+    if (requestParams.search !== searchFromUrl)
+      dispatch(setRequestParams({ search: searchFromUrl, index: 1 }));
+    if (groupedRequestParams.search !== searchFromUrl)
+      dispatch(setGroupedRequestParams(buildGroupedParams({ search: searchFromUrl, index: 1 })));
     setSearchValue(prevValue => (prevValue === searchFromUrl ? prevValue : searchFromUrl));
   }, [
     dispatch,
@@ -761,36 +791,24 @@ const ProjectList: React.FC = () => {
     buildGroupedParams,
   ]);
 
-  // Hydrate pagination from URL once on initial load
   useEffect(() => {
-    if (hasHydratedPaginationFromUrl.current) {
-      return;
-    }
+    if (hasHydratedPaginationFromUrl.current) return;
     hasHydratedPaginationFromUrl.current = true;
-
     const pageFromUrl = parsePositiveIntegerParam(urlSearchParams.get(PAGE_QUERY_PARAM));
     const sizeFromUrl = parsePositiveIntegerParam(urlSearchParams.get(SIZE_QUERY_PARAM));
-
     const listUpdates: Partial<typeof requestParams> = {};
     const groupedUpdates: Partial<typeof groupedRequestParams> = {};
-
     if (pageFromUrl && pageFromUrl !== requestParams.index) {
       listUpdates.index = pageFromUrl;
       groupedUpdates.index = pageFromUrl;
     }
-
     if (sizeFromUrl && sizeFromUrl !== requestParams.size) {
       listUpdates.size = sizeFromUrl;
       groupedUpdates.size = sizeFromUrl;
     }
-
-    if (Object.keys(listUpdates).length > 0) {
-      dispatch(setRequestParams(listUpdates));
-    }
-
-    if (Object.keys(groupedUpdates).length > 0) {
+    if (Object.keys(listUpdates).length > 0) dispatch(setRequestParams(listUpdates));
+    if (Object.keys(groupedUpdates).length > 0)
       dispatch(setGroupedRequestParams(buildGroupedParams(groupedUpdates)));
-    }
   }, [
     dispatch,
     urlSearchParams,
@@ -799,24 +817,29 @@ const ProjectList: React.FC = () => {
     buildGroupedParams,
   ]);
 
-  // Separate effect for tracking page visits - only run once
   useEffect(() => {
     trackMixpanelEvent(evt_projects_page_visit);
   }, [trackMixpanelEvent]);
 
-  // Enhanced effect for grouped projects - fetch data when in group view
   useEffect(() => {
     if (viewMode === ProjectViewType.GROUP && groupBy) {
       const shouldUpdateParams =
         !groupedRequestParams.groupBy || groupedRequestParams.groupBy !== groupBy;
-
       if (shouldUpdateParams) {
         const updatedParams = buildGroupedParams({
-          groupBy: groupBy,
+          groupBy,
           index: groupedRequestParams.index || 1,
           size: groupedRequestParams.size || DEFAULT_PAGE_SIZE,
-          field: groupedRequestParams.field || DEFAULT_PROJECT_SORT_FIELD,
-          order: groupedRequestParams.order || DEFAULT_PROJECT_SORT_ORDER,
+          field:
+            groupedRequestParams.field ||
+            (groupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_FIELD
+              : DEFAULT_PROJECT_SORT_FIELD),
+          order:
+            groupedRequestParams.order ||
+            (groupBy === ProjectGroupBy.PRIORITY
+              ? DEFAULT_GROUPED_PROJECT_SORT_ORDER
+              : DEFAULT_PROJECT_SORT_ORDER),
         });
         dispatch(setGroupedRequestParams(updatedParams));
         dispatch(fetchGroupedProjects(updatedParams));
@@ -824,64 +847,47 @@ const ProjectList: React.FC = () => {
         dispatch(fetchGroupedProjects(groupedRequestParams));
       }
     }
-  }, [dispatch, viewMode, groupBy, groupedRequestParams, groupedProjects.data, buildGroupedParams]);
+  }, [
+    dispatch,
+    viewMode,
+    groupBy,
+    groupedRequestParams,
+    groupedProjects.data,
+    buildGroupedParams,
+  ]);
 
-  // Optimize lookups loading - only fetch once
   useEffect(() => {
     const loadLookups = async () => {
       const promises = [];
-
-      if (projectStatuses.length === 0) {
-        promises.push(dispatch(fetchProjectStatuses()));
-      }
-      if (projectCategories.length === 0) {
-        promises.push(dispatch(fetchProjectCategories()));
-      }
-      if (projectHealths.length === 0) {
-        promises.push(dispatch(fetchProjectHealth()));
-      }
-
-      // Load all lookups in parallel
-      if (promises.length > 0) {
-        await Promise.allSettled(promises);
-      }
+      if (projectStatuses.length === 0) promises.push(dispatch(fetchProjectStatuses()));
+      if (projectCategories.length === 0) promises.push(dispatch(fetchProjectCategories()));
+      if (projectHealths.length === 0) promises.push(dispatch(fetchProjectHealth()));
+      if (promises.length > 0) await Promise.allSettled(promises);
     };
-
     loadLookups();
   }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length]);
 
-  // Sync search input only when Redux search changes (e.g. external resets/view switches)
   useEffect(() => {
     const currentSearch =
       viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search;
-
     setSearchValue(prevValue => {
-      const normalizedSearch = currentSearch || '';
-      return prevValue === normalizedSearch ? prevValue : normalizedSearch;
+      const n = currentSearch || '';
+      return prevValue === n ? prevValue : n;
     });
   }, [requestParams.search, groupedRequestParams.search, viewMode]);
 
-  // Keep URL search query in sync with the active view search
   useEffect(() => {
     const activeSearch =
-      (viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search) || '';
+      (viewMode === ProjectViewType.LIST ? requestParams.search : groupedRequestParams.search) ||
+      '';
     const normalizedSearch = activeSearch.trim();
     const currentUrlSearch = (urlSearchParams.get(SEARCH_QUERY_PARAM) || '').trim();
-
-    if (currentUrlSearch === normalizedSearch) {
-      return;
-    }
-
+    if (currentUrlSearch === normalizedSearch) return;
     setUrlSearchParams(
       prevParams => {
         const nextParams = new URLSearchParams(prevParams);
-
-        if (normalizedSearch) {
-          nextParams.set(SEARCH_QUERY_PARAM, normalizedSearch);
-        } else {
-          nextParams.delete(SEARCH_QUERY_PARAM);
-        }
-
+        if (normalizedSearch) nextParams.set(SEARCH_QUERY_PARAM, normalizedSearch);
+        else nextParams.delete(SEARCH_QUERY_PARAM);
         return nextParams;
       },
       { replace: true }
@@ -894,33 +900,21 @@ const ProjectList: React.FC = () => {
     setUrlSearchParams,
   ]);
 
-  // Keep URL pagination query in sync with active view pagination
   useEffect(() => {
     const activeIndex =
       viewMode === ProjectViewType.LIST ? requestParams.index : groupedRequestParams.index;
-    const activeSize = viewMode === ProjectViewType.LIST ? requestParams.size : groupedRequestParams.size;
-
-    const normalizedPage = activeIndex || 1;
-    const normalizedSize = activeSize || DEFAULT_PAGE_SIZE;
-
-    const desiredPage = normalizedPage.toString();
-    const desiredSize = normalizedSize.toString();
+    const activeSize =
+      viewMode === ProjectViewType.LIST ? requestParams.size : groupedRequestParams.size;
+    const desiredPage = (activeIndex || 1).toString();
+    const desiredSize = (activeSize || DEFAULT_PAGE_SIZE).toString();
     const currentUrlPage = urlSearchParams.get(PAGE_QUERY_PARAM) || '';
     const currentUrlSize = urlSearchParams.get(SIZE_QUERY_PARAM) || '';
-
-    const isSamePage = currentUrlPage === desiredPage;
-    const isSameSize = currentUrlSize === desiredSize;
-
-    if (isSamePage && isSameSize) {
-      return;
-    }
-
+    if (currentUrlPage === desiredPage && currentUrlSize === desiredSize) return;
     setUrlSearchParams(
       prevParams => {
         const nextParams = new URLSearchParams(prevParams);
         nextParams.set(PAGE_QUERY_PARAM, desiredPage);
         nextParams.set(SIZE_QUERY_PARAM, desiredSize);
-
         return nextParams;
       },
       { replace: true }
@@ -935,20 +929,12 @@ const ProjectList: React.FC = () => {
     setUrlSearchParams,
   ]);
 
-  // Optimize loading state management
   useEffect(() => {
-    let newLoadingState = false;
-
-    if (viewMode === ProjectViewType.LIST) {
-      newLoadingState = loadingProjects || isFetchingProjects;
-    } else {
-      newLoadingState = groupedProjects.loading;
-    }
-
-    // Only update if loading state actually changed
-    if (isLoading !== newLoadingState) {
-      setIsLoading(newLoadingState);
-    }
+    const newLoadingState =
+      viewMode === ProjectViewType.LIST
+        ? loadingProjects || isFetchingProjects
+        : groupedProjects.loading;
+    if (isLoading !== newLoadingState) setIsLoading(newLoadingState);
   }, [loadingProjects, isFetchingProjects, viewMode, groupedProjects.loading, isLoading]);
 
   return (
@@ -962,7 +948,9 @@ const ProjectList: React.FC = () => {
             <Tooltip title={t('refreshProjects', { defaultValue: 'Refresh projects' })}>
               <Button
                 shape="circle"
-                icon={<SyncOutlined spin={isFetchingProjects || groupedProjects.loading} />}
+                icon={
+                  <SyncOutlined spin={isFetchingProjects || groupedProjects.loading} />
+                }
                 onClick={handleRefresh}
                 aria-label={t('refreshProjects', { defaultValue: 'Refresh projects' })}
               />
@@ -1009,26 +997,39 @@ const ProjectList: React.FC = () => {
             onChange={handleTableChange}
             pagination={paginationConfig}
             locale={{ emptyText: emptyContent }}
+            scroll={{ y: 'calc(100vh - 280px)' }}
+            sticky
             onRow={record => ({
               onClick: () => navigateToProject(record.id, record.team_member_default_view),
               onMouseEnter: () => handleProjectHover(record.id),
             })}
           />
         ) : (
-          <div>
-            <ProjectGroupList
-              groups={transformedGroupedProjects}
-              navigate={navigate}
-              onProjectSelect={(id, defaultView) => navigateToProject(id, defaultView)}
-              onArchive={() => {}}
-              isOwnerOrAdmin={isOwnerOrAdmin}
-              loading={groupedProjects.loading}
-              t={t}
-            />
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 280px)' }}>
+            {/* Scrollable groups list */}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              <ProjectGroupList
+                groups={transformedGroupedProjects}
+                navigate={navigate}
+                onProjectSelect={(id, defaultView) => navigateToProject(id, defaultView)}
+                onArchive={() => {}}
+                isOwnerOrAdmin={isOwnerOrAdmin}
+                loading={groupedProjects.loading}
+                t={t}
+              />
+            </div>
+            {/* Pagination stays fixed below — never scrolls */}
             {!groupedProjects.loading &&
               groupedProjects.data?.data &&
               groupedProjects.data.data.length > 0 && (
-                <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                <div
+                  style={{
+                    flexShrink: 0,
+                    padding: '8px 0',
+                    textAlign: 'right',
+                    borderTop: '1px solid var(--ant-color-border)',
+                  }}
+                >
                   <Pagination
                     {...groupedPaginationConfig}
                     onChange={(page, pageSize) =>

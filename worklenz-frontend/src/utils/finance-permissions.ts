@@ -1,5 +1,7 @@
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { ROLE_NAMES } from '@/types/roles/role.types';
 
 /**
  * Checks if the current user has permission to edit finance data
@@ -14,12 +16,10 @@ export const hasFinanceEditPermission = (
   currentProject?: IProjectViewModel | null
 ): boolean => {
   if (!currentSession) return false;
+  const currentRole = getSessionRoleName(currentSession);
 
   // Team owner or admin always have permission (but not team leads)
-  if (
-    currentSession.owner ||
-    (currentSession.is_admin && currentSession.role_name !== 'Team Lead')
-  ) {
+  if (currentRole === ROLE_NAMES.OWNER || currentRole === ROLE_NAMES.ADMIN) {
     return true;
   }
 
@@ -41,12 +41,10 @@ export const hasFinanceViewPermission = (
   currentProject?: IProjectViewModel | null
 ): boolean => {
   if (!currentSession) return false;
+  const currentRole = getSessionRoleName(currentSession);
 
   // Team owner or admin always have permission (but not team leads)
-  if (
-    currentSession.owner ||
-    (currentSession.is_admin && currentSession.role_name !== 'Team Lead')
-  ) {
+  if (currentRole === ROLE_NAMES.OWNER || currentRole === ROLE_NAMES.ADMIN) {
     return true;
   }
 

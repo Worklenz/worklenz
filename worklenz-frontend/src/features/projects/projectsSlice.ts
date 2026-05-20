@@ -6,6 +6,7 @@ import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
 import { IProjectManager } from '@/types/project/projectManager.types';
 import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
+import { ProjectGroupBy } from '@/types/project/project.types';
 
 interface ProjectState {
   projects: {
@@ -24,6 +25,7 @@ interface ProjectState {
   isSaveAsTemplateDrawerOpen: boolean;
   filteredCategories: string[];
   filteredStatuses: string[];
+  filteredPriorities: string[]; // FIX #1: was missing from interface
   requestParams: {
     index: number;
     size: number;
@@ -33,6 +35,7 @@ interface ProjectState {
     filter: number;
     statuses: string | null;
     categories: string | null;
+    priorities: string | null; // FIX #2: was missing from interface
   };
   groupedRequestParams: {
     index: number;
@@ -44,6 +47,7 @@ interface ProjectState {
     filter: number;
     statuses: string | null;
     categories: string | null;
+    priorities: string | null; // FIX #2: was missing from interface
   };
   projectManagers: IProjectManager[];
   projectManagersLoading: boolean;
@@ -71,32 +75,34 @@ const initialState: ProjectState = {
   isSaveAsTemplateDrawerOpen: false,
   filteredCategories: [],
   filteredStatuses: [],
+  filteredPriorities: [], // FIX #1: now properly typed
   requestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: 'name',
-    order: 'ascend',
+    field: '',
+    order: '',
     search: '',
     filter: 0,
     statuses: null,
     categories: null,
+    priorities: null,
   },
   groupedRequestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: 'name',
-    order: 'ascend',
+    field: 'priority',
+    order: 'descend',
     search: '',
-    groupBy: 'category',
+    groupBy: ProjectGroupBy.PRIORITY,
     filter: 0,
     statuses: null,
     categories: null,
+    priorities: null, // FIX #2: now properly typed
   },
   projectManagers: [],
   projectManagersLoading: false,
 };
 
-// Create async thunk for fetching teams
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
   async (
@@ -109,6 +115,7 @@ export const fetchProjects = createAsyncThunk(
       filter: number;
       statuses: string | null;
       categories: string | null;
+      priorities: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -121,7 +128,8 @@ export const fetchProjects = createAsyncThunk(
         params.search,
         params.filter,
         params.statuses,
-        params.categories
+        params.categories,
+        params.priorities
       );
       return projectsResponse.body;
     } catch (error) {
@@ -134,7 +142,6 @@ export const fetchProjects = createAsyncThunk(
   }
 );
 
-// Create async thunk for fetching grouped projects
 export const fetchGroupedProjects = createAsyncThunk(
   'projects/fetchGroupedProjects',
   async (
@@ -148,6 +155,7 @@ export const fetchGroupedProjects = createAsyncThunk(
       filter: number;
       statuses: string | null;
       categories: string | null;
+      priorities: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -161,7 +169,8 @@ export const fetchGroupedProjects = createAsyncThunk(
         params.groupBy,
         params.filter,
         params.statuses,
-        params.categories
+        params.categories,
+        params.priorities
       );
       return groupedProjectsResponse.body;
     } catch (error) {
@@ -243,6 +252,7 @@ export const fetchProjectManagers = createAsyncThunk(
     return response.body;
   }
 );
+
 const projectSlice = createSlice({
   name: 'projectReducer',
   initialState,
@@ -266,6 +276,11 @@ const projectSlice = createSlice({
     setFilteredStatuses: (state, action: PayloadAction<string[]>) => {
       state.filteredStatuses = action.payload;
     },
+    setFilteredPriorities: (state, action: PayloadAction<string[]>) => {
+      state.filteredPriorities = action.payload;
+    },
+    // FIX #2: priorities is now properly typed in the interface so it
+    // will be included in the spread and never silently dropped
     setRequestParams: (state, action: PayloadAction<Partial<ProjectState['requestParams']>>) => {
       state.requestParams = {
         ...state.requestParams,
@@ -295,7 +310,9 @@ const projectSlice = createSlice({
         state.groupedProjects.data.data = state.groupedProjects.data.data.map(group => ({
           ...group,
           projects: group.projects.map(project =>
-            project.id === projectId ? { ...project, team_member_default_view: defaultView } : project
+            project.id === projectId
+              ? { ...project, team_member_default_view: defaultView }
+              : project
           ),
         }));
       }
@@ -361,6 +378,7 @@ export const {
   setCategories,
   setFilteredCategories,
   setFilteredStatuses,
+  setFilteredPriorities,
   setRequestParams,
   setGroupedRequestParams,
   setProjectMemberDefaultView,

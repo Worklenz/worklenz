@@ -87,6 +87,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_created_log = LOG_DESCRIPTIONS.PROJECT_CREATED;
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_manager_id = req.body.project_manager ? req.body.project_manager.id : null;
+    req.body.priority_id = req.body.priority_id || null;
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
@@ -104,6 +105,8 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     // Log project creation after successful database operation
     if (data.project?.id) {
+      await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
+
       await ActivityLoggingService.logProjectCreated(
         req.user?.team_id || "",
         data.project.id,
@@ -161,6 +164,16 @@ export default class ProjectsController extends WorklenzControllerBase {
                  AND is_member_of_project(projects.id, $2, $1)`;
     const result = await db.query(q, [req.user?.team_id, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  private static async setProjectPriority(projectId: string, priorityId: string | null, teamId: string | null) {
+    const q = `
+      UPDATE projects
+      SET priority_id = $2::UUID
+      WHERE id = $1
+        AND team_id = $3;
+    `;
+    await db.query(q, [projectId, priorityId, teamId]);
   }
 
   @HandleExceptions()
@@ -262,6 +275,13 @@ export default class ProjectsController extends WorklenzControllerBase {
     return { clause: `AND status_id IN (${clause})`, params: statusIds };
   }
 
+  private static getFilterByPriorityWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+    const priorityIds = text.split(" ").filter(id => id.trim());
+    const { clause } = SqlHelper.buildInClause(priorityIds, paramOffset);
+    return { clause: `AND priority_id IN (${clause})`, params: priorityIds };
+  }
+
   /**
    * Validates and maps sort field
    * Maps frontend field names to safe database column names
@@ -301,6 +321,9 @@ export default class ProjectsController extends WorklenzControllerBase {
         WHERE id = projects.category_id
       )`,
       'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
+      'priority': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority_id': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority_name': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
       'project_owner': 'owner_id',
     };
 
@@ -401,6 +424,12 @@ export default class ProjectsController extends WorklenzControllerBase {
       paramOffset += statusesResult.params.length;
     }
 
+    const prioritiesResult = this.getFilterByPriorityWhereClosure(req.query.priorities as string, paramOffset);
+    if (prioritiesResult.params.length > 0) {
+      queryParams.push(...prioritiesResult.params);
+      paramOffset += prioritiesResult.params.length;
+    }
+
     // Now get search query with correct paramOffset
     const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, paramOffset);
     
@@ -412,10 +441,11 @@ export default class ProjectsController extends WorklenzControllerBase {
 
     // Validate and sanitize sort field
     const safeSortField = this.validateAndMapSortField(sortField, "name");
-    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC") ? "DESC" : "ASC";
+    const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC" || sortOrder === "descend") ? "DESC" : "ASC";
 
     const categories = categoriesResult.clause;
     const statuses = statusesResult.clause;
+    const priorities = prioritiesResult.clause;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
@@ -461,6 +491,10 @@ export default class ProjectsController extends WorklenzControllerBase {
                                  (SELECT color_code
                                   FROM project_categories
                                   WHERE id = projects.category_id) AS category_color,
+                                 projects.priority_id,
+                                 (SELECT name FROM task_priorities WHERE id = projects.priority_id) AS priority_name,
+                                 (SELECT color_code FROM task_priorities WHERE id = projects.priority_id) AS priority_color,
+                                 (SELECT color_code_dark FROM task_priorities WHERE id = projects.priority_id) AS priority_color_dark,
 
                                   ((SELECT team_member_id as team_member_id
                                     FROM project_members
@@ -484,11 +518,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                                      AND project_id = projects.id)
                                            ELSE updated_at END) AS updated_at
                           FROM projects
-                          WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
-                          ORDER BY ${safeSortField} ${safeSortOrder}
+                          WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                          ORDER BY ${safeSortField} ${safeSortOrder} NULLS LAST
                           LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
-            WHERE team_id = $1 ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
+            WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
     `;
     
     // Add pagination parameters at the end
@@ -590,6 +624,10 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.end_date,
              projects.status_id,
              projects.health_id,
+             projects.priority_id,
+             tp.name AS priority_name,
+             tp.color_code AS priority_color,
+             tp.color_code_dark AS priority_color_dark,
              projects.created_at,
              projects.updated_at,
              projects.folder_id,
@@ -638,6 +676,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                             AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager
       FROM projects
              LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
+             LEFT JOIN task_priorities tp ON projects.priority_id = tp.id
       WHERE projects.id = $1
         AND team_id = $2;
     `;
@@ -680,6 +719,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     if (key.length > 5)
       return res.status(200).send(new ServerResponse(false, null, "The project key length cannot exceed 5 characters."));
 
+    if (req.body.notes && req.body.notes.length > 500) {
+      req.body.notes = req.body.notes.substring(0, 500);
+    }
+
     req.body.id = req.params.id;
     req.body.team_id = req.user?.team_id || null;
     req.body.user_id = req.user?.id || null;
@@ -690,19 +733,23 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.project_member_added_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_ADDED;
     req.body.project_member_removed_log = LOG_DESCRIPTIONS.PROJECT_MEMBER_REMOVED;
     req.body.team_member_id = req.body.project_manager ? req.body.project_manager.id : null;
+    req.body.priority_id = req.body.priority_id || null;
 
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
-      req.body.start_date = req.body.start_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+      req.body.start_date = req.body.start_date.toString().split('T')[0];
     }
     if (req.body.end_date) {
-      req.body.end_date = req.body.end_date.toString().split('T')[0]; // Ensure YYYY-MM-DD format
+      req.body.end_date = req.body.end_date.toString().split('T')[0];
     }
 
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
 
-    // Log the project update using the centralized service
+    if (data.project?.id) {
+      await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
+    }
+
     await ActivityLoggingService.logProjectUpdated(
       req.user?.team_id || "",
       req.params.id,
@@ -710,7 +757,6 @@ export default class ProjectsController extends WorklenzControllerBase {
       req.body.name
     );
 
-    // Log project manager assignment if changed
     if (req.body.project_manager && req.body.project_manager.id) {
       await ActivityLoggingService.logProjectActivity({
         teamId: req.user?.team_id || "",
@@ -1100,7 +1146,7 @@ export default class ProjectsController extends WorklenzControllerBase {
   public static async getGrouped(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     // Use qualified field name for projects to avoid ambiguity
     const {searchQuery, searchParams = [], sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["projects.name"], false, 2);
-    const groupBy = req.query.groupBy as string || "category";
+    const groupBy = req.query.groupBy as string || "priority";
     const userId = req.user?.id;
     
     // Use parameterized queries for user ID
@@ -1115,6 +1161,10 @@ export default class ProjectsController extends WorklenzControllerBase {
     const statusesResult = this.getFilterByStatusWhereClosure(req.query.statuses as string, paramOffset);
     const statuses = statusesResult.clause;
     paramOffset += statusesResult.params.length;
+    
+    const prioritiesResult = this.getFilterByPriorityWhereClosure(req.query.priorities as string, paramOffset);
+    const priorities = prioritiesResult.clause;
+    paramOffset += prioritiesResult.params.length;
     
     const userIdParam = paramOffset;
     paramOffset++;
@@ -1157,6 +1207,14 @@ export default class ProjectsController extends WorklenzControllerBase {
         groupJoin = "LEFT JOIN sys_project_statuses ON projects.status_id = sys_project_statuses.id";
         groupByFields = "projects.status_id, sys_project_statuses.name, sys_project_statuses.color_code";
         groupOrderBy = "COALESCE(sys_project_statuses.name, 'No Status')";
+        break;
+      case "priority":
+        groupField = "COALESCE(projects.priority_id::text, 'no-priority')";
+        groupName = "COALESCE(task_priorities.name, 'No Priority')";
+        groupColor = "COALESCE(task_priorities.color_code, '#888')";
+        groupJoin = "LEFT JOIN task_priorities ON projects.priority_id = task_priorities.id";
+        groupByFields = "projects.priority_id, task_priorities.name, task_priorities.color_code, task_priorities.value";
+        groupOrderBy = "COALESCE(task_priorities.value, -1) DESC";
         break;
       case "category":
       default:
@@ -1228,6 +1286,10 @@ export default class ProjectsController extends WorklenzControllerBase {
                                    (SELECT project_categories.color_code
                                     FROM project_categories
                                     WHERE project_categories.id = p2.category_id) AS category_color,
+                                   p2.priority_id,
+                                   (SELECT task_priorities.name FROM task_priorities WHERE task_priorities.id = p2.priority_id) AS priority_name,
+                                   (SELECT task_priorities.color_code FROM task_priorities WHERE task_priorities.id = p2.priority_id) AS priority_color,
+                                   (SELECT task_priorities.color_code_dark FROM task_priorities WHERE task_priorities.id = p2.priority_id) AS priority_color_dark,
                                    ((SELECT project_members.team_member_id as team_member_id
                                       FROM project_members
                                       WHERE project_members.project_id = p2.id
@@ -1253,6 +1315,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               AND ${groupField.replace("projects.", "p2.")} = ${groupField}
                               ${categories.replace("projects.", "p2.")}
                               ${statuses.replace("projects.", "p2.")}
+                              ${priorities.replace("projects.", "p2.")}
                               ${isArchived.replace("projects.", "p2.")}
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
@@ -1262,7 +1325,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                          ) AS projects
                   FROM projects
                   ${groupJoin}
-                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                   GROUP BY ${groupByFields}
                   ORDER BY ${groupOrderBy}
                   LIMIT $${sizeParam}::INTEGER OFFSET $${offsetParam}::INTEGER
@@ -1280,6 +1343,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       ...searchParams,
       ...categoriesResult.params,
       ...statusesResult.params,
+      ...prioritiesResult.params,
       userId
     ];
     queryParams.push(size, offset);

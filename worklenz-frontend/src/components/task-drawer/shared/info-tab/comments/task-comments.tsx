@@ -1,15 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Skeleton, Avatar, Tooltip, Popconfirm, LikeOutlined } from '@/shared/antd-imports';
+import {
+  Skeleton,
+  Tooltip,
+  Popconfirm,
+  Button,
+  Space,
+  Dropdown,
+  Input,
+  Popover,
+} from '@/shared/antd-imports';
+import { EditOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
-import { ITaskCommentViewModel, ReactionType } from '@/types/tasks/task-comments.types';
+import { ITaskComment, ITaskCommentViewModel, ReactionType } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import { fromNow } from '@/utils/dateUtils';
 import { AvatarNamesMap } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
-import TaskViewCommentEdit from './task-view-comment-edit';
 import './task-comments.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -22,7 +31,9 @@ import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sanitizeCommentContent } from '@/utils/sanitizeInput';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import CommentReactionsBar from './comment-reactions-bar';
+import { REACTION_CONFIGS } from '@/shared/reaction-config';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 // Helper function to format date for time separators
 const formatDateForSeparator = (date: string) => {
@@ -52,48 +63,23 @@ const hasProcessedMentions = (content: string): boolean => {
 const processMentions = (content: string) => {
   if (!content) return '';
 
-  // Check if content already contains mentions spans
   if (hasProcessedMentions(content)) {
-    return content; // Already processed, return as is
+    return content;
   }
 
-  // Match @mentions with multiple words (e.g., @saman navoda, @john doe)
-  // This regex matches @ followed by word characters and spaces, stopping at punctuation or end of word boundary
-  // Pattern explanation: @ followed by one or more groups of (word characters followed by optional space)
   return content.replace(/@([\w]+(?:\s+[\w]+)*)/g, '<span class="mentions">@$1</span>');
 };
 
 /**
  * Converts plain-text URLs in a string into safe, clickable anchor tags.
- *
- * Security measures applied:
- *  - Only matches http:// and https:// URLs (no javascript: or data: schemes)
- *  - rel="noopener noreferrer" prevents tab-napping and leaks the referrer
- *  - target="_blank" opens in a new tab so the user never leaves the app
- *  - The URL is HTML-entity-encoded in the href to neutralise any residual
- *    injection attempts that survived sanitisation upstream
- *  - URLs that are already inside an <a> tag are skipped to avoid double-wrapping
- *
- * Call this AFTER sanitiseCommentContent so the input is already clean.
  */
 const linkifyUrls = (content: string): string => {
   if (!content) return '';
 
-  // Regex explanation:
-  //   (?<!href="|href=')   — negative lookbehind: skip URLs already in an href attr
-  //   (https?:\/\/)        — must start with http:// or https://  (no other schemes)
-  //   ([\w\-._~:/?#[\]@!$&'()*+,;=%]+)  — URL path/query/fragment chars per RFC 3986
-  //
-  // The negative lookbehind keeps already-linked URLs untouched if sanitizeCommentContent
-  // happens to preserve <a> tags.
   const URL_REGEX = /(?<!href="|href=')(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+)/gi;
 
   return content.replace(URL_REGEX, rawUrl => {
-    // Double-encode any quotes inside the URL to prevent href injection
     const safeHref = rawUrl.replace(/"/g, '%22').replace(/'/g, '%27');
-
-    // Build a readable label: strip the scheme for cleaner display
-    // e.g. "https://example.com/path" → "example.com/path"
     const label = rawUrl.replace(/^https?:\/\//, '');
 
     return (
@@ -111,18 +97,32 @@ const linkifyUrls = (content: string): string => {
 const processContent = (content: string) => {
   if (!content) return '';
 
-  // Step 1 — sanitize to prevent XSS
   let processed = sanitizeCommentContent(content);
 
-  // Step 2 — highlight @mentions (re-run if sanitizer stripped the spans)
   if (!hasProcessedMentions(processed)) {
     processed = processMentions(processed);
   }
 
-  // Step 3 — linkify plain-text URLs into safe <a> tags
   processed = linkifyUrls(processed);
 
   return processed;
+};
+
+/**
+ * Strips all HTML markup from stored comment content so the textarea shows
+ * plain text ready for re-editing.
+ */
+const prepareContentForEditing = (content: string): string => {
+  if (!content) return '';
+
+  const withoutMentionSpans = content.replace(
+    /<span class="mentions">@([\w]+(?:\s+[\w]+)*)<\/span>/g,
+    '@$1'
+  );
+
+  const withRawUrls = withoutMentionSpans.replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1');
+
+  return withRawUrls.replace(/<[^>]*>/g, '');
 };
 
 const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
@@ -131,9 +131,17 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
   const commentsViewRef = useRef<HTMLDivElement>(null);
   const auth = useAuthService();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const currentUserId = auth.getCurrentSession()?.id;
+  const currentSession = auth.getCurrentSession();
+  const currentUserId = currentSession?.id;
+  const teamMemberId = currentSession?.team_member_id;
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
+
+  // Inline-edit state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editLoading, setEditLoading] = useState(false);
 
   const getComments = useCallback(
     async (showLoading = true) => {
@@ -146,22 +154,23 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
 
         const res = await taskCommentsApiService.getByTaskId(taskId);
         if (res.done) {
-          // Sort comments by date (oldest first)
           const sortedComments = [...res.body].sort((a, b) => {
             return dayjs(a.created_at).isBefore(dayjs(b.created_at)) ? -1 : 1;
           });
 
-          // Process content for each comment
+          // Process content for display but preserve task_id from response
           sortedComments.forEach(comment => {
             if (comment.content) {
-              // Always process the content to ensure mentions are highlighted and URLs are linked
               comment.content = processContent(comment.content);
+            }
+            // Ensure task_id is always set — fall back to the prop if backend omits it
+            if (!comment.task_id) {
+              comment.task_id = taskId;
             }
           });
 
           setComments(sortedComments);
 
-          // Update Redux state with the current comment count
           dispatch(
             updateTaskCounts({
               taskId,
@@ -214,10 +223,12 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     };
   }, [taskId, getComments, scrollIntoView]);
 
-  const canDelete = (userId?: string) => {
+  const canEdit = (userId?: string) => {
     if (!userId) return false;
     return userId === currentUserId;
   };
+
+  // ─── Reactions ────────────────────────────────────────────────────────────
 
   const handleReactionClick = async (item: ITaskCommentViewModel, reactionType: ReactionType) => {
     if (!item.id || !taskId) return;
@@ -229,9 +240,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
       });
       if (res.done) {
         getComments(false);
-
-        // Dispatch event to notify that a comment reaction was updated
-        // Use update event instead of create to avoid scrolling
         document.dispatchEvent(new Event('task-comment-update'));
       }
     } catch (e) {
@@ -239,36 +247,86 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     }
   };
 
+  const hasUserReacted = (item: ITaskCommentViewModel, reactionType: ReactionType): boolean => {
+    if (!teamMemberId || !item?.reactions) return false;
+    return item.reactions[reactionType]?.reacted_member_ids?.includes(teamMemberId) || false;
+  };
+
+  const getExistingReactions = (item: ITaskCommentViewModel) => {
+    if (!item.reactions) return [];
+    return Object.entries(item.reactions)
+      .filter(([_, details]) => details.count > 0)
+      .map(([type, details]) => {
+        const config = REACTION_CONFIGS.find(c => c.type === type);
+        return {
+          type: type as ReactionType,
+          emoji: config?.emoji || '👍',
+          count: details.count,
+          members: details.reacted_members || [],
+          isUserReacted: hasUserReacted(item, type as ReactionType),
+        };
+      });
+  };
+
+  // ─── Delete ───────────────────────────────────────────────────────────────
+
   const deleteComment = async (id?: string) => {
     if (!taskId || !id) return;
 
     try {
       const res = await taskCommentsApiService.delete(id, taskId);
       if (res.done) {
-        // Refresh comments to get updated list
         await getComments(false);
-
-        // The comment count will be updated by getComments function
-        // No need to dispatch here as getComments already handles it
       }
     } catch (e) {
       logger.error('Error deleting comment', e);
     }
   };
 
-  const editComment = (item: ITaskCommentViewModel) => {
-    item.edit = true;
-    setComments([...comments]); // Force re-render
+  // ─── Edit ─────────────────────────────────────────────────────────────────
+
+  const startEdit = (item: ITaskCommentViewModel) => {
+    setEditingCommentId(item.id || null);
+    setEditContent(prepareContentForEditing(item.content || ''));
   };
 
-  const commentUpdated = (comment: ITaskCommentViewModel) => {
-    comment.edit = false;
-    // Process content (mentions and links) in updated comment
-    if (comment.content) {
-      comment.content = processContent(comment.content);
-    }
-    setComments([...comments]); // Force re-render
+  const cancelEdit = () => {
+    setEditingCommentId(null);
+    setEditContent('');
   };
+
+  const saveEdit = async (item: ITaskCommentViewModel) => {
+    // ✅ Use taskId prop as fallback — backend list endpoint may not return task_id on each comment
+    const resolvedTaskId = item.task_id || taskId;
+
+    if (!item.id || !resolvedTaskId || !editContent.trim()) return;
+
+    try {
+      setEditLoading(true);
+
+      const res = await taskCommentsApiService.update(item.id, {
+        task_id: resolvedTaskId,
+        content: editContent,
+      } as ITaskComment);
+
+      if (res.done) {
+        setEditingCommentId(null);
+        setEditContent('');
+        getComments(false);
+        document.dispatchEvent(
+          new CustomEvent('task-comment-update', {
+            detail: { taskId: resolvedTaskId },
+          })
+        );
+      }
+    } catch (e) {
+      logger.error('Error updating comment', e);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // ─── Delete Attachment ────────────────────────────────────────────────────
 
   const deleteAttachment = async (attachmentId: string) => {
     if (!attachmentId || !taskId) return;
@@ -277,8 +335,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
       const res = await taskCommentsApiService.deleteAttachment(attachmentId, taskId);
       if (res.done) {
         await getComments(false);
-
-        // Dispatch event to notify that an attachment was deleted
         document.dispatchEvent(
           new CustomEvent('task-comment-update', {
             detail: { taskId },
@@ -301,11 +357,6 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     fontSize: '11px',
   };
 
-  const actionStyle = {
-    color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
-  };
-
-  // Render time separator between comments from different days
   const renderTimeSeparator = (date: string) => (
     <div className="comment-time-separator">
       <span
@@ -318,75 +369,257 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     </div>
   );
 
-  // Check if the comment is from the current user
   const isCurrentUser = (userId?: string) => {
     return userId === currentUserId;
   };
 
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const visibleComments = hasBusinessAccess
+    ? comments
+    : comments.filter(comment => {
+        if (!comment.created_at) return true;
+        return new Date(comment.created_at).getTime() >= ninetyDaysAgo;
+      });
+  const lockedCommentsCount = hasBusinessAccess ? 0 : comments.length - visibleComments.length;
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
+
   return (
     <div className={`task-view-comments theme-${themeMode}`} ref={commentsViewRef}>
       <Skeleton loading={loading}>
-        {comments.length > 0 ? (
+        {visibleComments.length > 0 ? (
           <>
-            {comments.map((item, index) => {
+            {lockedCommentsCount > 0 && (
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                <p style={{ margin: 0, fontSize: 12, color: '#8c8c8c' }}>
+                  {t('taskInfoTab.comments.historyLockedBoundary', {
+                    defaultValue: 'Comments beyond 90 days are locked',
+                  })}
+                </p>
+                <Popover
+                  trigger="click"
+                  open={isHistoryPopoverOpen}
+                  onOpenChange={setIsHistoryPopoverOpen}
+                  title={t('taskInfoTab.comments.historyLockedTitle', {
+                    defaultValue: 'Comment History Locked',
+                  })}
+                  content={
+                    <div style={{ maxWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <span>
+                        {t('taskInfoTab.comments.historyLockedBody', {
+                          defaultValue:
+                            'Comments beyond 90 days are available on the Business plan.',
+                        })}
+                      </span>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setIsHistoryPopoverOpen(false);
+                          dispatch(toggleUpgradeModal());
+                        }}
+                      >
+                        {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                      </Button>
+                    </div>
+                  }
+                >
+                  <Button size="small">
+                    {t('taskInfoTab.comments.viewFullComments', {
+                      defaultValue: 'View Full Comments',
+                    })}
+                  </Button>
+                </Popover>
+              </div>
+            )}
+            {visibleComments.map((item, index) => {
               const isUserComment = isCurrentUser(item.user_id);
+              const existingReactions = getExistingReactions(item);
+              const isEditing = editingCommentId === item.id;
 
               return (
                 <div key={item.id}>
-                  {/* Add time separator if this is the first comment or if it's from a different day than the previous comment */}
                   {(index === 0 ||
                     (index > 0 &&
                       isDifferentDay(
                         item.created_at || '',
-                        comments[index - 1].created_at || ''
+                        visibleComments[index - 1].created_at || ''
                       ))) &&
                     renderTimeSeparator(item.created_at || '')}
 
                   <Comment
                     key={item.id}
                     author={<span style={authorStyle}>{item.member_name}</span>}
-                    datetime={<span style={dateStyle}>{fromNow(item.created_at || '')}</span>}
+                    datetime={
+                      <span style={dateStyle}>
+                        {fromNow(item.created_at || '')}
+                        {/* ── Edited indicator ── */}
+                        {item.is_edited && (
+                          <span
+                            style={{
+                              marginLeft: 6,
+                              fontSize: '10px',
+                              color: themeWiseColor(colors.lightGray, colors.deepLightGray, themeMode),
+                              fontStyle: 'italic',
+                            }}
+                          >
+                            {t('taskInfoTab.comments.edited', { defaultValue: '(edited)' })}
+                          </span>
+                        )}
+                      </span>
+                    }
                     avatar={<SingleAvatar name={item.member_name} avatarUrl={item.avatar_url} />}
                     content={
-                      item.edit ? (
-                        <TaskViewCommentEdit commentData={item} onUpdated={commentUpdated} />
-                      ) : (
-                        <>
-                          <p
-                            className={`comment-content-${themeMode}`}
-                            dangerouslySetInnerHTML={{ __html: item.content || '' }}
-                          />
-                          {item.attachments && item.attachments.length > 0 && (
-                            <div className="ant-upload-list ant-upload-list-picture-card">
-                              <AttachmentsGrid
-                                attachments={item.attachments}
-                                t={t}
-                                loadingTask={false}
-                                uploading={false}
-                                handleFilesSelected={() => {}}
-                                isCommentAttachment={true}
+                      <div className="comment-wrapper">
+                        {/* ── Hover action bar ───────────────────────────── */}
+                        {!isEditing && (
+                          <div className={`comment-hover-bar theme-${themeMode}`}>
+                            {/* Quick emoji reactions */}
+                            <div className="quick-reactions">
+                              {REACTION_CONFIGS.slice(0, 6).map(config => (
+                                <Tooltip
+                                  key={config.type}
+                                  title={t(`reactions.${config.type}`, {
+                                    defaultValue: config.label,
+                                  })}
+                                >
+                                  <span
+                                    className={`quick-emoji${hasUserReacted(item, config.type) ? ' reacted-emoji' : ''}`}
+                                    onClick={() => handleReactionClick(item, config.type)}
+                                  >
+                                    {config.emoji}
+                                  </span>
+                                </Tooltip>
+                              ))}
+                            </div>
+
+                            {/* Edit + Delete (own comments only) */}
+                            {isUserComment && (
+                              <>
+                                <div className={`hover-divider theme-${themeMode}`} />
+                                <Tooltip
+                                  title={t('taskInfoTab.comments.edit', {
+                                    defaultValue: 'Edit',
+                                  })}
+                                >
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<EditOutlined />}
+                                    className="hover-action-btn"
+                                    onClick={() => startEdit(item)}
+                                  />
+                                </Tooltip>
+                                <Dropdown
+                                  menu={{
+                                    items: [
+                                      {
+                                        key: 'delete',
+                                        label: (
+                                          <Popconfirm
+                                            title={t(
+                                              'taskInfoTab.comments.confirmDeleteComment'
+                                            )}
+                                            onConfirm={() => deleteComment(item.id)}
+                                            okText={t('common.yes', { defaultValue: 'Yes' })}
+                                            cancelText={t('common.no', { defaultValue: 'No' })}
+                                          >
+                                            <span>
+                                              {t('taskInfoTab.comments.delete', {
+                                                defaultValue: 'Delete',
+                                              })}
+                                            </span>
+                                          </Popconfirm>
+                                        ),
+                                        icon: <DeleteOutlined />,
+                                        danger: true,
+                                      },
+                                    ],
+                                  }}
+                                  trigger={['click']}
+                                >
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<MoreOutlined />}
+                                    className="hover-action-btn"
+                                  />
+                                </Dropdown>
+                              </>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ── Comment body ───────────────────────────────── */}
+                        <div className={`comment-content-${themeMode}`}>
+                          {isEditing ? (
+                            <div>
+                              <Input.TextArea
+                                value={editContent}
+                                onChange={e => setEditContent(e.target.value)}
+                                autoSize={{ minRows: 2, maxRows: 6 }}
+                                style={{ marginBottom: 8 }}
+                                autoFocus
                               />
+                              <Space>
+                                <Button
+                                  size="small"
+                                  type="primary"
+                                  loading={editLoading}
+                                  onClick={() => saveEdit(item)}
+                                >
+                                  {t('taskInfoTab.comments.save', { defaultValue: 'Save' })}
+                                </Button>
+                                <Button size="small" onClick={cancelEdit}>
+                                  {t('taskInfoTab.comments.cancel', { defaultValue: 'Cancel' })}
+                                </Button>
+                              </Space>
+                            </div>
+                          ) : (
+                            <>
+                              <p dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+                              {item.attachments && item.attachments.length > 0 && (
+                                <div className="ant-upload-list ant-upload-list-picture-card">
+                                  <AttachmentsGrid
+                                    attachments={item.attachments}
+                                    t={t}
+                                    loadingTask={false}
+                                    uploading={false}
+                                    handleFilesSelected={() => {}}
+                                    isCommentAttachment={true}
+                                  />
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {/* ── Existing reaction badges ─────────────────── */}
+                          {existingReactions.length > 0 && !isEditing && (
+                            <div className="reaction-badges-row">
+                              {existingReactions.map(reaction => (
+                                <Tooltip
+                                  key={reaction.type}
+                                  title={
+                                    reaction.members.length > 0 ? (
+                                      <div>
+                                        {reaction.members.map((member, i) => (
+                                          <div key={i}>{member}</div>
+                                        ))}
+                                      </div>
+                                    ) : null
+                                  }
+                                >
+                                  <span
+                                    className={`reaction ${reaction.isUserReacted ? 'reacted' : ''} theme-${themeMode}`}
+                                    onClick={() => handleReactionClick(item, reaction.type)}
+                                  >
+                                    {reaction.emoji} {reaction.count}
+                                  </span>
+                                </Tooltip>
+                              ))}
                             </div>
                           )}
-                          {/* Reactions bar positioned at bottom-left of comment bubble */}
-                          <CommentReactionsBar
-                            comment={item}
-                            onReactionClick={(reactionType) => handleReactionClick(item, reactionType)}
-                          />
-                        </>
-                      )
+                        </div>
+                      </div>
                     }
-                    actions={[
-                      canDelete(item.user_id) && (
-                        <Popconfirm
-                          key="delete"
-                          title={t('taskInfoTab.comments.confirmDeleteComment')}
-                          onConfirm={() => deleteComment(item.id)}
-                        >
-                          <span style={actionStyle}>{t('taskInfoTab.comments.delete')}</span>
-                        </Popconfirm>
-                      ),
-                    ].filter(Boolean)}
                     className={isUserComment ? 'current-user-comment' : ''}
                   />
                 </div>

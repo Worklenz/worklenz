@@ -159,6 +159,7 @@
   },
   "errors": {
     "loadingData": "加载定价数据错误",
+    "loadingPlansRetry": "加载定价方案失败。请刷新页面。",
     "calculating": "正在计算价格...",
     "selectedPlan": "已选择方案：{{plan}}"
   },

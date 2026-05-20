@@ -53,7 +53,6 @@ import { toggleTheme } from '@/features/theme/themeSlice';
 
 const { Title } = Typography;
 
-// Simplified styles for form components using Ant Design theme tokens
 const getAccountSetupStyles = (token: any) => ({
   form: {
     width: '100%',
@@ -101,8 +100,13 @@ const AccountSetup: React.FC = () => {
   const [surveyId, setSurveyId] = React.useState<string | null>(null);
   const [isSkipping, setIsSkipping] = React.useState(false);
 
+  // FIX: Single loading flag that guards ALL async nextStep paths.
+  // This prevents double-clicks on the Continue button from firing
+  // completeAccountSetupWithTemplate() or completeAccountSetup() twice.
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const isDarkMode = themeMode === 'dark';
-  // Helper to extract organization name from email or fallback to user name
+
   function getOrganizationNamePlaceholder(
     userDetails: { email?: string; name?: string } | null
   ): string {
@@ -113,44 +117,16 @@ const AccountSetup: React.FC = () => {
       const match = email.match(/^([^@]+)@([^@]+)$/);
       if (match) {
         const domain = match[2].toLowerCase();
-        // List of common public email providers
         const publicProviders = [
-          'gmail.com',
-          'yahoo.com',
-          'outlook.com',
-          'hotmail.com',
-          'icloud.com',
-          'aol.com',
-          'protonmail.com',
-          'zoho.com',
-          'gmx.com',
-          'mail.com',
-          'yandex.com',
-          'msn.com',
-          'live.com',
-          'me.com',
-          'comcast.net',
-          'rediffmail.com',
-          'ymail.com',
-          'rocketmail.com',
-          'inbox.com',
-          'mail.ru',
-          'qq.com',
-          'naver.com',
-          '163.com',
-          '126.com',
-          'sina.com',
-          'yeah.net',
-          'googlemail.com',
-          'fastmail.com',
-          'hushmail.com',
-          'tutanota.com',
-          'pm.me',
-          'mailbox.org',
-          'proton.me',
+          'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
+          'aol.com', 'protonmail.com', 'zoho.com', 'gmx.com', 'mail.com',
+          'yandex.com', 'msn.com', 'live.com', 'me.com', 'comcast.net',
+          'rediffmail.com', 'ymail.com', 'rocketmail.com', 'inbox.com', 'mail.ru',
+          'qq.com', 'naver.com', '163.com', '126.com', 'sina.com', 'yeah.net',
+          'googlemail.com', 'fastmail.com', 'hushmail.com', 'tutanota.com',
+          'pm.me', 'mailbox.org', 'proton.me',
         ];
         if (!publicProviders.includes(domain)) {
-          // Use the first part of the domain (before the first dot)
           const org = domain.split('.')[0];
           if (org && org.length > 1) {
             return `e.g. ${org.charAt(0).toUpperCase() + org.slice(1)} Team`;
@@ -158,13 +134,9 @@ const AccountSetup: React.FC = () => {
         }
       }
     }
-    // Fallback to user name
     return name ? `e.g. ${name}'s Team` : '';
   }
 
-  const organizationNamePlaceholder = getOrganizationNamePlaceholder(userDetails);
-
-  // Helper to extract organization name from email or fallback to user name
   function getOrganizationNameInitialValue(
     userDetails: { email?: string; name?: string } | null
   ): string {
@@ -176,39 +148,13 @@ const AccountSetup: React.FC = () => {
       if (match) {
         const domain = match[2].toLowerCase();
         const publicProviders = [
-          'gmail.com',
-          'yahoo.com',
-          'outlook.com',
-          'hotmail.com',
-          'icloud.com',
-          'aol.com',
-          'protonmail.com',
-          'zoho.com',
-          'gmx.com',
-          'mail.com',
-          'yandex.com',
-          'msn.com',
-          'live.com',
-          'me.com',
-          'comcast.net',
-          'rediffmail.com',
-          'ymail.com',
-          'rocketmail.com',
-          'inbox.com',
-          'mail.ru',
-          'qq.com',
-          'naver.com',
-          '163.com',
-          '126.com',
-          'sina.com',
-          'yeah.net',
-          'googlemail.com',
-          'fastmail.com',
-          'hushmail.com',
-          'tutanota.com',
-          'pm.me',
-          'mailbox.org',
-          'proton.me',
+          'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com',
+          'aol.com', 'protonmail.com', 'zoho.com', 'gmx.com', 'mail.com',
+          'yandex.com', 'msn.com', 'live.com', 'me.com', 'comcast.net',
+          'rediffmail.com', 'ymail.com', 'rocketmail.com', 'inbox.com', 'mail.ru',
+          'qq.com', 'naver.com', '163.com', '126.com', 'sina.com', 'yeah.net',
+          'googlemail.com', 'fastmail.com', 'hushmail.com', 'tutanota.com',
+          'pm.me', 'mailbox.org', 'proton.me',
         ];
         if (!publicProviders.includes(domain)) {
           const org = domain.split('.')[0];
@@ -221,8 +167,8 @@ const AccountSetup: React.FC = () => {
     return name || '';
   }
 
+  const organizationNamePlaceholder = getOrganizationNamePlaceholder(userDetails);
   const organizationNameInitialValue = getOrganizationNameInitialValue(userDetails);
-
   const styles = getAccountSetupStyles(token);
 
   useEffect(() => {
@@ -252,7 +198,6 @@ const AccountSetup: React.FC = () => {
         }
       } catch (error) {
         logger.error('Failed to load survey', error);
-        // Continue without survey - don't block account setup
       }
     };
 
@@ -283,7 +228,6 @@ const AccountSetup: React.FC = () => {
       if (res.done && res.body.id) {
         trackMixpanelEvent(skip ? evt_account_setup_skip_invite : evt_account_setup_complete);
 
-        // Track signup completion
         const currentUser = getUserSession();
         trackMixpanelEvent(evt_signup_completed, {
           plan_type: currentUser?.subscription_type?.toLowerCase() || 'free',
@@ -291,7 +235,6 @@ const AccountSetup: React.FC = () => {
           template_used: false,
         });
 
-        // Refresh user session to update setup_completed status
         try {
           const authResponse = (await dispatch(
             verifyAuthentication()
@@ -304,19 +247,12 @@ const AccountSetup: React.FC = () => {
           logger.error('Failed to refresh user session after setup completion', error);
         }
 
-        // Check for pending invitation before navigating to default project
         const pendingInvitation = invitationRedirectService.getPendingInvitation();
         if (pendingInvitation) {
-          console.log(
-            '[AccountSetup] Found pending invitation after setup completion, redirecting to:',
-            pendingInvitation.url
-          );
-          // Don't clear here - let the invite page clear it after successful join
           navigate(pendingInvitation.url);
           return;
         }
 
-        // Default navigation to the newly created project
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
@@ -327,7 +263,6 @@ const AccountSetup: React.FC = () => {
   const handleSkipMembers = async () => {
     try {
       setIsSkipping(true);
-      // Bypass all validation and complete setup without team members
       await completeAccountSetup(true);
     } catch (error) {
       logger.error('Failed to skip members and complete setup', error);
@@ -338,11 +273,11 @@ const AccountSetup: React.FC = () => {
 
   const completeAccountSetupWithTemplate = async () => {
     try {
-      await saveSurveyData(); // Save survey data first
+      await saveSurveyData();
 
       const model: IAccountSetupRequest = {
         team_name: sanitizeInput(organizationName),
-        project_name: null, // No project name when using template
+        project_name: null,
         template_id: templateId,
         tasks: [],
         team_members: [],
@@ -359,7 +294,6 @@ const AccountSetup: React.FC = () => {
       if (res.done && res.body.id) {
         trackMixpanelEvent(evt_account_setup_complete);
 
-        // Track signup completion with template
         const currentUser = getUserSession();
         trackMixpanelEvent(evt_signup_completed, {
           plan_type: currentUser?.subscription_type?.toLowerCase() || 'free',
@@ -367,7 +301,6 @@ const AccountSetup: React.FC = () => {
           template_used: true,
         });
 
-        // Refresh user session to update setup_completed status
         try {
           const authResponse = (await dispatch(
             verifyAuthentication()
@@ -380,19 +313,12 @@ const AccountSetup: React.FC = () => {
           logger.error('Failed to refresh user session after template setup completion', error);
         }
 
-        // Check for pending invitation before navigating to default project
         const pendingInvitation = invitationRedirectService.getPendingInvitation();
         if (pendingInvitation) {
-          console.log(
-            '[AccountSetup] Found pending invitation after template setup completion, redirecting to:',
-            pendingInvitation.url
-          );
-          // Don't clear here - let the invite page clear it after successful join
           navigate(pendingInvitation.url);
           return;
         }
 
-        // Default navigation to the newly created project
         navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
       }
     } catch (error) {
@@ -428,8 +354,11 @@ const AccountSetup: React.FC = () => {
     {
       title: '',
       content: (
+        // FIX: onEnter now triggers nextStep in the parent (which calls
+        // completeAccountSetupWithTemplate). ProjectStep no longer makes its
+        // own API call, so only one project is ever created.
         <ProjectStep
-          onEnter={() => dispatch(setCurrentStep(currentStep + 1))}
+          onEnter={nextStep}
           styles={styles}
           isDarkMode={isDarkMode}
           token={token}
@@ -454,11 +383,13 @@ const AccountSetup: React.FC = () => {
   ];
 
   const isContinueDisabled = () => {
+    // Also disable while any async submission is in flight
+    if (isSubmitting) return true;
+
     switch (currentStep) {
       case 0:
         return !organizationName?.trim();
       case 1:
-        // Survey step - check current sub-step requirements
         if (surveySubStep === 0) {
           return !(surveyData.organization_type && surveyData.user_role);
         } else if (surveySubStep === 1) {
@@ -468,7 +399,6 @@ const AccountSetup: React.FC = () => {
         }
         return false;
       case 2:
-        // Project step - either project name OR template must be provided
         return !projectName?.trim() && !templateId;
       case 3:
         return tasks.length === 0 || tasks.every(task => !task.value?.trim());
@@ -490,116 +420,94 @@ const AccountSetup: React.FC = () => {
     try {
       const answers: ISurveyAnswer[] = [];
 
-      // Get the survey questions to map data properly
       const surveyResponse = await surveyApiService.getAccountSetupSurvey();
       if (!surveyResponse.done || !surveyResponse.body?.questions) {
-        logger.error(
-          'Could not retrieve survey questions for data mapping (warn replaced with error)'
-        );
+        logger.error('Could not retrieve survey questions for data mapping (warn replaced with error)');
         return;
       }
 
       const questions = surveyResponse.body.questions;
 
-      // Map survey data to answers based on question keys
       questions.forEach(question => {
         switch (question.question_key) {
           case 'organization_type':
             if (surveyData.organization_type) {
-              answers.push({
-                question_id: question.id,
-                answer_text: surveyData.organization_type,
-              });
+              answers.push({ question_id: question.id, answer_text: surveyData.organization_type });
             }
             break;
           case 'user_role':
             if (surveyData.user_role) {
-              answers.push({
-                question_id: question.id,
-                answer_text: surveyData.user_role,
-              });
+              answers.push({ question_id: question.id, answer_text: surveyData.user_role });
             }
             break;
           case 'main_use_cases':
             if (surveyData.main_use_cases && surveyData.main_use_cases.length > 0) {
-              answers.push({
-                question_id: question.id,
-                answer_json: surveyData.main_use_cases,
-              });
+              answers.push({ question_id: question.id, answer_json: surveyData.main_use_cases });
             }
             break;
           case 'previous_tools':
             if (surveyData.previous_tools) {
-              answers.push({
-                question_id: question.id,
-                answer_text: surveyData.previous_tools,
-              });
+              answers.push({ question_id: question.id, answer_text: surveyData.previous_tools });
             }
             break;
           case 'how_heard_about':
             if (surveyData.how_heard_about) {
-              answers.push({
-                question_id: question.id,
-                answer_text: surveyData.how_heard_about,
-              });
+              answers.push({ question_id: question.id, answer_text: surveyData.how_heard_about });
             }
             break;
         }
       });
 
       if (answers.length > 0) {
-        const submissionData: ISurveySubmissionRequest = {
-          survey_id: surveyId,
-          answers,
-        };
-
+        const submissionData: ISurveySubmissionRequest = { survey_id: surveyId, answers };
         const result = await surveyApiService.submitSurveyResponse(submissionData);
-        if (result.done) {
-          logger.error('Survey data saved successfully (info replaced with error)');
-        } else {
-          logger.error(
-            'Survey submission returned unsuccessful response (warn replaced with error)'
-          );
+        if (!result.done) {
+          logger.error('Survey submission returned unsuccessful response (warn replaced with error)');
         }
-      } else {
-        logger.error('No survey answers to save (info replaced with error)');
       }
     } catch (error) {
       logger.error('Failed to save survey data', error);
-      // Don't block account setup flow if survey fails
     }
   };
 
-  const nextStep = async () => {
+  // FIX: nextStep is now the single point of control for all step transitions.
+  // isSubmitting guards against double-clicks by returning early if already in flight.
+  // ProjectStep.onEnter points here, so the drawer's confirm button also goes through
+  // this function — there is now exactly ONE place that calls the setup APIs.
+  async function nextStep() {
+    if (isSubmitting) return;
+
     if (currentStep === 1) {
-      // Handle survey sub-step navigation
       if (surveySubStep < 2) {
-        // Move to next survey sub-step
         dispatch(setSurveySubStep(surveySubStep + 1));
       } else {
-        // Survey completed, save data and move to next main step
         await saveSurveyData();
         dispatch(setCurrentStep(currentStep + 1));
-        dispatch(setSurveySubStep(0)); // Reset for next time
+        dispatch(setSurveySubStep(0));
       }
     } else if (currentStep === 2) {
-      // Project step - check if template is selected
       if (templateId) {
-        // Template selected, complete account setup with template
-        await completeAccountSetupWithTemplate();
+        setIsSubmitting(true);
+        try {
+          await completeAccountSetupWithTemplate();
+        } finally {
+          setIsSubmitting(false);
+        }
       } else {
-        // No template, proceed to tasks step
         dispatch(setCurrentStep(currentStep + 1));
       }
     } else if (currentStep === 4) {
-      // Complete setup after members step
-      completeAccountSetup();
+      setIsSubmitting(true);
+      try {
+        await completeAccountSetup();
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
       dispatch(setCurrentStep(currentStep + 1));
     }
-  };
+  }
 
-  // Language switcher functionality
   const languages = [
     { key: Language.EN, label: 'English', flag: '🇺🇸' },
     { key: Language.ES, label: 'Español', flag: '🇪🇸' },
@@ -638,7 +546,6 @@ const AccountSetup: React.FC = () => {
     >
       {/* Controls - Top Right */}
       <div className="absolute top-6 right-6 flex items-center space-x-3">
-        {/* Theme Switcher */}
         <Button
           type="text"
           size="small"
@@ -648,8 +555,6 @@ const AccountSetup: React.FC = () => {
           style={{ color: token?.colorTextTertiary }}
           title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         />
-
-        {/* Language Switcher */}
         <Dropdown menu={{ items: languageMenuItems }} placement="bottomRight" trigger={['click']}>
           <Button
             type="text"
@@ -716,15 +621,13 @@ const AccountSetup: React.FC = () => {
                     type="link"
                     className="p-0 font-medium"
                     style={{ color: token.colorTextSecondary }}
+                    disabled={isSubmitting}
                     onClick={() => {
                       if (currentStep === 1 && surveySubStep > 0) {
-                        // Go back within survey sub-steps
                         dispatch(setSurveySubStep(surveySubStep - 1));
                       } else {
-                        // Go back to previous main step
                         dispatch(setCurrentStep(currentStep - 1));
                         if (currentStep === 2) {
-                          // When going back to survey from next step, go to last sub-step
                           dispatch(setSurveySubStep(2));
                         }
                       }
@@ -739,17 +642,20 @@ const AccountSetup: React.FC = () => {
                       style={{ color: token.colorTextTertiary }}
                       onClick={handleSkipMembers}
                       loading={isSkipping}
-                      disabled={isSkipping}
+                      disabled={isSkipping || isSubmitting}
                     >
                       {isSkipping ? t('skipping') : t('skipForNow')}
                     </Button>
                   )}
                 </div>
               )}
+              {/* FIX: loading and disabled both reflect isSubmitting so the button
+                  is visually locked and non-clickable while the API call is in flight. */}
               <Button
                 type="primary"
                 htmlType="submit"
                 disabled={isContinueDisabled()}
+                loading={isSubmitting}
                 onClick={nextStep}
               >
                 {t('continue')}

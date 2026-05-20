@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import DOMPurify from 'dompurify';
 import {
   Input,
+  InputNumber,
   Typography,
   DatePicker,
   dayjs,
@@ -427,6 +428,14 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
     const [taskName, setTaskName] = useState(safeTextDisplay(task.title || ''));
     const [showAddSubtask, setShowAddSubtask] = useState(false);
     const [newSubtaskName, setNewSubtaskName] = useState('');
+    const [estimationValue, setEstimationValue] = useState<number | null>(
+      task.timeTracking?.estimated ?? null
+    );
+
+    useEffect(() => {
+      setEstimationValue(task.timeTracking?.estimated ?? null);
+    }, [task.timeTracking?.estimated]);
+
     const inputRef = useRef<InputRef>(null);
     const addSubtaskInputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -671,6 +680,27 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
             [dateField]: date?.format('YYYY-MM-DD'),
             parent_task: null,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          })
+        );
+      },
+      [connected, socket, task.id]
+    );
+
+    const handleEstimationChange = useCallback(
+      (value: number | null) => {
+        setEstimationValue(value);
+        if (!connected || !socket || !task.id) return;
+        
+        const hours = value ? Math.floor(value) : 0;
+        const minutes = value ? Math.round((value - hours) * 60) : 0;
+
+        socket.emit(
+          SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(),
+          JSON.stringify({
+            task_id: task.id,
+            total_hours: hours,
+            total_minutes: minutes,
+            parent_task: null,
           })
         );
       },
@@ -1315,9 +1345,24 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                 className={`flex items-center px-2 ${borderClasses}`}
                 style={{ width: col.width }}
               >
-                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  {task.timeTracking?.estimated ? `${task.timeTracking.estimated}h` : '-'}
-                </span>
+                <div className="w-full">
+                  <InputNumber
+                    min={0}
+                    precision={1}
+                    size="small"
+                    className={`w-full bg-transparent shadow-none border-transparent hover:border-gray-300 focus:border-blue-500 transition-colors ${
+                      isDarkMode ? 'text-gray-300 hover:border-gray-600' : 'text-gray-700'
+                    }`}
+                    style={{ background: 'transparent' }}
+                    value={estimationValue}
+                    placeholder="-"
+                    onChange={handleEstimationChange}
+                    onPressEnter={(e) => {
+                      (e.target as HTMLInputElement).blur();
+                    }}
+                    controls={false}
+                  />
+                </div>
               </div>
             );
 

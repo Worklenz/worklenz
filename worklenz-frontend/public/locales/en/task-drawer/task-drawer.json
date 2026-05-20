@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Upgrade Now",
   "taskHeader": {
     "taskNamePlaceholder": "Type your Task",
     "deleteTask": "Delete Task",
@@ -31,6 +32,8 @@
       "show-start-date": "Show Start Date",
       "hours": "Hours",
       "minutes": "Minutes",
+      "hoursMinError": "Hours must be 0 or greater",
+      "minutesRangeError": "Minutes must be between 0 and 59",
       "progressValue": "Progress Value",
       "progressValueTooltip": "Set the progress percentage (0-100%)",
       "progressValueRequired": "Please enter a progress value",
@@ -85,12 +88,16 @@
     "attachments": {
       "title": "Attachments",
       "chooseOrDropFileToUpload": "Choose or drop file to upload",
-      "uploading": "Uploading..."
+      "uploading": "Uploading...",
+      "maxFileSizeText": "Max file size: {{maxSize}}MB",
+      "upgradeLinkText": "Need larger uploads? Upgrade"
     },
     "comments": {
       "title": "Comments",
       "addComment": "+ Add new comment",
       "noComments": "No comments yet. Be the first to comment!",
+      "edit": "Edit",
+      "save": "Save",
       "delete": "Delete",
       "confirmDeleteComment": "Are you sure you want to delete this comment?",
       "addCommentPlaceholder": "Add a comment...",
@@ -102,6 +109,11 @@
       "maxFilesError": "You can only upload a maximum of {count} files",
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
+      "fileTooLargeToSend": "Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.",
+      "historyLockedBoundary": "Comments beyond 90 days are locked",
+      "historyLockedTitle": "Comment History Locked",
+      "historyLockedBody": "Comments beyond 90 days are available on the Business plan.",
+      "viewFullComments": "View Full Comments",
       "createdBy": "Created {{time}} by {{user}}",
       "updatedTime": "Updated {{time}}"
     },
@@ -114,6 +126,10 @@
     "totalLogged": "Total Logged",
     "exportToExcel": "Export to Excel",
     "noTimeLogsFound": "No time logs found",
+    "historyLockedBoundary": "Time log history beyond 90 days is locked",
+    "historyLockedTitle": "Time Log History Locked",
+    "historyLockedBody": "Time log entries beyond 90 days are available on the Business plan.",
+    "viewFullTimeLog": "View Full Time Log",
     "timeLogForm": {
       "inputMode": "Input Mode",
       "durationMode": "Duration",
@@ -145,7 +161,11 @@
     "remove": "REMOVE",
     "none": "None",
     "weight": "Weight",
-    "createdTask": "created the task."
+    "createdTask": "created the task.",
+    "historyLockedBoundary": "Activity history beyond 90 days is locked",
+    "historyLockedTitle": "Activity History Locked",
+    "historyLockedBody": "Task activity beyond 90 days is available on the Business plan.",
+    "viewFullActivity": "View Full Activity"
   },
   "taskProgress": {
     "markAsDoneTitle": "Mark Task as Done?",

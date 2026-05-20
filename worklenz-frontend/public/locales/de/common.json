@@ -7,6 +7,8 @@
   "update-available": "Worklenz aktualisiert!",
   "update-description": "Eine neue Version von Worklenz ist verfügbar mit den neuesten Funktionen und Verbesserungen.",
   "update-instruction": "Für die beste Erfahrung laden Sie bitte die Seite neu, um die neuen Änderungen zu übernehmen.",
+  "update-banner-message": "Eine neue Version ist verfügbar.",
+  "update-banner-description": "Laden Sie neu, wenn Sie bereit sind, die neuesten Verbesserungen zu erhalten.",
   "update-whats-new": "💡 <1>Was ist neu:</1> Verbesserte Leistung, Fehlerbehebungen und verbesserte Benutzererfahrung",
   "update-now": "Neu laden",
   "update-later": "Später",
@@ -27,6 +29,7 @@
   "license-expired-upgrade": "Jetzt erneuern",
   "license-expired-trial-upgrade": "Jetzt upgraden",
   "license-expired-custom-upgrade": "Support kontaktieren",
+  "license-expired-contact-owner": "Das Abonnement Ihres Teams ist abgelaufen. Bitte kontaktieren Sie Ihren Team-Owner zur Verlängerung.",
   "license-expired-contacting-support": "Support wird kontaktiert...",
   "license-expired-message-sent": "Nachricht gesendet ✓",
   "license-expired-days-remaining": "{{days}} Tage verbleiben in Ihrer Testversion",
@@ -74,6 +77,8 @@
   "license-badge-hours": "{{hours}}h übrig",
   "business-plan-upgrade": "Auf Business-Plan upgraden, um auf diese Funktion zuzugreifen",
   "upgrade-plan": "Upgraden Sie Ihren Plan, um auf diese Funktion zuzugreifen",
+  "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+  "customFieldLimitReached": "Limit für benutzerdefinierte Felder erreicht. Für weitere Felder upgraden.",
   "disconnected": "Getrennt",
   "offline": "Offline",
   "bizPlan": {
@@ -101,5 +106,15 @@
     "rejectButton": "Ablehnen",
     "accept": "Analyse-Cookies akzeptieren",
     "reject": "Analyse-Cookies ablehnen"
-  }
+  },
+  "projectFinanceTitle": "Projektfinanzen",
+  "projectFinanceUpgradeBody": "Verfolgen Sie Budgets, Kosten und abrechenbare Zeiten in Ihren Projekten. Erfordert den Business-Plan.",
+  "seeSpends": "Ausgaben anzeigen",
+  "closePopover": "Popover schließen",
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing"
 }

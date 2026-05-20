@@ -8,6 +8,7 @@ import moment from "moment";
 import Excel from "exceljs";
 import ReportingControllerBase from "../reporting-controller-base";
 import { TASK_PRIORITY_COLOR_ALPHA } from "../../../shared/constants";
+import { sanitizeFilename } from "../../../shared/sanitize-filename";
 
 export default class ReportingOverviewExportController extends ReportingOverviewBase {
 
@@ -86,7 +87,8 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `${teamName} projects - ${exportDate}`;
+    const sanitizedTeamName = sanitizeFilename(teamName || 'Team');
+    const fileName = `${sanitizedTeamName} projects - ${exportDate}`;
     const workbook = new Excel.Workbook();
 
     const sheet = workbook.addWorksheet("Projects");
@@ -191,7 +193,8 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `${teamName} members - ${exportDate}`;
+    const sanitizedTeamName = sanitizeFilename(teamName || 'Team');
+    const fileName = `${sanitizedTeamName} members - ${exportDate}`;
     const workbook = new Excel.Workbook();
 
     const sheet = workbook.addWorksheet("Members");
@@ -264,7 +267,9 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `${teamName} ${projectName} members - ${exportDate}`;
+    const sanitizedTeamName = sanitizeFilename(teamName || 'Team');
+    const sanitizedProjectName = sanitizeFilename(projectName || 'Project');
+    const fileName = `${sanitizedTeamName} ${sanitizedProjectName} members - ${exportDate}`;
     const workbook = new Excel.Workbook();
 
     const sheet = workbook.addWorksheet("Members");
@@ -339,7 +344,9 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `${teamName} ${projectName} tasks - ${exportDate}`;
+    const sanitizedTeamName = sanitizeFilename(teamName || 'Team');
+    const sanitizedProjectName = sanitizeFilename(projectName || 'Project');
+    const fileName = `${sanitizedTeamName} ${sanitizedProjectName} tasks - ${exportDate}`;
     const workbook = new Excel.Workbook();
 
     const sheet = workbook.addWorksheet("Tasks");
@@ -430,7 +437,8 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `${teamMemberName} tasks - ${exportDate}`;
+    const sanitizedMemberName = sanitizeFilename(teamMemberName || 'Member');
+    const fileName = `${sanitizedMemberName} tasks - ${exportDate}`;
     const workbook = new Excel.Workbook();
 
     const sheet = workbook.addWorksheet("Tasks");
@@ -499,6 +507,94 @@ export default class ReportingOverviewExportController extends ReportingOverview
   }
 
   @HandleExceptions()
+  public static async exportProjectMemberTasks(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    const teamMemberId = (req.query.team_member_id as string)?.trim() || null;
+    const teamMemberName = (req.query.team_member_name as string)?.trim() || null;
+    const projectId = (req.query.project_id as string)?.trim() || null;
+    const projectName = (req.query.project_name as string)?.trim() || null;
+    const teamName = (req.query.team_name as string)?.trim() || "";
+
+    const includeArchived = req.query.archived === "true";
+
+    const results = await ReportingExportModel.getMemberTasks(
+      teamMemberId as string,
+      projectId,
+      "false",
+      "",
+      [],
+      includeArchived,
+      req.user?.id as string
+    );
+
+    // excel file
+    const exportDate = moment().format("MMM-DD-YYYY");
+    
+    // Sanitize filename components to remove special characters
+    const sanitizedMemberName = sanitizeFilename(teamMemberName || 'Member');
+    const sanitizedProjectName = sanitizeFilename(projectName || 'Project');
+    
+    const fileName = `${sanitizedMemberName} - ${sanitizedProjectName} tasks - ${exportDate}`;
+    const workbook = new Excel.Workbook();
+
+    const sheet = workbook.addWorksheet("Tasks");
+
+    // define columns in table
+    sheet.columns = [
+      { header: "Task", key: "task", width: 30 },
+      { header: "Project", key: "project", width: 20 },
+      { header: "Status", key: "status", width: 20 },
+      { header: "Priority", key: "priority", width: 20 },
+      { header: "Due Date", key: "due_date", width: 20 },
+      { header: "Completed Date", key: "completed_on", width: 20 },
+      { header: "Estimated Time", key: "estimated_time", width: 20 },
+      { header: "Logged Time", key: "logged_time", width: 20 },
+      { header: "Overlogged Time", key: "overlogged_time", width: 20 },
+    ];
+
+    // set title
+    sheet.getCell("A1").value = `${teamMemberName}'s Tasks in ${projectName} - ${teamName}`;
+    sheet.mergeCells("A1:I1");
+    sheet.getCell("A1").alignment = { horizontal: "center" };
+    sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
+    sheet.getCell("A1").font = { size: 16 };
+
+    // set export date
+    sheet.getCell("A2").value = `Exported on : ${exportDate}`;
+    sheet.mergeCells("A2:I2");
+    sheet.getCell("A2").alignment = { horizontal: "center" };
+    sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
+    sheet.getCell("A2").font = { size: 12 };
+
+    // set table headers
+    sheet.getRow(4).values = ["Task", "Project", "Status", "Priority", "Due Date", "Completed Date", "Estimated Time", "Logged Time", "Overlogged Time"];
+    sheet.getRow(4).font = { bold: true };
+
+    // set table data
+    for (const item of results) {
+      sheet.addRow({
+        task: item.name,
+        project: item.project_name ? item.project_name : "-",
+        status: item.status_name ? item.status_name : "-",
+        priority: item.priority_name ? item.priority_name : "-",
+        due_date: item.end_date ? moment(item.end_date).format("YYYY-MM-DD") : "-",
+        completed_on: item.completed_date ? moment(item.completed_date).format("YYYY-MM-DD") : "-",
+        estimated_time: item.estimated_string ? item.estimated_string : "-",
+        logged_time: item.time_spent_string ? item.time_spent_string : "-",
+        overlogged_time: item.overlogged_time ? item.overlogged_time : "-",
+      });
+    }
+
+    // download excel
+    res.setHeader("Content-Type", "application/vnd.openxmlformats");
+    res.setHeader("Content-Disposition", `attachment; filename=${fileName}.xlsx`);
+
+    await workbook.xlsx.write(res)
+      .then(() => {
+        res.end();
+      });
+  }
+
+  @HandleExceptions()
   public static async exportFlatTasks(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     const teamMemberId = (req.query.team_member_id as string)?.trim() || null;
     const teamMemberName = (req.query.team_member_name as string)?.trim() || null;
@@ -511,7 +607,9 @@ export default class ReportingOverviewExportController extends ReportingOverview
 
     // excel file
     const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `${teamMemberName}'s tasks in ${projectName}  - ${exportDate}`;
+    const sanitizedMemberName = sanitizeFilename(teamMemberName || 'Member');
+    const sanitizedProjectName = sanitizeFilename(projectName || 'Project');
+    const fileName = `${sanitizedMemberName}'s tasks in ${sanitizedProjectName}  - ${exportDate}`;
     const workbook = new Excel.Workbook();
 
     const sheet = workbook.addWorksheet("Tasks");

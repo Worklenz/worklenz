@@ -3,6 +3,8 @@
   "login-failed": "Falha no login. Por favor, verifique suas credenciais e tente novamente.",
   "signup-success": "Cadastro realizado com sucesso! Bem-vindo a bordo.",
   "signup-failed": "Falha no cadastro. Por favor, certifique-se de que todos os campos obrigatórios estão preenchidos e tente novamente.",
+  "update-banner-message": "Uma nova versão está disponível.",
+  "update-banner-description": "Recarregue quando estiver pronto para obter as melhorias mais recentes.",
   "reconnecting": "Reconectando ao servidor...",
   "connection-lost": "Conexão perdida. Tentando reconectar...",
   "connection-restored": "Conexão restaurada. Reconectando ao servidor..."

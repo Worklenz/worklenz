@@ -185,7 +185,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
         name: data.name,
-        notes: data.description, // create_project uses 'notes' not 'description'
+        notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
         color_code: data.color_code,
         image_url: data.image_url,
@@ -339,7 +339,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
         name: data.name,
-        notes: data.description, // create_project uses 'notes' not 'description'
+        notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
         color_code: data.color_code,
         team_id: req.user?.team_id || null,

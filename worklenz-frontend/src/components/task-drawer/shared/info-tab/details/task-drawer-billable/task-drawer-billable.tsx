@@ -2,15 +2,16 @@ import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import logger from '@/utils/errorLogger';
-import { Switch, Tooltip } from '@/shared/antd-imports';
+import { Switch, Tooltip, Button, Popover, Flex, Typography } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { shouldRestrictProjectHealth } from '@/utils/subscription-utils';
+import { shouldRestrictBillableFeature } from '@/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface TaskDrawerBillableProps {
   task?: ITaskViewModel | null;
@@ -22,7 +23,10 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
   const currentSession = authService.getCurrentSession();
   const { t } = useTranslation('common');
   const dispatch = useAppDispatch();
-  const isRestricted = shouldRestrictProjectHealth(currentSession);
+  const navigate = useNavigate();
+  const isRestricted = shouldRestrictBillableFeature(currentSession);
+  const [isSpendPopoverOpen, setIsSpendPopoverOpen] = useState(false);
+  const projectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Read billable status directly from Redux to ensure real-time updates
   const billableFromRedux = useAppSelector(
@@ -65,19 +69,83 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
 
   if (isRestricted) {
     return (
-      <Tooltip title={t('upgrade-plan')} placement="top">
-        <div
-          style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-          onClick={() => dispatch(toggleUpgradeModal())}
+      <Flex gap={8} align="center">
+        <Tooltip title={t('upgrade-plan')} placement="top">
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={() => dispatch(toggleUpgradeModal())}
+          >
+            <Switch defaultChecked={false} disabled />
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+        <Popover
+          trigger="click"
+          placement="bottomLeft"
+          open={isSpendPopoverOpen}
+          onOpenChange={setIsSpendPopoverOpen}
+          title={
+            <Flex align="center" justify="space-between" style={{ width: 240 }}>
+              <Typography.Text strong>
+                {t('projectFinanceTitle', { defaultValue: t('projectFinanceTitle') })}
+              </Typography.Text>
+              <Button
+                type="text"
+                size="small"
+                aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                onClick={event => {
+                  event.stopPropagation();
+                  setIsSpendPopoverOpen(false);
+                }}
+              >
+                ×
+              </Button>
+            </Flex>
+          }
+          content={
+            <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+              <Typography.Text>
+                {t('projectFinanceUpgradeBody', {
+                  defaultValue:
+                    t('projectFinanceUpgradeBody'),
+                })}
+              </Typography.Text>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setIsSpendPopoverOpen(false);
+                  dispatch(toggleUpgradeModal());
+                }}
+              >
+                {t('upgrade-now', { defaultValue: t('upgrade-now') })}
+              </Button>
+            </Flex>
+          }
         >
-          <Switch defaultChecked={false} disabled />
-          <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
-        </div>
-      </Tooltip>
+          <Button size="small" type="default">
+            {t('seeSpends', { defaultValue: t('seeSpends') })}
+          </Button>
+        </Popover>
+      </Flex>
     );
   }
 
-  return <Switch checked={localBillable} onChange={handleBillableChange} />;
+  return (
+    <Flex gap={8} align="center">
+      <Switch checked={localBillable} onChange={handleBillableChange} />
+      <Button
+        size="small"
+        type="default"
+        onClick={() => {
+          if (projectId) {
+            navigate(`/worklenz/projects/${projectId}?tab=finance`);
+          }
+        }}
+      >
+        {t('seeSpends', { defaultValue: t('seeSpends') })}
+      </Button>
+    </Flex>
+  );
 };
 
 export default TaskDrawerBillable;

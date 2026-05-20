@@ -2,6 +2,7 @@ import { AppDispatch } from '@/app/store';
 import {
   fetchProjectData,
   setProjectId,
+  setProjectData,
   toggleProjectDrawer,
 } from '@/features/project/project-drawer.slice';
 import { fetchProjects } from '@/features/projects/projectsSlice';
@@ -52,10 +53,20 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
       dispatch(fetchProjectData(record.id))
         .unwrap()
         .then(projectData => {
+          dispatch(
+            setProjectData({
+              ...projectData,
+              priority_id: projectData.priority_id || record.priority_id,
+              priority_name: projectData.priority_name || record.priority_name,
+              priority_color: projectData.priority_color || record.priority_color,
+              priority_color_dark: projectData.priority_color_dark || record.priority_color_dark,
+            })
+          );
           dispatch(toggleProjectDrawer());
         })
         .catch(error => {
           console.error('Failed to fetch project data:', error);
+          dispatch(setProjectData(record));
           dispatch(toggleProjectDrawer());
         });
     }
@@ -82,12 +93,14 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   };
 
   return (
-    <Space onClick={e => e.stopPropagation()}>
+    <Space size={4} onClick={e => e.stopPropagation()}>
       <Tooltip title={t('setting')}>
         <Button
           className="action-button"
+          type="text"
           size="small"
           onClick={handleSettingsClick}
+          style={{ width: 28, minWidth: 28, paddingInline: 0 }}
           icon={<SettingOutlined />}
         />
       </Tooltip>
@@ -104,7 +117,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         >
           <Button
             className="action-button"
+            type="text"
             size="small"
+            style={{ width: 28, minWidth: 28, paddingInline: 0 }}
             icon={<InboxOutlined />}
             disabled={!isEditable}
           />

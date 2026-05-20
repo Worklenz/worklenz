@@ -50,8 +50,7 @@ const TasksList: React.FC = React.memo(() => {
   const [skipAutoRefetch, setSkipAutoRefetch] = useState<boolean>(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  //change 1
-  //Added stableCounts state to store counts on first load only
+  // Save counts only on first load — never overwrite on tab change
   const [stableCounts, setStableCounts] = useState<{
     total: number;
     today: number;
@@ -77,8 +76,7 @@ const TasksList: React.FC = React.memo(() => {
   const { model } = useAppSelector(state => state.homePageReducer);
   const isMobile = useDebouncedMediaQuery({ query: '(max-width: 768px)' });
 
-  //change 2
-  //Save counts only on first load — never overwrite on tab change
+  // Save counts only on first load — never overwrite on tab change
   useEffect(() => {
     if (data?.body && !stableCounts) {
       setStableCounts({
@@ -90,6 +88,18 @@ const TasksList: React.FC = React.memo(() => {
       });
     }
   }, [data?.body]);
+
+  // Reset to page 1 whenever the active tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [homeTasksConfig.current_tab]);
+
+  // KEY FIX: Use tasks.length (not data.body.total) as the pagination total.
+  // data.body.total always equals the grand total across all tabs (e.g. 19)
+  // because the API never changes it — it only filters the tasks array per tab.
+  // So when Today tab returns 4 tasks, tasks.length = 4 (correct),
+  // but data.body.total = 19 (wrong — causes 2 pages to show for 4 tasks).
+  const currentTabTotal = data?.body?.tasks?.length ?? 0;
 
   const taskModes = useMemo(
     () => [
@@ -122,11 +132,9 @@ const TasksList: React.FC = React.memo(() => {
 
   const handleSelectTask = useCallback(
     (task: IMyTask) => {
-      // Get all task IDs from current data for navigation
       const allTaskIds = (data?.body?.tasks || []).map(t => t.id || '').filter(Boolean);
       const currentIndex = allTaskIds.indexOf(task.id || '');
 
-      // Set navigation context
       dispatch(
         setNavigationContext({
           taskIds: allTaskIds,
@@ -145,11 +153,10 @@ const TasksList: React.FC = React.memo(() => {
     [dispatch, data?.body?.tasks, homeTasksConfig]
   );
 
-  //change 3
-  //Reset stableCounts on manual refresh so fresh counts are saved
+  // Reset stableCounts on manual refresh so fresh counts are saved
   const refetch = useCallback(() => {
     setSkipAutoRefetch(false);
-    setStableCounts(null); // Reset so next API response saves fresh counts
+    setStableCounts(null);
     originalRefetch();
     dispatch(homePageApi.util.invalidateTags(['taskCounts']));
   }, [originalRefetch, dispatch]);
@@ -226,7 +233,7 @@ const TasksList: React.FC = React.memo(() => {
         render: (_, record) => <HomeTasksDatePicker record={record} />,
       },
     ],
-    [t, data?.body?.total, currentPage, pageSize, handlePageChange, isMobile]
+    [t, currentPage, pageSize, handleSelectTask, isMobile]
   );
 
   const handleTaskModeChange = (value: number) => {
@@ -235,21 +242,11 @@ const TasksList: React.FC = React.memo(() => {
     setCurrentPage(1);
   };
 
-  // Add effect to handle task config changes
   useEffect(() => {
-    // Only refetch if we're not skipping auto refetch
     if (!skipAutoRefetch) {
       originalRefetch();
     }
   }, [homeTasksConfig, skipAutoRefetch, originalRefetch]);
-
-  useEffect(() => {
-    dispatch(fetchLabels());
-    dispatch(fetchPriorities());
-    dispatch(
-      getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
-    );
-  }, [dispatch]);
 
   return (
     <Card
@@ -300,8 +297,7 @@ const TasksList: React.FC = React.memo(() => {
     >
       {/* toggle task view list / calendar */}
       {viewOptions === 'List' ? (
-        //change 4
-        //Pass stableCounts to ListView so tab clicks never change badge counts
+        // Pass stableCounts to ListView so tab clicks never change badge counts
         <ListView
           refetch={refetch}
           model={{
@@ -317,10 +313,12 @@ const TasksList: React.FC = React.memo(() => {
         <CalendarView />
       )}
 
-      {/* task list table --> render with different filters and views  */}
+      {/* task list table — render with different filters and views */}
       {!data?.body || isLoading ? (
         <Skeleton active />
-      ) : data?.body.total === 0 ? (
+      ) : currentTabTotal === 0 && !homeTasksFetching ? (
+        // Guard with !homeTasksFetching to avoid flashing the empty state
+        // while the new tab response is still in-flight
         <EmptyListPlaceholder
           imageSrc="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/empty-box.webp"
           text=" No tasks to show."
@@ -330,7 +328,7 @@ const TasksList: React.FC = React.memo(() => {
           <Table
             className="custom-two-colors-row-table"
             dataSource={
-              data?.body.tasks
+              data?.body?.tasks
                 ? data.body.tasks.slice((currentPage - 1) * pageSize, currentPage * pageSize)
                 : []
             }
@@ -338,27 +336,34 @@ const TasksList: React.FC = React.memo(() => {
             columns={columns as TableProps<IMyTask>['columns']}
             size="middle"
             rowClassName={() => 'custom-row-height'}
-            loading={homeTasksFetching && skipAutoRefetch}
+            loading={homeTasksFetching}
             pagination={false}
             scroll={{ x: 'max-content' }}
           />
 
-          <div
-            style={{
-              marginTop: 16,
-              textAlign: 'right',
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}
-          >
-            <Pagination
-              current={currentPage}
-              pageSize={pageSize}
-              total={data?.body.total || 0}
-              onChange={handlePageChange}
-              showSizeChanger={false}
-            />
-          </div>
+          {/* Only render pagination when:
+              - not currently fetching (avoids any stale state flash)
+              - current tab has more tasks than one page can show
+              currentTabTotal uses tasks.length so it always reflects
+              the filtered tab count, not the global total */}
+          {!homeTasksFetching && currentTabTotal > pageSize && (
+            <div
+              style={{
+                marginTop: 16,
+                textAlign: 'right',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={currentTabTotal}
+                onChange={handlePageChange}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
         </>
       )}
     </Card>

@@ -41,7 +41,7 @@ import {
   PerformanceStats,
 } from '@/api/team-lead-reports/team-lead-reports.api.service';
 import { getRoleColor } from '@/types/roles/role.types';
-import { formatSecondsToCompactHoursMinutes } from '@/utils/time-format.utils';
+import { formatSecondsToPaddedHoursMinutes } from '@/utils/time-format.utils';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import TeamLeadTimeChart, {
@@ -344,7 +344,7 @@ const TeamLeadReports: React.FC = () => {
   // Format time duration using shared utility
   const formatDuration = (seconds: number | string | null | undefined) => {
     const numSeconds = typeof seconds === 'number' ? seconds : parseFloat(seconds as string) || 0;
-    return formatSecondsToCompactHoursMinutes(numSeconds);
+    return formatSecondsToPaddedHoursMinutes(numSeconds);
   };
 
   // Handle export

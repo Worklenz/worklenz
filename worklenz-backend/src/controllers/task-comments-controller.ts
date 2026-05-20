@@ -99,281 +99,6 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     }
   }
 
-  @HandleExceptions()
-  public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    req.body.user_id = req.user?.id;
-    req.body.team_id = req.user?.team_id;
-    const { mentions, attachments, task_id } = req.body;
-    const url = `${S3_URL}/${getRootDir()}`;
-
-    // Content is already sanitized by the validator middleware
-    // Process mentions after sanitization to ensure safe HTML
-    let commentContent = req.body.content || '';
-    if (mentions.length > 0) {
-      commentContent = this.replaceContent(commentContent, mentions);
-      // Re-sanitize after mention processing to ensure no XSS was introduced
-      commentContent = sanitizeCommentContent(commentContent);
-    }
-
-    req.body.content = commentContent;
-
-    const q = `SELECT create_task_comment($1) AS comment;`;
-    const result = await db.query(q, [JSON.stringify(req.body)]);
-    const [data] = result.rows;
-
-    const response = data.comment;
-
-    const commentId = response.id;
-
-    if (attachments.length !== 0) {
-      for (const attachment of attachments) {
-        const q = `
-      INSERT INTO task_comment_attachments (name, type, size, task_id, comment_id, team_id, project_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, name, type, task_id, comment_id, created_at,
-      CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
-    `;
-
-        const result = await db.query(q, [
-          attachment.file_name,
-          attachment.file_name.split(".").pop(),
-          attachment.size,
-          task_id,
-          commentId,
-          req.user?.team_id,
-          attachment.project_id,
-          url
-        ]);
-
-        const [data] = result.rows;
-
-        const s3Url = await uploadBase64(attachment.file, getTaskAttachmentKey(req.user?.team_id as string, attachment.project_id, task_id, commentId, data.id, data.type));
-
-        if (!data?.id || !s3Url)
-          return res.status(200).send(new ServerResponse(false, null, "Attachment upload failed"));
-      }
-    }
-
-    // Sanitize user name to prevent XSS attacks in notification messages
-    const safeName = sanitizePlainText(req.user?.name || "Unknown User");
-    const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
-    // const mentions = [...new Set(req.body.mentions || [])] as string[]; // remove duplicates
-
-    const assignees = await getAssignees(req.body.task_id);
-
-    const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
-    for (const member of assignees || []) {
-      if (member.user_id && member.user_id === req.user?.id) continue;
-
-      void NotificationsService.createNotification({
-        userId: member.user_id,
-        teamId: req.user?.team_id as string,
-        socketId: member.socket_id,
-        message: commentMessage,
-        taskId: req.body.task_id,
-        projectId: response.project_id
-      });
-
-      if (member.email_notifications_enabled)
-        await this.sendMail({
-          message: commentMessage,
-          receiverEmail: member.email,
-          receiverName: member.name,
-          content: req.body.content,
-          commentId: response.id,
-          projectId: response.project_id,
-          taskId: req.body.task_id,
-          teamName: response.team_name,
-          projectName: response.project_name,
-          taskName: response.task_name
-        });
-    }
-
-    const senderUserId = req.user?.id as string;
-
-    for (const mention of mentions) {
-      if (mention) {
-        const member = await this.getUserDataByTeamMemberId(senderUserId, mention.team_member_id, response.project_id);
-        if (member) {
-
-          NotificationsService.sendNotification({
-            team: member.team,
-            receiver_socket_id: member.socket_id,
-            message: mentionMessage,
-            task_id: req.body.task_id,
-            project_id: response.project_id,
-            project: member.project,
-            project_color: member.project_color,
-            team_id: req.user?.team_id as string
-          });
-
-          if (member.email_notifications_enabled)
-            await this.sendMail({
-              message: mentionMessage,
-              receiverEmail: member.email,
-              receiverName: member.user_name,
-              content: req.body.content,
-              commentId: response.id,
-              projectId: response.project_id,
-              taskId: req.body.task_id,
-              teamName: response.team_name,
-              projectName: response.project_name,
-              taskName: response.task_name
-            });
-        }
-
-      }
-    }
-
-    // Get user avatar URL from database
-    const avatarQuery = `SELECT avatar_url FROM users WHERE id = $1`;
-    const avatarResult = await db.query(avatarQuery, [req.user?.id]);
-    const avatarUrl = avatarResult.rows[0]?.avatar_url || "";
-
-    // Get comment details including created_at
-    const commentQuery = `SELECT created_at FROM task_comments WHERE id = $1`;
-    const commentResult = await db.query(commentQuery, [response.id]);
-    const commentData = commentResult.rows[0];
-
-    // Get attachments if any
-    const attachmentsQuery = `SELECT id, name, type, size FROM task_comment_attachments WHERE comment_id = $1`;
-    const attachmentsResult = await db.query(attachmentsQuery, [response.id]);
-    const commentAttachments = attachmentsResult.rows.map(att => ({
-      id: att.id,
-      name: att.name,
-      type: att.type,
-      size: att.size
-    }));
-
-
-    const commentdata = {
-      attachments: commentAttachments,
-      avatar_url: avatarUrl,
-      content: req.body.content,
-      created_at: commentData?.created_at || new Date().toISOString(),
-      edit: false,
-      id: response.id,
-      member_name: req.user?.name || "",
-      mentions: mentions || [],
-      rawContent: req.body.content,
-      reactions: {},
-      team_member_id: req.user?.team_member_id || "",
-      user_id: req.user?.id || ""
-    };
-
-    // Send external notifications (Slack, Teams) for comment added
-    try {
-      await ExternalNotificationsService.sendExternalNotifications(
-        response.project_id,
-        req.body.task_id,
-        "comment_added",
-        req.user?.name || "Unknown User"
-      );
-    } catch (notifError) {
-      log_error("Error sending external notifications for comment:", notifError);
-      // Don't throw - continue even if notifications fail
-    }
-
-    return res.status(200).send(new ServerResponse(true, commentdata));
-  }
-
-  @HandleExceptions()
-  public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    req.body.user_id = req.user?.id;
-    req.body.team_id = req.user?.team_id;
-    const { mentions, comment_id } = req.body;
-
-    // Content is already sanitized by the validator middleware
-    // Process mentions after sanitization to ensure safe HTML
-    let commentContent = req.body.content || '';
-    if (mentions.length > 0) {
-      commentContent = await this.replaceContent(commentContent, mentions);
-      // Re-sanitize after mention processing to ensure no XSS was introduced
-      commentContent = sanitizeCommentContent(commentContent);
-    }
-
-    req.body.content = commentContent;
-
-    const q = `SELECT create_task_comment($1) AS comment;`;
-    const result = await db.query(q, [JSON.stringify(req.body)]);
-    const [data] = result.rows;
-
-    const response = data.comment;
-
-    // Sanitize user name to prevent XSS attacks in notification messages
-    const safeName = sanitizePlainText(req.user?.name || "Unknown User");
-    const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
-    // const mentions = [...new Set(req.body.mentions || [])] as string[]; // remove duplicates
-
-    const assignees = await getAssignees(req.body.task_id);
-
-    const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
-    for (const member of assignees || []) {
-      if (member.user_id && member.user_id === req.user?.id) continue;
-
-      void NotificationsService.createNotification({
-        userId: member.user_id,
-        teamId: req.user?.team_id as string,
-        socketId: member.socket_id,
-        message: commentMessage,
-        taskId: req.body.task_id,
-        projectId: response.project_id
-      });
-
-      if (member.email_notifications_enabled)
-        await this.sendMail({
-          message: commentMessage,
-          receiverEmail: member.email,
-          receiverName: member.name,
-          content: req.body.content,
-          commentId: response.id,
-          projectId: response.project_id,
-          taskId: req.body.task_id,
-          teamName: response.team_name,
-          projectName: response.project_name,
-          taskName: response.task_name
-        });
-    }
-
-    const senderUserId = req.user?.id as string;
-
-    for (const mention of mentions) {
-      if (mention) {
-        const member = await this.getUserDataByTeamMemberId(senderUserId, mention.team_member_id, response.project_id);
-        if (member) {
-
-          NotificationsService.sendNotification({
-            team: member.team,
-            receiver_socket_id: member.socket_id,
-            message: mentionMessage,
-            task_id: req.body.task_id,
-            project_id: response.project_id,
-            project: member.project,
-            project_color: member.project_color,
-            team_id: req.user?.team_id as string
-          });
-
-          if (member.email_notifications_enabled)
-            await this.sendMail({
-              message: mentionMessage,
-              receiverEmail: member.email,
-              receiverName: member.user_name,
-              content: req.body.content,
-              commentId: response.id,
-              projectId: response.project_id,
-              taskId: req.body.task_id,
-              teamName: response.team_name,
-              projectName: response.project_name,
-              taskName: response.task_name
-            });
-        }
-
-      }
-    }
-
-    return res.status(200).send(new ServerResponse(true, data.comment));
-  }
-
   private static async sendMail(config: IMailConfig) {
     const subject = config.message.replace(HTML_TAG_REGEXP, "");
     const taskUrl = `${getBaseUrl()}/worklenz/projects/${config.projectId}?tab=tasks-list&task=${config.taskId}&focus=comments`;
@@ -397,8 +122,225 @@ export default class TaskCommentsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    req.body.user_id = req.user?.id;
+    req.body.team_id = req.user?.team_id;
+    const { mentions, attachments, task_id } = req.body;
+    const url = `${S3_URL}/${getRootDir()}`;
+
+    let commentContent = req.body.content || '';
+    if (mentions.length > 0) {
+      commentContent = this.replaceContent(commentContent, mentions);
+      commentContent = sanitizeCommentContent(commentContent);
+    }
+
+    req.body.content = commentContent;
+
+    const q = `SELECT create_task_comment($1) AS comment;`;
+    const result = await db.query(q, [JSON.stringify(req.body)]);
+    const [data] = result.rows;
+
+    const response = data.comment;
+    const commentId = response.id;
+
+    if (attachments.length !== 0) {
+      for (const attachment of attachments) {
+        const q = `
+          INSERT INTO task_comment_attachments (name, type, size, task_id, comment_id, team_id, project_id)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING id, name, type, task_id, comment_id, created_at,
+          CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
+        `;
+        const result = await db.query(q, [
+          attachment.file_name,
+          attachment.file_name.split(".").pop(),
+          attachment.size,
+          task_id,
+          commentId,
+          req.user?.team_id,
+          attachment.project_id,
+          url
+        ]);
+        const [data] = result.rows;
+        const s3Url = await uploadBase64(attachment.file, getTaskAttachmentKey(req.user?.team_id as string, attachment.project_id, task_id, commentId, data.id, data.type));
+        if (!data?.id || !s3Url)
+          return res.status(200).send(new ServerResponse(false, null, "Attachment upload failed"));
+      }
+    }
+
+    const safeName = sanitizePlainText(req.user?.name || "Unknown User");
+    const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
+    const assignees = await getAssignees(req.body.task_id);
+    const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
+
+    for (const member of assignees || []) {
+      if (member.user_id && member.user_id === req.user?.id) continue;
+
+      void NotificationsService.createNotification({
+        userId: member.user_id,
+        teamId: req.user?.team_id as string,
+        socketId: member.socket_id,
+        message: commentMessage,
+        taskId: req.body.task_id,
+        projectId: response.project_id
+      });
+
+      if (member.email_notifications_enabled)
+        await this.sendMail({
+          message: commentMessage,
+          receiverEmail: member.email,
+          receiverName: member.name,
+          content: req.body.content,
+          commentId: response.id,
+          projectId: response.project_id,
+          taskId: req.body.task_id,
+          teamName: response.team_name,
+          projectName: response.project_name,
+          taskName: response.task_name
+        });
+    }
+
+    const senderUserId = req.user?.id as string;
+
+    for (const mention of mentions) {
+      if (mention) {
+        const member = await this.getUserDataByTeamMemberId(senderUserId, mention.team_member_id, response.project_id);
+        if (member) {
+          NotificationsService.sendNotification({
+            team: member.team,
+            receiver_socket_id: member.socket_id,
+            message: mentionMessage,
+            task_id: req.body.task_id,
+            project_id: response.project_id,
+            project: member.project,
+            project_color: member.project_color,
+            team_id: req.user?.team_id as string
+          });
+
+          if (member.email_notifications_enabled)
+            await this.sendMail({
+              message: mentionMessage,
+              receiverEmail: member.email,
+              receiverName: member.user_name,
+              content: req.body.content,
+              commentId: response.id,
+              projectId: response.project_id,
+              taskId: req.body.task_id,
+              teamName: response.team_name,
+              projectName: response.project_name,
+              taskName: response.task_name
+            });
+        }
+      }
+    }
+
+    const avatarQuery = `SELECT avatar_url FROM users WHERE id = $1`;
+    const avatarResult = await db.query(avatarQuery, [req.user?.id]);
+    const avatarUrl = avatarResult.rows[0]?.avatar_url || "";
+
+    const commentQuery = `SELECT created_at FROM task_comments WHERE id = $1`;
+    const commentResult = await db.query(commentQuery, [response.id]);
+    const commentData = commentResult.rows[0];
+
+    const attachmentsQuery = `SELECT id, name, type, size FROM task_comment_attachments WHERE comment_id = $1`;
+    const attachmentsResult = await db.query(attachmentsQuery, [response.id]);
+    const commentAttachments = attachmentsResult.rows.map((att: any) => ({
+      id: att.id,
+      name: att.name,
+      type: att.type,
+      size: att.size
+    }));
+
+    const commentdata = {
+      attachments: commentAttachments,
+      avatar_url: avatarUrl,
+      content: req.body.content,
+      created_at: commentData?.created_at || new Date().toISOString(),
+      edit: false,
+      id: response.id,
+      member_name: req.user?.name || "",
+      mentions: mentions || [],
+      rawContent: req.body.content,
+      reactions: {},
+      team_member_id: req.user?.team_member_id || "",
+      user_id: req.user?.id || ""
+    };
+
+    try {
+      await ExternalNotificationsService.sendExternalNotifications(
+        response.project_id,
+        req.body.task_id,
+        "comment_added",
+        req.user?.name || "Unknown User"
+      );
+    } catch (notifError) {
+      log_error("Error sending external notifications for comment:", notifError);
+    }
+
+    return res.status(200).send(new ServerResponse(true, commentdata));
+  } // ← end of create()
+
+  @HandleExceptions()
+  public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const commentId = req.params.id;
+
+    let commentContent = req.body.content || '';
+    const mentions: IMention[] = req.body.mentions || [];
+
+    if (mentions.length > 0) {
+      commentContent = this.replaceContent(commentContent, mentions);
+      commentContent = sanitizeCommentContent(commentContent);
+    } else {
+      commentContent = sanitizeCommentContent(commentContent);
+    }
+
+    // ✅ UPDATE existing row — mark as edited
+    const updateCommentQ = `
+      UPDATE task_comments
+      SET updated_at = NOW(),
+          is_edited  = TRUE
+      WHERE id = $1
+        AND user_id = $2
+      RETURNING id, task_id, user_id, team_member_id, created_at, updated_at;
+    `;
+    const updateResult = await db.query(updateCommentQ, [commentId, req.user?.id]);
+
+    if ((updateResult.rowCount ?? 0) === 0) {
+      return res.status(200).send(new ServerResponse(false, null, "Comment not found or you don't have permission to edit it"));
+    }
+
+    const updatedComment = updateResult.rows[0];
+
+    // ✅ Update content — check first to avoid ON CONFLICT issues
+    const contentExistsResult = await db.query(
+      `SELECT comment_id FROM task_comment_contents WHERE comment_id = $1;`,
+      [commentId]
+    );
+
+    if ((contentExistsResult.rowCount ?? 0) > 0) {
+      await db.query(
+        `UPDATE task_comment_contents SET text_content = $1 WHERE comment_id = $2;`,
+        [commentContent, commentId]
+      );
+    } else {
+      await db.query(
+        `INSERT INTO task_comment_contents (comment_id, text_content) VALUES ($1, $2);`,
+        [commentId, commentContent]
+      );
+    }
+
+    return res.status(200).send(new ServerResponse(true, {
+      id: updatedComment.id,
+      task_id: updatedComment.task_id,
+      content: commentContent,
+      is_edited: true,
+      updated_at: updatedComment.updated_at,
+    }));
+  } // ← end of update()
+
+  @HandleExceptions()
   public static async getByTaskId(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const result = await TaskCommentsController.getTaskComments(req.params.id); // task id
+    const result = await TaskCommentsController.getTaskComments(req.params.id);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -409,9 +351,12 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                     tc.text_content AS content,
                     task_comments.user_id,
                     task_comments.team_member_id,
+                    task_comments.task_id,
+                    task_comments.is_edited,
                     (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) AS member_name,
                     u.avatar_url,
                     task_comments.created_at,
+                    task_comments.updated_at,
                     (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
                       FROM (SELECT tmiv.name AS user_name,
                                   tmiv.email AS user_email
@@ -427,7 +372,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                             )
                         )
                       FROM (
-                          SELECT 
+                          SELECT
                               tcr.reaction_type,
                               COUNT(*) as count,
                               COALESCE(JSON_AGG(tmiv.name), '[]'::JSON) as reacted_members,
@@ -441,19 +386,19 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                     (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
                       FROM (SELECT id, created_at, name, size, type, (CONCAT('/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type)) AS url
                             FROM task_comment_attachments tca
-                            WHERE tca.comment_id = task_comments.id) rec)                                        AS attachments
+                            WHERE tca.comment_id = task_comments.id) rec) AS attachments
               FROM task_comments
                       LEFT JOIN task_comment_contents tc ON task_comments.id = tc.comment_id
                       INNER JOIN team_members tm ON task_comments.team_member_id = tm.id
                       LEFT JOIN users u ON tm.user_id = u.id
               WHERE task_comments.task_id = $1
               ORDER BY task_comments.created_at;`;
-    const result = await db.query(q, [taskId]); // task id
+    const result = await db.query(q, [taskId]);
 
     for (const comment of result.rows) {
       if (!comment.content) comment.content = "";
-      comment.rawContent = await comment.content;
-      comment.content = await comment.content.replace(/\n/g, "</br>");
+      comment.rawContent = comment.content;
+      comment.content = comment.content.replace(/\n/g, "</br>");
       comment.edit = false;
       const { mentions } = comment;
       if (mentions.length > 0) {
@@ -473,7 +418,6 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         attachment.size = humanFileSize(attachment.size);
         attachment.url = url + attachment.url;
       }
-
     }
 
     return result;
@@ -541,7 +485,6 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const { id } = req.params;
     const { reaction_type, task_id } = req.query;
 
-    // Validate reaction type
     const validReactionTypes = ['like', 'love', 'celebrate', 'support', 'insightful', 'curious'];
     if (!validReactionTypes.includes(reaction_type as string)) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid reaction type"));
@@ -550,16 +493,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const existingReaction = await this.checkIfAlreadyExists(id, req.user?.team_member_id, reaction_type as string);
 
     if (existingReaction === reaction_type) {
-      // User clicked the same reaction - remove it
       const deleteQ = `DELETE FROM task_comment_reactions WHERE comment_id = $1 AND team_member_id = $2;`;
       await db.query(deleteQ, [id, req.user?.team_member_id]);
     } else if (existingReaction) {
-      // User has a different reaction - update it
       const updateQ = `UPDATE task_comment_reactions SET reaction_type = $1 WHERE comment_id = $2 AND team_member_id = $3;`;
       await db.query(updateQ, [reaction_type, id, req.user?.team_member_id]);
 
       const getTaskCommentData = await TaskCommentsController.getTaskCommentData(id);
-      // Sanitize reactor name to prevent XSS attacks
       const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
       const commentMessage = `<b>${safeReactorName}</b> reacted to your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
 
@@ -574,12 +514,10 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         });
       }
     } else {
-      // User has no reaction - add new one
       const q = `INSERT INTO task_comment_reactions (comment_id, user_id, team_member_id, reaction_type) VALUES ($1, $2, $3, $4);`;
       await db.query(q, [id, req.user?.id, req.user?.team_member_id, reaction_type]);
 
       const getTaskCommentData = await TaskCommentsController.getTaskCommentData(id);
-      // Sanitize reactor name to prevent XSS attacks
       const safeReactorName = sanitizePlainText(getTaskCommentData.reactor_name || "Unknown User");
       const commentMessage = `<b>${safeReactorName}</b> reacted to your comment on <b>${getTaskCommentData.task_name}</b> (${getTaskCommentData.team_name})`;
 
@@ -613,15 +551,12 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                   RETURNING id;`;
     const result = await db.query(q, [req.user?.id, req.user?.team_id, task_id]);
     const [data] = result.rows;
-
     const commentId = data.id;
-
     const url = `${S3_URL}/${getRootDir()}`;
 
     for (const attachment of attachments) {
       if (req.user?.subscription_status === "free" && req.user?.owner_id) {
         const limits = await getFreePlanSettings();
-
         const usedStorage = await getUsedStorage(req.user?.owner_id);
         if ((parseInt(usedStorage) + attachment.size) > megabytesToBytes(parseInt(limits.free_tier_storage))) {
           return res.status(200).send(new ServerResponse(false, [], `Sorry, the free plan cannot exceed ${limits.free_tier_storage}MB of storage.`));
@@ -634,7 +569,6 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         RETURNING id, name, type, task_id, comment_id, created_at,
         CONCAT($8::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS url;
       `;
-
       const result = await db.query(q, [
         attachment.file_name,
         attachment.size,
@@ -645,18 +579,13 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         attachment.project_id,
         url
       ]);
-
       const [data] = result.rows;
-
       const s3Url = await uploadBase64(attachment.file, getTaskAttachmentKey(req.user?.team_id as string, attachment.project_id, task_id, commentId, data.id, data.type));
-
       if (!data?.id || !s3Url)
         return res.status(200).send(new ServerResponse(false, null, "Attachment upload failed"));
     }
 
     const assignees = await getAssignees(task_id);
-
-    // Sanitize user name to prevent XSS attacks in notification messages
     const safeName = sanitizePlainText(req.user?.name || "Unknown User");
     const commentMessage = `<b>${safeName}</b> added a new attachment as a comment on <b>${commentId.task_name}</b> (${commentId.team_name})`;
 
@@ -690,7 +619,6 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, []));
   }
 
-
   @HandleExceptions()
   public static async download(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT CONCAT($2::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS key
@@ -706,4 +634,5 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     return res.status(200).send(new ServerResponse(true, null));
   }
-}
+
+} 

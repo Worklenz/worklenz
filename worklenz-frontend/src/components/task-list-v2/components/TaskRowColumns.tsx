@@ -1,5 +1,8 @@
-import React, { memo } from 'react';
-import { CheckCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
+import React, { memo, useState, useEffect, useCallback } from 'react';
+import { CheckCircleOutlined, HolderOutlined, InputNumber, Popover, Button, Flex, Typography } from '@/shared/antd-imports';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
 import AssigneeSelector from '@/components/AssigneeSelector';
@@ -58,7 +61,7 @@ export const TaskLabelsCell: React.FC<TaskLabelsCellProps> = memo(({ labels, isD
   }
 
   return (
-    <div className="flex items-center gap-0.5 flex-wrap">
+    <div className="flex items-center gap-0.5" style={{ flexShrink: 0 }}>
       {labels.map((label, index) => {
         const extendedLabel = label as any;
         return extendedLabel.end && extendedLabel.names && extendedLabel.name ? (
@@ -154,24 +157,28 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
     const plainText=stripHtml(description);
     return(
     <div
-      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width, minHeight: '30px' }}
+      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+      style={{ 
+        width, 
+        minHeight: '30px',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
     >
       {plainText.trim() ? (
-        <div
-          className="text-sm text-gray-600 dark:text-gray-400 truncate w-full"
+        <span
+          className="text-sm text-gray-600 dark:text-gray-400"
           style={{
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxHeight: '24px',
-            lineHeight: '24px',
+            display: 'inline-block',
           }}
           title={plainText}
-          >
-            {plainText}
-    
-        </div>
+        >
+          {plainText}
+        </span>
       ) : (
         <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
       )}
@@ -212,16 +219,25 @@ interface AssigneesColumnProps {
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
   ({ width, task, convertedTask, isDarkMode }) => (
     <div
-      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width }}
+      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+      style={{ 
+        width,
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}
     >
-      <AvatarGroup
-        members={task.assignee_names || []}
-        maxCount={3}
-        isDarkMode={isDarkMode}
-        size={24}
-      />
-      <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+      <div className="flex items-center gap-1" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+        <AvatarGroup
+          members={task.assignee_names || []}
+          maxCount={3}
+          isDarkMode={isDarkMode}
+          size={24}
+        />
+        <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+      </div>
     </div>
   )
 );
@@ -294,10 +310,11 @@ interface LabelsColumnProps {
   labelsAdapter: any;
   isDarkMode: boolean;
   visibleColumns: any[];
+  columnId?: string;
 }
 
 export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
-  ({ width, task, labelsAdapter, isDarkMode, visibleColumns }) => {
+  ({ width, task, labelsAdapter, isDarkMode, visibleColumns, columnId = 'labels' }) => {
     const labelsStyle = {
       width,
       flexShrink: 0,
@@ -305,11 +322,20 @@ export const LabelsColumn: React.FC<LabelsColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center gap-0.5 flex-wrap min-w-0 px-2 border-r border-gray-200 dark:border-gray-700"
-        style={labelsStyle}
+        className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden labels-scroll-container"
+        style={{
+          ...labelsStyle,
+          // Enable horizontal scrolling for labels - GitHub style (hidden scrollbar)
+          scrollbarWidth: 'none', // For Firefox - hide scrollbar
+          msOverflowStyle: 'none', // For IE/Edge - hide scrollbar
+          WebkitOverflowScrolling: 'touch', // For iOS smooth scrolling
+          whiteSpace: 'nowrap', // Prevent wrapping
+        }}
       >
-        <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
-        <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+        <div className="flex items-center gap-0.5" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+          <TaskLabelsCell labels={task.labels} isDarkMode={isDarkMode} />
+          <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+        </div>
       </div>
     );
   }
@@ -362,35 +388,124 @@ interface EstimationColumnProps {
 }
 
 export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, task }) => {
+  const { socket, connected } = useSocket();
+  const { t } = useTranslation(['task-drawer/task-drawer', 'common']);
+  
+  const estimatedHours = task.timeTracking?.estimated || 0;
+  const initialHours = Math.floor(estimatedHours);
+  const initialMinutes = Math.round((estimatedHours - initialHours) * 60);
+
+  const [hours, setHours] = useState<number | null>(initialHours > 0 ? initialHours : null);
+  const [minutes, setMinutes] = useState<number | null>(initialMinutes > 0 ? initialMinutes : null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const newVal = task.timeTracking?.estimated || 0;
+    const h = Math.floor(newVal);
+    const m = Math.round((newVal - h) * 60);
+    setHours(h > 0 ? h : null);
+    setMinutes(m > 0 ? m : null);
+  }, [task.timeTracking?.estimated]);
+
+  const handleSave = useCallback(() => {
+    setIsOpen(false);
+    if (!connected || !socket || !task.id) return;
+    
+    socket.emit(
+      SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(),
+      JSON.stringify({
+        task_id: task.id,
+        total_hours: hours || 0,
+        total_minutes: minutes || 0,
+        parent_task: task.parent_task_id || null,
+      })
+    );
+  }, [connected, socket, task.id, task.parent_task_id, hours, minutes]);
+
+  const popoverContent = (
+    <div style={{ width: 280, padding: '4px 0' }}>
+      <Typography.Text strong style={{ display: 'block', marginBottom: 16 }}>
+        {t('taskInfoTab.details.time-estimation', { defaultValue: 'Time Estimation' })}
+      </Typography.Text>
+      
+      <Flex gap={8} style={{ marginBottom: 16 }}>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ color: '#8c8c8c', fontSize: 12, display: 'block', marginBottom: 4 }}>
+            {t('taskInfoTab.details.hours', { defaultValue: 'Hours' })}
+          </Typography.Text>
+          <InputNumber
+            min={0}
+            precision={0}
+            value={hours}
+            onChange={setHours}
+            style={{ width: '100%' }}
+            placeholder={t('taskInfoTab.details.hours', { defaultValue: 'Hours' })}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ color: '#8c8c8c', fontSize: 12, display: 'block', marginBottom: 4 }}>
+            {t('taskInfoTab.details.minutes', { defaultValue: 'Minutes' })}
+          </Typography.Text>
+          <InputNumber
+            min={0}
+            max={59}
+            precision={0}
+            value={minutes}
+            onChange={setMinutes}
+            style={{ width: '100%' }}
+            placeholder={t('taskInfoTab.details.minutes', { defaultValue: 'Minutes' })}
+          />
+        </div>
+      </Flex>
+
+      <Flex justify="flex-end" gap={8}>
+        <Button size="small" onClick={() => setIsOpen(false)}>
+          {t('common:common.cancel', { defaultValue: 'Cancel' })}
+        </Button>
+        <Button size="small" type="primary" onClick={handleSave}>
+          {t('common:common.save', { defaultValue: 'Save' })}
+        </Button>
+      </Flex>
+    </div>
+  );
+
   const estimationDisplay = (() => {
-    const estimatedHours = task.timeTracking?.estimated;
-
     if (estimatedHours && estimatedHours > 0) {
-      const hours = Math.floor(estimatedHours);
-      const minutes = Math.round((estimatedHours - hours) * 60);
+      const h = Math.floor(estimatedHours);
+      const m = Math.round((estimatedHours - h) * 60);
 
-      if (hours > 0 && minutes > 0) {
-        return `${hours}h ${minutes}m`;
-      } else if (hours > 0) {
-        return `${hours}h`;
-      } else if (minutes > 0) {
-        return `${minutes}m`;
+      if (h > 0 && m > 0) {
+        return `${h}h ${m}m`;
+      } else if (h > 0) {
+        return `${h}h`;
+      } else if (m > 0) {
+        return `${m}m`;
       }
     }
-
     return null;
   })();
 
   return (
     <div
-      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2a2a2a] cursor-pointer transition-colors"
       style={{ width }}
     >
-      {estimationDisplay ? (
-        <span className="text-sm text-gray-500 dark:text-gray-400">{estimationDisplay}</span>
-      ) : (
-        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
-      )}
+      <Popover
+        content={popoverContent}
+        trigger="click"
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        placement="bottom"
+        destroyTooltipOnHide
+      >
+        <div className="w-full h-full flex items-center justify-center min-h-[24px]">
+          {estimationDisplay ? (
+            <span className="text-sm text-gray-500 dark:text-gray-400">{estimationDisplay}</span>
+          ) : (
+            <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+          )}
+        </div>
+      </Popover>
     </div>
   );
 });
@@ -431,12 +546,20 @@ interface ReporterColumnProps {
 
 export const ReporterColumn: React.FC<ReporterColumnProps> = memo(({ width, reporter }) => (
   <div
-    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-    style={{ width }}
+    className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+    style={{ 
+      width,
+      scrollbarWidth: 'none',
+      msOverflowStyle: 'none',
+      WebkitOverflowScrolling: 'touch',
+      whiteSpace: 'nowrap',
+      flexShrink: 0,
+    }}
   >
     {reporter ? (
       <span
-        className="text-sm text-gray-500 dark:text-gray-400 truncate"
+        className="text-sm text-gray-500 dark:text-gray-400"
+        style={{ whiteSpace: 'nowrap' }}
         title={safeTextDisplay(reporter)}
       >
         {safeTextDisplay(reporter)}
@@ -462,17 +585,30 @@ export const CustomColumn: React.FC<CustomColumnProps> = memo(
 
     return (
       <div
-        className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-        style={{ width }}
+        className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+        style={{ 
+          width,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
       >
-        <CustomColumnCell
-          column={column}
-          task={task}
-          updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-        />
+        <div style={{ width: '100%', minWidth: 0 }}>
+          <CustomColumnCell
+            column={column}
+            task={task}
+            updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+          />
+        </div>
       </div>
     );
   }
 );
 
 CustomColumn.displayName = 'CustomColumn';
+
+
+// Export the new overflow-aware labels column
+export { LabelsColumnWithOverflow } from './LabelsColumnWithOverflow';

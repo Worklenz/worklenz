@@ -93,5 +93,17 @@
   "availableOnPaidPlans": "Verfügbar in kostenpflichtigen Plänen",
   "logoAltText": "Organisationslogo",
   "logoSupportedFormats": "PNG, JPG, WEBP",
-  "organizationProfile": "Organisationsprofil"
+  "organizationProfile": "Organisationsprofil",
+  "customLogoUpgradePopoverTitle": "Benutzerdefiniertes Organisationslogo",
+  "customLogoUpgradePopoverBody": "Laden Sie Ihr Logo hoch, um das Worklenz-Branding in der gesamten App und in allen E-Mails an Ihr Team zu ersetzen.",
+  "customLogoUpgradePopoverCta": "Jetzt upgraden",
+  "customLogoUpgradeModalHeadline": "Machen Sie Worklenz zu Ihrem eigenen",
+  "customLogoUpgradeModalSubCopy": "Upgraden Sie auf Business, um Ihr Organisationslogo hochzuladen. Ihr Logo ersetzt das Worklenz-Logo überall in der App und in allen System-E-Mails an Ihr Team und Ihre Kunden.",
+  "customLogoUpgradeModalBenefitApp": "Eigenes Logo in der gesamten App",
+  "customLogoUpgradeModalBenefitEmails": "Gebrandete E-Mails für Team und Kunden",
+  "customLogoUpgradeModalBenefitProfessional": "Professioneller Auftritt für Ihre Organisation",
+  "emailAddress": "Email Address",
+  "enterOrganizationName": "Enter organization name",
+  "ownerSuffix": " (Owner)",
+  "closePopover": "Popover schließen"
 }
