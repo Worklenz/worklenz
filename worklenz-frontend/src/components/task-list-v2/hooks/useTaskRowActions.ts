@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, RefObject } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -12,16 +12,16 @@ interface UseTaskRowActionsProps {
   task: Task;
   taskId: string;
   taskName: string;
-  editTaskName: boolean;
   setEditTaskName: (editing: boolean) => void;
+  originalTaskNameRef: RefObject<string>;
 }
 
 export const useTaskRowActions = ({
   task,
   taskId,
   taskName,
-  editTaskName,
   setEditTaskName,
+  originalTaskNameRef,
 }: UseTaskRowActionsProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
@@ -41,7 +41,7 @@ export const useTaskRowActions = ({
     if (
       taskName?.trim() !== '' &&
       connected &&
-      taskName.trim() !== (task.title || task.name || '').trim()
+      taskName.trim() !== (originalTaskNameRef.current ?? '').trim()
     ) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
@@ -59,16 +59,17 @@ export const useTaskRowActions = ({
     socket,
     task.id,
     task.parent_task_id,
-    task.title,
-    task.name,
+    originalTaskNameRef,
     setEditTaskName,
   ]);
 
-  // Handle task name edit start
+  // Handle task name edit start — snapshot the current name so handleTaskNameSave
+  // can compare against the true pre-edit value (task.title gets updated live in Redux)
   const handleTaskNameEdit = useCallback(() => {
     if (task.is_parent_container) return;
+    originalTaskNameRef.current = task.title || task.name || '';
     setEditTaskName(true);
-  }, [setEditTaskName, task.is_parent_container]);
+  }, [setEditTaskName, task.is_parent_container, task.title, task.name, originalTaskNameRef]);
 
   // Handle live task name change — updates Redux immediately so the drawer reflects it in real time
   const handleTaskNameChangeLive = useCallback(
