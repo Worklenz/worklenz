@@ -209,7 +209,7 @@ export const fetchProjectDataForCurrentView = createAsyncThunk(
   'projectReports/fetchProjectDataForCurrentView',
   async (_, { getState, dispatch }) => {
     const state = (getState() as any).projectReportsReducer;
-    
+
     if (state.viewMode === 'grouped') {
       return dispatch(fetchGroupedProjects());
     } else {
@@ -330,12 +330,12 @@ const projectReportsSlice = createSlice({
       state.order = action.payload;
     },
     setProjectHealth: (state, action) => {
-      const health = action.payload;
-      const project = state.projectList.find(p => p.id === health.id);
+      const data = action.payload;
+      const project = state.projectList.find(p => p.id === data.id);
       if (project) {
-        project.project_health = health.id;
-        project.health_name = health.name;
-        project.health_color = health.color_code;
+        project.project_health = data.health.id;
+        project.health_name = data.name;
+        project.health_color = data.color_code;
       }
     },
     setProjectStatus: (state, action) => {
@@ -525,7 +525,7 @@ const projectReportsSlice = createSlice({
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
         // Use total project count from backend (accurate with filters applied)
-        state.total = action.payload?.total || 0;
+        state.total = action.payload?.total_groups || 0;
       })
       // ── Fix: handle both rejectWithValue (our friendly message) and unexpected
       // runtime errors so isLoading is always cleared and the UI can recover.
@@ -536,9 +536,7 @@ const projectReportsSlice = createSlice({
         // action.payload comes from rejectWithValue(); action.error.message is the
         // fallback for unexpected throws (network down, etc.)
         state.error =
-          (action.payload as string) ||
-          action.error.message ||
-          'Failed to fetch grouped projects';
+          (action.payload as string) || action.error.message || 'Failed to fetch grouped projects';
         // Keep whatever was previously shown rather than wiping to empty on error
         // state.groupedProjects stays unchanged so the user can see their last results
       });
