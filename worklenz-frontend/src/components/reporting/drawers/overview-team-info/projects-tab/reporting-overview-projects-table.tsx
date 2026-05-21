@@ -41,6 +41,7 @@ import ProjectReportsDrawer from '@/features/reporting/projectReports/projectRep
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import logger from '@/utils/errorLogger';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useSocket } from '@/socket/socketContext';
@@ -88,7 +89,7 @@ const ReportingOverviewProjectsTable = ({
         )
       );
     },
-    []
+    [setProjectList]
   );
 
   useEffect(() => {
@@ -102,6 +103,9 @@ const ReportingOverviewProjectsTable = ({
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
     state => state.projectStatusesReducer
+  );
+  const { projectHealths, loading: projectHealthsLoading } = useAppSelector(
+    state => state.projectHealthReducer
   );
 
   const handleDrawerOpen = (record: IRPTProject) => {
@@ -286,6 +290,7 @@ const ReportingOverviewProjectsTable = ({
 
   useEffect(() => {
     if (projectStatuses.length === 0 && !projectStatusesLoading) dispatch(fetchProjectStatuses());
+    if (projectHealths.length === 0 && !projectHealthsLoading) dispatch(fetchProjectHealth());
   }, []);
 
   useEffect(() => {

@@ -18,7 +18,7 @@ interface HealthStatusDataType {
 const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataType) => {
   const { t } = useTranslation('reporting-projects');
   const { socket } = useSocket();
-  const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
+  const { projectHealths, loading } = useAppSelector(state => state.projectHealthReducer);
 
   const projectHealth = projectHealths.find(status => status.id === value) || {
     color_code: color,
@@ -59,6 +59,34 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
       ),
     },
   ];
+  if (loading || projectHealths.length === 0) {
+    return (
+      <Flex
+        gap={6}
+        align="center"
+        style={{
+          width: 'fit-content',
+          borderRadius: 24,
+          paddingInline: 8,
+          height: 30,
+          backgroundColor: projectHealth?.color_code || colors.transparent,
+          color: colors.darkGray,
+          cursor: 'default',
+        }}
+      >
+        <Typography.Text
+          style={{
+            textTransform: 'capitalize',
+            color: colors.darkGray,
+            fontSize: 13,
+          }}
+        >
+          {projectHealth?.name}
+        </Typography.Text>
+        <DownOutlined />
+      </Flex>
+    );
+  }
 
   return (
     <Dropdown
