@@ -5,6 +5,48 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+
+const CUSTOM_FIELD_LIMIT = 10;
+
+/**
+ * Determines whether the user has business-level access based on subscription data.
+ * Mirrors the frontend hasBusinessFeatureAccess() logic.
+ */
+function hasBusinessAccess(subscriptionData: any): boolean {
+  if (!subscriptionData) return false;
+
+  const isTruthy = (v: unknown) =>
+    v === true || v === 1 || v === "true" || v === "t";
+
+  if (isTruthy(subscriptionData.business_plan_override)) return true;
+
+  // LTD users never get business access
+  if (subscriptionData.is_ltd === true) return false;
+
+  const subType: string = (subscriptionData.subscription_type || "").toUpperCase();
+
+  if (subType === "BUSINESS_TRIAL" || subType === "ENTERPRISE_TRIAL") return true;
+  if (subType === "ANNUAL_BUSINESS" || subType === "SELF_HOSTED") return true;
+
+  if (subType === "PADDLE") {
+    const planName = (subscriptionData.plan_name || "").toLowerCase();
+    return planName.includes("business") || planName.includes("enterprise");
+  }
+
+  return false;
+}
+
+/**
+ * Returns the current number of custom columns for a project.
+ */
+async function getCustomColumnCount(projectId: string): Promise<number> {
+  const result = await db.query(
+    `SELECT COUNT(*)::INT AS count FROM cc_custom_columns WHERE project_id = $1`,
+    [projectId]
+  );
+  return result.rows[0]?.count ?? 0;
+}
 
 export default class CustomcolumnsController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -21,6 +63,25 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       is_visible = true,
       configuration,
     } = req.body;
+
+    // --- Subscription limit check ---
+    const teamId = req.user?.team_id;
+    if (teamId) {
+      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+      if (subscriptionData && !hasBusinessAccess(subscriptionData)) {
+        const currentCount = await getCustomColumnCount(project_id);
+        if (currentCount >= CUSTOM_FIELD_LIMIT) {
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              { error_code: "CUSTOM_FIELD_LIMIT_EXCEEDED" },
+              `You have reached the limit of ${CUSTOM_FIELD_LIMIT} custom fields. Upgrade to Business to add unlimited custom fields.`
+            )
+          );
+        }
+      }
+    }
+    // --- End limit check ---
 
     // Start a transaction since we're inserting into multiple tables
     const client = await db.pool.connect();
@@ -270,6 +331,34 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { name, field_type, width, is_visible, configuration } = req.body;
+
+    // --- Grandfathered AppSumo check ---
+    // LTD users who already have >10 fields (grandfathered) cannot edit existing fields.
+    const teamId = req.user?.team_id;
+    if (teamId) {
+      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+      if (subscriptionData && !hasBusinessAccess(subscriptionData) && subscriptionData.is_ltd === true) {
+        // Resolve the project_id for this column to count its custom fields
+        const colProjectResult = await db.query(
+          `SELECT project_id FROM cc_custom_columns WHERE id = $1`,
+          [id]
+        );
+        const projectId = colProjectResult.rows[0]?.project_id;
+        if (projectId) {
+          const currentCount = await getCustomColumnCount(projectId);
+          if (currentCount > CUSTOM_FIELD_LIMIT) {
+            return res.status(200).send(
+              new ServerResponse(
+                false,
+                { error_code: "CUSTOM_FIELD_LIMIT_EXCEEDED" },
+                "Editing custom fields beyond your current plan limit requires a Business plan."
+              )
+            );
+          }
+        }
+      }
+    }
+    // --- End grandfathered check ---
 
     const client = await db.pool.connect();
 
