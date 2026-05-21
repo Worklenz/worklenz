@@ -119,7 +119,7 @@ export const useTaskRowColumns = ({
             position: 'sticky' as const,
             left: leftPosition,
             zIndex: 5, // Lower than header but above regular content
-            backgroundColor: currentBg || (isDarkMode ? '#1e1e1e' : '#ffffff'), // Use dynamic background or fallback
+            backgroundColor: currentBg || (isDarkMode ? (isSubtask ? '#141414' : '#1e1e1e') : '#ffffff'), // Use dynamic background or fallback
             width: width,
             height: '100%', // Fill the row height
             display: 'flex', // Use flex to contain child
