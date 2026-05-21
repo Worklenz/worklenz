@@ -82,7 +82,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
       {/* Large task name */}
       <div className="task-drawer-title-name">
         {isLoadingTaskName ? (
-          <Skeleton.Input active size="large" style={{ width: '100%', height: 32 }} />
+          <Skeleton.Input active size="large" style={{ width: '100%', height: 40 }} />
         ) : isEditing ? (
           <Input
             ref={inputRef}
@@ -91,7 +91,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             onBlur={handleInputBlur}
             placeholder={t('taskHeader.taskNamePlaceholder')}
             className="task-name-input task-name-input--large"
-            style={{ width: '100%', border: 'none', padding: 0, boxShadow: 'none' }}
+            style={{ width: '100%', border: 'none', padding: 0, boxShadow: 'none', fontSize: '22px', fontWeight: 700 }}
             showCount={true}
             maxLength={250}
             autoFocus
@@ -101,7 +101,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             level={4}
             onClick={() => setIsEditing(true)}
             className="task-name-display task-name-display--large"
-            style={{ margin: 0, cursor: 'text', lineHeight: 1.3, fontWeight: 700 }}
+            style={{ margin: 0, cursor: 'text', lineHeight: 1.3, fontWeight: 700, fontSize: '22px' }}
           >
             {taskName || t('taskHeader.taskNamePlaceholder')}
           </Typography.Title>

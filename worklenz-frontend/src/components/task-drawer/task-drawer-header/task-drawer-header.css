@@ -167,3 +167,7 @@
   font-weight: 600 !important;
   padding: 0 !important;
 }
+
+[data-theme="dark"] .task-drawer-actions-dropdown-trigger .anticon {
+  color: rgba(255,255,255,0.65) !important;
+}

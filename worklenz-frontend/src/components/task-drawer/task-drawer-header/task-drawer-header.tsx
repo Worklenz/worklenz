@@ -187,7 +187,10 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
           placement="bottomRight"
           trigger={['click']}
         >
-          <Button type="text" icon={<EllipsisOutlined />} />
+          <Button
+            type="text"
+            icon={<EllipsisOutlined style={{ fontSize: '24px' }} />}
+          />
         </Dropdown>
       </Flex>
     </Flex>
