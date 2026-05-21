@@ -491,3 +491,6 @@ tr:hover .action-buttons {
 .custom-selection-dropdown .theme-dark .ant-dropdown-menu-item:hover {
   background-color: #374151 !important;
 }
+.ant-menu-inline-collapsed-tooltip {
+  display: none !important;
+}

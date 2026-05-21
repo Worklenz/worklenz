@@ -8,6 +8,9 @@ import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { SeatLimitModal } from '@/components/common/seat-limit-modal';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useNavigate } from 'react-router-dom';
 
 interface FormValues {
   emails: string[];
@@ -35,7 +38,13 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
   const [hasActiveLink, setHasActiveLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
 
+  // Seat limit modal states
+  const [seatLimitModalOpen, setSeatLimitModalOpen] = useState(false);
+  const [seatLimitData, setSeatLimitData] = useState<any>(null);
+  const [pendingInvite, setPendingInvite] = useState<any>(null);
+
   const [form] = Form.useForm<FormValues>();
+  const navigate = useNavigate();
 
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.projectMemberReducer.isDrawerOpen);
@@ -129,6 +138,12 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
             is_admin: values.access === 'admin',
           };
           const result = await projectMembersApiService.inviteByEmail(body);
+          
+          // Check for seat limit exceeded error
+          if (!result.done && result.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+            return { email, success: false, error: result.message, seatLimitError: result.body };
+          }
+          
           return { email, success: result.done, error: result.message };
         } catch (error: any) {
           return { email, success: false, error: error.message || 'Unknown error' };
@@ -136,6 +151,17 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       });
 
       const results = await Promise.all(invitePromises);
+      
+      // Check if any result has a seat limit error
+      const seatLimitError = results.find(r => (r as any).seatLimitError);
+      if (seatLimitError) {
+        setSeatLimitData((seatLimitError as any).seatLimitError);
+        setPendingInvite({ emails: emailList, access: values.access, projectId, projectName });
+        setSeatLimitModalOpen(true);
+        setLoading(false);
+        return;
+      }
+      
       const successResults = results.filter(r => r.success);
       const failedResults = results.filter(r => !r.success);
 
@@ -153,17 +179,17 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         dispatch(toggleProjectMemberDrawer());
       } else {
         const failedEmails = failedResults.map(r => r.email).join(', ');
-        message.error(`Failed to invite: ${failedEmails}`);
+        // message.error(`Failed to invite: ${failedEmails}`);
       }
     } catch (error) {
       console.error('Error inviting project members:', error);
-      message.error(t('projectInvite_inviteFailed'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGenerateAndCopyLink = async () => {
+  // Generate invitation link (separate from copying)
+  const handleGenerateLink = async () => {
     try {
       setLinkLoading(true);
       const linkData = {
@@ -175,25 +201,46 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       };
 
       const res = await projectMembersApiService.generateInvitationLink(linkData);
+      
+      // Check for seat limit exceeded error
+      if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
+        setSeatLimitData(res.body);
+        setPendingInvite({ 
+          emails: [], 
+          access: 'member', 
+          projectId, 
+          projectName,
+          isLinkGeneration: true 
+        });
+        setSeatLimitModalOpen(true);
+        return;
+      }
+      
       if (res.done && res.body.invitation_url) {
-        // Update state with new link
         setInvitationLink(res.body.invitation_url);
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
         
-        // Copy to clipboard
-        await navigator.clipboard.writeText(res.body.invitation_url);
-        
-        setLinkCopied(true);
-        // message.success(t('projectInvite_linkCopied'));
-        
-        setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
-      console.error('Error generating and copying invitation link:', error);
-      message.error(t('projectInvite_linkCreateFailed'));
+      console.error('Error generating invitation link:', error);
+      
     } finally {
       setLinkLoading(false);
+    }
+  };
+
+  // Copy existing link to clipboard (synchronous user action)
+  const handleCopyLink = async () => {
+    if (!invitationLink) return;
+    
+    try {
+      // This works in all browsers because it's called directly from user click
+      await navigator.clipboard.writeText(invitationLink);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
     }
   };
 
@@ -205,108 +252,159 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
     dispatch(toggleProjectMemberDrawer());
   };
 
+  const handleSeatLimitUpgrade = () => {
+    setSeatLimitModalOpen(false);
+    dispatch(toggleUpgradeModal());
+  };
+
+  const handleSeatLimitDeactivate = () => {
+    setSeatLimitModalOpen(false);
+    // Store pending invite in localStorage for auto-send after deactivation
+    if (pendingInvite) {
+      localStorage.setItem('pendingProjectInvite', JSON.stringify(pendingInvite));
+    }
+    // Navigate to Settings > Members
+    navigate('/worklenz/settings/team-members');
+  };
+
+  const handleSeatLimitModalClose = () => {
+    setSeatLimitModalOpen(false);
+    setPendingInvite(null);
+    setSeatLimitData(null);
+  };
+
   return (
-    <Modal
-      title={
-        <Typography.Text strong style={{ fontSize: 16 }}>
-          Share "{projectName}"
-        </Typography.Text>
-      }
-      open={isDrawerOpen}
-      onCancel={handleClose}
-      destroyOnHidden={false}
-      width={500}
-      loading={loading}
-      footer={
-        <Flex justify="space-between" align="center">
-          <Button
-            loading={linkLoading}
-            onClick={handleGenerateAndCopyLink}
-            icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+    <>
+      <Modal
+        title={
+          <Typography.Text strong style={{ fontSize: 16 }}>
+            Share "{projectName}"
+          </Typography.Text>
+        }
+        open={isDrawerOpen}
+        onCancel={handleClose}
+        destroyOnHidden={false}
+        width={500}
+        loading={loading}
+        footer={
+          <Flex justify="space-between" align="center" gap={8}>
+            {hasActiveLink && !isLinkExpired(linkExpiry) ? (
+              <>
+                <Button onClick={handleGenerateLink} loading={linkLoading}>
+                  {t('projectInvite_regenerateLink', { defaultValue: 'Regenerate Link' })}
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={handleCopyLink}
+                  icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
+                >
+                  {linkCopied
+                    ? t('projectInvite_copiedShort')
+                    : t('projectInvite_copyLinkButton')}
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="primary"
+                loading={linkLoading}
+                onClick={handleGenerateLink}
+                icon={<CopyOutlined />}
+              >
+                {t('projectInvite_generateLink', { defaultValue: 'Generate Link' })}
+              </Button>
+            )}
+          </Flex>
+        }
+      >
+        <Flex vertical gap={2}>
+          {/* Email Invitation Section */}
+          <Form
+            form={form}
+            onFinish={handleFormSubmit}
+            layout="vertical"
+            initialValues={{ access: 'member' }}
           >
-            {linkCopied
-              ? t('projectInvite_copiedShort')
-              : hasActiveLink && !isLinkExpired(linkExpiry)
-                ? t('projectInvite_copyLinkButton')
-                : t('Copy Link', { defaultValue: 'Copy Link' })}
-          </Button>
-        </Flex>
-      }
-    >
-      <Flex vertical gap={2}>
-        {/* Email Invitation Section */}
-        <Form
-          form={form}
-          onFinish={handleFormSubmit}
-          layout="vertical"
-          initialValues={{ access: 'member' }}
-        >
-          <Flex gap={16} align="flex-start">
-            <Form.Item
-              name="emails"
-              label={t('projectInvite_emailLabel')}
-              style={{ flex: 1, marginBottom: 16 }}
-              rules={[
-                {
-                  validator: (_, value) => {
-                    if (!value || !Array.isArray(value) || value.length === 0) {
-                      return Promise.reject(new Error(t('projectInvite_emailRequired')));
-                    }
+            <Flex gap={16} align="flex-start">
+              <Form.Item
+                name="emails"
+                label={t('projectInvite_emailLabel')}
+                style={{ flex: 1, marginBottom: 16 }}
+                rules={[
+                  {
+                    validator: (_, value) => {
+                      if (!value || !Array.isArray(value) || value.length === 0) {
+                        return Promise.reject(new Error(t('projectInvite_emailRequired')));
+                      }
 
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    const invalidEmails = value.filter(
-                      (email: string) => !emailRegex.test(email.trim())
-                    );
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      const invalidEmails = value.filter(
+                        (email: string) => !emailRegex.test(email.trim())
+                      );
 
-                    if (invalidEmails.length > 0) {
-                      return Promise.reject(new Error(t('projectInvite_emailInvalid')));
-                    }
+                      if (invalidEmails.length > 0) {
+                        return Promise.reject(new Error(t('projectInvite_emailInvalid')));
+                      }
 
-                    return Promise.resolve();
+                      return Promise.resolve();
+                    },
                   },
-                },
-              ]}
+                ]}
+              >
+                {/* Shows all team members immediately on open */}
+                <Select
+                  mode="tags"
+                  style={{ width: '100%' }}
+                  placeholder={t('projectInvite_emailPlaceholder')}
+                  options={teamMemberOptions}
+                  filterOption={(input, option) => {
+                    if (!option) return false;
+                    return (
+                      option.value.toLowerCase().includes(input.toLowerCase()) ||
+                      option.label.toLowerCase().includes(input.toLowerCase())
+                    );
+                  }}
+                  notFoundContent={
+                    <Typography.Text type="secondary">{t('projectInvite_emailHelp')}</Typography.Text>
+                  }
+                  tokenSeparators={[',', ' ', ';']}
+                />
+              </Form.Item>
+              <Button htmlType="submit" type="primary" loading={loading} style={{ marginTop: 30 }}>
+                {t('projectInvite_inviteButton')}
+              </Button>
+            </Flex>
+
+            <Form.Item
+              label={t('projectInvite_teamRoleLabel')}
+              name="access"
+              tooltip={t('projectInvite_teamRoleTooltip')}
             >
-              {/* Shows all team members immediately on open */}
               <Select
-                mode="tags"
-                style={{ width: '100%' }}
-                placeholder={t('projectInvite_emailPlaceholder')}
-                options={teamMemberOptions}
-                filterOption={(input, option) => {
-                  if (!option) return false;
-                  return (
-                    option.value.toLowerCase().includes(input.toLowerCase()) ||
-                    option.label.toLowerCase().includes(input.toLowerCase())
-                  );
-                }}
-                notFoundContent={
-                  <Typography.Text type="secondary">{t('projectInvite_emailHelp')}</Typography.Text>
-                }
-                tokenSeparators={[',', ' ', ';']}
+                options={[
+                  { value: 'member', label: t('memberText') },
+                  { value: 'team-lead', label: 'Team Lead' },
+                  { value: 'admin', label: t('adminText') },
+                ]}
               />
             </Form.Item>
-            <Button htmlType="submit" type="primary" loading={loading} style={{ marginTop: 30 }}>
-              {t('projectInvite_inviteButton')}
-            </Button>
-          </Flex>
+          </Form>
+        </Flex>
+      </Modal>
 
-          <Form.Item
-            label={t('projectInvite_teamRoleLabel')}
-            name="access"
-            tooltip={t('projectInvite_teamRoleTooltip')}
-          >
-            <Select
-              options={[
-                { value: 'member', label: t('memberText') },
-                { value: 'team-lead', label: 'Team Lead' },
-                { value: 'admin', label: t('adminText') },
-              ]}
-            />
-          </Form.Item>
-        </Form>
-      </Flex>
-    </Modal>
+      {/* Seat Limit Modal */}
+      {seatLimitData && (
+        <SeatLimitModal
+          open={seatLimitModalOpen}
+          onClose={handleSeatLimitModalClose}
+          currentMembers={seatLimitData.current_members}
+          planLimit={seatLimitData.plan_seat_limit}
+          businessLimit={seatLimitData.business_plan_limit}
+          isAppSumoUser={seatLimitData.is_appsumo_user}
+          onUpgrade={handleSeatLimitUpgrade}
+          onDeactivate={handleSeatLimitDeactivate}
+        />
+      )}
+    </>
   );
 };
 

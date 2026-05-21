@@ -132,11 +132,11 @@
     "budgetSettingsUpdateFailed": "Falha ao atualizar configurações de orçamento"
   },
   "columnTooltips": {
-    "hours": "Total de horas estimadas para todas as tarefas. Calculado a partir das estimativas de tempo das tarefas.",
+    "hours": "Total de horas estimadas para todas as tarefas. Calculado a partir das estimativas de tempo das tarefas. Formato de exibição: Xh Ym.",
     "manDays": "Total de dias-homem estimados para todas as tarefas. Baseado em {{hoursPerDay}} horas por dia de trabalho.",
     "actualManDays": "Dias-homem reais gastos com base no tempo registrado. Calculado como: Tempo Total Registrado ÷ {{hoursPerDay}} horas por dia.",
     "effortVariance": "Diferença entre dias-homem estimados e reais. Valores positivos indicam superestimação, valores negativos indicam subestimação.",
-    "totalTimeLogged": "Tempo total realmente registrado pelos membros da equipe em todas as tarefas.",
+    "totalTimeLogged": "Tempo total realmente registrado pelos membros da equipe em todas as tarefas. Formato de exibição: Xh Ym.",
     "estimatedCostHourly": "Custo estimado calculado como: Horas Estimadas × Taxas por Hora para membros da equipe designados.",
     "estimatedCostManDays": "Custo estimado calculado como: Dias-Homem Estimados × Taxas Diárias para membros da equipe designados.",
     "actualCost": "Custo real baseado no tempo registrado. Calculado como: Tempo Registrado × Taxas por Hora para membros da equipe.",

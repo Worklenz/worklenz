@@ -110,6 +110,9 @@ import projectFinanceRateCardReducer from '@/features/finance/project-finance-sl
 import projectFinancesReducer from '@/features/projects/finance/project-finance.slice';
 import financeReducer from '@/features/projects/finance/finance-slice';
 
+// Seat Limit
+import seatLimitReducer from '@/features/seat-limit/seatLimitSlice';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -228,6 +231,9 @@ export const store = configureStore({
     projectFinanceRateCardReducer: projectFinanceRateCardReducer,
     projectFinancesReducer: projectFinancesReducer,
     financeReducer: financeReducer,
+
+    // Seat Limit
+    seatLimitReducer: seatLimitReducer,
   },
 });
 

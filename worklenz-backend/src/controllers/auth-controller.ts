@@ -93,8 +93,15 @@ export default class AuthController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data) {
-      // Compare the password
+      // Compare the current password
       if (bcrypt.compareSync(currentPassword, data.password)) {
+
+        // Prevent reusing the same password
+        const isSamePassword = bcrypt.compareSync(newPassword, data.password);
+        if (isSamePassword) {
+          return res.status(200).send(new ServerResponse(false, null, "New password must be different from your current password."));
+        }
+
         const salt = bcrypt.genSaltSync(10);
         const encryptedPassword = bcrypt.hashSync(newPassword, salt);
 
@@ -475,13 +482,6 @@ export default class AuthController extends WorklenzControllerBase {
         process.env.GOOGLE_ANDROID_CLIENT_ID, // Android client ID
         process.env.GOOGLE_IOS_CLIENT_ID, // iOS client ID
       ].filter(Boolean); // Remove undefined values
-
-      console.log("Token audience (aud):", profile.aud);
-      console.log("Allowed client IDs:", allowedClientIds);
-      console.log("Environment variables check:");
-      console.log("- GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID ? "Set" : "Not set");
-      console.log("- GOOGLE_ANDROID_CLIENT_ID:", process.env.GOOGLE_ANDROID_CLIENT_ID ? "Set" : "Not set");
-      console.log("- GOOGLE_IOS_CLIENT_ID:", process.env.GOOGLE_IOS_CLIENT_ID ? "Set" : "Not set");
 
       if (!allowedClientIds.includes(profile.aud)) {
         return res.status(400).send(new ServerResponse(false, null, "Invalid token audience"));

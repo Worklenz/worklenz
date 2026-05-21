@@ -59,6 +59,34 @@ export const formatSecondsToCompactHoursMinutes = (totalSeconds: number): string
 };
 
 /**
+ * Format seconds to padded HH:mm for easy column scanning
+ * @param totalSeconds - Total seconds to format
+ * @returns Formatted string (e.g., "00:00", "00:30", "01:00", "12:05")
+ */
+export const formatSecondsToPaddedHoursMinutes = (totalSeconds: number): string => {
+  if (!totalSeconds || totalSeconds <= 0) return '00:00';
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Format seconds to explicit hours/minutes text
+ * @param totalSeconds - Total seconds to format
+ * @returns Formatted string (e.g., "0h 0m", "1h 0m", "2h 31m")
+ */
+export const formatSecondsToHoursMinutesText = (totalSeconds: number): string => {
+  if (!totalSeconds || totalSeconds <= 0) return '0h 0m';
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  return `${hours}h ${minutes}m`;
+};
+
+/**
  * Convert seconds to hours (decimal)
  * @param seconds - Number of seconds
  * @returns Number of hours as decimal

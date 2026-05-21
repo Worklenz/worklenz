@@ -1431,8 +1431,6 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         subject: `Welcome to your Client Portal - ${teamName}`,
         html: emailContent,
       });
-
-      console.log(`Client invitation email sent to ${client.email}`);
     } catch (error) {
       console.error("Error sending client invitation email:", error);
       throw error;

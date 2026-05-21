@@ -401,14 +401,21 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     if (!project_id || !team_id) return;
 
     try {
+      let index = 0;
       for await (const status of statuses) {
-        const q = `INSERT INTO task_statuses(name, project_id, team_id, category_id) VALUES($1, $2, $3, $4);`;
+        // Use status.sort_order if available, otherwise use index to maintain order
+        const sortOrder = status.sort_order !== undefined ? status.sort_order : index;
+        
+        const q = `INSERT INTO task_statuses(name, project_id, team_id, category_id, sort_order) VALUES($1, $2, $3, $4, $5);`;
         await db.query(q, [
           status.name,
           project_id,
           team_id,
           status.category_id,
+          sortOrder,
         ]);
+        
+        index++;
       }
     } catch (error) {
       log_error(error);

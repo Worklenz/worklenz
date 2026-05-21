@@ -402,19 +402,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
       } = req.body;
       const { organizationId, clientUserId } = req;
 
-      console.log("Service creation request received:", {
-        name,
-        price,
-        currency,
-        category,
-        service_key,
-        hasImageData: !!imageData,
-        imageName,
-        imageType,
-        imageDataLength: imageData?.length,
-        organizationId,
-      });
-
       if (!name) {
         return res
           .status(400)
@@ -448,8 +435,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
 
       // Handle image upload if provided
       if (imageData && imageName && imageType) {
-        console.log("Processing image upload...");
-
         // Validate image
         const allowedImageTypes = [
           "image/jpeg",
@@ -515,17 +500,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
             ...finalServiceData,
             images: [imageUrl],
           };
-
-          console.log(
-            `Service image uploaded for organization ${organizationId}:`,
-            {
-              imageName,
-              imageType,
-              storageKey,
-              fileSizeBytes,
-              imageUrl,
-            }
-          );
         } catch (uploadError) {
           console.error("Error uploading service image:", uploadError);
           return res
@@ -537,8 +511,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
       } else {
         console.log("No image data provided in request");
       }
-
-      console.log("Final service data being stored:", finalServiceData);
 
       const query = `
         INSERT INTO client_portal_services (
@@ -565,12 +537,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
       ]);
 
       const service = result.rows[0];
-
-      console.log("Service created in database:", {
-        id: service.id,
-        name: service.name,
-        serviceData: service.service_data,
-      });
 
       return res.status(201).json(
         new ServerResponse(
@@ -625,20 +591,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
       } = req.body;
       const { organizationId } = req;
 
-      console.log("Service update request received:", {
-        id,
-        name,
-        price,
-        currency,
-        category,
-        service_key,
-        hasImageData: !!imageData,
-        imageName,
-        imageType,
-        imageDataLength: imageData?.length,
-        organizationId,
-      });
-
       // First check if service exists and belongs to organization
       const checkQuery = `SELECT id FROM client_portal_services WHERE id = $1 AND organization_team_id = $2`;
       const checkResult = await db.query(checkQuery, [id, organizationId]);
@@ -674,8 +626,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
 
       // Handle image upload if provided
       if (imageData && imageName && imageType) {
-        console.log("Processing image upload for service update...");
-
         // Validate image
         const allowedImageTypes = [
           "image/jpeg",
@@ -752,17 +702,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
                 const urlParts = oldImageUrl.split("/");
                 const storageKey = urlParts.slice(-4).join("/");
 
-                console.log("Cleaning up old service image:", {
-                  serviceId: id,
-                  oldImageUrl,
-                  storageKey,
-                });
-
                 await deleteObject(storageKey);
-                console.log(
-                  "Successfully deleted old service image:",
-                  storageKey
-                );
               } catch (deleteError) {
                 console.error("Error deleting old service image:", {
                   oldImageUrl,
@@ -782,18 +722,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
             ...finalServiceData,
             images: [imageUrl],
           };
-
-          console.log(
-            `Service image uploaded for organization ${organizationId}:`,
-            {
-              serviceId: id,
-              imageName,
-              imageType,
-              storageKey,
-              fileSizeBytes,
-              imageUrl,
-            }
-          );
         } catch (uploadError) {
           console.error("Error uploading service image:", uploadError);
           return res
@@ -803,8 +731,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
             );
         }
       }
-
-      console.log("Final service data for update:", finalServiceData);
 
       const updateFields = [];
       const queryParams = [];
@@ -885,15 +811,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
         RETURNING *
       `;
 
-      console.log("Update query:", updateQuery);
-      console.log("Query params:", queryParams);
-
       const result = await db.query(updateQuery, queryParams);
-
-      console.log("Update result:", {
-        rowCount: result.rowCount,
-        updatedService: result.rows[0],
-      });
       const service = result.rows[0];
 
       return res.json(
@@ -933,11 +851,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
       const { id } = req.params;
       const { organizationId } = req;
 
-      console.log("Service deletion request received:", {
-        serviceId: id,
-        organizationId,
-      });
-
       // Check if service has any requests
       const requestsQuery = `SELECT COUNT(*) as count FROM client_portal_requests WHERE service_id = $1`;
       const requestsResult = await db.query(requestsQuery, [id]);
@@ -971,8 +884,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
 
       const serviceData = serviceResult.rows[0].service_data;
       const imageUrls = serviceData?.images || [];
-
-      console.log("Found images to delete:", imageUrls);
 
       // Delete the service from database first
       const deleteQuery = `
@@ -1014,13 +925,7 @@ export default class ClientPortalServicesController extends ClientPortalControll
               storageKey = urlParts.slice(-4).join("/");
             }
 
-            console.log("Deleting image from S3:", {
-              imageUrl,
-              storageKey,
-            });
-
             await deleteObject(storageKey);
-            console.log("Successfully deleted image from S3:", storageKey);
           } catch (deleteError) {
             console.error("Error deleting image from S3:", {
               imageUrl,
@@ -1031,7 +936,6 @@ export default class ClientPortalServicesController extends ClientPortalControll
         });
       }
 
-      console.log("Service deleted successfully:", id);
       return res.json(
         new ServerResponse(true, null, "Service deleted successfully")
       );

@@ -58,7 +58,12 @@ export const ProjectRateCell: React.FC<{
         <Button
           type="text"
           className="borderless-icon-btn"
-          style={{ backgroundColor: colors.transparent }}
+          style={{
+            backgroundColor: colors.transparent,
+            width: 28,
+            minWidth: 28,
+            paddingInline: 0,
+          }}
           shape="circle"
           icon={<StarFilled style={{ color: starColor, fontSize: '20px' }} />}
           onClick={handleFavorite}

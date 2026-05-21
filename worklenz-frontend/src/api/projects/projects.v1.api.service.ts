@@ -44,9 +44,10 @@ export const projectsApi = createApi({
         filter: number | null;
         statuses: string | null;
         categories: string | null;
+        priorities: string | null;
       }
     >({
-      query: ({ index, size, field, order, search, filter, statuses, categories }) => {
+      query: ({ index, size, field, order, search, filter, statuses, categories, priorities }) => {
         const params = new URLSearchParams({
           index: index.toString(),
           size: size.toString(),
@@ -56,6 +57,7 @@ export const projectsApi = createApi({
           filter: filter?.toString() || '',
           statuses: statuses || '',
           categories: categories || '',
+          priorities: priorities || '',
         });
         return `${rootUrl}?${params.toString()}`;
       },
@@ -91,7 +93,10 @@ export const projectsApi = createApi({
         method: 'PUT',
         body: project,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Projects', id }],
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Projects', id },
+        { type: 'Projects', id: 'LIST' },
+      ],
     }),
 
     deleteProject: builder.mutation<IServerResponse<IProjectViewModel>, string>({

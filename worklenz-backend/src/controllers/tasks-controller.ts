@@ -664,7 +664,7 @@ export default class TasksController extends TasksControllerBase {
 
     // Log the task deletion activity
     const activityLog: IActivityLog = {
-      task_id: taskId,
+      task_id: undefined,
       team_id: taskDetails.team_id,
       project_id: taskDetails.project_id,
       attribute_type: IActivityLogAttributeTypes.NAME,
@@ -674,13 +674,13 @@ export default class TasksController extends TasksControllerBase {
       new_value: null,
     };
 
-    await insertToActivityLogs(activityLog);
-
     // Now delete the task
     const q = `DELETE
                FROM tasks
                WHERE id = $1;`;
     const result = await db.query(q, [taskId]);
+
+    await insertToActivityLogs(activityLog);
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -903,23 +903,47 @@ export default class TasksController extends TasksControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    const deletedTasks = req.body.tasks.map((t: any) => t.id);
+    const userId = req.user?.id as string;
+    const taskIds = req.body.tasks.map((t: any) => t.id);
 
-    const result: any = { deleted_tasks: deletedTasks };
+    // Step 1: fetch task details BEFORE deleting (task row won't exist after delete)
+    const detailsQ = `
+      SELECT t.id, t.name, t.project_id, p.team_id
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      WHERE t.id = ANY($1::uuid[]);
+    `;
+    const detailsResult = await db.query(detailsQ, [taskIds]);
+    const taskDetailsList = detailsResult.rows;
 
-    // Add user_id to body for activity log tracking
+    // Step 2: delete the tasks via Postgres function
     const bodyWithUser = {
       ...req.body,
-      user_id: req.user?.id,
+      user_id: userId,
     };
-
     const q = `SELECT bulk_delete_tasks($1) AS task;`;
     await db.query(q, [JSON.stringify(bodyWithUser)]);
+
+    // Step 3: write one activity log per task AFTER delete
+    // task_id: undefined (NULL) so FK cascade cannot wipe these rows
+    for (const task of taskDetailsList) {
+      await insertToActivityLogs({
+        task_id: undefined,
+        team_id: task.team_id,
+        project_id: task.project_id,
+        attribute_type: IActivityLogAttributeTypes.NAME,
+        user_id: userId,
+        log_type: IActivityLogChangeType.DELETE,
+        old_value: task.name,
+        new_value: null,
+      });
+    }
+
     TasksController.notifyProjectUpdates(
       req.user?.socket_id as string,
       req.query.project as string,
     );
-    return res.status(200).send(new ServerResponse(true, result));
+    return res.status(200).send(new ServerResponse(true, { deleted_tasks: taskIds }));
   }
 
   @HandleExceptions()

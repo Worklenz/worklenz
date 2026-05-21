@@ -33,7 +33,6 @@ export const ProjectTemplateRenameModal: React.FC<ProjectTemplateRenameModalProp
     setLoading(true);
     try {
       await projectTemplatesApiService.renameCustomTemplate(templateId, name.trim());
-      message.success(t('renameSuccess'));
       onClose(true);
     } catch (error) {
       message.error(t('renameError'));

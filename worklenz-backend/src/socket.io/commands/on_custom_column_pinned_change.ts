@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { log_error } from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
+import { isValidUuid } from "../../shared/validation-helpers";
 
 interface CustomColumnPinnedChangeData {
   column_id: string;
@@ -21,18 +22,40 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
       return;
     }
 
-    // Update the is_visible status in the database
-    const updateQuery = `
-      UPDATE cc_custom_columns 
-      SET is_visible = $1, 
-          updated_at = NOW() 
-      WHERE id = $2 AND project_id = $3
-      RETURNING id, key
-    `;
-    
-    const result = await db.query(updateQuery, [is_visible, column_id, project_id]);
-    
-    if (result.rowCount === 0) {
+    let result: any = null;
+
+    // Only attempt the UUID query when BOTH column_id and project_id are valid UUIDs.
+    // If either is a nanoid/key string the PostgreSQL UUID cast will throw, so we skip
+    // straight to the key-based fallback in that case.
+    if (isValidUuid(column_id) && isValidUuid(project_id)) {
+      try {
+        const updateQuery = `
+          UPDATE cc_custom_columns 
+          SET is_visible = $1, 
+              updated_at = NOW() 
+          WHERE id = $2 AND project_id = $3
+          RETURNING id, key
+        `;
+        result = await db.query(updateQuery, [is_visible, column_id, project_id]);
+      } catch (uuidQueryError) {
+        // Swallow UUID cast errors and fall through to the key-based query below.
+        result = null;
+      }
+    }
+
+    // Fallback: update by column key (text column — safe for both UUIDs and nanoid keys).
+    if (!result || result.rowCount === 0) {
+      const updateByKeyQuery = `
+        UPDATE cc_custom_columns 
+        SET is_visible = $1, 
+            updated_at = NOW() 
+        WHERE key = $2 AND project_id = $3::uuid
+        RETURNING id, key
+      `;
+      result = await db.query(updateByKeyQuery, [is_visible, column_id, project_id]);
+    }
+
+    if (!result || result.rowCount === 0) {
       log_error("Custom column not found or not updated");
       return;
     }
@@ -43,9 +66,9 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
     socket.to(`project:${project_id}`).emit(
       SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(),
       JSON.stringify({
-        column_id,
+        column_id: updatedColumn.id,
         column_key: updatedColumn.key,
-        is_visible
+        is_visible,
       })
     );
 
@@ -53,9 +76,9 @@ export const  on_custom_column_pinned_change = async (io: Server, socket: Socket
     socket.emit(
       SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(),
       JSON.stringify({
-        column_id,
+        column_id: updatedColumn.id,
         column_key: updatedColumn.key,
-        is_visible
+        is_visible,
       })
     );
   } catch (error) {

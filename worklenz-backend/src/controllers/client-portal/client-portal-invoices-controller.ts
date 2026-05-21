@@ -844,16 +844,6 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const result = await db.query(updateQuery, [id, transactionId || null, notes || null]);
       const updatedInvoice = result.rows[0];
 
-      // Here you would typically integrate with a payment processor
-      // For now, we'll just mark it as paid and log the payment details
-      console.log(`Invoice ${updatedInvoice.invoice_no} marked as paid:`, {
-        paymentMethod,
-        transactionId,
-        notes,
-        amount: invoice.amount,
-        paidAt: updatedInvoice.paid_at,
-      });
-
       return res.json(
         new ServerResponse(
           true,
@@ -1035,20 +1025,14 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const { InvoiceTemplateGenerator } = require('../../shared/invoice-template-generator');
 
       try {
-        console.log('Generating invoice HTML for invoice:', invoice.invoice_no);
         const html = InvoiceTemplateGenerator.generateInvoiceHTML(invoiceData);
-        console.log('HTML generated successfully, length:', html.length);
-
-        console.log('Launching Puppeteer...');
         const browser = await puppeteer.launch({
           headless: true,
           args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
         });
 
-        console.log('Browser launched, creating page...');
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'networkidle0' });
-        console.log('Page content set, generating PDF...');
 
         const pdfBuffer = await page.pdf({
           format: 'A4',
@@ -1061,16 +1045,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           },
         });
 
-        console.log('PDF generated successfully, size:', pdfBuffer.length);
         await browser.close();
-        console.log('Browser closed');
 
         // Set response headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="invoice-${invoice.invoice_no}.pdf"`);
         res.setHeader('Content-Length', pdfBuffer.length);
 
-        console.log('Sending PDF response...');
         return res.end(pdfBuffer, 'binary');
       } catch (pdfError) {
         console.error('PDF generation error:', pdfError);

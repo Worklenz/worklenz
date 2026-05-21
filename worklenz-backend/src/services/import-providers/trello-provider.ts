@@ -199,9 +199,6 @@ export default class TrelloProvider implements ImportProvider {
 
     // Add dynamic custom fields from Trello
     if (customFields) {
-      console.log(
-        `[FIELD MAPPING DEBUG] Processing ${customFields.length} custom fields for field mappings`,
-      );
       customFields.forEach((field) => {
         if (field.name && field.id) {
           // Skip location field as it's already in DEFAULT_FIELDS
@@ -211,33 +208,16 @@ export default class TrelloProvider implements ImportProvider {
             field.name === "Location";
           if (!isLocationField) {
             const targetField = field.name.toLowerCase().replace(/\s+/g, "_");
-            console.log(
-              `[FIELD MAPPING DEBUG] Adding custom field: "${field.name}" -> "${targetField}" (type: ${field.type})`,
-            );
             mappings.push({
               source_field: field.name,
               target_field: targetField,
               include: true,
             });
-          } else {
-            console.log(
-              `[FIELD MAPPING DEBUG] Skipping location field: "${field.name}" (already in defaults)`,
-            );
           }
         }
       });
-    } else {
-      console.log(`[FIELD MAPPING DEBUG] No custom fields provided`);
     }
 
-    console.log(
-      `[FIELD MAPPING DEBUG] Final field mappings count:`,
-      mappings.length,
-    );
-    console.log(
-      `[FIELD MAPPING DEBUG] Field mapping names:`,
-      mappings.map((m) => m.source_field),
-    );
     return mappings;
   }
 
@@ -321,14 +301,7 @@ export default class TrelloProvider implements ImportProvider {
     // Cache custom fields for use in ingest method
     this.customFieldsCache = customFields;
 
-    console.log(
-      `[GETAUTOMAPPINGS DEBUG] Returning field mappings for ${customFields?.length || 0} custom fields`,
-    );
     const fieldMappings = this.buildFieldMappings(customFields);
-    console.log(
-      `[GETAUTOMAPPINGS DEBUG] Total field mappings:`,
-      fieldMappings.length,
-    );
 
     return {
       hierarchy: this.buildHierarchy(lists || []),
@@ -401,10 +374,6 @@ export default class TrelloProvider implements ImportProvider {
       }),
     ]);
 
-    console.log(
-      `[TRELLO API DEBUG] Custom fields from board:`,
-      customFields?.map((f) => ({ id: f.id, name: f.name, type: f.type })),
-    );
 
     const listNameMap = new Map<string, string>();
     (lists || []).forEach((list) => {
@@ -424,16 +393,10 @@ export default class TrelloProvider implements ImportProvider {
 
     const customFieldNameById = new Map<string, string>();
     const locationFieldIds = new Set<string>();
-    console.log(
-      `[TRELLO API DEBUG] Processing ${(customFields || []).length} custom fields`,
-    );
     (customFields || []).forEach((field) => {
       if (!field.id) return;
       if (field.name) customFieldNameById.set(field.id, field.name);
       const nameLower = (field.name || "").toLowerCase();
-      console.log(
-        `[TRELLO API DEBUG] Custom field: id="${field.id}", name="${field.name}", type="${field.type}"`,
-      );
       // Detect location fields by name or type
       if (
         field.type === "location" ||
@@ -441,39 +404,17 @@ export default class TrelloProvider implements ImportProvider {
         field.name === "Location"
       ) {
         locationFieldIds.add(field.id);
-        console.log(
-          `[TRELLO API DEBUG] ✓ Marked field "${field.name}" (${field.id}) as location field (type: ${field.type})`,
-        );
       }
     });
-    console.log(
-      `[TRELLO API DEBUG] Found ${locationFieldIds.size} location fields:`,
-      Array.from(locationFieldIds),
-    );
 
     // CRITICAL FIX: Update the custom fields cache for field mappings
     this.customFieldsCache = customFields || [];
-    console.log(
-      `[TRELLO API DEBUG] Updated customFieldsCache with ${this.customFieldsCache.length} fields`,
-    );
 
     const tasks: StageTaskRow[] = [];
     const attachments: AttachmentPlanRow[] = [];
     const userMappings = new Map<string, UserMappingRow>();
 
     (cards || []).forEach((card) => {
-      console.log(`[CARD DEBUG] Processing card: "${card.name}"`);
-      console.log(
-        `[CARD DEBUG] Card custom field items:`,
-        JSON.stringify(card.customFieldItems, null, 2),
-      );
-      console.log(
-        `[CARD DEBUG] Number of custom field items: ${Array.isArray(card.customFieldItems) ? card.customFieldItems.length : "not array"}`,
-      );
-      console.log(
-        `[CARD DEBUG] Location field IDs we're looking for:`,
-        Array.from(locationFieldIds),
-      );
 
       const listName = listNameMap.get(card.idList || "") || "";
       const memberNames = (card.idMembers || []).map((id) => {
@@ -490,12 +431,10 @@ export default class TrelloProvider implements ImportProvider {
       const toLocationString = (
         loc?: TrelloCustomFieldItemValue | string | null,
       ): string | null => {
-        console.log(`[LOCATION VALUE DEBUG] Processing location value:`, loc);
         if (!loc) return null;
 
         // Handle string values directly (fallback)
         if (typeof loc === "string" && loc.trim()) {
-          console.log(`[LOCATION VALUE DEBUG] Found direct string:`, loc);
           return loc.trim();
         }
 
@@ -503,7 +442,6 @@ export default class TrelloProvider implements ImportProvider {
         if (typeof loc === "object") {
           // Check text property first (most common for location fields)
           if (loc.text && typeof loc.text === "string" && loc.text.trim()) {
-            console.log(`[LOCATION VALUE DEBUG] Found text:`, loc.text);
             return loc.text.trim();
           }
 
@@ -513,7 +451,6 @@ export default class TrelloProvider implements ImportProvider {
             typeof loc.address === "string" &&
             loc.address.trim()
           ) {
-            console.log(`[LOCATION VALUE DEBUG] Found address:`, loc.address);
             return loc.address.trim();
           }
 
@@ -523,84 +460,46 @@ export default class TrelloProvider implements ImportProvider {
             typeof loc.longitude === "number"
           ) {
             const coords = `${loc.latitude}, ${loc.longitude}`;
-            console.log(`[LOCATION VALUE DEBUG] Found coordinates:`, coords);
             return coords;
           }
 
           // Other fallback properties
           if (loc.number && String(loc.number).trim()) {
             const numStr = String(loc.number).trim();
-            console.log(`[LOCATION VALUE DEBUG] Found number:`, numStr);
             return numStr;
           }
           if (loc.date && String(loc.date).trim()) {
             const dateStr = String(loc.date).trim();
-            console.log(`[LOCATION VALUE DEBUG] Found date:`, dateStr);
             return dateStr;
           }
           if (loc.checked && String(loc.checked).trim()) {
             const checkedStr = String(loc.checked).trim();
-            console.log(`[LOCATION VALUE DEBUG] Found checked:`, checkedStr);
             return checkedStr;
           }
         }
 
-        console.log(`[LOCATION VALUE DEBUG] No recognized value format found`);
         return null;
       };
 
       if (Array.isArray(card.customFieldItems)) {
-        console.log(
-          `[CARD DEBUG] Processing ${card.customFieldItems.length} custom field items for card "${card.name}"`,
-        );
         for (const item of card.customFieldItems) {
           const fieldId = item.idCustomField;
           const fieldName = customFieldNameById.get(fieldId || "");
-          console.log(`[CARD DEBUG] Custom field item:`, {
-            idCustomField: fieldId,
-            fieldName: fieldName,
-            value: item.value,
-            isLocationField: locationFieldIds.has(fieldId || ""),
-            rawItem: JSON.stringify(item, null, 2),
-          });
           if (!fieldId) {
-            console.log(`[CARD DEBUG] ❌ Skipping item - no field ID`);
             continue;
           }
           if (!locationFieldIds.has(fieldId)) {
-            console.log(
-              `[CARD DEBUG] ❌ Skipping item - not a location field (field: ${fieldName})`,
-            );
             continue;
           }
-          console.log(
-            `[CARD DEBUG] ✅ Processing location field "${fieldName}" (${fieldId})`,
-          );
           const value = toLocationString(
             item.value as TrelloCustomFieldItemValue | string,
           );
-          console.log(`[CARD DEBUG] Extracted location value:`, value);
           if (value) {
-            console.log(`[CARD DEBUG] ✅ Adding location value: "${value}"`);
             locationValues.push(value);
-          } else {
-            console.log(`[CARD DEBUG] ❌ Location value is null/empty`);
           }
         }
-      } else {
-        console.log(
-          `[CARD DEBUG] Card "${card.name}" has no custom field items or not an array`,
-        );
       }
-      console.log(
-        `[CARD DEBUG] Final locationValues for "${card.name}":`,
-        locationValues,
-      );
       const locationDisplay = locationValues.join("; ");
-      console.log(
-        `[CARD DEBUG] locationDisplay for "${card.name}":`,
-        locationDisplay,
-      );
       const raw: Record<string, unknown> = {
         ...this.buildRawCard(
           card,
@@ -615,16 +514,9 @@ export default class TrelloProvider implements ImportProvider {
         __memberNames: memberNames,
         __memberEmails: memberEmails,
       };
-      console.log(
-        `[CARD DEBUG] Raw data "Location" field for "${card.name}":`,
-        raw.Location,
-      );
 
       // Second loop: Add ALL custom field values to raw data
       if (Array.isArray(card.customFieldItems)) {
-        console.log(
-          `[RAW DEBUG] Adding custom fields to raw data for "${card.name}"`,
-        );
         for (const item of card.customFieldItems) {
           const fieldId = item.idCustomField;
           if (!fieldId) continue;
@@ -637,47 +529,18 @@ export default class TrelloProvider implements ImportProvider {
             const value = toLocationString(
               item.value as TrelloCustomFieldItemValue | string,
             );
-            console.log(`[RAW DEBUG] Setting raw["${fieldName}"] =`, value);
             if (value) {
               (raw as Record<string, unknown>)[fieldName] = value;
             }
           } else {
             // Handle other custom fields
             let value = this.extractCustomFieldValue(item.value);
-            console.log(`[RAW DEBUG] Setting raw["${fieldName}"] =`, value);
             if (value !== null && value !== undefined) {
               (raw as Record<string, unknown>)[fieldName] = value;
             }
           }
         }
       }
-      console.log(`[RAW DEBUG] Final raw data for "${card.name}":`, {
-        Location: raw.Location,
-        allKeys: Object.keys(raw),
-        customFieldKeys: Object.keys(raw).filter(
-          (key) =>
-            ![
-              "Card name",
-              "Description",
-              "List",
-              "Status",
-              "Due date",
-              "Start date",
-              "Members",
-              "Labels",
-              "Location",
-              "Completed on",
-              "Last updated",
-              "URL",
-              "__labelIds",
-              "__labels",
-              "__memberIds",
-              "__memberNames",
-              "__memberEmails",
-            ].includes(key),
-        ),
-        fullRawData: raw,
-      });
 
       const assigneeSource =
         memberEmails[0] || (card.idMembers?.[0] ?? null) || memberNames[0];

@@ -15,10 +15,11 @@ import {
   BulbOutlined,
   DeleteOutlined,
   DollarCircleOutlined,
-  SlackOutlined,
   ApiOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
@@ -56,11 +57,14 @@ type SettingMenuItem = {
   name: string;
   defaultValue: string;
   endpoint: string;
+  groupKey?: string;
+  groupDefaultValue?: string;
   icon: ReactNode;
   element: ReactNode;
   adminOnly?: boolean;
   isDangerous?: boolean;
   businessPlanRequired?: boolean;
+  showInSidebar?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const settingsItems: SettingMenuItem[] = [
@@ -70,6 +74,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'profile',
     defaultValue: 'Profile',
     endpoint: 'profile',
+    groupKey: 'account-personal',
+    groupDefaultValue: 'Account & Personal',
     icon: React.createElement(UserOutlined),
     element: React.createElement(ProfileSettings),
   },
@@ -78,6 +84,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'notifications',
     defaultValue: 'Notifications',
     endpoint: 'notifications',
+    groupKey: 'account-personal',
+    groupDefaultValue: 'Account & Personal',
     icon: React.createElement(NotificationOutlined),
     element: React.createElement(NotificationsSettings),
   },
@@ -86,6 +94,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'appearance',
     defaultValue: 'Appearance',
     endpoint: 'appearance',
+    groupKey: 'account-personal',
+    groupDefaultValue: 'Account & Personal',
     icon: React.createElement(BulbOutlined),
     element: React.createElement(AppearanceSettings),
   },
@@ -94,6 +104,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'change-password',
     defaultValue: 'Change Password',
     endpoint: 'password',
+    groupKey: 'account-personal',
+    groupDefaultValue: 'Account & Personal',
     icon: React.createElement(LockOutlined),
     element: React.createElement(ChangePassword),
   },
@@ -102,6 +114,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'language-and-region',
     defaultValue: 'Language and Region',
     endpoint: 'language-and-region',
+    groupKey: 'account-personal',
+    groupDefaultValue: 'Account & Personal',
     icon: React.createElement(GlobalOutlined),
     element: React.createElement(LanguageAndRegionSettings),
   },
@@ -111,6 +125,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'clients',
     defaultValue: 'Clients',
     endpoint: 'clients',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
     icon: React.createElement(UserSwitchOutlined),
     element: React.createElement(ClientsSettings),
     adminOnly: true,
@@ -120,6 +136,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'job-titles',
     defaultValue: 'Job Titles',
     endpoint: 'job-titles',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
     icon: React.createElement(IdcardOutlined),
     element: React.createElement(JobTitlesSettings),
     adminOnly: true,
@@ -129,6 +147,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'labels',
     defaultValue: 'Labels',
     endpoint: 'labels',
+    groupKey: 'project-workflow',
+    groupDefaultValue: 'Project & Workflow',
     icon: React.createElement(TagsOutlined),
     element: React.createElement(LabelsSettings),
     adminOnly: true,
@@ -138,6 +158,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'categories',
     defaultValue: 'Categories',
     endpoint: 'categories',
+    groupKey: 'project-workflow',
+    groupDefaultValue: 'Project & Workflow',
     icon: React.createElement(GroupOutlined),
     element: React.createElement(CategoriesSettings),
     adminOnly: true,
@@ -147,6 +169,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'project-templates',
     defaultValue: 'Project Templates',
     endpoint: 'project-templates',
+    groupKey: 'project-workflow',
+    groupDefaultValue: 'Project & Workflow',
     icon: React.createElement(FileZipOutlined),
     element: React.createElement(ProjectTemplatesSettings),
     adminOnly: true,
@@ -156,6 +180,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'task-templates',
     defaultValue: 'Task Templates',
     endpoint: 'task-templates',
+    groupKey: 'project-workflow',
+    groupDefaultValue: 'Project & Workflow',
     icon: React.createElement(ProfileOutlined),
     element: React.createElement(TaskTemplatesSettings),
     adminOnly: true,
@@ -165,6 +191,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'team-members',
     defaultValue: 'Team Members',
     endpoint: 'team-members',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamMembersSettings),
     adminOnly: true,
@@ -174,15 +202,19 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'team-hierarchy',
     defaultValue: 'Team Hierarchy',
     endpoint: 'team-hierarchy',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
     icon: React.createElement(TeamOutlined),
     element: React.createElement(TeamHierarchy),
     adminOnly: true,
   },
   {
     key: 'ratecard',
-    name: 'Rate Card',
+    name: 'ratecard',
     defaultValue: 'Rate Card',
     endpoint: 'ratecard',
+    groupKey: 'financial-billing',
+    groupDefaultValue: 'Financial & Billing',
     icon: React.createElement(DollarCircleOutlined),
     element: React.createElement(RateCardSettings),
     businessPlanRequired: true,
@@ -192,6 +224,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'teams',
     defaultValue: 'Teams',
     endpoint: 'teams',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
     icon: React.createElement(BankOutlined),
     element: React.createElement(TeamsSettings),
     adminOnly: true,
@@ -201,6 +235,8 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'integrations',
     defaultValue: 'Integrations',
     endpoint: 'integrations',
+    groupKey: 'system-integrations',
+    groupDefaultValue: 'System & Integrations',
     icon: React.createElement(ApiOutlined),
     element: React.createElement(IntegrationsSettings),
     adminOnly: true,
@@ -211,21 +247,22 @@ export const settingsItems: SettingMenuItem[] = [
     name: 'account-deletion',
     defaultValue: 'Account Deletion',
     endpoint: 'account-deletion',
+    groupKey: 'danger-zone',
+    groupDefaultValue: 'Danger Zone',
     icon: React.createElement(DeleteOutlined),
     element: React.createElement(AccountDeletion),
     isDangerous: true,
   },
 ];
 
-import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import { ILocalSession } from '@/types/auth/local-session.types';
-
 export const getAccessibleSettings = (isAdmin: boolean, session: ILocalSession | null) => {
   const hasBusinessAccess = hasBusinessFeatureAccess(session);
 
   return settingsItems.filter(item => {
     // Check admin requirement
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin) {
+      return false;
+    }
 
     // Check business plan requirement
     if (item.businessPlanRequired && !hasBusinessAccess) return false;

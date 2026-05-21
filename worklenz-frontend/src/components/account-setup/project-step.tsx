@@ -37,10 +37,6 @@ import { evt_account_setup_template_complete } from '@/shared/worklenz-analytics
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { createPortal } from 'react-dom';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { verifyAuthentication } from '@/features/auth/authSlice';
-import { setUser } from '@/features/user/userSlice';
-import { setSession } from '@/utils/session-helper';
-import { IAuthorizeResponse } from '@/types/auth/login.types';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -91,8 +87,6 @@ const getProjectSuggestions = (orgType?: string) => {
 export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = false, token }) => {
   const { t } = useTranslation('account-setup');
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const inputRef = useRef<InputRef>(null);
 
@@ -106,11 +100,9 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
       setLoadingTemplates(true);
       setTemplateError(null);
 
-      // Fetch list of available templates
       const templatesResponse = await projectTemplatesApiService.getWorklenzTemplates();
 
       if (templatesResponse.done && templatesResponse.body) {
-        // Fetch detailed information for first 4 templates for preview
         const templateDetails = await Promise.all(
           templatesResponse.body.slice(0, 4).map(async template => {
             if (template.id) {
@@ -128,7 +120,6 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
           })
         );
 
-        // Filter out null results and set templates
         const validTemplates = templateDetails.filter(
           (template): template is IProjectTemplate => template !== null
         );
@@ -142,11 +133,10 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
     }
   };
 
-  const { projectName, templateId, organizationName, surveyData } = useSelector(
+  const { projectName, templateId, surveyData } = useSelector(
     (state: RootState) => state.accountSetupReducer
   );
   const [open, setOpen] = useState(false);
-  const [creatingFromTemplate, setCreatingFromTemplate] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(templateId || null);
   const [templates, setTemplates] = useState<IProjectTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(true);
@@ -154,46 +144,23 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
 
   const projectSuggestions = getProjectSuggestions(surveyData.organization_type);
 
-  const handleTemplateSelected = (templateId: string) => {
-    if (!templateId) return;
-    dispatch(setTemplateId(templateId));
+  const handleTemplateSelected = (id: string) => {
+    if (!id) return;
+    dispatch(setTemplateId(id));
   };
 
   const toggleTemplateSelector = (isOpen: boolean) => {
     startTransition(() => setOpen(isOpen));
   };
 
-  const createFromTemplate = async () => {
-    setCreatingFromTemplate(true);
+  // FIX: This no longer calls the API directly.
+  // It simply closes the drawer and delegates to the parent's `onEnter` → `nextStep`,
+  // which calls `completeAccountSetupWithTemplate()`. This ensures only ONE API call
+  // is ever made, eliminating the duplicate project creation bug.
+  const confirmTemplateSelection = () => {
     if (!templateId) return;
-    try {
-      const model: IAccountSetupRequest = {
-        team_name: organizationName,
-        project_name: null,
-        template_id: templateId || null,
-        tasks: [],
-        team_members: [],
-      };
-      const res = await projectTemplatesApiService.setupAccount(model);
-      if (res.done && res.body.id) {
-        toggleTemplateSelector(false);
-        trackMixpanelEvent(evt_account_setup_template_complete);
-        try {
-          const authResponse = (await dispatch(
-            verifyAuthentication()
-          ).unwrap()) as IAuthorizeResponse;
-          if (authResponse?.authenticated && authResponse?.user) {
-            setSession(authResponse.user);
-            dispatch(setUser(authResponse.user));
-          }
-        } catch (error) {
-          logger.error('Failed to refresh user session after template setup completion', error);
-        }
-        navigate(`/worklenz/projects/${res.body.id}?tab=tasks-list&pinned_tab=tasks-list`);
-      }
-    } catch (error) {
-      logger.error('createFromTemplate', error);
-    }
+    toggleTemplateSelector(false);
+    onEnter();
   };
 
   const onPressEnter = () => {
@@ -374,7 +341,6 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
                           alt={template.name}
                           className="w-12 h-12 object-cover rounded"
                           onError={e => {
-                            // Fallback to icon if image fails to load
                             e.currentTarget.style.display = 'none';
                             if (e.currentTarget.nextSibling) {
                               (e.currentTarget.nextSibling as HTMLElement).style.display = 'block';
@@ -450,10 +416,15 @@ export const ProjectStep: React.FC<Props> = ({ onEnter, styles, isDarkMode = fal
               <Button style={{ marginRight: '8px' }} onClick={() => toggleTemplateSelector(false)}>
                 {t('cancel')}
               </Button>
+              {/*
+               * FIX: onClick now calls confirmTemplateSelection() which closes the drawer
+               * and delegates to onEnter() → parent's nextStep() →
+               * completeAccountSetupWithTemplate(). No API call happens here anymore,
+               * so there is zero chance of a duplicate project being created.
+               */}
               <Button
                 type="primary"
-                onClick={() => createFromTemplate()}
-                loading={creatingFromTemplate}
+                onClick={confirmTemplateSelection}
                 disabled={!templateId}
               >
                 {t('createProject')}

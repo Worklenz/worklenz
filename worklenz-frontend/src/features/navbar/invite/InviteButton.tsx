@@ -6,12 +6,16 @@ import { colors } from '../../../styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleInviteMemberDrawer } from '../../settings/member/memberSlice';
 import { useAuthService } from '@/hooks/useAuth';
+import { ROLE_DEFINITIONS } from '@/types/roles/role.types';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
 
 const InviteButton = () => {
   const dispatch = useAppDispatch();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isInviteRestricted = Boolean(currentSession?.is_expired);
+  const currentRole = getSessionRoleName(currentSession);
+  const canInviteMembers = ROLE_DEFINITIONS[currentRole].canInviteMembers;
 
   // localization
   const { t } = useTranslation('navbar');
@@ -25,6 +29,10 @@ const InviteButton = () => {
     : t('inviteTooltip', {
         defaultValue: 'Invite team members',
       });
+
+  if (!canInviteMembers) {
+    return null;
+  }
 
   return (
     <Tooltip title={inviteTooltip}>

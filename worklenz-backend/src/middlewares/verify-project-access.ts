@@ -84,10 +84,6 @@ export default function verifyProjectAccess(
           const hasProjectAccessInTeam = await checkProjectAccessInTeam(projectId, userId, projectTeamId, isOwnerOfProjectTeam, isAdminOfProjectTeam);
           
           if (hasProjectAccessInTeam) {
-            // User has access to the project's team AND the project itself
-            // Automatically switch teams in the backend
-            console.log(`[AUTO_TEAM_SWITCH] User ${userId} accessing project ${projectId} from team ${teamId}, switching to project team ${projectTeamId}`);
-            
             try {
               // Call the activate_team database function to switch teams
               const activateTeamQuery = `SELECT activate_team($1, $2)`;
@@ -97,9 +93,6 @@ export default function verifyProjectAccess(
               if (req.user) {
                 req.user.team_id = projectTeamId;
               }
-              
-              console.log(`[AUTO_TEAM_SWITCH] Successfully switched user ${userId} to team ${projectTeamId}`);
-              
               // Continue with the request - user is now in the correct team
               return next();
             } catch (switchError) {

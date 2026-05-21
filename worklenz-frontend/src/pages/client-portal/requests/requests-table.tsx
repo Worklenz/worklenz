@@ -1,4 +1,5 @@
 import { Card, Table, Typography, Spin, Alert, Empty } from '@/shared/antd-imports';
+import { useState } from 'react';
 import { TableProps } from 'antd/lib';
 import { useTranslation } from 'react-i18next';
 import { durationDateFormat } from '../../../utils/durationDateFormat';
@@ -6,7 +7,7 @@ import ClientPortalStatusTags from '@/components/client-portal/ClientPortalStatu
 import { useNavigate } from 'react-router-dom';
 import { setSelectedRequestNo } from '../../../features/clients-portal/requests/requests-slice';
 import { useAppDispatch } from '../../../hooks/useAppDispatch';
-import { useGetRequestsQuery } from '../../../api/client-portal/client-portal-api';
+import { useGetOrganizationRequestsQuery } from '../../../api/client-portal/client-portal-api';
 
 const RequestsTable = () => {
   // localization
@@ -14,9 +15,14 @@ const RequestsTable = () => {
 
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fetch requests from API
-  const { data: requestsData, isLoading, error } = useGetRequestsQuery();
+  const { data: requestsData, isLoading, error } = useGetOrganizationRequestsQuery({
+    page: currentPage,
+    limit: pageSize,
+  });
 
   // table columns
   const columns: TableProps['columns'] = [
@@ -92,14 +98,7 @@ const RequestsTable = () => {
 
   // Extract requests from API response - backend returns IServerResponse with {total, data} structure
   const requestsResponse = requestsData?.body || { total: 0, data: [] };
-  const requests = (requestsResponse as any).data || (requestsResponse as any).requests || [];
-
-  // Sort requests by created date (newest first)
-  const sortedRequests = [...requests].sort((a, b) => {
-    const dateA = new Date(a.created_at).getTime();
-    const dateB = new Date(b.created_at).getTime();
-    return dateB - dateA;
-  });
+  const requests = (requestsResponse as any).data || [];
 
   // Handle empty state
   if (!requests || requests.length === 0) {
@@ -131,13 +130,18 @@ const RequestsTable = () => {
     <Card style={{ height: 'calc(100vh - 280px)' }}>
       <Table
         columns={columns}
-        dataSource={sortedRequests}
+        dataSource={requests}
         rowKey="id"
         pagination={{
           size: 'small',
           total: requestsResponse.total || requests.length,
-          current: 1, // Backend doesn't return current page info
-          pageSize: 10, // Default page size
+          current: currentPage,
+          pageSize,
+          showSizeChanger: true,
+          onChange: (page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          },
         }}
         scroll={{
           x: 'max-content',

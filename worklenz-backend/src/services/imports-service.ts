@@ -343,16 +343,10 @@ const parseLabelValues = (
   // Check for direct Label fields (Label, Label1, Label2, etc.)
   Object.keys(source).forEach((key) => {
     if (key.match(/^Label\d*$/i) && source[key]) {
-      console.log(
-        `[parseLabelValues] Found Monday label field: ${key} = ${source[key]}`,
-      );
       pushValues(source[key]);
     }
   });
 
-  console.log(
-    `[parseLabelValues] Final parsed labels: ${JSON.stringify(labels)}`,
-  );
   return Array.from(new Set(labels.map(normalizeLabelName))).filter(Boolean);
 };
 
@@ -379,18 +373,11 @@ const createCustomColumnFromMondayField = async (
 
     const mapping = typeMapping[column.type];
     if (!mapping) {
-      console.log(
-        `[Monday Custom Column] Skipping unsupported column type: ${column.type}`,
-      );
       return null;
     }
 
     const columnKey = `monday_${column.id}_${column.type}`;
     const columnName = column.title || `Monday ${column.type}`;
-
-    console.log(
-      `[Monday Custom Column] Creating custom column: ${columnName} (${column.type} -> ${mapping.fieldType})`,
-    );
 
     const client = await db.pool.connect();
     try {
@@ -467,9 +454,6 @@ const createCustomColumnFromMondayField = async (
       }
 
       await client.query("COMMIT");
-      console.log(
-        `[Monday Custom Column] Created custom column with ID: ${columnId}`,
-      );
       return columnKey;
     } catch (error) {
       await client.query("ROLLBACK");
@@ -782,11 +766,6 @@ export const mapRawToTaskFields = (
   raw: unknown,
   mappings: FieldMappingRow[],
 ): { patch: TaskFieldPatch; customValues: CustomFieldValuePlan[] } => {
-  // DEBUG: Log mapping and raw input
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] === START ===");
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] Number of mappings:", mappings.length);
   // eslint-disable-next-line no-console
   const createdMapping = mappings.find((m) => {
     const normalizedTarget = normalizeTargetField(m.target_field);

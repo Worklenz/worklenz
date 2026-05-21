@@ -1,4 +1,31 @@
-import { ROLE_NAMES, IRoleOption } from '@/types/roles/role.types';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { IRoleOption, ROLE_DEFINITIONS, ROLE_NAMES, RoleName } from '@/types/roles/role.types';
+
+export const normalizeRoleName = (roleName?: string, isOwner?: boolean): RoleName => {
+  if (isOwner) {
+    return ROLE_NAMES.OWNER;
+  }
+
+  const normalizedRoleName = roleName?.toLowerCase().trim();
+
+  if (normalizedRoleName === 'owner') {
+    return ROLE_NAMES.OWNER;
+  }
+
+  if (normalizedRoleName === 'admin') {
+    return ROLE_NAMES.ADMIN;
+  }
+
+  if (normalizedRoleName === 'team lead' || normalizedRoleName === 'teamlead') {
+    return ROLE_NAMES.TEAM_LEAD;
+  }
+
+  return ROLE_NAMES.MEMBER;
+};
+
+export const getSessionRoleName = (session: ILocalSession | null): RoleName => {
+  return normalizeRoleName(session?.role_name, session?.owner);
+};
 
 /**
  * Check if current user can edit/manage another user's role
@@ -8,23 +35,9 @@ export function canManageUserRole(
   targetUserRole: string | undefined,
   isOwner?: boolean
 ): boolean {
-  // Owner can manage anyone except other owners
-  if (isOwner) {
-    return targetUserRole?.toLowerCase() !== 'owner';
-  }
-
-  // Admin can manage Admins, Team Leads and Members, but not Owner
-  if (currentUserRole?.toLowerCase() === 'admin') {
-    return ['admin', 'team lead', 'member'].includes(targetUserRole?.toLowerCase() || '');
-  }
-
-  // Team Lead can manage Team Leads and Members, but not Admin or Owner
-  if (currentUserRole?.toLowerCase() === 'team lead') {
-    return ['team lead', 'member'].includes(targetUserRole?.toLowerCase() || '');
-  }
-
-  // Members cannot manage other users
-  return false;
+  const actorRole = normalizeRoleName(currentUserRole, isOwner);
+  const targetRole = normalizeRoleName(targetUserRole);
+  return ROLE_DEFINITIONS[actorRole].manageableRoles.includes(targetRole);
 }
 
 /**
@@ -34,39 +47,18 @@ export function getAvailableRoleOptions(
   currentUserRole: string | undefined,
   isOwner?: boolean
 ): IRoleOption[] {
-  const allOptions: IRoleOption[] = [
-    {
-      value: ROLE_NAMES.MEMBER,
-      label: ROLE_NAMES.MEMBER,
-      description: 'Standard team member with basic access',
-    },
-    {
-      value: ROLE_NAMES.TEAM_LEAD,
-      label: ROLE_NAMES.TEAM_LEAD,
-      description: 'Admin access limited to this team only',
-    },
-    {
-      value: ROLE_NAMES.ADMIN,
-      label: ROLE_NAMES.ADMIN,
-      description: 'Full admin access to team management and settings',
-    },
-  ];
+  const actorRole = normalizeRoleName(currentUserRole, isOwner);
+  return ROLE_DEFINITIONS[actorRole].assignableRoles.map(roleName => {
+    const roleDefinition = ROLE_DEFINITIONS[roleName];
 
-  // Owner can assign any role except Owner
-  if (isOwner) {
-    return allOptions;
-  }
-
-  // Admin can assign Admin, Team Lead and Member roles (same as owner, except Owner role)
-  if (currentUserRole?.toLowerCase() === 'admin') {
-    return allOptions;
-  }
-
-  // Team Lead can assign Team Lead and Member roles
-  if (currentUserRole?.toLowerCase() === 'team lead') {
-    return allOptions.filter(option => ['Member', 'Team Lead'].includes(option.value));
-  }
-
-  // Members get no role options
-  return [];
+    return {
+      value: roleDefinition.value,
+      label: roleDefinition.labelDefaultValue,
+      description: roleDefinition.descriptionDefaultValue,
+      labelKey: roleDefinition.labelKey,
+      labelDefaultValue: roleDefinition.labelDefaultValue,
+      descriptionKey: roleDefinition.descriptionKey,
+      descriptionDefaultValue: roleDefinition.descriptionDefaultValue,
+    };
+  });
 }
