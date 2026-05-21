@@ -244,6 +244,8 @@ export enum IPaddlePlans {
 
 export enum ILocalPlans {
   FREE = 'FREE',
+  PRO_ANNUAL = 'PRO_ANNUAL',
+  PRO_MONTHLY = 'PRO_MONTHLY',
   ANNUAL = 'ANNUAL',
   MONTHLY = 'MONTHLY',
 }

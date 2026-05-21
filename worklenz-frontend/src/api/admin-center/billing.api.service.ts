@@ -154,18 +154,20 @@ export const billingApiService = {
   },
 
   /**
-   * Get LKR (local) pricing for Free and Business plans.
+   * Get LKR (local) pricing for Free, Pro, and Business plans.
    * This is a simplified endpoint used by the LKR upgrade modal.
    */
   async getLkrPricing(): Promise<
     IServerResponse<{
       free: { price: number };
+      pro: { price: number; discountedPrice: number };
       business: { price: number; discountedPrice: number };
     }>
   > {
     const response = await apiClient.get<
       IServerResponse<{
         free: { price: number };
+        pro: { price: number; discountedPrice: number };
         business: { price: number; discountedPrice: number };
       }>
     >(`${rootUrl}/lkr-pricing`);

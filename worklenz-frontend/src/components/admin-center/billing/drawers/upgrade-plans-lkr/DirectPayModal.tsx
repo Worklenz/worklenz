@@ -159,10 +159,11 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
       width={700}
       centered
       destroyOnClose
+      title="Secure Payment"
       styles={{
         body: {
           padding: 0,
-          height: '600px',
+          height: '80vh',
           position: 'relative',
         },
       }}
@@ -174,7 +175,7 @@ export const DirectPayModal: React.FC<DirectPayModalProps> = ({
             src={paymentUrl}
             style={{
               width: '100%',
-              height: '600px',
+              height: '80vh',
               border: 'none',
               display: isProcessing ? 'none' : 'block',
             }}

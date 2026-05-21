@@ -486,11 +486,7 @@ export default class BillingController extends WorklenzControllerBase {
 
   private static normalizeDirectPayUrlBase(url: string): string {
     const trimmedUrl = url.trim().replace(/\/+$/, "");
-    const urlWithScheme = /^https?:\/\//i.test(trimmedUrl)
-      ? trimmedUrl
-      : `http://${trimmedUrl}`;
-
-    return urlWithScheme.replace("://localhost", "://127.0.0.1");
+    return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `http://${trimmedUrl}`;
   }
 
   private static parseDirectPayOrderOwner(orderId?: string | null): IDirectPaySessionOwner {
@@ -1225,6 +1221,10 @@ export default class BillingController extends WorklenzControllerBase {
       free: {
         price: 0, // Free plan is always 0
       },
+      pro: {
+        price: proRow ? Number(proRow.monthly_base_price || 0) : 0,
+        discountedPrice: proRow ? Number(proRow.annual_base_price || 0) : 0,
+      },
       business: {
         price: businessRow ? Number(businessRow.monthly_base_price || 0) : 4990, // Fallback: LKR 4,990/month
         discountedPrice: businessRow ? Number(businessRow.annual_base_price || 0) : 49900, // Fallback: LKR 49,900/year
@@ -1234,6 +1234,9 @@ export default class BillingController extends WorklenzControllerBase {
     // Log warning if using fallback pricing
     if (!businessRow) {
       console.warn('⚠️  LKR business pricing not found in licensing_custom_plan_pricing table. Using fallback pricing.');
+    }
+    if (!proRow) {
+      console.warn('⚠️  LKR pro pricing not found in licensing_custom_plan_pricing table.');
     }
 
     return res.status(200).send(new ServerResponse(true, payload));

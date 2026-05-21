@@ -28,6 +28,7 @@ const UpgradePlansLKR: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<ILocalPlans[keyof ILocalPlans]>(ILocalPlans.ANNUAL);
   const [switchingToFreePlan, setSwitchingToFreePlan] = useState(false);
   const [directPayLoading, setDirectPayLoading] = useState<boolean>(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<'pro' | 'startup' | null>(null);
   const [directPayError, setDirectPayError] = useState<string | null>(null);
   const [showDirectPayModal, setShowDirectPayModal] = useState<boolean>(false);
   const [directPayUrl, setDirectPayUrl] = useState<string>('');
@@ -35,6 +36,8 @@ const UpgradePlansLKR: React.FC = () => {
   const [lkrPricingLoading, setLkrPricingLoading] = useState<boolean>(true);
   const [lkrPricingError, setLkrPricingError] = useState<string | null>(null);
   const [freePrice, setFreePrice] = useState<number>(0);
+  const [proMonthlyPrice, setProMonthlyPrice] = useState<number>(0);
+  const [proAnnualPrice, setProAnnualPrice] = useState<number>(0);
   const [businessMonthlyPrice, setBusinessMonthlyPrice] = useState<number>(0);
   const [businessAnnualPrice, setBusinessAnnualPrice] = useState<number>(0);
 
@@ -47,6 +50,7 @@ const UpgradePlansLKR: React.FC = () => {
       : 0;
 
   const hasValidPricing = businessMonthlyPrice > 0 || businessAnnualPrice > 0;
+  const hasValidProPricing = proMonthlyPrice > 0 || proAnnualPrice > 0;
 
   // Pricing data (populated from backend)
   const plans = {
@@ -57,6 +61,21 @@ const UpgradePlansLKR: React.FC = () => {
       tagline: 'Best for personal use',
       features: ['freeText01', 'freeText02', 'freeText03'],
       tag: selectedPlan === ILocalPlans.FREE ? t('currentPlan') : undefined,
+    },
+    pro: {
+      title: t('pro', { defaultValue: 'Pro' }),
+      priceMonthly: proMonthlyPrice,
+      priceAnnual: proAnnualPrice,
+      subtitle: t('startupSubtitle'),
+      tagline: 'Best for small teams',
+      features: [
+        'startupText01',
+        'startupText02',
+        'startupText03',
+        'startupText04',
+        'startupText05',
+      ],
+      tag: t('tag', { defaultValue: 'Most Popular' }),
     },
     startup: {
       // Local business plan
@@ -129,6 +148,8 @@ const UpgradePlansLKR: React.FC = () => {
   const handlePlanSelect = (plan: keyof typeof plans) => {
     if (plan === 'free') {
       setSelectedPlan(ILocalPlans.FREE);
+    } else if (plan === 'pro') {
+      setSelectedPlan(ILocalPlans.PRO_ANNUAL);
     } else {
       setSelectedPlan(ILocalPlans.ANNUAL);
     }
@@ -165,8 +186,10 @@ const UpgradePlansLKR: React.FC = () => {
         setLkrPricingError(null);
         const response = await billingApiService.getLkrPricing();
         if (response.done && response.body) {
-          const { free, business } = response.body;
+          const { free, pro, business } = response.body;
           setFreePrice(free?.price ?? 0);
+          setProMonthlyPrice(pro?.price ?? 0);
+          setProAnnualPrice(pro?.discountedPrice ?? 0);
           setBusinessMonthlyPrice(business?.price ?? 0);
           setBusinessAnnualPrice(business?.discountedPrice ?? 0);
         } else {
@@ -190,20 +213,25 @@ const UpgradePlansLKR: React.FC = () => {
     </div>
   );
 
-  const isPlanSelected = (planKey: 'free' | 'startup') => {
+  const isPlanSelected = (planKey: 'free' | 'pro' | 'startup') => {
     if (planKey === 'free') return selectedPlan === ILocalPlans.FREE;
+    if (planKey === 'pro') return selectedPlan === ILocalPlans.PRO_ANNUAL || selectedPlan === ILocalPlans.PRO_MONTHLY;
     return selectedPlan === ILocalPlans.ANNUAL || selectedPlan === ILocalPlans.MONTHLY;
   };
 
-  const initializeDirectPayCheckout = async () => {
+  const initializeDirectPayCheckout = async (planKey?: 'pro' | 'startup') => {
     try {
       setDirectPayLoading(true);
       setDirectPayError(null);
 
-      // Calculate amount based on selected plan
-      const amount = selectedPlan === ILocalPlans.ANNUAL
-        ? businessAnnualPrice
-        : businessMonthlyPrice;
+      // Derive amount from planKey (explicit) or fall back to selectedPlan state
+      const effectivePlan = planKey ?? (
+        selectedPlan === ILocalPlans.PRO_ANNUAL || selectedPlan === ILocalPlans.PRO_MONTHLY ? 'pro' : 'startup'
+      );
+      const amount =
+        effectivePlan === 'pro'
+          ? proAnnualPrice
+          : businessAnnualPrice;
 
       if (!amount || amount <= 0) {
         throw new Error('Invalid pricing. Please contact support.');
@@ -303,13 +331,17 @@ const UpgradePlansLKR: React.FC = () => {
     message.info('Payment was cancelled.');
   };
 
-  const handleUpgradeNow = async (e: React.MouseEvent) => {
+  const handleUpgradeNow = async (e: React.MouseEvent, planKey: 'pro' | 'startup') => {
     e.stopPropagation();
-    if (hasValidPricing) {
-      await initializeDirectPayCheckout();
+    handlePlanSelect(planKey);
+    setCheckoutPlan(planKey);
+    const valid = planKey === 'pro' ? hasValidProPricing : hasValidPricing;
+    if (valid) {
+      await initializeDirectPayCheckout(planKey);
     } else {
       window.open('mailto:sales@worklenz.com', '_blank');
     }
+    setCheckoutPlan(null);
   };
 
   return (
@@ -340,7 +372,7 @@ const UpgradePlansLKR: React.FC = () => {
       {/* Plan Cards - Centered and Responsive */}
       <Row justify="center" gutter={[24, 32]}>
         {/* Free Plan */}
-        <Col xs={24} sm={20} md={12} lg={12} xl={12} style={{ minWidth: 280, maxWidth: 320 }}>
+        <Col xs={24} sm={20} md={8} lg={8} xl={8} style={{ minWidth: 260, maxWidth: 320 }}>
           <Card
             hoverable
             style={getCardStyle(isPlanSelected('free'))}
@@ -393,8 +425,74 @@ const UpgradePlansLKR: React.FC = () => {
           </Card>
         </Col>
 
-        {/* Startup Plan */}
-        <Col xs={24} sm={20} md={12} lg={12} xl={12} style={{ minWidth: 280, maxWidth: 320 }}>
+        {/* Pro Plan */}
+        <Col xs={24} sm={20} md={8} lg={8} xl={8} style={{ minWidth: 260, maxWidth: 320 }}>
+          <Card
+            hoverable
+            style={getCardStyle(isPlanSelected('pro'))}
+            onClick={() => handlePlanSelect('pro')}
+            title={
+              <div style={cardStyles.title}>
+                {plans.pro.title}
+                <Tag color="blue">{plans.pro.tag}</Tag>
+              </div>
+            }
+            styles={{
+              body: {
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                padding: 0
+              }
+            }}
+          >
+            <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ marginBottom: '16px' }}>
+                  {hasValidProPricing ? (
+                    <>
+                      <Typography.Title level={1} style={cardStyles.price}>
+                        {userCurrency} {plans.pro.priceMonthly}
+                      </Typography.Title>
+                      <Typography.Text type="secondary" style={cardStyles.subtitle}>/month</Typography.Text>
+                      <Typography.Text type="secondary" style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>
+                        {plans.pro.tagline}
+                      </Typography.Text>
+                    </>
+                  ) : (
+                    <div style={{ textAlign: 'center' as const }}>
+                      <Typography.Title level={3} style={{ margin: 0, color: '#8c8c8c' }}>
+                        Contact Sales
+                      </Typography.Title>
+                      <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
+                        Custom pricing available
+                      </Typography.Text>
+                    </div>
+                  )}
+                </div>
+                <div style={cardStyles.featuresContainer}>
+                  {plans.pro.features.map((f, index) => renderFeature(f, index))}
+                </div>
+              </div>
+              <div style={{ marginTop: 'auto', paddingTop: '20px', textAlign: 'center' as const }}>
+                <Button
+                  type="primary"
+                  size="large"
+                  loading={directPayLoading && checkoutPlan === 'pro'}
+                  onClick={(e) => handleUpgradeNow(e, 'pro')}
+                  style={{ width: '100%' }}
+                >
+                  {hasValidProPricing
+                    ? t('upgradeNow', { defaultValue: 'Upgrade Now' })
+                    : t('contactSales', { defaultValue: 'Contact Sales' })}
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </Col>
+
+        {/* Business Plan */}
+        <Col xs={24} sm={20} md={8} lg={8} xl={8} style={{ minWidth: 260, maxWidth: 320 }}>
           <Card
             hoverable
             style={getCardStyle(isPlanSelected('startup'))}
@@ -448,8 +546,8 @@ const UpgradePlansLKR: React.FC = () => {
                 <Button
                   type="primary"
                   size="large"
-                  loading={directPayLoading}
-                  onClick={handleUpgradeNow}
+                  loading={directPayLoading && checkoutPlan === 'startup'}
+                  onClick={(e) => handleUpgradeNow(e, 'startup')}
                   style={{ width: '100%' }}
                 >
                   {hasValidPricing
