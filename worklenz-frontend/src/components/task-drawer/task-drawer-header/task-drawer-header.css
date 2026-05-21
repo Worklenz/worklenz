@@ -67,3 +67,56 @@
 [data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover .anticon {
   color: #ff7875 !important;
 }
+
+.task-drawer-header-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+ 
+/* Top row: breadcrumb on left, controls on right */
+.task-drawer-header-top-row {
+  width: 100%;
+  min-height: 24px;
+}
+ 
+.task-drawer-breadcrumb-area {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+}
+ 
+/* Large task name row */
+.task-drawer-name-row {
+  width: 100%;
+  padding-top: 2px;
+}
+ 
+/* Large display text */
+.task-name-display--large {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  word-break: break-word;
+  transition: color 0.15s;
+}
+ 
+.task-name-display--large:hover {
+  opacity: 0.8;
+}
+ 
+/* Large editable input */
+.task-name-input--large {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+ 
+.task-name-input--large .ant-input {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  padding: 0 !important;
+}

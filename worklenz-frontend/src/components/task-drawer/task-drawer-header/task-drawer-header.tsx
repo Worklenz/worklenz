@@ -7,6 +7,7 @@ import {
   MenuProps,
   Skeleton,
   message,
+  Typography,
 } from '@/shared/antd-imports';
 import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { EllipsisOutlined, CopyOutlined, DeleteOutlined } from '@/shared/antd-imports';
@@ -64,6 +65,7 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const { taskFormViewModel, selectedTaskId, navigationContext, loadingTask } = useAppSelector(
     state => state.taskDrawerReducer
   );
+  const projectName = useAppSelector(state => state.projectReducer.project?.name ?? null);
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
   const currentSession = useAuthService().getCurrentSession();
 
@@ -89,12 +91,9 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     const newName = e.currentTarget.value;
     setTaskName(newName);
 
-    // Live-sync to the task list row via Redux (no socket round-trip needed)
     if (selectedTaskId) {
-      // Update drawer slice so the name is consistent
       dispatch(updateSelectedTaskName({ id: selectedTaskId, name: newName }));
 
-      // Update task-management slice so the inline row reflects the change immediately
       const currentTask = store.getState().taskManagement.entities[selectedTaskId];
       if (currentTask) {
         dispatch(
@@ -125,18 +124,15 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const handleDeleteTask = async () => {
     if (!selectedTaskId) return;
 
-    // Set flag to indicate we're deleting the task
     isDeleting.current = true;
 
     const res = await tasksApiService.deleteTask(selectedTaskId);
     if (res.done) {
-      // Update all relevant slices to ensure task is removed everywhere
-      dispatch(deleteTask({ taskId: selectedTaskId })); // Old tasks slice
-      dispatch(deleteTaskFromManagement(selectedTaskId)); // Task management slice (TaskListV2)
-      dispatch(deselectTask(selectedTaskId)); // Remove from selection if selected
-      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId })); // Board slice
+      dispatch(deleteTask({ taskId: selectedTaskId }));
+      dispatch(deleteTaskFromManagement(selectedTaskId));
+      dispatch(deselectTask(selectedTaskId));
+      dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
 
-      // Clear the task drawer state and URL
       dispatch(setSelectedTaskId(null));
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
@@ -156,7 +152,6 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
         dispatch(deleteKanbanTask(selectedTaskId));
       }
       dispatch(setShowTaskDrawer(false));
-      // Reset the flag after a short delay
       setTimeout(() => {
         clearTaskFromUrl();
         isDeleting.current = false;
@@ -172,7 +167,6 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  // Menu click handler
   const handleMenuClick: MenuProps['onClick'] = e => {
     if (e.key === 'copy-link') {
       handleCopyTaskLink();
@@ -181,7 +175,6 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  // Dropdown menu items
   const taskDrawerDropdownItems: MenuProps['items'] = [
     {
       key: 'copy-link',
@@ -220,14 +213,11 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
         parent_task: taskFormViewModel?.task?.parent_task_id,
       })
     );
-    // Note: Real-time updates are handled by the global useTaskSocketHandlers hook
-    // No need for local socket listeners that could interfere with global handlers
   };
 
   const handlePrevious = () => {
     if (!navigationContext) return;
     dispatch(navigateToPreviousTask());
-    // Fetch the previous task
     const prevTaskId = navigationContext.taskIds[navigationContext.currentIndex - 1];
     if (prevTaskId && navigationContext.projectId) {
       dispatch(fetchTask({ taskId: prevTaskId, projectId: navigationContext.projectId }));
@@ -237,77 +227,81 @@ const TaskDrawerHeader = ({ inputRef, t }: TaskDrawerHeaderProps) => {
   const handleNext = () => {
     if (!navigationContext) return;
     dispatch(navigateToNextTask());
-    // Fetch the next task
     const nextTaskId = navigationContext.taskIds[navigationContext.currentIndex + 1];
     if (nextTaskId && navigationContext.projectId) {
       dispatch(fetchTask({ taskId: nextTaskId, projectId: navigationContext.projectId }));
     }
   };
 
-  // Show loading skeleton only if task is loading AND we don't have task name yet
-  // This prevents showing skeleton when task properties (like status) are being updated
   const isLoadingTaskName = loadingTask && !taskFormViewModel?.task?.name;
 
   return (
-    <div>
-      {/* Show breadcrumb for sub-tasks */}
-      {isSubTask && <TaskHierarchyBreadcrumb t={t} />}
+    <div className="task-drawer-header-wrapper">
+      {/* Top row: project name / breadcrumb + actions */}
+      <Flex align="center" justify="space-between" className="task-drawer-header-top-row">
+        {/* Left: project > [parent task >] current context */}
+        <div className="task-drawer-breadcrumb-area">
+          <TaskHierarchyBreadcrumb t={t} projectName={projectName} />
+        </div>
 
-      <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
-        <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
-          {isLoadingTaskName ? (
-            <Skeleton.Input active size="small" style={{ width: '100%' }} />
-          ) : isEditing ? (
-            <Input
-              ref={inputRef}
-              size="large"
-              value={taskName}
-              onChange={e => onTaskNameChange(e)}
-              onBlur={handleInputBlur}
-              placeholder={t('taskHeader.taskNamePlaceholder')}
-              className="task-name-input"
-              style={{
-                width: '100%',
-                border: 'none',
-              }}
-              showCount={true}
-              maxLength={250}
-              autoFocus
+        {/* Right: navigation + status + menu */}
+        <Flex gap={6} align="center" style={{ flexShrink: 0 }}>
+          {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
+            <TaskDrawerNavigation
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+              hasPrevious={navigationContext.currentIndex > 0}
+              hasNext={navigationContext.currentIndex < navigationContext.taskIds.length - 1}
+              currentIndex={navigationContext.currentIndex}
+              totalTasks={navigationContext.taskIds.length}
             />
-          ) : (
-            <p onClick={() => setIsEditing(true)} className="task-name-display">
-              {taskName}
-            </p>
           )}
-        </Flex>
 
-        {/* Task Navigation - Show only if navigation context exists */}
-        {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
-          <TaskDrawerNavigation
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            hasPrevious={navigationContext.currentIndex > 0}
-            hasNext={navigationContext.currentIndex < navigationContext.taskIds.length - 1}
-            currentIndex={navigationContext.currentIndex}
-            totalTasks={navigationContext.taskIds.length}
+          <TaskDrawerStatusDropdown
+            statuses={taskFormViewModel?.statuses ?? []}
+            task={taskFormViewModel?.task ?? ({} as ITaskViewModel)}
+            teamId={currentSession?.team_id ?? ''}
           />
-        )}
 
-        <TaskDrawerStatusDropdown
-          statuses={taskFormViewModel?.statuses ?? []}
-          task={taskFormViewModel?.task ?? ({} as ITaskViewModel)}
-          teamId={currentSession?.team_id ?? ''}
-        />
-
-        <Dropdown
-          overlayClassName={'task-drawer-actions-dropdown'}
-          menu={menuProps}
-          placement="bottomRight"
-          trigger={['click']}
-        >
-          <Button type="text" icon={<EllipsisOutlined />} />
-        </Dropdown>
+          <Dropdown
+            overlayClassName={'task-drawer-actions-dropdown'}
+            menu={menuProps}
+            placement="bottomRight"
+            trigger={['click']}
+          >
+            <Button type="text" icon={<EllipsisOutlined />} />
+          </Dropdown>
+        </Flex>
       </Flex>
+
+      {/* Bottom row: large task name */}
+      <div className="task-drawer-name-row">
+        {isLoadingTaskName ? (
+          <Skeleton.Input active size="large" style={{ width: '100%', height: 32 }} />
+        ) : isEditing ? (
+          <Input
+            ref={inputRef}
+            value={taskName}
+            onChange={e => onTaskNameChange(e)}
+            onBlur={handleInputBlur}
+            placeholder={t('taskHeader.taskNamePlaceholder')}
+            className="task-name-input task-name-input--large"
+            style={{ width: '100%', border: 'none', padding: 0 }}
+            showCount={true}
+            maxLength={250}
+            autoFocus
+          />
+        ) : (
+          <Typography.Title
+            level={4}
+            onClick={() => setIsEditing(true)}
+            className="task-name-display task-name-display--large"
+            style={{ margin: 0, cursor: 'text', lineHeight: 1.3 }}
+          >
+            {taskName || t('taskHeader.taskNamePlaceholder')}
+          </Typography.Title>
+        )}
+      </div>
     </div>
   );
 };
