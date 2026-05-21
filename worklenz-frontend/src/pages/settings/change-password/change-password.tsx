@@ -52,9 +52,9 @@ const ChangePassword: React.FC = () => {
     placeholder,
     iconRender: (visible: boolean) =>
       visible ? (
-        <EyeInvisibleOutlined style={{ color: '#000000d9' }} />
+        <EyeInvisibleOutlined style={{ color: 'var(--ant-color-text-secondary)' }} />
       ) : (
-        <EyeOutlined style={{ color: '#000000d9' }} />
+        <EyeOutlined style={{ color: 'var(--ant-color-text-secondary)' }} />
       ),
   });
 
