@@ -5,7 +5,7 @@ import {
   MenuProps,
   message,
 } from '@/shared/antd-imports';
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { EllipsisOutlined, CopyOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
@@ -50,11 +50,6 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
   const { socket } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   const isDeleting = useRef(false);
-  const [isEditing, setIsEditing] = useState(false);
-  // Snapshot of the name when editing starts — used in handleInputBlur to detect
-  // actual changes. We cannot use taskFormViewModel.task.name because onTaskNameChange
-  // updates it live in Redux, making the comparison always equal.
-  const originalNameRef = useRef<string>('');
 
   const { taskFormViewModel, selectedTaskId, navigationContext } = useAppSelector(
     state => state.taskDrawerReducer
@@ -144,32 +139,6 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
     },
   ];
 
-  const menuProps = {
-    items: taskDrawerDropdownItems,
-    onClick: handleMenuClick,
-  };
-
-  const handleInputBlur = () => {
-    setIsEditing(false);
-    if (
-      !selectedTaskId ||
-      !connected ||
-      taskName === originalNameRef.current ||
-      taskName === undefined ||
-      taskName === null ||
-      taskName === ''
-    )
-      return;
-    socket?.emit(
-      SocketEvents.TASK_NAME_CHANGE.toString(),
-      JSON.stringify({
-        task_id: selectedTaskId,
-        name: taskName,
-        parent_task: taskFormViewModel?.task?.parent_task_id,
-      })
-    );
-  };
-
   const handlePrevious = () => {
     if (!navigationContext) return;
     dispatch(navigateToPreviousTask());
@@ -189,68 +158,12 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
   };
 
   return (
-    <div>
-      {/* Show breadcrumb for sub-tasks */}
-      {isSubTask && <TaskHierarchyBreadcrumb t={t} />}
+    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+      {/* Left: empty or mark-as-complete placeholder */}
+      <div />
 
-      <Flex gap={8} align="center" style={{ marginBlockEnd: 2 }}>
-        <Flex style={{ position: 'relative', width: '100%', alignItems: 'center' }}>
-          {isLoadingTaskName ? (
-            <Skeleton.Input active size="small" style={{ width: '100%' }} />
-          ) : isEditing ? (
-            <Input
-              ref={inputRef}
-              size="large"
-              value={taskName}
-              onChange={e => onTaskNameChange(e)}
-              onBlur={handleInputBlur}
-              onKeyDown={e => {
-                if (e.key === 'Escape') {
-                  e.preventDefault();
-                  // Revert to the name captured when editing started
-                  const original = originalNameRef.current;
-                  setTaskName(original);
-                  if (selectedTaskId) {
-                    dispatch(updateSelectedTaskName({ id: selectedTaskId, name: original }));
-                    const currentTask = store.getState().taskManagement.entities[selectedTaskId];
-                    if (currentTask) {
-                      dispatch(
-                        updateTask({
-                          ...currentTask,
-                          title: original,
-                          updatedAt: new Date().toISOString(),
-                          updated_at: new Date().toISOString(),
-                        } as Task)
-                      );
-                    }
-                  }
-                  setIsEditing(false);
-                } else if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleInputBlur();
-                }
-              }}
-              placeholder={t('taskHeader.taskNamePlaceholder')}
-              className="task-name-input"
-              style={{
-                width: '100%',
-                border: 'none',
-              }}
-              showCount={true}
-              maxLength={250}
-              autoFocus
-            />
-          ) : (
-            <p onClick={() => {
-              originalNameRef.current = taskName;
-              setIsEditing(true);
-            }} className="task-name-display">
-              {taskName}
-            </p>
-          )}
-        </Flex>
-
-        {/* Task Navigation - Show only if navigation context exists */}
+      {/* Right: navigation + status + menu */}
+      <Flex gap={6} align="center">
         {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
           <TaskDrawerNavigation
             onPrevious={handlePrevious}
