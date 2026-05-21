@@ -333,7 +333,7 @@ const projectReportsSlice = createSlice({
       const data = action.payload;
       const project = state.projectList.find(p => p.id === data.id);
       if (project) {
-        project.project_health = data.health.id;
+        project.project_health = data.health_id;
         project.health_name = data.name;
         project.health_color = data.color_code;
       }
