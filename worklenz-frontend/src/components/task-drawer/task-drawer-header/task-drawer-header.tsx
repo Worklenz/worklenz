@@ -2,10 +2,9 @@ import {
   Button,
   Dropdown,
   Flex,
-  MenuProps,
   message,
 } from '@/shared/antd-imports';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EllipsisOutlined, CopyOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
@@ -50,6 +49,8 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
   const { socket } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   const isDeleting = useRef(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const { taskFormViewModel, selectedTaskId, navigationContext } = useAppSelector(
     state => state.taskDrawerReducer
@@ -80,6 +81,7 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
   const handleDeleteTask = async () => {
     if (!selectedTaskId) return;
     isDeleting.current = true;
+    setDropdownOpen(false);
     const res = await tasksApiService.deleteTask(selectedTaskId);
     if (res.done) {
       dispatch(deleteTask({ taskId: selectedTaskId }));
@@ -120,24 +122,75 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
     }
   };
 
-  const handleMenuClick: MenuProps['onClick'] = e => {
-    if (e.key === 'copy-link') handleCopyTaskLink();
-    else if (e.key === 'delete') handleDeleteTask();
-  };
+  const renderPopup = () => {
+    if (showDeleteConfirm) {
+      return (
+        <div
+          style={{
+            background: 'var(--ant-color-bg-elevated)',
+            borderRadius: '8px',
+            boxShadow: 'var(--ant-box-shadow-secondary)',
+            padding: '12px',
+            minWidth: '200px',
+          }}
+        >
+          <p style={{ margin: '0 0 10px 0', fontWeight: 500, fontSize: '13px', color: 'var(--ant-color-text)' }}>
+            {t('taskHeader.deleteTaskConfirmMessage', {
+              defaultValue: 'Are you sure you want to delete this task?',
+            })}
+          </p>
+          <Flex gap={8}>
+            <Button
+              size="small"
+              danger
+              type="primary"
+              style={{ flex: 1 }}
+              onClick={() => handleDeleteTask()}
+            >
+              {t('taskHeader.deleteConfirmOk', { defaultValue: 'Yes' })}
+            </Button>
+            <Button
+              size="small"
+              style={{ flex: 1 }}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              {t('taskHeader.deleteConfirmCancel', { defaultValue: 'No' })}
+            </Button>
+          </Flex>
+        </div>
+      );
+    }
 
-  const taskDrawerDropdownItems: MenuProps['items'] = [
-    {
-      key: 'copy-link',
-      label: t('Copy link to task') || 'Copy link to task',
-      icon: <CopyOutlined />,
-    },
-    {
-      key: 'delete',
-      label: t('taskHeader.deleteTask'),
-      icon: <DeleteOutlined />,
-      danger: true,
-    },
-  ];
+    return (
+      <div
+        style={{
+          background: 'var(--ant-color-bg-elevated)',
+          borderRadius: 'var(--ant-border-radius-lg)',
+          boxShadow: 'var(--ant-box-shadow-secondary)',
+          padding: '4px 0',
+          minWidth: '180px',
+        }}
+      >
+        <div
+          className="task-drawer-dropdown-item task-drawer-dropdown-item--default"
+          onClick={() => {
+            handleCopyTaskLink();
+            setDropdownOpen(false);
+          }}
+        >
+          <CopyOutlined />
+          {t('Copy link to task') || 'Copy link to task'}
+        </div>
+        <div
+          className="task-drawer-dropdown-item task-drawer-dropdown-item--danger"
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          <DeleteOutlined />
+          {t('taskHeader.deleteTask') || 'Delete Task'}
+        </div>
+      </div>
+    );
+  };
 
   const handlePrevious = () => {
     if (!navigationContext) return;
@@ -159,10 +212,8 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
 
   return (
     <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-      {/* Left: empty or mark-as-complete placeholder */}
       <div />
 
-      {/* Right: navigation + status + menu */}
       <Flex gap={6} align="center">
         {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
           <TaskDrawerNavigation
@@ -183,9 +234,14 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
 
         <Dropdown
           overlayClassName={'task-drawer-actions-dropdown'}
-          menu={{ items: taskDrawerDropdownItems, onClick: handleMenuClick }}
           placement="bottomRight"
           trigger={['click']}
+          open={dropdownOpen}
+          onOpenChange={open => {
+            setDropdownOpen(open);
+            if (!open) setShowDeleteConfirm(false);
+          }}
+          popupRender={renderPopup}
         >
           <Button
             type="text"
