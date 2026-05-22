@@ -117,7 +117,7 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
                   dispatch(toggleUpgradeModal());
                 }}
               >
-                {t('upgrade-now', { defaultValue: t('upgrade-now') })}
+                {t('upgrade-now', { defaultValue: "Upgrade Now" })}
               </Button>
             </Flex>
           }
