@@ -62,6 +62,7 @@ router.get("/projects", safeControllerFunction(ClientPortalProjectsController.ge
 router.get("/projects/statuses", safeControllerFunction(ClientPortalProjectsController.getProjectStatuses));
 router.get("/projects/:id", safeControllerFunction(ClientPortalProjectsController.getProjectDetails));
 router.get("/projects/:id/tasks", safeControllerFunction(ClientPortalProjectsController.getProjectTasks));
+router.get("/projects/time-logs", safeControllerFunction(ClientPortalProjectsController.getProjectTimeLogs));
 
 // Tasks
 router.get("/tasks/:id/comments", safeControllerFunction(ClientPortalProjectsController.getTaskComments));

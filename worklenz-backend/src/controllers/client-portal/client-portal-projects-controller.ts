@@ -638,6 +638,51 @@ export default class ClientPortalProjectsController extends ClientPortalControll
     }
   }
 
+   static async getProjectTimeLogs(
+      req: AuthenticatedClientRequest,
+      res: IWorkLenzResponse
+    ) {
+      try {
+        const { clientId, organizationId } = req;
+  
+        const query = `
+          SELECT
+            p.id AS project_id,
+            COALESCE(SUM(twl.time_spent), 0)::INT AS total_time_seconds
+          FROM projects p
+          LEFT JOIN tasks t ON t.project_id = p.id
+          LEFT JOIN task_work_log twl ON twl.task_id = t.id
+          WHERE p.client_id = $1
+            AND p.team_id = $2
+          GROUP BY p.id
+        `;
+  
+        const result = await db.query(query, [clientId, organizationId]);
+  
+        // Build map: { [project_id]: "1h 30m" }
+        const timeMap: Record<string, string> = {};
+        for (const row of result.rows) {
+          const seconds = parseInt(row.total_time_seconds || "0");
+          if (seconds > 0) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            timeMap[row.project_id] = h > 0 ? `${h}h ${m}m` : `${m}m`;
+          } else {
+            timeMap[row.project_id] = "0m";
+          }
+        }
+  
+        return res.json(
+          new ServerResponse(true, timeMap, "Time logs retrieved successfully")
+        );
+      } catch (error) {
+        console.error("Error fetching project time logs:", error);
+        return res
+          .status(500)
+          .json(new ServerResponse(false, null, "Failed to retrieve time logs"));
+      }
+    }
+
   static async markTaskCommentsAsViewed(
     req: AuthenticatedClientRequest,
     res: IWorkLenzResponse

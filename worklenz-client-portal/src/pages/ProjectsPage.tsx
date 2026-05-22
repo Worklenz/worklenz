@@ -17,7 +17,8 @@ import {
   EyeOutlined, 
   SearchOutlined,
   ProjectOutlined,
-  CalendarOutlined
+  CalendarOutlined,
+  ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import clientPortalAPI from '@/services/api';
@@ -40,6 +41,7 @@ const ProjectsPage: React.FC = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ClientProject[]>([]);
   const [projectStatuses, setProjectStatuses] = useState<ProjectStatus[]>([]);
+  const [timeLogs, setTimeLogs] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isStatusesLoading, setIsStatusesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +99,17 @@ const ProjectsPage: React.FC = () => {
     }
   }, []);
 
+  const fetchTimeLogs = useCallback(async () => {
+    try {
+      const response = await clientPortalAPI.getProjectTimeLogs();
+      if (response.done && response.body) {
+        setTimeLogs(response.body as Record<string, string>);
+      }
+    } catch (err) {
+      console.error('Error loading time logs:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProjectStatuses();
   }, [fetchProjectStatuses]);
@@ -104,6 +117,10 @@ const ProjectsPage: React.FC = () => {
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  useEffect(() => {
+    fetchTimeLogs();
+  }, [fetchTimeLogs]);
 
   const handleTableChange = (paginationInfo: { current?: number; pageSize?: number }) => {
     fetchProjects(
@@ -128,7 +145,6 @@ const ProjectsPage: React.FC = () => {
   const getStatusColor = (status: string) => {
     const statusObj = projectStatuses.find(s => s.name === status);
     if (statusObj?.colorCode) {
-      // Convert hex color to Ant Design Tag color if it's a standard color
       const colorMap: { [key: string]: string } = {
         '#1890ff': 'blue',
         '#52c41a': 'green',
@@ -145,7 +161,6 @@ const ProjectsPage: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    // Try to find translation first, fallback to status name from database
     const statusMap: { [key: string]: string } = {
       'Active': t('projects.active'),
       'Completed': t('projects.completed'),
@@ -215,6 +230,23 @@ const ProjectsPage: React.FC = () => {
               {record.completed_tasks} / {record.total_tasks} {t('projects.tasks')}
             </div>
           </Space>
+        );
+      },
+    },
+    {
+      title: t('Time Logs') || 'Time Logged',
+      key: 'time_logged',
+      render: (_: unknown, record: ClientProject) => {
+        const time = timeLogs[record.id];
+        return (
+          <Tooltip title="Total time logged across all tasks">
+            <Space>
+              <ClockCircleOutlined style={{ color: '#1890ff' }} />
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>
+                {time ?? '—'}
+              </span>
+            </Space>
+          </Tooltip>
         );
       },
     },
@@ -313,7 +345,7 @@ const ProjectsPage: React.FC = () => {
               t('projects.showingRange', { start: range[0], end: range[1], total }),
           }}
           onChange={handleTableChange}
-          scroll={{ x: 800 }}
+          scroll={{ x: 900 }}
         />
       </Card>
     </div>

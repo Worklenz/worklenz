@@ -345,6 +345,10 @@ class ClientPortalAPI {
     return this.request('/projects/statuses');
   }
 
+  async getProjectTimeLogs(): Promise<ApiResponse<Record<string, string>>> {
+    return this.request<Record<string, string>>('/projects/time-logs');
+  }
+
   async getProjectTasks(projectId: string, params?: { page?: number; limit?: number; search?: string }) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
