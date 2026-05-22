@@ -743,7 +743,13 @@ const TeamMembersSettings = () => {
                 trigger="click"
                 placement="bottomRight"
                 open={isSeatLimitPopoverOpen}
-                onOpenChange={setIsSeatLimitPopoverOpen}
+                onOpenChange={open => {
+                  // Only allow opening via the button when seat limit is reached;
+                  // always allow closing (open === false) so outside-click works.
+                  if (!open || hasReachedSeatLimit) {
+                    setIsSeatLimitPopoverOpen(open);
+                  }
+                }}
                 title={
                   <Flex align="center" justify="space-between" style={{ width: 240 }}>
                     <Typography.Text strong>
@@ -799,13 +805,10 @@ const TeamMembersSettings = () => {
                     disabled={isInviteRestricted}
                     onClick={() => {
                       if (isInviteRestricted) return;
-
-                      if (hasReachedSeatLimit) {
-                        setIsSeatLimitPopoverOpen(true);
-                        return;
+                      if (!hasReachedSeatLimit) {
+                        dispatch(toggleInviteMemberDrawer());
                       }
-
-                      dispatch(toggleInviteMemberDrawer());
+                      // When hasReachedSeatLimit, the Popover's trigger="click" handles opening
                     }}
                   >
                     {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
