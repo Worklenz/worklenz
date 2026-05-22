@@ -5,7 +5,11 @@ import {
   message,
 } from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
-import { EllipsisOutlined, CopyOutlined, DeleteOutlined } from '@/shared/antd-imports';
+import {
+  EllipsisOutlined,
+  CopyOutlined,
+  DeleteOutlined,
+} from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
 import './task-drawer-header.css';
@@ -49,16 +53,21 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
   const { socket } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   const isDeleting = useRef(false);
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const { taskFormViewModel, selectedTaskId, navigationContext } = useAppSelector(
-    state => state.taskDrawerReducer
-  );
+  const {
+    taskFormViewModel,
+    selectedTaskId,
+    navigationContext,
+  } = useAppSelector(state => state.taskDrawerReducer);
+
   const currentSession = useAuthService().getCurrentSession();
 
   const isSubTask =
-    taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
+    taskFormViewModel?.task?.is_sub_task ||
+    !!taskFormViewModel?.task?.parent_task_id;
 
   useEffect(() => {
     if (selectedTaskId && navigationContext) {
@@ -68,37 +77,54 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
 
   const handleCopyTaskLink = async () => {
     if (!selectedTaskId || !taskFormViewModel?.task?.project_id) return;
+
     try {
       const taskLink = `${window.location.origin}/worklenz/projects/${taskFormViewModel.task.project_id}?tab=tasks-list&pinned_tab=tasks-list&task=${selectedTaskId}`;
+
       await navigator.clipboard.writeText(taskLink);
-      message.success(t('Link copied to clipboard') || 'Task link copied to clipboard');
+
+      message.success(
+        t('Link copied to clipboard') ||
+          'Task link copied to clipboard'
+      );
     } catch (error) {
       logger.error('Error copying task link:', error);
-      message.error(t('Failed to copy task link') || 'Failed to copy task link');
+
+      message.error(
+        t('Failed to copy task link') ||
+          'Failed to copy task link'
+      );
     }
   };
 
   const handleDeleteTask = async () => {
     if (!selectedTaskId) return;
+
     isDeleting.current = true;
     setDropdownOpen(false);
     setShowDeleteConfirm(false);
+
     const res = await tasksApiService.deleteTask(selectedTaskId);
+
     if (res.done) {
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteTaskFromManagement(selectedTaskId));
       dispatch(deselectTask(selectedTaskId));
       dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
+
       dispatch(setSelectedTaskId(null));
+
       dispatch(deleteTask({ taskId: selectedTaskId }));
       dispatch(deleteBoardTask({ sectionId: '', taskId: selectedTaskId }));
+
       if (taskFormViewModel?.task?.is_sub_task) {
         dispatch(
           updateEnhancedKanbanSubtask({
             sectionId: '',
             subtask: {
               id: selectedTaskId,
-              parent_task_id: taskFormViewModel?.task?.parent_task_id || '',
+              parent_task_id:
+                taskFormViewModel?.task?.parent_task_id || '',
               manual_progress: false,
             },
             mode: 'delete',
@@ -107,11 +133,14 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
       } else {
         dispatch(deleteKanbanTask(selectedTaskId));
       }
+
       dispatch(setShowTaskDrawer(false));
+
       setTimeout(() => {
         clearTaskFromUrl();
         isDeleting.current = false;
       }, 100);
+
       if (taskFormViewModel?.task?.parent_task_id) {
         socket?.emit(
           SocketEvents.GET_TASK_PROGRESS.toString(),
@@ -155,7 +184,7 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
           {t('taskHeader.deleteTask') || 'Delete Task'}
         </div>
 
-        {/* Inline Yes/No confirmation — shown below Delete Task when clicked */}
+        {/* Confirmation */}
         {showDeleteConfirm && (
           <div
             style={{
@@ -174,19 +203,24 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
                 defaultValue: 'Are you sure?',
               })}
             </p>
+
             <Flex gap={8}>
               <Button
                 size="small"
                 danger
                 type="primary"
+                className="task-delete-confirm-btn"
                 style={{ flex: 1 }}
                 onClick={e => {
                   e.stopPropagation();
                   handleDeleteTask();
                 }}
               >
-                {t('taskHeader.deleteConfirmOk', { defaultValue: 'Yes' })}
+                {t('taskHeader.deleteConfirmOk', {
+                  defaultValue: 'Yes',
+                })}
               </Button>
+
               <Button
                 size="small"
                 style={{ flex: 1 }}
@@ -195,7 +229,9 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
                   setShowDeleteConfirm(false);
                 }}
               >
-                {t('taskHeader.deleteConfirmCancel', { defaultValue: 'No' })}
+                {t('taskHeader.deleteConfirmCancel', {
+                  defaultValue: 'No',
+                })}
               </Button>
             </Flex>
           </div>
@@ -206,41 +242,75 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
 
   const handlePrevious = () => {
     if (!navigationContext) return;
+
     dispatch(navigateToPreviousTask());
-    const prevTaskId = navigationContext.taskIds[navigationContext.currentIndex - 1];
+
+    const prevTaskId =
+      navigationContext.taskIds[
+        navigationContext.currentIndex - 1
+      ];
+
     if (prevTaskId && navigationContext.projectId) {
-      dispatch(fetchTask({ taskId: prevTaskId, projectId: navigationContext.projectId }));
+      dispatch(
+        fetchTask({
+          taskId: prevTaskId,
+          projectId: navigationContext.projectId,
+        })
+      );
     }
   };
 
   const handleNext = () => {
     if (!navigationContext) return;
+
     dispatch(navigateToNextTask());
-    const nextTaskId = navigationContext.taskIds[navigationContext.currentIndex + 1];
+
+    const nextTaskId =
+      navigationContext.taskIds[
+        navigationContext.currentIndex + 1
+      ];
+
     if (nextTaskId && navigationContext.projectId) {
-      dispatch(fetchTask({ taskId: nextTaskId, projectId: navigationContext.projectId }));
+      dispatch(
+        fetchTask({
+          taskId: nextTaskId,
+          projectId: navigationContext.projectId,
+        })
+      );
     }
   };
 
   return (
-    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+    <Flex
+      align="center"
+      justify="space-between"
+      style={{ width: '100%' }}
+    >
       <div />
 
       <Flex gap={6} align="center">
-        {!isSubTask && navigationContext && navigationContext.taskIds.length > 1 && (
-          <TaskDrawerNavigation
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            hasPrevious={navigationContext.currentIndex > 0}
-            hasNext={navigationContext.currentIndex < navigationContext.taskIds.length - 1}
-            currentIndex={navigationContext.currentIndex}
-            totalTasks={navigationContext.taskIds.length}
-          />
-        )}
+        {!isSubTask &&
+          navigationContext &&
+          navigationContext.taskIds.length > 1 && (
+            <TaskDrawerNavigation
+              onPrevious={handlePrevious}
+              onNext={handleNext}
+              hasPrevious={navigationContext.currentIndex > 0}
+              hasNext={
+                navigationContext.currentIndex <
+                navigationContext.taskIds.length - 1
+              }
+              currentIndex={navigationContext.currentIndex}
+              totalTasks={navigationContext.taskIds.length}
+            />
+          )}
 
         <TaskDrawerStatusDropdown
           statuses={taskFormViewModel?.statuses ?? []}
-          task={taskFormViewModel?.task ?? ({} as ITaskViewModel)}
+          task={
+            taskFormViewModel?.task ??
+            ({} as ITaskViewModel)
+          }
           teamId={currentSession?.team_id ?? ''}
         />
 
@@ -251,13 +321,18 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
           open={dropdownOpen}
           onOpenChange={open => {
             setDropdownOpen(open);
-            if (!open) setShowDeleteConfirm(false);
+
+            if (!open) {
+              setShowDeleteConfirm(false);
+            }
           }}
           popupRender={renderPopup}
         >
           <Button
             type="text"
-            icon={<EllipsisOutlined style={{ fontSize: '24px' }} />}
+            icon={
+              <EllipsisOutlined style={{ fontSize: '24px' }} />
+            }
           />
         </Dropdown>
       </Flex>

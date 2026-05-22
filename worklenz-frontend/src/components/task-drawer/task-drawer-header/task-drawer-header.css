@@ -233,3 +233,31 @@
 [data-theme="dark"] .task-drawer-dropdown-item--default:hover .anticon {
   color: #76a8ee !important;
 }
+
+/* Delete confirm button */
+.task-delete-confirm-btn {
+  background: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #fff !important;
+}
+
+.task-delete-confirm-btn:hover,
+.task-delete-confirm-btn:focus {
+  background: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #fff !important;
+}
+
+/* Dark mode */
+[data-theme='dark'] .task-delete-confirm-btn {
+  background: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #fff !important;
+}
+
+[data-theme='dark'] .task-delete-confirm-btn:hover,
+[data-theme='dark'] .task-delete-confirm-btn:focus {
+  background: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #fff !important;
+}
