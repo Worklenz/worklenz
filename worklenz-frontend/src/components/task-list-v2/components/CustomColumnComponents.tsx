@@ -21,6 +21,7 @@ import {
   parsePeopleCustomFieldValue,
 } from '@/utils/task-custom-columns';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
+import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
@@ -39,10 +40,10 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   const customColumns = useAppSelector(selectCustomColumns);
   const customColumnsCount = customColumns?.length ?? 0;
 
-  // At or over the 10-field limit (non-business users)
-  const hasReachedLimit = !hasBusinessAccess && customColumnsCount >= 10;
-  // AppSumo/LTD users who already had >10 fields before the limit was enforced
-  const isGrandfathered = !hasBusinessAccess && isLtdUser && customColumnsCount >= 10;
+  // At or over the custom field limit (non-business users)
+  const hasReachedLimit = !hasBusinessAccess && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
+  // AppSumo/LTD users who already had >limit fields before the limit was enforced
+  const isGrandfathered = !hasBusinessAccess && isLtdUser && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -185,7 +186,7 @@ export const CustomColumnHeader: React.FC<{
 
   const customColumns = useAppSelector(selectCustomColumns);
   const customColumnsCount = customColumns?.length ?? 0;
-  const isGrandfathered = isLtdUser && customColumnsCount > 10;
+  const isGrandfathered = isLtdUser && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
   const handleUpgradeNow = useCallback(() => {
     setSettingsPopoverOpen(false);

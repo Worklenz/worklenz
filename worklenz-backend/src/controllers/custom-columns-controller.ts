@@ -6,8 +6,9 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+import { LICENSING_SETTINGS } from "../shared/licensing_settings";
 
-const CUSTOM_FIELD_LIMIT = 10;
+const CUSTOM_FIELD_LIMIT = LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
 /**
  * Determines whether the user has business-level access based on subscription data.

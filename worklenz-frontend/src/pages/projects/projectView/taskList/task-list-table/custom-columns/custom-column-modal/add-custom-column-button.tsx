@@ -10,6 +10,7 @@ import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 
 const AddCustomColumnButton = () => {
   const dispatch = useAppDispatch();
@@ -20,7 +21,7 @@ const AddCustomColumnButton = () => {
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const columnList = useAppSelector(state => state.taskColumnsReducer.columnList);
   const customColumnsCount = columnList.filter(column => column.custom_column).length;
-  const hasReachedCustomFieldLimit = !hasBusinessAccess && customColumnsCount >= 10;
+  const hasReachedCustomFieldLimit = !hasBusinessAccess && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
   const handleModalOpen = () => {
     if (isFree || hasReachedCustomFieldLimit) {
