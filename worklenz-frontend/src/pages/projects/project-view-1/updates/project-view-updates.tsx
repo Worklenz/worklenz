@@ -427,7 +427,7 @@ const ProjectViewUpdates = () => {
                 >
                   <span style={{ fontSize: 12, color: '#8c8c8c' }}>
                     {t('historyLockedBoundary', {
-                      defaultValue: 'Chat history beyond 90 days is locked',
+                      defaultValue: 'Chat history is limited to the last 90 days on this plan',
                     })}
                   </span>
                   <Popover

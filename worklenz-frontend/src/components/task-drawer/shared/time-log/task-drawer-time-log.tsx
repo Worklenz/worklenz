@@ -4,10 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { TFunction } from 'i18next';
 
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
-import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setTimeLogEditing } from '@/features/task-drawer/task-drawer.slice';
 import TimeLogList from './time-log-list';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
@@ -29,10 +27,8 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
   const [loading, setLoading] = useState<boolean>(false);
   const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
 
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { selectedTaskId, taskFormViewModel, timeLogEditing } = useAppSelector(
-    state => state.taskDrawerReducer
-  );
+  const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
+  const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
 
@@ -111,9 +107,9 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
     const visibleLogs = hasBusinessAccess
       ? timeLoggedList
       : timeLoggedList.filter(log => {
-          if (!log.date) return true;
-          return new Date(log.date).getTime() >= ninetyDaysAgo;
-        });
+        if (!log.created_at) return true;
+        return new Date(log.created_at).getTime() >= ninetyDaysAgo;
+      });
     const lockedCount = hasBusinessAccess ? 0 : timeLoggedList.length - visibleLogs.length;
 
     if (loading) {
@@ -130,11 +126,12 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
 
     return (
       <Flex vertical gap={8}>
+        <TimeLogList timeLoggedList={visibleLogs} onRefresh={fetchTimeLoggedList} />
         {lockedCount > 0 && (
           <Flex align="center" justify="space-between">
             <Typography.Text type="secondary">
               {t('taskTimeLogTab.historyLockedBoundary', {
-                defaultValue: 'Time log history beyond 90 days is locked',
+                defaultValue: 'Time log history is limited to the last 90 days on this plan',
               })}
             </Typography.Text>
             <Popover
@@ -165,12 +162,11 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
               }
             >
               <Button size="small">
-                {t('taskTimeLogTab.viewFullTimeLog', { defaultValue: 'View Full Time Log' })}
+                {t('taskTimeLogTab.viewFullTimeLog', { defaultValue: 'View time log history' })}
               </Button>
             </Popover>
           </Flex>
         )}
-        <TimeLogList timeLoggedList={visibleLogs} onRefresh={fetchTimeLoggedList} />
       </Flex>
     );
   };

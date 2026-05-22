@@ -110,10 +110,10 @@
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
       "fileTooLargeToSend": "Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.",
-      "historyLockedBoundary": "Comments beyond 90 days are locked",
+      "historyLockedBoundary": "Comment history is limited to the last 90 days on this plan",
       "historyLockedTitle": "Comment History Locked",
       "historyLockedBody": "Comments beyond 90 days are available on the Business plan.",
-      "viewFullComments": "View Full Comments",
+      "viewFullComments": "View comment history",
       "createdBy": "Created {{time}} by {{user}}",
       "updatedTime": "Updated {{time}}"
     },
@@ -126,10 +126,10 @@
     "totalLogged": "Total Logged",
     "exportToExcel": "Export to Excel",
     "noTimeLogsFound": "No time logs found",
-    "historyLockedBoundary": "Time log history beyond 90 days is locked",
+    "historyLockedBoundary": "Time log history is limited to the last 90 days on this plan",
     "historyLockedTitle": "Time Log History Locked",
     "historyLockedBody": "Time log entries beyond 90 days are available on the Business plan.",
-    "viewFullTimeLog": "View Full Time Log",
+    "viewFullTimeLog": "View time log history",
     "timeLogForm": {
       "inputMode": "Input Mode",
       "durationMode": "Duration",
@@ -162,10 +162,10 @@
     "none": "None",
     "weight": "Weight",
     "createdTask": "created the task.",
-    "historyLockedBoundary": "Activity history beyond 90 days is locked",
+    "historyLockedBoundary": "Activity history is limited to the last 90 days on this plan",
     "historyLockedTitle": "Activity History Locked",
     "historyLockedBody": "Task activity beyond 90 days is available on the Business plan.",
-    "viewFullActivity": "View Full Activity"
+    "viewFullActivity": "View activity history"
   },
   "taskProgress": {
     "markAsDoneTitle": "Mark Task as Done?",

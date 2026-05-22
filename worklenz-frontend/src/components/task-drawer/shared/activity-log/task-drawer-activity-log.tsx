@@ -228,48 +228,6 @@ const TaskDrawerActivityLog = () => {
       }}
     >
       <Skeleton active loading={loading}>
-        {lockedCount > 0 && (
-          <Flex vertical gap={8} style={{ marginTop: 8, marginBottom: 8 }}>
-            <Typography.Text type="secondary">
-              {t('taskActivityLogTab.historyLockedBoundary', {
-                defaultValue: 'Activity history beyond 90 days is locked',
-              })}
-            </Typography.Text>
-            <Popover
-              trigger="click"
-              open={isHistoryPopoverOpen}
-              onOpenChange={setIsHistoryPopoverOpen}
-              title={t('taskActivityLogTab.historyLockedTitle', {
-                defaultValue: 'Activity History Locked',
-              })}
-              content={
-                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
-                  <Typography.Text>
-                    {t('taskActivityLogTab.historyLockedBody', {
-                      defaultValue:
-                        'Task activity beyond 90 days is available on the Business plan.',
-                    })}
-                  </Typography.Text>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setIsHistoryPopoverOpen(false);
-                      dispatch(toggleUpgradeModal());
-                    }}
-                  >
-                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
-                  </Button>
-                </Flex>
-              }
-            >
-              <Button size="small">
-                {t('taskActivityLogTab.viewFullActivity', {
-                  defaultValue: 'View Full Activity',
-                })}
-              </Button>
-            </Popover>
-          </Flex>
-        )}
         <Timeline style={{ marginBlockStart: 24 }}>
           {visibleLogs.map((activity, index) => (
             <Timeline.Item key={index}>
@@ -321,6 +279,48 @@ const TaskDrawerActivityLog = () => {
             </Flex>
           </Timeline.Item>
         </Timeline>
+        {lockedCount > 0 && (
+          <Flex gap={8} style={{ marginTop: 8, marginBottom: 8 }} align="center" justify="space-between">
+            <Typography.Text type="secondary">
+              {t('taskActivityLogTab.historyLockedBoundary', {
+                defaultValue: 'Activity history is limited to the last 90 days on this plan',
+              })}
+            </Typography.Text>
+            <Popover
+              trigger="click"
+              open={isHistoryPopoverOpen}
+              onOpenChange={setIsHistoryPopoverOpen}
+              title={t('taskActivityLogTab.historyLockedTitle', {
+                defaultValue: 'Activity History Locked',
+              })}
+              content={
+                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                  <Typography.Text>
+                    {t('taskActivityLogTab.historyLockedBody', {
+                      defaultValue:
+                        'Task activity beyond 90 days is available on the Business plan.',
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsHistoryPopoverOpen(false);
+                      dispatch(toggleUpgradeModal());
+                    }}
+                  >
+                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                  </Button>
+                </Flex>
+              }
+            >
+              <Button size="small">
+                {t('taskActivityLogTab.viewFullActivity', {
+                  defaultValue: 'View activity history',
+                })}
+              </Button>
+            </Popover>
+          </Flex>
+        )}
       </Skeleton>
     </ConfigProvider>
   );

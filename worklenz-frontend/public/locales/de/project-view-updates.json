@@ -9,10 +9,10 @@
   "yes": "Ja",
   "no": "Nein",
   "emptyState": "Noch keine Updates. Starten Sie die Unterhaltung!",
-  "historyLockedBoundary": "Chatverlauf älter als 90 Tage ist gesperrt",
+  "historyLockedBoundary": "Der Chatverlauf ist in diesem Plan auf die letzten 90 Tage begrenzt",
   "historyLockedTitle": "Chatverlauf gesperrt",
   "historyLockedBody": "Chatverlauf älter als 90 Tage ist im Business-Plan verfügbar.",
-  "viewFullHistory": "Vollständigen Verlauf anzeigen",
+  "viewFullHistory": "Chatverlauf anzeigen",
   "upgradeNow": "Jetzt upgraden",
   "reactions": {
     "like": "Gefällt mir",
