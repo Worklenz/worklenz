@@ -180,7 +180,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
 
     return (
       <div
-        className="relative flex items-center group pl-1 border-r border-b border-t border-gray-200 dark:border-gray-700"
+        className="flex items-center group pl-1 border-r border-b border-t border-gray-200 dark:border-gray-700 overflow-hidden"
         style={{ width, height: '40px', minHeight: '40px' }}
         onClick={() => {
           if (showTaskDrawer && !editTaskName && !task.is_parent_container) {
@@ -223,7 +223,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
           </div>
         ) : (
           <>
-            <div className="flex items-center flex-1 min-w-0 pr-0 transition-[padding] duration-200 group-hover:pr-14">
+            <div className="flex items-center flex-1 min-w-0 overflow-hidden">
               {isSubtask && <div className="w-2 flex-shrink-0" />}
 
               {Array.from({ length: depth }).map((_, i) => (
@@ -366,9 +366,9 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               </div>
             </div>
 
-            {/* Open button - fixed border, centered without transform */}
+            {/* Open button - inline so it pushes task name, not overlaps it */}
             <button
-              className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all duration-200 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-solid border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 absolute right-2 inset-y-0 my-auto h-fit"
+              className="pointer-events-none group-hover:pointer-events-auto focus-visible:pointer-events-auto opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200 px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-solid border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer rounded-md shadow-sm hover:shadow-md flex items-center gap-1 flex-shrink-0 mr-2"
               onClick={e => {
                 e.stopPropagation();
                 handleOpenTaskInDrawer();
