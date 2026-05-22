@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
-import { Tooltip, Flex, Dropdown, DatePicker, Input } from '@/shared/antd-imports';
+import { Tooltip, Flex, Dropdown, DatePicker, Input, Popover, Button, Typography } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -13,12 +13,15 @@ import PeopleDropdown from '@/components/common/people-dropdown/PeopleDropdown';
 import AvatarGroup from '@/components/AvatarGroup';
 import dayjs from 'dayjs';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/utils/subscription-utils';
-import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { isFreeUser, hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { openUpgradeModal, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import {
   getTaskCustomFieldDisplayName,
   parsePeopleCustomFieldValue,
 } from '@/utils/task-custom-columns';
+import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
+import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
@@ -29,58 +32,133 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isFree = isFreeUser(currentSession);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const isLtdUser =
+    currentSession?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL ||
+    String(currentSession?.subscription_status || '').toLowerCase() === 'life_time_deal';
+
+  const customColumns = useAppSelector(selectCustomColumns);
+  const customColumnsCount = customColumns?.length ?? 0;
+
+  // At or over the custom field limit (non-business users)
+  const hasReachedLimit = !hasBusinessAccess && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
+  // AppSumo/LTD users who already had >limit fields before the limit was enforced
+  const isGrandfathered = !hasBusinessAccess && isLtdUser && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
+
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!popoverOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      // Ignore clicks on the trigger button itself (handleModalOpen handles those)
+      if (buttonRef.current?.contains(e.target as Node)) return;
+      // Ignore clicks inside the popover overlay (Ant Design renders it in document.body)
+      const popoverEl = document.querySelector('.ant-popover');
+      if (popoverEl?.contains(e.target as Node)) return;
+      setPopoverOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [popoverOpen]);
 
   const handleModalOpen = useCallback(() => {
     if (isFree) {
       dispatch(toggleUpgradeModal());
       return;
     }
+    if (isGrandfathered || hasReachedLimit) {
+      setPopoverOpen(true);
+      return;
+    }
     dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
     dispatch(toggleCustomColumnModalOpen(true));
-  }, [dispatch, isFree]);
+  }, [dispatch, isFree, hasReachedLimit, isGrandfathered]);
 
-  const tooltipTitle = isFree ? tCommon('upgrade-plan') : t('customColumns.addCustomColumn');
+  const handleUpgradeNow = useCallback(() => {
+    setPopoverOpen(false);
+    dispatch(openUpgradeModal('customFields'));
+  }, [dispatch]);
+
+  const popoverTitle = isGrandfathered
+    ? t('customColumns.limitPopover.appSumoTitle', { defaultValue: 'Plan Upgrade Required' })
+    : t('customColumns.limitPopover.title', { defaultValue: 'Custom Field Limit Reached' });
+
+  const popoverBody = isGrandfathered
+    ? t('customColumns.limitPopover.appSumoBody', {
+        defaultValue:
+          'Editing or adding custom fields beyond your current plan limit requires a Business plan.',
+      })
+    : t('customColumns.limitPopover.body', {
+        defaultValue:
+          'You have used all 10 custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.',
+      });
+
+  const popoverContent = (
+    <Flex vertical gap={12} style={{ maxWidth: 260 }}>
+      <Typography.Text>{popoverBody}</Typography.Text>
+      <Button type="primary" size="small" onClick={handleUpgradeNow}>
+        {t('customColumns.limitPopover.cta', { defaultValue: 'Upgrade Now' })}
+      </Button>
+    </Flex>
+  );
+
+  const tooltipTitle = hasReachedLimit || isGrandfathered
+    ? t('customColumns.limitPopover.title', { defaultValue: 'Custom Field Limit Reached' })
+    : isFree
+      ? tCommon('upgrade-plan', { defaultValue: 'Upgrade plan' })
+      : t('customColumns.addCustomColumn', { defaultValue: 'Add a custom column' });
 
   return (
-    <Tooltip title={tooltipTitle} placement="top">
-      <button
-        onClick={handleModalOpen}
-        disabled={isFree}
-        className={`
-          group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
-          flex items-center justify-center
-          ${
-            isFree
-              ? isDarkMode
-                ? 'border-gray-600 text-gray-500 cursor-pointer'
-                : 'border-gray-300 text-gray-400 cursor-pointer'
-              : isDarkMode
-                ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400'
-                : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
-          }
-        `}
-      >
-        {isFree ? (
-          <CrownOutlined style={{ fontSize: '16px', color: '#faad14' }} />
-        ) : (
-          <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
-        )}
-
-        {/* Subtle glow effect on hover - only for non-free users */}
-        {!isFree && (
-          <div
-            className={`
-            absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
+    <Popover
+      open={popoverOpen}
+      title={popoverTitle}
+      content={popoverContent}
+      trigger={[]}
+      placement="bottomRight"
+    >
+      <Tooltip title={!popoverOpen ? tooltipTitle : undefined} placement="top">
+        <button
+          ref={buttonRef}
+          onClick={handleModalOpen}
+          disabled={isFree}
+          className={`
+            group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
+            flex items-center justify-center
             ${
-              isDarkMode
-                ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20'
-                : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
+              isFree
+                ? isDarkMode
+                  ? 'border-gray-600 text-gray-500 cursor-pointer'
+                  : 'border-gray-300 text-gray-400 cursor-pointer'
+                : isDarkMode
+                  ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400'
+                  : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
             }
           `}
-          />
-        )}
-      </button>
-    </Tooltip>
+        >
+          {isFree ? (
+            <CrownOutlined style={{ fontSize: '16px', color: '#faad14' }} />
+          ) : (
+            <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
+          )}
+
+          {/* Subtle glow effect on hover - only for non-free users */}
+          {!isFree && (
+            <div
+              className={`
+              absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
+              ${
+                isDarkMode
+                  ? 'bg-blue-500/5 shadow-lg shadow-blue-500/20'
+                  : 'bg-blue-500/5 shadow-lg shadow-blue-500/10'
+              }
+            `}
+            />
+          )}
+        </button>
+      </Tooltip>
+    </Popover>
   );
 });
 
@@ -95,10 +173,58 @@ export const CustomColumnHeader: React.FC<{
   setDragActivatorRef?: (element: HTMLElement | null) => void;
 }> = ({ column, onSettingsClick, dragListeners, dragAttributes, setDragActivatorRef }) => {
   const { t } = useTranslation('task-list-table');
+  const dispatch = useAppDispatch();
   const [isHovered, setIsHovered] = useState(false);
+  const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
+
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const isLtdUser =
+    currentSession?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL ||
+    String(currentSession?.subscription_status || '').toLowerCase() === 'life_time_deal';
+
+  const customColumns = useAppSelector(selectCustomColumns);
+  const customColumnsCount = customColumns?.length ?? 0;
+  const isGrandfathered = isLtdUser && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
+
+  const handleUpgradeNow = useCallback(() => {
+    setSettingsPopoverOpen(false);
+    dispatch(openUpgradeModal('customFields'));
+  }, [dispatch]);
+
+  const appSumoPopoverContent = (
+    <Flex vertical gap={12} style={{ maxWidth: 260 }}>
+      <Typography.Text>
+        {t('customColumns.limitPopover.appSumoBody', {
+          defaultValue:
+            'Editing or adding custom fields beyond your current plan limit requires a Business plan.',
+        })}
+      </Typography.Text>
+      <Button type="primary" size="small" onClick={handleUpgradeNow}>
+        {t('customColumns.limitPopover.cta', { defaultValue: 'Upgrade Now' })}
+      </Button>
+    </Flex>
+  );
 
   const displayName =
     getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
+
+  const settingsIcon = (
+    <SettingOutlined
+      className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
+        isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+      }`}
+      onClick={e => {
+        e.stopPropagation();
+        if (isGrandfathered && !hasBusinessAccess) {
+          setSettingsPopoverOpen(true);
+          return;
+        }
+        onSettingsClick(column.key || column.id);
+      }}
+    />
+  );
 
   return (
     <Flex
@@ -109,29 +235,45 @@ export const CustomColumnHeader: React.FC<{
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <span 
+      <span
         ref={setDragActivatorRef}
         {...dragAttributes}
         {...dragListeners}
-        title={displayName} 
-        className="truncate flex-1 mr-1" 
+        title={displayName}
+        className="truncate flex-1 mr-1"
         style={{ minWidth: 0, cursor: dragListeners ? 'grab' : 'default' }}
       >
         {displayName}
       </span>
       {/* Right-side icons: settings icon only */}
       <Flex align="center" gap={4} className="flex-shrink-0" onClick={e => e.stopPropagation()}>
-        <Tooltip title={t('customColumns.customColumnSettings')}>
-          <SettingOutlined
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
-              isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-            }`}
-            onClick={e => {
-              e.stopPropagation();
-              onSettingsClick(column.key || column.id);
-            }}
-          />
-        </Tooltip>
+        {isGrandfathered && !hasBusinessAccess ? (
+          <Popover
+            open={settingsPopoverOpen}
+            onOpenChange={setSettingsPopoverOpen}
+            title={t('customColumns.limitPopover.appSumoTitle', {
+              defaultValue: 'Plan Upgrade Required',
+            })}
+            content={appSumoPopoverContent}
+            placement="bottomRight"
+          >
+            <Tooltip
+              title={
+                !settingsPopoverOpen
+                  ? t('customColumns.customColumnSettings', {
+                      defaultValue: 'Custom column settings',
+                    })
+                  : undefined
+              }
+            >
+              {settingsIcon}
+            </Tooltip>
+          </Popover>
+        ) : (
+          <Tooltip title={t('customColumns.customColumnSettings')}>
+            {settingsIcon}
+          </Tooltip>
+        )}
       </Flex>
     </Flex>
   );
