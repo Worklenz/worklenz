@@ -82,6 +82,7 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
     if (!selectedTaskId) return;
     isDeleting.current = true;
     setDropdownOpen(false);
+    setShowDeleteConfirm(false);
     const res = await tasksApiService.deleteTask(selectedTaskId);
     if (res.done) {
       dispatch(deleteTask({ taskId: selectedTaskId }));
@@ -123,44 +124,6 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
   };
 
   const renderPopup = () => {
-    if (showDeleteConfirm) {
-      return (
-        <div
-          style={{
-            background: 'var(--ant-color-bg-elevated)',
-            borderRadius: '8px',
-            boxShadow: 'var(--ant-box-shadow-secondary)',
-            padding: '12px',
-            minWidth: '200px',
-          }}
-        >
-          <p style={{ margin: '0 0 10px 0', fontWeight: 500, fontSize: '13px', color: 'var(--ant-color-text)' }}>
-            {t('taskHeader.deleteTaskConfirmMessage', {
-              defaultValue: 'Are you sure you want to delete this task?',
-            })}
-          </p>
-          <Flex gap={8}>
-            <Button
-              size="small"
-              danger
-              type="primary"
-              style={{ flex: 1 }}
-              onClick={() => handleDeleteTask()}
-            >
-              {t('taskHeader.deleteConfirmOk', { defaultValue: 'Yes' })}
-            </Button>
-            <Button
-              size="small"
-              style={{ flex: 1 }}
-              onClick={() => setShowDeleteConfirm(false)}
-            >
-              {t('taskHeader.deleteConfirmCancel', { defaultValue: 'No' })}
-            </Button>
-          </Flex>
-        </div>
-      );
-    }
-
     return (
       <div
         style={{
@@ -168,9 +131,10 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
           borderRadius: 'var(--ant-border-radius-lg)',
           boxShadow: 'var(--ant-box-shadow-secondary)',
           padding: '4px 0',
-          minWidth: '180px',
+          minWidth: '200px',
         }}
       >
+        {/* Copy link item */}
         <div
           className="task-drawer-dropdown-item task-drawer-dropdown-item--default"
           onClick={() => {
@@ -181,6 +145,8 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
           <CopyOutlined />
           {t('Copy link to task') || 'Copy link to task'}
         </div>
+
+        {/* Delete Task item */}
         <div
           className="task-drawer-dropdown-item task-drawer-dropdown-item--danger"
           onClick={() => setShowDeleteConfirm(true)}
@@ -188,6 +154,52 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
           <DeleteOutlined />
           {t('taskHeader.deleteTask') || 'Delete Task'}
         </div>
+
+        {/* Inline Yes/No confirmation — shown below Delete Task when clicked */}
+        {showDeleteConfirm && (
+          <div
+            style={{
+              padding: '8px 12px',
+              borderTop: '1px solid var(--ant-color-split)',
+            }}
+          >
+            <p
+              style={{
+                margin: '0 0 8px 0',
+                fontSize: '12px',
+                color: 'var(--ant-color-text-secondary)',
+              }}
+            >
+              {t('taskHeader.deleteTaskConfirmMessage', {
+                defaultValue: 'Are you sure?',
+              })}
+            </p>
+            <Flex gap={8}>
+              <Button
+                size="small"
+                danger
+                type="primary"
+                style={{ flex: 1 }}
+                onClick={e => {
+                  e.stopPropagation();
+                  handleDeleteTask();
+                }}
+              >
+                {t('taskHeader.deleteConfirmOk', { defaultValue: 'Yes' })}
+              </Button>
+              <Button
+                size="small"
+                style={{ flex: 1 }}
+                onClick={e => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(false);
+                }}
+              >
+                {t('taskHeader.deleteConfirmCancel', { defaultValue: 'No' })}
+              </Button>
+            </Flex>
+          </div>
+        )}
       </div>
     );
   };
