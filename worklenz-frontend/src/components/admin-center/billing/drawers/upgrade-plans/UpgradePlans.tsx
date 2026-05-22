@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Col, Flex, Row, Typography, message, Space, Alert } from '@/shared/antd-imports';
-import { FileOutlined, PictureOutlined } from '@/shared/antd-imports';
+import { FileOutlined, PictureOutlined, TableOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
@@ -913,6 +913,45 @@ const UpgradePlans = () => {
                 />
               </Col>
             )}
+            {upgradeModalVariant === 'customFields' && (
+              <Flex vertical gap={16} style={{ marginBottom: 24 }}>
+                <Flex align="center" gap={12}>
+                  <TableOutlined style={{ fontSize: 28 }} />
+                  <Typography.Title level={3} style={{ margin: 0 }}>
+                    {t('pricing-modal:customFields.upgradeModalHeadline', {
+                      defaultValue: 'Capture every detail with unlimited custom fields',
+                    })}
+                  </Typography.Title>
+                </Flex>
+                <Typography.Text type="secondary">
+                  {t('pricing-modal:customFields.upgradeModalSubCopy', {
+                    defaultValue:
+                      'Your plan includes up to 10 custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.',
+                  })}
+                </Typography.Text>
+                <Flex vertical gap={6}>
+                  <Typography.Text>
+                    {'• '}
+                    {t('pricing-modal:customFields.benefit1', {
+                      defaultValue: 'Unlimited custom fields per project',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    {'• '}
+                    {t('pricing-modal:customFields.benefit2', {
+                      defaultValue: 'Field types: text, number, dropdown, date, and more',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    {'• '}
+                    {t('pricing-modal:customFields.benefit3', {
+                      defaultValue: 'Fields sync across all task views',
+                    })}
+                  </Typography.Text>
+                </Flex>
+              </Flex>
+            )}
+
             {upgradeModalVariant === 'customOrganizationLogo' && (
               <Flex vertical gap={16} style={{ marginBottom: 24 }}>
                 <Flex align="center" gap={12}>

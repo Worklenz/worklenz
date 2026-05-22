@@ -173,58 +173,10 @@ export const CustomColumnHeader: React.FC<{
   setDragActivatorRef?: (element: HTMLElement | null) => void;
 }> = ({ column, onSettingsClick, dragListeners, dragAttributes, setDragActivatorRef }) => {
   const { t } = useTranslation('task-list-table');
-  const dispatch = useAppDispatch();
   const [isHovered, setIsHovered] = useState(false);
-  const [settingsPopoverOpen, setSettingsPopoverOpen] = useState(false);
-
-  const authService = useAuthService();
-  const currentSession = authService.getCurrentSession();
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
-  const isLtdUser =
-    currentSession?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL ||
-    String(currentSession?.subscription_status || '').toLowerCase() === 'life_time_deal';
-
-  const customColumns = useAppSelector(selectCustomColumns);
-  const customColumnsCount = customColumns?.length ?? 0;
-  const isGrandfathered = isLtdUser && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
-
-  const handleUpgradeNow = useCallback(() => {
-    setSettingsPopoverOpen(false);
-    dispatch(openUpgradeModal('customFields'));
-  }, [dispatch]);
-
-  const appSumoPopoverContent = (
-    <Flex vertical gap={12} style={{ maxWidth: 260 }}>
-      <Typography.Text>
-        {t('customColumns.limitPopover.appSumoBody', {
-          defaultValue:
-            'Editing or adding custom fields beyond your current plan limit requires a Business plan.',
-        })}
-      </Typography.Text>
-      <Button type="primary" size="small" onClick={handleUpgradeNow}>
-        {t('customColumns.limitPopover.cta', { defaultValue: 'Upgrade Now' })}
-      </Button>
-    </Flex>
-  );
 
   const displayName =
     getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
-
-  const settingsIcon = (
-    <SettingOutlined
-      className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
-        isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-      }`}
-      onClick={e => {
-        e.stopPropagation();
-        if (isGrandfathered && !hasBusinessAccess) {
-          setSettingsPopoverOpen(true);
-          return;
-        }
-        onSettingsClick(column.key || column.id);
-      }}
-    />
-  );
 
   return (
     <Flex
@@ -247,33 +199,17 @@ export const CustomColumnHeader: React.FC<{
       </span>
       {/* Right-side icons: settings icon only */}
       <Flex align="center" gap={4} className="flex-shrink-0" onClick={e => e.stopPropagation()}>
-        {isGrandfathered && !hasBusinessAccess ? (
-          <Popover
-            open={settingsPopoverOpen}
-            onOpenChange={setSettingsPopoverOpen}
-            title={t('customColumns.limitPopover.appSumoTitle', {
-              defaultValue: 'Plan Upgrade Required',
-            })}
-            content={appSumoPopoverContent}
-            placement="bottomRight"
-          >
-            <Tooltip
-              title={
-                !settingsPopoverOpen
-                  ? t('customColumns.customColumnSettings', {
-                      defaultValue: 'Custom column settings',
-                    })
-                  : undefined
-              }
-            >
-              {settingsIcon}
-            </Tooltip>
-          </Popover>
-        ) : (
-          <Tooltip title={t('customColumns.customColumnSettings')}>
-            {settingsIcon}
-          </Tooltip>
-        )}
+        <Tooltip title={t('customColumns.customColumnSettings')}>
+          <SettingOutlined
+            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
+              isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
+            onClick={e => {
+              e.stopPropagation();
+              onSettingsClick(column.key || column.id);
+            }}
+          />
+        </Tooltip>
       </Flex>
     </Flex>
   );
