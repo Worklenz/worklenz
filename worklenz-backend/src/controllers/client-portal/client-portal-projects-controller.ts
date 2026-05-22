@@ -267,13 +267,13 @@ export default class ClientPortalProjectsController extends ClientPortalControll
       const { id } = req.params;
       const { clientId, organizationId } = req;
       const { page = 1, limit = 10, search } = req.query;
-
+ 
       // Verify client has access to this project - check both client_id AND team_id
       const accessCheck = await db.query(
         `SELECT id FROM projects WHERE id = $1 AND client_id = $2 AND team_id = $3`,
         [id, clientId, organizationId]
       );
-
+ 
       if (accessCheck.rows.length === 0) {
         return res
           .status(404)
@@ -285,7 +285,7 @@ export default class ClientPortalProjectsController extends ClientPortalControll
             )
           );
       }
-
+ 
       // Build tasks query with pagination
       let tasksQuery = `
         SELECT
@@ -298,6 +298,11 @@ export default class ClientPortalProjectsController extends ClientPortalControll
           t.end_date,
           t.created_at,
           t.updated_at,
+          COALESCE((
+            SELECT SUM(twl.time_spent)
+            FROM task_work_log twl
+            WHERE twl.task_id = t.id
+          ), 0)::INT AS time_spent_seconds,
           (
             SELECT COUNT(*)
             FROM client_portal_task_comments c
@@ -313,17 +318,17 @@ export default class ClientPortalProjectsController extends ClientPortalControll
         LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
         WHERE t.project_id = $1
       `;
-
+ 
       const queryParams: (string | number)[] = [id as string, clientId as string];
       let paramIndex = 3;
-
+ 
       // Add search filter if provided
       if (search) {
         tasksQuery += ` AND (t.name ILIKE $${paramIndex} OR t.description ILIKE $${paramIndex})`;
         queryParams.push(`%${search}%`);
         paramIndex++;
       }
-
+ 
       // Get total count
       const countQuery = `
         SELECT COUNT(*) as total
@@ -334,28 +339,33 @@ export default class ClientPortalProjectsController extends ClientPortalControll
       const countParams = search ? [id, `%${search}%`] : [id];
       const countResult = await db.query(countQuery, countParams);
       const total = parseInt(countResult.rows[0]?.total || "0");
-
+ 
       // Add ordering and pagination - last updated first
       const offset = (Number(page) - 1) * Number(limit);
       tasksQuery += ` ORDER BY t.updated_at DESC LIMIT $${paramIndex} OFFSET $${
         paramIndex + 1
       }`;
       queryParams.push(String(Number(limit)), String(offset));
-
+ 
       const tasksResult = await db.query(tasksQuery, queryParams);
-      const tasks = tasksResult.rows.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        status: row.status,
-        statusColor: row.status_color,
-        startDate: row.start_date,
-        endDate: row.end_date,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        unseenCommentsCount: parseInt(row.unseen_comments_count || "0"),
-      }));
-
+      const tasks = tasksResult.rows.map((row: any) => {
+        const seconds = parseInt(row.time_spent_seconds || "0");
+        const timeLogged = formatDuration(moment.duration(seconds, "seconds"));
+        return {
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          status: row.status,
+          statusColor: row.status_color,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          unseenCommentsCount: parseInt(row.unseen_comments_count || "0"),
+          timeLogged,
+        };
+      });
+ 
       return res.json(
         new ServerResponse(
           true,
