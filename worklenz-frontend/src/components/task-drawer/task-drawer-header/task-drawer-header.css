@@ -67,11 +67,7 @@
   color: #ff7875 !important;
 }
 
-/* ── Drawer title reset ──────────────────────────────────────────
-   Ant Design's .ant-drawer-title applies font-size/font-weight/color
-   to everything inside the title slot. We reset it so our custom
-   header can control its own typography.
-──────────────────────────────────────────────────────────────── */
+
 .ant-drawer-title {
   font-size: inherit !important;
   font-weight: inherit !important;
