@@ -96,12 +96,17 @@ const TeamMembersSettings = () => {
     is_appsumo_user: boolean;
   } | null>(null);
 
-  const totalUsedSeats = Math.max(billingInfo?.total_used ?? 0, model.total ?? 0);
-  const totalAvailableSeats = billingInfo?.total_seats;
+  // Only count active members for seat usage (deactivated members don't consume seats)
+  const totalUsedSeats = billingInfo?.total_used ?? 0;
+  const totalAvailableSeats = billingInfo?.total_seats ?? 0;
   const hasReachedSeatLimit =
     !hasBusinessFeatureAccess(currentSession) &&
     totalAvailableSeats > 0 &&
     totalUsedSeats >= totalAvailableSeats;
+  // Show warning when total roster (including deactivated) exceeds the plan seat limit,
+  // indicating some members had to be deactivated to stay within the limit.
+  const isSeatUsageOverLimit =
+    totalAvailableSeats > 0 && (model.total ?? 0) > totalAvailableSeats;
 
   const getTeamMembers = useCallback(async () => {
     try {
@@ -145,8 +150,7 @@ const TeamMembersSettings = () => {
 
       if (res.done) {
         await getTeamMembers();
-        
-        // Check for pending team invite and auto-send after deactivation
+        dispatch(fetchBillingInfo());
         const pendingTeamInvite = localStorage.getItem('pendingTeamInvite');
         if (pendingTeamInvite && !record.active) {
           try {
@@ -221,6 +225,7 @@ const TeamMembersSettings = () => {
       const res = await teamMembersApiService.delete(record.id);
       if (res.done) {
         await getTeamMembers();
+        dispatch(fetchBillingInfo());
       }
     } finally {
       setIsLoading(false);
@@ -326,7 +331,8 @@ const TeamMembersSettings = () => {
 
   useEffect(() => {
     handleRefresh();
-  }, [refreshTeamMembers, handleRefresh]);
+    dispatch(fetchBillingInfo());
+  }, [refreshTeamMembers, handleRefresh, dispatch]);
 
   useEffect(() => {
     getTeamMembers();
@@ -689,22 +695,34 @@ const TeamMembersSettings = () => {
               justify="flex-end"
               style={{ width: '100%', maxWidth: 500 }}
             >
-              <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-                {totalAvailableSeats && totalAvailableSeats > 0
-                  ? t('seatUsageWithLimitText', {
-                      defaultValue: t('seatUsageWithLimitText'),
-                      used: totalUsedSeats,
-                      total: totalAvailableSeats,
-                    })
-                  : totalUsedSeats >= 0
-                    ? t('seatUsageText', {
-                        defaultValue: t('seatUsageText'),
+              <Flex align="center" gap={4}>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                  {totalAvailableSeats && totalAvailableSeats > 0
+                    ? t('seatUsageWithLimitText', {
+                        defaultValue: t('seatUsageWithLimitText'),
                         used: totalUsedSeats,
+                        total: totalAvailableSeats,
                       })
-                    : t('seatUsageLoading', {
-                        defaultValue: t('seatUsageLoading'),
-                      })}
-              </Typography.Text>
+                    : totalUsedSeats >= 0
+                      ? t('seatUsageText', {
+                          defaultValue: t('seatUsageText'),
+                          used: totalUsedSeats,
+                        })
+                      : t('seatUsageLoading', {
+                          defaultValue: t('seatUsageLoading'),
+                        })}
+                </Typography.Text>
+                {isSeatUsageOverLimit && (
+                  <Tooltip
+                    title={t('seatUsageOverLimitTooltip', {
+                      defaultValue:
+                        'Active members exceed your plan limit. Deactivated members are not counted toward your seat usage.',
+                    })}
+                  >
+                    <ExclamationCircleFilled style={{ color: colors.vibrantOrange, fontSize: 14 }} />
+                  </Tooltip>
+                )}
+              </Flex>
               <Tooltip title={t('pinTooltip')}>
                 <Button
                   shape="circle"
