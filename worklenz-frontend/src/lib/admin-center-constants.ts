@@ -5,6 +5,7 @@ import {
   TeamOutlined,
   UserOutlined,
   SettingOutlined,
+  WalletOutlined,
 } from '@/shared/antd-imports';
 import React, { ReactNode, lazy } from 'react';
 
@@ -14,6 +15,7 @@ const Teams = lazy(() => import('../pages/admin-center/teams/teams'));
 const Billing = lazy(() => import('../pages/admin-center/billing/BillingSection'));
 const Projects = lazy(() => import('../pages/admin-center/projects/projects'));
 const Settings = lazy(() => import('../pages/admin-center/settings/settings'));
+const PaymentMethods = lazy(() => import('../pages/admin-center/payment-methods/PaymentMethodsPage'));
 
 // type of a menu item in admin center sidebar
 type AdminCenterMenuItems = {
@@ -24,6 +26,7 @@ type AdminCenterMenuItems = {
   icon: ReactNode;
   element: ReactNode;
   selfHostedExcluded?: boolean;
+  directPayOnly?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const adminCenterItems: AdminCenterMenuItems[] = [
@@ -67,6 +70,16 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     icon: React.createElement(CreditCardOutlined),
     element: React.createElement(Billing),
     selfHostedExcluded: true,
+  },
+  {
+    key: 'payment-methods',
+    name: 'paymentMethods',
+    defaultValue: 'Payment Methods',
+    endpoint: 'payment-methods',
+    icon: React.createElement(WalletOutlined),
+    element: React.createElement(PaymentMethods),
+    selfHostedExcluded: true,
+    directPayOnly: true,
   },
   {
     key: 'settings',

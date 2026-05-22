@@ -190,6 +190,7 @@ export {
   SunOutlined,
   EyeInvisibleOutlined,
   CreditCardOutlined,
+  WalletOutlined,
   CheckCircleTwoTone,
   CloseCircleTwoTone,
   EnterOutlined,

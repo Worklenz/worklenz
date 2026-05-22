@@ -18,12 +18,18 @@ const AdminCenterSidebar: React.FC = () => {
 
   type MenuItem = Required<MenuProps>['items'][number];
   const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+  const isDirectPay = currentSession?.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE
+    && currentSession?.subscription_type !== ISUBSCRIPTION_TYPE.FREE
+    && currentSession?.subscription_type !== ISUBSCRIPTION_TYPE.SELF_HOSTED;
 
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
       return isBusinessPlan(currentSession);
     }
     if (item.selfHostedExcluded && isSelfHosted) {
+      return false;
+    }
+    if (item.directPayOnly && !isDirectPay) {
       return false;
     }
     return true;

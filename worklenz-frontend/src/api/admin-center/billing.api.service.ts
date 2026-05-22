@@ -159,40 +159,18 @@ export const billingApiService = {
    */
   async getLkrPricing(): Promise<
     IServerResponse<{
-      free: { price: number };
-      pro: { price: number; discountedPrice: number };
-      business: { price: number; discountedPrice: number };
+      free: { display_name: string; price: number };
+      pro: { display_name: string; price: number };
+      business: { display_name: string; price: number };
     }>
   > {
     const response = await apiClient.get<
       IServerResponse<{
-        free: { price: number };
-        pro: { price: number; discountedPrice: number };
-        business: { price: number; discountedPrice: number };
+        free: { display_name: string; price: number };
+        pro: { display_name: string; price: number };
+        business: { display_name: string; price: number };
       }>
     >(`${rootUrl}/lkr-pricing`);
-    return response.data;
-  },
-
-  /**
-   * Get DirectPay checkout data for LKR payments.
-   * @param seatCount Number of seats for the subscription
-   */
-  async getDirectPayCheckout(seatCount: number): Promise<
-    IServerResponse<{
-      signature: string;
-      dataString: string;
-      stage: string;
-    }>
-  > {
-    const q = toQueryString({ seatCount });
-    const response = await apiClient.get<
-      IServerResponse<{
-        signature: string;
-        dataString: string;
-        stage: string;
-      }>
-    >(`${rootUrl}/get-direct-pay-data${q}`);
     return response.data;
   },
 
@@ -206,18 +184,66 @@ export const billingApiService = {
     doInitialPayment?: boolean
   ): Promise<
     IServerResponse<{
+      sessionData?: any;
+      stage: string;
+      existingCard?: {
+        card_id: string;
+        wallet_id: string;
+        card_number_masked: string;
+        card_brand: string;
+        expiry_month: string;
+        expiry_year: string;
+      };
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        sessionData?: any;
+        stage: string;
+        existingCard?: {
+          card_id: string;
+          wallet_id: string;
+          card_number_masked: string;
+          card_brand: string;
+          expiry_month: string;
+          expiry_year: string;
+        };
+      }>
+    >(`${rootUrl}/directpay/create-card-session`, {
+      amount,
+      doInitialPayment,
+    });
+    return response.data;
+  },
+
+  /**
+   * Create a CARD_TOKEN_PAYMENT session for 3DS payment with a stored card.
+   */
+  async createTokenPaymentSession(
+    walletId: string,
+    cardId: string,
+    amount: number,
+    currency: string = 'LKR',
+    cvv?: string
+  ): Promise<
+    IServerResponse<{
       sessionData: any;
       stage: string;
+      orderId: string;
     }>
   > {
     const response = await apiClient.post<
       IServerResponse<{
         sessionData: any;
         stage: string;
+        orderId: string;
       }>
-    >(`${rootUrl}/directpay/create-card-session`, {
+    >(`${rootUrl}/directpay/create-token-payment-session`, {
+      wallet_id: walletId,
+      card_id: cardId,
       amount,
-      doInitialPayment,
+      currency,
+      ...(cvv ? { cvv } : {}),
     });
     return response.data;
   },
@@ -238,11 +264,21 @@ export const billingApiService = {
    * List saved cards for a wallet
    * @param walletId Wallet ID from DirectPay
    */
-  async listCards(walletId: string): Promise<
+  async listCards(): Promise<
     IServerResponse<{
-      status: number;
-      data: {
-        wallet_id: number;
+      card_list: Array<{
+        card_id: number;
+        mask: string;
+        brand: string;
+        type: string;
+        issuer: string;
+        expiry: string;
+        created_at: string;
+      }>;
+    }>
+  > {
+    const response = await apiClient.get<
+      IServerResponse<{
         card_list: Array<{
           card_id: number;
           mask: string;
@@ -252,27 +288,8 @@ export const billingApiService = {
           expiry: string;
           created_at: string;
         }>;
-      };
-    }>
-  > {
-    const q = toQueryString({ wallet_id: walletId });
-    const response = await apiClient.get<
-      IServerResponse<{
-        status: number;
-        data: {
-          wallet_id: number;
-          card_list: Array<{
-            card_id: number;
-            mask: string;
-            brand: string;
-            type: string;
-            issuer: string;
-            expiry: string;
-            created_at: string;
-          }>;
-        };
       }>
-    >(`${rootUrl}/directpay/list-cards${q}`);
+    >(`${rootUrl}/directpay/list-cards`);
     return response.data;
   },
 

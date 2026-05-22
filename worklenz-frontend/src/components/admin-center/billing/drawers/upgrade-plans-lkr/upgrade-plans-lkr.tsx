@@ -16,7 +16,6 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import { ILocalPlans } from '@/shared/constants';
-import { DirectPayModal } from './DirectPayModal';
 
 const UpgradePlansLKR: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -30,66 +29,56 @@ const UpgradePlansLKR: React.FC = () => {
   const [directPayLoading, setDirectPayLoading] = useState<boolean>(false);
   const [checkoutPlan, setCheckoutPlan] = useState<'pro' | 'startup' | null>(null);
   const [directPayError, setDirectPayError] = useState<string | null>(null);
-  const [showDirectPayModal, setShowDirectPayModal] = useState<boolean>(false);
-  const [directPayUrl, setDirectPayUrl] = useState<string>('');
 
   const [lkrPricingLoading, setLkrPricingLoading] = useState<boolean>(true);
   const [lkrPricingError, setLkrPricingError] = useState<string | null>(null);
-  const [freePrice, setFreePrice] = useState<number>(0);
-  const [proMonthlyPrice, setProMonthlyPrice] = useState<number>(0);
-  const [proAnnualPrice, setProAnnualPrice] = useState<number>(0);
-  const [businessMonthlyPrice, setBusinessMonthlyPrice] = useState<number>(0);
-  const [businessAnnualPrice, setBusinessAnnualPrice] = useState<number>(0);
+  const [freePrice] = useState<number>(0);
+  const [proPrice, setProPrice] = useState<number>(0);
+  const [businessPrice, setBusinessPrice] = useState<number>(0);
 
   const currentSession = useAuthService().getCurrentSession();
-  const annualSavingsPercent =
-    businessMonthlyPrice > 0 && businessAnnualPrice > 0
-      ? Math.round(
-          (1 - businessAnnualPrice / (businessMonthlyPrice * 12)) * 100,
-        )
-      : 0;
 
-  const hasValidPricing = businessMonthlyPrice > 0 || businessAnnualPrice > 0;
-  const hasValidProPricing = proMonthlyPrice > 0 || proAnnualPrice > 0;
+  const hasValidPricing = businessPrice > 0;
+  const hasValidProPricing = proPrice > 0;
 
-  // Pricing data (populated from backend)
   const plans = {
     free: {
       title: t('freePlan'),
       price: freePrice,
       subtitle: t('freeSubtitle'),
       tagline: 'Best for personal use',
-      features: ['freeText01', 'freeText02', 'freeText03'],
+      features: [
+        t('freeText01'),
+        t('freeText02'),
+        t('freeText03'),
+      ],
       tag: selectedPlan === ILocalPlans.FREE ? t('currentPlan') : undefined,
     },
     pro: {
       title: t('pro', { defaultValue: 'Pro' }),
-      priceMonthly: proMonthlyPrice,
-      priceAnnual: proAnnualPrice,
-      subtitle: t('startupSubtitle'),
+      price: proPrice,
       tagline: 'Best for small teams',
       features: [
-        'startupText01',
-        'startupText02',
-        'startupText03',
-        'startupText04',
-        'startupText05',
+        t('unlimitedProjects', { defaultValue: 'Unlimited Projects' }),
+        t('timeTracking', { defaultValue: 'Time Tracking & Analytics' }),
+        t('projectTemplates', { defaultValue: 'Project Templates & Phases' }),
+        t('ganttReadOnly', { defaultValue: 'Gantt Charts (Read-only)' }),
+        t('customFields', { defaultValue: 'Custom Fields & Subtasks' }),
+        t('projectInsights', { defaultValue: 'Project Insights & Reports' }),
       ],
       tag: t('tag', { defaultValue: 'Most Popular' }),
     },
     startup: {
-      // Local business plan
       title: t('business'),
-      priceMonthly: businessMonthlyPrice,
-      priceAnnual: businessAnnualPrice,
-      subtitle: t('startupSubtitle'),
+      price: businessPrice,
       tagline: 'Best for growing teams',
       features: [
-        'startupText01',
-        'startupText02',
-        'startupText03',
-        'startupText04',
-        'startupText05',
+        t('everythingInPro', { defaultValue: 'Everything in Pro, plus:' }),
+        t('fullGanttCharts', { defaultValue: 'Full Gantt Charts' }),
+        t('projectHealth', { defaultValue: 'Project Health Monitoring' }),
+        t('clientPortal', { defaultValue: 'Client Portal' }),
+        t('financeTracking', { defaultValue: 'Finance & Billable Tracking' }),
+        t('scheduler', { defaultValue: 'Advanced Scheduler' }),
       ],
       tag: 'Recommended',
     },
@@ -105,60 +94,39 @@ const UpgradePlansLKR: React.FC = () => {
       justifyContent: 'space-between',
       width: '100%',
     },
-    price: {
-      fontSize: '32px',
-      fontWeight: 700,
-      margin: 0,
-      lineHeight: 1.1,
-    },
-    subtitle: {
-      fontSize: '14px',
-      fontWeight: 500,
-    },
-    users: {
-      fontSize: '14px',
-      fontWeight: 400,
-    },
-    featuresContainer: {
-      textAlign: 'left' as const,
-      marginTop: '20px',
-    },
-    featureText: {
-      fontSize: '14px',
-      lineHeight: 1.5,
-    },
+    price: { fontSize: '32px', fontWeight: 700, margin: 0, lineHeight: 1.1 },
+    subtitle: { fontSize: '14px', fontWeight: 500 },
+    featuresContainer: { textAlign: 'left' as const, marginTop: '20px' },
+    featureText: { fontSize: '14px', lineHeight: 1.5 },
   };
 
   const getCardStyle = (isSelected: boolean) => ({
     height: '100%',
     cursor: 'pointer',
     border: isSelected ? '2px solid #1890ff' : '1px solid #d9d9d9',
-    boxShadow: isSelected ? '0 4px 12px rgba(24, 144, 255, 0.15)' : '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+    boxShadow: isSelected
+      ? '0 4px 12px rgba(24, 144, 255, 0.15)'
+      : '0 1px 2px 0 rgba(0,0,0,0.03)',
     transition: 'all 0.2s',
     display: 'flex' as const,
     flexDirection: 'column' as const,
   });
 
-  const getCardContainerStyle = () => ({
-    display: 'flex' as const,
-    flexDirection: 'column' as const,
-    height: '100%',
-  });
-
   const handlePlanSelect = (plan: keyof typeof plans) => {
-    if (plan === 'free') {
-      setSelectedPlan(ILocalPlans.FREE);
-    } else if (plan === 'pro') {
-      setSelectedPlan(ILocalPlans.PRO_ANNUAL);
-    } else {
-      setSelectedPlan(ILocalPlans.ANNUAL);
-    }
+    if (plan === 'free') setSelectedPlan(ILocalPlans.FREE);
+    else if (plan === 'pro') setSelectedPlan(ILocalPlans.PRO_ANNUAL);
+    else setSelectedPlan(ILocalPlans.ANNUAL);
+  };
+
+  const isPlanSelected = (planKey: 'free' | 'pro' | 'startup') => {
+    if (planKey === 'free') return selectedPlan === ILocalPlans.FREE;
+    if (planKey === 'pro') return selectedPlan === ILocalPlans.PRO_ANNUAL || selectedPlan === ILocalPlans.PRO_MONTHLY;
+    return selectedPlan === ILocalPlans.ANNUAL || selectedPlan === ILocalPlans.MONTHLY;
   };
 
   const switchToFreePlan = async () => {
     const teamId = currentSession?.team_id;
     if (!teamId) return;
-
     try {
       setSwitchingToFreePlan(true);
       const res = await adminCenterApiService.switchToFreePlan(teamId);
@@ -186,12 +154,9 @@ const UpgradePlansLKR: React.FC = () => {
         setLkrPricingError(null);
         const response = await billingApiService.getLkrPricing();
         if (response.done && response.body) {
-          const { free, pro, business } = response.body;
-          setFreePrice(free?.price ?? 0);
-          setProMonthlyPrice(pro?.price ?? 0);
-          setProAnnualPrice(pro?.discountedPrice ?? 0);
-          setBusinessMonthlyPrice(business?.price ?? 0);
-          setBusinessAnnualPrice(business?.discountedPrice ?? 0);
+          const { pro, business } = response.body;
+          setProPrice(pro?.price ?? 0);
+          setBusinessPrice(business?.price ?? 0);
         } else {
           setLkrPricingError('Failed to load pricing');
         }
@@ -202,57 +167,66 @@ const UpgradePlansLKR: React.FC = () => {
         setLkrPricingLoading(false);
       }
     };
-
     loadLkrPricing();
   }, []);
 
   const renderFeature = (text: string, index: number) => (
     <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '12px' }}>
       <CheckCircleFilled style={cardStyles.checkIcon} />
-      <Typography.Text style={cardStyles.featureText}>{t(text)}</Typography.Text>
+      <Typography.Text style={cardStyles.featureText}>{text}</Typography.Text>
     </div>
   );
-
-  const isPlanSelected = (planKey: 'free' | 'pro' | 'startup') => {
-    if (planKey === 'free') return selectedPlan === ILocalPlans.FREE;
-    if (planKey === 'pro') return selectedPlan === ILocalPlans.PRO_ANNUAL || selectedPlan === ILocalPlans.PRO_MONTHLY;
-    return selectedPlan === ILocalPlans.ANNUAL || selectedPlan === ILocalPlans.MONTHLY;
-  };
 
   const initializeDirectPayCheckout = async (planKey?: 'pro' | 'startup') => {
     try {
       setDirectPayLoading(true);
       setDirectPayError(null);
 
-      // Derive amount from planKey (explicit) or fall back to selectedPlan state
       const effectivePlan = planKey ?? (
         selectedPlan === ILocalPlans.PRO_ANNUAL || selectedPlan === ILocalPlans.PRO_MONTHLY ? 'pro' : 'startup'
       );
-      const amount =
-        effectivePlan === 'pro'
-          ? proAnnualPrice
-          : businessAnnualPrice;
+      const amount = effectivePlan === 'pro' ? proPrice : businessPrice;
 
       if (!amount || amount <= 0) {
         throw new Error('Invalid pricing. Please contact support.');
       }
 
-      // Create card add session with initial payment enabled
-      const response = await billingApiService.createCardAddSession(amount, true);
+      const response = await billingApiService.createCardAddSession(amount, false);
 
       if (!response.done || !response.body) {
         throw new Error(response.message || 'Failed to create card add session');
       }
 
-      const { sessionData } = response.body;
-
-      if (!sessionData) {
-        throw new Error('Invalid session data received from server');
+      // Owner already has a saved card — charge it directly
+      if (response.body.existingCard) {
+        const { card_id, wallet_id, card_number_masked, card_brand } = response.body.existingCard;
+        const orderId = `WL${new Date().toISOString().slice(2, 10).replace(/-/g, '')}${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+        const payResult = await billingApiService.payWithCard(
+          String(wallet_id),
+          String(card_id),
+          orderId,
+          amount
+        );
+        if (!payResult.done) {
+          throw new Error(payResult.message || `Payment with ${card_brand} ${card_number_masked} failed`);
+        }
+        message.success(`Payment successful with ${card_brand} ${card_number_masked}`);
+        setDirectPayLoading(false);
+        setCheckoutPlan(null);
+        return;
       }
 
-      // Extract payment URL from session data
+      const { sessionData } = response.body;
+      if (!sessionData) throw new Error('Invalid session data received from server');
+
+      const dpBaseUrl = response.body.stage === 'PROD'
+        ? 'https://gateway.directpay.lk'
+        : 'https://test-gateway.directpay.lk';
+
       let paymentUrl = '';
-      if (sessionData?.data?.link) {
+      if (sessionData?.data?.token) {
+        paymentUrl = `${dpBaseUrl}/${sessionData.data.token}`;
+      } else if (sessionData?.data?.link) {
         paymentUrl = sessionData.data.link;
       } else if (sessionData?.link) {
         paymentUrl = sessionData.link;
@@ -262,73 +236,19 @@ const UpgradePlansLKR: React.FC = () => {
         paymentUrl = sessionData.url;
       }
 
-      if (!paymentUrl) {
-        throw new Error('No payment URL available from session data');
-      }
+      if (!paymentUrl) throw new Error('No payment URL available from session data');
 
-      // Open DirectPay modal
-      setDirectPayUrl(paymentUrl);
-      setShowDirectPayModal(true);
-      setDirectPayLoading(false);
+      // Store pending plan so billing page can charge card after DirectPay redirects back
+      localStorage.setItem('dp_pending_plan', JSON.stringify({ plan: effectivePlan, amount }));
+      window.location.href = paymentUrl;
     } catch (error: any) {
       setDirectPayLoading(false);
+      setCheckoutPlan(null);
       const errorMessage = error?.message || 'Failed to initialize DirectPay checkout';
       setDirectPayError(errorMessage);
       message.error(errorMessage);
       logger.error('Error initializing DirectPay checkout', error);
     }
-  };
-
-  const handleDirectPaySuccess = async (response: any) => {
-    logger.info('DirectPay payment successful', response);
-
-    const hasCardPayload =
-      response?.card?.id ||
-      response?.data?.card?.id ||
-      response?.walletId ||
-      response?.card?.walletId ||
-      response?.data?.walletId;
-
-    if (hasCardPayload) {
-      try {
-        await billingApiService.saveDirectPayCardResponse(response);
-      } catch (error) {
-        logger.error('Failed to persist DirectPay card response from browser payload', error);
-      }
-    }
-    
-    // Close modal immediately for better UX
-    setShowDirectPayModal(false);
-    
-    // Show success message
-    message.success('Payment processed successfully! Updating your subscription...');
-
-    // Refresh billing info and close upgrade modal
-    dispatch(fetchBillingInfo());
-    
-    // Refresh user session after a short delay
-    setTimeout(() => {
-      dispatch(toggleUpgradeModal());
-      authApiService.verify().then((authResponse) => {
-        if (authResponse.authenticated) {
-          setSession(authResponse.user);
-          dispatch(setUser(authResponse.user));
-        }
-      });
-    }, 1500);
-  };
-
-  const handleDirectPayError = (error: any) => {
-    logger.error('DirectPay payment error', error);
-    setShowDirectPayModal(false);
-    const errorMsg = error?.message || 'Payment failed. Please try again.';
-    setDirectPayError(errorMsg);
-    message.error(errorMsg);
-  };
-
-  const handleDirectPayCancel = () => {
-    setShowDirectPayModal(false);
-    message.info('Payment was cancelled.');
   };
 
   const handleUpgradeNow = async (e: React.MouseEvent, planKey: 'pro' | 'startup') => {
@@ -345,11 +265,10 @@ const UpgradePlansLKR: React.FC = () => {
   };
 
   return (
-    <>
-      <div className="upgrade-plans">
-        <Typography.Title level={2} style={{ textAlign: 'center' as const, marginBottom: '2rem' }}>
-          {t('modalTitle')}
-        </Typography.Title>
+    <div className="upgrade-plans">
+      <Typography.Title level={2} style={{ textAlign: 'center' as const, marginBottom: '2rem' }}>
+        {t('modalTitle')}
+      </Typography.Title>
 
       {lkrPricingLoading && (
         <Typography.Paragraph style={{ marginBottom: '1rem' }}>
@@ -369,7 +288,6 @@ const UpgradePlansLKR: React.FC = () => {
         </Typography.Paragraph>
       )}
 
-      {/* Plan Cards - Centered and Responsive */}
       <Row justify="center" gutter={[24, 32]}>
         {/* Free Plan */}
         <Col xs={24} sm={20} md={8} lg={8} xl={8} style={{ minWidth: 260, maxWidth: 320 }}>
@@ -383,14 +301,7 @@ const UpgradePlansLKR: React.FC = () => {
                 {plans.free.tag && <Tag color="orange">{plans.free.tag}</Tag>}
               </div>
             }
-            styles={{
-              body: {
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                padding: 0
-              }
-            }}
+            styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%', padding: 0 } }}
           >
             <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
               <div style={{ flex: 1 }}>
@@ -398,7 +309,7 @@ const UpgradePlansLKR: React.FC = () => {
                   <Typography.Title level={1} style={cardStyles.price}>
                     {userCurrency} {plans.free.price}
                   </Typography.Title>
-                  <Typography.Text type="secondary" style={cardStyles.subtitle}>{plans.free.subtitle}</Typography.Text>
+                  <Typography.Text type="secondary" style={cardStyles.subtitle}>/month</Typography.Text>
                   <Typography.Text type="secondary" style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>
                     {plans.free.tagline}
                   </Typography.Text>
@@ -412,10 +323,7 @@ const UpgradePlansLKR: React.FC = () => {
                   type="primary"
                   size="large"
                   loading={switchingToFreePlan}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    switchToFreePlan();
-                  }}
+                  onClick={(e) => { e.stopPropagation(); switchToFreePlan(); }}
                   style={{ width: '100%' }}
                 >
                   {t('switchToFreePlan')}
@@ -437,14 +345,7 @@ const UpgradePlansLKR: React.FC = () => {
                 <Tag color="blue">{plans.pro.tag}</Tag>
               </div>
             }
-            styles={{
-              body: {
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                padding: 0
-              }
-            }}
+            styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%', padding: 0 } }}
           >
             <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
               <div style={{ flex: 1 }}>
@@ -452,7 +353,7 @@ const UpgradePlansLKR: React.FC = () => {
                   {hasValidProPricing ? (
                     <>
                       <Typography.Title level={1} style={cardStyles.price}>
-                        {userCurrency} {plans.pro.priceMonthly}
+                        {userCurrency} {plans.pro.price.toLocaleString()}
                       </Typography.Title>
                       <Typography.Text type="secondary" style={cardStyles.subtitle}>/month</Typography.Text>
                       <Typography.Text type="secondary" style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>
@@ -461,12 +362,8 @@ const UpgradePlansLKR: React.FC = () => {
                     </>
                   ) : (
                     <div style={{ textAlign: 'center' as const }}>
-                      <Typography.Title level={3} style={{ margin: 0, color: '#8c8c8c' }}>
-                        Contact Sales
-                      </Typography.Title>
-                      <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
-                        Custom pricing available
-                      </Typography.Text>
+                      <Typography.Title level={3} style={{ margin: 0, color: '#8c8c8c' }}>Contact Sales</Typography.Title>
+                      <Typography.Text type="secondary" style={{ fontSize: '14px' }}>Custom pricing available</Typography.Text>
                     </div>
                   )}
                 </div>
@@ -503,14 +400,7 @@ const UpgradePlansLKR: React.FC = () => {
                 <Tag color="volcano">{plans.startup.tag}</Tag>
               </div>
             }
-            styles={{
-              body: {
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                padding: 0
-              }
-            }}
+            styles={{ body: { display: 'flex', flexDirection: 'column', height: '100%', padding: 0 } }}
           >
             <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
               <div style={{ flex: 1 }}>
@@ -518,23 +408,17 @@ const UpgradePlansLKR: React.FC = () => {
                   {hasValidPricing ? (
                     <>
                       <Typography.Title level={1} style={cardStyles.price}>
-                        {userCurrency} {plans.startup.priceMonthly}
+                        {userCurrency} {plans.startup.price.toLocaleString()}
                       </Typography.Title>
                       <Typography.Text type="secondary" style={cardStyles.subtitle}>/month</Typography.Text>
-                      {businessMonthlyPrice > 0 && (
-                        <Typography.Text type="secondary" style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>
-                          {plans.startup.tagline}
-                        </Typography.Text>
-                      )}
+                      <Typography.Text type="secondary" style={{ fontSize: '14px', marginTop: '8px', display: 'block' }}>
+                        {plans.startup.tagline}
+                      </Typography.Text>
                     </>
                   ) : (
                     <div style={{ textAlign: 'center' as const }}>
-                      <Typography.Title level={3} style={{ margin: 0, color: '#8c8c8c' }}>
-                        Contact Sales
-                      </Typography.Title>
-                      <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
-                        Custom pricing available
-                      </Typography.Text>
+                      <Typography.Title level={3} style={{ margin: 0, color: '#8c8c8c' }}>Contact Sales</Typography.Title>
+                      <Typography.Text type="secondary" style={{ fontSize: '14px' }}>Custom pricing available</Typography.Text>
                     </div>
                   )}
                 </div>
@@ -559,17 +443,7 @@ const UpgradePlansLKR: React.FC = () => {
           </Card>
         </Col>
       </Row>
-      </div>
-
-      {/* DirectPay Modal */}
-      <DirectPayModal
-        isOpen={showDirectPayModal}
-        paymentUrl={directPayUrl}
-        onSuccess={handleDirectPaySuccess}
-        onError={handleDirectPayError}
-        onCancel={handleDirectPayCancel}
-      />
-    </>
+    </div>
   );
 };
 

@@ -17,6 +17,7 @@ import {
 
 import CurrentPlanDetails from './current-plan-details/CurrentPlanDetails';
 import AccountStorage from './account-storage/account-storage';
+import SavedCards from './saved-cards/SavedCards';
 import { useAuthService } from '@/hooks/useAuth';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -147,6 +148,12 @@ const CurrentBill: React.FC = React.memo(() => {
     [currentSession?.subscription_type]
   );
 
+  const shouldShowSavedCards = useMemo(
+    () => currentSession?.subscription_type !== ISUBSCRIPTION_TYPE.PADDLE
+      && currentSession?.subscription_type !== ISUBSCRIPTION_TYPE.FREE,
+    [currentSession?.subscription_type]
+  );
+
   return (
     <div style={{ width: '100%' }} className="current-billing">
       {isTablet ? (
@@ -162,6 +169,7 @@ const CurrentBill: React.FC = React.memo(() => {
         renderMobileView()
       )}
       {shouldShowChargesAndInvoices && renderChargesAndInvoices()}
+      {shouldShowSavedCards && <SavedCards />}
     </div>
   );
 });

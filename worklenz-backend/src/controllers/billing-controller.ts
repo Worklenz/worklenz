@@ -8,13 +8,9 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { getTeamMemberCount } from "../shared/paddle-utils";
 import { generatePayLinkRequest, updateUsers } from "../shared/paddle-requests";
 
-import CryptoJS from "crypto-js";
-import moment from "moment";
 import axios from "axios";
 
 import crypto from "crypto";
-import fs from "fs";
-import path from "path";
 import { log_error } from "../shared/utils";
 import { sendEmail } from "../shared/email";
 
@@ -35,51 +31,6 @@ interface IDirectPayNormalizedResponse {
 
 export default class BillingController extends WorklenzControllerBase {
   private static readonly DIRECTPAY_CARD_ORDER_PREFIX = "WL_CARD";
-
-  public static async getInitialCharge(count: number) {
-    if (!count) throw new Error("No selected plan detected.");
-
-    const baseRate = 4990;
-    const firstTier = 15;
-    const secondTierEnd = 200;
-
-    if (count <= firstTier) {
-      return baseRate;
-    } else if (count <= secondTierEnd) {
-      return baseRate + (count - firstTier) * 300;
-    }
-    return baseRate + (secondTierEnd - firstTier) * 300 + (count - secondTierEnd) * 200;
-
-  }
-
-  public static async getBillingMonth() {
-    const startDate = moment().format("YYYYMMDD");
-    const endDate = moment().add(1, "month").subtract(1, "day").format("YYYYMMDD");
-
-    return `${startDate} - ${endDate}`;
-  }
-
-  public static async chargeInitialPayment(signature: string, data: any) {
-    const config = {
-      method: "post",
-      maxBodyLength: Infinity,
-      url: process.env.DP_URL,
-      headers: {
-        "Content-Type": "application/json",
-        "Signature": signature,
-        "x-api-key": process.env.DP_API_KEY
-      },
-      data
-    };
-
-    axios.request(config)
-      .then((response) => {
-        console.log(JSON.stringify(response.data));
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }
 
   @HandleExceptions()
   public static async upgradeToPaidPlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -110,153 +61,6 @@ export default class BillingController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));
     }
     return res.status(200).send(new ServerResponse(true, null, "Your purchase has been successfully completed!").withTitle("Done"));
-  }
-
-  @HandleExceptions()
-  public static async getDirectPayObject(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { seatCount } = req.query;
-    if (!seatCount) return res.status(200).send(new ServerResponse(false, null));
-    const email = req.user?.email;
-    const name = req.user?.name;
-    const amount = await this.getInitialCharge(parseInt(seatCount as string));
-    const uniqueTimestamp = moment().format("YYYYMMDDHHmmss");
-    const billingMonth = await this.getBillingMonth();
-
-    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
-
-    const payload = {
-      merchant_id: DP_MERCHANT_ID,
-      amount: 10,
-      type: "RECURRING",
-      order_id: `WORKLENZ_${email}_${uniqueTimestamp}`,
-      currency: "LKR",
-      return_url: null,
-      response_url: null,
-      first_name: name,
-      last_name: null,
-      phone: null,
-      email,
-      description: `${name} (${email})`,
-      page_type: "IN_APP",
-      logo: "https://app.worklenz.com/assets/icons/icon-96x96.png",
-      start_date: moment().format("YYYY-MM-DD"),
-      do_initial_payment: 1,
-      interval: 1,
-    };
-
-    const encodePayload = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(JSON.stringify(payload)));
-    const signature = CryptoJS.HmacSHA256(encodePayload, DP_SECRET_KEY as string);
-
-    return res.status(200).send(new ServerResponse(true, { signature: signature.toString(CryptoJS.enc.Hex), dataString: encodePayload, stage: DP_STAGE }));
-  }
-
-  @HandleExceptions()
-  public static async saveTransactionData(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { status, card, transaction, seatCount } = req.body;
-    const { DP_MERCHANT_ID, DP_STAGE } = process.env;
-
-    const email = req.user?.email;
-
-    const amount = await this.getInitialCharge(parseInt(seatCount as string));
-    const uniqueTimestamp = moment().format("YYYYMMDDHHmmss");
-    const billingMonth = await this.getBillingMonth();
-
-    const values = [
-      status,
-      card?.id,
-      card?.number,
-      card?.brand,
-      card?.type,
-      card?.issuer,
-      card?.expiry?.year,
-      card?.expiry?.month,
-      card?.walletId,
-      transaction?.id,
-      transaction?.status,
-      transaction?.amount || 0,
-      transaction?.currency || null,
-      transaction?.channel || null,
-      transaction?.dateTime || null,
-      transaction?.message || null,
-      transaction?.description || null,
-      req.user?.id,
-      req.user?.owner_id,
-    ];
-
-    const q = `INSERT INTO licensing_lkr_payments (
-      status, card_id, card_number, card_brand, card_type, card_issuer,
-      card_expiry_year, card_expiry_month, wallet_id,
-      transaction_id, transaction_status, transaction_amount, 
-      transaction_currency, transaction_channel, transaction_datetime,
-      transaction_message, transaction_description, user_id, owner_id
-    )
-    VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
-    );`;
-    await db.query(q, values);
-
-    if (transaction.status === "SUCCESS") {
-      const payload = {
-        "merchantId": DP_MERCHANT_ID,
-        "reference": `WORKLENZ_${email}_${uniqueTimestamp}`,
-        "type": "CARD_PAY",
-        "cardId": card.id,
-        "refCode": req.user?.id,
-        amount,
-        "currency": "LKR"
-      };
-      const dataString = Object.values(payload).join("");
-      const { DP_STAGE } = process.env;
-
-      const pemFile = DP_STAGE === "PROD" ? "src/keys/PRIVATE_KEY_PROD.pem" : `src/keys/PRIVATE_KEY_DEV.pem`;
-
-      const privateKeyTest = fs.readFileSync(path.resolve(pemFile), "utf8");
-      const sign = crypto.createSign("SHA256");
-      sign.update(dataString);
-      sign.end();
-
-      const signature = sign.sign(privateKeyTest);
-      const byteArray = new Uint8Array(signature);
-      let byteString = "";
-      for (let i = 0; i < byteArray.byteLength; i++) {
-        byteString += String.fromCharCode(byteArray[i]);
-      }
-      const base64Signature = btoa(byteString);
-
-      this.chargeInitialPayment(base64Signature, payload);
-    }
-
-    return res.status(200).send(new ServerResponse(true, null, "Your purchase has been successfully completed!").withTitle("Done"));
-  }
-
-  @HandleExceptions()
-  public static async getCardList(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { DP_MERCHANT_ID, DP_REFERENCE, DP_STAGE } = process.env;
-
-    const payload = {
-      "merchantId": DP_MERCHANT_ID,
-      "reference": DP_REFERENCE,
-      "type": "LIST_CARD"
-    };
-
-    const dataString = `${DP_MERCHANT_ID}${DP_REFERENCE}LIST_CARD`;
-    const pemFile = DP_STAGE === "PROD" ? "src/keys/PRIVATE_KEY_PROD.pem" : `src/keys/PRIVATE_KEY_DEV.pem`;
-
-    const privateKeyTest = fs.readFileSync(path.resolve(pemFile), "utf8");
-    const sign = crypto.createSign("SHA256");
-    sign.update(dataString);
-    sign.end();
-
-    const signature = sign.sign(privateKeyTest);
-    const byteArray = new Uint8Array(signature);
-    let byteString = "";
-    for (let i = 0; i < byteArray.byteLength; i++) {
-      byteString += String.fromCharCode(byteArray[i]);
-    }
-    const base64Signature = btoa(byteString);
-    // const signature = CryptoJS.HmacSHA256(dataString, DP_SECRET_KEY as string).toString(CryptoJS.enc.Hex);
-
-    return res.status(200).send(new ServerResponse(true, { signature: base64Signature, dataString }));
   }
 
   @HandleExceptions()
@@ -480,8 +284,11 @@ export default class BillingController extends WorklenzControllerBase {
     }
   }
 
-  private static buildDirectPayOrderId(userId: string, ownerId: string): string {
-    return `${this.DIRECTPAY_CARD_ORDER_PREFIX}__${userId}__${ownerId}__${Date.now()}`;
+  private static buildDirectPayOrderId(_userId: string, _ownerId: string): string {
+    const now = new Date();
+    const datePart = now.toISOString().slice(2, 10).replace(/-/g, ""); // YYMMDD
+    const rand = crypto.randomBytes(4).toString("hex").toUpperCase();
+    return `${this.DIRECTPAY_CARD_ORDER_PREFIX}${datePart}${rand}`;
   }
 
   private static normalizeDirectPayUrlBase(url: string): string {
@@ -489,14 +296,10 @@ export default class BillingController extends WorklenzControllerBase {
     return /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `http://${trimmedUrl}`;
   }
 
-  private static parseDirectPayOrderOwner(orderId?: string | null): IDirectPaySessionOwner {
-    if (!orderId) return { userId: null, ownerId: null };
-
-    const match = orderId.match(/^WL_CARD__([0-9a-f-]{36})__([0-9a-f-]{36})__/i);
-    return {
-      userId: match?.[1] || null,
-      ownerId: match?.[2] || match?.[1] || null,
-    };
+  private static parseDirectPayOrderOwner(_orderId?: string | null): IDirectPaySessionOwner {
+    // Owner identity is looked up from licensing_directpay_sessions by order_id in processCardResponse.
+    // This stub exists only as a fallback path; returning nulls causes the session row to be used.
+    return { userId: null, ownerId: null };
   }
 
   private static maskCardNumber(cardNumber?: string | null): string {
@@ -576,19 +379,29 @@ export default class BillingController extends WorklenzControllerBase {
           "SELECT * FROM licensing_directpay_sessions WHERE order_id = $1 FOR UPDATE",
           [normalized.orderId]
         )
-        : { rows: [] };
+        : await client.query(
+          `SELECT * FROM licensing_directpay_sessions
+           WHERE status = 'pending'
+           ORDER BY created_at DESC
+           LIMIT 1
+           FOR UPDATE`,
+          []
+        );
       const session = sessionResult.rows[0];
+      console.log("[DirectPay Webhook] Resolved session:", session ? `order_id=${session.order_id} user_id=${session.user_id}` : "none");
 
       const userId = fallbackUserId || session?.user_id || parsedOwner.userId;
       const ownerId = fallbackOwnerId || session?.owner_id || parsedOwner.ownerId || userId;
 
       if (!userId || !normalized.walletId || !normalized.cardId) {
         await client.query("ROLLBACK");
+        console.error("[DirectPay Webhook] Cannot save — missing:", { userId, walletId: normalized.walletId, cardId: normalized.cardId });
         return {
           saved: false,
           message: "Missing user, wallet, or card data in DirectPay response",
         };
       }
+      console.log("[DirectPay Webhook] Saving card for userId:", userId, "walletId:", normalized.walletId, "cardId:", normalized.cardId);
 
       const cardNumber = this.maskCardNumber(normalized.card?.number || normalized.card?.mask);
       const cardResult = await client.query(
@@ -798,15 +611,38 @@ export default class BillingController extends WorklenzControllerBase {
     const name = req.user?.name;
     const userId = req.user?.id;
     const ownerId = req.user?.owner_id || req.user?.id;
-    // Phone number is optional and not available in IPassportSession
-    // Can be queried from database if needed in the future
-    const phone = null;
+
+    // Try to get phone from DB for DirectPay wallet identity (wallet = phone + email)
+    let phone: string | null = null;
+    try {
+      const phoneResult = await db.query("SELECT phone FROM users WHERE id = $1", [userId]);
+      phone = phoneResult.rows[0]?.phone || null;
+    } catch {
+      // phone column may not exist; wallet identity falls back to email only
+    }
 
     if (!email || !name || !userId || !ownerId) {
       return res.status(400).send(new ServerResponse(false, null, "User email and name are required"));
     }
 
-    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE, FRONTEND_URL, BACKEND_URL, PORT } = process.env;
+    // If the owner already has an active card on file, return it so the frontend
+    // can skip card-add and go straight to payment — avoids DirectPay "Card already exist".
+    const existingCardResult = await db.query(
+      `SELECT card_id, wallet_id, card_number_masked, card_brand, expiry_month, expiry_year
+         FROM licensing_directpay_cards
+        WHERE user_id = $1 AND is_active = true
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [ownerId]
+    );
+    if (existingCardResult.rows.length > 0) {
+      return res.status(200).send(new ServerResponse(true, {
+        existingCard: existingCardResult.rows[0],
+        stage: process.env.DP_STAGE,
+      }));
+    }
+
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE, FRONTEND_URL, BACKEND_URL, ADMIN_BACKEND_URL, PORT } = process.env;
     if (!DP_MERCHANT_ID || !DP_SECRET_KEY) {
       return res.status(500).send(new ServerResponse(false, null, "DirectPay credentials are not configured"));
     }
@@ -818,8 +654,8 @@ export default class BillingController extends WorklenzControllerBase {
 
     const orderId = this.buildDirectPayOrderId(userId, ownerId);
 
-    // Construct backend URL for response callback
-    const backendBaseUrl = this.normalizeDirectPayUrlBase(BACKEND_URL || `http://localhost:${PORT || 3000}`);
+    // Use ADMIN_BACKEND_URL for the card-response webhook if set (admin backend handles card persistence)
+    const webhookBaseUrl = this.normalizeDirectPayUrlBase(ADMIN_BACKEND_URL || BACKEND_URL || `http://localhost:${PORT || 3000}`);
     const frontendBaseUrl = this.normalizeDirectPayUrlBase(FRONTEND_URL || "http://localhost:5000");
 
     // Split name into first_name and last_name
@@ -834,12 +670,12 @@ export default class BillingController extends WorklenzControllerBase {
       type: "CARD_ADD",
       order_id: orderId,
       currency: "LKR",
-      response_url: `${backendBaseUrl}/webhook/directpay/card-response`,
-      return_url: `${frontendBaseUrl}/worklenz/admin-center/billing`,
+      response_url: `${webhookBaseUrl}/directpay-webhook/card-response`,
+      return_url: `${frontendBaseUrl}/worklenz/admin-center/billing?dp_card_added=1`,
       first_name: firstName,
       email: email,
       description: "Worklenz - Add Payment Method",
-      logo: "https://app.worklenz.com/assets/icons/icon-96x96.png",
+      logo: "https://s3.us-west-2.amazonaws.com/worklenz.com/assets/icon-96x96.png",
       do_initial_payment: doInitialPayment ? "1" : "0",
     };
 
@@ -918,30 +754,104 @@ export default class BillingController extends WorklenzControllerBase {
   }
 
   /**
+   * Create a CARD_TOKEN_PAYMENT session for 3DS authenticated payment using a stored card.
+   * Uses /api/v3/CARD_TOKEN_PAYMENT
+   */
+  @HandleExceptions()
+  public static async createCardTokenPaymentSession(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id;
+    const ownerId = req.user?.owner_id || userId;
+    if (!userId || !ownerId) {
+      return res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    const { wallet_id, card_id, cvv, amount, currency } = req.body;
+    if (!wallet_id || !card_id || !amount) {
+      return res.status(400).send(new ServerResponse(false, null, "wallet_id, card_id, and amount are required"));
+    }
+
+    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
+    if (!DP_MERCHANT_ID || !DP_SECRET_KEY) {
+      return res.status(500).send(new ServerResponse(false, null, "DirectPay credentials are not configured"));
+    }
+
+    const orderId = this.buildDirectPayOrderId(userId, ownerId);
+    const paymentCurrency = currency || "LKR";
+
+    const requestPayload: Record<string, any> = {
+      merchant_id: DP_MERCHANT_ID,
+      type: "CARD_TOKEN_PAYMENT",
+      wallet_id: String(wallet_id),
+      card_id: String(card_id),
+      order_id: orderId,
+      currency: paymentCurrency,
+      amount: String(amount),
+    };
+    if (cvv) {
+      requestPayload.cvv = String(cvv);
+    }
+
+    const base64EncodedPayload = this.encodeDirectPayPayload(requestPayload);
+    const signature = this.signDirectPayPayload(base64EncodedPayload, DP_SECRET_KEY);
+
+    const apiUrl = DP_STAGE === "PROD"
+      ? "https://gateway.directpay.lk/api/v3/CARD_TOKEN_PAYMENT"
+      : "https://test-gateway.directpay.lk/api/v3/CARD_TOKEN_PAYMENT";
+
+    try {
+      const response = await axios.post(apiUrl, base64EncodedPayload, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": signature,
+        },
+        timeout: 30000,
+      });
+
+      const sessionData = this.decodeDirectPayApiResponse(response.data);
+      return res.status(200).send(new ServerResponse(true, {
+        sessionData,
+        stage: DP_STAGE,
+        orderId,
+      }));
+    } catch (error: any) {
+      log_error(error);
+      return res.status(500).send(new ServerResponse(false, null,
+        error?.response?.data?.message || "Failed to create token payment session"));
+    }
+  }
+
+  /**
    * List cards for a user's wallet
    * Uses /api/v3/listCard
    */
   @HandleExceptions()
   public static async listCards(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { wallet_id } = req.query;
+    const ownerId = req.user?.owner_id;
+    console.log("[listCards] ownerId:", ownerId);
 
-    if (!wallet_id) {
-      return res.status(400).send(new ServerResponse(false, null, "wallet_id is required"));
+    const cardRow = await db.query(
+      `SELECT wallet_id FROM licensing_directpay_cards WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1`,
+      [ownerId]
+    );
+
+    console.log("[listCards] DB card row:", cardRow.rows[0] ?? "none");
+
+    if (!cardRow.rows.length || !cardRow.rows[0].wallet_id) {
+      console.log("[listCards] No saved card in DB for owner:", ownerId);
+      return res.status(200).send(new ServerResponse(true, { card_list: [] }));
     }
 
+    const wallet_id = String(cardRow.rows[0].wallet_id);
+    console.log("[listCards] Calling DirectPay listCard for wallet_id:", wallet_id);
     const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
 
     const requestPayload = {
       merchant_id: DP_MERCHANT_ID,
-      wallet_id: String(wallet_id),
+      wallet_id,
     };
 
-    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(
-      CryptoJS.enc.Utf8.parse(JSON.stringify(requestPayload))
-    );
-
-    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
-    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+    const base64EncodedPayload = this.encodeDirectPayPayload(requestPayload);
+    const signature = this.signDirectPayPayload(base64EncodedPayload, DP_SECRET_KEY as string);
 
     const apiUrl = DP_STAGE === "PROD"
       ? "https://gateway.directpay.lk/api/v3/listCard"
@@ -956,7 +866,9 @@ export default class BillingController extends WorklenzControllerBase {
         timeout: 30000,
       });
 
-      return res.status(200).send(new ServerResponse(true, this.decodeDirectPayApiResponse(response.data)));
+      const decoded = this.decodeDirectPayApiResponse(response.data);
+      const card_list = (decoded?.data?.card_list ?? []).map((c: any) => ({ ...c, wallet_id }));
+      return res.status(200).send(new ServerResponse(true, { card_list, wallet_id }));
     } catch (error: any) {
       log_error(error);
       return res.status(500).send(new ServerResponse(false, null,
@@ -983,12 +895,8 @@ export default class BillingController extends WorklenzControllerBase {
       card_id: String(card_id),
     };
 
-    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(
-      CryptoJS.enc.Utf8.parse(JSON.stringify(requestPayload))
-    );
-
-    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
-    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+    const base64EncodedPayload = this.encodeDirectPayPayload(requestPayload);
+    const signature = this.signDirectPayPayload(base64EncodedPayload, DP_SECRET_KEY as string);
 
     const apiUrl = DP_STAGE === "PROD"
       ? "https://gateway.directpay.lk/api/v3/deleteCard"
@@ -1003,7 +911,14 @@ export default class BillingController extends WorklenzControllerBase {
         timeout: 30000,
       });
 
-      return res.status(200).send(new ServerResponse(true, this.decodeDirectPayApiResponse(response.data)));
+      const decoded = this.decodeDirectPayApiResponse(response.data);
+      if (decoded?.status === 1) {
+        await db.query(
+          "UPDATE licensing_directpay_cards SET is_active = false WHERE card_id = $1",
+          [String(card_id)]
+        );
+      }
+      return res.status(200).send(new ServerResponse(true, decoded));
     } catch (error: any) {
       log_error(error);
       return res.status(500).send(new ServerResponse(false, null,
@@ -1018,9 +933,11 @@ export default class BillingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async payWithCard(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { wallet_id, card_id, order_id, amount, currency } = req.body;
+    console.log("[payWithCard] Request — wallet_id:", wallet_id, "card_id:", card_id, "order_id:", order_id, "amount:", amount);
 
     if (!wallet_id || !card_id || !order_id || !amount) {
-      return res.status(400).send(new ServerResponse(false, null, 
+      console.error("[payWithCard] Missing required fields");
+      return res.status(400).send(new ServerResponse(false, null,
         "wallet_id, card_id, order_id, and amount are required"));
     }
 
@@ -1035,16 +952,17 @@ export default class BillingController extends WorklenzControllerBase {
       amount: String(amount),
     };
 
-    const base64EncodedPayload = CryptoJS.enc.Base64.stringify(
-      CryptoJS.enc.Utf8.parse(JSON.stringify(requestPayload))
-    );
-
-    const generatedHash = CryptoJS.HmacSHA256(base64EncodedPayload, DP_SECRET_KEY as string);
-    const signature = `hmac ${generatedHash.toString(CryptoJS.enc.Hex)}`;
+    const base64EncodedPayload = this.encodeDirectPayPayload(requestPayload);
+    const signature = this.signDirectPayPayload(base64EncodedPayload, DP_SECRET_KEY as string);
 
     const apiUrl = DP_STAGE === "PROD"
       ? "https://gateway.directpay.lk/api/v3/cardPay"
       : "https://test-gateway.directpay.lk/api/v3/cardPay";
+
+    console.log("[payWithCard] stage:", DP_STAGE, "url:", apiUrl);
+    console.log("[payWithCard] payload:", JSON.stringify(requestPayload));
+    console.log("[payWithCard] base64:", base64EncodedPayload.slice(0, 40) + "...");
+    console.log("[payWithCard] signature:", signature);
 
     try {
       const response = await axios.post(apiUrl, base64EncodedPayload, {
@@ -1055,9 +973,41 @@ export default class BillingController extends WorklenzControllerBase {
         timeout: 30000,
       });
 
-      return res.status(200).send(new ServerResponse(true, this.decodeDirectPayApiResponse(response.data)));
+      const decoded = this.decodeDirectPayApiResponse(response.data);
+      const txnStatus = decoded?.data?.transaction?.status || decoded?.transaction?.status || "UNKNOWN";
+      console.log("[payWithCard] DirectPay response — status:", decoded?.status, "txnStatus:", txnStatus, "decoded:", JSON.stringify(decoded));
+
+      if (txnStatus === "SUCCESS") {
+        const userId = req.user?.id;
+        const ownerId = req.user?.owner_id || userId;
+        const txn = decoded?.data?.transaction || decoded?.transaction || {};
+        await db.query(
+          `INSERT INTO licensing_lkr_payments
+             (user_id, owner_id, order_id, transaction_id, transaction_status,
+              transaction_amount, transaction_currency, transaction_channel,
+              status, card_id, payment_type)
+           VALUES ($1, $2, $3, $4, 'SUCCESS', $5, $6, $7, 200, $8, 'recurring')
+           ON CONFLICT DO NOTHING`,
+          [
+            userId, ownerId,
+            String(order_id),
+            String(txn.id ?? ""),
+            parseFloat(String(amount)),
+            currency || "LKR",
+            String(txn.channel ?? ""),
+            Number(card_id),
+          ]
+        );
+        console.log("[payWithCard] Payment SUCCESS — recorded in DB");
+      } else {
+        console.warn("[payWithCard] Payment not successful — txnStatus:", txnStatus, "message:", decoded?.data?.transaction?.message);
+      }
+
+      const success = txnStatus === "SUCCESS";
+      return res.status(200).send(new ServerResponse(success, decoded, success ? undefined : `Payment ${txnStatus}: ${decoded?.data?.transaction?.message || "failed"}`));
     } catch (error: any) {
       log_error(error);
+      console.error("[payWithCard] axios error:", error?.response?.status, error?.response?.data);
       return res.status(500).send(new ServerResponse(false, null,
         error?.response?.data?.message || "Failed to process payment"));
     }
@@ -1126,7 +1076,7 @@ export default class BillingController extends WorklenzControllerBase {
       // Extract IP address from request headers (handle proxies and load balancers)
       const forwardedFor = req.headers['x-forwarded-for'];
       const realIp = req.headers['x-real-ip'];
-      const remoteAddress = req.connection?.remoteAddress || req.socket?.remoteAddress;
+      const remoteAddress = req.socket?.remoteAddress;
 
       let ip: string | undefined;
 
@@ -1219,15 +1169,16 @@ export default class BillingController extends WorklenzControllerBase {
     // Free plan is the same for both local and non-local users
     const payload = {
       free: {
-        price: 0, // Free plan is always 0
+        display_name: 'Free',
+        price: 0,
       },
       pro: {
+        display_name: proRow?.display_name || 'Pro',
         price: proRow ? Number(proRow.monthly_base_price || 0) : 0,
-        discountedPrice: proRow ? Number(proRow.annual_base_price || 0) : 0,
       },
       business: {
-        price: businessRow ? Number(businessRow.monthly_base_price || 0) : 4990, // Fallback: LKR 4,990/month
-        discountedPrice: businessRow ? Number(businessRow.annual_base_price || 0) : 49900, // Fallback: LKR 49,900/year
+        display_name: businessRow?.display_name || 'Business',
+        price: businessRow ? Number(businessRow.monthly_base_price || 0) : 0,
       },
     };
 
