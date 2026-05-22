@@ -15,7 +15,7 @@ import {
 } from '@/types/holiday/holiday.types';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type UpgradeModalVariant = 'default' | 'customOrganizationLogo';
+export type UpgradeModalVariant = 'default' | 'customOrganizationLogo' | 'fileSizeLimit';
 
 interface adminCenterState {
   isRedeemCodeDrawerOpen: boolean;

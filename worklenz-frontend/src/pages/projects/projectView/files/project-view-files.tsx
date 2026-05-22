@@ -38,7 +38,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
-import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { toggleUpgradeModal, openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
 import {
@@ -147,6 +147,7 @@ const ProjectViewFiles = () => {
   const [previewUrlLoading, setPreviewUrlLoading] = useState(false);
   const [previewDownloadFn, setPreviewDownloadFn] = useState<(() => void) | null>(null);
   const [isStorageUpgradePopoverOpen, setIsStorageUpgradePopoverOpen] = useState(false);
+  const [oversizedFileSizeMb, setOversizedFileSizeMb] = useState<number | null>(null);
 
   const formattedStorage = useMemo(
     () =>
@@ -344,13 +345,19 @@ const ProjectViewFiles = () => {
     }
 
     if (file.size > maxFileSizeBytes) {
-      message.error(
-        t('fileTooLarge', {
-          defaultValue: '{{file}} exceeds the {{maxSize}} MB limit.',
-          file: file.name,
-          maxSize: maxFileSizeMb,
-        })
-      );
+      if (!hasBusinessAccess) {
+        // Show the upgrade popover with the actual file size
+        const fileSizeMb = Math.round(file.size / MB);
+        setOversizedFileSizeMb(fileSizeMb);
+      } else {
+        message.error(
+          t('fileTooLarge', {
+            defaultValue: '{{file}} exceeds the {{maxSize}} MB limit.',
+            file: file.name,
+            maxSize: maxFileSizeMb,
+          })
+        );
+      }
       return Upload.LIST_IGNORE;
     }
 
@@ -880,6 +887,34 @@ const ProjectViewFiles = () => {
           })}
         </Typography.Paragraph>
 
+        <Popover
+          open={oversizedFileSizeMb !== null}
+          onOpenChange={visible => {
+            if (!visible) setOversizedFileSizeMb(null);
+          }}
+          title={t('fileTooLargePopoverTitle', { defaultValue: 'File Too Large' })}
+          content={
+            <Flex vertical gap={12} style={{ maxWidth: 300 }}>
+              <Typography.Text>
+                {t('fileTooLargePopoverBody', {
+                  defaultValue:
+                    'Files larger than 25MB require the Business plan. This file is {{sizeMb}} MB. Upgrade to upload larger files.',
+                  sizeMb: oversizedFileSizeMb,
+                })}
+              </Typography.Text>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setOversizedFileSizeMb(null);
+                  dispatch(openUpgradeModal('fileSizeLimit'));
+                }}
+              >
+                {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+              </Button>
+            </Flex>
+          }
+          trigger="click"
+        >
         <Upload.Dragger
           multiple
           beforeUpload={beforeUpload}
@@ -977,10 +1012,12 @@ const ProjectViewFiles = () => {
           </p>
           <p className="ant-upload-hint">
             {t('uploadHintLimit', {
-              defaultValue: 'PDF, images, documents, archives. Max 100 MB per file.',
+              defaultValue: 'PDF, images, documents, archives. Max {{maxSize}} MB per file.',
+              maxSize: maxFileSizeMb,
             })}
           </p>
         </Upload.Dragger>
+        </Popover>
       </Modal>
     </Card>
   );
