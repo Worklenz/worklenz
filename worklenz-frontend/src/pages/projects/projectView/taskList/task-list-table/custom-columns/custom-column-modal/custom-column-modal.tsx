@@ -112,11 +112,11 @@ const CustomColumnModal = () => {
       openedColumn?.custom_column_obj?.id;
 
     if (!customColumnId || !columnUUID) {
-      message.error(
-        t('customColumns.modal.deleteErrorMissingId', {
-          defaultValue: 'Cannot delete column: Missing UUID',
-        })
-      );
+      // message.error(
+      //   t('customColumns.modal.deleteErrorMissingId', {
+      //     defaultValue: 'Cannot delete column: Missing UUID',
+      //   })
+      // );
       return;
     }
 
@@ -126,7 +126,7 @@ const CustomColumnModal = () => {
       dispatch(deleteCustomColumnFromColumns(customColumnId));
       dispatch(toggleCustomColumnModalOpen(false));
       resetModalData();
-      message.success(t('customColumns.modal.deleteSuccessMessage'));
+      // message.success(t('customColumns.modal.deleteSuccessMessage'));
 
       if (projectId) {
         dispatch(fetchTaskListColumns(projectId));
@@ -134,7 +134,7 @@ const CustomColumnModal = () => {
       }
     } catch (error) {
       logger.error('Error deleting custom column:', error);
-      message.error(t('customColumns.modal.deleteErrorMessage'));
+      // message.error(t('customColumns.modal.deleteErrorMessage'));
     }
   };
 
@@ -253,7 +253,7 @@ const CustomColumnModal = () => {
             dispatch(addCustomColumn(newColumn));
             dispatch(toggleCustomColumnModalOpen(false));
             resetModalData();
-            message.success(t('customColumns.modal.createSuccessMessage'));
+            // message.success(t('customColumns.modal.createSuccessMessage'));
 
             if (projectId) {
               dispatch(fetchTaskListColumns(projectId));
@@ -262,7 +262,7 @@ const CustomColumnModal = () => {
           }
         } catch (error) {
           logger.error('Error creating custom column:', error);
-          message.error(t('customColumns.modal.createErrorMessage'));
+          // message.error(t('customColumns.modal.createErrorMessage'));
         }
       } else if (customColumnModalType === 'edit' && customColumnId) {
         const updatedColumn = openedColumn
@@ -340,7 +340,7 @@ const CustomColumnModal = () => {
 
             dispatch(toggleCustomColumnModalOpen(false));
             resetModalData();
-            message.success(t('customColumns.modal.updateSuccessMessage'));
+            // message.success(t('customColumns.modal.updateSuccessMessage'));
 
             if (projectId) {
               dispatch(fetchTaskListColumns(projectId));
@@ -348,7 +348,7 @@ const CustomColumnModal = () => {
             }
           } catch (error) {
             logger.error('Error updating custom column:', error);
-            message.error(t('customColumns.modal.updateErrorMessage'));
+            // message.error(t('customColumns.modal.updateErrorMessage'));
           }
         }
       }
