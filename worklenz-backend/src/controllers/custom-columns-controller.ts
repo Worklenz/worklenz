@@ -335,30 +335,30 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
 
     // --- Grandfathered AppSumo check ---
     // LTD users who already have >10 fields (grandfathered) cannot edit existing fields.
-    const teamId = req.user?.team_id;
-    if (teamId) {
-      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
-      if (subscriptionData && !hasBusinessAccess(subscriptionData) && subscriptionData.is_ltd === true) {
-        // Resolve the project_id for this column to count its custom fields
-        const colProjectResult = await db.query(
-          `SELECT project_id FROM cc_custom_columns WHERE id = $1`,
-          [id]
-        );
-        const projectId = colProjectResult.rows[0]?.project_id;
-        if (projectId) {
-          const currentCount = await getCustomColumnCount(projectId);
-          if (currentCount > CUSTOM_FIELD_LIMIT) {
-            return res.status(200).send(
-              new ServerResponse(
-                false,
-                { error_code: "CUSTOM_FIELD_LIMIT_EXCEEDED" },
-                "Editing custom fields beyond your current plan limit requires a Business plan."
-              )
-            );
-          }
-        }
-      }
-    }
+    // const teamId = req.user?.team_id;
+    // if (teamId) {
+    //   const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+    //   if (subscriptionData && !hasBusinessAccess(subscriptionData) && subscriptionData.is_ltd === true) {
+    //     // Resolve the project_id for this column to count its custom fields
+    //     const colProjectResult = await db.query(
+    //       `SELECT project_id FROM cc_custom_columns WHERE id = $1`,
+    //       [id]
+    //     );
+    //     const projectId = colProjectResult.rows[0]?.project_id;
+    //     if (projectId) {
+    //       const currentCount = await getCustomColumnCount(projectId);
+    //       if (currentCount > CUSTOM_FIELD_LIMIT) {
+    //         return res.status(200).send(
+    //           new ServerResponse(
+    //             false,
+    //             { error_code: "CUSTOM_FIELD_LIMIT_EXCEEDED" },
+    //             "Editing custom fields beyond your current plan limit requires a Business plan."
+    //           )
+    //         );
+    //       }
+    //     }
+    //   }
+    // }
     // --- End grandfathered check ---
 
     const client = await db.pool.connect();
