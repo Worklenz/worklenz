@@ -10,6 +10,7 @@ import { setUser } from '@/features/user/userSlice';
 import logger from '@/utils/errorLogger';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
+import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 
 const REDIRECT_DELAY = 500; // Delay in milliseconds before redirecting
 
@@ -81,7 +82,7 @@ const AuthenticatingPage: React.FC = () => {
   return (
     <Card style={cardStyles}>
       <Flex vertical align="center" gap="middle">
-        <Spin size="large" />
+        <WorklenzLogoLoader />
         <Typography.Title level={3}>
           {t('authenticating', { defaultValue: 'Authenticating...' })}
         </Typography.Title>

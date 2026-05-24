@@ -8,6 +8,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import CacheCleanup from '@/utils/cache-cleanup';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_common_logout } from '@/shared/worklenz-analytics-events';
+import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 
 const LoggingOutPage = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const LoggingOutPage = () => {
   return (
     <Card style={cardStyles}>
       <Flex vertical align="center" justify="center" gap="middle">
-        <Spin size="large" />
+        <WorklenzLogoLoader />
         <Typography.Title level={3}>{t('loggingOut')}</Typography.Title>
       </Flex>
     </Card>
