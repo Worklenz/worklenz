@@ -7,7 +7,7 @@ import {
   Drawer,
   Typography,
 } from '@/shared/antd-imports';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useNavigation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
 import {
@@ -33,7 +33,10 @@ import { createPortal } from 'react-dom';
 
 const { Title } = Typography;
 
-const SidebarTooltip: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => {
+const SidebarTooltip: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => {
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const ref = useRef<HTMLSpanElement>(null);
@@ -58,26 +61,29 @@ const SidebarTooltip: React.FC<{ label: string; children: React.ReactNode }> = (
       >
         {children}
       </span>
-      {visible && createPortal(
-        <div style={{
-          position: 'fixed',
-          top: pos.top,
-          left: pos.left,
-          transform: 'translateY(-50%)',
-          backgroundColor: '#000000',
-          color: '#ffffff',
-          padding: '6px 10px',
-          borderRadius: '6px',
-          fontSize: '14px',
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          zIndex: 99999,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-        }}>
-          {label}
-        </div>,
-        document.body
-      )}
+      {visible &&
+        createPortal(
+          <div
+            style={{
+              position: 'fixed',
+              top: pos.top,
+              left: pos.left,
+              transform: 'translateY(-50%)',
+              backgroundColor: '#000000',
+              color: '#ffffff',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+              zIndex: 99999,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}
+          >
+            {label}
+          </div>,
+          document.body
+        )}
     </>
   );
 };
@@ -94,6 +100,7 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
   onToggleCollapse,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation('client-portal-common');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { isMobile } = useResponsive();
@@ -129,14 +136,12 @@ const ClientPortalSidebar: React.FC<ClientPortalSidebarProps> = ({
     () =>
       menuSource.map(item => ({
         key: item.key,
-       icon: collapsed ? (
-  <SidebarTooltip label={t(item.name)}>
-    {item.icon}
-  </SidebarTooltip>
-) : (
-  item.icon
-),
-title: undefined,
+        icon: collapsed ? (
+          <SidebarTooltip label={t(item.name)}>{item.icon}</SidebarTooltip>
+        ) : (
+          item.icon
+        ),
+        title: undefined,
         label: collapsed ? null : (
           <Link to={`/worklenz/client-portal/${item.endpoint}`}>
             <Flex align="center" justify="space-between" style={{ width: '100%' }}>
@@ -159,7 +164,7 @@ title: undefined,
           ? () => {
               // Handle navigation for collapsed state
               handleNavigation(item.key, activeKey, 'sidebar');
-              window.location.href = `/worklenz/client-portal/${item.endpoint}`;
+              navigate(`/worklenz/client-portal/${item.endpoint}`);
             }
           : () => {
               // Handle navigation for expanded state
