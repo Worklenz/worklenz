@@ -105,7 +105,7 @@
       "commentButton": "Comment",
       "attachFiles": "Attach files",
       "addMoreFiles": "Add more files",
-      "selectedFiles": "Selected Files (Up to 25MB, Maximum of {{count}})",
+      "selectedFiles": "Selected Files (Up to 25MB, Maximum of {{count}} files)",
       "maxFilesError": "You can only upload a maximum of {{count}} files",
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",

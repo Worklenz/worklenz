@@ -88,7 +88,7 @@
       "commentButton": "Kommentieren",
       "attachFiles": "Dateien anhängen",
       "addMoreFiles": "Weitere Dateien hinzufügen",
-      "selectedFiles": "Ausgewählte Dateien (Bis zu 25MB, Maximum von {{count}})",
+      "selectedFiles": "Ausgewählte Dateien (Bis zu 25MB, Maximum von {{count}} Dateien)",
       "maxFilesError": "Sie können maximal {{count}} Dateien hochladen",
       "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",

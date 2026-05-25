@@ -88,7 +88,7 @@
       "commentButton": "评论",
       "attachFiles": "附加文件",
       "addMoreFiles": "添加更多文件",
-      "selectedFiles": "选定文件 (最多 25MB，最多 {{count}} 个)",
+      "selectedFiles": "选定文件 (最多 25MB，最多 {{count}} 个文件)",
       "maxFilesError": "您最多只能上传 {{count}} 个文件",
       "processFilesError": "处理文件失败",
       "addCommentError": "请添加评论或附加文件",
