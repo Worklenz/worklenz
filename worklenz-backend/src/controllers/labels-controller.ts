@@ -67,6 +67,30 @@ export default class LabelsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  const { name, color } = req.body;
+
+  if (!name || !name.trim())
+    return res.status(400).send(new ServerResponse(false, null, "Label name is required"));
+
+  const validColors = [
+    ...Object.keys(WorklenzColorShades),
+    ...Object.values(WorklenzColorShades).flat(),
+  ].map(c => c.toLowerCase());
+
+  if (!color || !validColors.includes(color.toLowerCase()))
+    return res.status(400).send(new ServerResponse(false, null, "Invalid color"));
+
+  const q = `
+    INSERT INTO team_labels (name, color_code, team_id)
+    VALUES ($1, $2, $3)
+    RETURNING id, name, color_code;
+  `;
+  const result = await db.query(q, [name.trim(), color, req.user?.team_id]);
+  return res.status(200).send(new ServerResponse(true, result.rows[0]));
+}
+
+  @HandleExceptions()
   public static async updateColor(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `UPDATE team_labels
                SET color_code = $3

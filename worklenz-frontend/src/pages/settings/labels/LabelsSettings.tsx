@@ -1,6 +1,7 @@
 import {
   Button,
   Card,
+  Empty,
   Flex,
   Input,
   Table,
@@ -151,6 +152,11 @@ const LabelsSettings = () => {
     });
   };
 
+  const handleCreateClick = () => {
+  setSelectedLabelId(null);
+  setShowDrawer(true);
+};
+
   const handleEditClick = (id: string) => {
     setSelectedLabelId(id);
     setShowDrawer(true);
@@ -221,6 +227,9 @@ const LabelsSettings = () => {
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
             />
+             <Button type="primary" onClick={handleCreateClick}>
+      {t('createLabelButton', 'Create Label')}
+    </Button>
 
             <Tooltip
               title={t('pinTooltip', 'Click to pin this into the main menu')}
@@ -235,12 +244,8 @@ const LabelsSettings = () => {
     >
       <Table
         locale={{
-          emptyText: (
-            <Typography.Text>
-              {t('emptyText', 'Labels can be created while updating or creating tasks.')}
-            </Typography.Text>
-          ),
-        }}
+  emptyText: <Empty description="No labels found" />,
+}}
         loading={loading}
         className="custom-two-colors-row-table"
         dataSource={filteredData}

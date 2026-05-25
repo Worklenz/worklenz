@@ -44,6 +44,11 @@ export const labelsApiService = {
     return response.data;
   },
 
+  createLabel: async (data: { name: string; color: string }): Promise<IServerResponse<ITaskLabel>> => {
+  const response = await apiClient.post<IServerResponse<ITaskLabel>>(`${rootUrl}`, data);
+  return response.data;
+},
+
   deleteById: async (labelId: string, force: boolean = false): Promise<IServerResponse<void>> => {
     const url = force ? `${rootUrl}/team/${labelId}?force=true` : `${rootUrl}/team/${labelId}`;
     const response = await apiClient.delete<IServerResponse<void>>(url);
