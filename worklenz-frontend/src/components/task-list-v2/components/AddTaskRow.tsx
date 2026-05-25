@@ -149,12 +149,19 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
     );
 
     const handleCancel = useCallback(() => {
-      if (taskName.trim() === '') {
-        setTaskName('');
-        setIsAdding(false);
-        onDeactivate?.();
+      setTaskName('');
+      setIsAdding(false);
+      onDeactivate?.();
+    }, [onDeactivate]);
+
+    const handleBlur = useCallback(() => {
+      if (taskName.trim() !== '') {
+        // Save the task on blur, then keep the row open for the next task
+        handleAddTask(false);
+      } else {
+        handleCancel();
       }
-    }, [taskName, onDeactivate]);
+    }, [taskName, handleAddTask, handleCancel]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
@@ -242,7 +249,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
                         value={taskName}
                         onChange={e => setTaskName(e.target.value)}
                         onPressEnter={() => handleAddTask(false)}
-                        onBlur={handleCancel}
+                        onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
                         placeholder={t('addTaskInputPlaceholder', {
                           defaultValue: 'Type task name and press Enter to save',
@@ -282,6 +289,7 @@ const AddTaskRow: React.FC<AddTaskRowProps> = memo(
         taskName,
         handleAddTask,
         handleCancel,
+        handleBlur,
         handleKeyDown,
         t,
         visibleColumns,

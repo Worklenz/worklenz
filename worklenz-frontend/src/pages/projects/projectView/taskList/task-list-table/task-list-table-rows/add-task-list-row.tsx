@@ -51,7 +51,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
     };
   }, [taskCreationTimeout]);
 
-  // Handle click outside to cancel edit mode
+  // Handle click outside: save task if name is non-empty, otherwise cancel
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -60,7 +60,11 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        cancelEdit();
+        if (taskName.trim() !== '') {
+          addInstantTask();
+        } else {
+          cancelEdit();
+        }
       }
     };
 
@@ -70,7 +74,7 @@ const AddTaskListRow = ({ groupId = null, parentTask = null }: IAddTaskListRowPr
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
-  }, [isEdit, creatingTask]);
+  }, [isEdit, creatingTask, taskName]);
 
   const createRequestBody = (): ITaskCreateRequest | null => {
     if (!projectId || !currentSession) return null;
