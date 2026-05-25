@@ -90,7 +90,7 @@
       "commentButton": "Komento",
       "attachFiles": "Bashkëngjit skedarë",
       "addMoreFiles": "Shto më shumë skedarë",
-      "selectedFiles": "Skedarët e zgjedhur (Deri në 25MB, Maksimumi {{count}})",
+      "selectedFiles": "Skedarët e zgjedhur (Deri në 25MB, Maksimumi {{count}} skedarë)",
       "maxFilesError": "Mund të ngarkoni maksimumi {{count}} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
