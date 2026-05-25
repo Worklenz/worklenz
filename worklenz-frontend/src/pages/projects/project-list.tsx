@@ -634,7 +634,6 @@ const ProjectList: React.FC = () => {
         key: 'name',
         width: 280,
         sorter: true,
-        showSorterTooltip: false,
         defaultSortOrder: DEFAULT_PROJECT_SORT_ORDER,
         render: (text: string, record: IProjectViewModel) => (
           <ProjectNameCell navigate={navigate} key={record.id} t={t} record={record} />
@@ -646,7 +645,6 @@ const ProjectList: React.FC = () => {
         dataIndex: 'client_name',
         key: 'client_name',
         sorter: true,
-        showSorterTooltip: false,
       },
       // 4. Priority
       {
@@ -657,7 +655,6 @@ const ProjectList: React.FC = () => {
         filteredValue: filteredInfo.priority_name || filteredPriorities || [],
         filterMultiple: true,
         sorter: true,
-        showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => {
           if (!record.priority_name) {
             return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
@@ -698,7 +695,6 @@ const ProjectList: React.FC = () => {
         filteredValue: filteredInfo.category_id || filteredCategories || [],
         filterMultiple: true,
         sorter: true,
-        showSorterTooltip: false,
         render: (text: string, record: IProjectViewModel) => (
           <CategoryCell key={record.id} t={t} record={record} />
         ),
@@ -709,7 +705,6 @@ const ProjectList: React.FC = () => {
         dataIndex: 'updated_at',
         key: 'updated_at',
         sorter: true,
-        showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => <ProjectListUpdatedAt record={record} />,
       },
       // 9. Actions
