@@ -9,10 +9,10 @@
   "yes": "是",
   "no": "否",
   "emptyState": "暂无更新。开始对话吧！",
-  "historyLockedBoundary": "90 天以前的聊天记录已锁定",
+  "historyLockedBoundary": "聊天记录在此方案中仅限最近 90 天",
   "historyLockedTitle": "聊天记录已锁定",
   "historyLockedBody": "90 天以前的聊天记录仅在 Business 方案中可用。",
-  "viewFullHistory": "查看完整历史",
+  "viewFullHistory": "查看聊天记录",
   "upgradeNow": "立即升级",
   "reactions": {
     "like": "点赞",

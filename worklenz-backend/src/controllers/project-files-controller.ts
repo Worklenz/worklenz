@@ -155,11 +155,19 @@ export default class ProjectFilesController extends WorklenzControllerBase {
         : "DESC";
     const offset = (page - 1) * size;
 
+    // Build parameterized query — $1 is always projectId.
+    // If search is provided, $2 is the ILIKE pattern, then LIMIT=$3/OFFSET=$4.
+    // Without search, LIMIT=$2/OFFSET=$3.
     const params: Array<string | number> = [projectId];
-    const searchClause = search
-      ? `AND pf.name ILIKE $${params.length + 1}`
-      : "";
-    if (search) params.push(`%${search}%`);
+
+    let searchClause = "";
+    if (search) {
+      params.push(`%${search}%`);
+      searchClause = `AND pf.name ILIKE $${params.length}`;
+    }
+
+    const limitParam = params.length + 1;
+    const offsetParam = params.length + 2;
 
     const dataQuery = `
       SELECT pf.id,
@@ -173,8 +181,8 @@ export default class ProjectFilesController extends WorklenzControllerBase {
       WHERE pf.project_id = $1
       ${searchClause}
       ORDER BY ${sortField} ${sortOrder}
-      LIMIT $${params.length + 1}
-      OFFSET $${params.length + 2};
+      LIMIT $${limitParam}
+      OFFSET $${offsetParam};
     `;
 
     const dataResult = await db.query(dataQuery, [...params, size, offset]);

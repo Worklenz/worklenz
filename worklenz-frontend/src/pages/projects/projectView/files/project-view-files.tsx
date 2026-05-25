@@ -38,6 +38,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { fetchStorageInfo } from '@/features/admin-center/admin-center.slice';
 import { toggleUpgradeModal, openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
@@ -107,6 +108,7 @@ const ProjectViewFiles = () => {
     : STARTER_FILE_SIZE_LIMIT_BYTES;
   const maxFileSizeMb = hasBusinessAccess ? 250 : 25;
   const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const storageInfo = useAppSelector(state => state.adminCenterReducer.storageInfo);
   type PendingUploadFile = UploadFile & { errorMessage?: string };
 
   const [files, setFiles] = useState<ProjectFile[]>([]);
@@ -149,15 +151,28 @@ const ProjectViewFiles = () => {
   const [isStorageUpgradePopoverOpen, setIsStorageUpgradePopoverOpen] = useState(false);
   const [oversizedFileSizeMb, setOversizedFileSizeMb] = useState<number | null>(null);
 
-  const formattedStorage = useMemo(
-    () =>
-      t('storageUsage', {
-        defaultValue: 'Total Storage: {{used}} ({{count}} files)',
+  const GB = 1024 * MB;
+  const storageTotalBytes = storageInfo?.total ? storageInfo.total * GB : null;
+  const storagePercent =
+    storageTotalBytes && storageUsage.used
+      ? Math.min(Math.ceil((storageUsage.used / storageTotalBytes) * 10000) / 100, 100)
+      : 0;
+
+  const formattedStorage = useMemo(() => {
+    if (storageTotalBytes !== null) {
+      return t('storageUsageWithLimit', {
+        defaultValue: '{{used}} of {{total}} used ({{count}} files)',
         used: formatFileSize(storageUsage.used),
+        total: formatFileSize(storageTotalBytes),
         count: storageUsage.fileCount,
-      }),
-    [storageUsage, t]
-  );
+      });
+    }
+    return t('storageUsage', {
+      defaultValue: 'Storage used: {{used}} ({{count}} files)',
+      used: formatFileSize(storageUsage.used),
+      count: storageUsage.fileCount,
+    });
+  }, [storageTotalBytes, storageUsage, t]);
 
   const getFileTypeIcon = (type?: string) => {
     if (!type) return IconsMap['search'];
@@ -287,6 +302,7 @@ const ProjectViewFiles = () => {
 
   useEffect(() => {
     trackMixpanelEvent(evt_project_files_visit);
+    dispatch(fetchStorageInfo());
   }, [trackMixpanelEvent]);
 
   useEffect(() => {
@@ -784,9 +800,18 @@ const ProjectViewFiles = () => {
     >
       {activeTab === 'project' ? (
         <>
-          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
             {formattedStorage}
           </Typography.Text>
+          {storageTotalBytes !== null && (
+            <Progress
+              percent={Math.min(storagePercent, 100)}
+              size="small"
+              style={{ marginBottom: 12 }}
+              status={storagePercent >= 90 ? 'exception' : 'normal'}
+              showInfo={false}
+            />
+          )}
           {!hasBusinessAccess && (
             <Popover
               trigger="click"
@@ -800,7 +825,7 @@ const ProjectViewFiles = () => {
                       defaultValue:
                         'You are using {{used}} of your {{total}} storage limit. Upgrade to get more storage for your team files.',
                       used: formatFileSize(storageUsage.used),
-                      total: formatFileSize(STARTER_STORAGE_LIMIT_BYTES),
+                      total: formatFileSize(storageTotalBytes ?? STARTER_STORAGE_LIMIT_BYTES),
                     })}
                   </Typography.Text>
                   <Button

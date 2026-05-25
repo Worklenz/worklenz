@@ -1050,7 +1050,7 @@ const InfoTabFooter = () => {
       message.error(
         t('taskInfoTab.comments.maxFilesError', {
           count: MAXIMUM_FILE_COUNT,
-          defaultValue: 'Maximum {count} files allowed',
+          defaultValue: 'You can only upload a maximum of {{count}} files',
         })
       );
       return;
@@ -1177,7 +1177,7 @@ const InfoTabFooter = () => {
               <Typography.Title level={5} style={{ margin: 0 }}>
                 {t('taskInfoTab.comments.selectedFiles', {
                   count: MAXIMUM_FILE_COUNT,
-                  defaultValue: 'Selected Files ({count} max)',
+                  defaultValue: 'Selected Files (Maximum of {{count}})',
                 })}
               </Typography.Title>
               <Flex
@@ -1301,7 +1301,7 @@ const InfoTabFooter = () => {
                   selectedFiles.length >= MAXIMUM_FILE_COUNT
                     ? t('taskInfoTab.comments.maxFilesError', {
                         count: MAXIMUM_FILE_COUNT,
-                        defaultValue: 'Maximum {count} files allowed',
+                        defaultValue: 'You can only upload a maximum of {{count}} files',
                       })
                     : t('taskInfoTab.comments.attachFiles', {
                         defaultValue: 'Attach Files',

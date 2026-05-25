@@ -392,7 +392,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
               <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
                 <p style={{ margin: 0, fontSize: 12, color: '#8c8c8c' }}>
                   {t('taskInfoTab.comments.historyLockedBoundary', {
-                    defaultValue: 'Comments beyond 90 days are locked',
+                    defaultValue: 'Comment history is limited to the last 90 days on this plan',
                   })}
                 </p>
                 <Popover
@@ -424,7 +424,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                 >
                   <Button size="small">
                     {t('taskInfoTab.comments.viewFullComments', {
-                      defaultValue: 'View Full Comments',
+                      defaultValue: 'View comment history',
                     })}
                   </Button>
                 </Popover>
