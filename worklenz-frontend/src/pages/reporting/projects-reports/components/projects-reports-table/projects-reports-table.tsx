@@ -33,6 +33,7 @@ import {
   setIndex,
   setOrder,
   setPageSize,
+  setProjectHealth,
   toggleProjectReportsDrawer,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
@@ -42,10 +43,13 @@ import ProjectReportsDrawer from '@/features/reporting/projectReports/projectRep
 import { PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 const ProjectsReportsTable = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
+  const { socket, connected } = useSocket();
 
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
@@ -70,7 +74,25 @@ const ProjectsReportsTable = () => {
 
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
 
-  // Memoize the drawer open handler to prevent recreation on every render
+  // ✅ Single socket listener at table level instead of one per row
+  // Having a listener in every ProjectHealthCell means N rows = N listeners
+  // all firing simultaneously, causing re-render cascade that locks the dropdown
+  const handleHealthChangeResponse = useCallback(
+    (data: { id: string; health_id: string; color_code: string; name: string }) => {
+      dispatch(setProjectHealth(data));
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    if (!socket) return;
+    console.log('REGISTERING HEALTH LISTENER');
+    socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    return () => {
+      socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    };
+  }, [socket, handleHealthChangeResponse]);
+
   const handleDrawerOpen = useCallback(
     (record: IRPTProject) => {
       setSelectedProject(record);
@@ -99,7 +121,6 @@ const ProjectsReportsTable = () => {
               project={record.name}
               projectColor={record.color_code}
             />
-
             <Button
               className="hidden group-hover:flex"
               type="text"
@@ -247,13 +268,11 @@ const ProjectsReportsTable = () => {
     [t, order, handleDrawerOpen]
   );
 
-  // filter columns based on the `hidden` state from Redux
   const visibleColumns = useMemo(
     () => columns.filter(col => columnsVisibility[col.key as string]),
     [columns, columnsVisibility]
   );
 
-  // Memoize the table change handler to prevent recreation on every render
   const handleTableChange = useCallback(
     (pagination: PaginationProps, filters: any, sorter: any) => {
       if (sorter.order) dispatch(setOrder(sorter.order));
@@ -309,7 +328,6 @@ const ProjectsReportsTable = () => {
     []
   );
 
-  // Memoize pagination configuration to prevent recreation on every render
   const paginationConfig = useMemo(
     () => ({
       showSizeChanger: true,
@@ -321,13 +339,8 @@ const ProjectsReportsTable = () => {
     [total, index]
   );
 
-  // Memoize scroll configuration to prevent recreation on every render
   const scrollConfig = useMemo(() => ({ x: 'max-content' }), []);
-
-  // Memoize row key function to prevent recreation on every render
   const getRowKey = useCallback((record: IRPTProject) => record.id, []);
-
-  // Memoize onRow function to prevent recreation on every render
   const getRowProps = useCallback(() => tableRowProps, [tableRowProps]);
 
   return (
