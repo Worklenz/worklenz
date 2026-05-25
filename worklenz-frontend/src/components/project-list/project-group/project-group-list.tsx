@@ -264,7 +264,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         render: (text: string, record: any) => {
           if (!text || text === '-') return <>-</>;
           return (
-            <Tag color={record.category_color || '#ff9c3c'} style={{ borderRadius: '50rem' }}>
+            <Tag color={record.category_color || '#ff9c3c'} style={{ borderRadius: '50rem' , color: '#000000' }}>
               {text}
             </Tag>
           );
@@ -466,6 +466,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 count={projects.length}
                 style={{
                   backgroundColor: processColor(group.groupColor, token.colorPrimary),
+                  color: '#000000',
                   fontWeight: 600,
                   fontSize: 11,
                 }}
