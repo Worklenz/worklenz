@@ -17,9 +17,12 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
     return true;
   }
 
-  // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
-  if (isTruthy(session.appsumo_business_eligible) || (session.redeemed_codes_count ?? 0) >= 5) {
-    return true;
+  // Strict LTD rule: LTD users should not have Business feature access
+  if (
+    session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL ||
+    String(session.subscription_status || '').toLowerCase() === 'life_time_deal'
+  ) {
+    return false;
   }
 
   // Check for active Business plan trial
@@ -69,9 +72,12 @@ export const isBusinessPlan = (session: ILocalSession | null): boolean => {
     return true;
   }
 
-  // PRIORITY 2: AppSumo LTD users with 5+ redeemed codes
-  if (isTruthy(session.appsumo_business_eligible) || (session.redeemed_codes_count ?? 0) >= 5) {
-    return true;
+  // Strict LTD rule: LTD users should not be treated as Business plan users
+  if (
+    session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL ||
+    String(session.subscription_status || '').toLowerCase() === 'life_time_deal'
+  ) {
+    return false;
   }
 
   // Check for active Business plan trial

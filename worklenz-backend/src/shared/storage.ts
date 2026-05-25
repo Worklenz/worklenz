@@ -122,9 +122,13 @@ export function getProjectFileStorageKey(
   fileId: string,
   extension: string,
 ) {
+  // Uses getRootDir() so project files land under the same root prefix as task
+  // attachments (e.g. "secure/{teamId}/projects/..."). This ensures
+  // calculateStorage(teamId) in the admin-center controller picks up project
+  // files automatically without any additional changes to that controller.
   const keyPath = path
     .join(
-      getEnvironmentPrefix(),
+      getRootDir(),
       teamId,
       "projects",
       projectId,

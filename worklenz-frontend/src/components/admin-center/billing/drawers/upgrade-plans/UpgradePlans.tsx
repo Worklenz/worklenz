@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Col, Flex, Row, Typography, message, Space, Alert } from '@/shared/antd-imports';
+import { FileOutlined, PictureOutlined, TableOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
@@ -63,12 +64,12 @@ declare global {
 
 const UpgradePlans = () => {
   const dispatch = useAppDispatch();
-  const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal']);
+  const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal', 'admin-center/overview']);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
 
   // Redux state
-  const { billingInfo } = useAppSelector(state => state.adminCenterReducer);
+  const { billingInfo, upgradeModalVariant } = useAppSelector(state => state.adminCenterReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -228,7 +229,7 @@ const UpgradePlans = () => {
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const perUserPrice = isAnnual
             ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') *
-              12
+            12
             : parseFloat(planData.monthly_per_user_price || planData.additional_user_price || '0');
           finalPrice = basePrice + extraUsers * perUserPrice;
         }
@@ -245,7 +246,7 @@ const UpgradePlans = () => {
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const perUserPrice = isAnnual
             ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') *
-              12
+            12
             : parseFloat(planData.monthly_per_user_price || planData.additional_user_price || '0');
           finalPrice = basePrice + extraUsers * perUserPrice;
         }
@@ -508,7 +509,11 @@ const UpgradePlans = () => {
       }
     } catch (error) {
       logger.error('Error fetching pricing plans', error);
-      message.error('Failed to load pricing plans. Please refresh the page.');
+      message.error(
+        t('pricing-modal:errors.loadingPlansRetry', {
+          defaultValue: 'Failed to load pricing plans. Please refresh the page.',
+        })
+      );
       trackMixpanelEvent(MixpanelBillingEvents.PRICING_FETCH_ERROR, {
         user_type: getUserType,
         current_plan: billingInfo?.plan_name,
@@ -625,23 +630,23 @@ const UpgradePlans = () => {
               {billingInfo?.total_used && (
                 <Typography.Text type="secondary" style={{ fontSize: '14px' }}>
                   {teamSize <= TEAM_SIZE_THRESHOLD &&
-                  (pricingData.pro_small || pricingData.business_small)
+                    (pricingData.pro_small || pricingData.business_small)
                     ? t(
-                        'pricing-modal:pricingModel.autoPerUser',
-                        'Automatically using per-user pricing for {{count}} user{{s}}',
-                        {
-                          count: teamSize,
-                          s: teamSize > 1 ? 's' : '',
-                        }
-                      )
+                      'pricing-modal:pricingModel.autoPerUser',
+                      'Automatically using per-user pricing for {{count}} user{{s}}',
+                      {
+                        count: teamSize,
+                        s: teamSize > 1 ? 's' : '',
+                      }
+                    )
                     : t(
-                        'pricing-modal:pricingModel.autoBase',
-                        'Automatically using base plan pricing for {{count}} user{{s}}',
-                        {
-                          count: teamSize,
-                          s: teamSize > 1 ? 's' : '',
-                        }
-                      )}
+                      'pricing-modal:pricingModel.autoBase',
+                      'Automatically using base plan pricing for {{count}} user{{s}}',
+                      {
+                        count: teamSize,
+                        s: teamSize > 1 ? 's' : '',
+                      }
+                    )}
                 </Typography.Text>
               )}
               {(() => {
@@ -823,8 +828,8 @@ const UpgradePlans = () => {
                 onPlanSelect={handlePlanSelect}
                 primaryActionLabel={
                   trialEligibilityChecked &&
-                  canStartBusinessTrial &&
-                  !isOnBusinessTrial(currentSession)
+                    canStartBusinessTrial &&
+                    !isOnBusinessTrial(currentSession)
                     ? t('business-trial-start', { defaultValue: 'Start Free Trial' })
                     : t('pricing-modal:buttons.choosePlan', 'Continue with Selected Plan')
                 }
@@ -843,8 +848,8 @@ const UpgradePlans = () => {
                 primaryActionDisabled={isLoadingPlans}
                 primaryActionLoading={
                   trialEligibilityChecked &&
-                  canStartBusinessTrial &&
-                  !isOnBusinessTrial(currentSession)
+                    canStartBusinessTrial &&
+                    !isOnBusinessTrial(currentSession)
                     ? businessTrialLoading
                     : loadingPlanType === 'business'
                 }
@@ -907,6 +912,122 @@ const UpgradePlans = () => {
                   calculateTotalCostForPlan={calculateTotalCostForPlan}
                 />
               </Col>
+            )}
+            {upgradeModalVariant === 'customFields' && (
+              <Flex vertical gap={16} style={{ marginBottom: 24 }}>
+                <Flex align="center" gap={12}>
+                  <TableOutlined style={{ fontSize: 28 }} />
+                  <Typography.Title level={3} style={{ margin: 0 }}>
+                    {t('pricing-modal:customFields.upgradeModalHeadline', {
+                      defaultValue: 'Capture every detail with unlimited custom fields',
+                    })}
+                  </Typography.Title>
+                </Flex>
+                <Typography.Text type="secondary">
+                  {t('pricing-modal:customFields.upgradeModalSubCopy', {
+                    defaultValue:
+                      'Your plan includes up to 10 custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.',
+                  })}
+                </Typography.Text>
+                <Flex vertical gap={6}>
+                  <Typography.Text>
+                    {'• '}
+                    {t('pricing-modal:customFields.benefit1', {
+                      defaultValue: 'Unlimited custom fields per project',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    {'• '}
+                    {t('pricing-modal:customFields.benefit2', {
+                      defaultValue: 'Field types: text, number, dropdown, date, and more',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    {'• '}
+                    {t('pricing-modal:customFields.benefit3', {
+                      defaultValue: 'Fields sync across all task views',
+                    })}
+                  </Typography.Text>
+                </Flex>
+              </Flex>
+            )}
+
+            {upgradeModalVariant === 'customOrganizationLogo' && (
+              <Flex vertical gap={16} style={{ marginBottom: 24 }}>
+                <Flex align="center" gap={12}>
+                  <PictureOutlined style={{ fontSize: 28 }} />
+                  <Typography.Title level={3} style={{ margin: 0 }}>
+                    {t('admin-center/overview:customLogoUpgradeModalHeadline', {
+                      defaultValue: 'Make Worklenz yours',
+                    })}
+                  </Typography.Title>
+                </Flex>
+                <Typography.Text type="secondary">
+                  {t('admin-center/overview:customLogoUpgradeModalSubCopy', {
+                    defaultValue:
+                      'Upgrade to Business to upload your organization logo. Your logo will replace the Worklenz logo everywhere in the app and in all system emails sent to your team and clients.',
+                  })}
+                </Typography.Text>
+                <Flex vertical gap={6}>
+                  <Typography.Text>
+                    •{' '}
+                    {t('admin-center/overview:customLogoUpgradeModalBenefitApp', {
+                      defaultValue: 'Custom logo across the full app',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    •{' '}
+                    {t('admin-center/overview:customLogoUpgradeModalBenefitEmails', {
+                      defaultValue: 'Branded emails to team and clients',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    •{' '}
+                    {t('admin-center/overview:customLogoUpgradeModalBenefitProfessional', {
+                      defaultValue: 'Professional look for your organization',
+                    })}
+                  </Typography.Text>
+                </Flex>
+              </Flex>
+            )}
+
+            {upgradeModalVariant === 'fileSizeLimit' && (
+              <Flex vertical gap={16} style={{ marginBottom: 24 }}>
+                <Flex align="center" gap={12}>
+                  <FileOutlined style={{ fontSize: 28 }} />
+                  <Typography.Title level={3} style={{ margin: 0 }}>
+                    {t('admin-center/overview:fileSizeUpgradeModalHeadline', {
+                      defaultValue: 'Upload files of any size',
+                    })}
+                  </Typography.Title>
+                </Flex>
+                <Typography.Text type="secondary">
+                  {t('admin-center/overview:fileSizeUpgradeModalSubCopy', {
+                    defaultValue:
+                      'Your current plan supports files up to 25MB. Upgrade to Business to upload files up to 250MB and keep large assets close to your project work.',
+                  })}
+                </Typography.Text>
+                <Flex vertical gap={6}>
+                  <Typography.Text>
+                    •{' '}
+                    {t('admin-center/overview:fileSizeUpgradeModalBenefitFileSize', {
+                      defaultValue: 'File uploads up to 250MB',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    •{' '}
+                    {t('admin-center/overview:fileSizeUpgradeModalBenefitStorage', {
+                      defaultValue: 'Expanded total storage',
+                    })}
+                  </Typography.Text>
+                  <Typography.Text>
+                    •{' '}
+                    {t('admin-center/overview:fileSizeUpgradeModalBenefitFileTypes', {
+                      defaultValue: 'All file types supported',
+                    })}
+                  </Typography.Text>
+                </Flex>
+              </Flex>
             )}
           </>
         )}

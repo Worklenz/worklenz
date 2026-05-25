@@ -48,5 +48,9 @@
     "timerRunning_other": "{{count}} 个计时器运行中",
     "recentLog": "{{count}} 条最近记录",
     "recentLog_other": "{{count}} 条最近记录"
-  }
+  },
+  "clientPortalUpgradePopoverTitle": "客户门户",
+  "clientPortalUpgradePopoverBody": "通过品牌化门户与客户共享项目进度。该功能仅在 Business 方案提供。",
+  "clientPortalUpgradePopoverCta": "立即升级",
+  "closePopover": "关闭弹出层"
 }

@@ -14,7 +14,7 @@ export const TrialDaysBadge = () => {
   const navigate = useNavigate();
 
   const trialInfo = useMemo(() => {
-    // Only show for TRIAL subscription type (not business trial, not other types)
+    // Show for the full trial period in navbar (not only near expiry)
     if (currentSession?.subscription_type !== ISUBSCRIPTION_TYPE.TRIAL) {
       return null;
     }
@@ -27,47 +27,32 @@ export const TrialDaysBadge = () => {
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // Show badge from 7 days before expiry until 7 days after (grace period)
-    if (diffDays > 7) return null;
+    // Hide once trial has expired
+    if (diffDays < 0) return null;
 
-    const isExpired = diffDays < 0;
-    const isGracePeriod = isExpired && diffDays >= -7;
     const isLastDay = diffDays === 0;
     const isAboutToExpire = diffDays > 0 && diffDays <= 3;
 
-    // Don't show after grace period ends
-    if (diffDays < -7) return null;
-
     let badgeText = '';
-    let badgeType: 'success' | 'warning' | 'error' | 'critical' = 'success';
+    let badgeType: 'success' | 'warning' | 'critical' = 'success';
     let tooltipText = '';
     let icon = <ClockCircleOutlined />;
     let showShine = false;
 
-    if (isGracePeriod) {
-      const graceDaysRemaining = 7 + diffDays;
-      badgeText = `${graceDaysRemaining}d grace`;
-      badgeType = 'critical';
-      tooltipText = t('license-expired-grace-period', {
-        days: graceDaysRemaining,
-        count: graceDaysRemaining,
-      });
-      icon = <ClockCircleOutlined />;
-      showShine = true;
-    } else if (isLastDay) {
-      badgeText = 'Last day';
+    if (isLastDay) {
+      badgeText = t('trial-badge-today');
       badgeType = 'critical';
       tooltipText = t('trial-expiring-today');
       icon = <ClockCircleOutlined />;
       showShine = true;
     } else if (isAboutToExpire) {
-      badgeText = `${diffDays}d left`;
+      badgeText = t('trial-badge-days', { days: diffDays });
       badgeType = 'warning';
       tooltipText = t('trial-expiring-soon', { days: diffDays, count: diffDays });
       icon = <ClockCircleOutlined />;
       showShine = false;
     } else {
-      badgeText = `${diffDays}d left`;
+      badgeText = t('trial-badge-days', { days: diffDays });
       badgeType = 'success';
       tooltipText = t('license-expired-days-remaining', { days: diffDays });
       icon = <ClockCircleOutlined />;
@@ -78,7 +63,6 @@ export const TrialDaysBadge = () => {
       type: badgeType,
       tooltip: tooltipText,
       icon,
-      isGracePeriod,
       isLastDay,
       showShine,
       daysRemaining: diffDays,
@@ -96,7 +80,9 @@ export const TrialDaysBadge = () => {
       title={
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>{trialInfo.tooltip}</div>
-          <div style={{ fontSize: 12, opacity: 0.9 }}>Click to upgrade now</div>
+          <div style={{ fontSize: 12, opacity: 0.9 }}>
+            {t('business-trial-upgrade')}
+          </div>
         </div>
       }
       placement="bottom"

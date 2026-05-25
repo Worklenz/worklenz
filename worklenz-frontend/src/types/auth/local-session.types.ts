@@ -43,6 +43,11 @@ export interface ILocalSession extends IUserType {
   // AppSumo eligibility
   appsumo_business_eligible?: boolean; // True if user has 5+ redeemed coupon codes
   redeemed_codes_count?: number; // Number of redeemed coupon codes
+  // Subscription/seat metadata (from deserialize_user/checkTeamSubscriptionStatus)
+  team_member_count?: number;
+  effective_user_limit?: number;
+  base_user_limit?: number;
+  ltd_users?: number;
   // Timestamp fields
   created_at?: string;
   updated_at?: string;

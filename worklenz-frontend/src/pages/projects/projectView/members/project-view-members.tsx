@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Flex,
+  Popover,
   Popconfirm,
   Progress,
   Skeleton,
@@ -18,7 +19,7 @@ import {
 import { DeleteOutlined, ExclamationCircleFilled, SyncOutlined } from '@/shared/antd-imports';
 
 // React & Router
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -41,6 +42,10 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { getRoleColor } from '@/types/roles/role.types';
+import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 interface PaginationType {
   current: number;
@@ -60,8 +65,11 @@ const ProjectViewMembers = () => {
   const user = auth.getCurrentSession();
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const dispatch = useAppDispatch();
 
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const membersRefreshCount = useAppSelector(state => state.projectMemberReducer.membersRefreshCount);
+  const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
 
   // State
   const [isLoading, setIsLoading] = useState(false);
@@ -76,6 +84,27 @@ const ProjectViewMembers = () => {
     size: 'small',
   });
   const [searchQuery, setSearchQuery] = useState(''); // <-- Add search state
+  const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
+
+  const totalUsedSeats = billingInfo?.total_used ?? members?.total ?? 0;
+  const totalAvailableSeats = billingInfo?.total_seats ?? 0;
+  const remainingSeats = Math.max(0, totalAvailableSeats - totalUsedSeats);
+  const hasReachedSeatLimit =
+    !hasBusinessFeatureAccess(user) && totalAvailableSeats > 0 && totalUsedSeats >= totalAvailableSeats;
+  const seatUsageText = useMemo(() => {
+    if (!totalAvailableSeats) {
+      return t('seatUsageText', {
+        defaultValue: t('seatUsageText'),
+        used: totalUsedSeats,
+      });
+    }
+
+    return t('seatUsageWithLimitText', {
+      defaultValue: t('seatUsageWithLimitText'),
+      used: Math.min(totalUsedSeats, totalAvailableSeats),
+      total: totalAvailableSeats,
+    });
+  }, [totalAvailableSeats, totalUsedSeats, t]);
 
   // API Functions
   const getProjectMembers = async (search: string = searchQuery) => {
@@ -95,6 +124,7 @@ const ProjectViewMembers = () => {
       if (res.done) {
         setMembers(res.body);
         setPagination(p => ({ ...p, total: res.body.total ?? 0 })); // update total from backend, default to 0
+        dispatch(fetchBillingInfo());
       }
     } catch (error) {
       logger.error('Error fetching members:', error);
@@ -143,6 +173,7 @@ const ProjectViewMembers = () => {
     void getProjectMembers();
   }, [
     refreshTimestamp,
+    membersRefreshCount,
     projectId,
     pagination.current,
     pagination.pageSize,
@@ -150,6 +181,12 @@ const ProjectViewMembers = () => {
     pagination.order,
     // searchQuery, // <-- Do NOT include here, search is triggered manually
   ]);
+
+  useEffect(() => {
+    if (!billingInfo) {
+      dispatch(fetchBillingInfo());
+    }
+  }, [billingInfo, dispatch]);
 
   useEffect(() => {
     trackMixpanelEvent(evt_project_members_visit, {
@@ -285,9 +322,81 @@ const ProjectViewMembers = () => {
           </Typography.Text>
 
           <Flex gap={8} align="center">
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+              {seatUsageText}
+            </Typography.Text>
+            <Popover
+              trigger="click"
+              placement="bottomRight"
+              open={isSeatLimitPopoverOpen}
+              onOpenChange={open => {
+                  // Only allow opening via the button when seat limit is reached;
+                  // always allow closing (open === false) so outside-click works.
+                  if (!open || hasReachedSeatLimit) {
+                    setIsSeatLimitPopoverOpen(open);
+                  }
+                }}
+              title={
+                <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                  <Typography.Text strong>
+                    {t('seatLimitPopoverTitle', { defaultValue: t('seatLimitPopoverTitle') })}
+                  </Typography.Text>
+                  <Button
+                    type="text"
+                    size="small"
+                    aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                    onClick={event => {
+                      event.stopPropagation();
+                      setIsSeatLimitPopoverOpen(false);
+                    }}
+                  >
+                    ×
+                  </Button>
+                </Flex>
+              }
+              content={
+                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                  <Typography.Text>
+                    {t('seatLimitPopoverBody', {
+                      defaultValue:
+                        t('seatLimitPopoverBody'),
+                      used: totalUsedSeats,
+                      total: totalAvailableSeats,
+                    })}
+                  </Typography.Text>
+                  <Typography.Text type="secondary">
+                    {t('seatRemainingText', {
+                      defaultValue: t('seatRemainingText'),
+                      remaining: remainingSeats,
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsSeatLimitPopoverOpen(false);
+                      dispatch(toggleUpgradeModal());
+                    }}
+                  >
+                    {t('seatLimitPopoverCta', { defaultValue: t('seatLimitPopoverCta') })}
+                  </Button>
+                </Flex>
+              }
+            >
+              <Button
+                onClick={() => {
+                  if (hasReachedSeatLimit) {
+                    setIsSeatLimitPopoverOpen(true);
+                  } else {
+                    dispatch(toggleProjectMemberDrawer());
+                  }
+                }}
+              >
+                {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
+              </Button>
+            </Popover>
             <Input.Search
               allowClear
-              placeholder={t('search', { defaultValue: 'Search' })}
+              placeholder={t('searchPlaceholder', { defaultValue: t('searchPlaceholder') })}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onSearch={value => {

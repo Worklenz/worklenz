@@ -36,6 +36,15 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         const realExpiredDate = moment(data.user.valid_till_date).add(7, "days");
         data.user.is_expired = false;
 
+        // Strict LTD rule: if account is LTD, do not expose Business-trial state in session
+        if (String(data.user.subscription_status || "").toLowerCase() === "life_time_deal") {
+          data.user.active_plan_trial = null;
+          data.user.plan_trial_end_date = null;
+          data.user.trial_days_remaining = 0;
+          data.user.is_plan_trial = false;
+          data.user.subscription_type = "LIFE_TIME_DEAL";
+        }
+
         data.user.is_member = !!data.user.team_member_id;
         if (excludedSubscriptionTypes.includes(data.user.subscription_type)) data.user.is_expired = realExpiredDate.isBefore(moment(), "days");
 

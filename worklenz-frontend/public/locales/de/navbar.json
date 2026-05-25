@@ -48,5 +48,9 @@
     "timerRunning_other": "{{count}} Timer laufen",
     "recentLog": "{{count}} letztes Protokoll",
     "recentLog_other": "{{count}} letzte Protokolle"
-  }
+  },
+  "clientPortalUpgradePopoverTitle": "Kundenportal",
+  "clientPortalUpgradePopoverBody": "Teilen Sie den Projektfortschritt mit Ihren Kunden über ein gebrandetes Portal. Verfügbar im Business-Plan.",
+  "clientPortalUpgradePopoverCta": "Jetzt upgraden",
+  "closePopover": "Popover schließen"
 }
