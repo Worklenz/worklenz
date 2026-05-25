@@ -91,10 +91,10 @@
       "title": "Custom Field Limit Reached",
       "body": "You have used all 10 custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.",
       "appSumoTitle": "Plan Upgrade Required",
-      "appSumoBody": "Editing or adding custom fields beyond your current plan limit requires a Business plan.",
+      "appSumoBody": "Adding custom fields beyond your current plan limit requires a Business plan.",
       "cta": "Upgrade Now"
     },
-    
+
     "modal": {
       "addFieldTitle": "Add field",
       "editFieldTitle": "Edit field",
@@ -115,7 +115,7 @@
       "createErrorMessage": "Failed to create custom column",
       "updateErrorMessage": "Failed to update custom column"
     },
-    
+
     "fieldTypes": {
       "text": "Text",
       "people": "People",
