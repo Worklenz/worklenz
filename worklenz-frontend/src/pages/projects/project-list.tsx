@@ -986,7 +986,9 @@ const ProjectList: React.FC = () => {
           </Flex>
         }
       />
-      <Card className="project-card">
+      <Card
+        className="project-card"
+      >
         {viewMode === ProjectViewType.LIST ? (
           <Table<IProjectViewModel>
             columns={tableColumns}
@@ -1006,8 +1008,8 @@ const ProjectList: React.FC = () => {
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 280px)' }}>
-            {/* Scrollable groups list */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            {/* Scrollable groups list — scrollbar sits flush at card border like List view */}
+            <div className="project-group-scroll-container">
               <ProjectGroupList
                 groups={transformedGroupedProjects}
                 navigate={navigate}
@@ -1025,7 +1027,7 @@ const ProjectList: React.FC = () => {
                 <div
                   style={{
                     flexShrink: 0,
-                    padding: '8px 0',
+                    padding: '8px 24px',
                     textAlign: 'right',
                     borderTop: '1px solid var(--ant-color-border)',
                   }}

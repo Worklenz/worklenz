@@ -170,7 +170,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         width: 56,
         align: 'center' as const,
         render: (_: any, record: any) => (
-          <ProjectRateCell key={record.id} t={t} record={record} />
+          <ProjectRateCell key={record.id} t={t as any} record={record} />
         ),
       },
       // 2. Name
@@ -401,7 +401,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '10px 16px',
+                padding: '10px 24px 10px 16px',
                 marginBottom: isCollapsed ? 0 : 8,
                 borderRadius: isCollapsed ? token.borderRadius : `${token.borderRadius}px ${token.borderRadius}px 0 0`,
                 background: getThemeAwareColor(token.colorFillAlter, token.colorFillSecondary),
