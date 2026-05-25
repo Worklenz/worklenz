@@ -6,9 +6,11 @@ import Configuration from '@/components/admin-center/configuration/configuration
 import { useTranslation } from 'react-i18next';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSearchParams } from 'react-router-dom';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
 import logger from '@/utils/errorLogger';
+import { verifyAuthentication } from '@/features/auth/authSlice';
 import {
   evt_current_bill_click,
   evt_billing_configuration_click,
@@ -18,6 +20,7 @@ const BillingSection: React.FC = React.memo(() => {
   const { t } = useTranslation('admin-center/current-bill');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const currentSession = useAppSelector(state => state.userReducer);
+  const dispatch = useAppDispatch();
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -37,7 +40,7 @@ const BillingSection: React.FC = React.memo(() => {
       const pending = localStorage.getItem('dp_pending_plan');
       if (pending) {
         localStorage.removeItem('dp_pending_plan');
-        const { amount } = JSON.parse(pending) as { plan: string; amount: number };
+        const { plan, amount } = JSON.parse(pending) as { plan: string; amount: number };
         notification.info({ message: 'Card added', description: 'Processing your payment...', duration: 6 });
 
         // Retry card lookup up to 5 times with 3s intervals to allow webhook time to save
@@ -57,10 +60,11 @@ const BillingSection: React.FC = React.memo(() => {
               const payOrderId = `WL${new Date().toISOString().slice(2, 10).replace(/-/g, '')}${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
               const walletId = String((card as any).wallet_id ?? '');
               const cardId = String(card.card_id ?? '');
-              console.log('[DirectPay] Charging card — walletId:', walletId, 'cardId:', cardId, 'amount:', amount);
-              const payResult = await billingApiService.payWithCard(walletId, cardId, payOrderId, amount);
+              console.log('[DirectPay] Charging card — walletId:', walletId, 'cardId:', cardId, 'amount:', amount, 'plan:', plan);
+              const payResult = await billingApiService.payWithCard(walletId, cardId, payOrderId, amount, 'LKR', plan);
               if (payResult.done) {
-                notification.success({ message: 'Payment successful', description: 'Your plan is being activated.' });
+                notification.success({ message: 'Payment successful', description: 'Your plan has been activated.' });
+                dispatch(verifyAuthentication());
               } else {
                 notification.error({ message: 'Payment failed', description: payResult.message || 'Please try again.' });
               }

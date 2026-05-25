@@ -606,7 +606,7 @@ export default class BillingController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async createCardAddSession(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { amount, doInitialPayment = true } = req.body;
+    const { amount, doInitialPayment = true, plan } = req.body;
     const email = req.user?.email;
     const name = req.user?.name;
     const userId = req.user?.id;
@@ -696,19 +696,23 @@ export default class BillingController extends WorklenzControllerBase {
       : "https://test-gateway.directpay.lk/api/v3/create-session";
 
     try {
+      console.log(`[createCardAddSession] orderId=${orderId} userId=${userId} ownerId=${ownerId} amount=${checkoutAmount} plan=${plan || null}`);
+
       await db.query(
         `
           INSERT INTO licensing_directpay_sessions (
-            order_id, user_id, owner_id, amount, currency, status, request_payload
+            order_id, user_id, owner_id, amount, currency, status, request_payload, plan_key
           )
-          VALUES ($1, $2, $3, $4, 'LKR', 'pending', $5)
+          VALUES ($1, $2, $3, $4, 'LKR', 'pending', $5, $6)
           ON CONFLICT (order_id) DO UPDATE
           SET amount = EXCLUDED.amount,
               request_payload = EXCLUDED.request_payload,
+              plan_key = EXCLUDED.plan_key,
               updated_at = CURRENT_TIMESTAMP
         `,
-        [orderId, userId, ownerId, checkoutAmount, JSON.stringify(requestPayload)]
+        [orderId, userId, ownerId, checkoutAmount, JSON.stringify(requestPayload), plan || null]
       );
+      console.log(`[createCardAddSession] session upserted — orderId=${orderId} plan_key=${plan || null}`);
 
       // Call DirectPay API
       const response = await axios.post(apiUrl, base64EncodedPayload, {
@@ -720,6 +724,7 @@ export default class BillingController extends WorklenzControllerBase {
       });
 
       const sessionData = this.decodeDirectPayApiResponse(response.data);
+      console.log(`[createCardAddSession] DirectPay response status=${sessionData?.status} orderId=${orderId}`);
 
       if (Number(sessionData?.status) >= 400) {
         await db.query(
@@ -826,54 +831,23 @@ export default class BillingController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async listCards(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const ownerId = req.user?.owner_id;
+    const ownerId = req.user?.owner_id || req.user?.id;
     console.log("[listCards] ownerId:", ownerId);
 
-    const cardRow = await db.query(
-      `SELECT wallet_id FROM licensing_directpay_cards WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1`,
+    const result = await db.query(
+      `SELECT card_id, wallet_id, card_number_masked, card_brand, card_type, expiry_month, expiry_year
+       FROM licensing_directpay_cards
+       WHERE user_id = $1 AND is_active = true
+       ORDER BY created_at DESC`,
       [ownerId]
     );
 
-    console.log("[listCards] DB card row:", cardRow.rows[0] ?? "none");
+    console.log("[listCards] DB rows:", result.rows.length, result.rows[0] ?? "none");
 
-    if (!cardRow.rows.length || !cardRow.rows[0].wallet_id) {
-      console.log("[listCards] No saved card in DB for owner:", ownerId);
-      return res.status(200).send(new ServerResponse(true, { card_list: [] }));
-    }
-
-    const wallet_id = String(cardRow.rows[0].wallet_id);
-    console.log("[listCards] Calling DirectPay listCard for wallet_id:", wallet_id);
-    const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
-
-    const requestPayload = {
-      merchant_id: DP_MERCHANT_ID,
-      wallet_id,
-    };
-
-    const base64EncodedPayload = this.encodeDirectPayPayload(requestPayload);
-    const signature = this.signDirectPayPayload(base64EncodedPayload, DP_SECRET_KEY as string);
-
-    const apiUrl = DP_STAGE === "PROD"
-      ? "https://gateway.directpay.lk/api/v3/listCard"
-      : "https://test-gateway.directpay.lk/api/v3/listCard";
-
-    try {
-      const response = await axios.post(apiUrl, base64EncodedPayload, {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": signature,
-        },
-        timeout: 30000,
-      });
-
-      const decoded = this.decodeDirectPayApiResponse(response.data);
-      const card_list = (decoded?.data?.card_list ?? []).map((c: any) => ({ ...c, wallet_id }));
-      return res.status(200).send(new ServerResponse(true, { card_list, wallet_id }));
-    } catch (error: any) {
-      log_error(error);
-      return res.status(500).send(new ServerResponse(false, null,
-        error?.response?.data?.message || "Failed to list cards"));
-    }
+    return res.status(200).send(new ServerResponse(true, {
+      card_list: result.rows,
+      wallet_id: result.rows[0]?.wallet_id ?? null,
+    }));
   }
 
   /**
@@ -932,8 +906,8 @@ export default class BillingController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async payWithCard(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { wallet_id, card_id, order_id, amount, currency } = req.body;
-    console.log("[payWithCard] Request — wallet_id:", wallet_id, "card_id:", card_id, "order_id:", order_id, "amount:", amount);
+    const { wallet_id, card_id, order_id, amount, currency, plan } = req.body;
+    console.log("[payWithCard] Request — wallet_id:", wallet_id, "card_id:", card_id, "order_id:", order_id, "amount:", amount, "plan:", plan);
 
     if (!wallet_id || !card_id || !order_id || !amount) {
       console.error("[payWithCard] Missing required fields");
@@ -967,7 +941,7 @@ export default class BillingController extends WorklenzControllerBase {
     try {
       const response = await axios.post(apiUrl, base64EncodedPayload, {
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "text/plain",
           "Authorization": signature,
         },
         timeout: 30000,
@@ -981,6 +955,7 @@ export default class BillingController extends WorklenzControllerBase {
         const userId = req.user?.id;
         const ownerId = req.user?.owner_id || userId;
         const txn = decoded?.data?.transaction || decoded?.transaction || {};
+
         await db.query(
           `INSERT INTO licensing_lkr_payments
              (user_id, owner_id, order_id, transaction_id, transaction_status,
@@ -999,6 +974,8 @@ export default class BillingController extends WorklenzControllerBase {
           ]
         );
         console.log("[payWithCard] Payment SUCCESS — recorded in DB");
+
+        await this.activateLkrSubscription(ownerId as string, plan, parseFloat(String(amount)));
       } else {
         console.warn("[payWithCard] Payment not successful — txnStatus:", txnStatus, "message:", decoded?.data?.transaction?.message);
       }
@@ -1011,6 +988,87 @@ export default class BillingController extends WorklenzControllerBase {
       return res.status(500).send(new ServerResponse(false, null,
         error?.response?.data?.message || "Failed to process payment"));
     }
+  }
+
+  private static async activateLkrSubscription(
+    ownerId: string,
+    planKey: string | undefined,
+    amount: number
+  ): Promise<void> {
+    // 'startup' is the UI key for the business tier; both map to ANNUAL_BUSINESS license type
+    const tierName = planKey === "pro" ? "pro" : "business";
+
+    const pricingResult = await db.query(
+      `SELECT id, included_users, max_users
+       FROM licensing_custom_plan_pricing
+       WHERE tier_name = $1 AND currency = 'LKR' AND is_active = TRUE
+       LIMIT 1`,
+      [tierName]
+    );
+    const pricing = pricingResult.rows[0];
+    if (!pricing) {
+      console.error(`[activateLkrSubscription] No active pricing tier found for tierName=${tierName}`);
+      throw new Error(`No active pricing tier found for plan: ${tierName}`);
+    }
+    const planTierId = pricing.id;
+    const userLimit = pricing.max_users || pricing.included_users;
+
+    console.log(`[activateLkrSubscription] planKey=${planKey} tierName=${tierName} planTierId=${planTierId} userLimit=${userLimit} amount=${amount}`);
+
+    // Extend existing active/pending subscription or create a new one
+    const existingResult = await db.query(
+      `SELECT id, end_date FROM licensing_custom_subs
+       WHERE user_id = $1 AND status IN ('active', 'pending')
+       ORDER BY created_at DESC LIMIT 1`,
+      [ownerId]
+    );
+
+    if (existingResult.rows.length > 0) {
+      const existing = existingResult.rows[0];
+      const newEndDate = existing.end_date && new Date(existing.end_date) > new Date()
+        ? `(DATE '${existing.end_date}' + INTERVAL '1 month')`
+        : "(CURRENT_DATE + INTERVAL '1 month')";
+      await db.query(
+        `UPDATE licensing_custom_subs
+         SET status = 'active',
+             rate = $2,
+             plan_tier_id = $3,
+             user_limit = $4,
+             end_date = ${newEndDate},
+             card_id = (SELECT id FROM licensing_directpay_cards WHERE user_id = $1 AND is_active = TRUE ORDER BY created_at DESC LIMIT 1)
+         WHERE id = $5`,
+        [ownerId, amount, planTierId, userLimit, existing.id]
+      );
+      console.log(`[activateLkrSubscription] Extended existing subscription=${existing.id} new_end_date=${newEndDate}`);
+    } else {
+      const insertResult = await db.query(
+        `INSERT INTO licensing_custom_subs
+           (user_id, billing_type, currency, rate, end_date, user_limit, plan_tier_id, status, card_id)
+         VALUES (
+           $1, 'month', 'LKR', $2,
+           CURRENT_DATE + INTERVAL '1 month',
+           $3, $4, 'active',
+           (SELECT id FROM licensing_directpay_cards WHERE user_id = $1 AND is_active = TRUE ORDER BY created_at DESC LIMIT 1)
+         ) RETURNING id`,
+        [ownerId, amount, userLimit, planTierId]
+      );
+      console.log(`[activateLkrSubscription] Created new subscription=${insertResult.rows[0]?.id} for owner=${ownerId}`);
+    }
+
+    // Update the org's license_type_id so deserialize_user returns subscription_type = 'ANNUAL_BUSINESS'
+    const orgUpdateResult = await db.query(
+      `UPDATE organizations
+       SET license_type_id = (SELECT id FROM sys_license_types WHERE key = 'ANNUAL_BUSINESS'),
+           subscription_status = 'active'
+       WHERE user_id = $1
+       RETURNING license_type_id`,
+      [ownerId]
+    );
+    const updatedLicenseTypeId = orgUpdateResult.rows[0]?.license_type_id;
+    if (!updatedLicenseTypeId) {
+      console.error("[activateLkrSubscription] ANNUAL_BUSINESS not found in sys_license_types — run migration 1780000001000");
+    }
+    console.log(`[activateLkrSubscription] Org license_type_id=${updatedLicenseTypeId} subscription_status=active for owner=${ownerId}`);
   }
 
   /**

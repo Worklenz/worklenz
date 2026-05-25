@@ -15,6 +15,7 @@ import { setSession } from '@/utils/session-helper';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
+import { verifyAuthentication } from '@/features/auth/authSlice';
 import { ILocalPlans } from '@/shared/constants';
 
 const UpgradePlansLKR: React.FC = () => {
@@ -191,7 +192,7 @@ const UpgradePlansLKR: React.FC = () => {
         throw new Error('Invalid pricing. Please contact support.');
       }
 
-      const response = await billingApiService.createCardAddSession(amount, false);
+      const response = await billingApiService.createCardAddSession(amount, false, effectivePlan);
 
       if (!response.done || !response.body) {
         throw new Error(response.message || 'Failed to create card add session');
@@ -205,12 +206,15 @@ const UpgradePlansLKR: React.FC = () => {
           String(wallet_id),
           String(card_id),
           orderId,
-          amount
+          amount,
+          'LKR',
+          effectivePlan
         );
         if (!payResult.done) {
           throw new Error(payResult.message || `Payment with ${card_brand} ${card_number_masked} failed`);
         }
         message.success(`Payment successful with ${card_brand} ${card_number_masked}`);
+        dispatch(verifyAuthentication());
         setDirectPayLoading(false);
         setCheckoutPlan(null);
         return;

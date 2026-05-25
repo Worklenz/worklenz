@@ -181,7 +181,8 @@ export const billingApiService = {
    */
   async createCardAddSession(
     amount?: number,
-    doInitialPayment?: boolean
+    doInitialPayment?: boolean,
+    plan?: string
   ): Promise<
     IServerResponse<{
       sessionData?: any;
@@ -212,6 +213,7 @@ export const billingApiService = {
     >(`${rootUrl}/directpay/create-card-session`, {
       amount,
       doInitialPayment,
+      ...(plan ? { plan } : {}),
     });
     return response.data;
   },
@@ -331,7 +333,8 @@ export const billingApiService = {
     cardId: string,
     orderId: string,
     amount: number,
-    currency: string = 'LKR'
+    currency: string = 'LKR',
+    plan?: string
   ): Promise<
     IServerResponse<{
       status: number;
@@ -379,6 +382,7 @@ export const billingApiService = {
       order_id: orderId,
       amount: String(amount),
       currency,
+      ...(plan ? { plan } : {}),
     });
     return response.data;
   },
