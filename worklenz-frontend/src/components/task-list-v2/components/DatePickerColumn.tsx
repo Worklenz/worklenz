@@ -1,5 +1,5 @@
-import React, { memo, useCallback, useState } from 'react';
-import { DatePicker, Tooltip } from '@/shared/antd-imports';
+import React, { memo, useCallback, useState, useEffect } from 'react';
+import { DatePicker } from '@/shared/antd-imports';
 import { CloseOutlined } from '@/shared/antd-imports';
 import { dayjs, taskManagementAntdConfig } from '@/shared/antd-imports';
 import { Task } from '@/types/task-management.types';
@@ -32,10 +32,21 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
 
-    // Handle date change
+    // Local state for optimistic UI — prevents snap-back on controlled DatePicker
+    const [localDate, setLocalDate] = useState<dayjs.Dayjs | null>(dateValue ?? null);
+
+    // Sync local state when parent updates dateValue (socket response arrives)
+    useEffect(() => {
+      setLocalDate(dateValue ?? null);
+    }, [dateValue]);
+
+    // Handle date change (called by DatePicker onChange)
     const handleDateChange = useCallback(
       (date: dayjs.Dayjs | null) => {
         if (!connected || !socket) return;
+
+        // Optimistic update immediately
+        setLocalDate(date);
 
         const eventType =
           field === 'startDate'
@@ -47,7 +58,7 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
           eventType.toString(),
           JSON.stringify({
             task_id: task.id,
-            [dateField]: date?.format('YYYY-MM-DD'),
+            [dateField]: date ? date.format('YYYY-MM-DD') : null,
             parent_task: null,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           })
@@ -59,8 +70,9 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
       [connected, socket, task.id, field, onActiveDatePickerChange]
     );
 
-    // Handle clear date
-    const handleClearDate = useCallback(
+    // Handle clear date — use onMouseDown + preventDefault to fire before
+    // the DatePicker's onOpenChange(false) which would unmount this button
+    const handleClearMouseDown = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
@@ -75,9 +87,9 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
     }, [field, onActiveDatePickerChange]);
 
     const isActive = activeDatePicker === field;
-    const placeholder = field === 'dueDate' ? t('dueDatePlaceholder') : t('startDatePlaceholder');
-    const clearTitle = field === 'dueDate' ? t('clearDueDate') : t('clearStartDate');
-    const setTitle = field === 'dueDate' ? t('setDueDate') : t('setStartDate');
+    const placeholder = field === 'dueDate' ? t('dueDatePlaceholder', { defaultValue: 'Due Date' }) : t('startDatePlaceholder', { defaultValue: 'Start Date' });
+    const clearTitle = field === 'dueDate' ? t('clearDueDate', { defaultValue: 'Clear due date' }) : t('clearStartDate', { defaultValue: 'Clear start date' });
+    const setTitle = field === 'dueDate' ? t('setDueDate', { defaultValue: 'Set due date' }) : t('setStartDate', { defaultValue: 'Set start date' });
 
     return (
       <div
@@ -89,7 +101,7 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
             <DatePicker
               {...taskManagementAntdConfig.datePickerDefaults}
               className="w-full bg-transparent border-none shadow-none"
-              value={dateValue}
+              value={localDate}
               onChange={handleDateChange}
               placeholder={placeholder}
               allowClear={false}
@@ -102,10 +114,11 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
               }}
               autoFocus
             />
-            {/* Custom clear button */}
-            {dateValue && (
+            {/* Custom clear button — uses onMouseDown so it fires before the
+                DatePicker's blur/onOpenChange which would unmount this element */}
+            {localDate && (
               <button
-                onClick={handleClearDate}
+                onMouseDown={handleClearMouseDown}
                 className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full text-xs ${
                   isDarkMode
                     ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
@@ -125,9 +138,9 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
               handleOpenDatePicker();
             }}
           >
-            {formattedDate ? (
+            {localDate ? (
               <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                {formattedDate}
+                {localDate.format('MMM DD, YYYY')}
               </span>
             ) : (
               <span className="text-sm text-gray-400 dark:text-gray-500 whitespace-nowrap">

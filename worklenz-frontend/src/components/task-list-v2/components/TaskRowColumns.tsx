@@ -1,5 +1,5 @@
-import React, { memo, useState, useEffect, useCallback } from 'react';
-import { CheckCircleOutlined, HolderOutlined, InputNumber, Popover, Button, Flex, Typography } from '@/shared/antd-imports';
+import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
+import { CheckCircleOutlined, HolderOutlined, InputNumber, Popover, Button, Flex, Typography, Tooltip } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
@@ -143,48 +143,187 @@ TaskKeyColumn.displayName = 'TaskKeyColumn';
 interface DescriptionColumnProps {
   width: string;
   description: string;
+  taskId: string;
+  parentTaskId?: string | null;
+  onOpenDrawer?: () => void;
 }
 
-const stripHtml=(html:string):string =>{
-  if(!html)return '';
-  const tmp=document.createElement('div');
-  tmp.innerHTML=html;
+/** Strip HTML tags to plain text for display and editing in the task list cell. */
+const stripHtml = (html: string): string => {
+  if (!html) return '';
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || '';
-}
+};
+
+/**
+ * Returns true when the description contains HTML formatting that would be
+ * lost if edited as plain text (lists, bold, italic, links, etc.).
+ * A bare <p> with no attributes is treated as plain text — Quill wraps
+ * everything in <p> tags, so we only flag it when there is actual markup
+ * beyond a single plain paragraph.
+ */
+const hasRichFormatting = (html: string): boolean => {
+  if (!html) return false;
+  // Tags that carry formatting beyond a plain paragraph
+  const richTags = /<(ol|ul|li|strong|em|u|s|a|h[1-6]|blockquote|pre|code)\b/i;
+  if (richTags.test(html)) return true;
+  // Multiple <p> blocks = multi-paragraph content worth preserving
+  const paragraphCount = (html.match(/<p[\s>]/gi) || []).length;
+  return paragraphCount > 1;
+};
 
 export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
-  ({ width, description }) => {
-    const plainText=stripHtml(description);
-    return(
-    <div
-      className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
-      style={{ 
-        width, 
-        minHeight: '30px',
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-        WebkitOverflowScrolling: 'touch',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-    >
-      {plainText.trim() ? (
-        <span
-          className="text-sm text-gray-600 dark:text-gray-400"
+  ({ width, description, taskId, parentTaskId, onOpenDrawer }) => {
+    const { socket, connected } = useSocket();
+    const { t } = useTranslation('task-list-table');
+
+    const plainText = stripHtml(description);
+    const isRich = hasRichFormatting(description);
+
+    const [isEditing, setIsEditing] = useState(false);
+    // Draft holds the plain-text value while the input is open.
+    const [draft, setDraft] = useState('');
+    const inputRef = useRef<HTMLInputElement>(null);
+    // Keep a stable ref to the original plain text so we can detect changes on save.
+    const originalRef = useRef('');
+
+    const openEditor = useCallback(() => {
+      // If the description has rich formatting (lists, bold, etc.), editing as
+      // plain text would silently destroy it. Redirect to the task drawer instead.
+      if (isRich) {
+        onOpenDrawer?.();
+        return;
+      }
+      originalRef.current = plainText;
+      setDraft(plainText);
+      setIsEditing(true);
+    }, [isRich, plainText, onOpenDrawer]);
+
+    // Focus the input after it mounts.
+    useEffect(() => {
+      if (isEditing && inputRef.current) {
+        inputRef.current.focus();
+        // Place cursor at end of text.
+        const len = inputRef.current.value.length;
+        inputRef.current.setSelectionRange(len, len);
+      }
+    }, [isEditing]);
+
+    const saveAndClose = useCallback(() => {
+      const trimmed = draft.trim();
+      // Only emit if the value actually changed.
+      if (trimmed !== originalRef.current.trim() && connected && socket && taskId) {
+        socket.emit(
+          SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
+          JSON.stringify({
+            task_id: taskId,
+            description: trimmed || null,
+            parent_task: parentTaskId || null,
+          })
+        );
+      }
+      setIsEditing(false);
+    }, [draft, connected, socket, taskId, parentTaskId]);
+
+    const handleKeyDown = useCallback(
+      (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Escape') {
+          setIsEditing(false);
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          saveAndClose();
+        }
+      },
+      [saveAndClose]
+    );
+
+    if (isEditing) {
+      return (
+        <div
+          className="flex items-center"
           style={{
-            whiteSpace: 'nowrap',
-            display: 'inline-block',
+            width,
+            flexShrink: 0,
+            height: '40px',
+            padding: '0 4px',
+            // Border lives on the wrapper so the native input focus ring never shows.
+            border: '1px solid #1677ff',
+            borderRadius: '3px',
+            boxShadow: '0 0 0 2px rgba(22, 119, 255, 0.1)',
+            boxSizing: 'border-box',
           }}
-          title={plainText}
+          onClick={e => e.stopPropagation()}
         >
-          {plainText}
-        </span>
-      ) : (
-        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
-      )}
-    </div>
-  );
-}
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={saveAndClose}
+            onKeyDown={handleKeyDown}
+            placeholder={t('descriptionPlaceholder', { defaultValue: 'Add description…' })}
+            style={{
+              width: '100%',
+              height: '100%',
+              fontSize: '13px',
+              lineHeight: '22px',
+              padding: '0 4px',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: 'inherit',
+              boxShadow: 'none',
+              // Suppress any browser UA stylesheet focus styles.
+              WebkitAppearance: 'none',
+            }}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <Tooltip
+        title={
+          isRich
+            ? t('descriptionRichTooltip', { defaultValue: 'Contains rich formatting — click to edit in task drawer' })
+            : undefined
+        }
+        placement="top"
+        mouseEnterDelay={0.5}
+      >
+        <div
+          className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          style={{
+            width,
+            height: '40px',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+          onClick={e => {
+            e.stopPropagation();
+            openEditor();
+          }}
+          title={!isRich ? (plainText.trim() || t('descriptionPlaceholder', { defaultValue: 'Add description…' })) : undefined}
+        >
+          {plainText.trim() ? (
+            <span
+              className="text-sm text-gray-600 dark:text-gray-400"
+              style={{ whiteSpace: 'nowrap', display: 'inline-block' }}
+            >
+              {plainText}
+            </span>
+          ) : (
+            <span className="text-sm text-gray-400 dark:text-gray-500">
+              {t('descriptionPlaceholder', { defaultValue: 'Add description…' })}
+            </span>
+          )}
+        </div>
+      </Tooltip>
+    );
+  }
 );
 
 DescriptionColumn.displayName = 'DescriptionColumn';

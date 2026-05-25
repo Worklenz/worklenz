@@ -47,5 +47,10 @@
     "timerRunning_other": "{{count}} temporizadores en ejecución",
     "recentLog": "{{count}} registro reciente",
     "recentLog_other": "{{count}} registros recientes"
-  }
+  },
+  "reporting": "Reports",
+  "clientPortalUpgradePopoverTitle": "Portal del Cliente",
+  "clientPortalUpgradePopoverBody": "Comparte el progreso del proyecto con tus clientes mediante un portal con marca. Disponible en el plan Business.",
+  "clientPortalUpgradePopoverCta": "Actualizar ahora",
+  "closePopover": "Cerrar ventana emergente"
 }

@@ -1,9 +1,13 @@
-import { useCallback } from 'react';
+import { useCallback, RefObject, useEffect } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { toggleTaskSelection } from '@/features/task-management/selection.slice';
 import { Task } from '@/types/task-management.types';
+import { updateTask } from '@/features/task-management/task-management.slice';
+import { updateSelectedTaskName } from '@/features/task-drawer/task-drawer.slice';
+import { store } from '@/app/store';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
 interface UseTaskRowActionsProps {
   task: Task;
@@ -11,6 +15,7 @@ interface UseTaskRowActionsProps {
   taskName: string;
   editTaskName: boolean;
   setEditTaskName: (editing: boolean) => void;
+  originalTaskNameRef: RefObject<string>;
 }
 
 export const useTaskRowActions = ({
@@ -19,9 +24,33 @@ export const useTaskRowActions = ({
   taskName,
   editTaskName,
   setEditTaskName,
+  originalTaskNameRef,
 }: UseTaskRowActionsProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+
+  // When the drawer closes while this row is in active inline edit, flush the save
+  // so the name change is persisted rather than silently discarded.
+  useEffect(() => {
+    if (!editTaskName || showTaskDrawer) return;
+    // Drawer just closed — emit save if the name actually changed
+    if (
+      taskName?.trim() !== '' &&
+      connected &&
+      taskName.trim() !== (originalTaskNameRef.current ?? '').trim()
+    ) {
+      socket?.emit(
+        SocketEvents.TASK_NAME_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          name: taskName.trim(),
+          parent_task: task.parent_task_id,
+        })
+      );
+    }
+    setEditTaskName(false);
+  }, [showTaskDrawer]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle checkbox change
   const handleCheckboxChange = useCallback(
@@ -38,7 +67,7 @@ export const useTaskRowActions = ({
     if (
       taskName?.trim() !== '' &&
       connected &&
-      taskName.trim() !== (task.title || task.name || '').trim()
+      taskName.trim() !== (originalTaskNameRef.current ?? '').trim()
     ) {
       socket?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
@@ -56,26 +85,71 @@ export const useTaskRowActions = ({
     socket,
     task.id,
     task.parent_task_id,
-    task.title,
-    task.name,
+    originalTaskNameRef,
     setEditTaskName,
   ]);
 
-  // Handle task name edit start
+  // Handle task name edit start — snapshot the current name so handleTaskNameSave
+  // can compare against the true pre-edit value (task.title gets updated live in Redux)
   const handleTaskNameEdit = useCallback(() => {
     if (task.is_parent_container) return;
+    originalTaskNameRef.current = task.title || task.name || '';
     setEditTaskName(true);
-  }, [setEditTaskName, task.is_parent_container]);
+  }, [setEditTaskName, task.is_parent_container, task.title, task.name, originalTaskNameRef]);
 
-  // Handle task name change
-  const handleTaskNameChange = useCallback((name: string) => {
-    // This will be handled by the parent component's state setter
-  }, []);
+  // Handle Escape — revert to the name captured when editing started, then close
+  const handleCancelEdit = useCallback(() => {
+    const original = originalTaskNameRef.current ?? (task.title || task.name || '');
+    // Revert task-management slice back to the original name
+    const currentTask = store.getState().taskManagement.entities[task.id];
+    if (currentTask) {
+      dispatch(
+        updateTask({
+          ...currentTask,
+          title: original,
+          updatedAt: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Task)
+      );
+    }
+    // Revert drawer slice if this task is open
+    const drawerState = store.getState().taskDrawerReducer;
+    if (drawerState.selectedTaskId === task.id) {
+      dispatch(updateSelectedTaskName({ id: task.id, name: original }));
+    }
+    setEditTaskName(false);
+  }, [dispatch, task.id, task.title, task.name, originalTaskNameRef, setEditTaskName]);
+
+  // Handle live task name change — updates Redux immediately so the drawer reflects it in real time
+  const handleTaskNameChangeLive = useCallback(
+    (name: string) => {
+      // Update task-management slice so the row display stays in sync
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(
+          updateTask({
+            ...currentTask,
+            title: name,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          } as Task)
+        );
+      }
+
+      // Update drawer slice so the open drawer reflects the change immediately
+      const drawerState = store.getState().taskDrawerReducer;
+      if (drawerState.selectedTaskId === task.id) {
+        dispatch(updateSelectedTaskName({ id: task.id, name }));
+      }
+    },
+    [dispatch, task.id]
+  );
 
   return {
     handleCheckboxChange,
     handleTaskNameSave,
     handleTaskNameEdit,
-    handleTaskNameChange,
+    handleTaskNameChangeLive,
+    handleCancelEdit,
   };
 };

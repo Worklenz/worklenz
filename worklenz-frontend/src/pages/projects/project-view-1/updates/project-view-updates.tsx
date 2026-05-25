@@ -12,6 +12,7 @@ import {
   Input,
   Dropdown,
   message,
+  Popover,
 } from '@/shared/antd-imports';
 import { SendOutlined, EditOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -31,11 +32,14 @@ import {
   addReactionToComment,
   updateCommentAfterEdit,
 } from '@/features/projects/singleProject/updates/updatesSlice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { getAllProjectMembers } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
+import { useAuthService } from '@/hooks/useAuth';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import CustomMentionsInput from './CustomMentionsInput';
 import './project-view-updates.css';
 
@@ -74,6 +78,9 @@ const ProjectViewUpdates = () => {
   const { t } = useTranslation('project-view-updates');
   const { token } = useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
 
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +93,10 @@ const ProjectViewUpdates = () => {
   const [editContent, setEditContent] = useState('');
   const [commentValue, setCommentValue] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<
+    { id: string; team_member_id: string; name: string; user_id?: string }[]
+  >([]);
+
+  const [editSelectedMembers, setEditSelectedMembers] = useState<
     { id: string; team_member_id: string; name: string; user_id?: string }[]
   >([]);
 
@@ -155,7 +166,7 @@ const ProjectViewUpdates = () => {
           value: member.name,
           label: (
             <Space>
-              <SingleAvatar avatarUrl={member.avatar_url} name={member.name}/>
+              <SingleAvatar avatarUrl={member.avatar_url} name={member.name} />
               <span>{member.name}</span>
               {member.role && (
                 <span style={{ color: '#999', fontSize: '12px' }}>({member.role})</span>
@@ -291,49 +302,75 @@ const ProjectViewUpdates = () => {
     if (!editContent.trim()) return;
 
     try {
-      await projectCommentsApiService.editComment(commentId, editContent);
+      let contentToSave = editContent;
+
+      editSelectedMembers.forEach((member, index) => {
+        contentToSave = contentToSave.replace(`@${member.name}`, `{${index}}`);
+      });
+
+      await projectCommentsApiService.editComment(commentId, contentToSave);
+
       setEditingCommentId(null);
       setEditContent('');
+      setEditSelectedMembers([]);
+
       message.success(t('editSuccess', { defaultValue: 'Comment updated successfully' }));
     } catch (error) {
       message.error(t('editError', { defaultValue: 'Failed to edit comment' }));
     }
   };
 
-  const startEdit = (commentId: string, content: string,mentions?: any[]) => {
+  const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
-    const resolved = processMentions(content, mentions || []);
-    const textContent = resolved.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-    setEditContent(textContent);
+
+    let editableContent = content;
+
+    if (mentions && mentions.length > 0) {
+      mentions.forEach((mention, index) => {
+        const userName = mention.user_name || mention.name;
+        editableContent = editableContent.replace(`{${index}}`, `@${userName}`);
+      });
+
+      setEditSelectedMembers(
+        mentions.map(mention => ({
+          id: mention.user_id || mention.id,
+          team_member_id: mention.team_member_id || mention.id,
+          name: mention.user_name || mention.name,
+          user_id: mention.user_id || mention.id,
+        }))
+      );
+    } else {
+      setEditSelectedMembers([]);
+    }
+
+    setEditContent(editableContent);
   };
 
   const processMentions = (content: string, mentions: any[]) => {
+    let processedContent = content.replace(/\n/g, '<br/>');
+
     if (!mentions || mentions.length === 0) {
-      return content.replace(/\n/g, '<br/>');
+      return processedContent;
     }
 
-    let processedContent = content;
-    const placeholders = content.match(/{\d+}/g);
+    mentions.forEach((mention, index) => {
+      const userName = mention.user_name || mention.name;
+      if (!userName) return;
 
-    if (placeholders) {
-      processedContent = processedContent.replace(/\n/g, '<br/>');
+      const escapedName = escapeHtml(userName);
 
-      placeholders.forEach(placeholder => {
-        const match = placeholder.match(/\d+/);
-        if (match) {
-          const index = parseInt(match[0]);
-          if (index >= 0 && index < mentions.length && mentions[index]) {
-            const userName = mentions[index].user_name || mentions[index].name;
-            processedContent = processedContent.replace(
-              placeholder,
-              `<span class='mentions'>@${escapeHtml(userName)}</span>`
-            );
-          }
-        }
-      });
-    } else {
-      processedContent = processedContent.replace(/\n/g, '<br/>');
-    }
+      // Normal saved format: {0}, {1}
+      processedContent = processedContent.replace(
+        new RegExp(`\\{${index}\\}`, 'g'),
+        `<span class='mentions'>@${escapedName}</span>`
+      );
+
+      // Old edited format: @User Name saved as plain text
+      processedContent = processedContent.replace(
+        new RegExp(`@${userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'),
+        `<span class='mentions'>@${escapedName}</span>`
+      );
+    });
 
     return processedContent;
   };
@@ -367,11 +404,11 @@ const ProjectViewUpdates = () => {
     marginLeft: '8px',
   };
 
-  const shouldGroupWithPrevious = (currentIndex: number) => {
+  const shouldGroupWithPrevious = (currentIndex: number, list = updatesList) => {
     if (currentIndex === 0) return false;
 
-    const current = updatesList[currentIndex];
-    const previous = updatesList[currentIndex - 1];
+    const current = list[currentIndex];
+    const previous = list[currentIndex - 1];
 
     const isSameUser = current.user_id === previous.user_id;
     const timeDiff = dayjs(current.created_at).diff(dayjs(previous.created_at), 'minute');
@@ -379,6 +416,16 @@ const ProjectViewUpdates = () => {
 
     return isSameUser && isWithinTimeWindow;
   };
+
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const visibleUpdates = hasBusinessAccess
+    ? updatesList
+    : updatesList.filter(item => {
+        if (!item.created_at) return true;
+        return new Date(item.created_at).getTime() >= ninetyDaysAgo;
+      });
+  const lockedUpdatesCount = hasBusinessAccess ? 0 : updatesList.length - visibleUpdates.length;
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
 
   return (
     <Card
@@ -398,18 +445,63 @@ const ProjectViewUpdates = () => {
             <div style={{ textAlign: 'center', padding: '40px' }}>
               <Spin size="large" />
             </div>
-          ) : updatesList.length === 0 ? (
+          ) : visibleUpdates.length === 0 ? (
             <Empty description={t('emptyState')} />
           ) : (
             <div>
-              {updatesList.map((item, index) => {
+              {lockedUpdatesCount > 0 && (
+                <Flex
+                  align="center"
+                  justify="space-between"
+                  style={{ marginBottom: 12, paddingInline: 16 }}
+                >
+                  <span style={{ fontSize: 12, color: '#8c8c8c' }}>
+                    {t('historyLockedBoundary', {
+                      defaultValue: 'Chat history is limited to the last 90 days on this plan',
+                    })}
+                  </span>
+                  <Popover
+                    trigger="click"
+                    open={isHistoryPopoverOpen}
+                    onOpenChange={setIsHistoryPopoverOpen}
+                    title={t('historyLockedTitle', { defaultValue: 'Chat History Locked' })}
+                    content={
+                      <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                        <span>
+                          {t('historyLockedBody', {
+                            defaultValue:
+                              'Chat history beyond 90 days is available on the Business plan.',
+                          })}
+                        </span>
+                        <Button
+                          type="primary"
+                          onClick={() => {
+                            setIsHistoryPopoverOpen(false);
+                            dispatch(toggleUpgradeModal());
+                          }}
+                        >
+                          {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                        </Button>
+                      </Flex>
+                    }
+                  >
+                    <Button size="small">
+                      {t('viewFullHistory', { defaultValue: 'View Full History' })}
+                    </Button>
+                  </Popover>
+                </Flex>
+              )}
+              {visibleUpdates.map((item, index) => {
                 const isUserComment = item.user_id === user.id;
-                const isGrouped = shouldGroupWithPrevious(index);
+                const isGrouped = shouldGroupWithPrevious(index, visibleUpdates);
 
                 const showTimeSeparator =
                   index === 0 ||
                   (index > 0 &&
-                    isDifferentDay(item.created_at || '', updatesList[index - 1].created_at || ''));
+                    isDifferentDay(
+                      item.created_at || '',
+                      visibleUpdates[index - 1].created_at || ''
+                    ));
 
                 return (
                   <div key={item.id || index}>
@@ -529,7 +621,9 @@ const ProjectViewUpdates = () => {
                                     size="small"
                                     icon={<EditOutlined />}
                                     className="hover-action-btn"
-                                    onClick={() => startEdit(item.id!, item.content || '',item.mentions)}
+                                    onClick={() =>
+                                      startEdit(item.id!, item.content || '', item.mentions)
+                                    }
                                   />
                                 </Tooltip>
                                 <Dropdown

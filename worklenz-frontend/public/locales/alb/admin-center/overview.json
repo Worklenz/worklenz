@@ -93,5 +93,17 @@
   "availableOnPaidPlans": "I disponueshëm në planet me pagesë",
   "logoAltText": "Logo e organizatës",
   "logoSupportedFormats": "PNG, JPG, WEBP",
-  "organizationProfile": "Profili i Organizatës"
+  "organizationProfile": "Profili i Organizatës",
+  "customLogoUpgradePopoverTitle": "Logo e Personalizuar e Organizatës",
+  "customLogoUpgradePopoverBody": "Ngarkoni logon tuaj për të zëvendësuar markimin Worklenz në të gjithë aplikacionin dhe në të gjitha email-et e dërguara ekipit tuaj. E disponueshme në planin Business.",
+  "customLogoUpgradePopoverCta": "Përmirëso Tani",
+  "customLogoUpgradeModalHeadline": "Bëjeni Worklenz tuajin",
+  "customLogoUpgradeModalSubCopy": "Përmirësoni në Business për të ngarkuar logon e organizatës suaj. Logoja juaj do të zëvendësojë logon e Worklenz kudo në aplikacion dhe në të gjitha email-et e sistemit të dërguara ekipit dhe klientëve tuaj.",
+  "customLogoUpgradeModalBenefitApp": "Logo e personalizuar në të gjithë aplikacionin",
+  "customLogoUpgradeModalBenefitEmails": "Email-e të branduara për ekipin dhe klientët",
+  "customLogoUpgradeModalBenefitProfessional": "Pamje profesionale për organizatën tuaj",
+  "emailAddress": "Email Address",
+  "enterOrganizationName": "Enter organization name",
+  "ownerSuffix": " (Owner)",
+  "closePopover": "Mbyll dritaren"
 }

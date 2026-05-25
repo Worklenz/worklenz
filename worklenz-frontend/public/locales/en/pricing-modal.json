@@ -210,6 +210,7 @@
   },
   "errors": {
     "loadingData": "Error loading pricing data",
+    "loadingPlansRetry": "Failed to load pricing plans. Please refresh the page.",
     "calculating": "Calculating pricing...",
     "selectedPlan": "Selected plan: {{plan}}"
   },
@@ -331,5 +332,12 @@
     "popular": "Most Popular",
     "bestValue": "Best Value",
     "appsumoSpecial": "AppSumo Special"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Capture every detail with unlimited custom fields",
+    "upgradeModalSubCopy": "Your plan includes up to 10 custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.",
+    "benefit1": "Unlimited custom fields per project",
+    "benefit2": "Field types: text, number, dropdown, date, and more",
+    "benefit3": "Fields sync across all task views"
   }
 }

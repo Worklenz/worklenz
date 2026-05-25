@@ -21,6 +21,7 @@ const SocketContext = createContext<SocketContextType | null>(null);
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
+  const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
   const [modal, contextHolder] = Modal.useModal();
   const profile = getUserSession();
   const isInitialized = useRef(false); // Track if socket is already initialized
@@ -54,6 +55,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Only proceed if socket exists
     if (!socket) return;
+    setSocketInstance(socket);
+
+    if (socket.connected) {
+      setConnected(true);
+    }
 
     // Set up event listeners before connecting
     socket.on('connect', () => {
@@ -114,26 +120,16 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Cleanup function
     return () => {
-      if (socket) {
-        // Remove all listeners first
-        socket.off('connect');
-        socket.off('connect_error');
-        socket.off('disconnect');
-        socket.off(SocketEvents.INVITATIONS_UPDATE.toString());
-        socket.off(SocketEvents.TEAM_MEMBER_REMOVED.toString());
-        socket.removeAllListeners();
-
-        // Then close the connection
-        socket.close();
-        socketRef.current = null;
-        globalSocketInstance = null; // Clear global instance
-        isInitialized.current = false; // Reset initialization flag
-      }
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('disconnect');
+      socket.off(SocketEvents.INVITATIONS_UPDATE.toString());
+      socket.off(SocketEvents.TEAM_MEMBER_REMOVED.toString());
     };
   }, []); // Remove dependencies to prevent re-initialization
 
   const value = {
-    socket: socketRef.current,
+    socket: socketInstance,
     connected,
     modalContextHolder: contextHolder,
   };

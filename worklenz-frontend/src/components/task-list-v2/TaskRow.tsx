@@ -71,6 +71,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       setEditTaskName,
       taskName,
       setTaskName,
+      originalTaskNameRef,
       taskDisplayName,
       convertedTask,
       formattedDates,
@@ -78,12 +79,13 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       labelsAdapter,
     } = useTaskRowState(safeTask);
 
-    const { handleCheckboxChange, handleTaskNameSave, handleTaskNameEdit } = useTaskRowActions({
+    const { handleCheckboxChange, handleTaskNameSave, handleTaskNameEdit, handleTaskNameChangeLive, handleCancelEdit } = useTaskRowActions({
       task: safeTask,
       taskId,
       taskName,
       editTaskName,
       setEditTaskName,
+      originalTaskNameRef,
     });
 
     // Drag and drop functionality - only enable for parent tasks
@@ -119,6 +121,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       handleCheckboxChange,
       handleTaskNameSave,
       handleTaskNameEdit,
+      handleTaskNameChangeLive,
+      handleCancelEdit,
       attributes,
       listeners,
       depth,

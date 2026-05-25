@@ -7,6 +7,7 @@
   "emailLabel": "E-Mail",
   "emailRequiredError": "E-Mail ist erforderlich",
   "saveChanges": "Änderungen speichern",
+   "save": "Speichern",
   "profileJoinedText": "Beigetreten am {{date}}",
   "profileLastUpdatedText": "Zuletzt aktualisiert am {{date}}",
   "avatarTooltip": "Klicken Sie zum Hochladen eines Avatars",

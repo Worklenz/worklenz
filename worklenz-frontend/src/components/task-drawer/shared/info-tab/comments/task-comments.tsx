@@ -7,6 +7,7 @@ import {
   Space,
   Dropdown,
   Input,
+  Popover,
 } from '@/shared/antd-imports';
 import { EditOutlined, MoreOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
@@ -31,6 +32,8 @@ import { sanitizeCommentContent } from '@/utils/sanitizeInput';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { REACTION_CONFIGS } from '@/shared/reaction-config';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 // Helper function to format date for time separators
 const formatDateForSeparator = (date: string) => {
@@ -128,8 +131,10 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
   const commentsViewRef = useRef<HTMLDivElement>(null);
   const auth = useAuthService();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const currentUserId = auth.getCurrentSession()?.id;
-  const teamMemberId = auth.getCurrentSession()?.team_member_id;
+  const currentSession = auth.getCurrentSession();
+  const currentUserId = currentSession?.id;
+  const teamMemberId = currentSession?.team_member_id;
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
 
@@ -368,12 +373,64 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
     return userId === currentUserId;
   };
 
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const visibleComments = hasBusinessAccess
+    ? comments
+    : comments.filter(comment => {
+        if (!comment.created_at) return true;
+        return new Date(comment.created_at).getTime() >= ninetyDaysAgo;
+      });
+  const lockedCommentsCount = hasBusinessAccess ? 0 : comments.length - visibleComments.length;
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
+
   return (
     <div className={`task-view-comments theme-${themeMode}`} ref={commentsViewRef}>
       <Skeleton loading={loading}>
-        {comments.length > 0 ? (
+        {visibleComments.length > 0 ? (
           <>
-            {comments.map((item, index) => {
+            {lockedCommentsCount > 0 && (
+              <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between' }}>
+                <p style={{ margin: 0, fontSize: 12, color: '#8c8c8c' }}>
+                  {t('taskInfoTab.comments.historyLockedBoundary', {
+                    defaultValue: 'Comment history is limited to the last 90 days on this plan',
+                  })}
+                </p>
+                <Popover
+                  trigger="click"
+                  open={isHistoryPopoverOpen}
+                  onOpenChange={setIsHistoryPopoverOpen}
+                  title={t('taskInfoTab.comments.historyLockedTitle', {
+                    defaultValue: 'Comment History Locked',
+                  })}
+                  content={
+                    <div style={{ maxWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <span>
+                        {t('taskInfoTab.comments.historyLockedBody', {
+                          defaultValue:
+                            'Comments beyond 90 days are available on the Business plan.',
+                        })}
+                      </span>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setIsHistoryPopoverOpen(false);
+                          dispatch(toggleUpgradeModal());
+                        }}
+                      >
+                        {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                      </Button>
+                    </div>
+                  }
+                >
+                  <Button size="small">
+                    {t('taskInfoTab.comments.viewFullComments', {
+                      defaultValue: 'View comment history',
+                    })}
+                  </Button>
+                </Popover>
+              </div>
+            )}
+            {visibleComments.map((item, index) => {
               const isUserComment = isCurrentUser(item.user_id);
               const existingReactions = getExistingReactions(item);
               const isEditing = editingCommentId === item.id;
@@ -384,7 +441,7 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                     (index > 0 &&
                       isDifferentDay(
                         item.created_at || '',
-                        comments[index - 1].created_at || ''
+                        visibleComments[index - 1].created_at || ''
                       ))) &&
                     renderTimeSeparator(item.created_at || '')}
 

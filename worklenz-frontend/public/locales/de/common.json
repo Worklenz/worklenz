@@ -77,6 +77,8 @@
   "license-badge-hours": "{{hours}}h übrig",
   "business-plan-upgrade": "Auf Business-Plan upgraden, um auf diese Funktion zuzugreifen",
   "upgrade-plan": "Upgraden Sie Ihren Plan, um auf diese Funktion zuzugreifen",
+  "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+  "customFieldLimitReached": "Limit für benutzerdefinierte Felder erreicht. Für weitere Felder upgraden.",
   "disconnected": "Getrennt",
   "offline": "Offline",
   "bizPlan": {
@@ -104,5 +106,16 @@
     "rejectButton": "Ablehnen",
     "accept": "Analyse-Cookies akzeptieren",
     "reject": "Analyse-Cookies ablehnen"
-  }
+  },
+  "projectFinanceTitle": "Projektfinanzen",
+  "projectFinanceUpgradeBody": "Verfolgen Sie Budgets, Kosten und abrechenbare Zeiten in Ihren Projekten. Erfordert den Business-Plan.",
+  "upgrade-now": "Jetzt upgraden",
+  "seeSpends": "Ausgaben anzeigen",
+  "closePopover": "Popover schließen",
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing"
 }

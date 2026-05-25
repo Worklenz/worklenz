@@ -5,11 +5,8 @@ import { colors } from '@/styles/colors';
 import './project-health-cell.css';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { IProjectHealth } from '@/types/project/projectHealth.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { setProjectHealth } from '@/features/reporting/projectReports/project-reports-slice';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 interface HealthStatusDataType {
   value: string;
@@ -20,9 +17,8 @@ interface HealthStatusDataType {
 
 const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataType) => {
   const { t } = useTranslation('reporting-projects');
-  const dispatch = useAppDispatch();
-  const { socket, connected } = useSocket();
-  const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
+  const { socket } = useSocket();
+  const { projectHealths, loading } = useAppSelector(state => state.projectHealthReducer);
 
   const projectHealth = projectHealths.find(status => status.id === value) || {
     color_code: color,
@@ -39,10 +35,6 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
       </Typography.Text>
     ),
   }));
-
-  const handleHealthChangeResponse = (data: IProjectHealth) => {
-    dispatch(setProjectHealth(data));
-  };
 
   const onClick: MenuProps['onClick'] = e => {
     if (!e.key || !projectId) return;
@@ -67,19 +59,34 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
       ),
     },
   ];
-
-  useEffect(() => {
-    if (socket && connected) {
-      socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
-
-      return () => {
-        socket.removeListener(
-          SocketEvents.PROJECT_HEALTH_CHANGE.toString(),
-          handleHealthChangeResponse
-        );
-      };
-    }
-  }, [socket, connected]);
+  if (loading || projectHealths.length === 0) {
+    return (
+      <Flex
+        gap={6}
+        align="center"
+        style={{
+          width: 'fit-content',
+          borderRadius: 24,
+          paddingInline: 8,
+          height: 30,
+          backgroundColor: projectHealth?.color_code || colors.transparent,
+          color: colors.darkGray,
+          cursor: 'default',
+        }}
+      >
+        <Typography.Text
+          style={{
+            textTransform: 'capitalize',
+            color: colors.darkGray,
+            fontSize: 13,
+          }}
+        >
+          {projectHealth?.name}
+        </Typography.Text>
+        <DownOutlined />
+      </Flex>
+    );
+  }
 
   return (
     <Dropdown

@@ -1,19 +1,20 @@
 import { DownloadOutlined } from '@/shared/antd-imports';
-import { Button, Divider, Flex, Skeleton, Typography } from '@/shared/antd-imports';
+import { Button, Divider, Flex, Skeleton, Typography, Popover } from '@/shared/antd-imports';
 import { useEffect, useState, useCallback } from 'react';
 import { TFunction } from 'i18next';
 
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
-import { themeWiseColor } from '@/utils/themeWiseColor';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setTimeLogEditing } from '@/features/task-drawer/task-drawer.slice';
 import TimeLogList from './time-log-list';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
 import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
 import logger from '@/utils/errorLogger';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 interface TaskDrawerTimeLogProps {
   t: TFunction;
@@ -24,12 +25,12 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
   const [timeLoggedList, setTimeLoggedList] = useState<ITaskLogViewModel[]>([]);
   const [totalTimeText, setTotalTimeText] = useState<string>('0m 0s');
   const [loading, setLoading] = useState<boolean>(false);
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
 
+  const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const dispatch = useAppDispatch();
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { selectedTaskId, taskFormViewModel, timeLogEditing } = useAppSelector(
-    state => state.taskDrawerReducer
-  );
+  const currentSession = useAuthService().getCurrentSession();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
 
   const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
     selectedTaskId || '',
@@ -102,11 +103,20 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
   }, [selectedTaskId, fetchTimeLoggedList, refreshTrigger]);
 
   const renderTimeLogContent = () => {
+    const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+    const visibleLogs = hasBusinessAccess
+      ? timeLoggedList
+      : timeLoggedList.filter(log => {
+        if (!log.created_at) return true;
+        return new Date(log.created_at).getTime() >= ninetyDaysAgo;
+      });
+    const lockedCount = hasBusinessAccess ? 0 : timeLoggedList.length - visibleLogs.length;
+
     if (loading) {
       return <Skeleton active />;
     }
 
-    if (timeLoggedList.length === 0) {
+    if (visibleLogs.length === 0) {
       return (
         <Flex vertical gap={8} align="center">
           <EmptyListPlaceholder text={t('taskTimeLogTab.noTimeLogsFound')} imageHeight={120} />
@@ -114,7 +124,51 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
       );
     }
 
-    return <TimeLogList timeLoggedList={timeLoggedList} onRefresh={fetchTimeLoggedList} />;
+    return (
+      <Flex vertical gap={8}>
+        <TimeLogList timeLoggedList={visibleLogs} onRefresh={fetchTimeLoggedList} />
+        {lockedCount > 0 && (
+          <Flex align="center" justify="space-between">
+            <Typography.Text type="secondary">
+              {t('taskTimeLogTab.historyLockedBoundary', {
+                defaultValue: 'Time log history is limited to the last 90 days on this plan',
+              })}
+            </Typography.Text>
+            <Popover
+              trigger="click"
+              open={isHistoryPopoverOpen}
+              onOpenChange={setIsHistoryPopoverOpen}
+              title={t('taskTimeLogTab.historyLockedTitle', {
+                defaultValue: 'Time Log History Locked',
+              })}
+              content={
+                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                  <Typography.Text>
+                    {t('taskTimeLogTab.historyLockedBody', {
+                      defaultValue:
+                        'Time log entries beyond 90 days are available on the Business plan.',
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsHistoryPopoverOpen(false);
+                      dispatch(toggleUpgradeModal());
+                    }}
+                  >
+                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                  </Button>
+                </Flex>
+              }
+            >
+              <Button size="small">
+                {t('taskTimeLogTab.viewFullTimeLog', { defaultValue: 'View time log history' })}
+              </Button>
+            </Popover>
+          </Flex>
+        )}
+      </Flex>
+    );
   };
 
   return (

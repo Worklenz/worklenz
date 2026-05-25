@@ -71,6 +71,7 @@ import {
   setTaskStatus,
   setTaskSubscribers,
   updateSelectedTaskName,
+  setTaskDescription,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
@@ -720,6 +721,9 @@ export const useTaskSocketHandlers = () => {
         };
         dispatch(updateTask(updatedTask));
       }
+
+      // Update task drawer so the description editor reflects the change in real time.
+      dispatch(setTaskDescription({ id: data.id, description: data.description ?? null }));
     },
     [dispatch]
   );

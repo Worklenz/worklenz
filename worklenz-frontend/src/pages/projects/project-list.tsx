@@ -389,9 +389,20 @@ const ProjectList: React.FC = () => {
   }, [errorMessage, handleRefresh, isLoading, t]);
 
   const paginationShowTotal = useMemo(
-    () => (total: number, range: [number, number]) =>
-      `${range[0]}-${range[1]} of ${total} ${groupBy ? groupBy.toLowerCase() + 's' : 'groups'}`,
-    [groupBy]
+    () => (total: number, range: [number, number]) => {
+      let groupedLabel = t('groups', { defaultValue: 'groups' });
+
+      if (groupBy === ProjectGroupBy.CATEGORY) {
+        groupedLabel = t('groupBy.categories', { defaultValue: 'categories' });
+      } else if (groupBy === ProjectGroupBy.PRIORITY) {
+        groupedLabel = t('groupBy.priorities', { defaultValue: 'priorities' });
+      } else if (groupBy === ProjectGroupBy.CLIENT) {
+        groupedLabel = t('groupBy.clients', { defaultValue: 'clients' });
+      }
+
+      return `${range[0]}-${range[1]} of ${total} ${groupedLabel}`;
+    },
+    [groupBy, t]
   );
 
   const handleTableChange = useCallback(
@@ -610,6 +621,8 @@ const ProjectList: React.FC = () => {
         title: '',
         dataIndex: 'favorite',
         key: 'favorite',
+        width: 56,
+        align: 'center',
         render: (text: string, record: IProjectViewModel) => (
           <ProjectRateCell key={record.id} t={t} record={record} />
         ),
@@ -619,8 +632,8 @@ const ProjectList: React.FC = () => {
         title: t('name'),
         dataIndex: 'name',
         key: 'name',
+        width: 280,
         sorter: true,
-        showSorterTooltip: false,
         defaultSortOrder: DEFAULT_PROJECT_SORT_ORDER,
         render: (text: string, record: IProjectViewModel) => (
           <ProjectNameCell navigate={navigate} key={record.id} t={t} record={record} />
@@ -632,7 +645,6 @@ const ProjectList: React.FC = () => {
         dataIndex: 'client_name',
         key: 'client_name',
         sorter: true,
-        showSorterTooltip: false,
       },
       // 4. Priority
       {
@@ -643,7 +655,6 @@ const ProjectList: React.FC = () => {
         filteredValue: filteredInfo.priority_name || filteredPriorities || [],
         filterMultiple: true,
         sorter: true,
-        showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => {
           if (!record.priority_name) {
             return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
@@ -684,7 +695,6 @@ const ProjectList: React.FC = () => {
         filteredValue: filteredInfo.category_id || filteredCategories || [],
         filterMultiple: true,
         sorter: true,
-        showSorterTooltip: false,
         render: (text: string, record: IProjectViewModel) => (
           <CategoryCell key={record.id} t={t} record={record} />
         ),
@@ -695,7 +705,6 @@ const ProjectList: React.FC = () => {
         dataIndex: 'updated_at',
         key: 'updated_at',
         sorter: true,
-        showSorterTooltip: false,
         render: (_: string, record: IProjectViewModel) => <ProjectListUpdatedAt record={record} />,
       },
       // 9. Actions
@@ -703,6 +712,8 @@ const ProjectList: React.FC = () => {
         title: '',
         key: 'button',
         dataIndex: '',
+        width: 76,
+        align: 'center',
         render: (record: IProjectViewModel) => (
           <ActionButtons
             t={t}
@@ -970,7 +981,9 @@ const ProjectList: React.FC = () => {
           </Flex>
         }
       />
-      <Card className="project-card">
+      <Card
+        className="project-card"
+      >
         {viewMode === ProjectViewType.LIST ? (
           <Table<IProjectViewModel>
             columns={tableColumns}
@@ -990,8 +1003,8 @@ const ProjectList: React.FC = () => {
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 280px)' }}>
-            {/* Scrollable groups list */}
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            {/* Scrollable groups list — scrollbar sits flush at card border like List view */}
+            <div className="project-group-scroll-container">
               <ProjectGroupList
                 groups={transformedGroupedProjects}
                 navigate={navigate}
@@ -1009,7 +1022,7 @@ const ProjectList: React.FC = () => {
                 <div
                   style={{
                     flexShrink: 0,
-                    padding: '8px 0',
+                    padding: '8px 24px',
                     textAlign: 'right',
                     borderTop: '1px solid var(--ant-color-border)',
                   }}

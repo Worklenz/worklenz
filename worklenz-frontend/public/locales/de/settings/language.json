@@ -3,5 +3,6 @@
   "language_required": "Sprache ist erforderlich",
   "time_zone": "Zeitzone",
   "time_zone_required": "Zeitzone ist erforderlich",
-  "save_changes": "Änderungen speichern"
+  "save_changes": "Änderungen speichern",
+  "save": "Speichern"
 }

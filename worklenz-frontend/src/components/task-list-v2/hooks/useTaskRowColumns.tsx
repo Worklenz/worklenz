@@ -21,6 +21,15 @@ import {
 import { TitleColumn } from '../components/TitleColumn';
 import { DatePickerColumn } from '../components/DatePickerColumn';
 import TaskListDueTimeCell from '@/pages/projects/projectView/taskList/task-list-table/task-list-table-cells/task-list-due-time-cell/task-list-due-time-cell';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { selectGroups } from '@/features/task-management/task-management.slice';
+import {
+  fetchTask as fetchTaskDrawer,
+  setNavigationContext,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
 
 interface UseTaskRowColumnsProps {
   task: Task;
@@ -56,6 +65,8 @@ interface UseTaskRowColumnsProps {
   handleCheckboxChange: (e: any) => void;
   handleTaskNameSave: () => void;
   handleTaskNameEdit: () => void;
+  handleTaskNameChangeLive: (name: string) => void;
+  handleCancelEdit: () => void;
 
   // Drag and drop
   attributes: any;
@@ -90,11 +101,35 @@ export const useTaskRowColumns = ({
   handleCheckboxChange,
   handleTaskNameSave,
   handleTaskNameEdit,
+  handleTaskNameChangeLive,
+  handleCancelEdit,
   attributes,
   listeners,
   depth = 0,
   canCreateTask = true,
 }: UseTaskRowColumnsProps) => {
+  const dispatch = useAppDispatch();
+  const groups = useAppSelector(selectGroups);
+
+  // Opens the task drawer — used by DescriptionColumn when rich formatting
+  // is present and inline plain-text editing would destroy it.
+  const openDrawerForTask = useCallback(() => {
+    if (!task.id || !projectId) return;
+    const taskIds = groups.flatMap(g => g.taskIds);
+    const currentIndex = taskIds.indexOf(task.id);
+    dispatch(
+      setNavigationContext({
+        taskIds,
+        currentIndex: currentIndex >= 0 ? currentIndex : 0,
+        sourceView: 'task-list',
+        projectId,
+      })
+    );
+    dispatch(setSelectedTaskId(task.id));
+    dispatch(setShowTaskDrawer(true));
+    dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
+  }, [dispatch, groups, task.id, projectId]);
+
   const renderColumn = useCallback(
     (
       columnId: string,
@@ -164,15 +199,27 @@ export const useTaskRowColumns = ({
                 editTaskName={editTaskName}
                 taskName={taskName}
                 onEditTaskName={setEditTaskName}
-                onTaskNameChange={setTaskName}
+                onTaskNameChange={(name: string) => {
+                  setTaskName(name);
+                  handleTaskNameChangeLive(name);
+                }}
                 onTaskNameSave={handleTaskNameSave}
+                onCancelEdit={handleCancelEdit}
                 depth={depth}
                 canCreateTask={canCreateTask}
               />
             );
 
           case 'description':
-            return <DescriptionColumn width={width} description={task.description || ''} />;
+            return (
+              <DescriptionColumn
+                width={width}
+                description={task.description || ''}
+                taskId={task.id || ''}
+                parentTaskId={task.parent_task_id || null}
+                onOpenDrawer={openDrawerForTask}
+              />
+            );
 
           case 'status':
             return (
@@ -360,6 +407,7 @@ export const useTaskRowColumns = ({
       listeners,
       depth,
       canCreateTask,
+      openDrawerForTask,
     ]
   );
 

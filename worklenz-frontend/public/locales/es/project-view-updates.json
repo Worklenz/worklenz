@@ -9,6 +9,11 @@
   "yes": "Sí",
   "no": "No",
   "emptyState": "Aún no hay actualizaciones. ¡Inicia la conversación!",
+  "historyLockedBoundary": "El historial de chat está limitado a los últimos 90 días en este plan",
+  "historyLockedTitle": "Historial de chat bloqueado",
+  "historyLockedBody": "El historial de chat de más de 90 días está disponible en el plan Business.",
+  "viewFullHistory": "Ver historial de chat",
+  "upgradeNow": "Actualizar ahora",
   "reactions": {
     "like": "Me gusta",
     "love": "Amor",

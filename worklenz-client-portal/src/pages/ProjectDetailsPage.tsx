@@ -55,6 +55,7 @@ interface ProjectTask {
   createdAt: string;
   updatedAt: string;
   unseenCommentsCount: number;
+  timeLogged: string;
 }
 
 const ProjectDetailsPage: React.FC = () => {
@@ -254,6 +255,20 @@ const ProjectDetailsPage: React.FC = () => {
       render: (date: string | null) => formatDate(date),
     },
     {
+      title: 'Time Logged',
+      dataIndex: 'timeLogged',
+      key: 'timeLogged',
+      width: 130,
+      render: (time: string) => (
+        <Space size="small">
+          <ClockCircleOutlined style={{ color: '#1890ff' }} />
+          <Text style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {time || '0h 0m'}
+          </Text>
+        </Space>
+      ),
+    },
+    {
       title: 'Last Updated',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
@@ -369,7 +384,7 @@ const ProjectDetailsPage: React.FC = () => {
             pageSizeOptions: ['10', '20', '50']
           }}
           onChange={handleTableChange}
-          scroll={{ x: 700 }}
+          scroll={{ x: 800 }}
           locale={{
             emptyText: 'No tasks found'
           }}
@@ -390,7 +405,6 @@ const ProjectDetailsPage: React.FC = () => {
           setSelectedTaskId(null);
         }}
         onTaskUpdated={() => {
-          // Refresh tasks list to update unseen counts
           if (id) {
             fetchProjectTasks(id, tasksPagination.current, tasksPagination.pageSize, searchText);
           }

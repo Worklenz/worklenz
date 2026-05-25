@@ -7,6 +7,7 @@
   "emailLabel": "Email",
   "emailRequiredError": "Email-i është i detyrueshëm",
   "saveChanges": "Ruaj Ndryshimet",
+  "save": "Ruaj",
   "profileJoinedText": "U bashkua më {{date}}",
   "profileLastUpdatedText": "Përditësuar më {{date}}",
   "avatarTooltip": "Klikoni për të ngarkuar një avatar",

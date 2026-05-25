@@ -436,6 +436,24 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
       setEstimationValue(task.timeTracking?.estimated ?? null);
     }, [task.timeTracking?.estimated]);
 
+    // Local date state for optimistic UI — prevents controlled DatePicker from
+    // snapping back to the old value while waiting for the socket round-trip
+    const [localStartDate, setLocalStartDate] = useState<dayjs.Dayjs | null>(
+      task.startDate ? dayjs(task.startDate, 'YYYY-MM-DD') : null
+    );
+    const [localDueDate, setLocalDueDate] = useState<dayjs.Dayjs | null>(
+      task.dueDate ? dayjs(task.dueDate, 'YYYY-MM-DD') : null
+    );
+
+    // Sync local date state when Redux updates the task (socket response arrives)
+    useEffect(() => {
+      setLocalStartDate(task.startDate ? dayjs(task.startDate, 'YYYY-MM-DD') : null);
+    }, [task.startDate]);
+
+    useEffect(() => {
+      setLocalDueDate(task.dueDate ? dayjs(task.dueDate, 'YYYY-MM-DD') : null);
+    }, [task.dueDate]);
+
     const inputRef = useRef<InputRef>(null);
     const addSubtaskInputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -654,18 +672,25 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
       dispatch(fetchTask({ taskId: task.id, projectId }));
     }, [task.id, projectId, dispatch]);
 
-    // Optimized date handling with better memoization
+    // Optimized date handling — uses local state for optimistic UI updates
     const dateValues = useMemo(
       () => ({
-        start: task.startDate ? dayjs(task.startDate, 'YYYY-MM-DD') : undefined,
-        due: task.dueDate ? dayjs(task.dueDate, 'YYYY-MM-DD') : undefined,
+        start: localStartDate ?? undefined,
+        due: localDueDate ?? undefined,
       }),
-      [task.startDate, task.dueDate]
+      [localStartDate, localDueDate]
     );
 
     const handleDateChange = useCallback(
       (date: dayjs.Dayjs | null, field: 'startDate' | 'dueDate') => {
         if (!connected || !socket) return;
+
+        // Optimistic update — clear/set immediately without waiting for socket round-trip
+        if (field === 'startDate') {
+          setLocalStartDate(date);
+        } else {
+          setLocalDueDate(date);
+        }
 
         const eventType =
           field === 'startDate'
@@ -677,7 +702,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
           eventType.toString(),
           JSON.stringify({
             task_id: task.id,
-            [dateField]: date?.format('YYYY-MM-DD'),
+            [dateField]: date ? date.format('YYYY-MM-DD') : null,
             parent_task: null,
             time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           })

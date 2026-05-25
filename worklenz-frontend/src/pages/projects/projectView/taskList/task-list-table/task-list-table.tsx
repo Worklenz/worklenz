@@ -91,10 +91,13 @@ import {
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 import ConfigPhaseButton from '@/features/projects/singleProject/phase/ConfigPhaseButton';
 import PhaseDropdown from '@/components/taskListCommon/phase-dropdown/phase-dropdown';
 import CustomColumnModal from './custom-columns/custom-column-modal/custom-column-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { DragEndEvent } from '@/types/task-management.types';
 import { useColumnResize } from '@/hooks/useColumnResize';
@@ -1546,6 +1549,12 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const columnList = useAppSelector(state => state.taskReducer.columns);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const customColumnsCount = useMemo(
+    () => columnList.filter(column => Boolean(column.custom_column)).length,
+    [columnList]
+  );
+  const isGrandfatheredCustomFieldsRestricted = !hasBusinessAccess && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
   const columnStorageKey = React.useMemo(
     () => `worklenz.taskList.columnOrder.${project?.id || 'default'}.${tableId}`,
     [project?.id, tableId]
@@ -2081,6 +2090,12 @@ const TaskListTable: React.FC<TaskListTableProps> = ({ taskList, tableId, active
 
   const handleCustomColumnSettings = (columnKey: string) => {
     if (!columnKey) return;
+
+    if (isGrandfatheredCustomFieldsRestricted) {
+      dispatch(toggleUpgradeModal());
+      return;
+    }
+
     const currentColumn = columnList.find(
       column => column.id === columnKey || column.key === columnKey
     );

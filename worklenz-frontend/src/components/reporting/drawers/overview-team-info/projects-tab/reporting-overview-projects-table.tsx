@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Button,
   ConfigProvider,
@@ -41,8 +41,11 @@ import ProjectReportsDrawer from '@/features/reporting/projectReports/projectRep
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import logger from '@/utils/errorLogger';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface ReportingOverviewProjectsTableProps {
   searchQuery: string;
@@ -55,6 +58,7 @@ const ReportingOverviewProjectsTable = ({
 }: ReportingOverviewProjectsTableProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
+  const { socket } = useSocket();
 
   const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
@@ -68,9 +72,40 @@ const ReportingOverviewProjectsTable = ({
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [field, setField] = useState<string>('name');
 
+  // ✅ Update local projectList directly when socket response arrives
+  // This component uses local state not Redux, so we patch the list in place
+  const handleHealthChangeResponse = useCallback(
+    (data: { id: string; health_id: string; color_code: string; name: string }) => {
+      setProjectList(prev =>
+        prev.map(project =>
+          project.id === data.id
+            ? {
+                ...project,
+                project_health: data.health_id,
+                health_name: data.name,
+                health_color: data.color_code,
+              }
+            : project
+        )
+      );
+    },
+    [setProjectList]
+  );
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    return () => {
+      socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    };
+  }, [socket, handleHealthChangeResponse]);
+
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
     state => state.projectStatusesReducer
+  );
+  const { projectHealths, loading: projectHealthsLoading } = useAppSelector(
+    state => state.projectHealthReducer
   );
 
   const handleDrawerOpen = (record: IRPTProject) => {
@@ -255,6 +290,7 @@ const ReportingOverviewProjectsTable = ({
 
   useEffect(() => {
     if (projectStatuses.length === 0 && !projectStatusesLoading) dispatch(fetchProjectStatuses());
+    if (projectHealths.length === 0 && !projectHealthsLoading) dispatch(fetchProjectHealth());
   }, []);
 
   useEffect(() => {
@@ -327,7 +363,7 @@ const ReportingOverviewProjectsTable = ({
           pageSizeOptions: PAGE_SIZE_OPTIONS,
         }}
         scroll={{ x: 1500 }}
-        style={{ maxWidth: '100%' }} 
+        style={{ maxWidth: '100%' }}
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={record => record.id}

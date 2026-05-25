@@ -16,6 +16,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskDetailsForm from './task-details-form';
 import { fetchTask } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { TFunction } from 'i18next';
 import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
@@ -36,13 +37,23 @@ import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
 import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
 }
 
 const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
+  const FREE_ATTACHMENT_SIZE_LIMIT_MB = 25;
+  const BUSINESS_ATTACHMENT_SIZE_LIMIT_MB = 250;
   const dispatch = useAppDispatch();
+  const currentSession = useAuthService().getCurrentSession();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const attachmentSizeLimitMb = hasBusinessAccess
+    ? BUSINESS_ATTACHMENT_SIZE_LIMIT_MB
+    : FREE_ATTACHMENT_SIZE_LIMIT_MB;
+  const attachmentSizeLimitBytes = attachmentSizeLimitMb * 1024 * 1024;
 
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskFormViewModel, loadingTask, selectedTaskId } = useAppSelector(
@@ -73,6 +84,14 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
 
   const handleFilesSelected = async (files: File[]) => {
     if (!taskFormViewModel?.task?.id || !projectId) return;
+
+    const oversizedFiles = files.filter(file => file.size > attachmentSizeLimitBytes);
+    if (oversizedFiles.length > 0) {
+      if (!hasBusinessAccess) {
+        dispatch(toggleUpgradeModal());
+      }
+      return;
+    }
 
     if (!processingUpload) {
       setProcessingUpload(true);
@@ -194,10 +213,13 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
             attachments={taskAttachments}
             onDelete={() => fetchTaskAttachments()}
             onUpload={() => fetchTaskAttachments()}
+            onUpgradeRequested={() => dispatch(toggleUpgradeModal())}
             t={t}
             loadingTask={loadingTask}
             uploading={processingUpload}
             handleFilesSelected={handleFilesSelected}
+            maxFileSizeMb={attachmentSizeLimitMb}
+            showUpgradeLink={!hasBusinessAccess}
           />
         </Flex>
       ),

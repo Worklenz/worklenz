@@ -18,6 +18,20 @@
   }
 }
 
+/* Allow the scrollbar gutter to render outside the card body content area */
+.project-card.ant-card .ant-card-body {
+  overflow: hidden;
+}
+
+/* Group view scroll container — scrollbar stays inside the card */
+.project-group-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: -24px;
+  padding: 24px;
+}
+
 /* remove the border after the tabs in project view  */
 :where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top > .ant-tabs-nav::before,
 :where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > .ant-tabs-nav::before,

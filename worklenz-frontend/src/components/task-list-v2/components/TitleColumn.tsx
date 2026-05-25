@@ -43,6 +43,7 @@ interface TitleColumnProps {
   onEditTaskName: (editing: boolean) => void;
   onTaskNameChange: (name: string) => void;
   onTaskNameSave: () => void;
+  onCancelEdit: () => void;
   depth?: number;
   canCreateTask?: boolean;
 }
@@ -59,6 +60,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     onEditTaskName,
     onTaskNameChange,
     onTaskNameSave,
+    onCancelEdit,
     depth = 0,
     canCreateTask = true,
   }) => {
@@ -201,8 +203,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               onKeyDown={e => {
                 if (e.key === 'Escape') {
                   e.preventDefault();
-                  onTaskNameChange(task.title || task.name || '');
-                  onEditTaskName(false);
+                  onCancelEdit();
                 }
               }}
               className="text-sm"

@@ -167,9 +167,10 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: '',
         key: 'favorite',
-        width: 50,
+        width: 56,
+        align: 'center' as const,
         render: (_: any, record: any) => (
-          <ProjectRateCell key={record.id} t={t} record={record} />
+          <ProjectRateCell key={record.id} t={t as any} record={record} />
         ),
       },
       // 2. Name
@@ -177,6 +178,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         title: t('name', { defaultValue: 'Name' }),
         dataIndex: 'name',
         key: 'name',
+        width: 280,
         render: (text: string, record: any) => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
@@ -190,7 +192,19 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
               }}
             />
             <Tooltip title={text}>
-              <span style={{ fontWeight: 500, cursor: 'pointer' }}>{text}</span>
+              <span
+                style={{
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'block',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {text}
+              </span>
             </Tooltip>
           </div>
         ),
@@ -250,7 +264,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         render: (text: string, record: any) => {
           if (!text || text === '-') return <>-</>;
           return (
-            <Tag color={record.category_color || '#ff9c3c'} style={{ borderRadius: '50rem' }}>
+            <Tag color={record.category_color || '#ff9c3c'} style={{ borderRadius: '50rem' , color: '#000000' }}>
               {text}
             </Tag>
           );
@@ -268,7 +282,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: '',
         key: 'actions',
-        width: 80,
+        width: 76,
+        align: 'center' as const,
         render: (_: any, record: any) => (
           <Space size="small" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <Tooltip title={t('setting', { defaultValue: 'Settings' })}>
@@ -386,7 +401,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '10px 16px',
+                padding: '10px 24px 10px 16px',
                 marginBottom: isCollapsed ? 0 : 8,
                 borderRadius: isCollapsed ? token.borderRadius : `${token.borderRadius}px ${token.borderRadius}px 0 0`,
                 background: getThemeAwareColor(token.colorFillAlter, token.colorFillSecondary),
@@ -451,6 +466,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 count={projects.length}
                 style={{
                   backgroundColor: processColor(group.groupColor, token.colorPrimary),
+                  color: '#000000',
                   fontWeight: 600,
                   fontSize: 11,
                 }}
