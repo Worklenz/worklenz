@@ -1,5 +1,13 @@
 import { useState, useCallback } from 'react';
-import { Flex, DatePicker, Typography, Button, Form, FormInstance, TimePicker } from '@/shared/antd-imports';
+import {
+  Flex,
+  DatePicker,
+  Typography,
+  Button,
+  Form,
+  FormInstance,
+  TimePicker,
+} from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import dayjs, { Dayjs } from 'dayjs';
 
@@ -12,7 +20,11 @@ import { getUserSession } from '@/utils/session-helper';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setStartDate, setTaskEndDate, setTaskDueTime } from '@/features/task-drawer/task-drawer.slice';
+import {
+  setStartDate,
+  setTaskEndDate,
+  setTaskDueTime,
+} from '@/features/task-drawer/task-drawer.slice';
 import {
   updateEnhancedKanbanTaskStartDate,
   updateEnhancedKanbanTaskEndDate,
@@ -146,28 +158,45 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
   );
 
   return (
-    <Form.Item name="dueDate" label={t('taskInfoTab.details.due-date')}>
-      <Flex align="center" gap={8}>
-        {isShowStartDate && (
-          <>
-            <DatePicker
-              placeholder={t('taskInfoTab.details.start-date')}
-              disabledDate={(current: Dayjs) => disabledStartDate(current) ?? false}
-              onChange={handleStartDateChange}
-              value={isValidStartDate ? startDayjs : null}
-              format={'MMM DD, YYYY'}
-              suffixIcon={null}
-            />
-            <Typography.Text>-</Typography.Text>
-          </>
-        )}
-        <DatePicker
-          placeholder={t('taskInfoTab.details.end-date')}
-          disabledDate={(current: Dayjs) => disabledEndDate(current) ?? false}
-          onChange={handleEndDateChange}
-          value={isValidDueDate ? dueDayjs : null}
-          format={'MMM DD, YYYY'}
-        />
+    <>
+      <Form.Item name="dueDate" label={t('taskInfoTab.details.due-date')}>
+        <Flex align="center" gap={8}>
+          {isShowStartDate && (
+            <>
+              <DatePicker
+                placeholder={t('taskInfoTab.details.start-date')}
+                disabledDate={(current: Dayjs) => disabledStartDate(current) ?? false}
+                onChange={handleStartDateChange}
+                value={isValidStartDate ? startDayjs : null}
+                format={'MMM DD, YYYY'}
+                suffixIcon={null}
+              />
+              <Typography.Text>-</Typography.Text>
+            </>
+          )}
+          <DatePicker
+            placeholder={t('taskInfoTab.details.end-date')}
+            disabledDate={(current: Dayjs) => disabledEndDate(current) ?? false}
+            onChange={handleEndDateChange}
+            value={isValidDueDate ? dueDayjs : null}
+            format={'MMM DD, YYYY'}
+          />
+
+          <Button
+            type="text"
+            onClick={() => setIsShowStartDate(prev => !prev)}
+            style={{ color: isShowStartDate ? 'red' : colors.skyBlue }}
+          >
+            {isShowStartDate
+              ? t('taskInfoTab.details.hide-start-date')
+              : t('taskInfoTab.details.show-start-date')}
+          </Button>
+        </Flex>
+      </Form.Item>
+      <Form.Item
+        name="dueTime"
+        label={t('taskInfoTab.details.due-time', { defaultValue: 'Due Time' })}
+      >
         <TimePicker
           format="HH:mm"
           value={timeValue}
@@ -175,20 +204,11 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
           changeOnScroll
           needConfirm={false}
           placeholder={t('taskInfoTab.details.set-due-time', { defaultValue: 'Set due time' })}
-          style={{ width: '120px' }}
+          style={{ width: '160px' }}
           allowClear
         />
-        <Button
-          type="text"
-          onClick={() => setIsShowStartDate(prev => !prev)}
-          style={{ color: isShowStartDate ? 'red' : colors.skyBlue }}
-        >
-          {isShowStartDate
-            ? t('taskInfoTab.details.hide-start-date')
-            : t('taskInfoTab.details.show-start-date')}
-        </Button>
-      </Flex>
-    </Form.Item>
+      </Form.Item>
+    </>
   );
 };
 
