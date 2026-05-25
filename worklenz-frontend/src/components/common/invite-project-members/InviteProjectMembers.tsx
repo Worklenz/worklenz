@@ -1,7 +1,10 @@
 import { Button, Flex, Form, message, Modal, Select, Typography } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
+import {
+  toggleProjectMemberDrawer,
+  markProjectMembersUpdated,
+} from '@/features/projects/singleProject/members/projectMembersSlice';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
@@ -172,10 +175,12 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         const failedEmails = failedResults.map(r => r.email).join(', ');
         message.warning(`${successCount} invited successfully. Failed: ${failedEmails}`);
         form.resetFields();
+        dispatch(markProjectMembersUpdated());
         dispatch(toggleProjectMemberDrawer());
       } else if (successCount > 0) {
         message.success(`${successCount} project member(s) invited successfully`);
         form.resetFields();
+        dispatch(markProjectMembersUpdated());
         dispatch(toggleProjectMemberDrawer());
       } else {
         const failedEmails = failedResults.map(r => r.email).join(', ');
