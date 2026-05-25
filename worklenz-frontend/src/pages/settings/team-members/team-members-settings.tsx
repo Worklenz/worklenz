@@ -700,7 +700,7 @@ const TeamMembersSettings = () => {
                   {totalAvailableSeats && totalAvailableSeats > 0
                     ? t('seatUsageWithLimitText', {
                         defaultValue: t('seatUsageWithLimitText'),
-                        used: totalUsedSeats,
+                        used: Math.min(totalUsedSeats, totalAvailableSeats),
                         total: totalAvailableSeats,
                       })
                     : totalUsedSeats >= 0
