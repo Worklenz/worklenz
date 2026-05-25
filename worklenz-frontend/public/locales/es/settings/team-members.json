@@ -165,6 +165,7 @@
   "teamHierarchyNoResultsTitle": "No hay miembros que coincidan",
   "teamHierarchyNoResultsDescription": "Prueba con un término de búsqueda diferente.",
   "seatUsageWithLimitText": "{{used}} de {{total}} asientos usados",
+  "seatUsageOverLimitTooltip": "Los miembros actuales exceden el límite de tu plan. Los miembros desactivados no se cuentan en el uso de asientos.",
   "seatLimitPopoverTitle": "Límite de asientos alcanzado",
   "workspaceSeatLimitPopoverBody": "Tu espacio de trabajo está usando {{used}} de {{total}} asientos disponibles. Actualiza tu plan para agregar más miembros.",
   "seatLimitPopoverCta": "Actualizar ahora",

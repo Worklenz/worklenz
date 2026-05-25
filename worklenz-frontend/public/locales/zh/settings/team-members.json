@@ -159,6 +159,7 @@
   "teamHierarchyNoResultsTitle": "没有匹配的成员",
   "teamHierarchyNoResultsDescription": "请尝试其他搜索词。",
   "seatUsageWithLimitText": "已使用 {{used}} / {{total}} 个席位",
+  "seatUsageOverLimitTooltip": "当前成员数量已超过您的计划限制。停用的成员不计入席位使用量。",
   "seatLimitPopoverTitle": "席位上限已达",
   "workspaceSeatLimitPopoverBody": "您的工作区已使用 {{used}} / {{total}} 个可用席位。请升级方案以添加更多成员。",
   "seatLimitPopoverCta": "立即升级",

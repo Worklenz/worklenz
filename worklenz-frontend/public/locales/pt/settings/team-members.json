@@ -159,6 +159,7 @@
   "teamHierarchyNoResultsTitle": "Nenhum membro correspondente",
   "teamHierarchyNoResultsDescription": "Tente um termo de pesquisa diferente.",
   "seatUsageWithLimitText": "{{used}} de {{total}} assentos usados",
+  "seatUsageOverLimitTooltip": "Os membros atuais excedem o limite do seu plano. Membros desativados não são contados no uso de assentos.",
   "seatLimitPopoverTitle": "Limite de assentos atingido",
   "workspaceSeatLimitPopoverBody": "Seu workspace está usando {{used}} de {{total}} assentos disponíveis. Faça upgrade do plano para adicionar mais membros.",
   "seatLimitPopoverCta": "Fazer upgrade agora",

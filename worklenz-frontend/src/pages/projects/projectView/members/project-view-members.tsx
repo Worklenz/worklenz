@@ -68,6 +68,7 @@ const ProjectViewMembers = () => {
   const dispatch = useAppDispatch();
 
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const membersRefreshCount = useAppSelector(state => state.projectMemberReducer.membersRefreshCount);
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
 
   // State
@@ -100,7 +101,7 @@ const ProjectViewMembers = () => {
 
     return t('seatUsageWithLimitText', {
       defaultValue: t('seatUsageWithLimitText'),
-      used: totalUsedSeats,
+      used: Math.min(totalUsedSeats, totalAvailableSeats),
       total: totalAvailableSeats,
     });
   }, [totalAvailableSeats, totalUsedSeats, t]);
@@ -123,6 +124,7 @@ const ProjectViewMembers = () => {
       if (res.done) {
         setMembers(res.body);
         setPagination(p => ({ ...p, total: res.body.total ?? 0 })); // update total from backend, default to 0
+        dispatch(fetchBillingInfo());
       }
     } catch (error) {
       logger.error('Error fetching members:', error);
@@ -171,6 +173,7 @@ const ProjectViewMembers = () => {
     void getProjectMembers();
   }, [
     refreshTimestamp,
+    membersRefreshCount,
     projectId,
     pagination.current,
     pagination.pageSize,
@@ -326,7 +329,13 @@ const ProjectViewMembers = () => {
               trigger="click"
               placement="bottomRight"
               open={isSeatLimitPopoverOpen}
-              onOpenChange={setIsSeatLimitPopoverOpen}
+              onOpenChange={open => {
+                  // Only allow opening via the button when seat limit is reached;
+                  // always allow closing (open === false) so outside-click works.
+                  if (!open || hasReachedSeatLimit) {
+                    setIsSeatLimitPopoverOpen(open);
+                  }
+                }}
               title={
                 <Flex align="center" justify="space-between" style={{ width: 240 }}>
                   <Typography.Text strong>

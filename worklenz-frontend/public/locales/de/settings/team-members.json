@@ -165,6 +165,7 @@
   "teamHierarchyNoResultsTitle": "Keine übereinstimmenden Mitglieder",
   "teamHierarchyNoResultsDescription": "Versuchen Sie einen anderen Suchbegriff.",
   "seatUsageWithLimitText": "{{used}} von {{total}} Plätzen verwendet",
+  "seatUsageOverLimitTooltip": "Aktuelle Mitglieder überschreiten Ihr Planlimit. Deaktivierte Mitglieder werden nicht zu Ihrer Sitzplatzauslastung gezählt.",
   "seatLimitPopoverTitle": "Sitzplatzlimit erreicht",
   "workspaceSeatLimitPopoverBody": "Ihr Workspace nutzt {{used}} von {{total}} verfügbaren Plätzen. Upgraden Sie Ihren Plan, um mehr Mitglieder hinzuzufügen.",
   "seatLimitPopoverCta": "Jetzt upgraden",

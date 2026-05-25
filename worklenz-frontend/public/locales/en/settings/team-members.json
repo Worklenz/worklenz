@@ -9,6 +9,7 @@
   "seatUsageText": "{{used}} seats used",
   "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
   "seatUsageLoading": "Loading seat usage...",
+  "seatUsageOverLimitTooltip": "Current members exceed your plan limit. Deactivated members are not counted toward your seat usage.",
   "seatLimitPopoverTitle": "Seat Limit Reached",
   "workspaceSeatLimitPopoverBody": "Your workspace is using {{used}} of {{total}} available seats. Upgrade your plan to add more members.",
   "seatLimitPopoverCta": "Upgrade Now",

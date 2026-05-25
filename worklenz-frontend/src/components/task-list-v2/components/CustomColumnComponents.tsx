@@ -88,7 +88,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   const popoverBody = isGrandfathered
     ? t('customColumns.limitPopover.appSumoBody', {
         defaultValue:
-          'Editing or adding custom fields beyond your current plan limit requires a Business plan.',
+          'Adding custom fields beyond your current plan limit requires a Business plan.',
       })
     : t('customColumns.limitPopover.body', {
         defaultValue:
