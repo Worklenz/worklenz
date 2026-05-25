@@ -716,7 +716,7 @@ const TeamMembersSettings = () => {
                   <Tooltip
                     title={t('seatUsageOverLimitTooltip', {
                       defaultValue:
-                        'Active members exceed your plan limit. Deactivated members are not counted toward your seat usage.',
+                        'Current members exceed your plan limit. Deactivated members are not counted toward your seat usage.',
                     })}
                   >
                     <ExclamationCircleFilled style={{ color: colors.vibrantOrange, fontSize: 14 }} />
