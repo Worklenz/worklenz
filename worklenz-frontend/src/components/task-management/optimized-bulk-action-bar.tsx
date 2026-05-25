@@ -385,48 +385,98 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     }, [tasks, selectedTaskIds]);
 
     // Update Redux state when opening template drawer
-    const handleOpenTemplateDrawer = useCallback(() => {
+    const handleOpenTemplateDrawer = useCallback(async () => {
       if (isFree) {
         dispatch(toggleUpgradeModal());
         return;
       }
 
-      // Convert Task objects to IProjectTask format for template creation
-      const projectTasks: IProjectTask[] = selectedTaskObjects.map((task: any) => ({
-        id: task.id,
-        name: task.title,
-        task_key: task.task_key,
-        status: task.status,
-        status_id: task.status,
-        priority: task.priority,
-        phase_id: task.phase,
-        phase_name: task.phase,
-        description: task.description,
-        start_date: task.startDate,
-        end_date: task.dueDate,
-        total_hours: task.timeTracking?.estimated || 0,
-        total_minutes: task.timeTracking?.logged || 0,
-        progress: task.progress,
-        sub_tasks_count: task.sub_tasks_count || 0,
-        assignees:
-          task.assignees?.map((assigneeId: string) => ({
-            id: assigneeId,
-            name: '',
-            email: '',
-            avatar_url: '',
-            team_member_id: assigneeId,
-            project_member_id: assigneeId,
-          })) || [],
-        labels: task.labels || [],
-        manual_progress: false,
-        created_at: task.createdAt,
-        updated_at: task.updatedAt,
-        sort_order: task.order,
-      }));
+      // Build a fast lookup set of all selected task IDs
+      const selectedIdSet = new Set<string>(selectedTaskIds);
+
+      // ─── Build the selection-aware hierarchy ────────────────────────────────
+      //
+      // Rules (based on what the user explicitly selected):
+      //   • A selected task whose parent_task_id is NOT in the selection
+      //     → top-level template task
+      //   • A selected task whose parent_task_id IS in the selection
+      //     → subtask of that parent in the template
+      //   • A selected task whose grandparent is in the selection (parent is also selected)
+      //     → grandchild (level-3) of the grandparent in the template
+      //
+      // We do NOT auto-include any unselected subtasks. Only the explicit
+      // selection determines what ends up in the template.
+      // ────────────────────────────────────────────────────────────────────────
+
+      // Map: task id → task object (enriched with empty sub_tasks arrays)
+      type TaskNode = {
+        raw: any;
+        sub_tasks: TaskNode[];
+      };
+
+      const nodeMap = new Map<string, TaskNode>();
+      for (const task of selectedTaskObjects) {
+        nodeMap.set(task.id, { raw: task, sub_tasks: [] });
+      }
+
+      // Attach each selected task to its parent node if the parent is also selected
+      const topLevelNodes: TaskNode[] = [];
+      for (const task of selectedTaskObjects) {
+        const parentId: string | undefined = task.parent_task_id;
+        const parentNode = parentId ? nodeMap.get(parentId) : undefined;
+
+        if (parentNode) {
+          // Parent is also selected → this task is a subtask in the template
+          parentNode.sub_tasks.push(nodeMap.get(task.id)!);
+        } else {
+          // No selected parent → this task is a top-level template task
+          topLevelNodes.push(nodeMap.get(task.id)!);
+        }
+      }
+
+      // Convert the tree nodes into IProjectTask format
+      const toProjectTask = (node: TaskNode): IProjectTask => {
+        const task = node.raw;
+        return {
+          id: task.id,
+          name: task.title || task.name,
+          task_key: task.task_key,
+          status: task.status,
+          status_id: task.status,
+          priority: task.priority,
+          phase_id: task.phase,
+          phase_name: task.phase,
+          description: task.description,
+          start_date: task.startDate,
+          end_date: task.dueDate,
+          total_hours: task.timeTracking?.estimated || 0,
+          total_minutes: task.timeTracking?.logged || 0,
+          progress: task.progress,
+          sub_tasks_count: node.sub_tasks.length,
+          // Recursively convert child nodes (up to 3 levels)
+          sub_tasks: node.sub_tasks.map(childNode => toProjectTask(childNode)),
+          assignees:
+            task.assignees?.map((assigneeId: string) => ({
+              id: assigneeId,
+              name: '',
+              email: '',
+              avatar_url: '',
+              team_member_id: assigneeId,
+              project_member_id: assigneeId,
+            })) || [],
+          labels: task.labels || [],
+          manual_progress: false,
+          created_at: task.createdAt,
+          updated_at: task.updatedAt,
+          sort_order: task.order,
+        };
+      };
+
+      const projectTasks: IProjectTask[] = topLevelNodes.map(node => toProjectTask(node));
 
       dispatch(selectTasks(projectTasks));
       setShowDrawer(true);
-    }, [selectedTaskObjects, dispatch, isFree]);
+    }, [selectedTaskObjects, selectedTaskIds, dispatch, isFree]);
 
     // Labels dropdown content
     const labelsDropdownContent = useMemo(
@@ -964,6 +1014,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             showDrawer={showDrawer}
             selectedTemplateId={null}
             onClose={() => {
+              setShowDrawer(false);
+            }}
+            onSaved={() => {
               setShowDrawer(false);
               onClearSelection?.();
             }}
