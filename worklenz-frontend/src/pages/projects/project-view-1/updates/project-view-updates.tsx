@@ -96,6 +96,10 @@ const ProjectViewUpdates = () => {
     { id: string; team_member_id: string; name: string; user_id?: string }[]
   >([]);
 
+  const [editSelectedMembers, setEditSelectedMembers] = useState<
+    { id: string; team_member_id: string; name: string; user_id?: string }[]
+  >([]);
+
   useEffect(() => {
     if (projectId) {
       dispatch(getProjectComments(projectId));
@@ -162,7 +166,7 @@ const ProjectViewUpdates = () => {
           value: member.name,
           label: (
             <Space>
-              <SingleAvatar avatarUrl={member.avatar_url} name={member.name}/>
+              <SingleAvatar avatarUrl={member.avatar_url} name={member.name} />
               <span>{member.name}</span>
               {member.role && (
                 <span style={{ color: '#999', fontSize: '12px' }}>({member.role})</span>
@@ -298,49 +302,75 @@ const ProjectViewUpdates = () => {
     if (!editContent.trim()) return;
 
     try {
-      await projectCommentsApiService.editComment(commentId, editContent);
+      let contentToSave = editContent;
+
+      editSelectedMembers.forEach((member, index) => {
+        contentToSave = contentToSave.replace(`@${member.name}`, `{${index}}`);
+      });
+
+      await projectCommentsApiService.editComment(commentId, contentToSave);
+
       setEditingCommentId(null);
       setEditContent('');
+      setEditSelectedMembers([]);
+
       message.success(t('editSuccess', { defaultValue: 'Comment updated successfully' }));
     } catch (error) {
       message.error(t('editError', { defaultValue: 'Failed to edit comment' }));
     }
   };
 
-  const startEdit = (commentId: string, content: string,mentions?: any[]) => {
+  const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
-    const resolved = processMentions(content, mentions || []);
-    const textContent = resolved.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-    setEditContent(textContent);
+
+    let editableContent = content;
+
+    if (mentions && mentions.length > 0) {
+      mentions.forEach((mention, index) => {
+        const userName = mention.user_name || mention.name;
+        editableContent = editableContent.replace(`{${index}}`, `@${userName}`);
+      });
+
+      setEditSelectedMembers(
+        mentions.map(mention => ({
+          id: mention.user_id || mention.id,
+          team_member_id: mention.team_member_id || mention.id,
+          name: mention.user_name || mention.name,
+          user_id: mention.user_id || mention.id,
+        }))
+      );
+    } else {
+      setEditSelectedMembers([]);
+    }
+
+    setEditContent(editableContent);
   };
 
   const processMentions = (content: string, mentions: any[]) => {
+    let processedContent = content.replace(/\n/g, '<br/>');
+
     if (!mentions || mentions.length === 0) {
-      return content.replace(/\n/g, '<br/>');
+      return processedContent;
     }
 
-    let processedContent = content;
-    const placeholders = content.match(/{\d+}/g);
+    mentions.forEach((mention, index) => {
+      const userName = mention.user_name || mention.name;
+      if (!userName) return;
 
-    if (placeholders) {
-      processedContent = processedContent.replace(/\n/g, '<br/>');
+      const escapedName = escapeHtml(userName);
 
-      placeholders.forEach(placeholder => {
-        const match = placeholder.match(/\d+/);
-        if (match) {
-          const index = parseInt(match[0]);
-          if (index >= 0 && index < mentions.length && mentions[index]) {
-            const userName = mentions[index].user_name || mentions[index].name;
-            processedContent = processedContent.replace(
-              placeholder,
-              `<span class='mentions'>@${escapeHtml(userName)}</span>`
-            );
-          }
-        }
-      });
-    } else {
-      processedContent = processedContent.replace(/\n/g, '<br/>');
-    }
+      // Normal saved format: {0}, {1}
+      processedContent = processedContent.replace(
+        new RegExp(`\\{${index}\\}`, 'g'),
+        `<span class='mentions'>@${escapedName}</span>`
+      );
+
+      // Old edited format: @User Name saved as plain text
+      processedContent = processedContent.replace(
+        new RegExp(`@${userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'g'),
+        `<span class='mentions'>@${escapedName}</span>`
+      );
+    });
 
     return processedContent;
   };
@@ -468,7 +498,10 @@ const ProjectViewUpdates = () => {
                 const showTimeSeparator =
                   index === 0 ||
                   (index > 0 &&
-                    isDifferentDay(item.created_at || '', visibleUpdates[index - 1].created_at || ''));
+                    isDifferentDay(
+                      item.created_at || '',
+                      visibleUpdates[index - 1].created_at || ''
+                    ));
 
                 return (
                   <div key={item.id || index}>
@@ -588,7 +621,9 @@ const ProjectViewUpdates = () => {
                                     size="small"
                                     icon={<EditOutlined />}
                                     className="hover-action-btn"
-                                    onClick={() => startEdit(item.id!, item.content || '',item.mentions)}
+                                    onClick={() =>
+                                      startEdit(item.id!, item.content || '', item.mentions)
+                                    }
                                   />
                                 </Tooltip>
                                 <Dropdown
