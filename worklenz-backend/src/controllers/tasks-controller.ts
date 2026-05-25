@@ -223,6 +223,20 @@ export default class TasksController extends TasksControllerBase {
     const userId = req.user?.id as string;
     const teamId = req.user?.team_id as string;
 
+    // Check restrict_task_creation (Business Plan feature)
+    const projectId = req.body.project_id;
+    if (userId && projectId) {
+      const restrictResult = await db.query(
+        "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+        [userId, projectId]
+      );
+      if (restrictResult.rows[0]?.restricted === true) {
+        return res.status(403).send(
+          new ServerResponse(false, null, "Task creation is restricted. Please contact admin for access.")
+        );
+      }
+    }
+
     // Check if user is trying to set billable and if they're restricted
     if (req.body.billable === true) {
       const isRestricted = await isRestrictedFromProPlanFeatures(teamId);

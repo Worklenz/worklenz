@@ -131,6 +131,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       use_weighted_progress: project?.use_weighted_progress || false,
       use_time_progress: project?.use_time_progress || false,
       auto_assign_task_creator: project?.auto_assign_task_creator || false,
+      restrict_task_creation: project?.restrict_task_creation || false,
       health_id: project?.health_id || projectHealths.find(health => health.is_default)?.id,
     };
   }, [project, projectStatuses, projectHealths, defaultPriorityId]);
@@ -211,6 +212,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           use_weighted_progress: project.use_weighted_progress || false,
           use_time_progress: project.use_time_progress || false,
           auto_assign_task_creator: project.auto_assign_task_creator || false,
+          restrict_task_creation: project.restrict_task_creation || false,
           budget: project.budget ?? 0,
           currency: project.currency || 'USD',
         };
@@ -471,6 +473,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
         auto_assign_task_creator: Boolean(values.auto_assign_task_creator),
+        restrict_task_creation: Boolean(values.restrict_task_creation),
         health_id: values.health_id,
       };
 
@@ -967,6 +970,71 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             valuePropName="checked"
           >
             <Switch disabled={!isProjectManager && !isOwnerorAdmin} />
+          </Form.Item>
+
+          <Divider />
+
+          <Typography.Title level={5}>
+            {t('accessControlSettings', { defaultValue: 'Access Control' })}
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" style={{ fontSize: 12, marginBottom: 16 }}>
+            {t('accessControlSettingsDescription', {
+              defaultValue:
+                'Control who can create and assign tasks in this project.',
+            })}
+          </Typography.Paragraph>
+
+          {!hasBusinessAccess && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={t('restrictTaskCreationBusinessPlanTitle', {
+                defaultValue: 'Business Plan Required',
+              })}
+              description={
+                <Flex justify="space-between" align="center" gap={12} wrap="wrap">
+                  <Typography.Text>
+                    {t('restrictTaskCreationBusinessPlanDescription', {
+                      defaultValue:
+                        'Restricting task creation to Admins and Team Leads is available on Business and Enterprise plans.',
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    icon={<CrownOutlined />}
+                    onClick={handleUpgradeClick}
+                    aria-label={tCommon('upgrade-plan')}
+                  >
+                    {tCommon('upgrade-plan')}
+                  </Button>
+                </Flex>
+              }
+            />
+          )}
+
+          <Form.Item
+            name="restrict_task_creation"
+            label={
+              <Space>
+                <Typography.Text>
+                  {t('restrictTaskCreation', {
+                    defaultValue: 'Restrict task assignment to Admins and Team Leads',
+                  })}
+                </Typography.Text>
+                <Tooltip
+                  title={t('restrictTaskCreationTooltip', {
+                    defaultValue:
+                      'When enabled, only Admins and Team Leads can create and assign tasks. Team Members can only view their assigned tasks.',
+                  })}
+                >
+                  <InfoCircleOutlined style={{ color: token.colorTextSecondary }} />
+                </Tooltip>
+              </Space>
+            }
+            valuePropName="checked"
+          >
+            <Switch disabled={(!isProjectManager && !isOwnerorAdmin) || !hasBusinessAccess} />
           </Form.Item>
         </>
       ),

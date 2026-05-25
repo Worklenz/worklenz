@@ -74,6 +74,9 @@ interface UseTaskRowColumnsProps {
 
   // Depth for nested subtasks
   depth?: number;
+
+  // Task creation/assignment restriction
+  canCreateTask?: boolean;
 }
 
 export const useTaskRowColumns = ({
@@ -103,6 +106,7 @@ export const useTaskRowColumns = ({
   attributes,
   listeners,
   depth = 0,
+  canCreateTask = true,
 }: UseTaskRowColumnsProps) => {
   const dispatch = useAppDispatch();
   const groups = useAppSelector(selectGroups);
@@ -202,6 +206,7 @@ export const useTaskRowColumns = ({
                 onTaskNameSave={handleTaskNameSave}
                 onCancelEdit={handleCancelEdit}
                 depth={depth}
+                canCreateTask={canCreateTask}
               />
             );
 
@@ -233,6 +238,7 @@ export const useTaskRowColumns = ({
                 task={task}
                 convertedTask={convertedTask}
                 isDarkMode={isDarkMode}
+                canCreateTask={canCreateTask}
               />
             );
 
@@ -400,6 +406,7 @@ export const useTaskRowColumns = ({
       attributes,
       listeners,
       depth,
+      canCreateTask,
       openDrawerForTask,
     ]
   );

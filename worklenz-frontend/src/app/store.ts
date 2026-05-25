@@ -113,6 +113,9 @@ import financeReducer from '@/features/projects/finance/finance-slice';
 // Seat Limit
 import seatLimitReducer from '@/features/seat-limit/seatLimitSlice';
 
+// Org Configuration
+import orgConfigReducer from '@/features/org-config/org-config.slice';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -234,6 +237,9 @@ export const store = configureStore({
 
     // Seat Limit
     seatLimitReducer: seatLimitReducer,
+
+    // Org Configuration
+    orgConfigReducer: orgConfigReducer,
   },
 });
 

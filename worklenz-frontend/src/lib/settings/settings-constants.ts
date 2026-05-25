@@ -8,6 +8,7 @@ import {
   LockOutlined,
   NotificationOutlined,
   ProfileOutlined,
+  SettingOutlined,
   TagsOutlined,
   TeamOutlined,
   UserOutlined,
@@ -49,6 +50,9 @@ const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appear
 const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
 const IntegrationsSettings = lazy(
   () => import('@/pages/settings/integrations/IntegrationsSettings')
+);
+const ConfigurationSettings = lazy(
+  () => import('@/pages/settings/configuration/configuration-settings')
 );
 
 // type of menu item in settings sidebar
@@ -240,6 +244,18 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(ApiOutlined),
     element: React.createElement(IntegrationsSettings),
     adminOnly: true,
+  },
+  {
+    key: 'configuration',
+    name: 'configuration',
+    defaultValue: 'Configuration',
+    endpoint: 'configuration',
+    groupKey: 'system-integrations',
+    groupDefaultValue: 'System & Integrations',
+    icon: React.createElement(SettingOutlined),
+    element: React.createElement(ConfigurationSettings),
+    adminOnly: true,
+    businessPlanRequired: false, // Visible to all admins; upgrade prompt shown inside
   },
   // Danger zone - always at the bottom
   {

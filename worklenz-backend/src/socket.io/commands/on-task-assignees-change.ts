@@ -21,6 +21,18 @@ interface TaskAssigneesChangeData {
   mode: number; // 0 for assign, 1 for unassign
 }
 
+async function isTaskCreationRestricted(userId: string, projectId: string): Promise<boolean> {
+  try {
+    const result = await db.query(
+      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+      [userId, projectId]
+    );
+    return result.rows[0]?.restricted === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function on_task_assignees_change(
   _io: Server, 
   socket: Socket, 
@@ -38,8 +50,20 @@ export async function on_task_assignees_change(
       logUnauthorizedSocketAccess(socket, 'TASK_ASSIGNEES_CHANGE', 'task', body.task_id);
       return;
     }
-    
+
+    // Check restrict_task_creation before allowing assignment changes
     const userId = getLoggedInUserIdFromSocket(socket);
+    if (userId && body.project_id) {
+      const restricted = await isTaskCreationRestricted(userId, body.project_id);
+      if (restricted) {
+        socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), {
+          error: true,
+          message: "Task assignment is restricted to Admins and Team Leads only."
+        });
+        return;
+      }
+    }
+
     const newAssignees: string[] = body.team_member_id;
     const prevAssignees: ITaskAssignee[] = await getAssignees(body.task_id);
 

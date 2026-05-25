@@ -8,7 +8,7 @@ import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
  * Checks if user has business plan access based on session data
  * Includes active business plan trials, manual overrides, and AppSumo eligibility
  */
-function hasBusinessPlanAccess(user: any): boolean {
+export function hasBusinessPlanAccess(user: any): boolean {
   if (!user) {
     return false;
   }

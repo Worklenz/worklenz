@@ -652,6 +652,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.use_weighted_progress,
              projects.use_time_progress,
              projects.auto_assign_task_creator,
+             projects.restrict_task_creation,
              (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
              (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
 

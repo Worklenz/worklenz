@@ -36,6 +36,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import { getContrastColor } from '@/utils/colorUtils';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 // Simple Portal component - removed as it's no longer used
 
@@ -68,6 +69,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
     const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
     const [isEditable, setIsEditable] = useState(false);
     const isProjectManager = useIsProjectManager();
+    const { canCreateTask } = useTaskCreationPermission();
     const [name, setName] = useState(group.name);
     const inputRef = useRef<HTMLInputElement>(null);
     const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -525,7 +527,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
               </div>
 
               {/* Only show action buttons when expanded */}
-              {!isCollapsed && (
+              {!isCollapsed && canCreateTask && (
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
@@ -584,7 +586,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
           {!isCollapsed && (
             <div className="enhanced-kanban-group-tasks">
               {/* Create card at top */}
-              {showNewCardTop && (
+              {(showNewCardTop && canCreateTask ) && (
                 <EnhancedKanbanCreateTaskCard
                   sectionId={group.id}
                   setShowNewCard={setShowNewCardTop}
@@ -625,7 +627,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     onTaskDrop(e, group.id, 0);
                   }}
                 >
-                  {!showNewCardTop && !showNewCardBottom && (
+                  {!showNewCardTop && !showNewCardBottom && canCreateTask && (
                     <button
                       type="button"
                       className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -687,6 +689,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   groupId={group.id}
                   idx={idx}
                   onDragEnd={onDragEnd}
+                  canCreateTask={canCreateTask}
                 />
               </React.Fragment>
             ))}
@@ -709,7 +712,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             )}
 
             {/* Create card at bottom */}
-            {showNewCardBottom && (
+            {(showNewCardBottom && canCreateTask) && (
               <EnhancedKanbanCreateTaskCard
                 sectionId={group.id}
                 setShowNewCard={setShowNewCardBottom}
@@ -718,7 +721,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             )}
 
             {/* Footer Add Task Button */}
-            {!showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && (
+            {!showNewCardTop && !showNewCardBottom && group.tasks.length > 0 && canCreateTask && (
               <button
                 type="button"
                 className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mt-2"
