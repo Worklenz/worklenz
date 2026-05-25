@@ -65,6 +65,8 @@ interface UseTaskRowColumnsProps {
   handleCheckboxChange: (e: any) => void;
   handleTaskNameSave: () => void;
   handleTaskNameEdit: () => void;
+  handleTaskNameChangeLive: (name: string) => void;
+  handleCancelEdit: () => void;
 
   // Drag and drop
   attributes: any;
@@ -96,6 +98,8 @@ export const useTaskRowColumns = ({
   handleCheckboxChange,
   handleTaskNameSave,
   handleTaskNameEdit,
+  handleTaskNameChangeLive,
+  handleCancelEdit,
   attributes,
   listeners,
   depth = 0,
@@ -191,8 +195,12 @@ export const useTaskRowColumns = ({
                 editTaskName={editTaskName}
                 taskName={taskName}
                 onEditTaskName={setEditTaskName}
-                onTaskNameChange={setTaskName}
+                onTaskNameChange={(name: string) => {
+                  setTaskName(name);
+                  handleTaskNameChangeLive(name);
+                }}
                 onTaskNameSave={handleTaskNameSave}
+                onCancelEdit={handleCancelEdit}
                 depth={depth}
               />
             );

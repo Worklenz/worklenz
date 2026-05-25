@@ -42,8 +42,20 @@ const initialState: ITaskDrawerState = {
 
 export const fetchTask = createAsyncThunk(
   'tasks/fetchTask',
-  async ({ taskId, projectId }: { taskId: string; projectId: string }, { rejectWithValue }) => {
+  async ({ taskId, projectId }: { taskId: string; projectId: string }, { rejectWithValue, getState }) => {
     const response = await tasksApiService.getFormViewModel(taskId, projectId);
+    if (!response.body) return rejectWithValue('No data');
+
+    // The API may return a stale name if the user renamed the task locally
+    // (inline edit or drawer) before the socket round-trip persisted to the DB.
+    // Prefer the name already held in the task-management slice.
+    const state = getState() as { taskManagement: { entities: Record<string, { title?: string; name?: string } | undefined> } };
+    const localTask = state.taskManagement.entities[taskId];
+    const localName = localTask?.title || localTask?.name;
+    if (localName && response.body.task && response.body.task.name !== localName) {
+      response.body.task.name = localName;
+    }
+
     return response.body;
   }
 );
@@ -259,6 +271,7 @@ const taskDrawerSlice = createSlice({
     }),
       builder.addCase(fetchTask.fulfilled, (state, action) => {
         state.loadingTask = false;
+        if (!action.payload) return;
         state.taskFormViewModel = action.payload;
       }),
       builder.addCase(fetchTask.rejected, (state, action) => {

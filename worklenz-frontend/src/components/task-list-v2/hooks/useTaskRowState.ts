@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { dayjs } from '@/shared/antd-imports';
@@ -12,10 +12,19 @@ export const useTaskRowState = (task: Task) => {
   const [editTaskName, setEditTaskName] = useState(false);
   const [taskName, setTaskName] = useState(task.title || task.name || '');
 
-  // Update local taskName state when task name changes
+  // Captures the name at the moment the user starts editing so handleTaskNameSave
+  // can compare against the true pre-edit value. We cannot use task.title for this
+  // because handleTaskNameChangeLive updates task.title in Redux in real time —
+  // making the comparison always equal and preventing the socket save from firing.
+  const originalTaskNameRef = useRef<string>(task.title || task.name || '');
+
+  // Update local taskName state when task name changes from Redux,
+  // but only when NOT actively editing to avoid overwriting what the user is typing
   useEffect(() => {
-    setTaskName(task.title || task.name || '');
-  }, [task.title, task.name]);
+    if (!editTaskName) {
+      setTaskName(task.title || task.name || '');
+    }
+  }, [task.title, task.name, editTaskName]);
 
   // Memoize task display name
   const taskDisplayName = useMemo(
@@ -121,6 +130,7 @@ export const useTaskRowState = (task: Task) => {
     setEditTaskName,
     taskName,
     setTaskName,
+    originalTaskNameRef,
 
     // Computed values
     taskDisplayName,
