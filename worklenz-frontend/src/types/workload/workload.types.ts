@@ -11,6 +11,7 @@ export interface IWorkloadMember {
   utilizationPercentage: number;
   isOverallocated: boolean;
   isUnderutilized: boolean;
+  expectedCapacity: number;
 }
 
 export interface ITaskAllocation {

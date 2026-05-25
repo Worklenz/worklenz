@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Flex,
   Select,
@@ -162,7 +162,15 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
   const { t } = useTranslation('workload');
   const { alertThresholds, dateRange } = useAppSelector(state => state.projectWorkload);
   const { token } = theme.useToken();
-  const [chartType, setChartType] = useState<'bar' | 'stacked' | 'comparison'>('bar');
+  type ChartType = 'bar' | 'comparison';
+
+  const [chartType, setChartType] = useState<ChartType>(() => {
+    return (localStorage.getItem('workloadChartType') as ChartType) || 'bar';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('workloadChartType', chartType);
+  }, [chartType]);
   const [sortBy, setSortBy] = useState<'name' | 'workload' | 'utilization'>('utilization');
 
   const sortedMembers = useMemo(() => {
@@ -270,18 +278,18 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
 
     switch (sortBy) {
       case 'name':
-        return members.sort((a, b) => a.name.localeCompare(b.name));
+        return members.sort((a: any, b: any) => a.name.localeCompare(b.name));
       case 'workload':
-        return members.sort((a, b) => b.currentWorkload - a.currentWorkload);
+        return members.sort((a: any, b: any) => b.currentWorkload - a.currentWorkload);
       case 'utilization':
-        return members.sort((a, b) => b.utilizationPercentage - a.utilizationPercentage);
+        return members.sort((a: any, b: any) => b.utilizationPercentage - a.utilizationPercentage);
       default:
         return members;
     }
   }, [data, sortBy, dateRange.startDate, dateRange.endDate]);
 
   const chartData = useMemo(() => {
-    const labels = sortedMembers.map(member => member.name);
+    const labels = sortedMembers.map((member: any) => member.name);
 
     if (chartType === 'comparison') {
       return {
@@ -289,18 +297,18 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         datasets: [
           {
             label: t('chart.capacity'),
-            data: sortedMembers.map(member => member.expectedCapacity),
+            data: sortedMembers.map((member: any) => member.expectedCapacity),
             backgroundColor: token.colorPrimary,
             borderColor: token.colorPrimary,
             borderWidth: 1,
           },
           {
             label: t('chart.allocated'),
-            data: sortedMembers.map(member => member.currentWorkload),
-            backgroundColor: sortedMembers.map(member =>
+            data: sortedMembers.map((member: any) => member.currentWorkload),
+            backgroundColor: sortedMembers.map((member: any) =>
               member.isOverallocated ? token.colorError : token.colorSuccess
             ),
-            borderColor: sortedMembers.map(member =>
+            borderColor: sortedMembers.map((member: any) =>
               member.isOverallocated ? token.colorError : token.colorSuccess
             ),
             borderWidth: 1,
@@ -314,15 +322,15 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       datasets: [
         {
           label: t('chart.utilization'),
-          data: sortedMembers.map(member => member.utilizationPercentage),
-          backgroundColor: sortedMembers.map(member => {
+          data: sortedMembers.map((member: any) => member.utilizationPercentage),
+          backgroundColor: sortedMembers.map((member: any) => {
             if (member.utilizationPercentage > alertThresholds.overallocation)
               return token.colorError;
             if (member.utilizationPercentage < alertThresholds.underutilization)
               return token.colorWarning;
             return token.colorSuccess;
           }),
-          borderColor: sortedMembers.map(member => {
+          borderColor: sortedMembers.map((member: any) => {
             if (member.utilizationPercentage > alertThresholds.overallocation)
               return token.colorError;
             if (member.utilizationPercentage < alertThresholds.underutilization)
@@ -352,7 +360,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
             label: context => {
               if (chartType === 'comparison') {
                 const value = context.parsed.y;
-                return `${context.dataset.label}: ${formatTime(value)}`;
+                return `${context.dataset.label}: ${formatTime(Number(value || 0))}`;
               } else {
                 const member = sortedMembers[context.dataIndex];
                 return [
@@ -381,7 +389,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           ticks: {
             callback: function (value) {
               if (chartType === 'comparison') {
-                return formatTime(value);
+                return formatTime(Number(value || 0));
               }
               return `${value}%`;
             },
@@ -481,8 +489,6 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
               elements: {
                 bar: {
                   ...chartOptions.elements?.bar,
-                  barThickness: 35, // Smaller fixed bar width (35px instead of dynamic)
-                  maxBarThickness: 35, // Ensure maximum width is also 35px
                 },
               },
             }}
@@ -492,7 +498,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
 
       <Flex vertical gap={12} style={{ marginTop: 16 }}>
         <Typography.Title level={5}>{t('chart.memberDetails')}</Typography.Title>
-        {sortedMembers.map(member => (
+        {sortedMembers.map((member: any) => (
           <MemberWorkloadCard key={member.id} member={member} capacityUnit="hours" />
         ))}
       </Flex>
