@@ -187,6 +187,16 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.custom_column_values[columnKey] = value;
       }
     },
+    setTaskDescription: (
+      state,
+      action: PayloadAction<{ id: string; description: string | null }>
+    ) => {
+      if (!action.payload) return;
+      const { id: taskId, description } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        state.taskFormViewModel.task.description = description ?? '';
+      }
+    },
     updateSelectedTaskName: (
       state,
       action: PayloadAction<{
@@ -275,6 +285,7 @@ export const {
   setTaskRecurringSchedule,
   setTaskBillable,
   setTaskCustomColumnValue,
+  setTaskDescription,
   updateSelectedTaskName,
   setNavigationContext,
   navigateToNextTask,
