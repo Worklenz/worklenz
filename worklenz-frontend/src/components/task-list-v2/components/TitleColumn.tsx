@@ -26,8 +26,6 @@ import {
   setSelectedTaskId,
   setShowTaskDrawer,
 } from '@/features/task-drawer/task-drawer.slice';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
 import { getTaskDisplayName } from './TaskRowColumns';
 import TaskContextMenu from './TaskContextMenu';
@@ -65,7 +63,6 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     canCreateTask = true,
   }) => {
     const dispatch = useAppDispatch();
-    const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
     const inputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -105,32 +102,13 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     );
 
     const handleTaskNameSave = useCallback(() => {
-      const newTaskName = inputRef.current?.input?.value || taskName;
-      if (
-        newTaskName?.trim() !== '' &&
-        connected &&
-        newTaskName.trim() !== (task.title || task.name || '').trim()
-      ) {
-        socket?.emit(
-          SocketEvents.TASK_NAME_CHANGE.toString(),
-          JSON.stringify({
-            task_id: task.id,
-            name: newTaskName.trim(),
-            parent_task: task.parent_task_id,
-          })
-        );
-      }
-      onEditTaskName(false);
-    }, [
-      taskName,
-      connected,
-      socket,
-      task.id,
-      task.parent_task_id,
-      task.title,
-      task.name,
-      onEditTaskName,
-    ]);
+      // Delegate entirely to the parent hook (useTaskRowActions) which owns
+      // the socket ref, connected ref, and originalTaskNameRef comparison.
+      // The old local implementation was broken: it compared against task.title
+      // which is already updated live by handleTaskNameChangeLive, making the
+      // comparison always equal and silently skipping the socket emit.
+      onTaskNameSave();
+    }, [onTaskNameSave]);
 
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
       e.preventDefault();

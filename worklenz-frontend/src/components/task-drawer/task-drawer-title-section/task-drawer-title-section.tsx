@@ -1,4 +1,4 @@
-import React, { ChangeEvent, useEffect, useState } from 'react';
+import React, { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Flex, Input, InputRef, Skeleton, Typography } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -28,6 +28,10 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
   const projectName = useAppSelector(state => state.projectReducer.project?.name ?? null);
 
   const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
+  // Snapshot the name at the moment editing starts so the blur handler can
+  // compare against the true pre-edit value. We cannot use taskFormViewModel.task.name
+  // for this because onTaskNameChange updates it live via Redux dispatch.
+  const originalNameRef = React.useRef<string>(taskFormViewModel?.task?.name ?? '');
 
   useEffect(() => {
     if (!isEditing) {
@@ -38,6 +42,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
   const onTaskNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newName = e.currentTarget.value;
     setTaskName(newName);
+    // Update Redux slices optimistically so the task list row and drawer stay in sync
     if (selectedTaskId) {
       dispatch(updateSelectedTaskName({ id: selectedTaskId, name: newName }));
       const currentTask = store.getState().taskManagement.entities[selectedTaskId];
@@ -54,22 +59,55 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
     }
   };
 
-  const handleInputBlur = () => {
-    setIsEditing(false);
-    if (
-      !selectedTaskId ||
-      !connected ||
-      taskName === taskFormViewModel?.task?.name ||
-      !taskName
-    ) return;
+  const handleStartEditing = () => {
+    // Capture the name before the user starts typing so blur can detect a real change
+    originalNameRef.current = taskFormViewModel?.task?.name ?? taskName;
+    setIsEditing(true);
+  };
+
+  const emitNameChange = (name: string) => {
+    if (!selectedTaskId || !connected || !name.trim()) return;
+    // Only emit if the name actually changed from what it was before editing started
+    if (name.trim() === originalNameRef.current.trim()) return;
     socket?.emit(
       SocketEvents.TASK_NAME_CHANGE.toString(),
       JSON.stringify({
         task_id: selectedTaskId,
-        name: taskName,
+        name: name.trim(),
         parent_task: taskFormViewModel?.task?.parent_task_id,
       })
     );
+  };
+
+  const handleInputBlur = () => {
+    setIsEditing(false);
+    emitNameChange(taskName);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      setIsEditing(false);
+      emitNameChange(taskName);
+    } else if (e.key === 'Escape') {
+      // Revert to original name on Escape
+      setTaskName(originalNameRef.current);
+      if (selectedTaskId) {
+        dispatch(updateSelectedTaskName({ id: selectedTaskId, name: originalNameRef.current }));
+        const currentTask = store.getState().taskManagement.entities[selectedTaskId];
+        if (currentTask) {
+          dispatch(
+            updateTask({
+              ...currentTask,
+              title: originalNameRef.current,
+              updatedAt: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as Task)
+          );
+        }
+      }
+      setIsEditing(false);
+    }
   };
 
   const isLoadingTaskName = loadingTask && !taskFormViewModel?.task?.name;
@@ -89,6 +127,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             value={taskName}
             onChange={onTaskNameChange}
             onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
             placeholder={t('taskHeader.taskNamePlaceholder')}
             className="task-name-input task-name-input--large"
             style={{ width: '100%', border: 'none', padding: 0, boxShadow: 'none', fontSize: '22px', fontWeight: 700 }}
@@ -99,7 +138,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
         ) : (
           <Typography.Title
             level={4}
-            onClick={() => setIsEditing(true)}
+            onClick={handleStartEditing}
             className="task-name-display task-name-display--large"
             style={{ margin: 0, cursor: 'text', lineHeight: 1.3, fontWeight: 700, fontSize: '22px' }}
           >

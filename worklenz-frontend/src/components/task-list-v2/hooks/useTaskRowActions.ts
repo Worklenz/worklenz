@@ -1,4 +1,4 @@
-import { useCallback, RefObject, useEffect } from 'react';
+import { useCallback, RefObject, useEffect, useRef } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
@@ -28,6 +28,16 @@ export const useTaskRowActions = ({
 }: UseTaskRowActionsProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
+
+  // FIX: Keep refs to socket and connected so callbacks always read the live
+  // values rather than a stale closure captured at memoization time.
+  // This is the root cause of the name-change socket emit silently not firing
+  // when connected was false on first render (StrictMode stale closure).
+  const socketRef = useRef(socket);
+  socketRef.current = socket;
+  const connectedRef = useRef(connected);
+  connectedRef.current = connected;
+
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
 
   // When the drawer closes while this row is in active inline edit, flush the save
@@ -37,10 +47,10 @@ export const useTaskRowActions = ({
     // Drawer just closed — emit save if the name actually changed
     if (
       taskName?.trim() !== '' &&
-      connected &&
+      connectedRef.current &&
       taskName.trim() !== (originalTaskNameRef.current ?? '').trim()
     ) {
-      socket?.emit(
+      socketRef.current?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
@@ -66,10 +76,10 @@ export const useTaskRowActions = ({
   const handleTaskNameSave = useCallback(() => {
     if (
       taskName?.trim() !== '' &&
-      connected &&
+      connectedRef.current &&
       taskName.trim() !== (originalTaskNameRef.current ?? '').trim()
     ) {
-      socket?.emit(
+      socketRef.current?.emit(
         SocketEvents.TASK_NAME_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
@@ -81,12 +91,11 @@ export const useTaskRowActions = ({
     setEditTaskName(false);
   }, [
     taskName,
-    connected,
-    socket,
     task.id,
     task.parent_task_id,
     originalTaskNameRef,
     setEditTaskName,
+    // socketRef and connectedRef are stable refs — no need in deps
   ]);
 
   // Handle task name edit start — snapshot the current name so handleTaskNameSave
