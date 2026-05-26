@@ -46,9 +46,10 @@ import logger from '@/utils/errorLogger';
 
 type TaskDrawerHeaderProps = {
   t: TFunction;
+  canCreateTask?: boolean;
 };
 
-const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
+const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
@@ -176,16 +177,18 @@ const TaskDrawerHeader = ({ t }: TaskDrawerHeaderProps) => {
         </div>
 
         {/* Delete Task item */}
-        <div
-          className="task-drawer-dropdown-item task-drawer-dropdown-item--danger"
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          <DeleteOutlined />
-          {t('taskHeader.deleteTask') || 'Delete Task'}
-        </div>
+        {canCreateTask && (
+          <div
+            className="task-drawer-dropdown-item task-drawer-dropdown-item--danger"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <DeleteOutlined />
+            {t('taskHeader.deleteTask') || 'Delete Task'}
+          </div>
+        )}
 
         {/* Confirmation */}
-        {showDeleteConfirm && (
+        {canCreateTask && showDeleteConfirm && (
           <div
             style={{
               padding: '8px 12px',

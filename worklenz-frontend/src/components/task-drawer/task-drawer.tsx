@@ -32,13 +32,15 @@ import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const { t: tCommon } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<string>('info');
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
-
+  const { canCreateTask } = useTaskCreationPermission();
   const { showTaskDrawer, timeLogEditing } = useAppSelector(state => state.taskDrawerReducer);
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -123,7 +125,7 @@ const TaskDrawer = () => {
     {
       key: 'info',
       label: t('taskInfoTab.title', { defaultValue: 'Info' }),
-      children: <TaskDrawerInfoTab t={t} />,
+      children: <TaskDrawerInfoTab t={t} canCreateTask={canCreateTask} />,
     },
     {
       key: 'timeLog',
@@ -188,7 +190,7 @@ const TaskDrawer = () => {
     afterOpenChange: handleAfterOpenChange,
     width: 720,
     destroyOnClose: false,
-    title: <TaskDrawerHeader t={t} />,
+    title: <TaskDrawerHeader t={t} canCreateTask={canCreateTask} />,
     closeIcon: isSubTask ? <ArrowLeftOutlined /> : <CloseOutlined />,
     footer: renderFooter(),
     styles: {

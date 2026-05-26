@@ -40,9 +40,10 @@ import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
+  canCreateTask?: boolean;
 }
 
-const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
+const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
   const FREE_ATTACHMENT_SIZE_LIMIT_MB = 25;
   const BUSINESS_ATTACHMENT_SIZE_LIMIT_MB = 250;
   const dispatch = useAppDispatch();
@@ -230,6 +231,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
           subTasks={subTasks}
           loadingSubTasks={loadingSubTasks}
           refreshSubTasks={() => fetchSubTasks()}
+          canCreateTask={canCreateTask}
           t={t}
         />
       ),
