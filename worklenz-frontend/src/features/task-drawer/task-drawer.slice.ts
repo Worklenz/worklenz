@@ -269,11 +269,24 @@ const taskDrawerSlice = createSlice({
     (builder.addCase(fetchTask.pending, state => {
       state.loadingTask = true;
     }),
-      builder.addCase(fetchTask.fulfilled, (state, action) => {
-        state.loadingTask = false;
-        if (!action.payload) return;
-        state.taskFormViewModel = action.payload;
-      }),
+     builder.addCase(fetchTask.fulfilled, (state, action) => {
+  state.loadingTask = false;
+  if (!action.payload) return;
+  
+  // Preserve due_time if already set in current state and API returns null/undefined
+  // This prevents the optimistic update from being wiped by a stale API response
+  const existingDueTime = state.taskFormViewModel?.task?.due_time;
+  state.taskFormViewModel = action.payload;
+  
+  if (
+    existingDueTime &&
+    state.taskFormViewModel?.task &&
+    state.taskFormViewModel.task.id === action.payload.task?.id &&
+    !action.payload.task?.due_time
+  ) {
+    state.taskFormViewModel.task.due_time = existingDueTime;
+  }
+}),
       builder.addCase(fetchTask.rejected, (state, action) => {
         state.loadingTask = false;
       }));
