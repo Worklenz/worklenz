@@ -167,7 +167,9 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
           </Flex>
         </Form.Item>
 
-        <TaskDrawerDueDate task={taskFormViewModel?.task as ITaskViewModel} t={t} form={form} />
+     {taskFormViewModel?.task && (
+  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} />
+)}
 
         <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
 

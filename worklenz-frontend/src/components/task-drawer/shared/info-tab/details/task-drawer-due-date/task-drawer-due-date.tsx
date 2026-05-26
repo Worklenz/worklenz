@@ -119,43 +119,41 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
   // Due time handling
   const timeValue = task?.due_time ? dayjs(task.due_time, 'HH:mm') : null;
 
-  const handleDueTimeChange = useCallback(
-    (_time: dayjs.Dayjs | null, timeString: string | string[]) => {
-      try {
-        const value = Array.isArray(timeString) ? timeString[0] : timeString;
+const handleDueTimeChange = useCallback(
+  (_time: dayjs.Dayjs | null, timeString: string | string[]) => {
+    try {
+      const value = Array.isArray(timeString) ? timeString[0] : timeString;
+      const dueTime = value || null;
 
-        socket?.emit(
-          SocketEvents.TASK_DUE_TIME_CHANGE.toString(),
-          JSON.stringify({
-            task_id: task.id,
-            due_time: value || null,
-          })
-        );
-
-        socket?.once(
-          SocketEvents.TASK_DUE_TIME_CHANGE.toString(),
-          (data: { id: string; due_time: string | null }) => {
-            if (!data) return;
-
-            // Update task drawer slice
-            dispatch(setTaskDueTime({ id: data.id, due_time: data.due_time }));
-
-            // Update task-management slice
-            const currentTask = store.getState().taskManagement.entities[data.id];
-            if (currentTask) {
-              dispatch(updateTask({ ...currentTask, due_time: data.due_time }));
-            }
-
-            // Update form field
-            form.setFieldsValue({ dueTime: data.due_time });
-          }
-        );
-      } catch (error) {
-        logger.error('Failed to update due time:', error);
+      // Optimistically update Redux immediately
+      dispatch(setTaskDueTime({ id: task.id, due_time: dueTime }));
+      const currentTask = store.getState().taskManagement.entities[task.id];
+      if (currentTask) {
+        dispatch(updateTask({ ...currentTask, due_time: dueTime }));
       }
-    },
-    [socket, dispatch, form]
-  );
+
+      socket?.emit(
+        SocketEvents.TASK_DUE_TIME_CHANGE.toString(),
+        JSON.stringify({ task_id: task.id, due_time: dueTime })
+      );
+
+      socket?.once(
+        SocketEvents.TASK_DUE_TIME_CHANGE.toString(),
+        (data: { id: string; due_time: string | null }) => {
+          if (!data) return;
+          dispatch(setTaskDueTime({ id: data.id, due_time: data.due_time }));
+          const confirmedTask = store.getState().taskManagement.entities[data.id];
+          if (confirmedTask) {
+            dispatch(updateTask({ ...confirmedTask, due_time: data.due_time }));
+          }
+        }
+      );
+    } catch (error) {
+      logger.error('Failed to update due time:', error);
+    }
+  },
+  [socket, dispatch, task.id]
+);
 
   return (
     <>
@@ -196,10 +194,10 @@ const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
       <Form.Item
         name="dueTime"
         label={t('taskInfoTab.details.due-time', { defaultValue: 'Due Time' })}
+         getValueProps={() => ({ value: timeValue })}
       >
         <TimePicker
           format="HH:mm"
-          value={timeValue}
           onChange={handleDueTimeChange}
           changeOnScroll
           needConfirm={false}
