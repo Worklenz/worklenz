@@ -379,6 +379,7 @@ export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
               task={convertedTask}
               groupId={null}
               isDarkMode={isDarkMode}
+              disabled={!canCreateTask}
               triggerElement={
                 <AvatarGroup
                   members={task.assignee_names || []}
@@ -390,7 +391,7 @@ export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
             />
           ) : (
             // When no assignees: show only the plus button
-            <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+            canCreateTask && <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
           )}
         </div>
       </div>

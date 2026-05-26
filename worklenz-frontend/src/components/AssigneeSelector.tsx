@@ -26,6 +26,7 @@ interface AssigneeSelectorProps {
   kanbanMode?: boolean;
   /** When provided, renders this element as the dropdown trigger instead of the default plus button */
   triggerElement?: React.ReactNode;
+  disabled?: boolean;
 }
 
 /**
@@ -39,6 +40,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   isDarkMode = false,
   kanbanMode = false,
   triggerElement,
+  disabled
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,7 +165,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
+    if (disabled) return;
     if (!isOpen) {
       // Prepare team members data when opening
       const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
