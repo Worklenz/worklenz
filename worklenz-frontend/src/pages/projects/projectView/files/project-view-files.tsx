@@ -15,6 +15,7 @@ import {
   UploadProps,
   Progress,
   message,
+  Popover,
   CloudDownloadOutlined,
   DeleteOutlined,
   InboxOutlined,
@@ -35,6 +36,11 @@ import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
 import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { fetchStorageInfo } from '@/features/admin-center/admin-center.slice';
+import { toggleUpgradeModal, openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
 import {
   ProjectFile,
@@ -46,7 +52,10 @@ import { getFileType } from '@/types/mixpanel-events.types';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import logger from '@/utils/errorLogger';
 
-const MAX_FILE_SIZE_BYTES = 104_857_600; // 100 MB
+const MB = 1024 * 1024;
+const STARTER_FILE_SIZE_LIMIT_BYTES = 25 * MB;
+const BUSINESS_FILE_SIZE_LIMIT_BYTES = 250 * MB;
+const STARTER_STORAGE_LIMIT_BYTES = 5 * 1024 * MB;
 const BLOCKED_EXTENSIONS = [
   'exe',
   'bat',
@@ -88,9 +97,18 @@ const formatFileSize = (bytes?: number): string => {
 };
 
 const ProjectViewFiles = () => {
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('project-view-files');
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const maxFileSizeBytes = hasBusinessAccess
+    ? BUSINESS_FILE_SIZE_LIMIT_BYTES
+    : STARTER_FILE_SIZE_LIMIT_BYTES;
+  const maxFileSizeMb = hasBusinessAccess ? 250 : 25;
   const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const storageInfo = useAppSelector(state => state.adminCenterReducer.storageInfo);
   type PendingUploadFile = UploadFile & { errorMessage?: string };
 
   const [files, setFiles] = useState<ProjectFile[]>([]);
@@ -130,16 +148,31 @@ const ProjectViewFiles = () => {
   const [previewName, setPreviewName] = useState<string | null>(null);
   const [previewUrlLoading, setPreviewUrlLoading] = useState(false);
   const [previewDownloadFn, setPreviewDownloadFn] = useState<(() => void) | null>(null);
+  const [isStorageUpgradePopoverOpen, setIsStorageUpgradePopoverOpen] = useState(false);
+  const [oversizedFileSizeMb, setOversizedFileSizeMb] = useState<number | null>(null);
 
-  const formattedStorage = useMemo(
-    () =>
-      t('storageUsage', {
-        defaultValue: 'Total Storage: {{used}} ({{count}} files)',
+  const GB = 1024 * MB;
+  const storageTotalBytes = storageInfo?.total ? storageInfo.total * GB : null;
+  const storagePercent =
+    storageTotalBytes && storageUsage.used
+      ? Math.min(Math.ceil((storageUsage.used / storageTotalBytes) * 10000) / 100, 100)
+      : 0;
+
+  const formattedStorage = useMemo(() => {
+    if (storageTotalBytes !== null) {
+      return t('storageUsageWithLimit', {
+        defaultValue: '{{used}} of {{total}} used ({{count}} files)',
         used: formatFileSize(storageUsage.used),
+        total: formatFileSize(storageTotalBytes),
         count: storageUsage.fileCount,
-      }),
-    [storageUsage, t]
-  );
+      });
+    }
+    return t('storageUsage', {
+      defaultValue: 'Storage used: {{used}} ({{count}} files)',
+      used: formatFileSize(storageUsage.used),
+      count: storageUsage.fileCount,
+    });
+  }, [storageTotalBytes, storageUsage, t]);
 
   const getFileTypeIcon = (type?: string) => {
     if (!type) return IconsMap['search'];
@@ -269,6 +302,7 @@ const ProjectViewFiles = () => {
 
   useEffect(() => {
     trackMixpanelEvent(evt_project_files_visit);
+    dispatch(fetchStorageInfo());
   }, [trackMixpanelEvent]);
 
   useEffect(() => {
@@ -326,13 +360,20 @@ const ProjectViewFiles = () => {
       return Upload.LIST_IGNORE;
     }
 
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      message.error(
-        t('fileTooLarge', {
-          defaultValue: '{{file}} exceeds the 100 MB limit.',
-          file: file.name,
-        })
-      );
+    if (file.size > maxFileSizeBytes) {
+      if (!hasBusinessAccess) {
+        // Show the upgrade popover with the actual file size
+        const fileSizeMb = Math.round(file.size / MB);
+        setOversizedFileSizeMb(fileSizeMb);
+      } else {
+        message.error(
+          t('fileTooLarge', {
+            defaultValue: '{{file}} exceeds the {{maxSize}} MB limit.',
+            file: file.name,
+            maxSize: maxFileSizeMb,
+          })
+        );
+      }
       return Upload.LIST_IGNORE;
     }
 
@@ -759,9 +800,51 @@ const ProjectViewFiles = () => {
     >
       {activeTab === 'project' ? (
         <>
-          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
             {formattedStorage}
           </Typography.Text>
+          {storageTotalBytes !== null && (
+            <Progress
+              percent={Math.min(storagePercent, 100)}
+              size="small"
+              style={{ marginBottom: 12 }}
+              status={storagePercent >= 90 ? 'exception' : 'normal'}
+              showInfo={false}
+            />
+          )}
+          {!hasBusinessAccess && (
+            <Popover
+              trigger="click"
+              open={isStorageUpgradePopoverOpen}
+              onOpenChange={setIsStorageUpgradePopoverOpen}
+              title={t('storageLimitTitle', { defaultValue: 'Storage Limit' })}
+              content={
+                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                  <Typography.Text>
+                    {t('storageLimitBody', {
+                      defaultValue:
+                        'You are using {{used}} of your {{total}} storage limit. Upgrade to get more storage for your team files.',
+                      used: formatFileSize(storageUsage.used),
+                      total: formatFileSize(storageTotalBytes ?? STARTER_STORAGE_LIMIT_BYTES),
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsStorageUpgradePopoverOpen(false);
+                      dispatch(toggleUpgradeModal());
+                    }}
+                  >
+                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                  </Button>
+                </Flex>
+              }
+            >
+              <Button size="small" type="default" style={{ marginBottom: 16 }}>
+                {t('addMoreStorage', { defaultValue: 'Add More Storage' })}
+              </Button>
+            </Popover>
+          )}
 
           <Table<ProjectFile>
             dataSource={files}
@@ -824,10 +907,39 @@ const ProjectViewFiles = () => {
       >
         <Typography.Paragraph style={{ marginBottom: 16 }}>
           {t('uploadDescription', {
-            defaultValue: 'Drag & Drop files or click to browse. Max 100 MB per file.',
+            defaultValue: 'Drag & Drop files or click to browse. Max {{maxSize}} MB per file.',
+            maxSize: maxFileSizeMb,
           })}
         </Typography.Paragraph>
 
+        <Popover
+          open={oversizedFileSizeMb !== null}
+          onOpenChange={visible => {
+            if (!visible) setOversizedFileSizeMb(null);
+          }}
+          title={t('fileTooLargePopoverTitle', { defaultValue: 'File Too Large' })}
+          content={
+            <Flex vertical gap={12} style={{ maxWidth: 300 }}>
+              <Typography.Text>
+                {t('fileTooLargePopoverBody', {
+                  defaultValue:
+                    'Files larger than 25MB require the Business plan. This file is {{sizeMb}} MB. Upgrade to upload larger files.',
+                  sizeMb: oversizedFileSizeMb,
+                })}
+              </Typography.Text>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setOversizedFileSizeMb(null);
+                  dispatch(openUpgradeModal('fileSizeLimit'));
+                }}
+              >
+                {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+              </Button>
+            </Flex>
+          }
+          trigger="click"
+        >
         <Upload.Dragger
           multiple
           beforeUpload={beforeUpload}
@@ -925,10 +1037,12 @@ const ProjectViewFiles = () => {
           </p>
           <p className="ant-upload-hint">
             {t('uploadHintLimit', {
-              defaultValue: 'PDF, images, documents, archives. Max 100 MB per file.',
+              defaultValue: 'PDF, images, documents, archives. Max {{maxSize}} MB per file.',
+              maxSize: maxFileSizeMb,
             })}
           </p>
         </Upload.Dragger>
+        </Popover>
       </Modal>
     </Card>
   );

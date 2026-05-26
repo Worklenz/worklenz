@@ -163,5 +163,18 @@
   "teamHierarchyEmptyTitle": "Keine Teamhierarchie gefunden",
   "teamHierarchyEmptyDescription": "Weisen Sie Mitglieder Teamleitern zu, um die Berichtsstruktur aufzubauen.",
   "teamHierarchyNoResultsTitle": "Keine übereinstimmenden Mitglieder",
-  "teamHierarchyNoResultsDescription": "Versuchen Sie einen anderen Suchbegriff."
+  "teamHierarchyNoResultsDescription": "Versuchen Sie einen anderen Suchbegriff.",
+  "seatUsageWithLimitText": "{{used}} von {{total}} Plätzen verwendet",
+  "seatUsageOverLimitTooltip": "Aktuelle Mitglieder überschreiten Ihr Planlimit. Deaktivierte Mitglieder werden nicht zu Ihrer Sitzplatzauslastung gezählt.",
+  "seatLimitPopoverTitle": "Sitzplatzlimit erreicht",
+  "workspaceSeatLimitPopoverBody": "Ihr Workspace nutzt {{used}} von {{total}} verfügbaren Plätzen. Upgraden Sie Ihren Plan, um mehr Mitglieder hinzuzufügen.",
+  "seatLimitPopoverCta": "Jetzt upgraden",
+  "addMoreSeats": "Mehr Plätze hinzufügen",
+  "closePopover": "Popover schließen",
+  "memberDeactivatedInviteSent": "Mitglied deaktiviert. Ihre Einladung wurde gesendet.",
+  "memberDeactivatedProjectInviteSent": "Mitglied deaktiviert. Projekteinladung für \"{{projectName}}\" wurde gesendet.",
+  "saveMemberNameTooltip": "Save name",
+  "cancelRenameTooltip": "Cancel rename",
+  "seatUsageText": "{{used}} Plätze verwendet",
+  "seatUsageLoading": "Sitzplatznutzung wird geladen..."
 }

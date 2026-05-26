@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Fazer upgrade agora",
   "taskHeader": {
     "taskNamePlaceholder": "Digite sua tarefa",
     "deleteTask": "Excluir tarefa",
@@ -71,7 +72,9 @@
     "attachments": {
       "title": "Anexos",
       "chooseOrDropFileToUpload": "Escolha ou arraste arquivo para enviar",
-      "uploading": "Enviando..."
+      "uploading": "Enviando...",
+      "maxFileSizeText": "Tamanho máximo do arquivo: {{maxSize}}MB",
+      "upgradeLinkText": "Precisa de uploads maiores? Faça upgrade"
     },
     "comments": {
       "title": "Comentários",
@@ -85,10 +88,15 @@
       "commentButton": "Comentar",
       "attachFiles": "Anexar arquivos",
       "addMoreFiles": "Adicionar mais arquivos",
-      "selectedFiles": "Arquivos selecionados (Até 25MB, Máximo de {count})",
-      "maxFilesError": "Você pode enviar no máximo {count} arquivos",
+      "selectedFiles": "Arquivos selecionados (Até 25MB, Máximo de {{count}} arquivos)",
+      "maxFilesError": "Você pode enviar no máximo {{count}} arquivos",
       "processFilesError": "Falha ao processar arquivos",
       "addCommentError": "Por favor, adicione um comentário ou anexe arquivos",
+      "fileTooLargeToSend": "Arquivos acima de 25MB em comentários exigem o plano Business. Remova este arquivo ou faça upgrade para continuar.",
+      "historyLockedBoundary": "O histórico de comentários está limitado aos últimos 90 dias neste plano",
+      "historyLockedTitle": "Histórico de comentários bloqueado",
+      "historyLockedBody": "Comentários com mais de 90 dias estão disponíveis no plano Business.",
+      "viewFullComments": "Ver histórico de comentários",
       "createdBy": "Criado {{time}} por {{user}}",
       "updatedTime": "Atualizado {{time}}"
     },
@@ -101,6 +109,10 @@
     "totalLogged": "Total registrado",
     "exportToExcel": "Exportar para Excel",
     "noTimeLogsFound": "Nenhum registro de tempo encontrado",
+    "historyLockedBoundary": "O histórico de registros de tempo está limitado aos últimos 90 dias neste plano",
+    "historyLockedTitle": "Histórico de registro de tempo bloqueado",
+    "historyLockedBody": "Registros de tempo com mais de 90 dias estão disponíveis no plano Business.",
+    "viewFullTimeLog": "Ver histórico de registros de tempo",
     "timeLogForm": {
       "inputMode": "Modo de entrada",
       "durationMode": "Duração",
@@ -132,7 +144,11 @@
     "remove": "REMOVER",
     "none": "Nenhum",
     "weight": "Peso",
-    "createdTask": "criou a tarefa."
+    "createdTask": "criou a tarefa.",
+    "historyLockedBoundary": "O histórico de atividade está limitado aos últimos 90 dias neste plano",
+    "historyLockedTitle": "Histórico de atividade bloqueado",
+    "historyLockedBody": "Atividades de tarefas com mais de 90 dias estão disponíveis no plano Business.",
+    "viewFullActivity": "Ver histórico de atividade"
   },
   "taskProgress": {
     "markAsDoneTitle": "Marcar tarefa como concluída?",

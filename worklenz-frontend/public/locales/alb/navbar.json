@@ -47,5 +47,10 @@
     "timerRunning_other": "{{count}} kohëmatës në punë",
     "recentLog": "{{count}} regjistër i fundit",
     "recentLog_other": "{{count}} regjistrat e fundit"
-  }
+  },
+  "reporting": "Reports",
+  "clientPortalUpgradePopoverTitle": "Portali i Klientit",
+  "clientPortalUpgradePopoverBody": "Ndani progresin e projektit me klientët tuaj përmes një portali të markuar. I disponueshëm në planin Business.",
+  "clientPortalUpgradePopoverCta": "Përmirëso Tani",
+  "closePopover": "Mbyll dritaren"
 }
