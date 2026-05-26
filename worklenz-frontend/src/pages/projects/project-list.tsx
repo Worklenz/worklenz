@@ -951,6 +951,7 @@ const ProjectList: React.FC = () => {
               />
             </Tooltip>
             <Segmented<IProjectFilter>
+               className="project-filter-segmented"
               options={segmentOptions}
               defaultValue={filters[getFilterIndex()] ?? filters[0]}
               onChange={handleSegmentChange}
