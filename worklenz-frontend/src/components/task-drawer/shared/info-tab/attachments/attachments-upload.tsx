@@ -1,5 +1,5 @@
 import { LoadingOutlined, PlusOutlined } from '@/shared/antd-imports';
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { TFunction } from 'i18next';
 import './attachments-upload.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -27,13 +27,12 @@ const AttachmentsUpload = ({
   showUpgradeLink = true,
 }: AttachmentsUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { trackMixpanelEvent } = useMixpanelTracking();
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
       const filesArray = Array.from(event.target.files);
-      // Track each file upload by detected file type
       filesArray.forEach(file => {
         trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(file.name) });
       });
@@ -47,37 +46,8 @@ const AttachmentsUpload = ({
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragOver(false);
-
-    if (!loadingTask && !uploading && e.dataTransfer.files.length > 0) {
-      const filesArray = Array.from(e.dataTransfer.files);
-      // Track each dropped file upload by detected file type
-      filesArray.forEach(file => {
-        trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(file.name) });
-      });
-      onFilesSelected(filesArray);
-    }
-  };
-
   return (
-    <div
-      className={`task-drawer-attachments-upload ant-upload-list ant-upload-list-picture-card ${isDragOver ? 'focused' : ''}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
+    <div className="task-drawer-attachments-upload ant-upload-list ant-upload-list-picture-card">
       <div className="ant-upload ant-upload-select ant-upload-select-picture-card">
         <div
           className="ant-upload"
