@@ -235,13 +235,13 @@ AddSubtaskRow.displayName = 'AddSubtaskRow';
 const getSubtaskBackgroundColor = (depth: number) => {
   switch (depth) {
     case 1:
-      return 'bg-gray-50 dark:bg-gray-800/50';
+      return 'bg-gray-50 dark:bg-transparent';
     case 2:
-      return 'bg-blue-50 dark:bg-blue-900/20';
+      return 'bg-blue-50 dark:bg-transparent';
     case 3:
-      return 'bg-green-50 dark:bg-green-900/20';
+      return 'bg-green-50 dark:bg-transparent';
     default:
-      return 'bg-gray-50 dark:bg-gray-800/50';
+      return 'bg-gray-50 dark:bg-transparent';
   }
 };
 

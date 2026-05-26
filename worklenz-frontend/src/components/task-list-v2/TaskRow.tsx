@@ -156,7 +156,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       >
         {visibleColumns.map((column, index) => {
           const rowBackgrounds = {
-            normal: isDarkMode ? '#1e1e1e' : '#ffffff',
+            normal: isDarkMode ? (isSubtask ? '#141414' : '#1e1e1e') : '#ffffff',
             hover: isDarkMode ? '#1f2937' : '#f9fafb',
             dragOver: isDarkMode ? '#1e3a8a33' : '#dbeafe',
           };

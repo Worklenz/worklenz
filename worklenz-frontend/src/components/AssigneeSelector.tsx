@@ -24,6 +24,8 @@ interface AssigneeSelectorProps {
   groupId?: string | null;
   isDarkMode?: boolean;
   kanbanMode?: boolean;
+  /** When provided, renders this element as the dropdown trigger instead of the default plus button */
+  triggerElement?: React.ReactNode;
 }
 
 /**
@@ -36,6 +38,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   groupId = null,
   isDarkMode = false,
   kanbanMode = false,
+  triggerElement,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -255,25 +258,35 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
   return (
     <>
-      <button
-        ref={buttonRef}
-        onClick={handleDropdownToggle}
-        className={`
-          w-5 h-5 rounded-full border border-dashed flex items-center justify-center
-          transition-colors duration-200
-          ${
-            isOpen
-              ? isDarkMode
-                ? 'border-blue-500 bg-blue-900/20 text-blue-400'
-                : 'border-blue-500 bg-blue-50 text-blue-600'
-              : isDarkMode
-                ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
-                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
-          }
-        `}
-      >
-        <PlusOutlined className="text-xs" />
-      </button>
+      {triggerElement ? (
+        // Custom trigger: clone the element and inject onClick so it works even
+        // when the child calls stopPropagation (e.g. AvatarGroup)
+        <span ref={buttonRef} style={{ display: 'inline-flex', cursor: 'pointer' }}>
+          {React.cloneElement(triggerElement as React.ReactElement, {
+            onClick: handleDropdownToggle,
+          })}
+        </span>
+      ) : (
+        <button
+          ref={buttonRef}
+          onClick={handleDropdownToggle}
+          className={`
+            w-5 h-5 rounded-full border border-dashed flex items-center justify-center
+            transition-colors duration-200
+            ${
+              isOpen
+                ? isDarkMode
+                  ? 'border-blue-500 bg-blue-900/20 text-blue-400'
+                  : 'border-blue-500 bg-blue-50 text-blue-600'
+                : isDarkMode
+                  ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
+                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+            }
+          `}
+        >
+          <PlusOutlined className="text-xs" />
+        </button>
+      )}
 
       {isOpen &&
         createPortal(

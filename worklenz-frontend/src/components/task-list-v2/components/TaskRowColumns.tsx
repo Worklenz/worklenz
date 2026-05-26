@@ -357,31 +357,45 @@ interface AssigneesColumnProps {
 }
 
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
-  ({ width, task, convertedTask, isDarkMode, canCreateTask = true }) => (
-    <div
-      className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
-      style={{ 
-        width,
-        scrollbarWidth: 'none',
-        msOverflowStyle: 'none',
-        WebkitOverflowScrolling: 'touch',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }}
-    >
-      <div className="flex items-center gap-1" style={{ flexShrink: 0, minWidth: 'max-content' }}>
-        <AvatarGroup
-          members={task.assignee_names || []}
-          maxCount={3}
-          isDarkMode={isDarkMode}
-          size={24}
-        />
-        {canCreateTask && (
-          <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
-        )}
+  ({ width, task, convertedTask, isDarkMode, canCreateTask = true }) => {
+    const hasAssignees = (task.assignee_names || []).length > 0;
+
+    return (
+      <div
+        className="flex items-center gap-1 px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll"
+        style={{ 
+          width,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch',
+          whiteSpace: 'nowrap',
+          flexShrink: 0,
+        }}
+      >
+        <div className="flex items-center gap-1" style={{ flexShrink: 0, minWidth: 'max-content' }}>
+          {hasAssignees ? (
+            // When assignees exist: avatars act as the trigger, no plus button
+            <AssigneeSelector
+              task={convertedTask}
+              groupId={null}
+              isDarkMode={isDarkMode}
+              triggerElement={
+                <AvatarGroup
+                  members={task.assignee_names || []}
+                  maxCount={3}
+                  isDarkMode={isDarkMode}
+                  size={24}
+                />
+              }
+            />
+          ) : (
+            // When no assignees: show only the plus button
+            <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+          )}
+        </div>
       </div>
-    </div>
-  )
+    );
+  }
 );
 
 AssigneesColumn.displayName = 'AssigneesColumn';
