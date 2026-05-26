@@ -1925,6 +1925,7 @@ const TaskListV2Section: React.FC = () => {
                 selectedTaskIds={selectedTaskIds}
                 totalSelected={selectedTaskIds.length}
                 projectId={urlProjectId}
+                canCreateTask={canCreateTask}
                 onClearSelection={bulkActions.handleClearSelection}
                 onBulkStatusChange={statusId =>
                   bulkActions.handleBulkStatusChange(statusId, selectedTaskIds)
