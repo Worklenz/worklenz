@@ -68,15 +68,28 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     return replacedContent;
   }
 
+  private static restoreContentFromPlaceholders(content: string, mentions: IMention[]): string {
+    if (!mentions || mentions.length === 0) return content;
+
+    let restoredContent = content;
+    mentions.forEach((mention, index) => {
+      const regex = new RegExp(`\\{${index}\\}`, "g");
+      restoredContent = restoredContent.replace(regex, `@${mention.name}`);
+    });
+
+    return restoredContent;
+  }
+
   private static async getUserDataByTeamMemberId(senderUserId: string, teamMemberId: string, projectId: string) {
     const q = `
       SELECT id,
              socket_id,
              users.name AS user_name,
+             users.email,
              (SELECT email_notifications_enabled
               FROM notification_settings
               WHERE notification_settings.team_id = (SELECT team_id FROM team_members WHERE id = $2)
-                AND notification_settings.user_id = users.id),
+                AND notification_settings.user_id = users.id) AS email_notifications_enabled,
              (SELECT name FROM teams WHERE id = (SELECT team_id FROM team_members WHERE id = $2)) AS team,
              (SELECT name FROM projects WHERE id = $3) AS project,
              (SELECT color_code FROM projects WHERE id = $3) AS project_color
@@ -172,6 +185,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
     const assignees = await getAssignees(req.body.task_id);
     const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
+    
+    // Restore mention names for email display
+    const restoredContentForEmail = this.restoreContentFromPlaceholders(req.body.content, mentions);
 
     for (const member of assignees || []) {
       if (member.user_id && member.user_id === req.user?.id) continue;
@@ -190,7 +206,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
           message: commentMessage,
           receiverEmail: member.email,
           receiverName: member.name,
-          content: req.body.content,
+          content: restoredContentForEmail,
           commentId: response.id,
           projectId: response.project_id,
           taskId: req.body.task_id,
@@ -222,7 +238,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
               message: mentionMessage,
               receiverEmail: member.email,
               receiverName: member.user_name,
-              content: req.body.content,
+              content: restoredContentForEmail,
               commentId: response.id,
               projectId: response.project_id,
               taskId: req.body.task_id,
