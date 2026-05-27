@@ -143,6 +143,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const response = data.comment;
     const commentId = response.id;
 
+    // Bump the parent task's updated_at so the "Updated X ago" timestamp reflects the new comment
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
+
     if (attachments.length !== 0) {
       for (const attachment of attachments) {
         const q = `
@@ -310,6 +313,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     }
 
     const updatedComment = updateResult.rows[0];
+
+    // Bump the parent task's updated_at so the "Updated X ago" timestamp reflects the edit
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [updatedComment.task_id]);
 
     // ✅ Update content — check first to avoid ON CONFLICT issues
     const contentExistsResult = await db.query(
