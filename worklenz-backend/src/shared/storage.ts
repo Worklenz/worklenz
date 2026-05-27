@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   DeleteObjectCommandInput,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   PutObjectCommandInput,
@@ -581,4 +582,109 @@ export async function createPresignedUrlWithClient(key: string, file: string) {
     return createPresignedUrlWithAzureClient(key, file);
   }
   return createPresignedUrlWithS3Client(key, file);
+}
+
+// ---------------------------------------------------------------------------
+// Presigned upload URL — browser uploads directly to storage (no Node proxy)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a presigned PUT URL for S3/MinIO so the browser can upload directly.
+ * Expires in 15 minutes — enough for large files on slow connections.
+ */
+async function createPresignedUploadUrlS3(
+  key: string,
+  contentType: string,
+): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    ContentType: contentType,
+  });
+  return getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 min
+}
+
+/**
+ * Generate a write-SAS URL for Azure Blob Storage so the browser can upload directly.
+ * Expires in 15 minutes.
+ */
+async function createPresignedUploadUrlAzure(
+  key: string,
+  contentType: string,
+): Promise<string | null> {
+  try {
+    if (
+      !azureContainerClient ||
+      !AZURE_STORAGE_ACCOUNT_NAME ||
+      !AZURE_STORAGE_ACCOUNT_KEY
+    ) {
+      throw new Error("Azure Blob Storage not configured properly");
+    }
+
+    const sharedKeyCredential = new StorageSharedKeyCredential(
+      AZURE_STORAGE_ACCOUNT_NAME,
+      AZURE_STORAGE_ACCOUNT_KEY,
+    );
+
+    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    const expiresOn = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+
+    const sasOptions = {
+      containerName,
+      blobName: key,
+      permissions: BlobSASPermissions.parse("cw"), // create + write
+      startsOn: new Date(),
+      expiresOn,
+      contentType: contentType || undefined,
+    };
+
+    const sasToken = generateBlobSASQueryParameters(
+      sasOptions,
+      sharedKeyCredential,
+    ).toString();
+
+    return `${AZURE_STORAGE_URL}/${containerName}/${key}?${sasToken}`;
+  } catch (error) {
+    log_error(error);
+    return null;
+  }
+}
+
+/**
+ * Returns a presigned URL the browser can use to PUT a file directly to storage.
+ * Works for both S3/MinIO and Azure Blob Storage.
+ */
+export async function createPresignedUploadUrl(
+  key: string,
+  contentType: string,
+): Promise<string | null> {
+  try {
+    if (STORAGE_PROVIDER === "azure") {
+      return createPresignedUploadUrlAzure(key, contentType);
+    }
+    return createPresignedUploadUrlS3(key, contentType);
+  } catch (error) {
+    log_error(error);
+    return null;
+  }
+}
+
+/**
+ * Verify that an object actually exists in storage after a direct upload.
+ * Used by the confirm endpoint to prevent phantom DB records.
+ */
+export async function objectExists(key: string): Promise<boolean> {
+  try {
+    if (STORAGE_PROVIDER === "azure") {
+      if (!azureContainerClient) return false;
+      const blobClient = azureContainerClient.getBlockBlobClient(key);
+      return await blobClient.exists();
+    }
+
+    // S3 / MinIO — HeadObject throws if the key doesn't exist
+    await s3Client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
 }

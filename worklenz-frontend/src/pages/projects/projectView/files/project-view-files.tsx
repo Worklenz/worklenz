@@ -434,12 +434,38 @@ const ProjectViewFiles = () => {
         }));
 
         try {
-          const response = await projectFilesApiService.upload(projectId, rawFile, percent => {
-            updatePendingFile(file.uid, current => ({ ...current, status: 'uploading', percent }));
-          });
+          // Step 1 — get presigned URL from backend (fast, no file bytes)
+          const presignResponse = await projectFilesApiService.presign(
+            projectId,
+            rawFile.name,
+            rawFile.size,
+            rawFile.type || 'application/octet-stream'
+          );
 
-          if (!response.done) {
-            throw new Error('Upload failed');
+          if (!presignResponse.done || !presignResponse.body) {
+            throw new Error(presignResponse.message || 'Failed to initiate upload');
+          }
+
+          const { file_id, upload_url } = presignResponse.body;
+
+          // Step 2 — upload directly to S3/Azure (progress tracked via XHR)
+          await projectFilesApiService.uploadDirect(
+            upload_url,
+            rawFile,
+            percent => {
+              updatePendingFile(file.uid, current => ({
+                ...current,
+                status: 'uploading',
+                percent,
+              }));
+            }
+          );
+
+          // Step 3 — confirm with backend so it marks the DB record active
+          const confirmResponse = await projectFilesApiService.confirm(projectId, file_id);
+
+          if (!confirmResponse.done) {
+            throw new Error(confirmResponse.message || 'Upload confirmation failed');
           }
 
           trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(rawFile.name) });
@@ -451,11 +477,20 @@ const ProjectViewFiles = () => {
           }));
         } catch (error: unknown) {
           hasError = true;
-          const serverMessage = (error as any)?.response?.data?.message as string | undefined;
+
+          // Distinguish storage-side errors from backend errors
+          const axiosMessage = (error as any)?.response?.data?.message as string | undefined;
+          const rawMessage = error instanceof Error ? error.message : undefined;
+          const serverMessage = axiosMessage || rawMessage;
+
           const tooLarge = serverMessage?.toLowerCase().includes('max file size') || false;
+          const expired = serverMessage?.toLowerCase().includes('expired') || false;
+
           const errorMessage = tooLarge
             ? t('fileTooLargeLabel', { defaultValue: 'File too large' })
-            : serverMessage || t('uploadFailedShort', { defaultValue: 'Upload failed' });
+            : expired
+              ? t('uploadExpired', { defaultValue: 'Upload session expired. Please try again.' })
+              : serverMessage || t('uploadFailedShort', { defaultValue: 'Upload failed' });
 
           updatePendingFile(file.uid, current => ({
             ...current,
@@ -463,6 +498,8 @@ const ProjectViewFiles = () => {
             percent: undefined,
             errorMessage,
           }));
+
+          logger.error('Error uploading file', error);
         }
       }
 

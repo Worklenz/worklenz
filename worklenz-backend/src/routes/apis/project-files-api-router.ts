@@ -60,12 +60,27 @@ projectFilesApiRouter.get(
   safeControllerFunction(ProjectFilesController.storage),
 );
 
+// Legacy synchronous upload (kept for backward compatibility with small files)
 projectFilesApiRouter.post(
   "/",
   verifyProjectAccess("params", "projectId"),
   handleUpload,
   projectFilesValidator,
   safeControllerFunction(ProjectFilesController.upload),
+);
+
+// Async presigned-URL upload — Step 1: get a presigned PUT URL
+projectFilesApiRouter.post(
+  "/presign",
+  verifyProjectAccess("params", "projectId"),
+  safeControllerFunction(ProjectFilesController.presign),
+);
+
+// Async presigned-URL upload — Step 2: confirm the upload completed
+projectFilesApiRouter.post(
+  "/confirm",
+  verifyProjectAccess("params", "projectId"),
+  safeControllerFunction(ProjectFilesController.confirm),
 );
 
 projectFilesApiRouter.get(
