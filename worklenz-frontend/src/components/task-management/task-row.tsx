@@ -436,6 +436,12 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
       setEstimationValue(task.timeTracking?.estimated ?? null);
     }, [task.timeTracking?.estimated]);
 
+    useEffect(() => {
+      if (!editTaskName) {
+        setTaskName(safeTextDisplay(task.title || ''));
+      }
+    }, [editTaskName, task.title]);
+
     // Local date state for optimistic UI — prevents controlled DatePicker from
     // snapping back to the old value while waiting for the socket round-trip
     const [localStartDate, setLocalStartDate] = useState<dayjs.Dayjs | null>(
@@ -539,7 +545,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
     // Optimized task name save handler
     const handleTaskNameSave = useCallback(() => {
       const newTaskName = taskName?.trim();
-      if (newTaskName && connected && newTaskName !== task.title) {
+      if (newTaskName && connected && newTaskName !== safeTextDisplay(task.title)) {
         socket?.emit(
           SocketEvents.TASK_NAME_CHANGE.toString(),
           JSON.stringify({
@@ -715,7 +721,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
       (value: number | null) => {
         setEstimationValue(value);
         if (!connected || !socket || !task.id) return;
-        
+
         const hours = value ? Math.floor(value) : 0;
         const minutes = value ? Math.round((value - hours) * 60) : 0;
 
@@ -1382,7 +1388,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
                     value={estimationValue}
                     placeholder="-"
                     onChange={handleEstimationChange}
-                    onPressEnter={(e) => {
+                    onPressEnter={e => {
                       (e.target as HTMLInputElement).blur();
                     }}
                     controls={false}
@@ -1586,7 +1592,7 @@ const TaskRow: React.FC<TaskRowProps> = React.memo(
             maxWidth: '300px',
           }}
         >
-          {task.title}
+          {safeTextDisplay(task.title)}
         </div>
       );
     }

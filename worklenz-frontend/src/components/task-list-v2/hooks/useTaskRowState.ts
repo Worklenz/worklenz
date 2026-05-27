@@ -3,6 +3,7 @@ import { Task } from '@/types/task-management.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { dayjs } from '@/shared/antd-imports';
 import { getTaskDisplayName, formatDate } from '../components/TaskRowColumns';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export const useTaskRowState = (task: Task) => {
   // State for tracking which date picker is open
@@ -10,21 +11,22 @@ export const useTaskRowState = (task: Task) => {
 
   // State for editing task name
   const [editTaskName, setEditTaskName] = useState(false);
-  const [taskName, setTaskName] = useState(task.title || task.name || '');
+  const decodedTaskName = decodeHtmlEntities(task.title || task.name);
+  const [taskName, setTaskName] = useState(decodedTaskName);
 
   // Captures the name at the moment the user starts editing so handleTaskNameSave
   // can compare against the true pre-edit value. We cannot use task.title for this
   // because handleTaskNameChangeLive updates task.title in Redux in real time —
   // making the comparison always equal and preventing the socket save from firing.
-  const originalTaskNameRef = useRef<string>(task.title || task.name || '');
+  const originalTaskNameRef = useRef<string>(decodedTaskName);
 
   // Update local taskName state when task name changes from Redux,
   // but only when NOT actively editing to avoid overwriting what the user is typing
   useEffect(() => {
     if (!editTaskName) {
-      setTaskName(task.title || task.name || '');
+      setTaskName(decodedTaskName);
     }
-  }, [task.title, task.name, editTaskName]);
+  }, [decodedTaskName, editTaskName]);
 
   // Memoize task display name
   const taskDisplayName = useMemo(
@@ -94,7 +96,7 @@ export const useTaskRowState = (task: Task) => {
   const labelsAdapter = useMemo(
     () => ({
       id: task.id,
-      name: task.title || task.name,
+      name: decodedTaskName,
       parent_task_id: task.parent_task_id,
       manual_progress: false,
       all_labels:
@@ -119,6 +121,7 @@ export const useTaskRowState = (task: Task) => {
       task.labels,
       task.all_labels?.length,
       task.labels?.length,
+      decodedTaskName,
     ]
   );
 

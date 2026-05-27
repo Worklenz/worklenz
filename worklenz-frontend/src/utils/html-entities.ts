@@ -14,6 +14,10 @@ export function decodeHtmlEntities(text: string | undefined): string {
     return '';
   }
 
+  if (typeof document === 'undefined') {
+    return decodeHtmlEntitiesFallback(text);
+  }
+
   // Create a temporary element to decode HTML entities
   const textarea = document.createElement('textarea');
   textarea.innerHTML = text;

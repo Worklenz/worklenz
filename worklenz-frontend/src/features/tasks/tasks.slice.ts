@@ -23,6 +23,7 @@ import { produce } from 'immer';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -439,6 +440,18 @@ const findTaskInGroups = (
   return null;
 };
 
+const decodeTaskName = (task: IProjectTask): IProjectTask => ({
+  ...task,
+  name: decodeHtmlEntities(task.name),
+  sub_tasks: task.sub_tasks?.map(decodeTaskName),
+});
+
+const decodeTaskGroupNames = (groups: ITaskListGroup[]): ITaskListGroup[] =>
+  groups.map(group => ({
+    ...group,
+    tasks: group.tasks.map(decodeTaskName),
+  }));
+
 export const fetchCustomColumns = createAsyncThunk(
   'tasks/fetchCustomColumns',
   async (projectId: string, { rejectWithValue }) => {
@@ -505,6 +518,7 @@ const taskSlice = createSlice({
       }>
     ) => {
       const { task, groupId, insert = false } = action.payload;
+      const decodedTask = decodeTaskName(task);
       const group = state.taskGroups.find(g => g.id === groupId);
       if (!group || !task.id) return;
 
@@ -521,9 +535,9 @@ const taskSlice = createSlice({
       } else {
         // Handle main task addition
         if (insert) {
-          group.tasks.push(task);
+          group.tasks.push(decodedTask);
         } else {
-          group.tasks.unshift(task);
+          group.tasks.unshift(decodedTask);
         }
       }
     },
@@ -567,12 +581,13 @@ const taskSlice = createSlice({
       action: PayloadAction<{ id: string; parent_task: string; name: string }>
     ) => {
       const { id, name } = action.payload;
+      const decodedName = decodeHtmlEntities(name);
 
       for (const group of state.taskGroups) {
         // Check main tasks
         const task = group.tasks.find(task => task.id === id);
         if (task) {
-          task.name = name;
+          task.name = decodedName;
           return; // Exit early after updating
         }
 
@@ -581,7 +596,7 @@ const taskSlice = createSlice({
           if (task.sub_tasks) {
             const subTask = task.sub_tasks.find(subtask => subtask.id === id);
             if (subTask) {
-              subTask.name = name;
+              subTask.name = decodedName;
               return; // Exit early after updating
             }
           }
@@ -975,13 +990,14 @@ const taskSlice = createSlice({
 
     updateSubTasks: (state, action: PayloadAction<IProjectTask>) => {
       const { parent_task_id } = action.payload;
+      const decodedTask = decodeTaskName(action.payload);
       for (const group of state.taskGroups) {
         const parentTask = group.tasks.find(t => t.id === parent_task_id);
         if (parentTask) {
           if (!parentTask.sub_tasks) {
             parentTask.sub_tasks = [];
           }
-          parentTask.sub_tasks.push({ ...action.payload });
+          parentTask.sub_tasks.push(decodedTask);
           // Always update sub_tasks_count based on actual subtasks array length
           parentTask.sub_tasks_count = (parentTask.sub_tasks_count || 0) + 1;
           break;
@@ -1090,8 +1106,14 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
-        state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
+        state.taskGroups =
+          action.payload && action.payload.groups
+            ? decodeTaskGroupNames(action.payload.groups)
+            : [];
+        state.allTasks =
+          action.payload && action.payload.allTasks
+            ? action.payload.allTasks.map(decodeTaskName)
+            : [];
         state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
         state.totalTasks =
           action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
@@ -1112,7 +1134,7 @@ const taskSlice = createSlice({
             for (const group of state.taskGroups) {
               const task = group.tasks.find(t => t.id === taskId);
               if (task) {
-                task.sub_tasks = subtasks;
+                task.sub_tasks = subtasks.map(decodeTaskName);
                 task.show_sub_tasks = true;
                 break;
               }

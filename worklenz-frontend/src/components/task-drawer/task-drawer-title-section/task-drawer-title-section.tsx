@@ -10,6 +10,7 @@ import { store } from '@/app/store';
 import { Task } from '@/types/task-management.types';
 import { TFunction } from 'i18next';
 import TaskHierarchyBreadcrumb from '../task-hierarchy-breadcrumb/task-hierarchy-breadcrumb';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import './task-drawer-title-section.css';
 
 type Props = {
@@ -27,17 +28,18 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
   );
   const projectName = useAppSelector(state => state.projectReducer.project?.name ?? null);
 
-  const [taskName, setTaskName] = useState<string>(taskFormViewModel?.task?.name ?? '');
+  const decodedTaskName = decodeHtmlEntities(taskFormViewModel?.task?.name);
+  const [taskName, setTaskName] = useState<string>(decodedTaskName);
   // Snapshot the name at the moment editing starts so the blur handler can
   // compare against the true pre-edit value. We cannot use taskFormViewModel.task.name
   // for this because onTaskNameChange updates it live via Redux dispatch.
-  const originalNameRef = React.useRef<string>(taskFormViewModel?.task?.name ?? '');
+  const originalNameRef = React.useRef<string>(decodedTaskName);
 
   useEffect(() => {
     if (!isEditing) {
-      setTaskName(taskFormViewModel?.task?.name ?? '');
+      setTaskName(decodedTaskName);
     }
-  }, [taskFormViewModel?.task?.name, isEditing]);
+  }, [decodedTaskName, isEditing]);
 
   const onTaskNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newName = e.currentTarget.value;
@@ -61,7 +63,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
 
   const handleStartEditing = () => {
     // Capture the name before the user starts typing so blur can detect a real change
-    originalNameRef.current = taskFormViewModel?.task?.name ?? taskName;
+    originalNameRef.current = decodedTaskName || taskName;
     setIsEditing(true);
   };
 
@@ -130,7 +132,14 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             onKeyDown={handleInputKeyDown}
             placeholder={t('taskHeader.taskNamePlaceholder')}
             className="task-name-input task-name-input--large"
-            style={{ width: '100%', border: 'none', padding: 0, boxShadow: 'none', fontSize: '22px', fontWeight: 700 }}
+            style={{
+              width: '100%',
+              border: 'none',
+              padding: 0,
+              boxShadow: 'none',
+              fontSize: '22px',
+              fontWeight: 700,
+            }}
             showCount={true}
             maxLength={250}
             autoFocus
@@ -140,7 +149,13 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             level={4}
             onClick={handleStartEditing}
             className="task-name-display task-name-display--large"
-            style={{ margin: 0, cursor: 'text', lineHeight: 1.3, fontWeight: 700, fontSize: '22px' }}
+            style={{
+              margin: 0,
+              cursor: 'text',
+              lineHeight: 1.3,
+              fontWeight: 700,
+              fontSize: '22px',
+            }}
           >
             {taskName || t('taskHeader.taskNamePlaceholder')}
           </Typography.Title>
