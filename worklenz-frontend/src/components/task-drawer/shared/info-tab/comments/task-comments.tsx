@@ -296,10 +296,15 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
   };
 
   const saveEdit = async (item: ITaskCommentViewModel) => {
-    // ✅ Use taskId prop as fallback — backend list endpoint may not return task_id on each comment
     const resolvedTaskId = item.task_id || taskId;
 
     if (!item.id || !resolvedTaskId || !editContent.trim()) return;
+
+    const originalContent = prepareContentForEditing(item.content || '');
+    if (editContent.trim() === originalContent.trim()) {
+      cancelEdit();
+      return;
+    }
 
     try {
       setEditLoading(true);
