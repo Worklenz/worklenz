@@ -50,6 +50,7 @@ interface OptimizedBulkActionBarProps {
   selectedTaskIds: string[];
   totalSelected: number;
   projectId: string;
+  canCreateTask?: boolean;
   onClearSelection?: () => void;
   onBulkStatusChange?: (statusId: string) => void;
   onBulkPriorityChange?: (priorityId: string) => void;
@@ -169,6 +170,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     selectedTaskIds,
     totalSelected,
     projectId,
+    canCreateTask = true,
     onClearSelection,
     onBulkStatusChange,
     onBulkPriorityChange,
@@ -830,24 +832,26 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           />
 
           {/* Change Assignees */}
-          <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
-            <Dropdown
-              dropdownRender={() => assigneesDropdownContent}
-              open={assigneeDropdownOpen}
-              onOpenChange={onAssigneeDropdownOpenChange}
-              trigger={['click']}
-              placement="top"
-              arrow
-            >
-              <Button
-                icon={<UsergroupAddOutlined />}
-                style={makeButtonStyle()}
-                size="small"
-                type="text"
-                loading={loadingStates.assignMembers}
-              />
-            </Dropdown>
-          </Tooltip>
+          {canCreateTask && (
+            <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
+              <Dropdown
+                dropdownRender={() => assigneesDropdownContent}
+                open={assigneeDropdownOpen}
+                onOpenChange={onAssigneeDropdownOpenChange}
+                trigger={['click']}
+                placement="top"
+                arrow
+              >
+                <Button
+                  icon={<UsergroupAddOutlined />}
+                  style={makeButtonStyle()}
+                  size="small"
+                  type="text"
+                  loading={loadingStates.assignMembers}
+                />
+              </Dropdown>
+            </Tooltip>
+          )}
 
           {/* Set Start Date — NEW */}
           <Tooltip
@@ -938,23 +942,25 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           </Tooltip>
 
           {/* Delete */}
-          <Popconfirm
-            title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
-            description={t('DELETE_TASKS_WARNING')}
-            onConfirm={handleDelete}
-            okText={t('DELETE')}
-            cancelText={t('CANCEL')}
-            okType="danger"
-            placement="top"
-          >
-            <ActionButton
-              icon={<DeleteOutlined />}
-              tooltip={t('DELETE')}
-              loading={loadingStates.delete}
-              danger
-              isDarkMode={isDarkMode}
-            />
-          </Popconfirm>
+          {canCreateTask && (
+            <Popconfirm
+              title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
+              description={t('DELETE_TASKS_WARNING')}
+              onConfirm={handleDelete}
+              okText={t('DELETE')}
+              cancelText={t('CANCEL')}
+              okType="danger"
+              placement="top"
+            >
+              <ActionButton
+                icon={<DeleteOutlined />}
+                tooltip={t('DELETE')}
+                loading={loadingStates.delete}
+                danger
+                isDarkMode={isDarkMode}
+              />
+            </Popconfirm>
+          )}
 
           {/* More Options — Only for owners/admins */}
           {isOwnerOrAdmin && (

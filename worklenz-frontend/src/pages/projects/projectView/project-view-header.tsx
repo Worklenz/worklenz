@@ -70,13 +70,14 @@ import { fetchTasksV3, setLoading } from '@/features/task-management/task-manage
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
   const { t } = useTranslation('project-view/project-view-header');
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
-
+  const { canCreateTask } = useTaskCreationPermission();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
@@ -451,7 +452,7 @@ const ProjectViewHeader = memo(() => {
           </Dropdown.Button>
         </Tooltip>
       );
-    } else {
+    } else if (canCreateTask) {
       actions.push(
         <Tooltip
           key="create-task-tooltip"

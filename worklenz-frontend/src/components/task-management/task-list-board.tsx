@@ -40,6 +40,7 @@ import {
 } from '@/features/projects/bulkActions/bulkActionSlice';
 import { Task, TaskGroup } from '@/types/task-management.types';
 import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import TaskRow from './task-row';
@@ -146,6 +147,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
 
   // Enable real-time socket updates for task changes
   useTaskSocketHandlers();
+  const { canCreateTask } = useTaskCreationPermission();
 
   // Socket connection for drag and drop
   const { socket, connected } = useSocket();
@@ -939,6 +941,7 @@ const TaskListBoard: React.FC<TaskListBoardProps> = ({ projectId, className = ''
         selectedTaskIds={selectedTaskIds}
         totalSelected={selectedTaskIds.length}
         projectId={projectId}
+        canCreateTask={canCreateTask}
         onClearSelection={handleClearSelection}
         onBulkStatusChange={handleBulkStatusChange}
         onBulkPriorityChange={handleBulkPriorityChange}

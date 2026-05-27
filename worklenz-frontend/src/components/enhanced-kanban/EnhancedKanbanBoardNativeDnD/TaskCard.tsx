@@ -530,24 +530,26 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   ? t('unarchive', { defaultValue: 'Unarchive' })
                   : t('archive', { defaultValue: 'Archive' })}
               </Button>
-              <Button
-                type="text"
-                icon={<DeleteOutlined style={{ color: '#ef4444', fontSize: 16 }} />}
-                style={{
-                  color: '#ef4444',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 16px',
-                  fontWeight: 500,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  whiteSpace: 'nowrap',
-                }}
-                onClick={() => handleDeleteTask(selectedTask || null)}
-              >
-                {t('delete')}
-              </Button>
+              {canCreateTask && (
+                <Button
+                  type="text"
+                  icon={<DeleteOutlined style={{ color: '#ef4444', fontSize: 16 }} />}
+                  style={{
+                    color: '#ef4444',
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '8px 16px',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={() => handleDeleteTask(selectedTask || null)}
+                >
+                  {t('delete')}
+                </Button>
+              )}
             </div>,
             document.body
           )}
