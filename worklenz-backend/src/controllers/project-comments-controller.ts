@@ -45,6 +45,19 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
     return replacedContent;
   }
 
+  private static restoreMentionPlaceholders(content: string, mentions: IMention[]): string {
+    if (!mentions || mentions.length === 0) return sanitizeCommentContent(content);
+
+    let restoredContent = content;
+    mentions.forEach((mention, index) => {
+      restoredContent = restoredContent
+        .replace(new RegExp(`\\{${index}\\}`, "g"), `@${mention.name}`)
+        .replace(new RegExp(`\\[${index}\\]`, "g"), `@${mention.name}`);
+    });
+
+    return sanitizeCommentContent(restoredContent);
+  }
+
   private static async sendMail(config: IMailConfig) {
     const subject = config.message.replace(HTML_TAG_REGEXP, "");
 
@@ -65,18 +78,20 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const userId = req.user?.id;
-    const mentions: IMention[] = req.body.mentions;
+    const mentions: IMention[] = req.body.mentions || [];
     const projectId = req.body.project_id;
     const teamId = req.user?.team_id;
 
     // Sanitize content to prevent XSS attacks
     let commentContent = sanitizeCommentContent(req.body.content || '');
+    let emailCommentContent = commentContent;
 
     // Process mentions after sanitization to ensure safe HTML
     if (mentions.length > 0) {
       commentContent = await this.replaceContent(commentContent, mentions);
       // Re-sanitize after mention processing to ensure no XSS was introduced
       commentContent = sanitizeCommentContent(commentContent);
+      emailCommentContent = this.restoreMentionPlaceholders(commentContent, mentions);
     }
 
     const body = {
@@ -114,7 +129,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
           message: commentMessage,
           receiverEmail: member.email,
           receiverName: member.name,
-          content: commentContent,
+          content: emailCommentContent,
           projectId,
           teamName: data.comment.team_name,
           projectName: data.comment.project_name
@@ -144,7 +159,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
             message: mentionMessage,
             receiverEmail: member.email,
             receiverName: member.name,
-            content: commentContent,
+            content: emailCommentContent,
             projectId,
             teamName: data.comment.team_name,
             projectName: data.comment.project_name
