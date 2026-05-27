@@ -1496,6 +1496,7 @@ BEGIN
                u.name,
                u.email,
                u.timezone_id AS timezone,
+               u.language,
                u.avatar_url,
                u.user_no,
                u.socket_id,

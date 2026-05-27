@@ -24,10 +24,18 @@ const LanguageAndRegionSettings = () => {
   const { t } = useTranslation('settings/language');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { lng } = useAppSelector(state => state.localesReducer);
+  const [form] = Form.useForm();
   const [timezones, setTimezones] = useState<ITimezone[]>([]);
   const [loadingTimezones, setLoadingTimezones] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const currentSession = useAuthService().getCurrentSession();
+
+  useEffect(() => {
+    form.setFieldsValue({
+      language: lng || Language.EN,
+      timezone: currentSession?.timezone,
+    });
+  }, [form, lng, currentSession?.timezone]);
 
   useDocumentTitle('Language & Region');
 
@@ -179,6 +187,7 @@ const LanguageAndRegionSettings = () => {
     <Card style={{ width: '100%' }}>
       {!loadingTimezones ? (
         <Form
+          form={form}
           layout="vertical"
           style={{ width: '100%', maxWidth: 350 }}
           initialValues={{
