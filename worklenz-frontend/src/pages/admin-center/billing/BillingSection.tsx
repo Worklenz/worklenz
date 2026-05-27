@@ -31,17 +31,33 @@ const BillingSection: React.FC = React.memo(() => {
 
     // On card-add return: skip payment status messages (they belong to the card-add transaction, not a plan payment)
     if (dpCardAdded === '1') {
+      const dpDesc = searchParams.get('desc') || searchParams.get('description') || '';
+      const isCardAlreadyExists = dpDesc.toLowerCase().includes('card already exist');
+      const isDirectPayError = dpDesc.length > 0 && !isCardAlreadyExists;
+
       searchParams.delete('dp_card_added');
       searchParams.delete('status');
       searchParams.delete('trnId');
       searchParams.delete('orderId');
+      searchParams.delete('desc');
+      searchParams.delete('description');
       setSearchParams(searchParams, { replace: true });
+
+      if (isDirectPayError) {
+        // DirectPay returned a non-recoverable error — clear pending plan and show error
+        localStorage.removeItem('dp_pending_plan');
+        notification.error({ message: 'Card add failed', description: dpDesc, duration: 8 });
+        return;
+      }
 
       const pending = localStorage.getItem('dp_pending_plan');
       if (pending) {
         localStorage.removeItem('dp_pending_plan');
         const { plan, amount } = JSON.parse(pending) as { plan: string; amount: number };
-        notification.info({ message: 'Card added', description: 'Processing your payment...', duration: 6 });
+        const description = isCardAlreadyExists
+          ? 'Card already exists in DirectPay. Checking for saved card...'
+          : 'Processing your payment...';
+        notification.info({ message: isCardAlreadyExists ? 'Card already on file' : 'Card added', description, duration: 6 });
 
         // Retry card lookup up to 5 times with 3s intervals to allow webhook time to save
         const chargeCard = async () => {

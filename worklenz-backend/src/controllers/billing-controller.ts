@@ -606,7 +606,7 @@ export default class BillingController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async createCardAddSession(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { amount, doInitialPayment = true, plan } = req.body;
+    const { amount, doInitialPayment = false, plan } = req.body;
     const email = req.user?.email;
     const name = req.user?.name;
     const userId = req.user?.id;
@@ -938,6 +938,26 @@ export default class BillingController extends WorklenzControllerBase {
     console.log("[payWithCard] base64:", base64EncodedPayload.slice(0, 40) + "...");
     console.log("[payWithCard] signature:", signature);
 
+    // Idempotency guard: block charge if subscription is active and already paid this month
+    const userId = req.user?.id;
+    const ownerId = req.user?.owner_id || userId;
+    const recentPaymentResult = await db.query(
+      `SELECT lp.id
+       FROM licensing_lkr_payments lp
+       JOIN licensing_custom_subs lcs ON lcs.user_id = $1
+       WHERE lp.owner_id = $1
+         AND lp.status IN ('SUCCESS', '200')
+         AND lp.created_at >= (CURRENT_DATE - INTERVAL '1 hour')
+         AND lcs.status = 'active'
+         AND lcs.end_date > CURRENT_DATE
+       LIMIT 1`,
+      [ownerId]
+    );
+    if (recentPaymentResult.rows.length > 0) {
+      console.warn("[payWithCard] Blocked duplicate charge — active subscription with recent payment for ownerId:", ownerId);
+      return res.status(200).send(new ServerResponse(false, null, "A payment was already processed recently. Please wait before retrying."));
+    }
+
     try {
       const response = await axios.post(apiUrl, base64EncodedPayload, {
         headers: {
@@ -952,8 +972,6 @@ export default class BillingController extends WorklenzControllerBase {
       console.log("[payWithCard] DirectPay response — status:", decoded?.status, "txnStatus:", txnStatus, "decoded:", JSON.stringify(decoded));
 
       if (txnStatus === "SUCCESS") {
-        const userId = req.user?.id;
-        const ownerId = req.user?.owner_id || userId;
         const txn = decoded?.data?.transaction || decoded?.transaction || {};
 
         await db.query(
