@@ -6,6 +6,7 @@ export interface IWorklenzAlert {
 }
 
 export interface ILocalSession extends IUserType {
+  language?: string;
   team_id?: string;
   team_name?: string;
   owner?: boolean;
