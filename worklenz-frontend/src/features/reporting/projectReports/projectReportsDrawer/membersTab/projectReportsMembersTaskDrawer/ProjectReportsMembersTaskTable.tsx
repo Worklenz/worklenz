@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Badge,
@@ -14,10 +14,16 @@ import dayjs from 'dayjs';
 import { DoubleRightOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import { lazy } from 'react';
+import {
+  fetchTask,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { setProjectId } from '@/features/project/project.slice';
 
 const TaskDrawer = lazy(() => import('@components/task-drawer/task-drawer'));
 
@@ -25,6 +31,11 @@ type ProjectReportsMembersTasksTableProps = {
   tasksData: any[];
   loading?: boolean;
 };
+
+interface ReportingTaskRecord {
+  id: string;
+  project_id: string;
+}
 
 const ProjectReportsMembersTasksTable = ({
   tasksData,
@@ -36,19 +47,23 @@ const ProjectReportsMembersTasksTable = ({
   const dispatch = useAppDispatch();
 
   // function to handle task drawer open
-  const handleUpdateTaskDrawer = (id: string) => {
-    dispatch(setShowTaskDrawer(true));
-  };
+  const handleUpdateTaskDrawer = useCallback(
+    (id: string, projectId: string) => {
+      if (!id || !projectId) return;
+
+      dispatch(setSelectedTaskId(id));
+      dispatch(setProjectId(projectId));
+      dispatch(fetchPhasesByProjectId(projectId));
+      dispatch(fetchTask({ taskId: id, projectId }));
+      dispatch(setShowTaskDrawer(true));
+    },
+    [dispatch]
+  );
 
   const columns: TableColumnsType = [
     {
       key: 'task',
       title: <CustomTableTitle title={t('taskColumn')} />,
-      onCell: record => {
-        return {
-          onClick: () => handleUpdateTaskDrawer(record.id),
-        };
-      },
       render: record => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
@@ -153,8 +168,8 @@ const ProjectReportsMembersTasksTable = ({
 
   // Memoize row props generator
   const getRowProps = useMemo(
-    () => (record: any) => ({
-      onClick: () => handleUpdateTaskDrawer(record.id),
+    () => (record: ReportingTaskRecord) => ({
+      onClick: () => handleUpdateTaskDrawer(record.id, record.project_id),
       style: { height: 38, cursor: 'pointer' },
       className: 'group even:bg-[#4e4e4e10]',
     }),
