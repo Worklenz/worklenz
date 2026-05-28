@@ -7,6 +7,20 @@ import {
   IPricingOption,
 } from '@/types/admin-center/admin-center.types';
 
+export interface ILkrPayment {
+  id: string;
+  created_at: string;
+  transaction_amount: number | null;
+  amount: number | null;
+  transaction_currency: string | null;
+  transaction_status: string | null;
+  status: string | null;
+  transaction_id: string | null;
+  order_id: string | null;
+  payment_type: string | null;
+  card_number: string | null;
+}
+
 export interface IPricingPlan {
   id?: string;
   name: string;
@@ -385,5 +399,24 @@ export const billingApiService = {
       ...(plan ? { plan } : {}),
     });
     return response.data;
+  },
+
+  async getLkrPaymentHistory(): Promise<IServerResponse<{ payments: ILkrPayment[] }>> {
+    const response = await apiClient.get<IServerResponse<{ payments: ILkrPayment[] }>>(
+      `${rootUrl}/lkr-payment-history`
+    );
+    return response.data;
+  },
+
+  async downloadLkrReceipt(paymentId: string, receiptNumber: string): Promise<void> {
+    const response = await apiClient.get(`${rootUrl}/lkr-receipt/${paymentId}`, {
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${receiptNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };

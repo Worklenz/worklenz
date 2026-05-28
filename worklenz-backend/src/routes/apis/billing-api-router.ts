@@ -19,6 +19,8 @@ billingApiRouter.get("/directpay/list-cards", BillingController.listCards);
 billingApiRouter.post("/directpay/delete-card", BillingController.deleteCard);
 billingApiRouter.post("/directpay/pay-with-card", BillingController.payWithCard);
 billingApiRouter.post("/directpay/save-card-response", BillingController.saveDirectPayCardResponse);
+billingApiRouter.get("/lkr-payment-history", BillingController.getLkrPaymentHistory);
+billingApiRouter.get("/lkr-receipt/:id", BillingController.downloadLkrReceipt);
 // Note: DirectPay card-response webhook is mounted at app level (/webhook/directpay/card-response)
 // to bypass auth/CSRF since it's called by DirectPay's server, not the browser.
 

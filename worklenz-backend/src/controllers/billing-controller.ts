@@ -1089,6 +1089,108 @@ export default class BillingController extends WorklenzControllerBase {
     console.log(`[activateLkrSubscription] Org license_type_id=${updatedLicenseTypeId} subscription_status=active for owner=${ownerId}`);
   }
 
+  @HandleExceptions()
+  public static async downloadLkrReceipt(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const ownerId = req.user?.owner_id || req.user?.id;
+
+    const result = await db.query(
+      `SELECT lp.id, lp.created_at, lp.transaction_amount, lp.amount,
+              lp.transaction_currency, lp.transaction_id, lp.order_id,
+              lp.card_number, lp.payment_type,
+              u.name AS user_name, u.email AS user_email,
+              o.organization_name AS org_name,
+              lpt.display_name AS plan_name
+       FROM licensing_lkr_payments lp
+       JOIN users u ON u.id = $2
+       LEFT JOIN organizations o ON o.user_id = $2
+       LEFT JOIN licensing_custom_subs lcs ON lcs.id = lp.subscription_id
+       LEFT JOIN licensing_custom_plan_pricing lpt ON lpt.id = lcs.plan_tier_id
+       WHERE lp.id = $1 AND lp.owner_id = $2
+       LIMIT 1`,
+      [id, ownerId]
+    );
+
+    const row = result.rows[0];
+    if (!row) {
+      return res.status(404).send(new ServerResponse(false, null, 'Receipt not found'));
+    }
+
+    const amount = Number(row.transaction_amount ?? row.amount ?? 0);
+    const currency = row.transaction_currency ?? 'LKR';
+    const date = new Date(row.created_at).toLocaleDateString('en-GB', {
+      day: '2-digit', month: 'long', year: 'numeric',
+    });
+    const receiptNumber = (row.order_id ?? row.transaction_id ?? row.id).replace(/[^A-Z0-9]/gi, '').slice(-12).toUpperCase();
+    const planLabel = row.plan_name
+      ? `${row.plan_name.charAt(0).toUpperCase() + row.plan_name.slice(1)} Plan — ${currency} ${amount.toFixed(2)} / month`
+      : null;
+
+    const { LkrReceiptTemplate } = require('../shared/lkr-receipt-template');
+    const html = LkrReceiptTemplate.generate({
+      receiptNumber,
+      date,
+      amount,
+      currency,
+      transactionId: row.transaction_id ?? null,
+      orderId: row.order_id ?? null,
+      cardNumber: row.card_number ?? null,
+      planName: planLabel,
+      userName: row.user_name ?? null,
+      userEmail: row.user_email ?? null,
+      orgName: row.org_name ?? null,
+    });
+
+    const puppeteer = require('puppeteer');
+    try {
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      });
+      await browser.close();
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="receipt-${receiptNumber}.pdf"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      return res.end(pdfBuffer, 'binary');
+    } catch (pdfErr) {
+      console.error('[downloadLkrReceipt] PDF error:', pdfErr);
+      return res.status(500).send(new ServerResponse(false, null, 'Failed to generate receipt'));
+    }
+  }
+
+  @HandleExceptions()
+  public static async getLkrPaymentHistory(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const ownerId = req.user?.owner_id || req.user?.id;
+    const result = await db.query(
+      `SELECT id,
+              created_at,
+              transaction_amount,
+              amount,
+              transaction_currency,
+              transaction_status,
+              status,
+              transaction_id,
+              order_id,
+              payment_type,
+              card_number
+       FROM licensing_lkr_payments
+       WHERE owner_id = $1
+         AND (transaction_status = 'SUCCESS' OR status::text IN ('SUCCESS', '200'))
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [ownerId]
+    );
+    return res.status(200).send(new ServerResponse(true, { payments: result.rows }));
+  }
+
   /**
    * Handle DirectPay card add response (webhook)
    * Called by DirectPay server after card is added/payment is processed.
