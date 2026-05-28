@@ -33,7 +33,11 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
-
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
+import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
+import { getTeamMembers } from '@/features/team-members/team-members.slice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { getProject } from '@/features/project/project.slice';
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
@@ -43,13 +47,17 @@ const TaskDrawer = () => {
   const { canCreateTask } = useTaskCreationPermission();
   const { showTaskDrawer, timeLogEditing } = useAppSelector(state => state.taskDrawerReducer);
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { projectId, project } = useAppSelector(state => state.projectReducer);
+  const priorities = useAppSelector(state => state.priorityReducer.priorities);
+  const labels = useAppSelector(state => state.taskLabelsReducer.labels);
+  const teamMembers = useAppSelector(state => state.teamMembersReducer.teamMembers);
 
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const isFree = isFreeUser(currentSession);
   const taskNameInputRef = useRef<InputRef>(null);
   const isClosingManually = useRef(false);
+  const hydratedProjectIdRef = useRef<string | null>(null);
 
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   useTaskDrawerNavigation();
@@ -61,6 +69,49 @@ const TaskDrawer = () => {
   }, [showTaskDrawer]);
 
   const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (!showTaskDrawer) return;
+
+    if (!priorities.length) {
+      dispatch(fetchPriorities());
+    }
+
+    if (!labels.length) {
+      dispatch(fetchLabels());
+    }
+
+    if (!teamMembers?.data?.length) {
+      dispatch(
+        getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
+      );
+    }
+
+    if (projectId) {
+      if (hydratedProjectIdRef.current !== projectId) {
+        hydratedProjectIdRef.current = projectId;
+        dispatch(fetchPhasesByProjectId(projectId));
+      }
+
+      if (project?.id !== projectId) {
+        dispatch(getProject(projectId));
+      }
+
+      if (selectedTaskId && taskFormViewModel?.task?.id !== selectedTaskId) {
+        dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
+      }
+    }
+  }, [
+    dispatch,
+    labels.length,
+    priorities.length,
+    project,
+    projectId,
+    selectedTaskId,
+    showTaskDrawer,
+    taskFormViewModel?.task?.id,
+    teamMembers?.data?.length,
+  ]);
 
   const handleBackToParent = () => {
     if (taskFormViewModel?.task?.parent_task_id && projectId) {
@@ -85,7 +136,9 @@ const TaskDrawer = () => {
       handleBackToParent();
     }
 
-    setTimeout(() => { isClosingManually.current = false; }, 100);
+    setTimeout(() => {
+      isClosingManually.current = false;
+    }, 100);
   };
 
   const handleAfterOpenChange = (open: boolean) => {
@@ -131,12 +184,17 @@ const TaskDrawer = () => {
       key: 'timeLog',
       label: isFree ? (
         <Tooltip title={tCommon('upgrade-plan', { defaultValue: 'Upgrade Plan' })} placement="top">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={handlePremiumTabClick}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={handlePremiumTabClick}
+          >
             <span>{t('taskTimeLogTab.title', { defaultValue: 'Time Log' })}</span>
             <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
           </div>
         </Tooltip>
-      ) : t('taskTimeLogTab.title', { defaultValue: 'Time Log' }),
+      ) : (
+        t('taskTimeLogTab.title', { defaultValue: 'Time Log' })
+      ),
       children: <TaskDrawerTimeLog t={t} refreshTrigger={refreshTimeLogTrigger} />,
       disabled: isFree,
     },
@@ -144,12 +202,17 @@ const TaskDrawer = () => {
       key: 'activityLog',
       label: isFree ? (
         <Tooltip title={tCommon('upgrade-plan', { defaultValue: 'Upgrade Plan' })} placement="top">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }} onClick={handlePremiumTabClick}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={handlePremiumTabClick}
+          >
             <span>{t('taskActivityLogTab.title', { defaultValue: 'Activity Log' })}</span>
             <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
           </div>
         </Tooltip>
-      ) : t('taskActivityLogTab.title', { defaultValue: 'Activity Log' }),
+      ) : (
+        t('taskActivityLogTab.title', { defaultValue: 'Activity Log' })
+      ),
       children: <TaskDrawerActivityLog />,
       disabled: isFree,
     },
@@ -170,7 +233,12 @@ const TaskDrawer = () => {
       }
       return (
         <Flex justify="center" style={{ width: '100%', padding: '16px 0 0' }}>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddTimeLog} style={{ width: '100%' }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddTimeLog}
+            style={{ width: '100%' }}
+          >
             {t('taskTimeLogTab.addTimeLog', { defaultValue: 'Add Time Log' })}
           </Button>
         </Flex>
@@ -197,9 +265,10 @@ const TaskDrawer = () => {
       body: {
         padding: 0,
         overflow: 'auto',
-        height: activeTab === 'timeLog' && timeLogEditing.isEditing
-          ? 'calc(100% - 220px)'
-          : 'calc(100% - 180px)',
+        height:
+          activeTab === 'timeLog' && timeLogEditing.isEditing
+            ? 'calc(100% - 220px)'
+            : 'calc(100% - 180px)',
       },
       footer: {
         padding: '0 24px 16px',
