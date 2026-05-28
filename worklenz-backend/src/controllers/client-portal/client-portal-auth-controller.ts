@@ -1587,9 +1587,9 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             );
 
             // Import and send the main Worklenz reset email (not client portal)
-            const { sendResetEmail } =
+            const { sendClientPortalResetEmail } =
               await import("../../shared/email-templates");
-            sendResetEmail(normalizedEmail, userIdBase64, hashedString);
+            sendClientPortalResetEmail(normalizedEmail, userIdBase64, hashedString);
           }
         } catch (error) {
           // Log error internally but don't expose to client
@@ -1668,20 +1668,122 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
   static async resetPassword(req: IWorkLenzRequest, res: IWorkLenzResponse) {
     try {
       const { user, hash, password } = req.body;
-      const hashedString = hash.replace(/\-/g, "/");
 
+      if (!user || !hash || !password) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "User, hash, and password are required."));
+      }
+
+      // Decode the user ID from base64.
+      // For linked Worklenz users this is a Worklenz users.id.
+      // For standalone client users this is a client_users.id.
       const userId = Buffer.from(user as string, "base64").toString("ascii");
 
-      // First, verify the token exists, is not used, and is not expired
-      // Use raw hash (with dashes) as that is what is stored in the DB
-      const tokenCheck = await db.query(
-        `SELECT id, client_user_id, expires_at, is_used
-         FROM client_password_reset_tokens
-         WHERE token_hash = $1 AND is_used = FALSE AND expires_at > NOW()`,
+      // The hash is stored with dashes replacing slashes (URL-safe).
+      // Restore slashes for bcrypt.compareSync.
+      const hashedString = hash.replace(/-/g, "/");
+
+      // ── PATH 1: Linked Worklenz user ─────────────────────────────────────────
+      // forgotPassword stores the token in `password_reset_tokens` (keyed by
+      // Worklenz users.id) when the client_user has a user_id set.
+      // Hash seed used at generation: worklenzUser.id + worklenzUser.email + worklenzUser.password
+      // Login for linked users always verifies against users.password, so we must
+      // update users.password here — not client_users.password_hash.
+      const worklenzTokenCheck = await db.query(
+        `SELECT prt.id, prt.user_id,
+                u.id       AS wl_id,
+                u.email    AS wl_email,
+                u.password AS wl_password
+         FROM password_reset_tokens prt
+         JOIN users u ON u.id = prt.user_id
+         WHERE prt.token_hash = $1
+           AND prt.is_used = FALSE
+           AND prt.expires_at > NOW()`,
         [hash],
       );
 
-      if (!tokenCheck.rowCount) {
+      if (worklenzTokenCheck.rowCount) {
+        const tokenData = worklenzTokenCheck.rows[0];
+
+        // The base64-encoded ID must match the Worklenz user who owns this token
+        if (tokenData.wl_id !== userId) {
+          return res
+            .status(200)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                "Invalid reset link. Please request a new password reset.",
+              ),
+            );
+        }
+
+        // Verify hash seed: wl_id + wl_email + wl_password (mirrors forgotPassword)
+        if (
+          !bcrypt.compareSync(
+            tokenData.wl_id + tokenData.wl_email + tokenData.wl_password,
+            hashedString,
+          )
+        ) {
+          await db.query(
+            `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+            [tokenData.id],
+          );
+          return res
+            .status(200)
+            .json(
+              new ServerResponse(
+                false,
+                null,
+                "Invalid reset link. Please request a new password reset.",
+              ),
+            );
+        }
+
+        // Update the Worklenz user's password — this is what authenticateClient checks
+        // for linked users (it always verifies against users.password, never client_users.password_hash).
+        const encryptedPassword = bcrypt.hashSync(password, 10);
+        await db.query(
+          `UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2`,
+          [encryptedPassword, tokenData.wl_id],
+        );
+
+        // Mark token as used and invalidate all other unused tokens for this Worklenz user
+        await db.query(
+          `UPDATE password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
+          [tokenData.id],
+        );
+        await db.query(
+          `UPDATE password_reset_tokens
+           SET is_used = TRUE
+           WHERE user_id = $1 AND is_used = FALSE AND id != $2`,
+          [tokenData.wl_id, tokenData.id],
+        );
+
+        return res
+          .status(200)
+          .json(new ServerResponse(true, null, "Password updated successfully"));
+      }
+
+      // ── PATH 2: Standalone client user ───────────────────────────────────────
+      // forgotPassword stores the token in `client_password_reset_tokens` (keyed by
+      // client_users.id) when the user has no user_id (standalone portal account).
+      // Hash seed used at generation: data.id + data.email + data.password_hash
+      const clientTokenCheck = await db.query(
+        `SELECT cprt.id, cprt.client_user_id,
+                cu.id           AS cu_id,
+                cu.email        AS cu_email,
+                cu.password_hash AS cu_password_hash
+         FROM client_password_reset_tokens cprt
+         JOIN client_users cu ON cu.id = cprt.client_user_id
+         WHERE cprt.token_hash = $1
+           AND cprt.is_used = FALSE
+           AND cprt.expires_at > NOW()`,
+        [hash],
+      );
+
+      if (!clientTokenCheck.rowCount) {
         return res
           .status(200)
           .json(
@@ -1693,10 +1795,10 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           );
       }
 
-      const tokenData = tokenCheck.rows[0];
+      const tokenData = clientTokenCheck.rows[0];
 
-      // Verify the user ID matches
-      if (tokenData.client_user_id !== userId) {
+      // The base64-encoded ID must match the client_user who owns this token
+      if (tokenData.cu_id !== userId) {
         return res
           .status(200)
           .json(
@@ -1708,46 +1810,13 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           );
       }
 
-      // Get client user data
-      const q = `SELECT id, email, user_id, password_hash FROM client_users WHERE id = $1;`;
-      const result = await db.query(q, [userId || null]);
-
-      if (!result.rowCount) {
-        return res
-          .status(200)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "User not found. Please request a new password reset.",
-            ),
-          );
-      }
-
-      const [data] = result.rows;
-
-      // Block password reset for linked Worklenz users
-      if (data.user_id) {
-        return res
-          .status(200)
-          .json(
-            new ServerResponse(
-              false,
-              null,
-              "This account is linked to Worklenz. Please use the main Worklenz app to reset your password.",
-            ),
-          );
-      }
-
-      // Verify the token hash matches the current user data (for additional security)
-      const salt = bcrypt.genSaltSync(10);
+      // Verify hash seed: cu_id + cu_email + cu_password_hash (mirrors forgotPassword)
       if (
         !bcrypt.compareSync(
-          data.id + data.email + data.password_hash,
+          tokenData.cu_id + tokenData.cu_email + tokenData.cu_password_hash,
           hashedString,
         )
       ) {
-        // Token doesn't match - mark as used to prevent further attempts
         await db.query(
           `UPDATE client_password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
           [tokenData.id],
@@ -1763,23 +1832,23 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           );
       }
 
-      // Update password using TokenService.hashClientPassword()
+      // Update the client user's password
       const encryptedPassword = TokenService.hashClientPassword(password);
-      const updatePasswordQ = `UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2;`;
-      await db.query(updatePasswordQ, [encryptedPassword, userId || null]);
+      await db.query(
+        `UPDATE client_users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+        [encryptedPassword, tokenData.cu_id],
+      );
 
-      // Mark token as used
+      // Mark token as used and invalidate all other unused tokens for this client user
       await db.query(
         `UPDATE client_password_reset_tokens SET is_used = TRUE, used_at = NOW() WHERE id = $1`,
         [tokenData.id],
       );
-
-      // Invalidate all other unused tokens for this user (defense in depth)
       await db.query(
         `UPDATE client_password_reset_tokens
          SET is_used = TRUE
          WHERE client_user_id = $1 AND is_used = FALSE AND id != $2`,
-        [userId, tokenData.id],
+        [tokenData.cu_id, tokenData.id],
       );
 
       return res

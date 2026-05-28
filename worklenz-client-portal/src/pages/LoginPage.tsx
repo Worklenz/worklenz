@@ -11,6 +11,7 @@ import {
   Alert,
   LockOutlined,
   UserOutlined,
+  theme,
 } from "@/shared/antd-imports";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -31,6 +32,7 @@ const LoginPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { token: { colorBgLayout } } = theme.useToken();
   const { isLoading, error, isAuthenticated } = useAppSelector(
     (state: RootState) => state.auth
   );
@@ -91,7 +93,7 @@ const LoginPage: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f5f5f5",
+        background: colorBgLayout,
         padding: 24,
       }}
     >
@@ -148,7 +150,7 @@ const LoginPage: React.FC = () => {
               <Form.Item name="remember" valuePropName="checked" noStyle>
                 <Checkbox>{t("login.remember")}</Checkbox>
               </Form.Item>
-              <Link to="/forgot-password" className="ant-typography ant-typography-link">
+              <Link to="/auth/forgot-password" className="ant-typography ant-typography-link">
                 {t("login.forgot")}
               </Link>
             </Flex>
