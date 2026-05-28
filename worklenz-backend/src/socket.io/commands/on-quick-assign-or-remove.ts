@@ -85,6 +85,10 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
     }
 
     const assignment = await runAssignOrRemove(body, isAssign);
+
+    // Bump task updated_at so "Updated X ago" reflects the assignment change
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [body.task_id]);
+
     const assignees = await getAssignees(body.task_id);
     const members = await getTeamMembers(body.team_id);
     // for inline display
