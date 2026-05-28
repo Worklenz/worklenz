@@ -183,6 +183,7 @@ const TaskTemplatesSettings = () => {
         locale={{ emptyText: isLoading ? null : emptyState }}
         loading={isLoading}
         size="small"
+          showHeader={isLoading || taskTemplates.length > 0}
         pagination={{
           size: 'small',
           showSizeChanger: true,
