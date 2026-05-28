@@ -298,8 +298,28 @@ const ProjectViewUpdates = () => {
     }
   };
 
-  const handleEdit = async (commentId: string) => {
+  // ✅ FIX: Accept item as second parameter to compare original vs edited content
+  const handleEdit = async (commentId: string, item: any) => {
     if (!editContent.trim()) return;
+
+    // ✅ Reconstruct the original editable content exactly as startEdit did,
+    //    so we have a reliable baseline to diff against.
+    let originalContent = item.content || '';
+    if (item.mentions && item.mentions.length > 0) {
+      item.mentions.forEach((mention: any, index: number) => {
+        const userName = mention.user_name || mention.name;
+        originalContent = originalContent.replace(`{${index}}`, `@${userName}`);
+      });
+    }
+
+    // ✅ If the content hasn't changed, cancel silently — no API call,
+    //    so the backend never sets the `edited` flag.
+    if (editContent.trim() === originalContent.trim()) {
+      setEditingCommentId(null);
+      setEditContent('');
+      setEditSelectedMembers([]);
+      return;
+    }
 
     try {
       let contentToSave = editContent;
@@ -662,10 +682,12 @@ const ProjectViewUpdates = () => {
                                   style={{ marginBottom: 8 }}
                                 />
                                 <Space>
+                                  {/* ✅ FIX: Pass item to handleEdit so it can compare
+                                      original vs current content before calling the API */}
                                   <Button
                                     size="small"
                                     type="primary"
-                                    onClick={() => handleEdit(item.id!)}
+                                    onClick={() => handleEdit(item.id!, item)}
                                   >
                                     {t('actions.save', { defaultValue: 'Save' })}
                                   </Button>
