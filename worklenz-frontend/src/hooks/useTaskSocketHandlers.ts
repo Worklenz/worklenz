@@ -8,6 +8,7 @@ import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
 import { store } from '@/app/store';
 import { handleNewTaskReceived as handleTaskReceivedUtil } from '@/utils/taskHandlers';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
@@ -118,7 +119,7 @@ export const useTaskSocketHandlers = () => {
 
         // Only update task name if it's actually provided (not undefined)
         if (data.name !== undefined) {
-          dispatch(updateSelectedTaskName({ id: data.id, name: data.name }));
+          dispatch(updateSelectedTaskName({ id: data.id, name: decodeHtmlEntities(data.name) }));
         }
       }
 
@@ -508,17 +509,22 @@ export const useTaskSocketHandlers = () => {
   const handleTaskNameChange = useCallback(
     (data: { id: string; parent_task: string; name: string }) => {
       if (!data) return;
+      const decodedData = {
+        ...data,
+        name: decodeHtmlEntities(data.name),
+      };
 
       // Update the old task slice (for backward compatibility)
-      dispatch(updateTaskName(data));
+      dispatch(updateTaskName(decodedData));
+      dispatch(updateSelectedTaskName(decodedData));
 
       // For the task management slice, update task name
-      if (data.id) {
-        const currentTask = store.getState().taskManagement.entities[data.id];
+      if (decodedData.id) {
+        const currentTask = store.getState().taskManagement.entities[decodedData.id];
         if (currentTask) {
           const updatedTask: Task = {
             ...currentTask,
-            title: data.name,
+            title: decodedData.name,
             updatedAt: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -528,7 +534,7 @@ export const useTaskSocketHandlers = () => {
 
       // Update enhanced kanban slice (add manual_progress property for compatibility)
       const taskWithProgress = {
-        ...data,
+        ...decodedData,
         manual_progress: false,
       } as IProjectTask;
       dispatch(updateEnhancedKanbanTaskName({ task: taskWithProgress }));
@@ -984,7 +990,8 @@ export const useTaskSocketHandlers = () => {
         data.forEach((taskData: any) => {
           const currentTask = state.taskManagement.entities[taskData.id];
           if (currentTask) {
-            const nextOrder = taskData.current_sort_order ?? taskData.sort_order ?? currentTask.order;
+            const nextOrder =
+              taskData.current_sort_order ?? taskData.sort_order ?? currentTask.order;
             nextOrderByTaskId.set(taskData.id, nextOrder);
 
             let updatedTask: Task = {
@@ -1030,12 +1037,16 @@ export const useTaskSocketHandlers = () => {
           if (!Array.isArray(group?.taskIds) || group.taskIds.length < 2) return;
 
           const sortedTaskIds = [...group.taskIds].sort((taskIdA: string, taskIdB: string) => {
-            const orderA = nextOrderByTaskId.get(taskIdA) ?? state.taskManagement.entities[taskIdA]?.order ?? 0;
-            const orderB = nextOrderByTaskId.get(taskIdB) ?? state.taskManagement.entities[taskIdB]?.order ?? 0;
+            const orderA =
+              nextOrderByTaskId.get(taskIdA) ?? state.taskManagement.entities[taskIdA]?.order ?? 0;
+            const orderB =
+              nextOrderByTaskId.get(taskIdB) ?? state.taskManagement.entities[taskIdB]?.order ?? 0;
             return orderA - orderB;
           });
 
-          const hasOrderChanged = sortedTaskIds.some((taskId, index) => taskId !== group.taskIds[index]);
+          const hasOrderChanged = sortedTaskIds.some(
+            (taskId, index) => taskId !== group.taskIds[index]
+          );
           if (hasOrderChanged) {
             dispatch(reorderTasks({ taskIds: sortedTaskIds, groupId: group.id }));
           }

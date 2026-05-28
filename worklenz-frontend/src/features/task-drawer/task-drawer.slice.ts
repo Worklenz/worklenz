@@ -8,6 +8,7 @@ import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priorit
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ITaskDrawerState {
   selectedTaskId: string | null;
@@ -42,18 +43,25 @@ const initialState: ITaskDrawerState = {
 
 export const fetchTask = createAsyncThunk(
   'tasks/fetchTask',
-  async ({ taskId, projectId }: { taskId: string; projectId: string }, { rejectWithValue, getState }) => {
+  async (
+    { taskId, projectId }: { taskId: string; projectId: string },
+    { rejectWithValue, getState }
+  ) => {
     const response = await tasksApiService.getFormViewModel(taskId, projectId);
     if (!response.body) return rejectWithValue('No data');
 
     // The API may return a stale name if the user renamed the task locally
     // (inline edit or drawer) before the socket round-trip persisted to the DB.
     // Prefer the name already held in the task-management slice.
-    const state = getState() as { taskManagement: { entities: Record<string, { title?: string; name?: string } | undefined> } };
+    const state = getState() as {
+      taskManagement: { entities: Record<string, { title?: string; name?: string } | undefined> };
+    };
     const localTask = state.taskManagement.entities[taskId];
-    const localName = localTask?.title || localTask?.name;
+    const localName = decodeHtmlEntities(localTask?.title || localTask?.name);
     if (localName && response.body.task && response.body.task.name !== localName) {
       response.body.task.name = localName;
+    } else if (response.body.task?.name) {
+      response.body.task.name = decodeHtmlEntities(response.body.task.name);
     }
 
     return response.body;
@@ -122,11 +130,20 @@ const taskDrawerSlice = createSlice({
     },
     setTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
       if (!action.payload) return;
-      const { priority_id, id: taskId, color_code, color_code_dark, priority_value } = action.payload;
+      const {
+        priority_id,
+        id: taskId,
+        color_code,
+        color_code_dark,
+        priority_value,
+      } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.priority_id = priority_id;
         // Update priority_value if available (for icon rendering)
-        if (priority_value !== undefined && state.taskFormViewModel.task.priority_value !== undefined) {
+        if (
+          priority_value !== undefined &&
+          state.taskFormViewModel.task.priority_value !== undefined
+        ) {
           (state.taskFormViewModel.task as any).priority_value = priority_value;
         }
       }
@@ -218,8 +235,12 @@ const taskDrawerSlice = createSlice({
     ) => {
       const { id, name } = action.payload;
       // Only update if name is provided and not undefined
-      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === id && name !== undefined) {
-        state.taskFormViewModel.task.name = name;
+      if (
+        state.taskFormViewModel?.task &&
+        state.taskFormViewModel.task.id === id &&
+        name !== undefined
+      ) {
+        state.taskFormViewModel.task.name = decodeHtmlEntities(name);
       }
     },
     setNavigationContext: (
@@ -269,24 +290,24 @@ const taskDrawerSlice = createSlice({
     (builder.addCase(fetchTask.pending, state => {
       state.loadingTask = true;
     }),
-     builder.addCase(fetchTask.fulfilled, (state, action) => {
-  state.loadingTask = false;
-  if (!action.payload) return;
-  
-  // Preserve due_time if already set in current state and API returns null/undefined
-  // This prevents the optimistic update from being wiped by a stale API response
-  const existingDueTime = state.taskFormViewModel?.task?.due_time;
-  state.taskFormViewModel = action.payload;
-  
-  if (
-    existingDueTime &&
-    state.taskFormViewModel?.task &&
-    state.taskFormViewModel.task.id === action.payload.task?.id &&
-    !action.payload.task?.due_time
-  ) {
-    state.taskFormViewModel.task.due_time = existingDueTime;
-  }
-}),
+      builder.addCase(fetchTask.fulfilled, (state, action) => {
+        state.loadingTask = false;
+        if (!action.payload) return;
+
+        // Preserve due_time if already set in current state and API returns null/undefined
+        // This prevents the optimistic update from being wiped by a stale API response
+        const existingDueTime = state.taskFormViewModel?.task?.due_time;
+        state.taskFormViewModel = action.payload;
+
+        if (
+          existingDueTime &&
+          state.taskFormViewModel?.task &&
+          state.taskFormViewModel.task.id === action.payload.task?.id &&
+          !action.payload.task?.due_time
+        ) {
+          state.taskFormViewModel.task.due_time = existingDueTime;
+        }
+      }),
       builder.addCase(fetchTask.rejected, (state, action) => {
         state.loadingTask = false;
       }));

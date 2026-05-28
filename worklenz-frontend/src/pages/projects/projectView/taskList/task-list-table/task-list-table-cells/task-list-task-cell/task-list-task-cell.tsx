@@ -21,6 +21,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { fetchSubTasks } from '@/features/task-management/task-management.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type TaskListTaskCellProps = {
   task: IProjectTask;
@@ -41,7 +42,8 @@ const TaskListTaskCell = ({
   const { socket, connected } = useSocket();
 
   const [editTaskName, setEditTaskName] = useState(false);
-  const [taskName, setTaskName] = useState(task.name || '');
+  const displayTaskName = decodeHtmlEntities(task.name);
+  const [taskName, setTaskName] = useState(displayTaskName);
   const inputRef = useRef<InputRef>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +65,12 @@ const TaskListTaskCell = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [editTaskName]);
+
+  useEffect(() => {
+    if (!editTaskName) {
+      setTaskName(displayTaskName);
+    }
+  }, [displayTaskName, editTaskName]);
 
   const handleToggleExpansion = (taskId: string) => {
     if (task.is_parent_container) return;
@@ -174,7 +182,7 @@ const TaskListTaskCell = ({
         <div ref={wrapperRef} style={{ flex: 1 }}>
           {!editTaskName && (
             <Typography.Text
-              ellipsis={{ tooltip: task.name }}
+              ellipsis={{ tooltip: displayTaskName }}
               onClick={() => {
                 if (!task.is_parent_container) {
                   setEditTaskName(true);
@@ -186,7 +194,7 @@ const TaskListTaskCell = ({
                 maxWidth: '350px',
               }}
             >
-              {task.name}
+              {displayTaskName}
             </Typography.Text>
           )}
 

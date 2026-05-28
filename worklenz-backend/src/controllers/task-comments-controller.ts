@@ -68,12 +68,14 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     return replacedContent;
   }
 
-  private static restoreContentFromPlaceholders(content: string, mentions: IMention[]): string {
+  private static restoreMentionPlaceholders(content: string, mentions: IMention[]): string {
     if (!mentions || mentions.length === 0) return content;
 
+    // Convert frontend mention format [0], [1], etc. to actual mention names
     let restoredContent = content;
     mentions.forEach((mention, index) => {
-      const regex = new RegExp(`\\{${index}\\}`, "g");
+      // Replace [index] with @name
+      const regex = new RegExp(`\\[${index}\\]`, "g");
       restoredContent = restoredContent.replace(regex, `@${mention.name}`);
     });
 
@@ -142,9 +144,17 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const url = `${S3_URL}/${getRootDir()}`;
 
     let commentContent = req.body.content || '';
+    let restoredContentForEmail = commentContent; // Keep original for email restoration
+
     if (mentions.length > 0) {
+      // Restore mention placeholders for email display (convert [0], [1] to actual names)
+      restoredContentForEmail = this.restoreMentionPlaceholders(commentContent, mentions);
+      restoredContentForEmail = sanitizeCommentContent(restoredContentForEmail);
+      
       commentContent = this.replaceContent(commentContent, mentions);
       commentContent = sanitizeCommentContent(commentContent);
+    } else {
+      restoredContentForEmail = sanitizeCommentContent(commentContent);
     }
 
     req.body.content = commentContent;
@@ -188,9 +198,6 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     const mentionMessage = `<b>${safeName}</b> has mentioned you in a comment on <b>${response.task_name}</b> (${response.team_name})`;
     const assignees = await getAssignees(req.body.task_id);
     const commentMessage = `<b>${safeName}</b> added a comment on <b>${response.task_name}</b> (${response.team_name})`;
-    
-    // Restore mention names for email display
-    const restoredContentForEmail = this.restoreContentFromPlaceholders(req.body.content, mentions);
 
     for (const member of assignees || []) {
       if (member.user_id && member.user_id === req.user?.id) continue;
@@ -305,12 +312,15 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     let commentContent = req.body.content || '';
     const mentions: IMention[] = req.body.mentions || [];
+    let restoredContentForEmail = commentContent; // Keep original for email restoration
 
     if (mentions.length > 0) {
       commentContent = this.replaceContent(commentContent, mentions);
       commentContent = sanitizeCommentContent(commentContent);
+      // Restore from original (unsanitized) content for email
+      restoredContentForEmail = sanitizeCommentContent(restoredContentForEmail);
     } else {
-      commentContent = sanitizeCommentContent(commentContent);
+      restoredContentForEmail = sanitizeCommentContent(commentContent);
     }
 
     // ✅ UPDATE existing row — mark as edited
@@ -349,6 +359,46 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         `INSERT INTO task_comment_contents (comment_id, text_content) VALUES ($1, $2);`,
         [commentId, commentContent]
       );
+    }
+
+    // ✅ Send email notifications for mentions
+    if (mentions.length > 0) {
+      // Get task details for email
+      const taskDetailsQ = `
+        SELECT id, name AS task_name, project_id, 
+               (SELECT name FROM projects WHERE id = tasks.project_id) AS project_name,
+               (SELECT name FROM teams WHERE id = (SELECT team_id FROM projects WHERE id = tasks.project_id)) AS team_name
+        FROM tasks
+        WHERE id = $1;
+      `;
+      const taskDetailsResult = await db.query(taskDetailsQ, [updatedComment.task_id]);
+      const taskDetails = taskDetailsResult.rows[0];
+
+      if (taskDetails) {
+        const safeName = sanitizePlainText(req.user?.name || "Unknown User");
+        const mentionMessage = `<b>${safeName}</b> has mentioned you in an updated comment on <b>${taskDetails.task_name}</b> (${taskDetails.team_name})`;
+        const senderUserId = req.user?.id as string;
+
+        for (const mention of mentions) {
+          if (mention) {
+            const member = await this.getUserDataByTeamMemberId(senderUserId, mention.team_member_id, taskDetails.project_id);
+            if (member && member.email_notifications_enabled) {
+              await this.sendMail({
+                message: mentionMessage,
+                receiverEmail: member.email,
+                receiverName: member.user_name,
+                content: restoredContentForEmail,
+                commentId: commentId,
+                projectId: taskDetails.project_id,
+                taskId: updatedComment.task_id,
+                teamName: taskDetails.team_name,
+                projectName: taskDetails.project_name,
+                taskName: taskDetails.task_name
+              });
+            }
+          }
+        }
+      }
     }
 
     return res.status(200).send(new ServerResponse(true, {

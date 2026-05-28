@@ -8,6 +8,7 @@ import { updateTask } from '@/features/task-management/task-management.slice';
 import { updateSelectedTaskName } from '@/features/task-drawer/task-drawer.slice';
 import { store } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface UseTaskRowActionsProps {
   task: Task;
@@ -102,13 +103,13 @@ export const useTaskRowActions = ({
   // can compare against the true pre-edit value (task.title gets updated live in Redux)
   const handleTaskNameEdit = useCallback(() => {
     if (task.is_parent_container) return;
-    originalTaskNameRef.current = task.title || task.name || '';
+    originalTaskNameRef.current = decodeHtmlEntities(task.title || task.name);
     setEditTaskName(true);
   }, [setEditTaskName, task.is_parent_container, task.title, task.name, originalTaskNameRef]);
 
   // Handle Escape — revert to the name captured when editing started, then close
   const handleCancelEdit = useCallback(() => {
-    const original = originalTaskNameRef.current ?? (task.title || task.name || '');
+    const original = originalTaskNameRef.current ?? decodeHtmlEntities(task.title || task.name);
     // Revert task-management slice back to the original name
     const currentTask = store.getState().taskManagement.entities[task.id];
     if (currentTask) {

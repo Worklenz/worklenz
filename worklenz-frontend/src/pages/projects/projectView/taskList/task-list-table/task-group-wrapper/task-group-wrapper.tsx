@@ -68,6 +68,7 @@ import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_project_task_list_drag_and_move } from '@/shared/worklenz-analytics-events';
 import { ALPHA_CHANNEL } from '@/shared/constants';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface TaskGroupWrapperProps {
   taskGroups: ITaskListGroup[];
@@ -276,7 +277,12 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
     (data: { id: string; parent_task: string; name: string }) => {
       if (!data) return;
 
-      dispatch(updateTaskName(data));
+      dispatch(
+        updateTaskName({
+          ...data,
+          name: decodeHtmlEntities(data.name),
+        })
+      );
     },
     [dispatch]
   );
@@ -756,9 +762,9 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
             name={taskGroup.name}
             groupBy={groupBy}
             statusCategory={taskGroup.category_id}
-            color={(()=>{
-              const raw=themeMode==='dark'? taskGroup.color_code_dark:taskGroup.color_code;
-              return raw?.length===9? raw.slice(0,7):raw;
+            color={(() => {
+              const raw = themeMode === 'dark' ? taskGroup.color_code_dark : taskGroup.color_code;
+              return raw?.length === 9 ? raw.slice(0, 7) : raw;
             })()}
             activeId={activeId}
           />
