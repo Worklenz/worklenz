@@ -215,6 +215,7 @@ const UpgradePlansLKR: React.FC = () => {
         }
         message.success(`Payment successful with ${card_brand} ${card_number_masked}`);
         dispatch(verifyAuthentication());
+        dispatch(toggleUpgradeModal());
         setDirectPayLoading(false);
         setCheckoutPlan(null);
         return;
