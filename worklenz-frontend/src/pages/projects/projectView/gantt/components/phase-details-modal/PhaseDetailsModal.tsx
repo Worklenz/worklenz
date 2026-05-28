@@ -116,8 +116,8 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
     const now = new Date();
     const overdueTasks = Array.isArray(localPhase.children)
       ? localPhase.children.filter(
-          task => task.end_date && new Date(task.end_date) < now && task.progress < 100
-        ).length
+        task => task.end_date && new Date(task.end_date) < now && task.progress < 100
+      ).length
       : 0;
     const completionPercentage =
       totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
@@ -125,11 +125,11 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
     return { totalTasks, completedTasks, pendingTasks, overdueTasks, completionPercentage };
   }, [localPhase]);
 
-const formatDate = (date: Date | string | null | undefined) => {
-  if (!date) return t('timeline.notSet');
-  const d = dayjs(date);
-  return d.isValid() ? d.format('MMM DD, YYYY') : t('timeline.notSet');
-};
+  const formatDate = (date: Date | string | null | undefined) => {
+    if (!date) return t('timeline.notSet');
+    const d = dayjs(date);
+    return d.isValid() ? d.format('MMM DD, YYYY') : t('timeline.notSet');
+  };
 
   const getDateStatus = () => {
     if (!localPhase?.start_date || !localPhase?.end_date) return 'not-set';
@@ -237,14 +237,20 @@ const formatDate = (date: Date | string | null | undefined) => {
     }
   };
 
-  const convertAssigneesToMembers = (assignees: string[] | undefined) => {
+  const convertAssigneesToMembers = (assignees: any[] | undefined) => {
     if (!assignees || assignees.length === 0) return [];
 
-    return assignees.map((assignee, index) => ({
-      id: `assignee-${index}`,
-      name: assignee,
-      color_code: token.colorPrimary,
-    }));
+    return assignees.map((assignee: any, index: number) => {
+      if (typeof assignee === 'string') {
+        return { id: `assignee-${index}`, name: assignee, color_code: token.colorPrimary };
+      }
+      return {
+        id: assignee.id || assignee.team_member_id || `assignee-${index}`,
+        name: assignee.name || assignee.assignee_name,
+        avatar_url: assignee.avatar_url || null,
+        color_code: assignee.color_code || token.colorPrimary,
+      };
+    });
   };
 
   const handleFieldSave = async (field: string, value: any) => {
@@ -353,7 +359,7 @@ const formatDate = (date: Date | string | null | undefined) => {
             onChangeComplete={color => handleFieldSave('color', color.toHexString())}
             size="small"
             showText={false}
-            trigger="click"                                                                                                                                     
+            trigger="click"
             disabledAlpha
           />
           {editingField === 'name' ? (
@@ -642,6 +648,7 @@ const formatDate = (date: Date | string | null | undefined) => {
             >
               <div className="space-y-3 flex-1 overflow-y-auto max-h-96">
                 {localPhase.children.map(task => {
+                  console.log('task.assignees:', JSON.stringify(task.assignees));
                   const taskStatus = getTaskStatus(task);
                   const taskStatusColor = getTaskStatusColor(taskStatus);
 
@@ -650,11 +657,10 @@ const formatDate = (date: Date | string | null | undefined) => {
                   return (
                     <div
                       key={task.id}
-                      className={`p-3 rounded-md border transition-colors hover:shadow-sm ${
-                        task.progress === 100
+                      className={`p-3 rounded-md border transition-colors hover:shadow-sm ${task.progress === 100
                           ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
                           : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
+                        }`}
                       style={{
                         backgroundColor: task.progress === 100 ? undefined : token.colorBgContainer,
                         borderColor: task.progress === 100 ? undefined : token.colorBorder,
@@ -750,9 +756,9 @@ const formatDate = (date: Date | string | null | undefined) => {
                                 type="secondary"
                                 className={`text-xs ${taskStatus === 'overdue' ? 'text-red-500 dark:text-red-400' : ''}`}
                               >
-                               {dayjs(task.end_date).isValid()
-  ? dayjs(task.end_date).format('MMM DD')
-  : 'No due date'}
+                                {dayjs(task.end_date).isValid()
+                                  ? dayjs(task.end_date).format('MMM DD')
+                                  : 'No due date'}
                               </Text>
                             </div>
                           ) : (
