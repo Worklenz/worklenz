@@ -60,6 +60,7 @@ import {
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useCustomColumnVisibility } from '@/hooks/useCustomColumnVisibility';
+import { useState } from 'react';
 
 const CustomColumnModal = () => {
   const [mainForm] = Form.useForm();
@@ -96,6 +97,7 @@ const CustomColumnModal = () => {
 
   const openedColumn = currentColumnData;
   const { isHidden, toggleVisibility } = useCustomColumnVisibility();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resetModalData = () => {
     mainForm.resetFields();
@@ -189,6 +191,8 @@ const CustomColumnModal = () => {
   ];
 
   const handleFormSubmit = async (value: any) => {
+      if (isSubmitting) return;          // ← guard: drop extra clicks
+  setIsSubmitting(true);             // ← lock the button
     try {
       if (customColumnModalType === 'create') {
         const columnKey = nanoid();
@@ -253,16 +257,18 @@ const CustomColumnModal = () => {
             dispatch(addCustomColumn(newColumn));
             dispatch(toggleCustomColumnModalOpen(false));
             resetModalData();
-            // message.success(t('customColumns.modal.createSuccessMessage'));
+            message.success(t('customColumns.modal.createSuccessMessage'));
 
             if (projectId) {
               dispatch(fetchTaskListColumns(projectId));
               dispatch(fetchTasksV3(projectId));
             }
+            setIsSubmitting(false);  
           }
         } catch (error) {
           logger.error('Error creating custom column:', error);
-          // message.error(t('customColumns.modal.createErrorMessage'));
+          message.error(t('customColumns.modal.createErrorMessage'));
+          setIsSubmitting(false);
         }
       } else if (customColumnModalType === 'edit' && customColumnId) {
         const updatedColumn = openedColumn
@@ -346,9 +352,11 @@ const CustomColumnModal = () => {
               dispatch(fetchTaskListColumns(projectId));
               dispatch(fetchTasksV3(projectId));
             }
+            setIsSubmitting(false);
           } catch (error) {
             logger.error('Error updating custom column:', error);
             // message.error(t('customColumns.modal.updateErrorMessage'));
+            setIsSubmitting(false);
           }
         }
       }
@@ -356,6 +364,7 @@ const CustomColumnModal = () => {
       mainForm.resetFields();
     } catch (error) {
       logger.error('error in custom column modal', error);
+      setIsSubmitting(false);
     }
   };
 
@@ -528,11 +537,11 @@ const CustomColumnModal = () => {
               {t('customColumns.modal.cancelButton')}
             </Button>
             {customColumnModalType === 'create' ? (
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit"loading={isSubmitting} disabled={isSubmitting}>
                 {t('customColumns.modal.createButton')}
               </Button>
             ) : (
-              <Button type="primary" htmlType="submit">
+              <Button type="primary" htmlType="submit"loading={isSubmitting} disabled={isSubmitting}>
                 {t('customColumns.modal.updateButton')}
               </Button>
             )}
