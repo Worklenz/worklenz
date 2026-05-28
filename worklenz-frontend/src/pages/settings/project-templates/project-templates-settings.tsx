@@ -167,6 +167,7 @@ const ProjectTemplatesSettings = () => {
         columns={columns}
         dataSource={projectTemplates}
         size="small"
+         showHeader={loading || projectTemplates.length > 0}
         // ✅ FIXED: added pageSize, showSizeChanger and showTotal for full pagination support
         pagination={{
           size: 'small',
