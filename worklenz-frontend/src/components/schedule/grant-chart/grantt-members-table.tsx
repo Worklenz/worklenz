@@ -152,7 +152,7 @@ const GranttMembersTable = React.memo(
                   }}
                 >
                   <Flex gap={12} align="center" style={{ flex: 1 }}>
-                    <CustomAvatar avatarName={member?.name} size={32} />
+                    <CustomAvatar avatarName={member?.name}   avatarUrl={member?.avatar_url} size={32} />
                     <Flex vertical gap={4} style={{ flex: 1 }}>
                       <Flex align="center" gap={8}>
                         <Button

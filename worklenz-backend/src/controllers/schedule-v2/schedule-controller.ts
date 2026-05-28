@@ -322,6 +322,7 @@ export default class ScheduleControllerV2 extends WorklenzControllerBase {
                 users.id AS id, 
                 users.name AS name, 
                 users.email AS email,
+                users.avatar_url AS avatar_url,
                 COALESCE(mp.projects, '[]'::JSONB) AS projects
             FROM team_members 
             INNER JOIN users ON users.id = team_members.user_id 
