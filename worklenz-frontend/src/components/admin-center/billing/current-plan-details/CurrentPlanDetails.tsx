@@ -635,17 +635,19 @@ const CurrentPlanDetails = () => {
         </Typography.Text>
         {billingInfo?.unit_price != null && (
           <Typography.Text>
-            {t('unitPrice', 'LKR {{price}} / user / month', { price: billingInfo.unit_price })}
+            {billingInfo.is_lkr_billing
+              ? t('unitPriceFlat', 'LKR {{price}} / month', { price: billingInfo.unit_price })
+              : t('unitPrice', 'LKR {{price}} / user / month', { price: billingInfo.unit_price })}
           </Typography.Text>
         )}
-        {billingInfo?.total_used != null && (
+        {!billingInfo?.is_lkr_billing && billingInfo?.total_used != null && (
           <Typography.Text>
             {t('totalUsed', 'Members: {{count}}', { count: billingInfo.total_used })}
           </Typography.Text>
         )}
       </Flex>
     );
-  }, [billingInfo?.plan_name, billingInfo?.valid_till_date, billingInfo?.unit_price, billingInfo?.total_used, t]);
+  }, [billingInfo?.plan_name, billingInfo?.valid_till_date, billingInfo?.unit_price, billingInfo?.total_used, billingInfo?.is_lkr_billing, t]);
 
   const renderSubscriptionContent = useCallback(() => {
     if (!billingInfo) return null;

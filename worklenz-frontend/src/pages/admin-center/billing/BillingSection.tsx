@@ -9,8 +9,10 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useSearchParams } from 'react-router-dom';
 import { billingApiService } from '@/api/admin-center/billing.api.service';
+import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { verifyAuthentication } from '@/features/auth/authSlice';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import {
   evt_current_bill_click,
   evt_billing_configuration_click,
@@ -32,8 +34,10 @@ const BillingSection: React.FC = React.memo(() => {
     // On card-add return: skip payment status messages (they belong to the card-add transaction, not a plan payment)
     if (dpCardAdded === '1') {
       const dpDesc = searchParams.get('desc') || searchParams.get('description') || '';
-      const isCardAlreadyExists = dpDesc.toLowerCase().includes('card already exist');
-      const isDirectPayError = dpDesc.length > 0 && !isCardAlreadyExists;
+      const descLower = dpDesc.toLowerCase();
+      const isCardAlreadyExists = descLower.includes('card already exist');
+      const isCardAddSuccess = descLower.includes('success') || descLower.includes('successful');
+      const isDirectPayError = dpDesc.length > 0 && !isCardAlreadyExists && !isCardAddSuccess;
 
       searchParams.delete('dp_card_added');
       searchParams.delete('status');
@@ -59,24 +63,44 @@ const BillingSection: React.FC = React.memo(() => {
           : 'Processing your payment...';
         notification.info({ message: isCardAlreadyExists ? 'Card already on file' : 'Card added', description, duration: 6 });
 
-        // Retry card lookup up to 5 times with 3s intervals to allow webhook time to save
+        // Poll for subscription activation — the webhook (chargeAndActivate) handles charging.
+        // Only fall back to payWithCard if the webhook hasn't activated within the polling window.
         const chargeCard = async () => {
-          for (let attempt = 1; attempt <= 5; attempt++) {
+          for (let attempt = 1; attempt <= 8; attempt++) {
             await new Promise(r => setTimeout(r, 3000));
             try {
+              // Check if the webhook already activated the subscription
+              const billingInfo = await adminCenterApiService.getBillingAccountInfo();
+              const subStatus = billingInfo?.body?.status;
+              const subType = billingInfo?.body?.subscription_type;
+              if (subType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS && subStatus === 'active') {
+                console.log('[DirectPay] Subscription activated by webhook — skipping payWithCard');
+                notification.success({ message: 'Payment successful', description: 'Your plan has been activated.' });
+                dispatch(verifyAuthentication());
+                return;
+              }
+
+              // Subscription not active yet — check card is in DB for fallback charge
               const cardRes = await billingApiService.listCards();
               const card = cardRes?.body?.card_list?.[0];
               if (!card) {
-                console.log(`[DirectPay] Card not in DB yet, attempt ${attempt}/5`);
-                if (attempt === 5) {
+                console.log(`[DirectPay] Card not in DB yet, attempt ${attempt}/8`);
+                if (attempt === 8) {
                   notification.error({ message: 'No card found', description: 'Card was not saved. Please contact support.' });
                 }
                 continue;
               }
+
+              // Only attempt fallback charge on the last attempt to avoid racing the webhook
+              if (attempt < 8) {
+                console.log(`[DirectPay] Waiting for webhook activation, attempt ${attempt}/8`);
+                continue;
+              }
+
               const payOrderId = `WL${new Date().toISOString().slice(2, 10).replace(/-/g, '')}${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
               const walletId = String((card as any).wallet_id ?? '');
               const cardId = String(card.card_id ?? '');
-              console.log('[DirectPay] Charging card — walletId:', walletId, 'cardId:', cardId, 'amount:', amount, 'plan:', plan);
+              console.log('[DirectPay] Webhook did not activate — falling back to payWithCard');
               const payResult = await billingApiService.payWithCard(walletId, cardId, payOrderId, amount, 'LKR', plan);
               if (payResult.done) {
                 notification.success({ message: 'Payment successful', description: 'Your plan has been activated.' });
@@ -87,7 +111,7 @@ const BillingSection: React.FC = React.memo(() => {
               return;
             } catch (e) {
               logger.error('DirectPay post-card-add charge failed', e);
-              if (attempt === 5) {
+              if (attempt === 8) {
                 notification.error({ message: 'Payment error', description: 'Could not charge card. Please try again.' });
               }
             }
