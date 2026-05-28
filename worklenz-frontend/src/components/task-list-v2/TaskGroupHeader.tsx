@@ -397,7 +397,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   ]);
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative flex items-center" style={{ width: '100%', minWidth: 'max-content' }}>
       <div
         className="inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-t border-b border-gray-200 dark:border-gray-700 rounded-t-md pr-2"
         style={{

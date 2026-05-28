@@ -23,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { HolderOutlined } from '@/shared/antd-imports';
+import { HolderOutlined, theme } from '@/shared/antd-imports';
 import { PlusOutlined } from '@/shared/antd-imports';
 import '../../pages/projects/project-view-1/taskList/taskListTable/column-resize.css';
 
@@ -218,13 +218,15 @@ const InsertTaskDivider: React.FC<{
       <div className="relative h-full w-full">
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-blue-400 dark:border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         <button
+          data-insert-btn
           type="button"
           onMouseDown={e => e.preventDefault()}
           onClick={e => {
             e.stopPropagation();
             onInsert();
           }}
-          className="absolute left-8 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900 text-[10px] text-blue-600 dark:text-blue-300 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity flex items-center justify-center shadow-sm"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-4 w-4 rounded-full border border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900 text-[10px] text-blue-600 dark:text-blue-300 opacity-0 group-hover:opacity-100 focus:opacity-100 flex items-center justify-center shadow-sm"
+          style={{ left: 32 }}
           title={title}
           aria-label={title}
         >
@@ -316,6 +318,7 @@ const TaskListV2Section: React.FC = () => {
   const currentSession = useAuthService().getCurrentSession();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
+  const { token: themeToken } = theme.useToken();
 
   // Task creation/assignment restriction (Business Plan feature)
   const { canCreateTask } = useTaskCreationPermission();
@@ -343,7 +346,8 @@ const TaskListV2Section: React.FC = () => {
 
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
-  const contentScrollRef = useRef<HTMLDivElement>(null);
+  const outerScrollRef = useRef<HTMLDivElement>(null);  // handles horizontal scroll
+  const contentScrollRef = useRef<HTMLDivElement>(null); // handles vertical scroll (customScrollParent for virtuoso)
   // State for GroupedVirtuoso customScrollParent (updated after mount via useEffect)
   const [scrollContainer, setScrollContainer] = useState<Element | null>(null);
 
@@ -703,73 +707,43 @@ const TaskListV2Section: React.FC = () => {
   }, [columns, fields, dispatch, initializedFromDatabase]);
 
   // Capture scroll container for GroupedVirtuoso.
-  // Must depend on loading/loadingColumns: the contentScrollRef div only mounts
-  // after loading finishes (skeleton is returned early), so the empty-deps variant
-  // would always capture null. Re-running when loading transitions to false ensures
-  // contentScrollRef.current is the real DOM element by the time this effect fires.
+  // outerScrollRef is the single scroll container (both X and Y).
+  // Must depend on loading/loadingColumns: the div only mounts after loading finishes.
   useEffect(() => {
-    if (contentScrollRef.current) {
-      setScrollContainer(contentScrollRef.current);
+    if (outerScrollRef.current) {
+      setScrollContainer(outerScrollRef.current);
     }
   }, [loading, loadingColumns]);
 
-  // Fix sticky group headers positioning - they should stick below column headers
-  // GroupedVirtuoso creates wrapper divs with position: sticky and top: 0px
-  // We need to adjust them to top: 40px (column header height) with proper z-index
+  // Apply .virtuoso-group-header-wrapper class to the sticky wrappers that
+  // GroupedVirtuoso creates around each groupContent render.
+  // This lets the CSS rule set top:40px so headers stick below the column header row.
   useEffect(() => {
-    if (!contentScrollRef.current) return;
+    const container = outerScrollRef.current;
+    if (!container) return;
 
-    const scrollContainer = contentScrollRef.current;
-    
-    // Function to update sticky group header styles
-    const updateStickyHeaders = () => {
-      // GroupedVirtuoso wraps each group in a div with position: sticky
-      // We need to find all elements with position: sticky that are group wrappers
-      const allElements = scrollContainer.querySelectorAll('*');
-      
-      allElements.forEach(element => {
-        const htmlElement = element as HTMLElement;
-        const computedStyle = window.getComputedStyle(htmlElement);
-        
-        // Check if this is a sticky element (group header wrapper created by virtuoso)
-        if (computedStyle.position === 'sticky') {
-          // Check if it's a group wrapper by looking for our TaskGroupHeader inside
-          const hasGroupHeader = htmlElement.querySelector('[class*="inline-flex"][class*="w-max"]');
-          
-          if (hasGroupHeader && !htmlElement.classList.contains('virtuoso-group-header-wrapper')) {
-            // This is a group wrapper - add our custom class
-            htmlElement.classList.add('virtuoso-group-header-wrapper');
-            
-            // Set background to match the scroll container to prevent content showing through
-            // Get the computed background color from the scroll container
-            const containerBg = window.getComputedStyle(scrollContainer).backgroundColor;
-            htmlElement.style.backgroundColor = containerBg;
-          }
+    const tagStickyWrappers = () => {
+      container.querySelectorAll<HTMLElement>('*').forEach(el => {
+        if (window.getComputedStyle(el).position !== 'sticky') return;
+        const child = el.firstElementChild as HTMLElement | null;
+        if (child && (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))) {
+          el.classList.add('virtuoso-group-header-wrapper');
+          // Use Ant Design's colorBgContainer token — matches the actual page background
+          // in both light (#ffffff) and dark (#141414) modes.
+          el.style.backgroundColor = themeToken.colorBgContainer;
         }
       });
     };
 
-    // Initial update after a short delay to ensure virtuoso has rendered
-    const timeoutId = setTimeout(updateStickyHeaders, 100);
+    const timeoutId = setTimeout(tagStickyWrappers, 100);
+    const observer = new MutationObserver(tagStickyWrappers);
+    observer.observe(container, { childList: true, subtree: true });
 
-    // Create a MutationObserver to watch for DOM changes
-    // GroupedVirtuoso dynamically creates/removes elements as you scroll
-    const observer = new MutationObserver(() => {
-      updateStickyHeaders();
-    });
-
-    // Observe the scroll container for child list changes
-    observer.observe(scrollContainer, {
-      childList: true,
-      subtree: true,
-    });
-
-    // Cleanup
     return () => {
       clearTimeout(timeoutId);
       observer.disconnect();
     };
-  }, [contentScrollRef.current, loading, loadingColumns]);
+  }, [loading, loadingColumns, themeToken.colorBgContainer]);
 
   // Cleanup column resize listeners on unmount to prevent memory leaks
   useEffect(() => {
@@ -1102,7 +1076,7 @@ const TaskListV2Section: React.FC = () => {
       const isGroupEmpty = group.actualCount === 0;
 
       return (
-        <div className={groupIndex > 0 ? 'mt-2' : ''}>
+        <div className={groupIndex > 0 ? 'mt-2' : ''} data-group-header="true">
           <TaskGroupHeader
             group={{
               id: group.id,
@@ -1438,6 +1412,7 @@ const TaskListV2Section: React.FC = () => {
 
                           // Find the scrollable table container
                           const scrollableContainer =
+                            outerScrollRef.current ||
                             contentScrollRef.current ||
                             (e.currentTarget.closest('[style*="overflow"]') as HTMLElement) ||
                             (document
@@ -1673,47 +1648,48 @@ const TaskListV2Section: React.FC = () => {
               }}
             >
               <div
-                ref={contentScrollRef}
+                ref={outerScrollRef}
                 className="flex-1 bg-white dark:bg-gray-900 relative"
-                style={{
-                  overflowX: 'auto',
-                  overflowY: 'auto',
-                  minHeight: 0,
-                }}
+                style={{ overflowX: 'auto', overflowY: 'auto', minHeight: 0 }}
               >
-                {/* Sticky Column Headers */}
                 <div
-                  className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
-                  style={{ width: '100%', minWidth: 'max-content' }}
+                  ref={contentScrollRef}
+                  style={{ minWidth: 'max-content', overflowX: 'visible', overflowY: 'visible' }}
                 >
-                  {renderColumnHeaders()}
-                </div>
+                  {/* Sticky Column Headers */}
+                  <div
+                    className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
+                    style={{ minWidth: 'max-content' }}
+                  >
+                    {renderColumnHeaders()}
+                  </div>
 
-                <div style={{ minWidth: 'max-content' }}>
-                  <div className="mt-2">
-                    <TaskGroupHeader
-                      group={{
-                        id: unmappedGroupId,
-                        name: 'Unmapped',
-                        count: 0,
-                        color: '#fbc84c69',
-                      }}
-                      isCollapsed={false}
-                      onToggle={() => {}}
-                      projectId={urlProjectId || ''}
-                    />
-                    {/* Single add task row - reused for all tasks */}
-                    {canCreateTask && (
-                      <AddTaskRow
-                        groupId={unmappedGroupId}
-                        groupType="phase"
-                        groupValue="Unmapped"
+                  <div style={{ minWidth: 'max-content' }}>
+                    <div className="mt-2">
+                      <TaskGroupHeader
+                        group={{
+                          id: unmappedGroupId,
+                          name: 'Unmapped',
+                          count: 0,
+                          color: '#fbc84c69',
+                        }}
+                        isCollapsed={false}
+                        onToggle={() => {}}
                         projectId={urlProjectId || ''}
-                        visibleColumns={visibleColumns}
-                        rowId={`add-task-${unmappedGroupId}-0`}
-                        autoFocus={false}
                       />
-                    )}
+                      {/* Single add task row - reused for all tasks */}
+                      {canCreateTask && (
+                        <AddTaskRow
+                          groupId={unmappedGroupId}
+                          groupType="phase"
+                          groupValue="Unmapped"
+                          projectId={urlProjectId || ''}
+                          visibleColumns={visibleColumns}
+                          rowId={`add-task-${unmappedGroupId}-0`}
+                          autoFocus={false}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1749,14 +1725,15 @@ const TaskListV2Section: React.FC = () => {
           .dark .hover\\:bg-gray-800:hover .sticky-column-hover {
             background-color: var(--hover-bg) !important;
           }
-          
-          /* Sticky group headers positioning */
+
+          /* GroupedVirtuoso wraps each groupContent in a position:sticky div with top:0.
+             Override top to 40px so the group header sticks below the column header row.
+             Background is set via JS using Ant Design's colorBgContainer token. */
           .virtuoso-group-header-wrapper {
-            position: sticky !important;
             top: 40px !important;
-            z-index: 25 !important;
+            z-index: 20 !important;
           }
-          
+
           /* Column drag performance optimization */
           .column-header-cell {
             will-change: auto;
@@ -1806,9 +1783,11 @@ const TaskListV2Section: React.FC = () => {
               overflow: 'hidden',
             }}
           >
-            {/* Task List Content with Sticky Header */}
+            {/* Single scroll container: handles both X and Y.
+                outerScrollRef is the customScrollParent for virtuoso AND the X scroll container.
+                TaskGroupHeader's sticky left:0 containing block is this element — full scroll width. */}
             <div
-              ref={contentScrollRef}
+              ref={outerScrollRef}
               className="flex-1 bg-white dark:bg-gray-900 relative"
               style={{
                 overflowX: 'auto',
@@ -1816,82 +1795,109 @@ const TaskListV2Section: React.FC = () => {
                 minHeight: 0,
               }}
             >
-              {/* Sticky Column Headers */}
+              {/* Inner wrapper — only sets min-width so content can expand horizontally.
+                  overflowX: visible so sticky left:0 walks up to outerScrollRef as containing block. */}
               <div
-                className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
-                style={{ width: '100%', minWidth: 'max-content' }}
+                ref={contentScrollRef}
+                style={{
+                  minWidth: 'max-content',
+                  overflowX: 'visible',
+                  overflowY: 'visible',
+                }}
               >
-                {renderColumnHeaders()}
-              </div>
-              <SortableContext
-                items={virtuosoItems
-                  .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
-                  .map(item => item.id)
-                  .filter((id): id is string => id !== undefined)}
-                strategy={verticalListSortingStrategy}
-              >
-                <GroupedVirtuoso
-                  customScrollParent={scrollContainer || undefined}
-                  overscan={800}
-                  groupCounts={virtuosoGroupCounts}
-                  groupContent={renderGroup}
-                  itemContent={(index, groupIndex) => {
-                    const item = virtuosoItems[index];
-                    if (!item) return <div />;
-                    const group = virtuosoGroups[groupIndex];
-
-                    const groupOffset = virtuosoGroupCounts
-                      .slice(0, groupIndex)
-                      .reduce((sum, c) => sum + c, 0);
-                    const indexInGroup = index - groupOffset;
-                    const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
-                    const previousItem = indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
-                    const showInsertDivider =
-                      indexInGroup > 0 &&
-                      !('isAddTaskRow' in item) &&
-                      previousItem &&
-                      !('isAddTaskRow' in previousItem);
-
-                    const isOverThisTask =
-                      activeId && overId === item.id && !('isAddTaskRow' in item);
-                    const showBefore = isOverThisTask && dropPosition === 'before';
-                    const showAfter = isOverThisTask && dropPosition === 'after';
-
-                    return (
-                      <div style={{ minWidth: 'max-content' }} className="relative">
-                        {showBefore && !activeId && (
-                          <DropSpacer
-                            isVisible={true}
-                            visibleColumns={visibleColumns}
-                            isDarkMode={isDarkMode}
-                          />
-                        )}
-                        {showInsertDivider && previousItem && canCreateTask && (
-                          <InsertTaskDivider
-                            title={t('insertTaskText', { defaultValue: 'Insert Task' })}
-                            onInsert={() => {
-                              setInsertAnchor({
-                                groupId: group.id,
-                                afterTaskId: previousItem.id,
-                              });
-                              setActiveAddRowsByGroup(prev => ({ ...prev, [group.id]: true }));
-                            }}
-                          />
-                        )}
-                        {renderTask(index, isFirstInGroup)}
-                        {showAfter && !activeId && (
-                          <DropSpacer
-                            isVisible={true}
-                            visibleColumns={visibleColumns}
-                            isDarkMode={isDarkMode}
-                          />
-                        )}
-                      </div>
-                    );
-                  }}
+                {/* Sticky Column Headers */}
+                <div
+                  className="sticky top-0 z-30 bg-gray-50 dark:bg-gray-800"
                   style={{ minWidth: 'max-content' }}
-                />
-              </SortableContext>
+                >
+                  {renderColumnHeaders()}
+                </div>
+                <SortableContext
+                  items={virtuosoItems
+                    .filter(item => !('isAddTaskRow' in item) && !item.parent_task_id)
+                    .map(item => item.id)
+                    .filter((id): id is string => id !== undefined)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <GroupedVirtuoso
+                    customScrollParent={scrollContainer || undefined}
+                    overscan={800}
+                    groupCounts={virtuosoGroupCounts}
+                    groupContent={renderGroup}
+                    itemContent={(index, groupIndex) => {
+                      const item = virtuosoItems[index];
+                      if (!item) return <div />;
+                      const group = virtuosoGroups[groupIndex];
+
+                      const groupOffset = virtuosoGroupCounts
+                        .slice(0, groupIndex)
+                        .reduce((sum, c) => sum + c, 0);
+                      const indexInGroup = index - groupOffset;
+                      const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
+                      const previousItem = indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
+                      const showInsertDivider =
+                        indexInGroup > 0 &&
+                        !('isAddTaskRow' in item) &&
+                        previousItem &&
+                        !('isAddTaskRow' in previousItem);
+
+                      const isOverThisTask =
+                        activeId && overId === item.id && !('isAddTaskRow' in item);
+                      const showBefore = isOverThisTask && dropPosition === 'before';
+                      const showAfter = isOverThisTask && dropPosition === 'after';
+
+                      return (
+                        <div
+                          style={{ minWidth: 'max-content' }}
+                          className="relative"
+                          onMouseMove={e => {
+                            // Find the InsertTaskDivider button inside this row and update
+                            // its left position to follow the cursor — direct DOM update,
+                            // no React state, no re-render.
+                            const btn = (e.currentTarget as HTMLElement).querySelector<HTMLButtonElement>(
+                              '[data-insert-btn]'
+                            );
+                            if (!btn) return;
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            // clientX relative to the row's left edge
+                            const x = e.clientX - rect.left;
+                            btn.style.left = `${x}px`;
+                          }}
+                        >
+                          {showBefore && !activeId && (
+                            <DropSpacer
+                              isVisible={true}
+                              visibleColumns={visibleColumns}
+                              isDarkMode={isDarkMode}
+                            />
+                          )}
+                          {showInsertDivider && previousItem && canCreateTask && (
+                            <InsertTaskDivider
+                              title={t('insertTaskText', { defaultValue: 'Insert Task' })}
+                              onInsert={() => {
+                                setInsertAnchor({
+                                  groupId: group.id,
+                                  afterTaskId: previousItem.id,
+                                });
+                                setActiveAddRowsByGroup(prev => ({ ...prev, [group.id]: true }));
+                              }}
+                            />
+                          )}
+                          {renderTask(index, isFirstInGroup)}
+                          {showAfter && !activeId && (
+                            <DropSpacer
+                              isVisible={true}
+                              visibleColumns={visibleColumns}
+                              isDarkMode={isDarkMode}
+                            />
+                          )}
+                        </div>
+                      );
+                    }}
+                    style={{ minWidth: 'max-content' }}
+                  />
+                </SortableContext>
+              </div>
             </div>
           </div>
 
