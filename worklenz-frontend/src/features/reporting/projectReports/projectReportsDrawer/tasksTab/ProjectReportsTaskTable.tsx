@@ -55,7 +55,7 @@ const ProjectReportsTasksTable = ({
 
   // function to handle task drawer open
   const handleUpdateTaskDrawer = (id: string) => {
-    if (!id && !projectId) return;
+    if (!id || !projectId) return;
     dispatch(setSelectedTaskId(id));
     dispatch(setProjectId(projectId));
     dispatch(fetchPhasesByProjectId(projectId));
