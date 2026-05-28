@@ -298,12 +298,10 @@ const ProjectViewUpdates = () => {
     }
   };
 
-  // ✅ FIX: Accept item as second parameter to compare original vs edited content
+  
   const handleEdit = async (commentId: string, item: any) => {
     if (!editContent.trim()) return;
 
-    // ✅ Reconstruct the original editable content exactly as startEdit did,
-    //    so we have a reliable baseline to diff against.
     let originalContent = item.content || '';
     if (item.mentions && item.mentions.length > 0) {
       item.mentions.forEach((mention: any, index: number) => {
@@ -311,9 +309,7 @@ const ProjectViewUpdates = () => {
         originalContent = originalContent.replace(`{${index}}`, `@${userName}`);
       });
     }
-
-    // ✅ If the content hasn't changed, cancel silently — no API call,
-    //    so the backend never sets the `edited` flag.
+   
     if (editContent.trim() === originalContent.trim()) {
       setEditingCommentId(null);
       setEditContent('');
