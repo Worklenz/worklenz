@@ -1,14 +1,14 @@
-import {ParsedQs} from "qs";
+import { ParsedQs } from "qs";
 
 import db from "../../config/db";
 import HandleExceptions from "../../decorators/handle-exceptions";
-import {IWorkLenzRequest} from "../../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../../interfaces/worklenz-response";
-import {ServerResponse} from "../../models/server-response";
-import {TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
-import {getColor} from "../../shared/utils";
-import RoadmapTasksControllerV2Base, {GroupBy, IRMTaskGroup} from "./roadmap-tasks-contoller-v2-base";
-import moment, {Moment} from "moment";
+import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
+import { ServerResponse } from "../../models/server-response";
+import { TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA, UNMAPPED } from "../../shared/constants";
+import { getColor } from "../../shared/utils";
+import RoadmapTasksControllerV2Base, { GroupBy, IRMTaskGroup } from "./roadmap-tasks-contoller-v2-base";
+import moment, { Moment } from "moment";
 import momentTime from "moment-timezone";
 
 export class TaskListGroup implements IRMTaskGroup {
@@ -111,7 +111,7 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
         const dayName = currentDate.format("ddd");
         const isWeekend = [0, 6].includes(currentDate.day());
         const isToday = moment(moment(today).format("YYYY-MM-DD")).isSame(moment(currentDate).format("YYYY-MM-DD"));
-        monthData.days.push({day: dayOfMonth, name: dayName, isWeekend, isToday});
+        monthData.days.push({ day: dayOfMonth, name: dayName, isWeekend, isToday });
         currentDate.add(1, "day");
         days++;
       }
@@ -142,7 +142,7 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
 
   private static getQuery(userId: string, options: ParsedQs) {
     const searchField = options.search ? "t.name" : "sort_order";
-    const {searchQuery} = RoadmapTasksControllerV2.toPaginationOptions(options, searchField);
+    const { searchQuery } = RoadmapTasksControllerV2.toPaginationOptions(options, searchField);
 
     const isSubTasks = !!options.parent_task;
 
@@ -198,6 +198,20 @@ export default class RoadmapTasksControllerV2 extends RoadmapTasksControllerV2Ba
              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
              start_date,
              end_date
+             (SELECT COALESCE(
+           jsonb_agg(
+             jsonb_build_object(
+               'id', u.id,
+               'name', u.name,
+               'avatar_url', u.avatar_url
+             )
+           ), '[]'::jsonb)
+          FROM tasks_assignees ta
+          JOIN project_members pm ON ta.project_member_id = pm.id
+          JOIN team_members tm ON pm.team_member_id = tm.id
+          JOIN users u ON tm.user_id = u.id
+          WHERE ta.task_id = t.id
+         ) AS assignees
       FROM tasks t
       WHERE ${filters} ${searchQuery} AND project_id = $1
       ORDER BY t.start_date ASC NULLS LAST`;
