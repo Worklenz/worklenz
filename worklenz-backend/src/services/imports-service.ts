@@ -1353,35 +1353,43 @@ class ImportsService {
   async upsertStageTasks(jobId: string, rows: StageTaskRow[]) {
     await db.query("DELETE FROM import_stage_tasks WHERE job_id = $1", [jobId]);
     if (!rows.length) return;
-    const insertValues: string[] = [];
-    const params: unknown[] = [];
-    rows.forEach((row, idx) => {
-      insertValues.push(
-        `($1, $${idx * 11 + 2}, $${idx * 11 + 3}, $${idx * 11 + 4}, $${
-          idx * 11 + 5
-        }, $${idx * 11 + 6}, $${idx * 11 + 7}, $${idx * 11 + 8}, $${
-          idx * 11 + 9
-        }, $${idx * 11 + 10}, $${idx * 11 + 11}, $${idx * 11 + 12})`,
+    const BATCH_SIZE = 500;
+    for (let start = 0; start < rows.length; start += BATCH_SIZE) {
+      const batch = rows.slice(start, start + BATCH_SIZE);
+      const insertValues: string[] = [];
+      const params: unknown[] = [];
+      batch.forEach((row, idx) => {
+        insertValues.push(
+          `($1, $${idx * 11 + 2}, $${idx * 11 + 3}, $${idx * 11 + 4}, $${
+            idx * 11 + 5
+          }, $${idx * 11 + 6}, $${idx * 11 + 7}, $${idx * 11 + 8}, $${
+            idx * 11 + 9
+          }, $${idx * 11 + 10}, $${idx * 11 + 11}, $${idx * 11 + 12})`,
+        );
+        params.push(
+          row.source_task_id || null,
+          row.parent_source_task_id || null,
+          row.title,
+          row.description || null,
+          row.status || null,
+          row.due_at || null,
+          row.start_at || null,
+          row.worktype || null,
+          row.assignee_source_id || null,
+          row.attachments_planned ?? false,
+          row.raw || null,
+        );
+      });
+      await db.query(
+        `INSERT INTO import_stage_tasks (job_id, source_task_id, parent_source_task_id, title, description, status, due_at, start_at, worktype, assignee_source_id, attachments_planned, raw)
+         VALUES ${insertValues.join(",")}`,
+        [jobId, ...params],
       );
-      params.push(
-        row.source_task_id || null,
-        row.parent_source_task_id || null,
-        row.title,
-        row.description || null,
-        row.status || null,
-        row.due_at || null,
-        row.start_at || null,
-        row.worktype || null,
-        row.assignee_source_id || null,
-        row.attachments_planned ?? false,
-        row.raw || null,
-      );
-    });
-    await db.query(
-      `INSERT INTO import_stage_tasks (job_id, source_task_id, parent_source_task_id, title, description, status, due_at, start_at, worktype, assignee_source_id, attachments_planned, raw)
-       VALUES ${insertValues.join(",")}`,
-      [jobId, ...params],
-    );
+    }
+  }
+
+  async deleteTargetProject(projectId: string): Promise<void> {
+    await db.query("DELETE FROM projects WHERE id = $1", [projectId]);
   }
 
   async listStageTasks(jobId: string) {
