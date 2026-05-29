@@ -591,7 +591,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   // Send structured error response
   res.json({
     done: false,
-    message: isProduction() ? "Internal Server Error" : err.message,
+    message: (isProduction() && status >= 500) ? "Internal Server Error" : err.message,
     body: null,
     ...(process.env.NODE_ENV === "development" ? { stack: err.stack } : {}),
   });
