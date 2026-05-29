@@ -13,6 +13,7 @@ import {
   MailOutlined,
   CheckCircleTwoTone,
   CloseCircleTwoTone,
+  theme,
 } from "@/shared/antd-imports";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -54,6 +55,7 @@ const InvitePage: React.FC = () => {
   const [passwordActive, setPasswordActive] = useState(false);
   const [isWorklenzUser, setIsWorklenzUser] = useState(false);
   const themeMode = useAppSelector((state: RootState) => state.ui.theme);
+  const { token: { colorBgLayout } } = theme.useToken();
 
   const passwordChecklistItems = [
     {
@@ -246,7 +248,7 @@ const InvitePage: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f0f2f5",
+          background: colorBgLayout,
         }}
       >
         <Card style={styles.card}>
@@ -271,7 +273,7 @@ const InvitePage: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f0f2f5",
+          background: colorBgLayout,
         }}
       >
         <Card style={styles.card}>
@@ -298,7 +300,7 @@ const InvitePage: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f0f2f5",
+        background: colorBgLayout,
       }}
     >
       <Card
