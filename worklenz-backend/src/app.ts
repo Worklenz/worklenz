@@ -22,6 +22,7 @@ import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
+import BillingController from "./controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import importWorker from "./services/import-worker";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
@@ -41,7 +42,15 @@ app.set("trust proxy", 1);
 // Basic middleware setup
 app.use(compression());
 app.use(logger("dev"));
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({
+  limit: "50mb",
+  verify: (req: Request & { rawBody?: string }, _res, buf) => {
+    const url = req.originalUrl || req.url || "";
+    if (url.includes("/webhook/directpay/")) {
+      req.rawBody = buf.toString("utf8");
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(hpp());
@@ -243,7 +252,8 @@ app.use((req, res, next) => {
   const baseUrl = req.baseUrl || "";
 
   // Always exclude webhooks (external services can't provide CSRF tokens)
-  if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/")) {
+  if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/") ||
+      originalUrl.includes("/webhook/directpay/")) {
     log_error(`[CSRF] Excluding webhook: ${path}`);
     return next();
   }
@@ -414,6 +424,58 @@ app.post(
 app.post(
   "/webhook/emails/reply",
   safeControllerFunction(AwsSesController.handleReplies),
+);
+
+// DirectPay webhook test endpoint (GET) - verify webhook is reachable
+app.get("/webhook/directpay/card-response", (req: Request, res: Response) => {
+  console.log("[DirectPay Webhook Test] GET request received");
+  res.status(200).json({ 
+    message: "DirectPay webhook endpoint is reachable",
+    timestamp: new Date().toISOString(),
+    url: req.url,
+    headers: req.headers
+  });
+});
+
+// DirectPay webhook (no auth/CSRF required - called by DirectPay server)
+// Add raw body parser to handle text/plain and capture raw payload
+app.post("/webhook/directpay/card-response", 
+  express.raw({ type: "*/*", limit: "10mb" }),
+  (req: any, res: Response, next: NextFunction) => {
+    // Log raw body for debugging
+    console.log("[DirectPay Webhook] Raw body type:", typeof req.body);
+    console.log("[DirectPay Webhook] Raw body:", req.body);
+    console.log("[DirectPay Webhook] Content-Type:", req.headers["content-type"]);
+    
+    // If body is Buffer (raw), try to parse it
+    if (Buffer.isBuffer(req.body)) {
+      try {
+        const bodyString = req.body.toString("utf8");
+        req.rawBody = bodyString;
+        console.log("[DirectPay Webhook] Body string:", bodyString);
+        
+        // Try to parse as JSON
+        try {
+          req.body = JSON.parse(bodyString);
+          console.log("[DirectPay Webhook] Parsed JSON body:", req.body);
+        } catch (jsonError) {
+          // If not JSON, try base64 decode
+          try {
+            const decoded = Buffer.from(bodyString, "base64").toString("utf8");
+            req.body = JSON.parse(decoded);
+            console.log("[DirectPay Webhook] Decoded base64 and parsed JSON:", req.body);
+          } catch (base64Error) {
+            console.error("[DirectPay Webhook] Failed to parse body:", jsonError, base64Error);
+            req.body = { raw: bodyString };
+          }
+        }
+      } catch (error) {
+        console.error("[DirectPay Webhook] Error processing raw body:", error);
+      }
+    }
+    next();
+  },
+  safeControllerFunction(BillingController.handleCardAddResponse)
 );
 
 // Static file serving

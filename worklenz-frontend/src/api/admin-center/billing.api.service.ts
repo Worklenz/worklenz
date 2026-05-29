@@ -7,6 +7,20 @@ import {
   IPricingOption,
 } from '@/types/admin-center/admin-center.types';
 
+export interface ILkrPayment {
+  id: string;
+  created_at: string;
+  transaction_amount: number | null;
+  amount: number | null;
+  transaction_currency: string | null;
+  transaction_status: string | null;
+  status: string | null;
+  transaction_id: string | null;
+  order_id: string | null;
+  payment_type: string | null;
+  card_number: string | null;
+}
+
 export interface IPricingPlan {
   id?: string;
   name: string;
@@ -126,5 +140,283 @@ export const billingApiService = {
       `${rootUrl}/pricing-plans`
     );
     return response.data;
+  },
+
+  /**
+   * Check user's region based on IP address to determine LKR pricing eligibility.
+   * Returns null for isLkrEligible if IP detection fails (triggers timezone fallback).
+   */
+  async checkRegion(): Promise<
+    IServerResponse<{
+      isLkrEligible: boolean | null;
+      country: string;
+      countryCode: string | null;
+      ip?: string;
+      error?: string;
+    }>
+  > {
+    const response = await apiClient.get<
+      IServerResponse<{
+        isLkrEligible: boolean | null;
+        country: string;
+        countryCode: string | null;
+        ip?: string;
+        error?: string;
+      }>
+    >(`${rootUrl}/check-region`);
+    return response.data;
+  },
+
+  /**
+   * Get LKR (local) pricing for Free, Pro, and Business plans.
+   * This is a simplified endpoint used by the LKR upgrade modal.
+   */
+  async getLkrPricing(): Promise<
+    IServerResponse<{
+      free: { display_name: string; price: number };
+      pro: { display_name: string; price: number };
+      business: { display_name: string; price: number };
+    }>
+  > {
+    const response = await apiClient.get<
+      IServerResponse<{
+        free: { display_name: string; price: number };
+        pro: { display_name: string; price: number };
+        business: { display_name: string; price: number };
+      }>
+    >(`${rootUrl}/lkr-pricing`);
+    return response.data;
+  },
+
+  /**
+   * Create DirectPay card add session for tokenization
+   * @param amount Optional amount for initial payment (default: 10.00)
+   * @param doInitialPayment Whether to collect payment during card add (default: false)
+   */
+  async createCardAddSession(
+    amount?: number,
+    doInitialPayment?: boolean,
+    plan?: string
+  ): Promise<
+    IServerResponse<{
+      sessionData?: any;
+      stage: string;
+      existingCard?: {
+        card_id: string;
+        wallet_id: string;
+        card_number_masked: string;
+        card_brand: string;
+        expiry_month: string;
+        expiry_year: string;
+      };
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        sessionData?: any;
+        stage: string;
+        existingCard?: {
+          card_id: string;
+          wallet_id: string;
+          card_number_masked: string;
+          card_brand: string;
+          expiry_month: string;
+          expiry_year: string;
+        };
+      }>
+    >(`${rootUrl}/directpay/create-card-session`, {
+      amount,
+      doInitialPayment,
+      ...(plan ? { plan } : {}),
+    });
+    return response.data;
+  },
+
+  /**
+   * Create a CARD_TOKEN_PAYMENT session for 3DS payment with a stored card.
+   */
+  async createTokenPaymentSession(
+    walletId: string,
+    cardId: string,
+    amount: number,
+    currency: string = 'LKR',
+    cvv?: string
+  ): Promise<
+    IServerResponse<{
+      sessionData: any;
+      stage: string;
+      orderId: string;
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        sessionData: any;
+        stage: string;
+        orderId: string;
+      }>
+    >(`${rootUrl}/directpay/create-token-payment-session`, {
+      wallet_id: walletId,
+      card_id: cardId,
+      amount,
+      currency,
+      ...(cvv ? { cvv } : {}),
+    });
+    return response.data;
+  },
+
+  /**
+   * Persist a DirectPay SDK card-add response when the browser receives the full payload.
+   * The server webhook remains the source of truth for return URL-only responses.
+   */
+  async saveDirectPayCardResponse(responsePayload: any): Promise<IServerResponse<any>> {
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/directpay/save-card-response`,
+      responsePayload
+    );
+    return response.data;
+  },
+
+  /**
+   * List saved cards for a wallet
+   * @param walletId Wallet ID from DirectPay
+   */
+  async listCards(): Promise<
+    IServerResponse<{
+      card_list: Array<{
+        card_id: number;
+        mask: string;
+        brand: string;
+        type: string;
+        issuer: string;
+        expiry: string;
+        created_at: string;
+      }>;
+    }>
+  > {
+    const response = await apiClient.get<
+      IServerResponse<{
+        card_list: Array<{
+          card_id: number;
+          mask: string;
+          brand: string;
+          type: string;
+          issuer: string;
+          expiry: string;
+          created_at: string;
+        }>;
+      }>
+    >(`${rootUrl}/directpay/list-cards`);
+    return response.data;
+  },
+
+  /**
+   * Delete a saved card
+   * @param cardId Card ID from DirectPay
+   */
+  async deleteCard(cardId: string): Promise<
+    IServerResponse<{
+      status: number;
+      data: {
+        card_id: number;
+      };
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        status: number;
+        data: {
+          card_id: number;
+        };
+      }>
+    >(`${rootUrl}/directpay/delete-card`, {
+      card_id: cardId,
+    });
+    return response.data;
+  },
+
+  /**
+   * Pay using a stored card
+   * @param walletId Wallet ID from DirectPay
+   * @param cardId Card ID from DirectPay
+   * @param orderId Unique order reference
+   * @param amount Payment amount
+   * @param currency Currency code (default: LKR)
+   */
+  async payWithCard(
+    walletId: string,
+    cardId: string,
+    orderId: string,
+    amount: number,
+    currency: string = 'LKR',
+    plan?: string
+  ): Promise<
+    IServerResponse<{
+      status: number;
+      data: {
+        transaction: {
+          status: string;
+          message: string;
+          id: number;
+          description: string;
+          channel: string;
+          dateTime: string;
+          amount: number;
+          promotion_amount?: string;
+        };
+        card: {
+          number: string;
+        };
+        promotion: any;
+      };
+    }>
+  > {
+    const response = await apiClient.post<
+      IServerResponse<{
+        status: number;
+        data: {
+          transaction: {
+            status: string;
+            message: string;
+            id: number;
+            description: string;
+            channel: string;
+            dateTime: string;
+            amount: number;
+            promotion_amount?: string;
+          };
+          card: {
+            number: string;
+          };
+          promotion: any;
+        };
+      }>
+    >(`${rootUrl}/directpay/pay-with-card`, {
+      wallet_id: walletId,
+      card_id: cardId,
+      order_id: orderId,
+      amount: String(amount),
+      currency,
+      ...(plan ? { plan } : {}),
+    });
+    return response.data;
+  },
+
+  async getLkrPaymentHistory(): Promise<IServerResponse<{ payments: ILkrPayment[] }>> {
+    const response = await apiClient.get<IServerResponse<{ payments: ILkrPayment[] }>>(
+      `${rootUrl}/lkr-payment-history`
+    );
+    return response.data;
+  },
+
+  async downloadLkrReceipt(paymentId: string, receiptNumber: string): Promise<void> {
+    const response = await apiClient.get(`${rootUrl}/lkr-receipt/${paymentId}`, {
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `receipt-${receiptNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   },
 };
