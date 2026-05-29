@@ -361,6 +361,22 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       );
     }
 
+    // ✅ Update mentions — replace existing ones with the new set
+    await db.query(`DELETE FROM task_comment_mentions WHERE comment_id = $1;`, [commentId]);
+    if (mentions.length > 0) {
+      for (let i = 0; i < mentions.length; i++) {
+        const mention = mentions[i];
+        if (mention?.team_member_id) {
+          await db.query(
+            `INSERT INTO task_comment_mentions (comment_id, mentioned_index, mentioned_by, informed_by)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT DO NOTHING;`,
+            [commentId, i, req.user?.id, mention.team_member_id]
+          );
+        }
+      }
+    }
+
     // ✅ Send email notifications for mentions
     if (mentions.length > 0) {
       // Get task details for email
@@ -425,6 +441,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                     task_comments.team_member_id,
                     task_comments.task_id,
                     task_comments.is_edited,
+                    task_comments.is_deleted,
                     (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) AS member_name,
                     u.avatar_url,
                     task_comments.created_at,
@@ -470,6 +487,16 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     for (const comment of result.rows) {
       if (!comment.content) comment.content = "";
       comment.rawContent = comment.content;
+
+      // Soft-deleted comments: wipe content so the frontend shows the placeholder
+      if (comment.is_deleted) {
+        comment.content = "";
+        comment.rawContent = "";
+        comment.attachments = [];
+        comment.mentions = [];
+        continue;
+      }
+
       comment.content = comment.content.replace(/\n/g, "</br>");
       comment.edit = false;
       const { mentions } = comment;
@@ -497,11 +524,16 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DELETE
-               FROM task_comments
-               WHERE id = $1
-                 AND task_id = $2
-                 AND user_id = $3;`;
+    // Soft-delete: mark as deleted so the frontend can show "This message was deleted"
+    const q = `
+      UPDATE task_comments
+      SET is_deleted = TRUE,
+          updated_at = NOW()
+      WHERE id = $1
+        AND task_id = $2
+        AND user_id = $3
+      RETURNING id;
+    `;
     const result = await db.query(q, [req.params.id, req.params.taskId, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
