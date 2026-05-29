@@ -104,10 +104,10 @@ const MondayIcon = () => (
 );
 
 const AVAILABLE_IMPORT_SOURCES = [
-  { key: 'asana', icon: <AsanaIcon />, label: 'Asana', order: 1 },
-  { key: 'jira-software', icon: <JiraIcon />, label: 'Jira', order: 0 },
-  { key: 'trello', icon: <TrelloIcon />, label: 'Trello', order: 2 },
-  { key: 'monday', icon: <MondayIcon />, label: 'Monday.com', order: 3 },
+  { key: 'asana', icon: <AsanaIcon />, label: 'Asana', order: 1, comingSoon: false },
+  { key: 'jira-software', icon: <JiraIcon />, label: 'Jira', order: 0, comingSoon: false },
+  { key: 'trello', icon: <TrelloIcon />, label: 'Trello', order: 2, comingSoon: true },
+  { key: 'monday', icon: <MondayIcon />, label: 'Monday.com', order: 3, comingSoon: true },
   {
     key: 'csv',
     icon: (
@@ -119,8 +119,9 @@ const AVAILABLE_IMPORT_SOURCES = [
     ),
     label: 'CSV',
     order: 99,
+    comingSoon: false,
   },
-] as const;
+];
 
 export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onClose, source }) => {
   const [selectedSource, setSelectedSource] = React.useState(source);
@@ -774,12 +775,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               .sort((a, b) => a.order - b.order)
               .map(sourceOption => (
                 <div
-                  className="import-source-card"
+                  className={`import-source-card${sourceOption.comingSoon ? ' import-source-card--coming-soon' : ''}`}
                   key={sourceOption.key}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => handleSourcePick(sourceOption)}
-                  onKeyDown={e => {
+                  role={sourceOption.comingSoon ? undefined : 'button'}
+                  tabIndex={sourceOption.comingSoon ? -1 : 0}
+                  onClick={sourceOption.comingSoon ? undefined : () => handleSourcePick(sourceOption)}
+                  onKeyDown={sourceOption.comingSoon ? undefined : e => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       handleSourcePick(sourceOption);
@@ -788,7 +789,12 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                 >
                   <div className="import-source-content">
                     <div className="import-source-icon">{sourceOption.icon}</div>
-                    <span className="import-source-label">{sourceOption.label}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span className="import-source-label">{sourceOption.label}</span>
+                      {sourceOption.comingSoon && (
+                        <span className="import-source-coming-soon-badge">Coming soon</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

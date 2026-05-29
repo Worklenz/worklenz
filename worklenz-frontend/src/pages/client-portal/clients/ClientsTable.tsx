@@ -316,6 +316,26 @@ const ClientsTable = () => {
 
   // Handle activate client
   const handleActivateClient = async (clientId: string) => {
+    // Optimistically flip the status so the menu changes immediately
+    const state = (dispatch as any).getState?.() as any;
+    const queryKeys = Object.keys(state?.clientPortalApi?.queries || {});
+    const patches: any[] = [];
+    for (const key of queryKeys) {
+      if (!key.startsWith('getClients')) continue;
+      const args = state.clientPortalApi.queries[key]?.originalArgs;
+      patches.push(
+        dispatch(
+          clientPortalApi.util.updateQueryData('getClients', args, (draft: any) => {
+            const clients: any[] = draft?.body?.clients ?? [];
+            const target = clients.find((c: any) => c.id === clientId);
+            if (target) {
+              target.status = 'active';
+              target.has_portal_access = true;
+            }
+          })
+        )
+      );
+    }
     try {
       await updateClient({
         id: clientId,
@@ -324,9 +344,9 @@ const ClientsTable = () => {
       message.success(
         t('activateClientSuccessMessage', { defaultValue: 'Client activated successfully' })
       );
-      // Invalidate cache to refresh the UI
       dispatch(clientPortalApi.util.invalidateTags(['Clients']));
     } catch (error: any) {
+      patches.forEach(p => p.undo?.());
       message.error(
         error?.data?.message ||
           t('activateClientErrorMessage', { defaultValue: 'Failed to activate client' })

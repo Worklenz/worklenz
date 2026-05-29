@@ -85,9 +85,20 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
             border: `1px dashed ${themeToken.colorBorder}`,
             borderRadius: themeToken.borderRadiusLG,
           }}
-          accept=".csv"
+          accept=".csv,.tsv,.txt"
           showUploadList={false}
           beforeUpload={file => {
+            const allowed = ['text/csv', 'text/plain', 'text/tab-separated-values', 'application/csv', 'application/vnd.ms-excel'];
+            const ext = (file.name || '').toLowerCase().split('.').pop();
+            const allowedExt = ['csv', 'tsv', 'txt'];
+            if (!allowed.includes(file.type) && !allowedExt.includes(ext || '')) {
+              antdMessage.error(
+                t('importStep.csvInvalidType', {
+                  defaultValue: 'Please upload a CSV file. Files like PDFs or images are not supported.',
+                })
+              );
+              return false;
+            }
             uploadedCsvFileRef.current = file;
             setUploadedFileName(file.name || '');
             const reader = new FileReader();

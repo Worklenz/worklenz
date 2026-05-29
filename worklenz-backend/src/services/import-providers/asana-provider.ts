@@ -36,6 +36,7 @@ interface AsanaTask {
   memberships?: Array<{
     section?: { gid?: string; name?: string | null } | null;
   }>;
+  tags?: Array<{ gid?: string; name?: string | null }>;
 }
 
 interface AsanaCustomFieldValue {
@@ -81,6 +82,37 @@ interface FieldMappingRow {
   include?: boolean;
 }
 
+interface AsanaStory {
+  gid?: string;
+  text?: string;
+  resource_subtype?: string;
+  created_at?: string;
+  created_by?: {
+    gid?: string | null;
+    name?: string | null;
+    email?: string | null;
+  } | null;
+}
+
+interface AsanaStoryResponse {
+  data: AsanaStory[];
+  next_page?: { offset?: string | null };
+}
+
+interface AsanaAttachmentMeta {
+  gid?: string;
+  name?: string;
+  download_url?: string | null;
+  size?: number | null;
+  content_type?: string | null;
+  created_at?: string;
+}
+
+interface AsanaAttachmentResponse {
+  data: AsanaAttachmentMeta[];
+  next_page?: { offset?: string | null };
+}
+
 const STANDARD_FIELD_CANDIDATES: Array<{
   name: string;
   target: string;
@@ -94,6 +126,7 @@ const STANDARD_FIELD_CANDIDATES: Array<{
   { name: "Section", target: "status" },
   { name: "Created by", target: "reporter" },
   { name: "Priority", target: "priority" },
+  { name: "Tags", target: "labels" },
   { name: "Likes", target: "likes" },
   { name: "Alphabetical", target: "alphabetical" },
   { name: "Completed on", target: "completedDate" },
@@ -105,6 +138,42 @@ const SECTION_FALLBACK = [
   { source_level: "Subtask", target_level: "Subtask", position: 3 },
   { source_level: "Nested subtask", target_level: "Subtask", position: 4 },
 ];
+
+const TASK_OPT_FIELDS = [
+  "gid",
+  "name",
+  "notes",
+  "due_on",
+  "due_at",
+  "start_on",
+  "assignee.gid",
+  "assignee.name",
+  "assignee.email",
+  "created_by.gid",
+  "created_by.name",
+  "created_by.email",
+  "created_at",
+  "modified_at",
+  "completed_at",
+  "completed",
+  "likes.user.name",
+  "likes.user.email",
+  "num_likes",
+  "custom_fields.gid",
+  "custom_fields.name",
+  "custom_fields.type",
+  "custom_fields.text_value",
+  "custom_fields.number_value",
+  "custom_fields.display_value",
+  "custom_fields.enum_value.name",
+  "memberships.section.name",
+  "memberships.section.gid",
+  "tags.gid",
+  "tags.name",
+];
+
+const NESTED_FETCH_CONCURRENCY = 5;
+const MAX_SUBTASK_DEPTH = 3;
 
 export default class AsanaProvider implements ImportProvider {
   name = "asana";
@@ -285,7 +354,7 @@ export default class AsanaProvider implements ImportProvider {
     if (value.enum_value?.name) return value.enum_value.name;
     if (setting.custom_field?.enum_options?.length) {
       const matched = setting.custom_field.enum_options.find(
-        (opt) => opt.name && opt.name === value.name
+        (opt) => opt.name && opt.name === (value as any).name
       );
       if (matched?.name) return matched.name;
     }
@@ -306,6 +375,11 @@ export default class AsanaProvider implements ImportProvider {
         : task.likes?.length ?? null;
     const alphabeticalValue = task.name || "";
     const statusLabel = primarySection || (task.completed ? "Completed" : "");
+    const tagsValue = (task.tags || [])
+      .map((tag) => tag.name)
+      .filter((name): name is string => !!name)
+      .join(", ");
+
     const raw: Record<string, unknown> = {
       "Task name": task.name || "",
       Description: task.notes || "",
@@ -323,6 +397,7 @@ export default class AsanaProvider implements ImportProvider {
       Priority: "",
       Status: statusLabel || "",
       Project: projectName || "",
+      Tags: tagsValue,
     };
 
     const valueMap = new Map<string, AsanaCustomFieldValue>();
@@ -364,9 +439,139 @@ export default class AsanaProvider implements ImportProvider {
         position: idx + 1,
       }));
     } catch (err) {
-      // On failure, fall back to defaults
       return SECTION_FALLBACK;
     }
+  }
+
+  private async runBatched<T>(
+    items: T[],
+    concurrency: number,
+    fn: (item: T) => Promise<void>
+  ): Promise<void> {
+    for (let i = 0; i < items.length; i += concurrency) {
+      const batch = items.slice(i, i + concurrency);
+      await Promise.all(batch.map(fn));
+    }
+  }
+
+  private async fetchTaskComments(
+    token: string,
+    taskGid: string
+  ): Promise<Array<Record<string, unknown>>> {
+    try {
+      const resp = await getWithRetries<AsanaStoryResponse>({
+        method: "GET",
+        url: `https://app.asana.com/api/1.0/tasks/${taskGid}/stories`,
+        params: {
+          opt_fields:
+            "gid,text,resource_subtype,created_at,created_by.gid,created_by.name,created_by.email",
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return (resp.data || [])
+        .filter((story) => story.resource_subtype === "comment")
+        .map((story) => ({
+          body: story.text || "",
+          author: story.created_by?.name || story.created_by?.email || "Unknown",
+          authorEmail: story.created_by?.email || null,
+          authorAccountId: story.created_by?.gid || null,
+          created: story.created_at || null,
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  private async fetchTaskAttachments(
+    token: string,
+    taskGid: string
+  ): Promise<Array<Record<string, unknown>>> {
+    try {
+      const resp = await getWithRetries<AsanaAttachmentResponse>({
+        method: "GET",
+        url: `https://app.asana.com/api/1.0/tasks/${taskGid}/attachments`,
+        params: {
+          opt_fields: "gid,name,download_url,size,content_type,created_at",
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return (resp.data || [])
+        .filter((att) => att.download_url)
+        .map((att) => ({
+          filename: att.name || "attachment",
+          url: att.download_url!,
+          mimeType: att.content_type || null,
+          size: att.size || null,
+          created: att.created_at || null,
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  private async fetchSubtasks(
+    token: string,
+    parentGid: string,
+    customFieldSettings: AsanaCustomFieldSetting[],
+    projectName: string | null | undefined,
+    assigneeDirectory: Map<string, { source_user_id?: string | null; source_email?: string | null }>,
+    depth: number
+  ): Promise<StageTaskRow[]> {
+    if (depth >= MAX_SUBTASK_DEPTH) return [];
+
+    let subtaskPage: { data: AsanaTask[]; next_page?: { offset?: string | null } };
+    try {
+      subtaskPage = await getWithRetries<{ data: AsanaTask[]; next_page?: { offset?: string | null } }>({
+        method: "GET",
+        url: `https://app.asana.com/api/1.0/tasks/${parentGid}/subtasks`,
+        params: { opt_fields: TASK_OPT_FIELDS.join(",") },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      return [];
+    }
+
+    const collected: StageTaskRow[] = [];
+    for (const t of subtaskPage.data || []) {
+      const raw = this.buildRawTask(t, customFieldSettings, projectName);
+      const primarySection = this.pickPrimarySection(t);
+      const normalizedEmail = t.assignee?.email?.toLowerCase();
+      if (normalizedEmail && !assigneeDirectory.has(normalizedEmail)) {
+        assigneeDirectory.set(normalizedEmail, {
+          source_user_id: t.assignee?.gid || null,
+          source_email: t.assignee?.email || null,
+        });
+      }
+      const resolvedStatus = primarySection || (t.completed ? "Completed" : null);
+      collected.push({
+        source_task_id: t.gid,
+        parent_source_task_id: parentGid,
+        title: t.name || "Untitled task",
+        description: t.notes || null,
+        due_at: t.due_at || t.due_on || null,
+        start_at: t.start_on || null,
+        status: resolvedStatus || null,
+        assignee_source_id: t.assignee?.email || t.assignee?.gid || null,
+        worktype: resolvedStatus || null,
+        raw,
+      });
+    }
+
+    // Recursively fetch nested subtasks in batches
+    const deeperTasks: StageTaskRow[] = [];
+    await this.runBatched(collected, NESTED_FETCH_CONCURRENCY, async (task) => {
+      const nested = await this.fetchSubtasks(
+        token,
+        task.source_task_id!,
+        customFieldSettings,
+        projectName,
+        assigneeDirectory,
+        depth + 1
+      );
+      deeperTasks.push(...nested);
+    });
+
+    return [...collected, ...deeperTasks];
   }
 
   async getAutoMappings(
@@ -409,42 +614,12 @@ export default class AsanaProvider implements ImportProvider {
       { source_user_id?: string | null; source_email?: string | null }
     >();
     let offset: string | undefined;
-    const optFields = [
-      "gid",
-      "name",
-      "notes",
-      "due_on",
-      "due_at",
-      "start_on",
-      "assignee.gid",
-      "assignee.name",
-      "assignee.email",
-      "created_by.gid",
-      "created_by.name",
-      "created_by.email",
-      "created_at",
-      "modified_at",
-      "completed_at",
-      "completed",
-      "likes.user.name",
-      "likes.user.email",
-      "num_likes",
-      "custom_fields.gid",
-      "custom_fields.name",
-      "custom_fields.type",
-      "custom_fields.text_value",
-      "custom_fields.number_value",
-      "custom_fields.display_value",
-      "custom_fields.enum_value.name",
-      "memberships.section.name",
-      "memberships.section.gid",
-    ];
 
     do {
       const page = await getWithRetries<AsanaTaskResponse>({
         method: "GET",
         url: `https://app.asana.com/api/1.0/projects/${options.projectId}/tasks`,
-        params: { limit: 50, offset, opt_fields: optFields.join(",") },
+        params: { limit: 50, offset, opt_fields: TASK_OPT_FIELDS.join(",") },
         headers: { Authorization: `Bearer ${options.token}` },
       });
 
@@ -480,6 +655,35 @@ export default class AsanaProvider implements ImportProvider {
       }
       offset = page.next_page?.offset || undefined;
     } while (offset);
+
+    // Fetch nested data (comments, attachments, subtasks) for all top-level tasks
+    const subtaskBatch: StageTaskRow[] = [];
+    await this.runBatched(tasks, NESTED_FETCH_CONCURRENCY, async (task) => {
+      const gid = task.source_task_id;
+
+      const [comments, attachments, subtasks] = await Promise.all([
+        this.fetchTaskComments(options.token, gid!),
+        this.fetchTaskAttachments(options.token, gid!),
+        this.fetchSubtasks(
+          options.token,
+          gid!,
+          customFieldSettings,
+          options.projectName,
+          assigneeDirectory,
+          1
+        ),
+      ]);
+
+      if (comments.length > 0) {
+        (task.raw as Record<string, unknown>).__jira_comments = comments;
+      }
+      if (attachments.length > 0) {
+        (task.raw as Record<string, unknown>).__jira_attachments = attachments;
+      }
+      subtaskBatch.push(...subtasks);
+    });
+
+    tasks.push(...subtaskBatch);
 
     const hierarchy = await this.buildHierarchy(
       options.token,

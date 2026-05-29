@@ -34,10 +34,27 @@
   cursor: pointer;
 }
 
-.import-source-card:hover {
+.import-source-card:hover:not(.import-source-card--coming-soon) {
   border: 1px solid #4096ff;
   box-shadow: 0 6px 18px rgba(64, 150, 255, 0.12);
   transform: translateY(-2px);
+}
+
+.import-source-card--coming-soon {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.import-source-coming-soon-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fff;
+  background: #8c8c8c;
+  border-radius: 4px;
+  padding: 1px 6px;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
 }
 
 .import-source-content {
@@ -185,4 +202,10 @@ body.dark .csv-dropzone,
 .ant-modal-root .dark .csv-dropzone {
   background: #111214;
   border-color: #2f3238;
+}
+
+body.dark .import-source-coming-soon-badge,
+.ant-modal-root .dark .import-source-coming-soon-badge {
+  background: #3a3b3f;
+  color: #a1a7b3;
 }

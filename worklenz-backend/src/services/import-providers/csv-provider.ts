@@ -51,6 +51,13 @@ export default class CsvProvider implements ImportProvider {
     const csvText = (payload?.csvText as string) || "";
     if (!csvText.trim()) return { tasks: [], fields: [] };
 
+    // Reject binary content (PDF, images, etc.) — check for non-text byte sequences
+    const sample = csvText.slice(0, 512);
+    const binarySignatures = ["%PDF-", "\x89PNG", "\xFF\xD8\xFF", "PK\x03\x04"];
+    if (binarySignatures.some(sig => sample.includes(sig))) {
+      throw new Error("The uploaded file does not appear to be a CSV. Please upload a valid CSV file.");
+    }
+
     const parsed = parseCsv(csvText);
     if (!parsed.length) return { tasks: [], fields: [] };
     const [headerRow, ...dataRows] = parsed;

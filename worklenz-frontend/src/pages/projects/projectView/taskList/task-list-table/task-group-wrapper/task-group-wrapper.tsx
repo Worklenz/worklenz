@@ -232,14 +232,56 @@ const TaskGroupWrapper = ({ taskGroups, groupBy }: TaskGroupWrapperProps) => {
     }) => {
       if (!data) return;
 
+      const targetTaskId = data.parent_task || data.id;
+
       dispatch(
         updateTaskProgress({
-          taskId: data.parent_task || data.id,
+          taskId: targetTaskId,
           progress: data.complete_ratio,
           totalTasksCount: data.total_tasks_count,
           completedCount: data.completed_count,
         })
       );
+
+      // Update local groups state so the progress bar re-renders immediately.
+      // The component renders from local `groups` state (not directly from Redux),
+      // so dispatching to Redux alone is not enough for a real-time update.
+      if (targetTaskId) {
+        setGroups(prevGroups =>
+          prevGroups.map(group => {
+            const taskIndex = group.tasks.findIndex(t => t.id === targetTaskId);
+            if (taskIndex !== -1) {
+              const updatedTasks = [...group.tasks];
+              updatedTasks[taskIndex] = {
+                ...updatedTasks[taskIndex],
+                complete_ratio: data.complete_ratio,
+                progress_value: data.complete_ratio,
+                completed_count: data.completed_count,
+                total_tasks_count: data.total_tasks_count,
+              };
+              return { ...group, tasks: updatedTasks };
+            }
+
+            // Also check inside sub_tasks of top-level tasks
+            let changed = false;
+            const updatedTasks2 = group.tasks.map(task => {
+              if (!task.sub_tasks?.length) return task;
+              const subIdx = task.sub_tasks.findIndex(s => s.id === targetTaskId);
+              if (subIdx === -1) return task;
+              changed = true;
+              const updatedSubs = [...task.sub_tasks];
+              updatedSubs[subIdx] = {
+                ...updatedSubs[subIdx],
+                complete_ratio: data.complete_ratio,
+                progress_value: data.complete_ratio,
+              };
+              return { ...task, sub_tasks: updatedSubs };
+            });
+
+            return changed ? { ...group, tasks: updatedTasks2 } : group;
+          })
+        );
+      }
     },
     [dispatch]
   );

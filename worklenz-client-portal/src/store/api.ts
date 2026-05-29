@@ -1,20 +1,20 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { 
-  ApiResponse, 
-  ClientRequest, 
-  ClientSettings, 
-  ClientUser, 
-  ClientService, 
-  ClientProject, 
-  ClientInvoice, 
-  ClientChat, 
+import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import {
+  ApiResponse,
+  ClientRequest,
+  ClientSettings,
+  ClientUser,
+  ClientService,
+  ClientProject,
+  ClientInvoice,
+  ClientChat,
   ClientNotification,
   DashboardStats,
-  PaginatedResponse 
+  PaginatedResponse
 } from '@/types';
 
-// Base query with authentication
-const baseQuery = fetchBaseQuery({
+const rawBaseQuery = fetchBaseQuery({
   baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/client-portal',
   prepareHeaders: (headers) => {
     const token = localStorage.getItem('clientToken');
@@ -24,6 +24,31 @@ const baseQuery = fetchBaseQuery({
     return headers;
   },
 });
+
+// Wrap the base query to handle 403 deactivation responses.
+// fetchBaseQuery doesn't go through the ApiService axios interceptor, so RTK Query
+// requests that receive "account is deactivated" 403s would otherwise be silently
+// swallowed — the already-logged-in client could keep browsing indefinitely.
+const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
+  args,
+  api,
+  extraOptions
+) => {
+  const result = await rawBaseQuery(args, api, extraOptions);
+  if (result.error?.status === 403) {
+    const message: string =
+      (result.error.data as any)?.message || '';
+    const isDeactivated =
+      message.toLowerCase().includes('deactivated') ||
+      message.toLowerCase().includes('portal access is disabled');
+    if (isDeactivated) {
+      localStorage.removeItem('clientToken');
+      localStorage.removeItem('clientTokenExpiry');
+      window.dispatchEvent(new CustomEvent('client-deactivated'));
+    }
+  }
+  return result;
+};
 
 // Create the API slice
 export const clientPortalApi = createApi({

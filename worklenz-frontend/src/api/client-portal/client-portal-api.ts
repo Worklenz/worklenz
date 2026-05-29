@@ -1109,6 +1109,33 @@ export const clientPortalApi = createApi({
         method: 'DELETE',
       }),
       invalidatesTags: ['Clients'],
+      // Optimistically mark the client as inactive so the Activate/Deactivate
+      // menu item flips immediately without waiting for the refetch round-trip.
+      onQueryStarted: async (id, { dispatch, queryFulfilled, getState }) => {
+        const patches: ReturnType<typeof dispatch>[] = [];
+        const state = getState() as any;
+        const queryKeys = Object.keys(state?.clientPortalApi?.queries || {});
+        for (const key of queryKeys) {
+          if (!key.startsWith('getClients')) continue;
+          const args = state.clientPortalApi.queries[key]?.originalArgs;
+          const patch = dispatch(
+            clientPortalApi.util.updateQueryData('getClients', args, draft => {
+              const clients: any[] = (draft as any)?.body?.clients ?? [];
+              const target = clients.find((c: any) => c.id === id);
+              if (target) {
+                target.status = 'inactive';
+                target.has_portal_access = false;
+              }
+            })
+          );
+          patches.push(patch);
+        }
+        try {
+          await queryFulfilled;
+        } catch {
+          patches.forEach(p => (p as any).undo?.());
+        }
+      },
     }),
 
     // Client Projects

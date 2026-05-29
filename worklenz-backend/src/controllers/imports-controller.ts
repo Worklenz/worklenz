@@ -82,12 +82,6 @@ const autoFieldTemplate: FieldMappingRow[] = [
     include: true,
   },
   {
-    source_field: "Likes",
-    target_field: "Likes",
-    required: false,
-    include: true,
-  },
-  {
     source_field: "Completed on",
     target_field: "completedDate",
     required: false,
@@ -1136,8 +1130,9 @@ export default class ImportsController {
       } catch (err: any) {
         const status = err?.response?.status;
         if (status === 401 || status === 403) {
+          // Use 422 instead of 401 to avoid the frontend's global session-expiry redirect
           throw createHttpError(
-            401,
+            422,
             "Invalid JIRA credentials. Please check your email, API token, and domain.",
           );
         }
