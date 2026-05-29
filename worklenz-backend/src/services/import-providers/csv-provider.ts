@@ -1,3 +1,4 @@
+import createHttpError from "http-errors";
 import { ImportProvider, ProviderResult } from "./provider-types";
 import { ImportJob, StageTaskRow } from "../imports-service";
 
@@ -55,13 +56,15 @@ export default class CsvProvider implements ImportProvider {
     const sample = csvText.slice(0, 512);
     const binarySignatures = ["%PDF-", "\x89PNG", "\xFF\xD8\xFF", "PK\x03\x04"];
     if (binarySignatures.some(sig => sample.includes(sig))) {
-      throw new Error("The uploaded file does not appear to be a CSV. Please upload a valid CSV file.");
+      throw createHttpError(400, "The uploaded file does not appear to be a CSV. Please upload a valid CSV file.");
     }
 
     const parsed = parseCsv(csvText);
-    if (!parsed.length) return { tasks: [], fields: [] };
+    if (!parsed.length) throw createHttpError(400, "The CSV file is empty. Please upload a file with at least a header row and one data row.");
     const [headerRow, ...dataRows] = parsed;
     const headers = headerRow.map((h) => h.trim()).filter(Boolean);
+    if (!headers.length) throw createHttpError(400, "The CSV file has no column headers. Please ensure the first row contains column names.");
+    if (!dataRows.length) throw createHttpError(400, "The CSV file has no data rows. Please ensure there is at least one row of data below the header.");
     const tasks: StageTaskRow[] = dataRows.map((row, idx) => {
       const record: Record<string, string> = {};
       headers.forEach((h, colIdx) => {
