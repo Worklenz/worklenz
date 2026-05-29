@@ -8,8 +8,9 @@ import {
   Flex,
   LockOutlined,
   Result,
-  message,
+  theme,
 } from "@/shared/antd-imports";
+import { App } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -25,6 +26,8 @@ interface ResetPasswordFormValues {
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { notification } = App.useApp();
+  const { token: { colorBgLayout } } = theme.useToken();
   const [searchParams] = useSearchParams();
   const [form] = Form.useForm<ResetPasswordFormValues>();
   const [isLoading, setIsLoading] = useState(false);
@@ -44,14 +47,16 @@ const ResetPasswordPage: React.FC = () => {
   // Validate that user and hash are present
   useEffect(() => {
     if (!user || !hash) {
-      message.error(
-        t("resetPassword.invalidLink", {
+      notification.error({
+        message: t("resetPassword.invalidLinkTitle", { defaultValue: "Invalid Link" }),
+        description: t("resetPassword.invalidLink", {
           defaultValue: "Invalid reset link. Please request a new password reset.",
-        })
-      );
+        }),
+        placement: "topRight",
+      });
       navigate("/auth/forgot-password", { replace: true });
     }
-  }, [user, hash, navigate, t]);
+  }, [user, hash, navigate, t, notification]);
 
   const onFinish = useCallback(
     async (values: ResetPasswordFormValues) => {
@@ -68,22 +73,33 @@ const ResetPasswordPage: React.FC = () => {
         if (result.done) {
           setIsSuccess(true);
         } else {
+          // Backend returned done: false — read the message from the ServerResponse shape { done, body, message }
           const errorMessage =
             result.message ||
             t("resetPassword.errorMessage", {
               defaultValue: "Failed to reset password. Please try again.",
             });
-          message.error(errorMessage);
+          notification.error({
+            message: t("resetPassword.errorTitle", { defaultValue: "Error" }),
+            description: errorMessage,
+            placement: "topRight",
+          });
         }
       } catch (error: any) {
         console.error("Failed to reset password", error);
+        // For HTTP errors, axios puts the server response body at error.response.data
+        // The backend ServerResponse shape is { done, body, message }
         const errorMessage =
           error?.response?.data?.message ||
           error?.message ||
           t("resetPassword.errorMessage", {
             defaultValue: "Failed to reset password. Please try again.",
           });
-        message.error(errorMessage);
+        notification.error({
+          message: t("resetPassword.errorTitle", { defaultValue: "Error" }),
+          description: errorMessage,
+          placement: "topRight",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -109,7 +125,7 @@ const ResetPasswordPage: React.FC = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#f0f2f5",
+        background: colorBgLayout,
         padding: 24,
       }}
     >

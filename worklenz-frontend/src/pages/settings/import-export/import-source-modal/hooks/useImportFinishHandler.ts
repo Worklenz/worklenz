@@ -159,7 +159,7 @@ export const useImportFinishHandler = ({
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
         } finally {
           setIsImporting(false);
         }
@@ -224,7 +224,7 @@ export const useImportFinishHandler = ({
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
         } finally {
           setIsImporting(false);
         }
@@ -300,7 +300,7 @@ export const useImportFinishHandler = ({
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
         } finally {
           setIsImporting(false);
         }
@@ -376,7 +376,7 @@ export const useImportFinishHandler = ({
           message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
         } finally {
           setIsImporting(false);
         }
@@ -413,11 +413,8 @@ export const useImportFinishHandler = ({
         importOptionOverrides: { importMembers: addUsers },
       });
 
-      await ingestImportJob(activeJob.id, {
-        csvText,
-        sourceReference: { provider: lowerKey },
-      });
-
+      // Build all mappings upfront and send them with the ingest call so the
+      // background worker has everything it needs without a race condition.
       const mappedFields = csvColumns
         .filter(col => includeInImport[col] !== false && fieldMappings[col])
         .map(col => ({
@@ -426,10 +423,6 @@ export const useImportFinishHandler = ({
           include: includeInImport[col] !== false,
         }));
 
-      if (mappedFields.length) {
-        await saveImportFields(activeJob.id, mappedFields);
-      }
-
       const mappedValues = Object.entries(statusValueMapping)
         .filter(([, target]) => !!target)
         .map(([sourceValue, targetWorktype]) => ({
@@ -437,9 +430,6 @@ export const useImportFinishHandler = ({
           target_worktype: targetWorktype,
           include: true,
         }));
-      if (mappedValues.length) {
-        await saveImportValueMappings(activeJob.id, mappedValues);
-      }
 
       const userMappings = csvUserRows.map(user => {
         const candidateEmail = (userEmails[user] || '').trim();
@@ -452,19 +442,25 @@ export const useImportFinishHandler = ({
           include: addUsers && hasEmail,
         };
       });
-      if (userMappings.length) {
-        await saveImportUserMappings(activeJob.id, userMappings);
-      }
 
-      const commitProgress = await commitImportJob(activeJob.id);
-      if (commitProgress?.job) setJob(commitProgress.job as ImportJob);
+      // Single request — server stores everything in source_reference and marks
+      // the job ready; the background worker parses + stages + commits.
+      await ingestImportJob(activeJob.id, {
+        csvText,
+        sourceReference: { provider: lowerKey },
+        ...(mappedFields.length ? { fields: mappedFields } : {}),
+        ...(mappedValues.length ? { values: mappedValues } : {}),
+        ...(userMappings.length ? { users: userMappings } : {}),
+      });
+
       enqueuePendingImportJob(activeJob.id);
 
       setShowCompletion(false);
       message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
       onClose();
     } catch (err: any) {
-      message.error(err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+      const errorMessage = err?.response?.data?.message || err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.');
+      message.error(errorMessage);
     } finally {
       setIsImporting(false);
     }

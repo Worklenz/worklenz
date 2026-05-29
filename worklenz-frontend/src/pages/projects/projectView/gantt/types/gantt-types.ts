@@ -20,7 +20,14 @@ export interface GanttTask {
   level?: number;
   expanded?: boolean;
   color?: string;
-  assignees?: string[];
+  assignees?: Array<{
+    id?: string;
+    team_member_id?: string;
+    name?: string;
+    assignee_name?: string;
+    avatar_url?: string | null;
+    color_code?: string;
+  }>;
   priority?: string;
   status?: string;
   phase_id?: string;

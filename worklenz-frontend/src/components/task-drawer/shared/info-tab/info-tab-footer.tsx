@@ -1349,8 +1349,8 @@ const InfoTabFooter = () => {
         </Tooltip>
         <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('taskInfoTab.comments.updatedTime', {
-              defaultValue: 'Updated {time}',
+            {t('taskInfoTab.comments.updatedTimes', {
+              defaultValue: 'Updated {{time}}',
               time: updatedFromNow,
             })}
           </Typography.Text>

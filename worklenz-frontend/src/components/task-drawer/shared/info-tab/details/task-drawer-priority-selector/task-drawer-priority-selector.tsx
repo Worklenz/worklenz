@@ -6,7 +6,12 @@ import { ALPHA_CHANNEL } from '@/shared/constants';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskPriority } from '@/types/tasks/taskPriority.types';
-import { DoubleLeftOutlined, ExclamationOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
+import {
+  DoubleLeftOutlined,
+  ExclamationOutlined,
+  MinusOutlined,
+  PauseOutlined,
+} from '@/shared/antd-imports';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -29,6 +34,10 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
   const currentSession = useAuthService().getCurrentSession();
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
+
+  useEffect(() => {
+    setSelectedPriority(priorityList?.find(priority => priority.id === task?.priority_id));
+  }, [priorityList, task?.priority_id]);
 
   const handlePriorityChange = (priorityId: string) => {
     if (!task.id || !priorityId) return;

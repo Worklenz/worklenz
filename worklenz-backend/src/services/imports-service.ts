@@ -1353,35 +1353,43 @@ class ImportsService {
   async upsertStageTasks(jobId: string, rows: StageTaskRow[]) {
     await db.query("DELETE FROM import_stage_tasks WHERE job_id = $1", [jobId]);
     if (!rows.length) return;
-    const insertValues: string[] = [];
-    const params: unknown[] = [];
-    rows.forEach((row, idx) => {
-      insertValues.push(
-        `($1, $${idx * 11 + 2}, $${idx * 11 + 3}, $${idx * 11 + 4}, $${
-          idx * 11 + 5
-        }, $${idx * 11 + 6}, $${idx * 11 + 7}, $${idx * 11 + 8}, $${
-          idx * 11 + 9
-        }, $${idx * 11 + 10}, $${idx * 11 + 11}, $${idx * 11 + 12})`,
+    const BATCH_SIZE = 500;
+    for (let start = 0; start < rows.length; start += BATCH_SIZE) {
+      const batch = rows.slice(start, start + BATCH_SIZE);
+      const insertValues: string[] = [];
+      const params: unknown[] = [];
+      batch.forEach((row, idx) => {
+        insertValues.push(
+          `($1, $${idx * 11 + 2}, $${idx * 11 + 3}, $${idx * 11 + 4}, $${
+            idx * 11 + 5
+          }, $${idx * 11 + 6}, $${idx * 11 + 7}, $${idx * 11 + 8}, $${
+            idx * 11 + 9
+          }, $${idx * 11 + 10}, $${idx * 11 + 11}, $${idx * 11 + 12})`,
+        );
+        params.push(
+          row.source_task_id || null,
+          row.parent_source_task_id || null,
+          row.title,
+          row.description || null,
+          row.status || null,
+          row.due_at || null,
+          row.start_at || null,
+          row.worktype || null,
+          row.assignee_source_id || null,
+          row.attachments_planned ?? false,
+          row.raw || null,
+        );
+      });
+      await db.query(
+        `INSERT INTO import_stage_tasks (job_id, source_task_id, parent_source_task_id, title, description, status, due_at, start_at, worktype, assignee_source_id, attachments_planned, raw)
+         VALUES ${insertValues.join(",")}`,
+        [jobId, ...params],
       );
-      params.push(
-        row.source_task_id || null,
-        row.parent_source_task_id || null,
-        row.title,
-        row.description || null,
-        row.status || null,
-        row.due_at || null,
-        row.start_at || null,
-        row.worktype || null,
-        row.assignee_source_id || null,
-        row.attachments_planned ?? false,
-        row.raw || null,
-      );
-    });
-    await db.query(
-      `INSERT INTO import_stage_tasks (job_id, source_task_id, parent_source_task_id, title, description, status, due_at, start_at, worktype, assignee_source_id, attachments_planned, raw)
-       VALUES ${insertValues.join(",")}`,
-      [jobId, ...params],
-    );
+    }
+  }
+
+  async deleteTargetProject(projectId: string): Promise<void> {
+    await db.query("DELETE FROM projects WHERE id = $1", [projectId]);
   }
 
   async listStageTasks(jobId: string) {
@@ -1509,6 +1517,7 @@ class ImportsService {
         { rows: fieldRows },
         { rows: customColumnRows },
         { rows: taskListColumns },
+        { rows: valueMappingRows },
       ] = await Promise.all([
         client.query(
           "SELECT * FROM import_stage_tasks WHERE job_id = $1 ORDER BY id",
@@ -1543,6 +1552,10 @@ class ImportsService {
         client.query(
           "SELECT id, key, pinned FROM project_task_list_cols WHERE project_id = $1",
           [job.target_project_id],
+        ),
+        client.query(
+          "SELECT source_value, target_worktype FROM import_value_mappings WHERE job_id = $1 AND (include IS NULL OR include = true)",
+          [jobId],
         ),
       ]);
 
@@ -1716,6 +1729,17 @@ class ImportsService {
         }
         return Array.from(new Set(ids));
       };
+
+      // Map source status values (from import_value_mappings) to target status names
+      const sourcesToTargetStatus = new Map<string, string>();
+      (valueMappingRows || []).forEach((row: any) => {
+        if (row.source_value && row.target_worktype) {
+          sourcesToTargetStatus.set(
+            row.source_value.toString().trim().toLowerCase(),
+            row.target_worktype.toString().trim().toLowerCase(),
+          );
+        }
+      });
 
       const statusMap = new Map<string, string>();
       const doneStatusIds = new Set<string>();
@@ -2204,7 +2228,9 @@ class ImportsService {
       const lookupStatusId = (value?: string | null): string | null => {
         if (!value) return defaultStatusId;
         const key = value.toString().trim().toLowerCase();
-        const match = statusMap.get(key) || null;
+        // Apply value mapping (e.g. "Doing" → "In Progress") before status lookup
+        const mappedKey = sourcesToTargetStatus.get(key) || key;
+        const match = statusMap.get(mappedKey) || null;
         return match || defaultStatusId;
       };
 
@@ -2256,10 +2282,25 @@ class ImportsService {
         );
       };
 
+      const PRIORITY_ALIASES: Record<string, string> = {
+        highest: "urgent",
+        critical: "urgent",
+        blocker: "urgent",
+        lowest: "low",
+        minor: "low",
+        trivial: "low",
+        normal: "medium",
+        moderate: "medium",
+      };
+
       const resolvePriorityId = (value?: string | null) => {
         if (!value) return defaultPriorityId;
         const key = value.toString().trim().toLowerCase();
-        return priorityMap.get(key) || defaultPriorityId;
+        return (
+          priorityMap.get(key) ||
+          priorityMap.get(PRIORITY_ALIASES[key] || key) ||
+          defaultPriorityId
+        );
       };
 
       const normalizeAssigneeToken = (token: string) =>

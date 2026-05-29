@@ -181,7 +181,7 @@ const tasksSchema: Schema = {
 const ingestSchema: Schema = {
   type: "object",
   properties: {
-    csvText: { type: "string", maxLength: 500000 },
+    csvText: { type: "string", maxLength: 10000000, message: "CSV file is too large. Please keep the file under 10 MB or split it into smaller batches." } as any,
     sourceReference: { type: "object" },
   },
   additionalProperties: true,

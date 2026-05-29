@@ -198,17 +198,16 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     const currentExpanded = expandedTasks;
     const previousExpanded = prevExpandedTasks;
 
-    const newlyExpanded = new Set([...currentExpanded].filter(id => !previousExpanded.has(id)));
-    const newlyCollapsed = new Set([...previousExpanded].filter(id => !currentExpanded.has(id)));
+   const newlyExpanded = new Set(Array.from(currentExpanded).filter(id => !previousExpanded.has(id)));
+const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !currentExpanded.has(id)));
 
     if (newlyExpanded.size > 0 || newlyCollapsed.size > 0) {
-      setAnimatingTasks(new Set([...newlyExpanded, ...newlyCollapsed]));
-
+     setAnimatingTasks(new Set(Array.from(newlyExpanded).concat(Array.from(newlyCollapsed))));
       const timeout = setTimeout(() => {
         setAnimatingTasks(new Set());
       }, 400);
 
-      setPrevExpandedTasks(new Set(currentExpanded));
+      setPrevExpandedTasks(new Set(Array.from(currentExpanded)));
 
       return () => clearTimeout(timeout);
     }
@@ -283,9 +282,19 @@ const ProjectViewGantt: React.FC = React.memo(() => {
   }, []);
 
   const handlePhaseClick = useCallback((phase: any) => {
-    setSelectedPhase(phase);
+    // Enrich children with assignees from the raw tasks response
+    if (phase.children && tasksResponse?.body) {
+      const rawTasks = tasksResponse.body;
+      const enrichedChildren = phase.children.map((child: any) => {
+        const rawTask = rawTasks.find((t: any) => t.id === child.id);
+        return rawTask ? { ...child, assignees: rawTask.assignees || [] } : child;
+      });
+      setSelectedPhase({ ...phase, children: enrichedChildren });
+    } else {
+      setSelectedPhase(phase);
+    }
     setShowPhaseDetailsModal(true);
-  }, []);
+  }, [tasksResponse]);
 
   const handleClosePhaseDetailsModal = useCallback(() => {
     setShowPhaseDetailsModal(false);

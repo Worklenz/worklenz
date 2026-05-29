@@ -291,7 +291,7 @@ export const useImportAuthHandlers = ({
       setAuthError(null);
       message.success(t('auth.success', 'Connected'));
     } catch (err: any) {
-      setAuthError(err?.message || t('auth.error', 'Connection failed. Please try again.'));
+      setAuthError((err?.response?.data as any)?.message || err?.message || t('auth.error', 'Connection failed. Please try again.'));
     } finally {
       setAuthLoading(false);
     }

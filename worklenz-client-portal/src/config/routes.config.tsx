@@ -40,13 +40,15 @@ export const AppRoutes: React.FC = () => (
     />
     <Route path="/login" element={<Navigate to="/auth/login" replace />} />
     <Route
-      path="/forgot-password"
+      path="/auth/forgot-password"
       element={
         <PublicRoute restricted>
           <ForgotPasswordPage />
         </PublicRoute>
       }
     />
+    {/* Legacy redirect for old /forgot-password links */}
+    <Route path="/forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
     <Route
       path="/auth/reset-password"
       element={

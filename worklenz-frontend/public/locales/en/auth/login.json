@@ -5,7 +5,7 @@
   "emailRequired": "Please enter your Email!",
   "passwordLabel": "Password",
   "passwordPlaceholder": "Enter your password",
-  "passwordRequired": "Please enter your Password!",
+  "passwordRequired": "Please enter your password!",
   "rememberMe": "Remember me",
   "loginButton": "Log in",
   "signupButton": "Sign up",

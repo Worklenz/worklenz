@@ -18,6 +18,8 @@ export default class TaskdependenciesController extends WorklenzControllerBase {
     const {task_id, related_task_id, dependency_type } = req.body;
     const q = `SELECT insert_task_dependency($1, $2, $3);`;
     const result = await db.query(q, [task_id, related_task_id, dependency_type]);
+    // Bump task updated_at so "Updated X ago" reflects the new dependency
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -47,8 +49,14 @@ export default class TaskdependenciesController extends WorklenzControllerBase {
 
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {id} = req.params;
-    const q = `DELETE FROM task_dependencies WHERE id = $1;`;
+    
+    const q = `DELETE FROM task_dependencies WHERE id = $1 RETURNING task_id;`;
     const result = await db.query(q, [id]);
+    const [data] = result.rows;
+    if (data) {
+    // Bump task updated_at so "Updated X ago" reflects the removed dependency
+    if (data.task_id) await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [data.task_id]);
+    }
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 }

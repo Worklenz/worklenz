@@ -10,6 +10,7 @@ import {
   updateEnhancedKanbanSubtask,
   addTaskToGroup as addEnhancedKanbanTaskToGroup,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface HandleNewTaskReceivedOptions {
   dispatch: Dispatch;
@@ -38,6 +39,7 @@ export const handleNewTaskReceived = (response: any, options: HandleNewTaskRecei
   // Handle array format response [index, taskData]
   const data = Array.isArray(response) ? response[1] : response;
   if (!data) return;
+  const taskName = decodeHtmlEntities(data.name || data.title);
 
   // Helper to construct assignee_names from assignees array if names is not available
   const getAssigneeNames = (assignees: any[], names: any[]) => {
@@ -58,7 +60,8 @@ export const handleNewTaskReceived = (response: any, options: HandleNewTaskRecei
     const subtask: Task = {
       id: data.id || '',
       task_key: data.task_key || '',
-      title: data.name || '',
+      title: taskName,
+      name: taskName,
       description: data.description || '',
       // Prefer canonical status ID if provided; otherwise fall back to category value
       status: (data.status ||
@@ -149,7 +152,8 @@ export const handleNewTaskReceived = (response: any, options: HandleNewTaskRecei
     const task: Task = {
       id: data.id || '',
       task_key: data.task_key || '',
-      title: data.name || '',
+      title: taskName,
+      name: taskName,
       description: data.description || '',
       // Prefer concrete status id if provided; fall back to category only if missing
       status: (data.status ||

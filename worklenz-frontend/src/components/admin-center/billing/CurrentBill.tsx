@@ -4,6 +4,7 @@ import './current-bill.css';
 import { InfoCircleTwoTone } from '@/shared/antd-imports';
 import ChargesTable from './billing-tables/charges-table';
 import InvoicesTable from './billing-tables/invoices-table';
+import LkrPaymentHistoryTable from './billing-tables/lkr-payment-history-table';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -147,6 +148,11 @@ const CurrentBill: React.FC = React.memo(() => {
     [currentSession?.subscription_type]
   );
 
+  const shouldShowLkrHistory = useMemo(
+    () => currentSession?.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS,
+    [currentSession?.subscription_type]
+  );
+
   return (
     <div style={{ width: '100%' }} className="current-billing">
       {isTablet ? (
@@ -162,6 +168,13 @@ const CurrentBill: React.FC = React.memo(() => {
         renderMobileView()
       )}
       {shouldShowChargesAndInvoices && renderChargesAndInvoices()}
+      {shouldShowLkrHistory && (
+        <div style={colStyle}>
+          <Card title={<span style={titleStyle}>Payment History</span>} style={cardStyle}>
+            <LkrPaymentHistoryTable />
+          </Card>
+        </div>
+      )}
     </div>
   );
 });

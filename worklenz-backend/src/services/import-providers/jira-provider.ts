@@ -141,11 +141,14 @@ interface JiraField {
   };
 }
 
-// JIRA standard field mappings to Worklenz
+// JIRA standard field mappings to Worklenz.
+// Fields with include:false are excluded by default to avoid creating
+// dozens of useless custom columns from Jira metadata.
 const STANDARD_FIELD_CANDIDATES: Array<{
   name: string;
   target: string;
   required?: boolean;
+  include?: boolean;
 }> = [
   { name: "Summary", target: "key", required: true },
   { name: "Description", target: "description" },
@@ -161,17 +164,34 @@ const STANDARD_FIELD_CANDIDATES: Array<{
   { name: "Labels", target: "labels" },
   { name: "Original estimate", target: "estimation" },
   { name: "Time Spent", target: "timeTracking" },
-  { name: "Progress", target: "progress" },
-  { name: "Reporter email", target: "reporterEmail" },
-  { name: "Comments", target: "comments" },
-  { name: "Work logs", target: "workLogs" },
-  { name: "Work logged (seconds)", target: "workLoggedSeconds" },
-  { name: "Attachments", target: "attachments" },
-  { name: "Attachment URLs", target: "attachmentUrls" },
-  { name: "Original estimate (seconds)", target: "originalEstimateSeconds" },
-  { name: "Remaining estimate (seconds)", target: "remainingEstimateSeconds" },
-  { name: "Time Spent (seconds)", target: "timeSpentSeconds" },
-  { name: "Key", target: "jiraKey" },
+  { name: "Progress", target: "progress", include: false },
+  // Metadata fields — excluded by default (would create noisy custom columns)
+  { name: "Reporter email", target: "reporterEmail", include: false },
+  { name: "Comments", target: "comments", include: false },
+  { name: "Work logs", target: "workLogs", include: false },
+  { name: "Work logged (seconds)", target: "workLoggedSeconds", include: false },
+  { name: "Attachments", target: "attachments", include: false },
+  { name: "Attachment URLs", target: "attachmentUrls", include: false },
+  { name: "Original estimate (seconds)", target: "originalEstimateSeconds", include: false },
+  { name: "Remaining estimate (seconds)", target: "remainingEstimateSeconds", include: false },
+  { name: "Remaining Estimate", target: "remainingEstimate", include: false },
+  { name: "Time Spent (seconds)", target: "timeSpentSeconds", include: false },
+  { name: "Key", target: "jiraKey", include: false },
+  { name: "Status Category", target: "statusCategory", include: false },
+  { name: "Comments count", target: "commentsCount", include: false },
+  { name: "Attachment count", target: "attachmentCount", include: false },
+  { name: "Work Ratio", target: "workRatio", include: false },
+  { name: "Environment", target: "environment", include: false },
+  { name: "Fix versions", target: "fixVersions", include: false },
+  { name: "Votes", target: "votes", include: false },
+  { name: "Watchers", target: "watchers", include: false },
+  { name: "Sub-tasks", target: "subTasks", include: false },
+  { name: "Parent", target: "parentKey", include: false },
+  { name: "Project", target: "project", include: false },
+  { name: "Reporter name", target: "reporterName", include: false },
+  { name: "Assignee name", target: "assigneeName", include: false },
+  { name: "Assignee id", target: "assigneeId", include: false },
+  { name: "Creator", target: "creator", include: false },
 ];
 
 const STATUS_HIERARCHY_FALLBACK = [
@@ -286,15 +306,16 @@ export default class JiraProvider implements ImportProvider {
 
   private buildFieldMappings(jiraFields: JiraField[]): FieldMappingRow[] {
     const rows: FieldMappingRow[] = STANDARD_FIELD_CANDIDATES.map(
-      ({ name, target, required }) => ({
+      ({ name, target, required, include }) => ({
         source_field: name,
         target_field: target,
         required: required ?? false,
-        include: true,
+        // Default include to false only when explicitly set to false
+        include: include !== false,
       })
     );
 
-    // Add custom fields from JIRA
+    // Add custom fields from JIRA — excluded by default to keep the import clean
     jiraFields.forEach((field) => {
       const name = field.name;
       if (!name) return;
@@ -311,7 +332,8 @@ export default class JiraProvider implements ImportProvider {
       rows.push({
         source_field: name,
         target_field: target,
-        include: true,
+        // Custom Jira fields start excluded — user can toggle them in field mapping UI
+        include: false,
       });
     });
 

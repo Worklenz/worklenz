@@ -389,7 +389,7 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const errorMessage = message || 'An unexpected error occurred';
+    const errorMessage = (errorResponse?.data as any)?.message || message || 'An unexpected error occurred';
     const errorTitle = 'Error';
 
     if (error.code !== 'ERR_NETWORK') {

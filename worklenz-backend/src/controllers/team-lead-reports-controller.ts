@@ -92,33 +92,38 @@ export default class TeamLeadReportsController {
         return res.status(403).send(new ServerResponse(false, null, "Access denied: Only Team Leads can access this endpoint"));
       }
 
-      // Build date filter
+      // Build date filter using range on raw timestamp to allow index usage
       let dateFilter = "";
-      const queryParams = [teamLead.team_member_id];
-      
+      const queryParams: string[] = [teamLead.team_member_id];
+
       if (startDate && endDate) {
-        dateFilter = "AND DATE(tltl.logged_at) BETWEEN $2::DATE AND $3::DATE";
+        dateFilter = "AND twl.created_at >= $2::DATE AND twl.created_at < ($3::DATE + INTERVAL '1 day')";
         queryParams.push(startDate as string, endDate as string);
       }
 
-      // Get time logs summary using the view
+      // Scope the recursive CTE to this manager first, then join work logs directly
+      // to avoid scanning all work logs across all managed members of all managers.
       const timeLogsSummaryQuery = `
-        SELECT 
-          tltl.managed_member_id,
-          tltl.managed_member_name,
-          tltl.managed_member_user_id,
-          COUNT(tltl.time_log_id) as total_logs,
-          SUM(tltl.time_spent) as total_time_minutes,
-          COUNT(DISTINCT tltl.project_id) as projects_worked_on,
-          COUNT(DISTINCT DATE(tltl.logged_at)) as days_logged,
-          MAX(tltl.logged_at) as last_log_date
-        FROM team_lead_time_logs tltl
-        WHERE tltl.manager_id = $1::UUID
+        WITH managed AS (
+          SELECT DISTINCT managed_member_id, managed_member_user_id, managed_member_name
+          FROM team_lead_managed_members
+          WHERE manager_id = $1::UUID
+        )
+        SELECT
+          m.managed_member_id,
+          m.managed_member_name,
+          m.managed_member_user_id,
+          COUNT(twl.id) AS total_logs,
+          SUM(twl.time_spent) AS total_time_minutes,
+          COUNT(DISTINCT t.project_id) AS projects_worked_on,
+          COUNT(DISTINCT twl.created_at::date) AS days_logged,
+          MAX(twl.created_at) AS last_log_date
+        FROM managed m
+        JOIN task_work_log twl ON twl.user_id = m.managed_member_user_id
+        JOIN tasks t ON twl.task_id = t.id AND t.archived = FALSE
+        WHERE TRUE
         ${dateFilter}
-        GROUP BY 
-          tltl.managed_member_id,
-          tltl.managed_member_name,
-          tltl.managed_member_user_id
+        GROUP BY m.managed_member_id, m.managed_member_name, m.managed_member_user_id
         ORDER BY total_time_minutes DESC
       `;
 
@@ -347,52 +352,76 @@ export default class TeamLeadReportsController {
         return res.status(403).send(new ServerResponse(false, null, "Access denied: Only Team Leads can access this endpoint"));
       }
 
-      // Build date filter for performance stats
-      let dateFilter = "";
-      const queryParams = [teamLead.team_member_id];
-      
+      // Build date filter using range on raw timestamp to allow index usage
+      let timeLogDateFilter = "";
+      const queryParams: string[] = [teamLead.team_member_id];
+
       if (startDate && endDate) {
-        dateFilter = "AND DATE(tltl.logged_at) BETWEEN $2::DATE AND $3::DATE";
+        timeLogDateFilter = "AND twl.created_at >= $2::DATE AND twl.created_at < ($3::DATE + INTERVAL '1 day')";
         queryParams.push(startDate as string, endDate as string);
       }
 
-      // Get performance stats with date filtering using a custom query
+      // Scope the recursive CTE to this manager first.
+      // Task stats (assigned/completed/overdue) are intentionally not date-filtered — they
+      // reflect the member's overall workload. Only time logs are date-filtered.
       const performanceQuery = `
-        SELECT 
-          tltl.managed_member_id,
-          tltl.managed_member_name,
-          tltl.managed_member_user_id,
-          u.email as managed_member_email,
-          r.name as managed_member_role_name,
-          tlmm.level as hierarchy_level,
-          COUNT(DISTINCT ta.task_id) as assigned_tasks,
-          COUNT(DISTINCT CASE WHEN ts.name = 'Done' THEN ta.task_id END) as completed_tasks,
-          CASE 
-            WHEN COUNT(DISTINCT ta.task_id) > 0 
-            THEN ROUND((COUNT(DISTINCT CASE WHEN ts.name = 'Done' THEN ta.task_id END) * 100.0) / COUNT(DISTINCT ta.task_id), 2)
-            ELSE 0 
-          END as completion_percentage,
-          COALESCE(SUM(tltl.time_spent), 0) as total_time_minutes,
-          COUNT(DISTINCT CASE WHEN t.end_date < NOW() AND ts.name != 'Done' THEN ta.task_id END) as overdue_tasks,
-          COUNT(DISTINCT tltl.project_id) as active_projects,
-          MAX(tltl.logged_at) as last_time_log
-        FROM team_lead_time_logs tltl
-        JOIN team_lead_managed_members tlmm ON tltl.managed_member_id = tlmm.managed_member_id
-        JOIN users u ON tltl.managed_member_user_id = u.id
-        JOIN team_members tm ON tltl.managed_member_id = tm.id
-        JOIN roles r ON tm.role_id = r.id
-        LEFT JOIN tasks_assignees ta ON ta.team_member_id = tltl.managed_member_id
-        LEFT JOIN tasks t ON t.id = ta.task_id AND t.archived = FALSE
-        LEFT JOIN task_statuses ts ON t.status_id = ts.id
-        WHERE tltl.manager_id = $1::UUID
-        ${dateFilter}
-        GROUP BY 
-          tltl.managed_member_id,
-          tltl.managed_member_name,
-          tltl.managed_member_user_id,
-          u.email,
-          r.name,
-          tlmm.level
+        WITH managed AS (
+          SELECT DISTINCT
+            managed_member_id,
+            managed_member_user_id,
+            managed_member_name,
+            managed_member_email,
+            managed_member_role_name,
+            level AS hierarchy_level
+          FROM team_lead_managed_members
+          WHERE manager_id = $1::UUID
+        ),
+        time_log_agg AS (
+          SELECT
+            m.managed_member_id,
+            COALESCE(SUM(twl.time_spent), 0) AS total_time_minutes,
+            COUNT(DISTINCT t.project_id) AS active_projects,
+            MAX(twl.created_at) AS last_time_log
+          FROM managed m
+          JOIN task_work_log twl ON twl.user_id = m.managed_member_user_id
+          JOIN tasks t ON twl.task_id = t.id AND t.archived = FALSE
+          WHERE TRUE
+          ${timeLogDateFilter}
+          GROUP BY m.managed_member_id
+        ),
+        task_agg AS (
+          SELECT
+            m.managed_member_id,
+            COUNT(DISTINCT ta.task_id) AS assigned_tasks,
+            COUNT(DISTINCT CASE WHEN ts.name = 'Done' THEN ta.task_id END) AS completed_tasks,
+            COUNT(DISTINCT CASE WHEN t.end_date < NOW() AND ts.name != 'Done' THEN ta.task_id END) AS overdue_tasks
+          FROM managed m
+          LEFT JOIN tasks_assignees ta ON ta.team_member_id = m.managed_member_id
+          LEFT JOIN tasks t ON t.id = ta.task_id AND t.archived = FALSE
+          LEFT JOIN task_statuses ts ON t.status_id = ts.id
+          GROUP BY m.managed_member_id
+        )
+        SELECT
+          m.managed_member_id,
+          m.managed_member_name,
+          m.managed_member_user_id,
+          m.managed_member_email,
+          m.managed_member_role_name,
+          m.hierarchy_level,
+          COALESCE(ta.assigned_tasks, 0) AS assigned_tasks,
+          COALESCE(ta.completed_tasks, 0) AS completed_tasks,
+          CASE
+            WHEN COALESCE(ta.assigned_tasks, 0) > 0
+            THEN ROUND((COALESCE(ta.completed_tasks, 0) * 100.0) / ta.assigned_tasks, 2)
+            ELSE 0
+          END AS completion_percentage,
+          COALESCE(tl.total_time_minutes, 0) AS total_time_minutes,
+          COALESCE(ta.overdue_tasks, 0) AS overdue_tasks,
+          COALESCE(tl.active_projects, 0) AS active_projects,
+          tl.last_time_log
+        FROM managed m
+        LEFT JOIN task_agg ta ON ta.managed_member_id = m.managed_member_id
+        LEFT JOIN time_log_agg tl ON tl.managed_member_id = m.managed_member_id
         ORDER BY total_time_minutes DESC
       `;
 

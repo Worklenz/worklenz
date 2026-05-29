@@ -33,7 +33,7 @@ const TaskTemplatesSettings = () => {
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [taskTemplates, setTaskTemplates] = useState<ITaskTemplatesGetResponse[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -180,9 +180,10 @@ const TaskTemplatesSettings = () => {
   return (
     <Card style={{ width: '100%' }}>
       <Table
-        locale={{ emptyText: emptyState }}
+        locale={{ emptyText: isLoading ? null : emptyState }}
         loading={isLoading}
         size="small"
+          showHeader={isLoading || taskTemplates.length > 0}
         pagination={{
           size: 'small',
           showSizeChanger: true,

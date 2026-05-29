@@ -15,8 +15,10 @@ import {
   TableOutlined,
   TeamOutlined,
   Tooltip,
-  Typography
+  Typography,
+  message as antdMessage,
 } from '@/shared/antd-imports';
+import { saveImportFields } from '@/api/imports';
 
 interface DirectIntegrationStepContentProps {
   step: number;
@@ -659,7 +661,15 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                 {t('importStep.backToReview', 'Back to review details')}
               </a>
               <div style={{ flex: 1 }} />
-              <Button type="primary">{t('common.save', 'Save')}</Button>
+              <Button
+                type="primary"
+                onClick={async () => {
+                  setReviewSubScreen('main');
+                  antdMessage.success(t('importStep.hierarchySaved', 'Hierarchy mapping saved.'));
+                }}
+              >
+                {t('common.save', 'Save')}
+              </Button>
             </div>
 
             <Typography.Title level={3} style={{ margin: '0 0 4px' }}>
@@ -825,7 +835,23 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                 <ArrowLeftOutlined style={{ fontSize: 14 }} />
                 {t('importStep.backToReview', 'Back to review details')}
               </a>
-              <Button type="primary">{t('common.save', 'Save')}</Button>
+              <Button
+                type="primary"
+                onClick={async () => {
+                  if (job?.id && fieldMappingRows.length) {
+                    try {
+                      await saveImportFields(job.id, fieldMappingRows as any);
+                      antdMessage.success(t('importStep.fieldMappingSaved', 'Field mapping saved.'));
+                    } catch {
+                      antdMessage.error(t('importStep.fieldMappingSaveError', 'Failed to save field mapping.'));
+                      return;
+                    }
+                  }
+                  setReviewSubScreen('main');
+                }}
+              >
+                {t('common.save', 'Save')}
+              </Button>
             </div>
 
             <div>

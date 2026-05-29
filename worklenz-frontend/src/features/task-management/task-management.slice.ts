@@ -27,6 +27,7 @@ import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.serv
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // Helper function to safely convert time values
 const convertTimeValue = (value: any): number => {
@@ -159,55 +160,59 @@ export const fetchTasks = createAsyncThunk(
 
       // Transform the API response to our Task type
       const tasks: Task[] = response.body.flatMap((group: any) =>
-        group.tasks.map((task: any) => ({
-          id: task.id,
-          task_key: task.task_key || '',
-          title: task.title && task.title.trim() ? task.title.trim() : DEFAULT_TASK_NAME,
-          description: task.description || '',
-          status: statusIdToNameMap[task.status] || 'todo',
-          priority: priorityIdToNameMap[task.priority] || 'medium',
-          phase: task.phase_name || 'Development',
-          progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
-          assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
-          assignee_names: task.assignee_names || task.names || [],
-          labels:
-            task.labels?.map((l: any) => ({
-              id: l.id || l.label_id,
-              name: l.name,
-              color: l.color || '#1890ff',
-              end: l.end,
-              names: l.names,
-            })) || [],
-          dueDate: task.dueDate,
-          startDate: task.startDate,
-          completedAt: task.completedAt || task.completed_at || undefined,
-          timeTracking: {
-            estimated: convertTimeValue(task.total_time),
-            logged: convertTimeValue(task.time_spent),
-          },
-          customFields: {},
-          createdAt: task.createdAt || task.created_at || new Date().toISOString(),
-          updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
-          created_at: task.createdAt || task.created_at || new Date().toISOString(),
-          updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
-          completed_at: task.completedAt || task.completed_at || undefined,
-          order: typeof task.sort_order === 'number' ? task.sort_order : 0,
-          // Ensure all Task properties are mapped, even if undefined in API response
-          sub_tasks: task.sub_tasks || [],
-          sub_tasks_count: task.sub_tasks_count || 0,
-          show_sub_tasks: task.show_sub_tasks || false,
-          parent_task_id: task.parent_task_id || undefined,
-          weight: task.weight || 0,
-          color: task.color || undefined,
-          statusColor: task.statusColor || undefined,
-          priorityColor: task.priorityColor || undefined,
-          comments_count: task.comments_count || 0,
-          attachments_count: task.attachments_count || 0,
-          has_dependencies: task.has_dependencies || false,
-          has_subscribers: task.has_subscribers || false,
-          schedule_id: task.schedule_id || null,
-          reporter: task.reporter || undefined,
-        }))
+        group.tasks.map((task: any) => {
+          const taskTitle = decodeHtmlEntities(task.title || task.name).trim();
+
+          return {
+            id: task.id,
+            task_key: task.task_key || '',
+            title: taskTitle || DEFAULT_TASK_NAME,
+            description: task.description || '',
+            status: statusIdToNameMap[task.status] || 'todo',
+            priority: priorityIdToNameMap[task.priority] || 'medium',
+            phase: task.phase_name || 'Development',
+            progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
+            assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+            assignee_names: task.assignee_names || task.names || [],
+            labels:
+              task.labels?.map((l: any) => ({
+                id: l.id || l.label_id,
+                name: l.name,
+                color: l.color || '#1890ff',
+                end: l.end,
+                names: l.names,
+              })) || [],
+            dueDate: task.dueDate,
+            startDate: task.startDate,
+            completedAt: task.completedAt || task.completed_at || undefined,
+            timeTracking: {
+              estimated: convertTimeValue(task.total_time),
+              logged: convertTimeValue(task.time_spent),
+            },
+            customFields: {},
+            createdAt: task.createdAt || task.created_at || new Date().toISOString(),
+            updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
+            created_at: task.createdAt || task.created_at || new Date().toISOString(),
+            updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
+            completed_at: task.completedAt || task.completed_at || undefined,
+            order: typeof task.sort_order === 'number' ? task.sort_order : 0,
+            // Ensure all Task properties are mapped, even if undefined in API response
+            sub_tasks: task.sub_tasks || [],
+            sub_tasks_count: task.sub_tasks_count || 0,
+            show_sub_tasks: task.show_sub_tasks || false,
+            parent_task_id: task.parent_task_id || undefined,
+            weight: task.weight || 0,
+            color: task.color || undefined,
+            statusColor: task.statusColor || undefined,
+            priorityColor: task.priorityColor || undefined,
+            comments_count: task.comments_count || 0,
+            attachments_count: task.attachments_count || 0,
+            has_dependencies: task.has_dependencies || false,
+            has_subscribers: task.has_subscribers || false,
+            schedule_id: task.schedule_id || null,
+            reporter: task.reporter || undefined,
+          };
+        })
       );
 
       return tasks;
@@ -274,11 +279,13 @@ export const fetchTasksV3 = createAsyncThunk(
 
       const normalizeTask = (task: any): Task => {
         const now = new Date().toISOString();
+        const taskTitle = decodeHtmlEntities(task.title || task.name).trim();
 
         const transformedTask: Task = {
           id: task.id,
           task_key: task.task_key || task.key || '',
-          title: task.title && task.title.trim() ? task.title.trim() : DEFAULT_TASK_NAME,
+          title: taskTitle || DEFAULT_TASK_NAME,
+          name: taskTitle || DEFAULT_TASK_NAME,
           description: task.description || '',
           status: task.status || 'todo',
           priority: task.priority || 'medium',
@@ -711,7 +718,9 @@ const taskManagementSlice = createSlice({
         const candidateParent = state.entities[entityId];
         if (!candidateParent?.sub_tasks || candidateParent.sub_tasks.length === 0) continue;
         const before = candidateParent.sub_tasks.length;
-        candidateParent.sub_tasks = candidateParent.sub_tasks.filter(subtask => subtask.id !== taskId);
+        candidateParent.sub_tasks = candidateParent.sub_tasks.filter(
+          subtask => subtask.id !== taskId
+        );
         if (candidateParent.sub_tasks.length !== before) {
           candidateParent.sub_tasks_count = Math.max(candidateParent.sub_tasks.length, 0);
         }
@@ -957,6 +966,7 @@ const taskManagementSlice = createSlice({
       }>
     ) => {
       const { parentTaskId, name, projectId, reporterName } = action.payload;
+      const decodedName = decodeHtmlEntities(name);
       const parent = state.entities[parentTaskId];
       if (parent) {
         // Create a temporary subtask - the real one will come from the socket
@@ -964,8 +974,8 @@ const taskManagementSlice = createSlice({
         const tempSubtask: Task = {
           id: tempId,
           task_key: '',
-          title: name,
-          name: name,
+          title: decodedName,
+          name: decodedName,
           description: '',
           status: 'todo',
           priority: 'low',
@@ -1184,45 +1194,49 @@ const taskManagementSlice = createSlice({
         state.loadingSubtasks[parentTaskId] = false;
         if (parentTask && subtasks) {
           // Convert subtasks to the proper format
-          const convertedSubtasks = subtasks.map(subtask => ({
-            id: subtask.id || '',
-            task_key: subtask.task_key || '',
-            title: subtask.name || subtask.title || '',
-            name: subtask.name || subtask.title || '',
-            description: subtask.description || '',
-            status: subtask.status || 'todo',
-            priority: subtask.priority || 'low',
-            phase: subtask.phase_name || subtask.phase || 'Development',
-            progress: subtask.complete_ratio || subtask.progress || 0,
-            assignees: subtask.assignees || [],
-            assignee_names: subtask.assignee_names || subtask.names || [],
-            labels: subtask.labels || [],
-            dueDate: subtask.end_date || subtask.dueDate,
-            due_date: subtask.end_date || subtask.due_date,
-            startDate: subtask.start_date || subtask.startDate,
-            timeTracking: subtask.timeTracking || {
-              estimated: 0,
-              logged: 0,
-            },
-            createdAt: subtask.created_at || subtask.createdAt || new Date().toISOString(),
-            created_at: subtask.created_at || subtask.createdAt || new Date().toISOString(),
-            updatedAt: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
-            updated_at: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
-            order: subtask.sort_order || subtask.order || 0,
-            parent_task_id: parentTaskId,
-            is_sub_task: true,
-            sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
-            // Auto-expand subtasks that have filtered children
-            show_sub_tasks: subtask.has_filtered_children || false,
-            has_filtered_children: subtask.has_filtered_children || false,
-            // Add indicator fields for icons
-            comments_count: subtask.comments_count || 0,
-            has_subscribers: subtask.has_subscribers || false,
-            attachments_count: subtask.attachments_count || 0,
-            has_dependencies: subtask.has_dependencies || false,
-            schedule_id: subtask.schedule_id || null,
-            reporter: subtask.reporter || undefined, // Add reporter field mapping
-          }));
+          const convertedSubtasks = subtasks.map(subtask => {
+            const subtaskTitle = decodeHtmlEntities(subtask.name || subtask.title).trim();
+
+            return {
+              id: subtask.id || '',
+              task_key: subtask.task_key || '',
+              title: subtaskTitle,
+              name: subtaskTitle,
+              description: subtask.description || '',
+              status: subtask.status || 'todo',
+              priority: subtask.priority || 'low',
+              phase: subtask.phase_name || subtask.phase || 'Development',
+              progress: subtask.complete_ratio || subtask.progress || 0,
+              assignees: subtask.assignees || [],
+              assignee_names: subtask.assignee_names || subtask.names || [],
+              labels: subtask.labels || [],
+              dueDate: subtask.end_date || subtask.dueDate,
+              due_date: subtask.end_date || subtask.due_date,
+              startDate: subtask.start_date || subtask.startDate,
+              timeTracking: subtask.timeTracking || {
+                estimated: 0,
+                logged: 0,
+              },
+              createdAt: subtask.created_at || subtask.createdAt || new Date().toISOString(),
+              created_at: subtask.created_at || subtask.createdAt || new Date().toISOString(),
+              updatedAt: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
+              updated_at: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
+              order: subtask.sort_order || subtask.order || 0,
+              parent_task_id: parentTaskId,
+              is_sub_task: true,
+              sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
+              // Auto-expand subtasks that have filtered children
+              show_sub_tasks: subtask.has_filtered_children || false,
+              has_filtered_children: subtask.has_filtered_children || false,
+              // Add indicator fields for icons
+              comments_count: subtask.comments_count || 0,
+              has_subscribers: subtask.has_subscribers || false,
+              attachments_count: subtask.attachments_count || 0,
+              has_dependencies: subtask.has_dependencies || false,
+              schedule_id: subtask.schedule_id || null,
+              reporter: subtask.reporter || undefined, // Add reporter field mapping
+            };
+          });
 
           // Update parent task with subtasks
           parentTask.sub_tasks = convertedSubtasks;

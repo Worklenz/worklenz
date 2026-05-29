@@ -47,6 +47,9 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!data?.id || !s3Url)
       return res.status(200).send(new ServerResponse(false, null, "Attachment upload failed"));
 
+    // Bump task updated_at so "Updated X ago" reflects the new attachment
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
+
     data.size = humanFileSize(data.size);
 
     return res.status(200).send(new ServerResponse(true, data));
@@ -160,13 +163,15 @@ export default class AttachmentController extends WorklenzControllerBase {
     const q = `DELETE
                FROM task_attachments
                WHERE id = $1
-               RETURNING team_id, project_id, id, type;`;
+               RETURNING team_id, project_id, id, type, task_id;`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
 
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
       void deleteObject(key);
+      // Bump task updated_at so "Updated X ago" reflects the removed attachment
+      if (data.task_id) await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [data.task_id]);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

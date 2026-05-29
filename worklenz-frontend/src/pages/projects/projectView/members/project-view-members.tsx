@@ -391,7 +391,7 @@ const ProjectViewMembers = () => {
                   }
                 }}
               >
-                {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
+                {t('Invite', { defaultValue: t('Invite') })}
               </Button>
             </Popover>
             <Input.Search

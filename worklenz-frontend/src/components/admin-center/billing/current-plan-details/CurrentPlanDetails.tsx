@@ -624,6 +624,31 @@ const CurrentPlanDetails = () => {
     );
   }, [billingInfo?.valid_till_date, t]);
 
+  const renderAnnualBusinessSubscriptionInfo = useCallback(() => {
+    return (
+      <Flex vertical>
+        <Typography.Text strong>{billingInfo?.plan_name}</Typography.Text>
+        <Typography.Text>
+          {t('planValidTill', 'Your plan is valid till {{date}}', {
+            date: billingInfo?.valid_till_date,
+          })}
+        </Typography.Text>
+        {billingInfo?.unit_price != null && (
+          <Typography.Text>
+            {billingInfo.is_lkr_billing
+              ? t('unitPriceFlat', 'LKR {{price}} / month', { price: billingInfo.unit_price })
+              : t('unitPrice', 'LKR {{price}} / user / month', { price: billingInfo.unit_price })}
+          </Typography.Text>
+        )}
+        {!billingInfo?.is_lkr_billing && billingInfo?.total_used != null && (
+          <Typography.Text>
+            {t('totalUsed', 'Members: {{count}}', { count: billingInfo.total_used })}
+          </Typography.Text>
+        )}
+      </Flex>
+    );
+  }, [billingInfo?.plan_name, billingInfo?.valid_till_date, billingInfo?.unit_price, billingInfo?.total_used, billingInfo?.is_lkr_billing, t]);
+
   const renderSubscriptionContent = useCallback(() => {
     if (!billingInfo) return null;
 
@@ -645,6 +670,8 @@ const CurrentPlanDetails = () => {
         return renderCreditSubscriptionInfo();
       case ISUBSCRIPTION_TYPE.CUSTOM:
         return renderCustomSubscriptionInfo();
+      case ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS:
+        return renderAnnualBusinessSubscriptionInfo();
       default:
         return null;
     }
@@ -656,6 +683,7 @@ const CurrentPlanDetails = () => {
     renderPaddleSubscriptionInfo,
     renderCreditSubscriptionInfo,
     renderCustomSubscriptionInfo,
+    renderAnnualBusinessSubscriptionInfo,
   ]);
 
   const appsumoRedeemedCodesCount = useMemo(
