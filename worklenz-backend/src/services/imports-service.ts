@@ -824,9 +824,6 @@ export const mapRawToTaskFields = (
         // Handle Monday.com timeline data - check for _start suffix first
         if (mapping.source_field?.includes("_start")) {
           patch.start_at = String(value);
-          console.log(
-            `[Monday Timeline Start] Set start date from ${mapping.source_field}: ${value}`,
-          );
         } else if (source[`${mapping.source_field}_raw`]) {
           const timelineData = source[`${mapping.source_field}_raw`];
           if (
@@ -835,17 +832,11 @@ export const mapRawToTaskFields = (
             (timelineData as any).from
           ) {
             patch.start_at = String((timelineData as any).from);
-            console.log(
-              `[Monday Timeline] Extracted start date from timeline: ${(timelineData as any).from}`,
-            );
           } else {
             patch.start_at = String(value);
           }
         } else if (source[`${mapping.source_field}_start`]) {
           patch.start_at = String(source[`${mapping.source_field}_start`]);
-          console.log(
-            `[Monday Timeline] Using _start field: ${source[`${mapping.source_field}_start`]}`,
-          );
         } else {
           patch.start_at = String(value);
         }
@@ -854,9 +845,6 @@ export const mapRawToTaskFields = (
         // Handle Monday.com timeline data and regular dates - check for _end suffix first
         if (mapping.source_field?.includes("_end")) {
           patch.due_at = String(value);
-          console.log(
-            `[Monday Timeline End] Set due date from ${mapping.source_field}: ${value}`,
-          );
         } else if (source[`${mapping.source_field}_raw`]) {
           const timelineData = source[`${mapping.source_field}_raw`];
           if (
@@ -865,38 +853,22 @@ export const mapRawToTaskFields = (
             (timelineData as any).to
           ) {
             patch.due_at = String((timelineData as any).to);
-            console.log(
-              `[Monday Timeline] Extracted end date from timeline: ${(timelineData as any).to}`,
-            );
           } else if (
             typeof timelineData === "object" &&
             timelineData &&
             (timelineData as any).date
           ) {
             patch.due_at = String((timelineData as any).date);
-            console.log(
-              `[Monday Date] Extracted date: ${(timelineData as any).date}`,
-            );
           } else {
             patch.due_at = String(value);
           }
         } else if (source[`${mapping.source_field}_end`]) {
           patch.due_at = String(source[`${mapping.source_field}_end`]);
-          console.log(
-            `[Monday Timeline] Using _end field: ${source[`${mapping.source_field}_end`]}`,
-          );
         } else {
           patch.due_at = String(value);
         }
         break;
       case "createdDate":
-        // eslint-disable-next-line no-console
-        console.log(
-          "[mapRawToTaskFields] ✓ Mapping createdDate - source_field:",
-          mapping.source_field,
-          "value:",
-          value,
-        );
         patch.created_at = String(value);
         break;
       case "lastUpdated":
@@ -958,11 +930,6 @@ export const mapRawToTaskFields = (
         break;
       }
       case "location": {
-        console.log(`[LOCATION DEBUG] Processing location case:`, {
-          value: value,
-          columnKey: toColumnKey("location"),
-          columnName: mapping.source_field || "Location",
-        });
         pushCustomValue(
           toColumnKey("location"),
           mapping.source_field || "Location",
@@ -973,13 +940,6 @@ export const mapRawToTaskFields = (
       default: {
         const columnKey = toColumnKey(targetField);
         const columnName = mapping.source_field || targetField;
-        console.log(`[Custom Field] Adding custom field value:`, {
-          originalTargetField: mapping.target_field,
-          normalizedTargetField: targetField,
-          columnKey: columnKey,
-          columnName: columnName,
-          value: value,
-        });
         pushCustomValue(columnKey, columnName, value);
         break;
       }
@@ -1004,11 +964,6 @@ export const mapRawToTaskFields = (
       ]);
     if (rawCreated) {
       patch.created_at = String(rawCreated);
-      // eslint-disable-next-line no-console
-      console.log(
-        "[mapRawToTaskFields] Fallback applied for created_at from raw",
-        rawCreated,
-      );
     }
   }
 
@@ -1033,23 +988,8 @@ export const mapRawToTaskFields = (
       ]);
     if (rawUpdated) {
       patch.updated_at = String(rawUpdated);
-      // eslint-disable-next-line no-console
-      console.log(
-        "[mapRawToTaskFields] Fallback applied for updated_at from raw",
-        rawUpdated,
-      );
     }
   }
-
-  // DEBUG: Log patch output
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] FINAL patch.created_at:", patch.created_at);
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] FINAL patch:", patch);
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] FINAL customValues:", customValues);
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] === END ===");
 
   return { patch, customValues };
 };
@@ -1760,9 +1700,6 @@ class ImportsService {
         );
 
         if (hasMondaySpecificMapping) {
-          console.log(
-            `[Standard Column Creation] Skipping standard custom column for "${mapping.source_field}" -> "${normalizedTarget}" (Monday-specific version exists)`,
-          );
           return;
         }
 
@@ -2001,11 +1938,6 @@ class ImportsService {
         config?: ColumnPlanConfig,
       ) => {
         if (!column?.id) {
-          // eslint-disable-next-line no-console
-          console.log(
-            "[createTask] Skipping custom column insert - missing column id for",
-            column?.key,
-          );
           return;
         }
         const effectiveConfig = config || customColumnConfigs.get(column.key);
@@ -2436,18 +2368,6 @@ class ImportsService {
           activeFieldMappings,
         );
         const taskWithMappings = { ...task, ...patch } as any;
-        // eslint-disable-next-line no-console
-        console.log("[createTask] Task title:", task.title);
-        // eslint-disable-next-line no-console
-        console.log(
-          "[createTask] taskWithMappings.created_at:",
-          taskWithMappings.created_at,
-        );
-        // eslint-disable-next-line no-console
-        console.log(
-          "[createTask] taskWithMappings.updated_at:",
-          taskWithMappings.updated_at,
-        );
         const taskTitle = (taskWithMappings as any).title || task.title;
         let statusId = lookupStatusId(taskWithMappings.status);
         const completedValue =
@@ -2485,8 +2405,6 @@ class ImportsService {
           JSON.stringify(payload),
         ]);
         const createdRow = result.rows?.[0] || null;
-        // eslint-disable-next-line no-console
-        console.log("[createTask] raw create_task row:", createdRow);
         const createdTask =
           (createdRow as any)?.task ||
           (createdRow as any)?.create_task ||
@@ -2499,13 +2417,6 @@ class ImportsService {
           (createdTask as any)?.task ||
           createdTask ||
           null;
-        // eslint-disable-next-line no-console
-        console.log("[createTask] Task created with ID:", created?.id);
-        // eslint-disable-next-line no-console
-        console.log(
-          "[createTask] Initial created.created_at from DB:",
-          created?.created_at,
-        );
         if (
           created?.id &&
           (taskWithMappings.created_at || taskWithMappings.updated_at)
@@ -2516,14 +2427,7 @@ class ImportsService {
           const updatedAt = taskWithMappings.updated_at
             ? new Date(taskWithMappings.updated_at)
             : null;
-          // eslint-disable-next-line no-console
-          console.log(
-            "[createTask] About to UPDATE - createdAt:",
-            createdAt?.toISOString(),
-            "updatedAt:",
-            updatedAt?.toISOString(),
-          );
-          const updateResult = await client.query(
+          await client.query(
             `UPDATE tasks
                SET created_at = COALESCE($2::timestamptz, created_at),
                    updated_at = COALESCE($3::timestamptz, updated_at)
@@ -2534,19 +2438,6 @@ class ImportsService {
               createdAt && !isNaN(createdAt.valueOf()) ? createdAt : null,
               updatedAt && !isNaN(updatedAt.valueOf()) ? updatedAt : null,
             ],
-          );
-          // eslint-disable-next-line no-console
-          console.log(
-            "[createTask] UPDATE complete - new values:",
-            updateResult.rows[0],
-          );
-        } else {
-          // eslint-disable-next-line no-console
-          console.log(
-            "[createTask] Skipping timestamp update - created?.id:",
-            created?.id,
-            "has timestamps:",
-            !!(taskWithMappings.created_at || taskWithMappings.updated_at),
           );
         }
         if (created?.id && task.source_task_id) {
