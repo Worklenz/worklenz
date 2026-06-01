@@ -117,7 +117,7 @@ export const ImportProgressNotifier = () => {
                   defaultValue: 'Your import is being processed. We will notify you when it is ready.',
                 }),
                 duration: 0, // keep open until dismissed or replaced
-                placement: 'bottomRight',
+                placement: 'topRight',
               });
             }
 

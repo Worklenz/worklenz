@@ -2368,7 +2368,13 @@ class ImportsService {
           activeFieldMappings,
         );
         const taskWithMappings = { ...task, ...patch } as any;
-        const taskTitle = (taskWithMappings as any).title || task.title;
+        // tasks.name has a CHECK constraint (CHAR_LENGTH(name) <= 500). Clamp
+        // the title and fall back to a placeholder so a single over-long or
+        // empty row can't abort the whole import transaction.
+        const rawTitle = String(
+          (taskWithMappings as any).title || task.title || "",
+        ).trim();
+        const taskTitle = (rawTitle || "Untitled task").slice(0, 500);
         let statusId = lookupStatusId(taskWithMappings.status);
         const completedValue =
           typeof taskWithMappings.completed_at === "string" &&
