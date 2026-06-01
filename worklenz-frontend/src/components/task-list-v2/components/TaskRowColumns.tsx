@@ -542,9 +542,10 @@ TimeTrackingColumn.displayName = 'TimeTrackingColumn';
 interface EstimationColumnProps {
   width: string;
   task: Task;
+  disabled?: boolean;
 }
 
-export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, task }) => {
+export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, task, disabled = false }) => {
   const { socket, connected } = useSocket();
   const { t } = useTranslation(['task-drawer/task-drawer', 'common']);
   
@@ -644,14 +645,18 @@ export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, 
 
   return (
     <div
-      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2a2a2a] cursor-pointer transition-colors"
+      className={`flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 transition-colors ${
+        disabled
+          ? 'opacity-40 cursor-not-allowed'
+          : 'hover:bg-gray-50 dark:hover:bg-[#2a2a2a] cursor-pointer'
+      }`}
       style={{ width }}
     >
       <Popover
         content={popoverContent}
-        trigger="click"
-        open={isOpen}
-        onOpenChange={setIsOpen}
+        trigger={disabled ? [] : 'click'}
+        open={disabled ? false : isOpen}
+        onOpenChange={disabled ? undefined : setIsOpen}
         placement="bottom"
         destroyTooltipOnHide
       >

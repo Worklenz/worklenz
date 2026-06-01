@@ -40,9 +40,10 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 interface NotifyMemberSelectorProps {
   task: ITaskViewModel;
   t: TFunction;
+  disabled?: boolean;
 }
 
-const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
+const NotifyMemberSelector = ({ task, t, disabled = false }: NotifyMemberSelectorProps) => {
   const { token } = theme.useToken();
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
@@ -265,9 +266,9 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       {hasSubscribers ? <Avatars members={subscribers || []} /> : null}
       <Dropdown
         overlayClassName="custom-dropdown"
-        trigger={['click']}
+        trigger={disabled ? [] : ['click']}
         dropdownRender={() => membersDropdownContent}
-        onOpenChange={handleMembersDropdownOpen}
+        onOpenChange={disabled ? undefined : handleMembersDropdownOpen}
       >
         <Button
           type="dashed"
@@ -278,7 +279,12 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
           title={t('taskInfoTab.notify.addSubscriber', {
             defaultValue: 'Add notified member',
           })}
-          style={addNotifyButtonStyles}
+          style={{
+            ...addNotifyButtonStyles,
+            opacity: disabled ? 0.4 : 1,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+          }}
+          disabled={disabled}
           icon={
             <PlusOutlined
               style={{

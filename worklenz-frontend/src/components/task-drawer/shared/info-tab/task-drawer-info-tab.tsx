@@ -188,7 +188,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     {
       key: 'details',
       label: <Typography.Text strong>{t('taskInfoTab.details.title')}</Typography.Text>,
-      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} />,
+      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} canCreateTask={canCreateTask} />,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
@@ -248,6 +248,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
           taskDependencies={taskDependencies}
           loadingTaskDependencies={loadingTaskDependencies}
           refreshTaskDependencies={() => fetchTaskDependencies()}
+          canCreateTask={canCreateTask}
         />
       ),
       style: panelStyle,

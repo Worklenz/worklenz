@@ -235,8 +235,9 @@ const ExampleTaskRows: React.FC<{
   groupName: string;
   groupColor: string;
   projectId: string;
+  canCreateTask?: boolean;
   onTaskCreated: (task: any, options?: { openDrawer: boolean; insertAfterTaskId?: string | null }) => void;
-}> = ({ visibleColumns, isDarkMode = false, groupId, groupType, groupValue, groupName, groupColor, projectId, onTaskCreated }) => {
+}> = ({ visibleColumns, isDarkMode = false, groupId, groupType, groupValue, groupName, groupColor, projectId, canCreateTask = true, onTaskCreated }) => {
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
@@ -345,8 +346,8 @@ const ExampleTaskRows: React.FC<{
           <div
             key={rowIndex}
             className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-            style={{ height: '40px', cursor: 'text' }}
-            onClick={() => { if (activeRowIndex === null) setActiveRowIndex(rowIndex); }}
+            style={{ height: '40px', cursor: canCreateTask ? 'text' : 'default' }}
+            onClick={() => { if (canCreateTask && activeRowIndex === null) setActiveRowIndex(rowIndex); }}
           >
             {visibleColumns.map((column, colIndex) => {
               let leftPosition = 0;
@@ -1356,6 +1357,7 @@ const TaskListV2Section: React.FC = () => {
               groupName={group.title || group.name || ''}
               groupColor={isDarkMode ? (group.color_code_dark || group.color) : group.color}
               projectId={urlProjectId || ''}
+              canCreateTask={canCreateTask}
               onTaskCreated={(task, options) =>
                 handleTaskCreated(task, group.id, !!options?.openDrawer, null)
               }

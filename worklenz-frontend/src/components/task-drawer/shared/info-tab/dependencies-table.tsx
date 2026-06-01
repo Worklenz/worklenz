@@ -30,6 +30,7 @@ interface DependenciesTableProps {
   taskDependencies: ITaskDependency[];
   loadingTaskDependencies: boolean;
   refreshTaskDependencies: () => void;
+  canCreateTask?: boolean;
 }
 
 const DependenciesTable = ({
@@ -38,6 +39,7 @@ const DependenciesTable = ({
   taskDependencies,
   loadingTaskDependencies,
   refreshTaskDependencies,
+  canCreateTask = true,
 }: DependenciesTableProps) => {
   const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [isDependencyInputShow, setIsDependencyInputShow] = useState(false);
@@ -156,9 +158,16 @@ const DependenciesTable = ({
           <Popconfirm
             title={t('taskInfoTab.dependencies.confirmDeleteDependency')}
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-            onConfirm={() => handleDeleteDependency(record.id)}
+            onConfirm={() => canCreateTask && handleDeleteDependency(record.id)}
+            disabled={!canCreateTask}
           >
-            <Button shape="default" icon={<DeleteOutlined />} size="small" danger />
+            <Button
+              shape="default"
+              icon={<DeleteOutlined />}
+              size="small"
+              danger
+              disabled={!canCreateTask}
+            />
           </Popconfirm>
         </div>
       ),
@@ -179,8 +188,7 @@ const DependenciesTable = ({
         />
       )}
 
-      {isDependencyInputShow ? (
-        <Form layout="inline">
+      {isDependencyInputShow ? (        <Form layout="inline">
           <Row gutter={8} style={{ width: '100%' }}>
             <Col span={14}>
               <Form.Item name="taskName" style={{ marginBottom: 0 }}>
@@ -244,10 +252,13 @@ const DependenciesTable = ({
           type="text"
           style={{
             width: 'fit-content',
-            color: colors.skyBlue,
+            color: canCreateTask ? colors.skyBlue : undefined,
             padding: 0,
+            opacity: !canCreateTask ? 0.4 : 1,
+            cursor: !canCreateTask ? 'not-allowed' : 'pointer',
           }}
-          onClick={() => setIsDependencyInputShow(true)}
+          disabled={!canCreateTask}
+          onClick={() => canCreateTask && setIsDependencyInputShow(true)}
         >
           {t('taskInfoTab.dependencies.addDependency')}
         </Button>
