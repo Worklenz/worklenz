@@ -599,10 +599,6 @@ const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
     plan.name.toLowerCase().includes("location") ||
     plan.key.includes("location")
   ) {
-    console.log(
-      `[LOCATION DEBUG] Creating location field as labels type for:`,
-      plan.name,
-    );
     return { fieldType: "labels" };
   }
 
@@ -766,28 +762,10 @@ export const mapRawToTaskFields = (
   raw: unknown,
   mappings: FieldMappingRow[],
 ): { patch: TaskFieldPatch; customValues: CustomFieldValuePlan[] } => {
-  // eslint-disable-next-line no-console
-  const createdMapping = mappings.find((m) => {
-    const normalizedTarget = normalizeTargetField(m.target_field);
-    const normalizedSource = normalizeRawFieldName(m.source_field);
-    return (
-      normalizedTarget === "createdDate" ||
-      normalizedSource === "created" ||
-      normalizedSource === "createdat" ||
-      normalizedSource === "createddate"
-    );
-  });
-  // eslint-disable-next-line no-console
-  console.log("[mapRawToTaskFields] Created field mapping:", createdMapping);
   const source =
     raw && typeof raw === "object" && !Array.isArray(raw)
       ? (raw as Record<string, unknown>)
       : {};
-  // eslint-disable-next-line no-console
-  console.log(
-    "[mapRawToTaskFields] Raw 'Created' value:",
-    (source as any)?.Created,
-  );
 
   const patch: TaskFieldPatch = {};
   const customValues: CustomFieldValuePlan[] = [];
@@ -818,42 +796,11 @@ export const mapRawToTaskFields = (
       if (
         standardCustomFieldTypes.includes(mapping.target_field.toLowerCase())
       ) {
-        console.log(
-          `[Monday Provider] Skipping standard custom field mapping: "${mapping.source_field}" -> "${mapping.target_field}" (Monday-specific version exists)`,
-        );
         return;
       }
     }
 
     const value = getNormalizedFieldValue(source, [mapping.source_field]);
-
-    // Special debug for Monday custom fields
-    if (mapping.target_field?.startsWith("monday_")) {
-      console.log(
-        `[Monday Custom Field] Processing Monday custom field mapping:`,
-        {
-          source_field: mapping.source_field,
-          target_field: mapping.target_field,
-          normalized_target: normalizeTargetField(mapping.target_field),
-          value: value,
-          rawSourceValue: source[mapping.source_field],
-        },
-      );
-    }
-
-    // Special debug for Location field
-    if (
-      mapping.source_field === "Location" ||
-      mapping.target_field === "location"
-    ) {
-      console.log(`[LOCATION DEBUG] Processing Location mapping:`, {
-        source_field: mapping.source_field,
-        target_field: mapping.target_field,
-        value: value,
-        sourceLocationField: source.Location,
-        allSourceKeys: Object.keys(source),
-      });
-    }
 
     if (value === undefined || value === null || value === "") return;
 
@@ -1302,9 +1249,9 @@ class ImportsService {
     const params: unknown[] = [];
     rows.forEach((row, idx) => {
       insertValues.push(
-        `($1, $${idx * 6 + 2}, $${idx * 6 + 3}, $${idx * 6 + 4}, $${
-          idx * 6 + 5
-        }, $${idx * 6 + 6})`,
+        `($1, $${idx * 5 + 2}, $${idx * 5 + 3}, $${idx * 5 + 4}, $${
+          idx * 5 + 5
+        }, $${idx * 5 + 6})`,
       );
       params.push(
         row.source_user_id || null,

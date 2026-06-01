@@ -6,6 +6,10 @@ import alertService from '@/services/alerts/alertService';
 import { getImportProgress } from '@/api/imports';
 
 const STORAGE_KEY = 'worklenz.imports.pending_jobs';
+// Same-tab signal: the `storage` event only fires in *other* tabs, so we need
+// a custom event to tell the notifier mounted in this tab that a new job was
+// enqueued.
+const PENDING_JOBS_EVENT = 'worklenz.imports.pending_jobs_changed';
 
 const readPendingJobs = (): string[] => {
   try {
@@ -27,6 +31,8 @@ export const enqueuePendingImportJob = (jobId: string) => {
   if (!trimmed) return;
   const existing = readPendingJobs();
   writePendingJobs([...existing, trimmed]);
+  // Notify the notifier in the current tab (storage events don't fire here).
+  window.dispatchEvent(new CustomEvent(PENDING_JOBS_EVENT));
 };
 
 // Track which jobs already have an open "in-progress" notification so we
@@ -45,8 +51,14 @@ export const ImportProgressNotifier = () => {
       if (e.key !== STORAGE_KEY) return;
       setPendingJobs(readPendingJobs());
     };
+    // Same-tab enqueues arrive via the custom event; cross-tab via `storage`.
+    const onLocalChange = () => setPendingJobs(readPendingJobs());
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener(PENDING_JOBS_EVENT, onLocalChange);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(PENDING_JOBS_EVENT, onLocalChange);
+    };
   }, []);
 
   useEffect(() => {
