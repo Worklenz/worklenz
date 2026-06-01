@@ -40,6 +40,87 @@ import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
 // Simple Portal component - removed as it's no longer used
 
+const ExampleKanbanCards = ({
+  isDarkMode,
+  onClick,
+}: {
+  isDarkMode: boolean;
+  onClick: () => void;
+}) => {
+  const { t } = useTranslation('kanban-board');
+  const [showText, setShowText] = useState(false);
+
+  const exampleNames = [
+    t('exampleTasks.task1', { defaultValue: 'Define project scope' }),
+    t('exampleTasks.task2', { defaultValue: 'Review with stakeholders' }),
+    t('exampleTasks.task3', { defaultValue: 'Schedule kickoff' }),
+  ];
+  const egPrefix = t('exampleTasks.prefix', { defaultValue: 'e.g.' });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowText(true), 350);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div style={{ padding: 8 }}>
+      {exampleNames.map((name, i) => (
+        <div
+          key={i}
+          className="enhanced-kanban-task-card"
+          style={{
+            display: 'block',
+            position: 'relative',
+            cursor: 'text',
+            background: isDarkMode ? '#1e1e1e' : '#fff',
+            color: isDarkMode ? '#fff' : '#181818',
+          }}
+          onClick={onClick}
+        >
+          {/* Labels row — empty, matches height of a card with no labels */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 4, minHeight: 0 }} />
+
+          {/* Title row */}
+          <div className="task-content" style={{ display: 'flex', alignItems: 'center' }}>
+            <div
+              className="task-title"
+              style={{
+                opacity: showText ? 0.45 : 0,
+                transition: 'opacity 0.25s ease-in',
+                marginBottom: 4,
+              }}
+            >
+              {egPrefix} {name}
+            </div>
+          </div>
+
+          {/* Bottom row: date left, assignee placeholder right */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              width: '100%',
+              opacity: showText ? 0.25 : 0,
+              transition: 'opacity 0.25s ease-in',
+            }}
+          >
+            <div style={{ fontSize: 10, color: '#888' }}>—</div>
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                backgroundColor: isDarkMode ? '#333' : '#e8e8e8',
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 interface KanbanGroupProps {
   group: ITaskListGroup;
   onGroupDragStart: (e: React.DragEvent, groupId: string) => void;
@@ -594,30 +675,14 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                 />
               )}
 
-            {/* If group is empty, render a drop zone */}
+            {/* If group is empty, show example task cards as drop zone */}
             {group.tasks.length === 0 &&
               !showNewCardTop &&
               !showNewCardBottom &&
               hoveredGroupId !== group.id && (
                 <div
                   className="empty-drop-zone"
-                  style={{
-                    padding: 8,
-                    height: 500,
-                    background: themeWiseColor(
-                      'linear-gradient( 180deg,#E2EAF4, rgba(245, 243, 243, 0))',
-                      'linear-gradient( 180deg, #2a2a2a, rgba(42, 43, 45, 0))',
-                      themeMode
-                    ),
-                    borderRadius: 6,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start',
-                    paddingTop: 8,
-                    color: '#888',
-                    fontStyle: 'italic',
-                  }}
+                  style={{ borderRadius: 6 }}
                   onDragOver={e => {
                     e.preventDefault();
                     onTaskDragOver(e, group.id, 0);
@@ -627,31 +692,13 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     onTaskDrop(e, group.id, 0);
                   }}
                 >
-                  {!showNewCardTop && !showNewCardBottom && canCreateTask && (
-                    <button
-                      type="button"
-                      className="h-10 w-full rounded-md border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 transition-colors flex items-center justify-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                      onClick={() => {
-                        setShowNewCardBottom(false);
-                        setShowNewCardTop(true);
-                      }}
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                      {t('addTask')}
-                    </button>
-                  )}
+                  <ExampleKanbanCards
+                    isDarkMode={themeMode === 'dark'}
+                    onClick={() => {
+                      setShowNewCardBottom(false);
+                      setShowNewCardTop(true);
+                    }}
+                  />
                 </div>
               )}
 

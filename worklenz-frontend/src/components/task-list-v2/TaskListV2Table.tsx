@@ -84,6 +84,23 @@ import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
+import {
+  DragHandleColumn,
+  CheckboxColumn,
+  TaskKeyColumn,
+  StatusColumn,
+  AssigneesColumn,
+  PriorityColumn,
+  ProgressColumn,
+  LabelsColumnWithOverflow,
+  PhaseColumn,
+  TimeTrackingColumn,
+  EstimationColumn,
+  DateColumn,
+  ReporterColumn,
+  DescriptionColumn,
+} from './components/TaskRowColumns';
+import { DatePickerColumn } from './components/DatePickerColumn';
 
 // Drop Spacer Component - creates space between tasks when dragging
 const DropSpacer: React.FC<{ isVisible: boolean; visibleColumns: any[]; isDarkMode?: boolean }> = ({
@@ -215,14 +232,16 @@ const ExampleTaskRows: React.FC<{
   groupId: string;
   groupType: string;
   groupValue: string;
+  groupName: string;
+  groupColor: string;
   projectId: string;
   onTaskCreated: (task: any, options?: { openDrawer: boolean; insertAfterTaskId?: string | null }) => void;
-}> = ({ visibleColumns, isDarkMode = false, groupId, groupType, groupValue, projectId, onTaskCreated }) => {
+}> = ({ visibleColumns, isDarkMode = false, groupId, groupType, groupValue, groupName, groupColor, projectId, onTaskCreated }) => {
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
 
-  const [showText, setShowText] = React.useState(false);
+  const [showPlaceholders, setShowPlaceholders] = React.useState(false);
   const [activeRowIndex, setActiveRowIndex] = React.useState<number | null>(null);
   const [taskName, setTaskName] = React.useState('');
   const inputRef = React.useRef<any>(null);
@@ -235,7 +254,7 @@ const ExampleTaskRows: React.FC<{
   const egPrefix = t('exampleTasks.prefix', { defaultValue: 'e.g.' });
 
   React.useEffect(() => {
-    const timer = setTimeout(() => setShowText(true), 350);
+    const timer = setTimeout(() => setShowPlaceholders(true), 350);
     return () => clearTimeout(timer);
   }, []);
 
@@ -278,97 +297,171 @@ const ExampleTaskRows: React.FC<{
 
   const handleKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        handleCreateTask(false);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setTaskName('');
-        setActiveRowIndex(null);
-      }
+      if (e.key === 'Enter') { e.preventDefault(); handleCreateTask(false); }
+      else if (e.key === 'Escape') { e.preventDefault(); setTaskName(''); setActiveRowIndex(null); }
     },
     [handleCreateTask]
   );
 
   const handleBlur = React.useCallback(() => {
-    if (taskName.trim()) {
-      handleCreateTask(false);
-    } else {
-      setActiveRowIndex(null);
-    }
+    if (taskName.trim()) handleCreateTask(false);
+    else setActiveRowIndex(null);
   }, [taskName, handleCreateTask]);
 
   return (
     <>
-      {exampleTaskNames.map((name, rowIndex) => (
-        <div
-          key={rowIndex}
-          className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-          style={{ height: '40px', cursor: 'text' }}
-          onClick={() => {
-            if (activeRowIndex === null) setActiveRowIndex(rowIndex);
-          }}
-        >
-          {visibleColumns.map((column, colIndex) => {
-            let leftPosition = 0;
-            if (column.isSticky) {
-              for (let i = 0; i < colIndex; i++) {
-                leftPosition += parseInt(visibleColumns[i].width.replace('px', ''));
-              }
-            }
-            const colStyle = {
-              width: column.width,
-              flexShrink: 0,
-              ...(column.isSticky && {
-                position: 'sticky' as const,
-                left: leftPosition,
-                zIndex: 10,
-                backgroundColor: isDarkMode ? '#141414' : 'inherit',
-              }),
-            };
+      {exampleTaskNames.map((name, rowIndex) => {
+        // Build a minimal mock task so real column components render correctly.
+        // pointer-events:none on the wrapper prevents any socket/API calls.
+        const mockTask: any = {
+          id: `_example_${rowIndex}`,
+          name,
+          title: name,
+          // Status — pass display fields so StatusColumn renders the badge
+          status_id:    groupType === 'status'   ? groupValue : undefined,
+          status:       groupType === 'status'   ? groupName  : undefined,
+          color_code:   groupType === 'status'   ? groupColor : undefined,
+          // Priority — pass display fields so PriorityColumn renders the badge
+          priority_id:        groupType === 'priority' ? groupValue : undefined,
+          priority:           groupType === 'priority' ? groupName  : undefined,
+          priority_color:     groupType === 'priority' ? groupColor : undefined,
+          priority_color_dark: groupType === 'priority' ? groupColor : undefined,
+          // Phase
+          phase_id: groupType === 'phase' ? groupValue : undefined,
+          names: [],
+          labels: [],
+          sub_tasks: [],
+          sub_tasks_count: 0,
+          show_sub_tasks: false,
+          task_key: '',
+          description: '',
+          done: false,
+          archived: false,
+          created_at: '',
+          updated_at: '',
+        };
 
-            if (column.id === 'title') {
+        return (
+          <div
+            key={rowIndex}
+            className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+            style={{ height: '40px', cursor: 'text' }}
+            onClick={() => { if (activeRowIndex === null) setActiveRowIndex(rowIndex); }}
+          >
+            {visibleColumns.map((column, colIndex) => {
+              let leftPosition = 0;
+              if (column.isSticky) {
+                for (let i = 0; i < colIndex; i++) {
+                  leftPosition += parseInt(visibleColumns[i].width.replace('px', ''));
+                }
+              }
+              const colStyle: React.CSSProperties = {
+                width: column.width,
+                flexShrink: 0,
+                ...(column.isSticky && {
+                  position: 'sticky',
+                  left: leftPosition,
+                  zIndex: 10,
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: isDarkMode ? '#141414' : '#ffffff',
+                }),
+              };
+
+              // Title: "e.g." hint text or active inline input
+              if (column.id === 'title') {
+                return (
+                  <div
+                    key={column.id}
+                    className="flex items-center pl-8 border-r border-gray-200 dark:border-gray-700 h-full"
+                    style={colStyle}
+                  >
+                    {activeRowIndex === rowIndex ? (
+                      <Input
+                        ref={inputRef}
+                        value={taskName}
+                        onChange={e => setTaskName(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onBlur={handleBlur}
+                        placeholder={t('addTaskInputPlaceholder', { defaultValue: 'Type task name and press Enter to save' })}
+                        className="w-full border-none shadow-none bg-transparent"
+                        style={{ height: '100%', padding: '4px 8px', fontSize: '14px' }}
+                        autoFocus
+                      />
+                    ) : (
+                      <span
+                        className="text-sm text-gray-400 dark:text-gray-500 truncate"
+                        style={{ opacity: showPlaceholders ? 1 : 0, transition: 'opacity 0.25s ease-in' }}
+                      >
+                        {egPrefix} {name}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
+              // All other columns: render the real component, block interactions
+              const renderContent = () => {
+                switch (column.id) {
+                  case 'dragHandle':
+                    return <DragHandleColumn width={column.width} isSubtask={false} attributes={{}} listeners={{}} />;
+                  case 'checkbox':
+                    return <CheckboxColumn width={column.width} isSelected={false} onCheckboxChange={() => {}} />;
+                  case 'taskKey':
+                    return <TaskKeyColumn width={column.width} taskKey="" />;
+                  case 'description':
+                    return <DescriptionColumn width={column.width} description="" taskId={mockTask.id} />;
+                  case 'status':
+                    return <StatusColumn width={column.width} task={mockTask} projectId={projectId} isDarkMode={isDarkMode} />;
+                  case 'assignees':
+                    return <AssigneesColumn width={column.width} task={mockTask} convertedTask={mockTask} isDarkMode={isDarkMode} canCreateTask={true} />;
+                  case 'priority':
+                    return <PriorityColumn width={column.width} task={mockTask} projectId={projectId} isDarkMode={isDarkMode} />;
+                  case 'dueDate':
+                    return <DatePickerColumn width={column.width} task={mockTask} field="dueDate" formattedDate={null} dateValue={undefined} isDarkMode={isDarkMode} activeDatePicker={null} onActiveDatePickerChange={() => {}} />;
+                  case 'startDate':
+                    return <DatePickerColumn width={column.width} task={mockTask} field="startDate" formattedDate={null} dateValue={undefined} isDarkMode={isDarkMode} activeDatePicker={null} onActiveDatePickerChange={() => {}} />;
+                  case 'progress':
+                    return <ProgressColumn width={column.width} task={mockTask} />;
+                  case 'labels':
+                    return <LabelsColumnWithOverflow width={column.width} task={mockTask} labelsAdapter={[]} isDarkMode={isDarkMode} columnId={column.id} />;
+                  case 'phase':
+                    return <PhaseColumn width={column.width} task={mockTask} projectId={projectId} isDarkMode={isDarkMode} />;
+                  case 'timeTracking':
+                    return <TimeTrackingColumn width={column.width} taskId={mockTask.id} isDarkMode={isDarkMode} />;
+                  case 'estimation':
+                    return <EstimationColumn width={column.width} task={mockTask} />;
+                  case 'completedDate':
+                    return <DateColumn width={column.width} formattedDate="" />;
+                  case 'createdDate':
+                    return <DateColumn width={column.width} formattedDate="" />;
+                  case 'lastUpdated':
+                    return <DateColumn width={column.width} formattedDate="" />;
+                  case 'reporter':
+                    return <ReporterColumn width={column.width} reporter="" />;
+                  default:
+                    return <div className="border-r border-gray-200 dark:border-gray-700" style={{ width: column.width }} />;
+                }
+              };
+
               return (
                 <div
                   key={column.id}
-                  className="flex items-center pl-8 border-r border-gray-200 dark:border-gray-700 h-full"
-                  style={colStyle}
+                  style={{
+                    ...colStyle,
+                    pointerEvents: 'none',
+                    opacity: showPlaceholders ? 1 : 0,
+                    transition: 'opacity 0.25s ease-in',
+                  }}
                 >
-                  {activeRowIndex === rowIndex ? (
-                    <Input
-                      ref={inputRef}
-                      value={taskName}
-                      onChange={e => setTaskName(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      onBlur={handleBlur}
-                      placeholder={t('addTaskInputPlaceholder', {
-                        defaultValue: 'Type task name and press Enter to save',
-                      })}
-                      className="w-full border-none shadow-none bg-transparent"
-                      style={{ height: '100%', padding: '4px 8px', fontSize: '14px' }}
-                      autoFocus
-                    />
-                  ) : (
-                    <span
-                      className="text-sm text-gray-400 dark:text-gray-500 truncate"
-                      style={{ opacity: showText ? 1 : 0, transition: 'opacity 0.25s ease-in' }}
-                    >
-                      {egPrefix} {name}
-                    </span>
-                  )}
+                  {renderContent()}
                 </div>
               );
-            }
-            return (
-              <div
-                key={column.id}
-                className={`border-r border-gray-200 dark:border-gray-700 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
-                style={colStyle}
-              />
-            );
-          })}
-        </div>
-      ))}
+            })}
+          </div>
+        );
+      })}
     </>
   );
 };
@@ -1185,6 +1278,7 @@ const TaskListV2Section: React.FC = () => {
       const addTaskItem = {
         id: `add-task-${group.id}-0`,
         isAddTaskRow: true,
+        isGroupEmpty: group.taskIds.length === 0,
         groupId: group.id,
         groupType: currentGrouping || 'status',
         groupValue: group.id, // Send the UUID that backend expects
@@ -1259,6 +1353,8 @@ const TaskListV2Section: React.FC = () => {
               groupId={group.id}
               groupType={currentGrouping || 'status'}
               groupValue={group.id}
+              groupName={group.title || group.name || ''}
+              groupColor={isDarkMode ? (group.color_code_dark || group.color) : group.color}
               projectId={urlProjectId || ''}
               onTaskCreated={(task, options) =>
                 handleTaskCreated(task, group.id, !!options?.openDrawer, null)
@@ -1280,6 +1376,8 @@ const TaskListV2Section: React.FC = () => {
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
         // Hide the add-task row entirely when task creation is restricted
         if (!canCreateTask) return null;
+        // Example rows (rendered in group header) handle creation for empty groups
+        if ((item as any).isGroupEmpty) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}
