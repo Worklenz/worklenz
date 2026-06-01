@@ -24,7 +24,7 @@ const DEFAULT_FIELDS: TaskListField[] = [
   { key: 'LABELS', label: 'Labels', visible: true, order: 6 },
   { key: 'PHASE', label: 'Phase', visible: true, order: 7 },
   { key: 'PRIORITY', label: 'Priority', visible: true, order: 8 },
-  { key: 'TIME_TRACKING', label: 'Time Tracking', visible: true, order: 9 },
+  { key: 'TIME_TRACKING', label: 'Time', visible: true, order: 9 },
   { key: 'ESTIMATION', label: 'Estimation', visible: false, order: 10 },
   { key: 'START_DATE', label: 'Start Date', visible: false, order: 11 },
   { key: 'DUE_DATE', label: 'Due Date', visible: true, order: 12 },

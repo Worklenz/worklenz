@@ -116,7 +116,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   const handleProjectHover = React.useCallback((project_id: string) => {
     if (project_id) {
       import('@/pages/projects/projectView/project-view').catch(() => {});
-      import('@/components/task-management/task-list-board').catch(() => {});
     }
   }, []);
 

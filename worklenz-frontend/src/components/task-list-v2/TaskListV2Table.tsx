@@ -25,7 +25,7 @@ import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { HolderOutlined, theme } from '@/shared/antd-imports';
 import { PlusOutlined } from '@/shared/antd-imports';
-import '../../pages/projects/project-view-1/taskList/taskListTable/column-resize.css';
+import './column-resize.css';
 
 // Redux hooks and selectors
 import { useAppSelector } from '@/hooks/useAppSelector';

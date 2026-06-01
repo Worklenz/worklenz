@@ -609,7 +609,6 @@ const ProjectList: React.FC = () => {
   const handleProjectHover = useCallback((project_id: string | undefined) => {
     if (project_id) {
       import('@/pages/projects/projectView/project-view').catch(() => {});
-      import('@/components/task-management/task-list-board').catch(() => {});
     }
   }, []);
 

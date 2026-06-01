@@ -1,4 +1,5 @@
 import { CronJob } from "cron";
+import { PoolClient } from "pg";
 import { calculateNextEndDate, log_error } from "../shared/utils";
 import db from "../config/db";
 import { IRecurringSchedule, ITaskTemplate } from "../interfaces/recurring-tasks";
@@ -16,15 +17,20 @@ const MAX_TASKS_PER_TICK = 50;
 
 const log = (value: string) => console.log("recurring-task-cron-job:", value);
 
-// Acquire a PostgreSQL advisory lock to prevent concurrent execution
-async function acquireAdvisoryLock(): Promise<boolean> {
-  const result = await db.query("SELECT pg_try_advisory_lock($1) AS acquired;", [ADVISORY_LOCK_ID]);
+// Acquire a PostgreSQL advisory lock to prevent concurrent execution.
+// IMPORTANT: pg_try_advisory_lock is SESSION-level — the lock belongs to the exact
+// connection that ran it. The caller MUST keep using and release the lock on this
+// same client; do NOT use the shared pool.query, which hands out arbitrary
+// connections and would leak the lock (acquired on one connection, "released" on
+// another), permanently blocking every subsequent tick.
+async function acquireAdvisoryLock(client: PoolClient): Promise<boolean> {
+  const result = await client.query("SELECT pg_try_advisory_lock($1) AS acquired;", [ADVISORY_LOCK_ID]);
   return result.rows[0]?.acquired === true;
 }
 
-// Release the advisory lock
-async function releaseAdvisoryLock(): Promise<void> {
-  await db.query("SELECT pg_advisory_unlock($1);", [ADVISORY_LOCK_ID]);
+// Release the advisory lock on the same client that acquired it.
+async function releaseAdvisoryLock(client: PoolClient): Promise<void> {
+  await client.query("SELECT pg_advisory_unlock($1);", [ADVISORY_LOCK_ID]);
 }
 
 // Create a single recurring task from a template
@@ -229,11 +235,14 @@ async function changeTaskStatus(
 }
 
 async function onRecurringTaskJobTick() {
+  // Hold a single dedicated connection for the lifetime of the lock. The advisory
+  // lock is session-scoped, so acquire + release must run on this exact client.
+  const lockClient = await db.pool.connect();
   let lockAcquired = false;
 
   try {
     // Safeguard 1: Advisory lock — prevent concurrent execution
-    lockAcquired = await acquireAdvisoryLock();
+    lockAcquired = await acquireAdvisoryLock(lockClient);
     if (!lockAcquired) {
       log("(cron) Skipped — another instance is already running.");
       return;
@@ -359,8 +368,13 @@ async function onRecurringTaskJobTick() {
     log("(cron) Recurring task job ended with errors.");
   } finally {
     if (lockAcquired) {
-      await releaseAdvisoryLock();
+      try {
+        await releaseAdvisoryLock(lockClient);
+      } catch (releaseError) {
+        log_error(releaseError);
+      }
     }
+    lockClient.release();
   }
 }
 
