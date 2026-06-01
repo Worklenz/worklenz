@@ -80,6 +80,13 @@
   "dueDatePlaceholder": "Fälligkeitsdatum",
   "startDatePlaceholder": "Startdatum",
 
+  "exampleTasks": {
+    "prefix": "z.B.",
+    "task1": "Projektumfang und Ziele definieren",
+    "task2": "Mit Stakeholdern abstimmen",
+    "task3": "Kickoff-Meeting planen"
+  },
+
   "emptyStates": {
     "noTaskGroups": "Keine Aufgabengruppen gefunden",
     "noTaskGroupsDescription": "Aufgaben werden hier angezeigt, wenn sie erstellt oder Filter angewendet werden.",

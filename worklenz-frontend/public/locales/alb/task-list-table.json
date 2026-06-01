@@ -80,6 +80,13 @@
   "dueDatePlaceholder": "Data e afatit",
   "startDatePlaceholder": "Data e fillimit",
 
+  "exampleTasks": {
+    "prefix": "p.sh.",
+    "task1": "Përcaktoni qëllimin dhe objektivat e projektit",
+    "task2": "Rishikoni dhe harmonizoni me palët e interesuara",
+    "task3": "Planifikoni takimin fillestar"
+  },
+
   "emptyStates": {
     "noTaskGroups": "Nuk u gjetën grupe detyrash",
     "noTaskGroupsDescription": "Detyrat do të shfaqen këtu kur krijohen ose kur aplikohen filtra.",

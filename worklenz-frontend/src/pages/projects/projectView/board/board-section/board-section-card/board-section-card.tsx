@@ -21,6 +21,58 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import logger from '@/utils/errorLogger';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 
+const ExampleBoardTaskCards = ({
+  isDarkMode,
+  onClick,
+}: {
+  isDarkMode?: boolean;
+  onClick: () => void;
+}) => {
+  const { t } = useTranslation('kanban-board');
+  const [showText, setShowText] = useState(false);
+
+  const exampleNames = [
+    t('exampleTasks.task1', { defaultValue: 'Define project scope' }),
+    t('exampleTasks.task2', { defaultValue: 'Review with stakeholders' }),
+    t('exampleTasks.task3', { defaultValue: 'Schedule kickoff' }),
+  ];
+  const egPrefix = t('exampleTasks.prefix', { defaultValue: 'e.g.' });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowText(true), 350);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+      {exampleNames.map((name, i) => (
+        <div
+          key={i}
+          onClick={onClick}
+          style={{
+            background: isDarkMode ? '#1f1f1f' : '#ffffff',
+            border: `1px solid ${isDarkMode ? '#333' : '#e8e8e8'}`,
+            borderRadius: 6,
+            padding: '10px 12px',
+            fontSize: 13,
+            cursor: 'text',
+          }}
+        >
+          <span
+            style={{
+              color: isDarkMode ? '#555' : '#aaa',
+              opacity: showText ? 1 : 0,
+              transition: 'opacity 0.25s ease-in',
+            }}
+          >
+            {egPrefix} {name}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 interface IBoardSectionCardProps {
   taskGroup: ITaskListGroup;
 }
@@ -160,18 +212,11 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
         ref={scrollContainerRef}
         style={{
           borderRadius: 6,
-          height: taskGroup?.tasks.length <= 0 ? 600 : 'auto',
-          maxHeight: taskGroup?.tasks.length <= 0 ? 600 : 'auto',
+          height: 'auto',
+          maxHeight: 'auto',
           overflowY: 'scroll',
           padding: taskGroup?.tasks.length <= 0 ? 8 : 6,
-          background:
-            taskGroup?.tasks.length <= 0 && !showNewCardTop && !showNewCardBottom
-              ? themeWiseColor(
-                  'linear-gradient( 180deg, #fafafa, rgba(245, 243, 243, 0))',
-                  'linear-gradient( 180deg, #2a2b2d, rgba(42, 43, 45, 0))',
-                  themeMode
-                )
-              : 'transparent',
+          background: 'transparent',
         }}
       >
         <SortableContext
@@ -179,6 +224,13 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
           strategy={verticalListSortingStrategy}
         >
           <Flex vertical gap={16} align="center">
+            {taskGroup.tasks.length === 0 && !showNewCardTop && !showNewCardBottom && (
+              <ExampleBoardTaskCards
+                isDarkMode={themeMode === 'dark'}
+                onClick={handleAddTaskToBottom}
+              />
+            )}
+
             {showNewCardTop && (
               <BoardViewCreateTaskCard
                 position="top"

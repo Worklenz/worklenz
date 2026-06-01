@@ -80,6 +80,13 @@
   "dueDatePlaceholder": "Fecha de vencimiento",
   "startDatePlaceholder": "Fecha de inicio",
 
+  "exampleTasks": {
+    "prefix": "ej.",
+    "task1": "Definir el alcance y los objetivos del proyecto",
+    "task2": "Revisar y alinear con las partes interesadas",
+    "task3": "Programar la reunión de inicio"
+  },
+
   "emptyStates": {
     "noTaskGroups": "No se encontraron grupos de tareas",
     "noTaskGroupsDescription": "Las tareas aparecerán aquí cuando se creen o cuando se apliquen filtros.",

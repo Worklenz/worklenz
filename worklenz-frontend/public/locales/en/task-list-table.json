@@ -85,6 +85,13 @@
   "dueDatePlaceholder": "Due Date",
   "startDatePlaceholder": "Start Date",
 
+  "exampleTasks": {
+    "prefix": "e.g.",
+    "task1": "Define project scope and objectives",
+    "task2": "Review and align with stakeholders",
+    "task3": "Schedule kickoff meeting"
+  },
+
   "emptyStates": {
     "noTaskGroups": "No task groups found",
     "noTaskGroupsDescription": "Tasks will appear here when they are created or when filters are applied.",

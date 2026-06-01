@@ -23,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { HolderOutlined, theme } from '@/shared/antd-imports';
+import { HolderOutlined, theme, Input } from '@/shared/antd-imports';
 import { PlusOutlined } from '@/shared/antd-imports';
 import './column-resize.css';
 
@@ -206,6 +206,170 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
         );
       })}
     </div>
+  );
+};
+
+const ExampleTaskRows: React.FC<{
+  visibleColumns: any[];
+  isDarkMode?: boolean;
+  groupId: string;
+  groupType: string;
+  groupValue: string;
+  projectId: string;
+  onTaskCreated: (task: any, options?: { openDrawer: boolean; insertAfterTaskId?: string | null }) => void;
+}> = ({ visibleColumns, isDarkMode = false, groupId, groupType, groupValue, projectId, onTaskCreated }) => {
+  const { t } = useTranslation('task-list-table');
+  const { socket, connected } = useSocket();
+  const currentSession = useAuthService().getCurrentSession();
+
+  const [showText, setShowText] = React.useState(false);
+  const [activeRowIndex, setActiveRowIndex] = React.useState<number | null>(null);
+  const [taskName, setTaskName] = React.useState('');
+  const inputRef = React.useRef<any>(null);
+
+  const exampleTaskNames = [
+    t('exampleTasks.task1', { defaultValue: 'Define project scope and objectives' }),
+    t('exampleTasks.task2', { defaultValue: 'Review and align with stakeholders' }),
+    t('exampleTasks.task3', { defaultValue: 'Schedule kickoff meeting' }),
+  ];
+  const egPrefix = t('exampleTasks.prefix', { defaultValue: 'e.g.' });
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setShowText(true), 350);
+    return () => clearTimeout(timer);
+  }, []);
+
+  React.useEffect(() => {
+    if (activeRowIndex !== null) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [activeRowIndex]);
+
+  const handleCreateTask = React.useCallback(
+    (openDrawer: boolean = false) => {
+      if (!currentSession || !taskName.trim() || !socket || !connected) return;
+
+      const body: any = {
+        name: taskName.trim(),
+        project_id: projectId,
+        reporter_id: currentSession.id,
+        team_id: currentSession.team_id,
+      };
+
+      switch (groupType) {
+        case 'status': body.status_id = groupValue; break;
+        case 'priority': body.priority_id = groupValue; break;
+        case 'phase': body.phase_id = groupValue; break;
+        default: body[groupType] = groupValue; break;
+      }
+
+      socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
+      socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
+        if (task?.id) {
+          onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
+        }
+      });
+
+      setTaskName('');
+      setActiveRowIndex(null);
+    },
+    [taskName, projectId, groupType, groupValue, socket, connected, currentSession, onTaskCreated]
+  );
+
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleCreateTask(false);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setTaskName('');
+        setActiveRowIndex(null);
+      }
+    },
+    [handleCreateTask]
+  );
+
+  const handleBlur = React.useCallback(() => {
+    if (taskName.trim()) {
+      handleCreateTask(false);
+    } else {
+      setActiveRowIndex(null);
+    }
+  }, [taskName, handleCreateTask]);
+
+  return (
+    <>
+      {exampleTaskNames.map((name, rowIndex) => (
+        <div
+          key={rowIndex}
+          className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
+          style={{ height: '40px', cursor: 'text' }}
+          onClick={() => {
+            if (activeRowIndex === null) setActiveRowIndex(rowIndex);
+          }}
+        >
+          {visibleColumns.map((column, colIndex) => {
+            let leftPosition = 0;
+            if (column.isSticky) {
+              for (let i = 0; i < colIndex; i++) {
+                leftPosition += parseInt(visibleColumns[i].width.replace('px', ''));
+              }
+            }
+            const colStyle = {
+              width: column.width,
+              flexShrink: 0,
+              ...(column.isSticky && {
+                position: 'sticky' as const,
+                left: leftPosition,
+                zIndex: 10,
+                backgroundColor: isDarkMode ? '#141414' : 'inherit',
+              }),
+            };
+
+            if (column.id === 'title') {
+              return (
+                <div
+                  key={column.id}
+                  className="flex items-center pl-8 border-r border-gray-200 dark:border-gray-700 h-full"
+                  style={colStyle}
+                >
+                  {activeRowIndex === rowIndex ? (
+                    <Input
+                      ref={inputRef}
+                      value={taskName}
+                      onChange={e => setTaskName(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      onBlur={handleBlur}
+                      placeholder={t('addTaskInputPlaceholder', {
+                        defaultValue: 'Type task name and press Enter to save',
+                      })}
+                      className="w-full border-none shadow-none bg-transparent"
+                      style={{ height: '100%', padding: '4px 8px', fontSize: '14px' }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span
+                      className="text-sm text-gray-400 dark:text-gray-500 truncate"
+                      style={{ opacity: showText ? 1 : 0, transition: 'opacity 0.25s ease-in' }}
+                    >
+                      {egPrefix} {name}
+                    </span>
+                  )}
+                </div>
+              );
+            }
+            return (
+              <div
+                key={column.id}
+                className={`border-r border-gray-200 dark:border-gray-700 ${column.id === 'dragHandle' ? 'pl-1' : ''}`}
+                style={colStyle}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </>
   );
 };
 
@@ -1089,12 +1253,22 @@ const TaskListV2Section: React.FC = () => {
             projectId={urlProjectId || ''}
           />
           {isGroupEmpty && !isGroupCollapsed && (
-            <EmptyGroupMessage visibleColumns={visibleColumns} isDarkMode={isDarkMode} />
+            <ExampleTaskRows
+              visibleColumns={visibleColumns}
+              isDarkMode={isDarkMode}
+              groupId={group.id}
+              groupType={currentGrouping || 'status'}
+              groupValue={group.id}
+              projectId={urlProjectId || ''}
+              onTaskCreated={(task, options) =>
+                handleTaskCreated(task, group.id, !!options?.openDrawer, null)
+              }
+            />
           )}
         </div>
       );
     },
-    [virtuosoGroups, collapsedGroups, handleGroupCollapse, visibleColumns, t, isDarkMode]
+    [virtuosoGroups, collapsedGroups, handleGroupCollapse, visibleColumns, t, isDarkMode, currentGrouping, urlProjectId, handleTaskCreated]
   );
 
   const renderTask = useCallback(
