@@ -38,7 +38,9 @@ const OverviewReportsMembersReportsTable = ({
   };
 
   const filteredMembersList = useMemo(() => {
-    return membersList?.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    return membersList?.filter(item =>
+      (item.name ?? '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [searchQuery, membersList]);
 
   useEffect(() => {
