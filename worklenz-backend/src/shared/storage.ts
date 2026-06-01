@@ -591,15 +591,17 @@ export async function createPresignedUrlWithClient(key: string, file: string) {
 /**
  * Generate a presigned PUT URL for S3/MinIO so the browser can upload directly.
  * Expires in 15 minutes — enough for large files on slow connections.
+ * ContentType is intentionally NOT signed — S3 would reject the PUT if the
+ * browser sends a slightly different Content-Type header (e.g. "application/pdf"
+ * vs "application/pdf; charset=utf-8"), causing a silent 403 that looks like
+ * a successful upload from the XHR perspective.
  */
 async function createPresignedUploadUrlS3(
   key: string,
-  contentType: string,
 ): Promise<string> {
   const command = new PutObjectCommand({
     Bucket: BUCKET,
     Key: key,
-    ContentType: contentType,
   });
   return getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 min
 }
@@ -610,7 +612,6 @@ async function createPresignedUploadUrlS3(
  */
 async function createPresignedUploadUrlAzure(
   key: string,
-  contentType: string,
 ): Promise<string | null> {
   try {
     if (
@@ -635,7 +636,6 @@ async function createPresignedUploadUrlAzure(
       permissions: BlobSASPermissions.parse("cw"), // create + write
       startsOn: new Date(),
       expiresOn,
-      contentType: contentType || undefined,
     };
 
     const sasToken = generateBlobSASQueryParameters(
@@ -656,13 +656,12 @@ async function createPresignedUploadUrlAzure(
  */
 export async function createPresignedUploadUrl(
   key: string,
-  contentType: string,
 ): Promise<string | null> {
   try {
     if (STORAGE_PROVIDER === "azure") {
-      return createPresignedUploadUrlAzure(key, contentType);
+      return createPresignedUploadUrlAzure(key);
     }
-    return createPresignedUploadUrlS3(key, contentType);
+    return createPresignedUploadUrlS3(key);
   } catch (error) {
     log_error(error);
     return null;

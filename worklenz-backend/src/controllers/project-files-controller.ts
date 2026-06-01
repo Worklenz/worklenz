@@ -437,7 +437,7 @@ export default class ProjectFilesController extends WorklenzControllerBase {
     const cleanFileName = sanitizeFileName(filename, extension);
     const storageKey = getProjectFileStorageKey(teamId, projectId, fileId, extension);
 
-    const uploadUrl = await createPresignedUploadUrl(storageKey, mime_type);
+    const uploadUrl = await createPresignedUploadUrl(storageKey);
 
     if (!uploadUrl) {
       return res
