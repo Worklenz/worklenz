@@ -73,7 +73,7 @@ const ExampleKanbanCards = ({
             position: 'relative',
             cursor: 'text',
             background: isDarkMode ? '#1e1e1e' : '#fff',
-            color: isDarkMode ? '#fff' : '#181818',
+            color: isDarkMode ? '#e0e0e0' : '#181818',
           }}
           onClick={onClick}
         >
@@ -88,6 +88,7 @@ const ExampleKanbanCards = ({
                 opacity: showText ? 0.45 : 0,
                 transition: 'opacity 0.25s ease-in',
                 marginBottom: 4,
+                color: isDarkMode ? '#9ca3af' : '#9ca3af',
               }}
             >
               {egPrefix} {name}
@@ -105,13 +106,13 @@ const ExampleKanbanCards = ({
               transition: 'opacity 0.25s ease-in',
             }}
           >
-            <div style={{ fontSize: 10, color: '#888' }}>—</div>
+            <div style={{ fontSize: 10, color: isDarkMode ? '#6b7280' : '#aaa' }}>—</div>
             <div
               style={{
                 width: 24,
                 height: 24,
                 borderRadius: '50%',
-                backgroundColor: isDarkMode ? '#333' : '#e8e8e8',
+                backgroundColor: isDarkMode ? '#374151' : '#e8e8e8',
               }}
             />
           </div>

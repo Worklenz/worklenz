@@ -50,17 +50,20 @@ const ExampleBoardTaskCards = ({
           key={i}
           onClick={onClick}
           style={{
-            background: isDarkMode ? '#1f1f1f' : '#ffffff',
-            border: `1px solid ${isDarkMode ? '#333' : '#e8e8e8'}`,
+            background: isDarkMode ? '#1e1e1e' : '#ffffff',
+            border: `1px solid ${isDarkMode ? '#404040' : '#e1e4e8'}`,
             borderRadius: 6,
             padding: '10px 12px',
             fontSize: 13,
             cursor: 'text',
+            boxShadow: isDarkMode
+              ? 'none'
+              : '0 1px 4px 0 rgba(60,64,67,0.08), 0 0.5px 1.5px 0 rgba(60,64,67,0.03)',
           }}
         >
           <span
             style={{
-              color: isDarkMode ? '#555' : '#aaa',
+              color: isDarkMode ? '#888' : '#aaa',
               opacity: showText ? 1 : 0,
               transition: 'opacity 0.25s ease-in',
             }}

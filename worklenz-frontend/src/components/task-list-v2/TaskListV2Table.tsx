@@ -240,6 +240,8 @@ const ExampleTaskRows: React.FC<{
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
+  const priorities = useAppSelector((state: any) => state.priorityReducer?.priorities || []);
+  const mediumPriority = priorities.find((p: any) => p.value === '1' || p.value === 1) || priorities[0];
 
   const [showPlaceholders, setShowPlaceholders] = React.useState(false);
   const [activeRowIndex, setActiveRowIndex] = React.useState<number | null>(null);
@@ -318,14 +320,15 @@ const ExampleTaskRows: React.FC<{
           name,
           title: name,
           // Status — pass display fields so StatusColumn renders the badge
-          status_id:    groupType === 'status'   ? groupValue : undefined,
-          status:       groupType === 'status'   ? groupName  : undefined,
-          color_code:   groupType === 'status'   ? groupColor : undefined,
-          // Priority — pass display fields so PriorityColumn renders the badge
-          priority_id:        groupType === 'priority' ? groupValue : undefined,
-          priority:           groupType === 'priority' ? groupName  : undefined,
-          priority_color:     groupType === 'priority' ? groupColor : undefined,
-          priority_color_dark: groupType === 'priority' ? groupColor : undefined,
+          status_id:  groupType === 'status' ? groupValue : undefined,
+          status:     groupType === 'status' ? groupName  : undefined,
+          color_code: groupType === 'status' ? groupColor : undefined,
+          // Priority — use group data when grouped by priority, otherwise default to Medium
+          priority_id:         groupType === 'priority' ? groupValue            : mediumPriority?.id,
+          priority:            groupType === 'priority' ? groupName             : mediumPriority?.name,
+          priority_color:      groupType === 'priority' ? groupColor            : mediumPriority?.color_code,
+          priority_color_dark: groupType === 'priority' ? groupColor            : (mediumPriority?.color_code_dark || mediumPriority?.color_code),
+          priority_value:      groupType === 'priority' ? undefined             : mediumPriority?.value,
           // Phase
           phase_id: groupType === 'phase' ? groupValue : undefined,
           names: [],
@@ -365,7 +368,7 @@ const ExampleTaskRows: React.FC<{
                   height: '100%',
                   display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: isDarkMode ? '#141414' : '#ffffff',
+                  backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
                 }),
               };
 
@@ -890,6 +893,10 @@ const TaskListV2Section: React.FC = () => {
     return !!urlProjectId && shouldFetchInitialData && groups.length === 0;
   }, [urlProjectId, shouldFetchInitialData, groups.length]);
 
+  // Show example rows only when the project has zero tasks across all groups.
+  // Once any task exists anywhere, all example rows disappear.
+  const hasNoTasks = useMemo(() => allTasks.length === 0, [allTasks]);
+
   useEffect(() => {
     if (!urlProjectId || !shouldFetchInitialData) {
       return;
@@ -1278,7 +1285,6 @@ const TaskListV2Section: React.FC = () => {
       const addTaskItem = {
         id: `add-task-${group.id}-0`,
         isAddTaskRow: true,
-        isGroupEmpty: group.taskIds.length === 0,
         groupId: group.id,
         groupType: currentGrouping || 'status',
         groupValue: group.id, // Send the UUID that backend expects
@@ -1346,7 +1352,7 @@ const TaskListV2Section: React.FC = () => {
             onToggle={() => handleGroupCollapse(group.id)}
             projectId={urlProjectId || ''}
           />
-          {isGroupEmpty && !isGroupCollapsed && (
+          {isGroupEmpty && !isGroupCollapsed && hasNoTasks && (
             <ExampleTaskRows
               visibleColumns={visibleColumns}
               isDarkMode={isDarkMode}
@@ -1364,7 +1370,7 @@ const TaskListV2Section: React.FC = () => {
         </div>
       );
     },
-    [virtuosoGroups, collapsedGroups, handleGroupCollapse, visibleColumns, t, isDarkMode, currentGrouping, urlProjectId, handleTaskCreated]
+    [virtuosoGroups, collapsedGroups, handleGroupCollapse, visibleColumns, t, isDarkMode, currentGrouping, urlProjectId, handleTaskCreated, hasNoTasks]
   );
 
   const renderTask = useCallback(
@@ -1376,8 +1382,6 @@ const TaskListV2Section: React.FC = () => {
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
         // Hide the add-task row entirely when task creation is restricted
         if (!canCreateTask) return null;
-        // Example rows (rendered in group header) handle creation for empty groups
-        if ((item as any).isGroupEmpty) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}

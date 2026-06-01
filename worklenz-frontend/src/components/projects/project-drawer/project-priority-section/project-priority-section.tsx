@@ -12,13 +12,13 @@ import {
 } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 
-import { ITaskPrioritiesGetResponse } from '@/types/tasks/taskPriority.types';
+import { IProjectPrioritiesGetResponse } from '@/types/project/projectPriority.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
 import './project-priority-section.css';
 
 interface ProjectPrioritySectionProps {
-  priorities: ITaskPrioritiesGetResponse[];
+  priorities: IProjectPrioritiesGetResponse[];
   form: FormInstance;
   t: TFunction;
   disabled: boolean;
@@ -29,7 +29,7 @@ const ProjectPrioritySection = ({ priorities, form, t, disabled }: ProjectPriori
   const selectedPriorityId = Form.useWatch('priority_id', form);
   const { token } = theme.useToken();
 
-  const getPriorityColor = (priority: ITaskPrioritiesGetResponse) => {
+  const getPriorityColor = (priority: IProjectPrioritiesGetResponse) => {
     const color = themeMode === 'dark' ? priority.color_code_dark : priority.color_code;
     return color || priority.color_code || priority.color_code_dark || token.colorTextTertiary;
   };
@@ -59,7 +59,7 @@ const ProjectPrioritySection = ({ priorities, form, t, disabled }: ProjectPriori
     return <span className="project-priority-section__icon-placeholder" aria-hidden />;
   };
 
-  const renderPriorityLabel = (priority: ITaskPrioritiesGetResponse, isCurrent = false) => {
+  const renderPriorityLabel = (priority: IProjectPrioritiesGetResponse, isCurrent = false) => {
     const color = getPriorityColor(priority);
 
     return (

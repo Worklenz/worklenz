@@ -5,6 +5,7 @@ import AuthController from "../../controllers/auth-controller";
 import LogsController from "../../controllers/logs-controller";
 import OverviewController from "../../controllers/overview-controller";
 import TaskPrioritiesController from "../../controllers/task-priorities-controller";
+import ProjectPrioritiesController from "../../controllers/project-priorities-controller";
 
 import attachmentsApiRouter from "./attachments-api-router";
 import clientsApiRouter from "./clients-api-router";
@@ -139,6 +140,14 @@ api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
 api.get(
   "/task-priorities",
   safeControllerFunction(TaskPrioritiesController.get)
+);
+api.get(
+  "/project-priorities",
+  safeControllerFunction(ProjectPrioritiesController.get)
+);
+api.get(
+  "/project-priorities/:id",
+  safeControllerFunction(ProjectPrioritiesController.getById)
 );
 api.post(
   "/change-password",
