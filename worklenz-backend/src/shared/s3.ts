@@ -129,7 +129,7 @@ export async function createPresignedUrlWithClient(key: string, file: string) {
     Bucket: BUCKET,
     Key: key,
     ResponseContentType: `${contentType}`,
-    ResponseContentDisposition: `attachment; filename=${file}`,
+    ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
   });
   return getSignedUrl(s3Client, command, {expiresIn: 3600});
 }

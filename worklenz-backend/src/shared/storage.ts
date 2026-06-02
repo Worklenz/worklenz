@@ -526,7 +526,7 @@ async function createPresignedUrlWithS3Client(key: string, file: string) {
     Bucket: BUCKET,
     Key: key,
     ResponseContentType: `${contentType}`,
-    ResponseContentDisposition: `attachment; filename=${file}`,
+    ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
   });
   return getSignedUrl(s3Client, command, { expiresIn: 3600 });
 }
@@ -559,7 +559,7 @@ async function createPresignedUrlWithAzureClient(key: string, file: string) {
       permissions: BlobSASPermissions.parse("r"), // Read permission
       startsOn: new Date(),
       expiresOn: new Date(new Date().valueOf() + 3600 * 1000),
-      contentDisposition: `attachment; filename=${file}`,
+      contentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
       contentType: contentType || undefined,
     };
 
