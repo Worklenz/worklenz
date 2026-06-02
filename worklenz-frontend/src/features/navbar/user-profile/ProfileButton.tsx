@@ -127,9 +127,8 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           {!isLicenseExpired && (
             <div
               onClick={() => { setMobileModalOpen(true); setDropdownOpen(false); }}
-              style={{ ...getLinkStyle(), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+              style={{ ...getLinkStyle(), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
             >
-              <MobileOutlined />
               {t('getMobileApp')}
             </div>
           )}
