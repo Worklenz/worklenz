@@ -70,7 +70,7 @@ import {
   Slider,
   Descriptions,
   Upload,
-  UploadProps,
+  QRCode,
   Tree,
 } from 'antd/es';
 
@@ -283,6 +283,7 @@ export {
   Slider,
   Descriptions,
   Upload,
+  QRCode,
   Tree,
 };
 

@@ -12,6 +12,7 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '../hooks/useAuth';
 import { ImportProgressNotifier } from '@/components/imports/ImportProgressNotifier';
 import { useRegionCheck } from '../hooks/useRegionCheck';
+import { MobileAppBanner } from '@/components/mobile-app/MobileAppBanner';
 
 const LIFETIME_KEYWORDS = ['appsumo', 'life_time_deal', 'lifetime', 'life time'];
 
@@ -64,6 +65,7 @@ const MainLayout = memo(() => {
     <>
       <ImportProgressNotifier />
       <Layout className="min-h-screen">
+        <MobileAppBanner />
         <TrialExpirationAlert />
 
         <Layout.Header

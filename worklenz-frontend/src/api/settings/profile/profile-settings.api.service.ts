@@ -93,6 +93,13 @@ export const profileSettingsApiService = {
     return response.data;
   },
 
+  dismissMobileAppBanner: async (): Promise<IServerResponse<null>> => {
+    const response = await apiClient.put<IServerResponse<null>>(
+      `${rootUrl}/mobile-app-banner-dismissed`
+    );
+    return response.data;
+  },
+
   getClientPortalBaseUrl: async (): Promise<IServerResponse<{ baseUrl: string }>> => {
     const response = await apiClient.get<IServerResponse<{ baseUrl: string }>>(
       `${rootUrl}/client-portal/base-url`

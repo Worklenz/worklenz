@@ -38,6 +38,8 @@
   "integrations-search": "aplicaciones conexiones slack api integraciones herramientas",
   "account-deletion": "Eliminar cuenta",
   "account-deletion-search": "eliminar cuenta borrar perfil zona de peligro cerrar cuenta",
-  "team-hierarchy": "Jerarquía del equipo"
-  ,"team-hierarchy-search": "jerarquía organigrama estructura gerentes árbol organizacional"
+  "team-hierarchy": "Jerarquía del equipo",
+  "team-hierarchy-search": "jerarquía organigrama estructura gerentes árbol organizacional",
+  "mobile-app": "Aplicación móvil",
+  "mobile-app-search": "ios android teléfono móvil descargar código qr app store google play"
 }
