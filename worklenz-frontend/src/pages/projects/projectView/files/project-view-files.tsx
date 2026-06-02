@@ -102,6 +102,7 @@ const ProjectViewFiles = () => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const maxFileSizeBytes = hasBusinessAccess
     ? BUSINESS_FILE_SIZE_LIMIT_BYTES
@@ -302,7 +303,7 @@ const ProjectViewFiles = () => {
 
   useEffect(() => {
     trackMixpanelEvent(evt_project_files_visit);
-    dispatch(fetchStorageInfo());
+    if (isOwnerOrAdmin) dispatch(fetchStorageInfo());
   }, [trackMixpanelEvent]);
 
   useEffect(() => {
@@ -837,50 +838,54 @@ const ProjectViewFiles = () => {
     >
       {activeTab === 'project' ? (
         <>
-          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-            {formattedStorage}
-          </Typography.Text>
-          {storageTotalBytes !== null && (
-            <Progress
-              percent={Math.min(storagePercent, 100)}
-              size="small"
-              style={{ marginBottom: 12 }}
-              status={storagePercent >= 90 ? 'exception' : 'normal'}
-              showInfo={false}
-            />
-          )}
-          {!hasBusinessAccess && (
-            <Popover
-              trigger="click"
-              open={isStorageUpgradePopoverOpen}
-              onOpenChange={setIsStorageUpgradePopoverOpen}
-              title={t('storageLimitTitle', { defaultValue: 'Storage Limit' })}
-              content={
-                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
-                  <Typography.Text>
-                    {t('storageLimitBody', {
-                      defaultValue:
-                        'You are using {{used}} of your {{total}} storage limit. Upgrade to get more storage for your team files.',
-                      used: formatFileSize(storageUsage.used),
-                      total: formatFileSize(storageTotalBytes ?? STARTER_STORAGE_LIMIT_BYTES),
-                    })}
-                  </Typography.Text>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setIsStorageUpgradePopoverOpen(false);
-                      dispatch(toggleUpgradeModal());
-                    }}
-                  >
-                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+          {isOwnerOrAdmin && (
+            <>
+              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                {formattedStorage}
+              </Typography.Text>
+              {storageTotalBytes !== null && (
+                <Progress
+                  percent={Math.min(storagePercent, 100)}
+                  size="small"
+                  style={{ marginBottom: 12 }}
+                  status={storagePercent >= 90 ? 'exception' : 'normal'}
+                  showInfo={false}
+                />
+              )}
+              {!hasBusinessAccess && (
+                <Popover
+                  trigger="click"
+                  open={isStorageUpgradePopoverOpen}
+                  onOpenChange={setIsStorageUpgradePopoverOpen}
+                  title={t('storageLimitTitle', { defaultValue: 'Storage Limit' })}
+                  content={
+                    <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                      <Typography.Text>
+                        {t('storageLimitBody', {
+                          defaultValue:
+                            'You are using {{used}} of your {{total}} storage limit. Upgrade to get more storage for your team files.',
+                          used: formatFileSize(storageUsage.used),
+                          total: formatFileSize(storageTotalBytes ?? STARTER_STORAGE_LIMIT_BYTES),
+                        })}
+                      </Typography.Text>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setIsStorageUpgradePopoverOpen(false);
+                          dispatch(toggleUpgradeModal());
+                        }}
+                      >
+                        {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                      </Button>
+                    </Flex>
+                  }
+                >
+                  <Button size="small" type="default" style={{ marginBottom: 16 }}>
+                    {t('addMoreStorage', { defaultValue: 'Add More Storage' })}
                   </Button>
-                </Flex>
-              }
-            >
-              <Button size="small" type="default" style={{ marginBottom: 16 }}>
-                {t('addMoreStorage', { defaultValue: 'Add More Storage' })}
-              </Button>
-            </Popover>
+                </Popover>
+              )}
+            </>
           )}
 
           <Table<ProjectFile>
