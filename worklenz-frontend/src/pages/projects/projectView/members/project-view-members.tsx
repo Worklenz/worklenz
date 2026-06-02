@@ -128,7 +128,7 @@ const ProjectViewMembers = () => {
       if (res.done) {
         setMembers(res.body);
         setPagination(p => ({ ...p, total: res.body.total ?? 0 })); // update total from backend, default to 0
-        dispatch(fetchBillingInfo());
+        if (isOwnerOrAdmin) dispatch(fetchBillingInfo());
       }
     } catch (error) {
       logger.error('Error fetching members:', error);
@@ -187,7 +187,7 @@ const ProjectViewMembers = () => {
   ]);
 
   useEffect(() => {
-    if (!billingInfo) {
+    if (isOwnerOrAdmin && !billingInfo) {
       dispatch(fetchBillingInfo());
     }
   }, [billingInfo, dispatch]);
@@ -290,30 +290,34 @@ const ProjectViewMembers = () => {
         </Typography.Text>
       ),
     },
-    {
-      key: 'actionBtns',
-      width: 80,
-      render: (record: IProjectMemberViewModel) => (
-        <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
-          <Popconfirm
-            title={t('deleteConfirmationTitle')}
-            icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-            okText={t('deleteConfirmationOk')}
-            cancelText={t('deleteConfirmationCancel')}
-            onConfirm={() => deleteMember(record.id)}
-          >
-            <Tooltip title={t('deleteButtonTooltip')}>
-              <Button
-                disabled={checkDisabled(record)}
-                shape="default"
-                icon={<DeleteOutlined />}
-                size="small"
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Flex>
-      ),
-    },
+    ...(isOwnerOrAdmin
+      ? [
+          {
+            key: 'actionBtns',
+            width: 80,
+            render: (record: IProjectMemberViewModel) => (
+              <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
+                <Popconfirm
+                  title={t('deleteConfirmationTitle')}
+                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                  okText={t('deleteConfirmationOk')}
+                  cancelText={t('deleteConfirmationCancel')}
+                  onConfirm={() => deleteMember(record.id)}
+                >
+                  <Tooltip title={t('deleteButtonTooltip')}>
+                    <Button
+                      disabled={checkDisabled(record)}
+                      shape="default"
+                      icon={<DeleteOutlined />}
+                      size="small"
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              </Flex>
+            ),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -326,10 +330,12 @@ const ProjectViewMembers = () => {
           </Typography.Text>
 
           <Flex gap={8} align="center">
-            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
-              {seatUsageText}
-            </Typography.Text>
-            <Popover
+            {isOwnerOrAdmin && (
+              <>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+                  {seatUsageText}
+                </Typography.Text>
+                <Popover
               trigger="click"
               placement="bottomRight"
               open={isSeatLimitPopoverOpen}
@@ -411,6 +417,8 @@ const ProjectViewMembers = () => {
                 {t('Invite', { defaultValue: t('Invite') })}
               </Button>
             </Popover>
+            </>
+            )}
             <Input.Search
               allowClear
               placeholder={t('searchPlaceholder', { defaultValue: t('searchPlaceholder') })}
