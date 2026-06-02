@@ -11,6 +11,7 @@ import {
   createPresignedUploadUrl,
   createPresignedUrlWithClient,
   deleteObject,
+  getKey,
   getProjectFileStorageKey,
   objectExists,
   uploadBuffer,
@@ -272,14 +273,28 @@ export default class ProjectFilesController extends WorklenzControllerBase {
     }
 
     const file = result.rows[0];
-    const storageKey = getProjectFileStorageKey(
+
+    // Try the current key format first (files uploaded via the project files feature)
+    // Format: {env}/{teamId}/projects/{projectId}/files/{fileId}.{ext}
+    const newKey = getProjectFileStorageKey(
       file.team_id,
       file.project_id,
       file.id,
       file.type,
     );
 
-    const url = await createPresignedUrlWithClient(storageKey, file.name);
+    // Fall back to the legacy key format (files uploaded before the project files feature)
+    // Format: {env}/{teamId}/{projectId}/{fileId}.{ext}
+    const legacyKey = getKey(
+      file.team_id,
+      file.project_id,
+      file.id,
+      file.type,
+    );
+
+    const keyToUse = (await objectExists(newKey)) ? newKey : legacyKey;
+
+    const url = await createPresignedUrlWithClient(keyToUse, file.name);
 
     return res
       .status(200)
