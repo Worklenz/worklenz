@@ -2,8 +2,6 @@
   "pageTitle": "移动应用",
   "pageDescription": "在 iOS 或 Android 上下载 Worklenz 应用。用手机扫描二维码或点击应用商店徽标。",
   "modalTitle": "下载 Worklenz 移动应用",
-  "appStoreLabel": "App Store",
-  "googlePlayLabel": "Google Play",
   "appStoreBadgeAlt": "从 App Store 下载",
   "googlePlayBadgeAlt": "在 Google Play 上获取",
   "bannerText": "Worklenz 现已登陆 iOS 和 Android。",
