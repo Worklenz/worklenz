@@ -55,7 +55,7 @@ exports.up = async function (db) {
                 FOREIGN KEY (priority_id) REFERENCES sys_project_priorities (id) ON DELETE SET NULL;
     `);
 
-    // 5. Default the priority lookup from the new table
+    // 5. Default the priority lookup from the new table; also include restrict_task_creation
     await db.query(`
         CREATE OR REPLACE FUNCTION create_project(_body json) RETURNS json
             LANGUAGE plpgsql
@@ -93,12 +93,11 @@ exports.up = async function (db) {
             END IF;
 
             INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, priority_id, start_date,
-                                  end_date,
-                                  folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
-                                  use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator)
+                                  end_date, folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
+                                  use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator,
+                                  restrict_task_creation)
             VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
-                    _client_id,
-                    _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
+                    _client_id, _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
                     COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
                     (_body ->> 'start_date')::TIMESTAMPTZ,
                     (_body ->> 'end_date')::TIMESTAMPTZ, (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
@@ -106,7 +105,8 @@ exports.up = async function (db) {
                     COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
                     COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
                     COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
-                    COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE))
+                    COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
+                    COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE))
             RETURNING id INTO _project_id;
 
             INSERT INTO project_logs (team_id, project_id, description)
@@ -173,26 +173,27 @@ exports.up = async function (db) {
             END IF;
 
             UPDATE projects
-            SET name                   = _project_name,
-                notes                  = (_body ->> 'notes')::TEXT,
-                color_code             = (_body ->> 'color_code')::TEXT,
-                status_id              = (_body ->> 'status_id')::UUID,
-                health_id              = (_body ->> 'health_id')::UUID,
-                priority_id            = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
-                key                    = (_body ->> 'key')::TEXT,
-                start_date             = (_body ->> 'start_date')::TIMESTAMPTZ,
-                end_date               = (_body ->> 'end_date')::TIMESTAMPTZ,
-                client_id              = _client_id,
-                folder_id              = (_body ->> 'folder_id')::UUID,
-                category_id            = (_body ->> 'category_id')::UUID,
-                updated_at             = CURRENT_TIMESTAMP,
-                estimated_working_days = (_body ->> 'working_days')::INTEGER,
-                estimated_man_days     = (_body ->> 'man_days')::INTEGER,
-                hours_per_day          = (_body ->> 'hours_per_day')::INTEGER,
-                use_manual_progress    = COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
-                use_weighted_progress  = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
-                use_time_progress      = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
-                auto_assign_task_creator = COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE)
+            SET name                     = _project_name,
+                notes                    = (_body ->> 'notes')::TEXT,
+                color_code               = (_body ->> 'color_code')::TEXT,
+                status_id                = (_body ->> 'status_id')::UUID,
+                health_id                = (_body ->> 'health_id')::UUID,
+                priority_id              = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
+                key                      = (_body ->> 'key')::TEXT,
+                start_date               = (_body ->> 'start_date')::TIMESTAMPTZ,
+                end_date                 = (_body ->> 'end_date')::TIMESTAMPTZ,
+                client_id                = _client_id,
+                folder_id                = (_body ->> 'folder_id')::UUID,
+                category_id              = (_body ->> 'category_id')::UUID,
+                updated_at               = CURRENT_TIMESTAMP,
+                estimated_working_days   = (_body ->> 'working_days')::INTEGER,
+                estimated_man_days       = (_body ->> 'man_days')::INTEGER,
+                hours_per_day            = (_body ->> 'hours_per_day')::INTEGER,
+                use_manual_progress      = COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+                use_weighted_progress    = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+                use_time_progress        = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
+                auto_assign_task_creator = COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
+                restrict_task_creation   = COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE)
             WHERE id = (_body ->> 'id')::UUID
               AND team_id = _team_id
             RETURNING id INTO _project_id;
