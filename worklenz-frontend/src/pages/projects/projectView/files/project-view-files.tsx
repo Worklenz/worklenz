@@ -103,9 +103,9 @@ const ProjectViewFiles = () => {
   const { t } = useTranslation('project-view-files');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { trackAppSumoEvent } = useAppSumoTracking();
-  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const maxFileSizeBytes = hasBusinessAccess
     ? BUSINESS_FILE_SIZE_LIMIT_BYTES

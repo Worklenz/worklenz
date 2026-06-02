@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
 import {
+  WORKLENZ_MOBILE_APP_URL,
   WORKLENZ_APP_STORE_URL,
   WORKLENZ_GOOGLE_PLAY_URL,
 } from '@/shared/mobile-app-constants';
@@ -29,23 +30,17 @@ const MobileAppModal = ({ open, onClose }: MobileAppModalProps) => {
       footer={null}
       centered
       destroyOnHidden
-      width={480}
+      width={360}
     >
-      <Flex
-        gap={32}
-        justify="center"
-        wrap
-        style={{ paddingBlock: 16 }}
-      >
-        {/* App Store */}
-        <Flex vertical align="center" gap={12}>
-          <QRCode
-            value={WORKLENZ_APP_STORE_URL}
-            size={160}
-            color={isDark ? '#ffffff' : '#000000'}
-            bgColor={isDark ? '#1f1f1f' : '#ffffff'}
-          />
-          <Typography.Text strong>{t('appStoreLabel')}</Typography.Text>
+      <Flex vertical align="center" gap={20} style={{ paddingBlock: 16 }}>
+        <QRCode
+          value={WORKLENZ_MOBILE_APP_URL}
+          size={180}
+          color={isDark ? '#ffffff' : '#000000'}
+          bgColor={isDark ? '#1f1f1f' : '#ffffff'}
+        />
+
+        <Flex gap={12} justify="center" wrap>
           <a href={WORKLENZ_APP_STORE_URL} target="_blank" rel="noopener noreferrer">
             <img
               src="/img/app-store-badge.svg"
@@ -56,17 +51,6 @@ const MobileAppModal = ({ open, onClose }: MobileAppModalProps) => {
               }}
             />
           </a>
-        </Flex>
-
-        {/* Google Play */}
-        <Flex vertical align="center" gap={12}>
-          <QRCode
-            value={WORKLENZ_GOOGLE_PLAY_URL}
-            size={160}
-            color={isDark ? '#ffffff' : '#000000'}
-            bgColor={isDark ? '#1f1f1f' : '#ffffff'}
-          />
-          <Typography.Text strong>{t('googlePlayLabel')}</Typography.Text>
           <a href={WORKLENZ_GOOGLE_PLAY_URL} target="_blank" rel="noopener noreferrer">
             <img
               src="/img/google-play-badge.png"
