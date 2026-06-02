@@ -16,6 +16,8 @@ import { useAuthService } from '@/hooks/useAuth';
 import { isFreeUser, hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { openUpgradeModal, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import {
   getTaskCustomFieldDisplayName,
   parsePeopleCustomFieldValue,
@@ -47,6 +49,8 @@ export const AddCustomColumnButton: React.FC = memo(() => {
 
   const [popoverOpen, setPopoverOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   // Close popover on outside click
   useEffect(() => {
@@ -58,6 +62,9 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       const popoverEl = document.querySelector('.ant-popover');
       if (popoverEl?.contains(e.target as Node)) return;
       setPopoverOpen(false);
+      if (isAppSumoUser) {
+        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED, { feature: 'custom_fields' });
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
@@ -70,6 +77,10 @@ export const AddCustomColumnButton: React.FC = memo(() => {
     }
     if (isGrandfathered || hasReachedLimit) {
       setPopoverOpen(true);
+      if (isAppSumoUser) {
+        trackAppSumoEvent(AppSumoUpsellEvents.CUSTOM_FIELD_LIMIT_HIT, { feature: 'custom_fields' });
+        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN, { feature: 'custom_fields' });
+      }
       return;
     }
     dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
@@ -78,8 +89,11 @@ export const AddCustomColumnButton: React.FC = memo(() => {
 
   const handleUpgradeNow = useCallback(() => {
     setPopoverOpen(false);
+    if (isAppSumoUser) {
+      trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'custom_fields' });
+    }
     dispatch(openUpgradeModal('customFields'));
-  }, [dispatch]);
+  }, [dispatch, isAppSumoUser, trackAppSumoEvent]);
 
   const popoverTitle = isGrandfathered
     ? t('customColumns.limitPopover.appSumoTitle', { defaultValue: 'Plan Upgrade Required' })

@@ -33,6 +33,8 @@ import {
   updateCommentAfterEdit,
 } from '@/features/projects/singleProject/updates/updatesSlice';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { getAllProjectMembers } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { useAuthService } from '@/hooks/useAuth';
@@ -81,6 +83,8 @@ const ProjectViewUpdates = () => {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -479,7 +483,15 @@ const ProjectViewUpdates = () => {
                   <Popover
                     trigger="click"
                     open={isHistoryPopoverOpen}
-                    onOpenChange={setIsHistoryPopoverOpen}
+                    onOpenChange={open => {
+                      setIsHistoryPopoverOpen(open);
+                      if (isAppSumoUser) {
+                        trackAppSumoEvent(
+                          open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                          { feature: 'project_updates_history' }
+                        );
+                      }
+                    }}
                     title={t('historyLockedTitle', { defaultValue: 'Chat History Locked' })}
                     content={
                       <Flex vertical gap={12} style={{ maxWidth: 280 }}>
@@ -493,6 +505,10 @@ const ProjectViewUpdates = () => {
                           type="primary"
                           onClick={() => {
                             setIsHistoryPopoverOpen(false);
+                            if (isAppSumoUser) {
+                              trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'project_updates_history' });
+                              trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'project_updates_history' });
+                            }
                             dispatch(toggleUpgradeModal());
                           }}
                         >

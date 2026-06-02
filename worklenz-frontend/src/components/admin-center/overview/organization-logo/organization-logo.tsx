@@ -24,6 +24,8 @@ import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface OrganizationLogoProps {
   themeMode: string;
@@ -43,6 +45,8 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isUpgradePopoverOpen, setIsUpgradePopoverOpen] = useState(false);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(
     null
@@ -212,6 +216,10 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const handleChangeLogoClick = () => {
     if (!hasLogoFeatureAccess) {
       setIsUpgradePopoverOpen(true);
+      if (isAppSumoUser) {
+        trackAppSumoEvent(AppSumoUpsellEvents.ORG_LOGO_GATED_CLICK, { feature: 'org_logo' });
+        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN, { feature: 'org_logo' });
+      }
       return;
     }
 
@@ -220,6 +228,9 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
 
   const handleUpgradeNowClick = () => {
     setIsUpgradePopoverOpen(false);
+    if (isAppSumoUser) {
+      trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'org_logo' });
+    }
     dispatch(openUpgradeModal('customOrganizationLogo'));
   };
 
@@ -387,7 +398,12 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
                     open={isUpgradePopoverOpen}
                     trigger="click"
                     placement="bottomLeft"
-                    onOpenChange={setIsUpgradePopoverOpen}
+                    onOpenChange={open => {
+                      setIsUpgradePopoverOpen(open);
+                      if (!open && isAppSumoUser) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED, { feature: 'org_logo' });
+                      }
+                    }}
                     title={
                       <Flex align="center" justify="space-between" style={{ width: 240 }}>
                         <Typography.Text strong>

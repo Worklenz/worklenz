@@ -58,6 +58,8 @@ import { message } from '@/shared/antd-imports';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { SeatLimitModal } from '@/components/common/seat-limit-modal/SeatLimitModal';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './team-members-settings.css';
 
 const TeamMembersSettings = () => {
@@ -82,6 +84,8 @@ const TeamMembersSettings = () => {
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = billingInfo?.subscription_type?.toLowerCase().includes('appsumo') ?? false;
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
@@ -209,6 +213,9 @@ const TeamMembersSettings = () => {
   const handleSeatLimitDeactivate = () => {
     setSeatLimitModalOpen(false);
     setSeatLimitData(null);
+    if (isAppSumoUser) {
+      trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_DEACTIVATE_CHOSEN, { feature: 'team_members' });
+    }
     // Scroll to the members table so the user can deactivate someone
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -216,6 +223,9 @@ const TeamMembersSettings = () => {
   const handleSeatLimitModalClose = () => {
     setSeatLimitModalOpen(false);
     setSeatLimitData(null);
+    if (isAppSumoUser) {
+      trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_INVITE_CANCELLED, { feature: 'team_members' });
+    }
   };
 
   const handleDeleteMember = async (record: ITeamMemberViewModel) => {
@@ -748,6 +758,12 @@ const TeamMembersSettings = () => {
                   // always allow closing (open === false) so outside-click works.
                   if (!open || hasReachedSeatLimit) {
                     setIsSeatLimitPopoverOpen(open);
+                    if (isAppSumoUser) {
+                      trackAppSumoEvent(
+                        open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                        { feature: 'seat_limit_team_members' }
+                      );
+                    }
                   }
                 }}
                 title={
@@ -782,6 +798,10 @@ const TeamMembersSettings = () => {
                       type="primary"
                       onClick={() => {
                         setIsSeatLimitPopoverOpen(false);
+                        if (isAppSumoUser) {
+                          trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'seat_limit_team_members' });
+                          trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_ADD_MORE_CLICKED, { feature: 'team_members' });
+                        }
                         dispatch(toggleUpgradeModal());
                       }}
                     >

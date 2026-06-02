@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { Button, Divider, Flex, Modal, theme, Typography, Steps } from '@/shared/antd-imports';
 import { TeamOutlined, RightOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface SeatLimitModalProps {
   open: boolean;
@@ -25,6 +28,13 @@ export const SeatLimitModal: React.FC<SeatLimitModalProps> = ({
 }) => {
   const { t } = useTranslation('settings/team-members');
   const { token } = theme.useToken();
+  const { trackAppSumoEvent } = useAppSumoTracking();
+
+  useEffect(() => {
+    if (open && isAppSumoUser) {
+      trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_MODAL_SHOWN);
+    }
+  }, [open, isAppSumoUser]);
 
   return (
     <Modal

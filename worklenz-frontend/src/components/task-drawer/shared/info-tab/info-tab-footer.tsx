@@ -17,6 +17,8 @@ import { fromNow } from '@/utils/dateUtils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './info-tab-footer.css';
 
 // Utility function to convert file to base64
@@ -867,6 +869,8 @@ const InfoTabFooter = () => {
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
@@ -993,6 +997,10 @@ const InfoTabFooter = () => {
               'Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.',
           })
         );
+        if (isAppSumoUser) {
+          trackAppSumoEvent(AppSumoUpsellEvents.COMMENT_ATTACHMENT_REPLACED, { feature: 'comment_attachments' });
+          trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN, { feature: 'comment_attachments' });
+        }
         dispatch(toggleUpgradeModal());
         return;
       }

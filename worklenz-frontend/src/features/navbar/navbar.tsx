@@ -25,6 +25,8 @@ import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import TimerButton from './timers/TimerButton';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -58,6 +60,8 @@ const Navbar = () => {
   const canInviteMembers = ROLE_DEFINITIONS[currentRole].canInviteMembers;
 
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const { isLicenseExpired } = useAuthStatus();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
@@ -158,6 +162,9 @@ const Navbar = () => {
                 event.preventDefault();
                 event.stopPropagation();
                 setIsClientPortalPopoverOpen(false);
+                if (isAppSumoUser) {
+                  trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'client_portal' });
+                }
                 setTimeout(() => {
                   dispatch(toggleUpgradeModal());
                 }, 0);
@@ -176,7 +183,15 @@ const Navbar = () => {
               <Popover
                 trigger="click"
                 open={isClientPortalPopoverOpen}
-                onOpenChange={setIsClientPortalPopoverOpen}
+                onOpenChange={open => {
+                  setIsClientPortalPopoverOpen(open);
+                  if (isAppSumoUser) {
+                    trackAppSumoEvent(
+                      open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                      { feature: 'client_portal' }
+                    );
+                  }
+                }}
                 placement="bottom"
                 title={
                   <Typography.Text strong>
@@ -259,6 +274,9 @@ const Navbar = () => {
 
         if (clickedRoute.name === 'client-portal' && shouldOpenModal) {
           setIsClientPortalPopoverOpen(true);
+          if (isAppSumoUser) {
+            trackAppSumoEvent(AppSumoUpsellEvents.CLIENT_PORTAL_GATED_CLICK, { feature: 'client_portal' });
+          }
           return;
         }
 

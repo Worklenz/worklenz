@@ -46,6 +46,8 @@ import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/ad
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface PaginationType {
   current: number;
@@ -85,6 +87,8 @@ const ProjectViewMembers = () => {
   });
   const [searchQuery, setSearchQuery] = useState(''); // <-- Add search state
   const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = billingInfo?.subscription_type?.toLowerCase().includes('appsumo') ?? false;
 
   const totalUsedSeats = billingInfo?.total_used ?? members?.total ?? 0;
   const totalAvailableSeats = billingInfo?.total_seats ?? 0;
@@ -334,6 +338,15 @@ const ProjectViewMembers = () => {
                   // always allow closing (open === false) so outside-click works.
                   if (!open || hasReachedSeatLimit) {
                     setIsSeatLimitPopoverOpen(open);
+                    if (isAppSumoUser) {
+                      trackAppSumoEvent(
+                        open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                        { feature: 'seat_limit_project_members' }
+                      );
+                      if (!open) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_INVITE_CANCELLED, { feature: 'project_members' });
+                      }
+                    }
                   }
                 }}
               title={
@@ -374,6 +387,10 @@ const ProjectViewMembers = () => {
                     type="primary"
                     onClick={() => {
                       setIsSeatLimitPopoverOpen(false);
+                      if (isAppSumoUser) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'seat_limit_project_members' });
+                        trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_ADD_MORE_CLICKED, { feature: 'project_members' });
+                      }
                       dispatch(toggleUpgradeModal());
                     }}
                   >

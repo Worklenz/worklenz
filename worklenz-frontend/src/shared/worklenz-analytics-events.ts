@@ -204,3 +204,25 @@ export const evt_admin_center_projects_visit = 'admin_center_projects_visit';
 
 // Project Preferences
 export const evt_project_default_view_pinned = 'pin_default_project_view';
+
+// AppSumo upsell funnel events
+export const evt_appsumo_upgrade_prompt_shown = 'appsumo_upgrade_prompt_shown';
+export const evt_appsumo_upgrade_prompt_dismissed = 'appsumo_upgrade_prompt_dismissed';
+export const evt_appsumo_upgrade_now_clicked = 'appsumo_upgrade_now_clicked';
+export const evt_appsumo_upgrade_modal_viewed = 'appsumo_upgrade_modal_viewed';
+export const evt_appsumo_upgrade_modal_dismissed = 'appsumo_upgrade_modal_dismissed';
+export const evt_appsumo_upgrade_plan_selected = 'appsumo_upgrade_plan_selected';
+export const evt_appsumo_upgrade_talk_to_sales_clicked = 'appsumo_upgrade_talk_to_sales_clicked';
+export const evt_appsumo_seat_limit_blocking_modal_shown = 'appsumo_seat_limit_blocking_modal_shown';
+export const evt_appsumo_seat_limit_deactivate_path_chosen = 'appsumo_seat_limit_deactivate_path_chosen';
+export const evt_appsumo_seat_limit_invite_cancelled = 'appsumo_seat_limit_invite_cancelled';
+export const evt_appsumo_seat_limit_add_more_clicked = 'appsumo_seat_limit_add_more_clicked';
+export const evt_appsumo_custom_field_limit_hit = 'appsumo_custom_field_limit_hit';
+export const evt_appsumo_client_portal_gated_click = 'appsumo_client_portal_gated_click';
+export const evt_appsumo_project_finance_gated_click = 'appsumo_project_finance_gated_click';
+export const evt_appsumo_org_logo_change_gated_click = 'appsumo_org_logo_change_gated_click';
+export const evt_appsumo_storage_add_more_clicked = 'appsumo_storage_add_more_clicked';
+export const evt_appsumo_oversized_file_blocked = 'appsumo_oversized_file_blocked';
+export const evt_appsumo_task_attachment_upgrade_link_clicked = 'appsumo_task_attachment_upgrade_link_clicked';
+export const evt_appsumo_comment_attachment_file_replaced = 'appsumo_comment_attachment_file_replaced';
+export const evt_appsumo_locked_history_view_clicked = 'appsumo_locked_history_view_clicked';
