@@ -678,7 +678,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
             <Typography.Paragraph style={{ marginBottom: 16, color: themeToken.colorTextSecondary }}>
               {t(
                 'importStep.hierarchyIntro',
-                "How we've mapped your Asana data to Worklenz. More about project hierarchy in Worklenz."
+                `How we've mapped your ${source.label} data to Worklenz. More about project hierarchy in Worklenz.`
               )}
             </Typography.Paragraph>
 
