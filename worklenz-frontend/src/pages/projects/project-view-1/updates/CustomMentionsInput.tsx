@@ -33,6 +33,7 @@ const CustomMentionsInput = ({
   const isComposingRef = useRef(false);
   const isUpdatingRef = useRef(false);
   const lineBreakJustInsertedRef = useRef(false);
+  const lastHighlightedRef = useRef('');
 
   // Guard selection mutations because contentEditable updates can detach range nodes.
   const safelyAddRange = (selection: Selection, range: Range): boolean => {
@@ -124,40 +125,52 @@ const CustomMentionsInput = ({
   };
 
   // Extract plain text from HTML
-  const extractPlainText = (html: string) => {
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
+const extractPlainText = (html: string): string => {
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
 
-    // Walk through nodes and build plain text
-    let plainText = '';
+  let plainText = '';
 
-    const walkNodes = (node: Node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        // Strip the \n that the browser inserts before <br> elements
-        // so we don't double-count newlines
-        let text = node.textContent || '';
-        text = text.replace(/\u200B/g, '');
-        if (node.nextSibling && (node.nextSibling as Element).tagName === 'BR') {
-          text = text.replace(/\n$/, '');
+  const walkNodes = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      let text = node.textContent || '';
+      // Skip pure ZWSP anchor nodes inserted by Shift+Enter
+      if (text === '\u200B') return;
+      // Strip any ZWSP mixed into real text
+      text = text.replace(/\u200B/g, '');
+      // Don't double-count \n the browser puts before a <br>
+      if (
+        node.nextSibling &&
+        (node.nextSibling as Element).tagName === 'BR'
+      ) {
+        text = text.replace(/\n$/, '');
+      }
+      plainText += text;
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      if (el.getAttribute('data-mention') === 'true') {
+        // Use textContent directly — never walk children of mention spans
+        plainText += el.textContent || '';
+      } else if (el.tagName === 'BR') {
+        plainText += '\n';
+      } else if (el.tagName === 'DIV' || el.tagName === 'P') {
+        // Block elements that the browser inserts on Enter in some cases
+        if (plainText.length > 0) plainText += '\n';
+        for (let i = 0; i < el.childNodes.length; i++) {
+          walkNodes(el.childNodes[i]);
         }
-        plainText += text;
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        if ((node as Element).getAttribute('data-mention') === 'true') {
-          plainText += node.textContent || '';
-        } else if ((node as Element).tagName === 'BR') {
-          plainText += '\n';
-        } else {
-          for (let i = 0; i < node.childNodes.length; i++) {
-            walkNodes(node.childNodes[i]);
-          }
+      } else {
+        for (let i = 0; i < el.childNodes.length; i++) {
+          walkNodes(el.childNodes[i]);
         }
       }
-    };
-
-    walkNodes(temp);
-    return plainText.replace(/\n+$/, '');
+    }
   };
 
+  walkNodes(temp);
+  // Strip only one trailing newline (sentinel <br>), not real content
+  return plainText.replace(/\n$/, '');
+};
   // Get cursor position that respects mention boundaries
   const getCursorPosition = () => {
     const selection = window.getSelection();
@@ -305,17 +318,23 @@ const CustomMentionsInput = ({
   };
 
   // Handle input changes - MODIFIED TO FIX BUG
-  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    if (isComposingRef.current || isUpdatingRef.current || lineBreakJustInsertedRef.current) return;
+const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+  if (isComposingRef.current || isUpdatingRef.current || lineBreakJustInsertedRef.current) return;
+    console.log('RAW innerHTML:', JSON.stringify(e.currentTarget.innerHTML));
+  console.log('extracted:', JSON.stringify(extractPlainText(e.currentTarget.innerHTML)));
+  console.log('value prop:', JSON.stringify(value));
 
-    const plainText = extractPlainText(e.currentTarget.innerHTML);
-    const currentCursorPos = getCursorPosition();
-    setCursorPosition(currentCursorPos);
+  // Capture innerHTML immediately before any async work
+  const currentHTML = e.currentTarget.innerHTML;
+
+   const plainText = extractPlainText(currentHTML);
+  const currentCursorPos = getCursorPosition();
+  setCursorPosition(currentCursorPos);
+
 
     // Update the value
-    if (plainText !== value) {
       onChange(plainText);
-    }
+ 
 
     // Check if cursor is inside a mention
     if (isCursorInMention()) {
@@ -711,37 +730,38 @@ const CustomMentionsInput = ({
   };
 
   // Update contenteditable with highlighted HTML
-  useEffect(() => {
-    if (editableRef.current && value !== undefined && !isUpdatingRef.current) {
+useEffect(() => {
+  if (!editableRef.current || value === undefined || isUpdatingRef.current) return;
+
+  const highlighted = createHighlightedHTML(value);
+  const hasMentions = highlighted.includes('data-mention="true"');
+
+  if (!hasMentions) {
+    // Only clear DOM when truly empty (after submit)
+    if (!value) {
       isUpdatingRef.current = true;
-
-      const highlighted = createHighlightedHTML(value);
-      // Only update DOM if HTML has actually changed (i.e. a mention was just highlighted)
-      if (editableRef.current.innerHTML !== highlighted) {
-        // Only restore cursor if the value has mentions — plain text typing
-        // should never trigger a cursor restore because the browser already
-        // placed the cursor correctly and we would move it to position 0.
-        const hasMentions = highlighted.includes('data-mention="true"');
-
-        if (hasMentions) {
-          // Only rewrite DOM when mentions need highlighting
-          const offset = getCursorPosition();
-          editableRef.current.innerHTML = highlighted;
-          if (offset >= 0) {
-            restoreCursorPosition(offset);
-          }
-        } else if (!value) {
-          // Clear DOM only when value is empty (after submit)
-          editableRef.current.innerHTML = '';
-        }
-        // For plain text with no mentions — NEVER touch the DOM
-      }
-
-      setTimeout(() => {
-        isUpdatingRef.current = false;
-      }, 0);
+      editableRef.current.innerHTML = '';
+      setTimeout(() => { isUpdatingRef.current = false; }, 0);
     }
-  }, [value, themeMode, options]);
+    return;
+  }
+
+  // CRITICAL: If the DOM already has more content than value,
+  // the user typed faster than React re-rendered — skip the rewrite
+  const currentDOMText = extractPlainText(editableRef.current.innerHTML);
+  if (currentDOMText.length > value.length) {
+    return; // DOM is ahead of React state — don't overwrite
+  }
+
+  isUpdatingRef.current = true;
+  const offset = getCursorPosition();
+  editableRef.current.innerHTML = highlighted;
+  if (offset >= 0) {
+    restoreCursorPosition(offset);
+  }
+  setTimeout(() => { isUpdatingRef.current = false; }, 0);
+
+}, [value, themeMode, options]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
