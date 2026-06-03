@@ -207,11 +207,13 @@ const ProjectViewUpdates = () => {
     setCommentValue(value);
   }, []);
 
+  const isSubmittingRef = useRef(false);
+
   const onFinish = async () => {
-    if (!projectId || !commentValue?.trim()) {
-      message.error(t('emptyCommentError', { defaultValue: 'Please enter a comment' }));
-      return;
-    }
+    if (!projectId || !commentValue?.trim()) return;
+    if (isSubmittingRef.current) return; // ← prevents double fire
+    isSubmittingRef.current = true;
+
 
     setSubmitting(true);
 
@@ -262,13 +264,15 @@ const ProjectViewUpdates = () => {
       }
     } finally {
       setSubmitting(false);
+      isSubmittingRef.current = false;
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault();
-      onFinish();
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (commentValue?.trim() && !submitting) {
+        onFinish();
+      }
     }
   };
 
@@ -298,24 +302,8 @@ const ProjectViewUpdates = () => {
     }
   };
 
-  
-  const handleEdit = async (commentId: string, item: any) => {
+  const handleEdit = async (commentId: string) => {
     if (!editContent.trim()) return;
-
-    let originalContent = item.content || '';
-    if (item.mentions && item.mentions.length > 0) {
-      item.mentions.forEach((mention: any, index: number) => {
-        const userName = mention.user_name || mention.name;
-        originalContent = originalContent.replace(`{${index}}`, `@${userName}`);
-      });
-    }
-   
-    if (editContent.trim() === originalContent.trim()) {
-      setEditingCommentId(null);
-      setEditContent('');
-      setEditSelectedMembers([]);
-      return;
-    }
 
     try {
       let contentToSave = editContent;
@@ -338,8 +326,14 @@ const ProjectViewUpdates = () => {
 
   const startEdit = (commentId: string, content: string, mentions?: any[]) => {
     setEditingCommentId(commentId);
+    // Strip any HTML tags from content before editing
+    const stripHtml = (html: string) => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      return div.textContent || div.innerText || '';
+    };
 
-    let editableContent = content;
+    let editableContent = stripHtml(content);
 
     if (mentions && mentions.length > 0) {
       mentions.forEach((mention, index) => {
@@ -437,9 +431,9 @@ const ProjectViewUpdates = () => {
   const visibleUpdates = hasBusinessAccess
     ? updatesList
     : updatesList.filter(item => {
-        if (!item.created_at) return true;
-        return new Date(item.created_at).getTime() >= ninetyDaysAgo;
-      });
+      if (!item.created_at) return true;
+      return new Date(item.created_at).getTime() >= ninetyDaysAgo;
+    });
   const lockedUpdatesCount = hasBusinessAccess ? 0 : updatesList.length - visibleUpdates.length;
   const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
 
@@ -540,7 +534,7 @@ const ProjectViewUpdates = () => {
                         )
                       }
                       content={
-                        <div className="comment-wrapper">
+                        <div className="comment-wrapper" style={{ position: 'relative' }}>
                           <div className="comment-hover-bar">
                             <div className="quick-reactions">
                               <Tooltip title={t('reactions.like', { defaultValue: 'Like' })}>
@@ -678,12 +672,10 @@ const ProjectViewUpdates = () => {
                                   style={{ marginBottom: 8 }}
                                 />
                                 <Space>
-                                  {/* ✅ FIX: Pass item to handleEdit so it can compare
-                                      original vs current content before calling the API */}
                                   <Button
                                     size="small"
                                     type="primary"
-                                    onClick={() => handleEdit(item.id!, item)}
+                                    onClick={() => handleEdit(item.id!)}
                                   >
                                     {t('actions.save', { defaultValue: 'Save' })}
                                   </Button>
@@ -794,14 +786,17 @@ const ProjectViewUpdates = () => {
               themeMode={themeMode}
             />
           </div>
-          <Flex justify="flex-end">
+          <Flex justify="space-between" align="center">
+            <span style={{ fontSize: 11, color: token.colorTextQuaternary, userSelect: 'none' }}>
+              {t('inputHint', { defaultValue: 'Enter to send . Shift+Enter for new line' })}
+            </span>
             <Button
               type="primary"
               onClick={onFinish}
               loading={submitting}
               icon={<SendOutlined />}
               size="small"
-              disabled={!commentValue.trim()}
+              disabled={!commentValue.trim() || submitting}
             >
               {t('addButton')}
             </Button>

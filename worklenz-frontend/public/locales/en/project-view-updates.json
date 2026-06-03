@@ -14,6 +14,7 @@
   "historyLockedBody": "Chat history beyond 90 days is available on the Business plan.",
   "viewFullHistory": "View chat history",
   "upgradeNow": "Upgrade Now",
+  "inputHint": "Enter to send Shift+Enter for new line",
   "reactions": {
     "like": "Like",
     "love": "Love",

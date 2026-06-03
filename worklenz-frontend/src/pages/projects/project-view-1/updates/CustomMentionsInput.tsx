@@ -32,6 +32,7 @@ const CustomMentionsInput = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
   const isUpdatingRef = useRef(false);
+  const lineBreakJustInsertedRef = useRef(false);
 
   // Guard selection mutations because contentEditable updates can detach range nodes.
   const safelyAddRange = (selection: Selection, range: Range): boolean => {
@@ -63,6 +64,10 @@ const CustomMentionsInput = ({
   // Process text to create HTML with highlighted mentions
   const createHighlightedHTML = (text: string) => {
     if (!text) return '';
+    // Split on newlines, process each line, rejoin with <br>
+    if (text.includes('\n') && !text.includes('@')) {
+      return text.split('\n').map(line => escapeHtml(line)).join('<br>');
+    }
 
     const highlightClass =
       themeMode === 'light' ? 'mention-highlight-light' : 'mention-highlight-dark';
@@ -108,10 +113,7 @@ const CustomMentionsInput = ({
     mentions.sort((a, b) => b.start - a.start);
 
     // Build the HTML string
-    let result = escapeHtml(text);
-
-    // Replace each mention with highlighted HTML
-    for (const mention of mentions) {
+    let result = text.split('\n').map(line => escapeHtml(line)).join('\n<br>'); for (const mention of mentions) {
       const before = result.slice(0, mention.start);
       const after = result.slice(mention.end);
       const mentionHtml = `<span class="${highlightClass}" data-mention="true" data-mention-id="${mention.option.key}" contenteditable="false">${escapeHtml(mention.text)}</span>`;
@@ -131,10 +133,19 @@ const CustomMentionsInput = ({
 
     const walkNodes = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
-        plainText += node.textContent || '';
+        // Strip the \n that the browser inserts before <br> elements
+        // so we don't double-count newlines
+        let text = node.textContent || '';
+        text = text.replace(/\u200B/g, '');
+        if (node.nextSibling && (node.nextSibling as Element).tagName === 'BR') {
+          text = text.replace(/\n$/, '');
+        }
+        plainText += text;
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         if ((node as Element).getAttribute('data-mention') === 'true') {
           plainText += node.textContent || '';
+        } else if ((node as Element).tagName === 'BR') {
+          plainText += '\n';
         } else {
           for (let i = 0; i < node.childNodes.length; i++) {
             walkNodes(node.childNodes[i]);
@@ -144,7 +155,7 @@ const CustomMentionsInput = ({
     };
 
     walkNodes(temp);
-    return plainText;
+    return plainText.replace(/\n+$/, '');
   };
 
   // Get cursor position that respects mention boundaries
@@ -295,7 +306,7 @@ const CustomMentionsInput = ({
 
   // Handle input changes - MODIFIED TO FIX BUG
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    if (isComposingRef.current || isUpdatingRef.current) return;
+    if (isComposingRef.current || isUpdatingRef.current || lineBreakJustInsertedRef.current) return;
 
     const plainText = extractPlainText(e.currentTarget.innerHTML);
     const currentCursorPos = getCursorPosition();
@@ -375,9 +386,72 @@ const CustomMentionsInput = ({
 
   // Handle key down events
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Call parent onKeyDown if provided
-    if (onKeyDown) {
-      onKeyDown(e);
+    // Handle dropdown navigation first
+    if (isDropdownOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
+        return;
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => Math.max(prev - 1, 0));
+        return;
+      } else if (e.key === 'Enter' && filteredOptions.length > 0) {
+        e.preventDefault();
+        selectOption(filteredOptions[selectedIndex]);
+        return;
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsDropdownOpen(false);
+        return;
+      }
+    }
+
+    // Handle Enter/Shift+Enter ourselves — do NOT delegate to parent
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        e.preventDefault();
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+
+        const br = document.createElement('br');
+        range.insertNode(br);
+        const zwsp = document.createTextNode('\u200B');
+        if (br.nextSibling) {
+          br.parentNode?.insertBefore(zwsp, br.nextSibling);
+        } else {
+          br.parentNode?.appendChild(zwsp);
+        }
+
+        const newRange = document.createRange();
+        newRange.setStart(zwsp, 1);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+
+        requestAnimationFrame(() => {
+          if (editableRef.current) {
+            const plainText = extractPlainText(editableRef.current.innerHTML);
+            if (plainText !== value) onChange(plainText);
+          }
+          lineBreakJustInsertedRef.current = false;
+        });
+
+        return;
+      } else {
+        // Plain Enter: submit
+        e.preventDefault();
+        e.stopPropagation();                      // ← prevents duplicate triggers
+        lineBreakJustInsertedRef.current = false; // ← safety reset
+        if (onKeyDown) {
+          onKeyDown(e);
+        }
+        return;
+      }
     }
 
     // Check if cursor is in mention and user tries to type
@@ -492,23 +566,6 @@ const CustomMentionsInput = ({
             return;
           }
         }
-      }
-    }
-
-    // Handle dropdown navigation
-    if (isDropdownOpen) {
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex(prev => Math.min(prev + 1, filteredOptions.length - 1));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex(prev => Math.max(prev - 1, 0));
-      } else if (e.key === 'Enter' && filteredOptions.length > 0) {
-        e.preventDefault();
-        selectOption(filteredOptions[selectedIndex]);
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        setIsDropdownOpen(false);
       }
     }
   };
@@ -659,17 +716,25 @@ const CustomMentionsInput = ({
       isUpdatingRef.current = true;
 
       const highlighted = createHighlightedHTML(value);
-
-      // Only update if HTML has actually changed
+      // Only update DOM if HTML has actually changed (i.e. a mention was just highlighted)
       if (editableRef.current.innerHTML !== highlighted) {
-        const selection = window.getSelection();
-        const offset = selection && selection.rangeCount > 0 ? getCursorPosition() : value.length;
+        // Only restore cursor if the value has mentions — plain text typing
+        // should never trigger a cursor restore because the browser already
+        // placed the cursor correctly and we would move it to position 0.
+        const hasMentions = highlighted.includes('data-mention="true"');
 
-        editableRef.current.innerHTML = highlighted;
-
-        if (editableRef.current.childNodes.length > 0 && offset >= 0) {
-          restoreCursorPosition(offset);
+        if (hasMentions) {
+          // Only rewrite DOM when mentions need highlighting
+          const offset = getCursorPosition();
+          editableRef.current.innerHTML = highlighted;
+          if (offset >= 0) {
+            restoreCursorPosition(offset);
+          }
+        } else if (!value) {
+          // Clear DOM only when value is empty (after submit)
+          editableRef.current.innerHTML = '';
         }
+        // For plain text with no mentions — NEVER touch the DOM
       }
 
       setTimeout(() => {
@@ -677,13 +742,6 @@ const CustomMentionsInput = ({
       }, 0);
     }
   }, [value, themeMode, options]);
-
-  // Auto focus
-  useEffect(() => {
-    if (autoFocus && editableRef.current) {
-      editableRef.current.focus();
-    }
-  }, [autoFocus]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

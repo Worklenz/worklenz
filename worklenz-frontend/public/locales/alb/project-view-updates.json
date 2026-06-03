@@ -14,6 +14,7 @@
   "historyLockedBody": "Historiku i bisedës më i vjetër se 90 ditë është i disponueshëm në planin Business.",
   "viewFullHistory": "Shiko historikun e bisedës",
   "upgradeNow": "Bëj upgrade tani",
+  "inputHint": "Enter për të dërguar  ·  Shift+Enter për rresht të ri",
   "reactions": {
     "like": "Pëlqej",
     "love": "Dashuri",
@@ -25,6 +26,7 @@
     "eyes": "Sy",
     "fire": "Zjarr",
     "hundred": "100"
+    
   },
   "actions": {
     "edit": "Redakto",
