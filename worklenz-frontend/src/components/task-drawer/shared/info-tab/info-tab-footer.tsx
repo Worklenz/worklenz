@@ -59,6 +59,7 @@ const CustomMentionsInput = ({
   value,
   onChange,
   onSelect,
+  onSubmit,
   themeMode,
   options,
   placeholder,
@@ -78,6 +79,7 @@ const CustomMentionsInput = ({
   const isComposingRef = useRef(false);
   const lastMentionedOptionsRef = useRef<Set<string>>(new Set());
   const isUpdatingRef = useRef(false);
+  const skipNextRenderRef = useRef(false);
 
   /**
    * Builds the highlighted HTML shown inside the contentEditable div.
@@ -168,13 +170,16 @@ const CustomMentionsInput = ({
     ranges.sort((a, b) => a.start - b.start);
 
     // ── Step 4: build the final HTML in a single pass ────────────────────────
+    // Helper: escape plain text AND convert \n to <br> so newlines survive
+    // the round-trip through the value string.
+    const plainSegmentToHtml = (segment: string) => escapeHtml(segment).replace(/\n/g, '<br>');
+
     let result = '';
     let cursor = 0;
 
     for (const range of ranges) {
       if (range.start > cursor) {
-        // Plain text segment before this range
-        result += escapeHtml(text.slice(cursor, range.start));
+        result += plainSegmentToHtml(text.slice(cursor, range.start));
       }
       result += range.html;
       cursor = range.end;
@@ -182,13 +187,14 @@ const CustomMentionsInput = ({
 
     // Any remaining plain text after the last range
     if (cursor < text.length) {
-      result += escapeHtml(text.slice(cursor));
+      result += plainSegmentToHtml(text.slice(cursor));
     }
 
     return result;
   };
 
-  // Extract plain text from HTML
+  // Extract plain text from HTML — <br> elements become \n so newlines
+  // survive the round-trip through the value string.
   const extractPlainText = (html: string) => {
     const temp = document.createElement('div');
     temp.innerHTML = html;
@@ -200,6 +206,11 @@ const CustomMentionsInput = ({
         plainText += node.textContent || '';
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as Element;
+        // <br> → newline character
+        if (el.tagName === 'BR') {
+          plainText += '\n';
+          return;
+        }
         if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           // For both mentions and URL spans, use their text content as-is
           plainText += node.textContent || '';
@@ -555,6 +566,43 @@ const CustomMentionsInput = ({
       }
     }
 
+    if (e.key === 'Enter') {
+      if (isDropdownOpen) {
+        // Let the dropdown handler below deal with it
+      } else if (e.shiftKey) {
+        // ── Shift+Enter: insert a line break ──────────────────────────────
+        e.preventDefault();
+
+        if (!editableRef.current) return;
+
+        // Let the browser insert the line break natively — this is the most
+        // reliable cross-browser way to get an immediate visible new line.
+        const success = document.execCommand('insertLineBreak');
+
+        // Fallback for browsers that don't support insertLineBreak
+        if (!success) {
+          document.execCommand('insertHTML', false, '<br>');
+        }
+
+        // Block the useEffect from wiping the DOM on the next onChange
+        skipNextRenderRef.current = true;
+
+        // Sync plain text (with \n) to parent
+        const updated = extractPlainText(editableRef.current.innerHTML);
+        onChange(updated);
+
+        return;
+      } else {
+        // ── Plain Enter: send the message ─────────────────────────────────
+        e.preventDefault();
+        const trimmed = (value || '').trim();
+        if (trimmed.length > 0 && onSubmit) {
+          onSubmit();
+        }
+        return;
+      }
+    }
+
     if (isDropdownOpen) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -709,8 +757,15 @@ const CustomMentionsInput = ({
     }
   };
 
-  // Update contenteditable with highlighted HTML
+  // Update contenteditable with highlighted HTML.
+  // Skips the re-render on the value change that immediately follows a
+  // Shift+Enter so the manually-inserted <br> is never wiped.
   useEffect(() => {
+    if (skipNextRenderRef.current) {
+      skipNextRenderRef.current = false;
+      return;
+    }
+
     if (editableRef.current && value !== undefined && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
 
@@ -870,7 +925,9 @@ const InfoTabFooter = () => {
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { trackAppSumoEvent } = useAppSumoTracking();
-  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
+  const isAppSumoUser = String(currentSession?.subscription_type || '')
+    .toLowerCase()
+    .includes('appsumo');
 
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [membersLoading, setMembersLoading] = useState<boolean>(false);
@@ -998,8 +1055,12 @@ const InfoTabFooter = () => {
           })
         );
         if (isAppSumoUser) {
-          trackAppSumoEvent(AppSumoUpsellEvents.COMMENT_ATTACHMENT_REPLACED, { feature: 'comment_attachments' });
-          trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN, { feature: 'comment_attachments' });
+          trackAppSumoEvent(AppSumoUpsellEvents.COMMENT_ATTACHMENT_REPLACED, {
+            feature: 'comment_attachments',
+          });
+          trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN, {
+            feature: 'comment_attachments',
+          });
         }
         dispatch(toggleUpgradeModal());
         return;
@@ -1266,6 +1327,7 @@ const InfoTabFooter = () => {
                   memberSelectHandler(option as IMentionMemberSelectOption)
                 }
                 onChange={handleCommentChange}
+                onSubmit={handleSubmit}
                 prefix="@"
                 filterOption={(input: string, option: any) => {
                   if (!input) return true;
@@ -1292,6 +1354,14 @@ const InfoTabFooter = () => {
                 }}
               >{`${characterLength}/5000`}</span>
             </div>
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 11, marginTop: 4, display: 'block' }}
+            >
+              {t('taskInfoTab.comments.enterHint', {
+                defaultValue: 'Enter to send  ·  Shift+Enter for new line',
+              })}
+            </Typography.Text>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
