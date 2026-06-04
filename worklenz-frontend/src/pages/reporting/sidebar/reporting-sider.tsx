@@ -1,8 +1,8 @@
 import { Menu, Button } from '@/shared/antd-imports';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useMemo, useCallback, useState } from 'react';
 import { reportingsItems } from '@/lib/reporting/reporting-constants';
-import { useMemo } from 'react';
 import { MenuFoldOutlined, MenuUnfoldOutlined } from '@/shared/antd-imports';
 import './reporting-sider.css';
 
@@ -14,6 +14,18 @@ interface ReportingSiderProps {
 const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onToggleCollapse }) => {
   const location = useLocation();
   const { t } = useTranslation('reporting-sidebar');
+  const navigate = useNavigate();
+  const [openKeys, setOpenKeys] = useState<string[]>(() => {
+    for (const item of reportingsItems) {
+      if (item.children) {
+        const match = item.children.find(child =>
+          location.pathname.includes(child.endpoint)
+        );
+        if (match) return [item.key];
+      }
+    }
+    return ['time-sheet'];
+  });
 
   // Memoize the menu items since they only depend on translations
   const menuItems = useMemo(
@@ -38,28 +50,42 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
             children: item.children.map(child => ({
               key: child.key,
               icon: child.icon,
-              label: (
-                <Link to={`/worklenz/reporting/${child.endpoint}`}>
-                  {t(`${child.name}`, { defaultValue: child.defaultValue })}
-                </Link>
-              ),
+              label: t(`${child.name}`, { defaultValue: child.defaultValue }),
             })),
           });
         } else {
           items.push({
             key: item.key,
             icon: item.icon,
-            label: (
-              <Link to={`/worklenz/reporting/${item.endpoint}`}>
-                {t(`${item.name}`, { defaultValue: item.defaultValue })}
-              </Link>
-            ),
+            label: t(`${item.name}`, { defaultValue: item.defaultValue }),
           });
         }
 
         return items;
       }),
     [t]
+  );
+
+  const endpointByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const item of reportingsItems) {
+      if (item.children) {
+        for (const child of item.children) {
+          map[child.key] = child.endpoint;
+        }
+      } else if (item.endpoint) {
+        map[item.key] = item.endpoint;
+      }
+    }
+    return map;
+  }, []);
+
+  const handleMenuClick = useCallback(
+    ({ key }: { key: string }) => {
+      const endpoint = endpointByKey[key];
+      if (endpoint) navigate(`/worklenz/reporting/${endpoint}`);
+    },
+    [navigate, endpointByKey]
   );
 
   // Memoize the active key calculation
@@ -89,7 +115,12 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={onToggleCollapse}
+            onClick={() => {
+              if (collapsed) {
+                setOpenKeys(['time-sheet']); // restore open keys when expanding
+              }
+              onToggleCollapse?.();
+            }}
             size="small"
           />
         </div>
@@ -101,9 +132,11 @@ const ReportingSider: React.FC<ReportingSiderProps> = ({ collapsed = false, onTo
           className="custom-reporting-sider"
           items={menuItems}
           selectedKeys={[activeKey]}
-          defaultOpenKeys={['time-sheet']}
+          openKeys={collapsed ? [] : openKeys}
+          onOpenChange={setOpenKeys}
           mode="inline"
           inlineCollapsed={collapsed}
+          onClick={handleMenuClick}
           style={{ border: 'none' }}
         />
       </div>
