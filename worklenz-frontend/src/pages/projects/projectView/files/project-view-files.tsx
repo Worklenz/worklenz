@@ -36,6 +36,8 @@ import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
 import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { fetchStorageInfo } from '@/features/admin-center/admin-center.slice';
@@ -100,8 +102,10 @@ const ProjectViewFiles = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('project-view-files');
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const { trackAppSumoEvent } = useAppSumoTracking();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const maxFileSizeBytes = hasBusinessAccess
     ? BUSINESS_FILE_SIZE_LIMIT_BYTES
@@ -365,6 +369,9 @@ const ProjectViewFiles = () => {
         // Show the upgrade popover with the actual file size
         const fileSizeMb = Math.round(file.size / MB);
         setOversizedFileSizeMb(fileSizeMb);
+        if (isAppSumoUser) {
+          trackAppSumoEvent(AppSumoUpsellEvents.OVERSIZED_FILE_BLOCKED, { feature: 'project_files', file_size_mb: fileSizeMb });
+        }
       } else {
         message.error(
           t('fileTooLarge', {
@@ -816,7 +823,15 @@ const ProjectViewFiles = () => {
             <Popover
               trigger="click"
               open={isStorageUpgradePopoverOpen}
-              onOpenChange={setIsStorageUpgradePopoverOpen}
+              onOpenChange={open => {
+                setIsStorageUpgradePopoverOpen(open);
+                if (isAppSumoUser) {
+                  trackAppSumoEvent(
+                    open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                    { feature: 'storage' }
+                  );
+                }
+              }}
               title={t('storageLimitTitle', { defaultValue: 'Storage Limit' })}
               content={
                 <Flex vertical gap={12} style={{ maxWidth: 280 }}>
@@ -832,6 +847,10 @@ const ProjectViewFiles = () => {
                     type="primary"
                     onClick={() => {
                       setIsStorageUpgradePopoverOpen(false);
+                      if (isAppSumoUser) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.STORAGE_ADD_MORE_CLICKED, { feature: 'storage' });
+                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'storage' });
+                      }
                       dispatch(toggleUpgradeModal());
                     }}
                   >

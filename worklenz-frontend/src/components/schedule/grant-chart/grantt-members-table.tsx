@@ -1,5 +1,6 @@
 import { Badge, Button, Flex, Tooltip, Progress, Tag, Spin } from '@/shared/antd-imports';
 import React, { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import CustomAvatar from '../../CustomAvatar';
 import { toggleScheduleDrawer } from '../../../features/schedule/scheduleSlice';
@@ -37,6 +38,14 @@ const GranttMembersTable = React.memo(
     const { workingHours } = useAppSelector(state => state.scheduleReducer);
 
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
+
+    const navigateToProject = useCallback(
+      (projectId: string) => {
+        navigate(`/worklenz/projects/${projectId}?tab=tasks-list&pinned_tab=tasks-list`);
+      },
+      [navigate]
+    );
 
     // Calculate member workload statistics
     const calculateMemberWorkload = useMemo(() => {
@@ -269,10 +278,12 @@ const GranttMembersTable = React.memo(
                           gap={8}
                           align="center"
                           key={project.id || index}
+                          onClick={() => project.id && navigateToProject(project.id)}
                           style={{
                             paddingInline: 12,
                             position: 'sticky',
                             height: 65,
+                            cursor: project.id ? 'pointer' : 'default',
                           }}
                         >
                           <Badge color={project.color_code || '#1890ff'} />
@@ -303,7 +314,14 @@ const GranttMembersTable = React.memo(
                               </div>
                             }
                           >
-                            <span style={{ cursor: 'default' }}>{project.name}</span>
+                            <span
+                              style={{
+                                cursor: project.id ? 'pointer' : 'default',
+                                color: 'inherit',
+                              }}
+                            >
+                              {project.name}
+                            </span>
                           </Tooltip>
                         </Flex>
                       );

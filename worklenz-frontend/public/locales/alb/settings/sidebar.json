@@ -38,6 +38,8 @@
   "integrations-search": "aplikacione lidhje slack api integrime mjete",
   "account-deletion": "Fshij Llogarinë",
   "account-deletion-search": "fshij llogarinë hiq profilin zonë rreziku mbyll llogarinë",
-  "team-hierarchy": "Hierarkia e Ekipit"
-  ,"team-hierarchy-search": "hierarki organigramë strukturë menaxherë pemë organizative"
+  "team-hierarchy": "Hierarkia e Ekipit",
+  "team-hierarchy-search": "hierarki organigramë strukturë menaxherë pemë organizative",
+  "mobile-app": "Aplikacioni Mobil",
+  "mobile-app-search": "ios android telefon mobil shkarko kod qr dyqan aplikacioni google play"
 }

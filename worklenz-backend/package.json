@@ -14,7 +14,7 @@
     "test": "jest",
     "start": "node build/bin/www.js",
     "dev": "npm run build:dev && concurrently \"npm run watch\" \"npm run dev:server\"",
-    "dev:server": "nodemon --watch build --ext js,json,pug --delay 300ms build/bin/www.js",
+    "dev:server": "nodemon --watch build --ext js,json,pug --delay 2000ms build/bin/www.js",
     "build": "npm run clean && npm run compile && npm run copy && npm run compress",
     "build:dev": "npm run clean && npm run compile:dev && npm run copy",
     "build:prod": "npm run clean && npm run compile:prod && npm run copy && npm run minify && npm run compress",

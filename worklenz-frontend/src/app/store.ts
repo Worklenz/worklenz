@@ -41,6 +41,7 @@ import projectHealthReducer from '@features/projects/lookups/projectHealth/proje
 import taskReducer from '@features/tasks/tasks.slice';
 import createCardReducer from '@/features/board/create-card.slice';
 import priorityReducer from '@features/taskAttributes/taskPrioritySlice';
+import projectPriorityReducer from '@features/projects/priority/projectPrioritySlice';
 import taskLabelsReducer from '@features/taskAttributes/taskLabelSlice';
 import taskStatusReducer, { deleteStatus } from '@features/taskAttributes/taskStatusSlice';
 import taskDrawerReducer from '@features/task-drawer/task-drawer.slice';
@@ -183,6 +184,7 @@ export const store = configureStore({
     taskReducer: taskReducer,
     createCardReducer: createCardReducer,
     priorityReducer: priorityReducer,
+    projectPriorityReducer: projectPriorityReducer,
     taskLabelsReducer: taskLabelsReducer,
     taskStatusReducer: taskStatusReducer,
     taskDrawerReducer: taskDrawerReducer,

@@ -33,6 +33,8 @@ import { teamMembersApiService } from '@/api/team-members/teamMembers.api.servic
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
 import CustomMentionsInput, { MentionOption } from './custom-mentions-input';
 import '../info-tab-footer.css';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 // Helper function to format date for time separators
 const formatDateForSeparator = (date: string) => {
@@ -160,6 +162,8 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
   const currentUserId = currentSession?.id;
   const teamMemberId = currentSession?.team_member_id;
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const dispatch = useAppDispatch();
 
   // Inline-edit state
@@ -476,7 +480,15 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                 <Popover
                   trigger="click"
                   open={isHistoryPopoverOpen}
-                  onOpenChange={setIsHistoryPopoverOpen}
+                  onOpenChange={open => {
+                    setIsHistoryPopoverOpen(open);
+                    if (isAppSumoUser) {
+                      trackAppSumoEvent(
+                        open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                        { feature: 'comment_history' }
+                      );
+                    }
+                  }}
                   title={t('taskInfoTab.comments.historyLockedTitle', {
                     defaultValue: 'Comment History Locked',
                   })}
@@ -492,6 +504,10 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
                         type="primary"
                         onClick={() => {
                           setIsHistoryPopoverOpen(false);
+                          if (isAppSumoUser) {
+                            trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'comment_history' });
+                            trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'comment_history' });
+                          }
                           dispatch(toggleUpgradeModal());
                         }}
                       >

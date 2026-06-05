@@ -1275,9 +1275,21 @@ ALTER TABLE task_priorities
     ADD CONSTRAINT task_priorities_pk
         PRIMARY KEY (id);
 
+CREATE TABLE IF NOT EXISTS sys_project_priorities (
+    id              UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name            TEXT                               NOT NULL,
+    value           INTEGER DEFAULT 0                  NOT NULL,
+    color_code      WL_HEX_COLOR                       NOT NULL,
+    color_code_dark WL_HEX_COLOR
+);
+
+ALTER TABLE sys_project_priorities
+    ADD CONSTRAINT sys_project_priorities_pk
+        PRIMARY KEY (id);
+
 ALTER TABLE projects
     ADD CONSTRAINT projects_priority_id_fk
-        FOREIGN KEY (priority_id) REFERENCES task_priorities;
+        FOREIGN KEY (priority_id) REFERENCES sys_project_priorities;
 
 ALTER TABLE cpt_tasks
     ADD CONSTRAINT cpt_tasks_priority_fk

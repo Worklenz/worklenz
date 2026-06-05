@@ -73,6 +73,13 @@
   "dueDatePlaceholder": "截止日期",
   "startDatePlaceholder": "开始日期",
 
+  "exampleTasks": {
+    "prefix": "例如",
+    "task1": "定义项目范围和目标",
+    "task2": "与利益相关者审查和对齐",
+    "task3": "安排启动会议"
+  },
+
   "emptyStates": {
     "noTaskGroups": "未找到任务组",
     "noTaskGroupsDescription": "创建任务或应用筛选器后，任务将显示在此处。",

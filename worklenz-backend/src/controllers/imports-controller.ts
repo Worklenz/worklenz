@@ -609,12 +609,43 @@ export default class ImportsController {
     async (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
       const userId = this.getUserId(req);
       const job = await this.assertJob(req.params.jobId, userId);
-      const result = await ImportIngestionService.ingest(job, req.body || {});
-      await ImportsService.updateJobStatus(job.id, "ready");
-      const data = await ImportsService.progress(job.id);
-      return res
-        .status(200)
-        .send(new ServerResponse(true, { ...data, ingest: result }));
+      const body = req.body || {};
+
+      // CSV flow: persist the raw CSV text and any pre-configured mappings in
+      // source_reference, then hand off to the background worker. This avoids
+      // parsing tens-of-thousands of rows inside an HTTP request handler.
+      if (job.flow_type === "csv" && body.csvText) {
+        const patch: Record<string, unknown> = { csvText: body.csvText };
+        if (body.fields) patch.fields = body.fields;
+        if (body.values) patch.values = body.values;
+        if (body.users) patch.users = body.users;
+        await ImportsService.mergeSourceReference(job.id, patch);
+        await ImportsService.updateJobStatus(job.id, "ready");
+        const data = await ImportsService.progress(job.id);
+        return res.status(202).send(new ServerResponse(true, data));
+      }
+
+      // Direct integrations (Asana, Jira, Trello, Monday, ClickUp): run
+      // ingestion synchronously so staged data is available immediately.
+      try {
+        const result = await ImportIngestionService.ingest(job, body);
+        await ImportsService.updateJobStatus(job.id, "ready");
+        const data = await ImportsService.progress(job.id);
+        return res
+          .status(200)
+          .send(new ServerResponse(true, { ...data, ingest: result }));
+      } catch (err: any) {
+        await ImportsService.updateJobStatus(job.id, "failed", err?.message || "Ingest failed");
+        if (job.target_project_id) {
+          try {
+            await ImportsService.deleteTargetProject(job.target_project_id);
+          } catch {
+            // Ignore cleanup errors — don't mask the original error
+          }
+        }
+        const message = err?.status ? err.message : "Failed to process the import file. Please check your file and try again.";
+        throw createHttpError(err?.status || 422, message);
+      }
     },
   );
 

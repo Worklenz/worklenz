@@ -123,15 +123,15 @@ const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) 
         </div>
       ),
     },
-    {
-      key: 'import-export',
-      label: (
-        <div className="w-full m-0 p-0" onClick={() => setIsImportExportOpen(true)}>
-          <ImportOutlined className="mr-2" />
-          {t('importTasks', { defaultValue: 'Import Tasks' })}
-        </div>
-      ),
-    },
+    // {
+    //   key: 'import-export',
+    //   label: (
+    //     <div className="w-full m-0 p-0" onClick={() => setIsImportExportOpen(true)}>
+    //       <ImportOutlined className="mr-2" />
+    //       {t('importTasks', { defaultValue: 'Import Tasks' })}
+    //     </div>
+    //   ),
+    // },
   ];
 
   const handleCreateProject = () => {

@@ -56,6 +56,12 @@ export default class ProfileSettingsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async dismissMobileAppBanner(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    await db.query(`UPDATE users SET mobile_app_banner_dismissed = TRUE WHERE id = $1;`, [req.user?.id]);
+    return res.status(200).send(new ServerResponse(true, null));
+  }
+
+  @HandleExceptions()
   public static async update_team_name(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT update_team_name($1);`;
     const body = {

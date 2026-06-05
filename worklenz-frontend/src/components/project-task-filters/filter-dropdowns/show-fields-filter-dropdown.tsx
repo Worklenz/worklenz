@@ -62,7 +62,7 @@ const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'PRIORITY', label: 'Priority', showInDropdown: true, order: 9, category: 'basic' },
   {
     key: 'TIME_TRACKING',
-    label: 'Time Tracking',
+    label: 'Time',
     showInDropdown: true,
     order: 10,
     category: 'time',

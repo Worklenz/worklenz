@@ -9,7 +9,7 @@ import AssigneeSelector from '@/components/AssigneeSelector';
 import { format } from 'date-fns';
 import AvatarGroup from '../../AvatarGroup';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
-import TaskProgress from '@/pages/projects/project-view-1/taskList/taskListTable/taskListTableCells/TaskProgress';
+import TaskProgress from './TaskProgress';
 import TaskStatusDropdown from '@/components/task-management/task-status-dropdown';
 import TaskPriorityDropdown from '@/components/task-management/task-priority-dropdown';
 import TaskPhaseDropdown from '@/components/task-management/task-phase-dropdown';

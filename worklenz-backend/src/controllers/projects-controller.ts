@@ -321,9 +321,9 @@ export default class ProjectsController extends WorklenzControllerBase {
         WHERE id = projects.category_id
       )`,
       'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
-      'priority': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
-      'priority_id': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
-      'priority_name': `(SELECT value FROM task_priorities WHERE id = projects.priority_id)`,
+      'priority': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
+      'priority_id': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
+      'priority_name': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
       'project_owner': 'owner_id',
     };
 
@@ -492,9 +492,9 @@ export default class ProjectsController extends WorklenzControllerBase {
                                   FROM project_categories
                                   WHERE id = projects.category_id) AS category_color,
                                  projects.priority_id,
-                                 (SELECT name FROM task_priorities WHERE id = projects.priority_id) AS priority_name,
-                                 (SELECT color_code FROM task_priorities WHERE id = projects.priority_id) AS priority_color,
-                                 (SELECT color_code_dark FROM task_priorities WHERE id = projects.priority_id) AS priority_color_dark,
+                                 (SELECT name FROM sys_project_priorities WHERE id = projects.priority_id) AS priority_name,
+                                 (SELECT color_code FROM sys_project_priorities WHERE id = projects.priority_id) AS priority_color,
+                                 (SELECT color_code_dark FROM sys_project_priorities WHERE id = projects.priority_id) AS priority_color_dark,
 
                                   ((SELECT team_member_id as team_member_id
                                     FROM project_members
@@ -677,7 +677,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                             AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager
       FROM projects
              LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
-             LEFT JOIN task_priorities tp ON projects.priority_id = tp.id
+             LEFT JOIN sys_project_priorities tp ON projects.priority_id = tp.id
       WHERE projects.id = $1
         AND team_id = $2;
     `;
@@ -1211,11 +1211,11 @@ export default class ProjectsController extends WorklenzControllerBase {
         break;
       case "priority":
         groupField = "COALESCE(projects.priority_id::text, 'no-priority')";
-        groupName = "COALESCE(task_priorities.name, 'No Priority')";
-        groupColor = "COALESCE(task_priorities.color_code, '#888')";
-        groupJoin = "LEFT JOIN task_priorities ON projects.priority_id = task_priorities.id";
-        groupByFields = "projects.priority_id, task_priorities.name, task_priorities.color_code, task_priorities.value";
-        groupOrderBy = "COALESCE(task_priorities.value, -1) DESC";
+        groupName = "COALESCE(sys_project_priorities.name, 'No Priority')";
+        groupColor = "COALESCE(sys_project_priorities.color_code, '#888')";
+        groupJoin = "LEFT JOIN sys_project_priorities ON projects.priority_id = sys_project_priorities.id";
+        groupByFields = "projects.priority_id, sys_project_priorities.name, sys_project_priorities.color_code, sys_project_priorities.value";
+        groupOrderBy = "COALESCE(sys_project_priorities.value, -1) DESC";
         break;
       case "category":
       default:
@@ -1288,9 +1288,9 @@ export default class ProjectsController extends WorklenzControllerBase {
                                     FROM project_categories
                                     WHERE project_categories.id = p2.category_id) AS category_color,
                                    p2.priority_id,
-                                   (SELECT task_priorities.name FROM task_priorities WHERE task_priorities.id = p2.priority_id) AS priority_name,
-                                   (SELECT task_priorities.color_code FROM task_priorities WHERE task_priorities.id = p2.priority_id) AS priority_color,
-                                   (SELECT task_priorities.color_code_dark FROM task_priorities WHERE task_priorities.id = p2.priority_id) AS priority_color_dark,
+                                   (SELECT sys_project_priorities.name FROM sys_project_priorities WHERE sys_project_priorities.id = p2.priority_id) AS priority_name,
+                                   (SELECT sys_project_priorities.color_code FROM sys_project_priorities WHERE sys_project_priorities.id = p2.priority_id) AS priority_color,
+                                   (SELECT sys_project_priorities.color_code_dark FROM sys_project_priorities WHERE sys_project_priorities.id = p2.priority_id) AS priority_color_dark,
                                    ((SELECT project_members.team_member_id as team_member_id
                                       FROM project_members
                                       WHERE project_members.project_id = p2.id

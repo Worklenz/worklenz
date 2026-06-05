@@ -19,6 +19,7 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
 import { InvoiceDetails } from "@/types";
+import { CURRENCY_OPTIONS } from "@/shared/currencies";
 import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
@@ -228,11 +229,21 @@ const EditInvoicePage: React.FC = () => {
                   name="currency"
                   rules={[{ required: true, message: "Please select currency" }]}
                 >
-                  <Select placeholder="Select currency">
-                    <Option value="USD">USD - US Dollar</Option>
-                    <Option value="EUR">EUR - Euro</Option>
-                    <Option value="GBP">GBP - British Pound</Option>
-                    <Option value="LKR">LKR - Sri Lankan Rupee</Option>
+                  <Select
+                    placeholder="Select currency"
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      (option?.children as unknown as string)
+                        ?.toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  >
+                    {CURRENCY_OPTIONS.map(currency => (
+                      <Option key={currency.value} value={currency.value}>
+                        {currency.label}
+                      </Option>
+                    ))}
                   </Select>
                 </Form.Item>
               </Col>
