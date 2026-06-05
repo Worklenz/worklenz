@@ -120,6 +120,14 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
   }, [position]);
 
+  // Reset any pending delete confirmation if the user's permission changes
+  // mid-session, so the inline confirm UI never reappears without a fresh click.
+  useEffect(() => {
+    if (!canCreateTask) {
+      setShowDeleteConfirm(false);
+    }
+  }, [canCreateTask]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -474,8 +482,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
   }, [projectId, task.id, dispatch, onClose]);
 
-  // Shared disabled style for restricted items
-  const disabledCls = 'opacity-40 cursor-not-allowed pointer-events-none';
+  // Shared disabled style for restricted items.
+  // Note: no `pointer-events-none` here — it would suppress the `cursor-not-allowed`
+  // rule. The `disabled` attribute and `onClick={undefined}` already block the action.
+  const disabledCls = 'opacity-40 cursor-not-allowed';
 
   const menuItems = useMemo(() => {
     const items = [
@@ -483,9 +493,9 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         key: 'assignToMe',
         label: (
           <button
-            onClick={handleAssignToMe}
-            disabled={updatingAssignToMe}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            onClick={canCreateTask ? handleAssignToMe : undefined}
+            disabled={updatingAssignToMe || !canCreateTask}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
           >
             {updatingAssignToMe ? (
               <LoadingOutlined className="text-gray-500 dark:text-gray-400" />

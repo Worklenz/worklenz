@@ -188,7 +188,8 @@ const DependenciesTable = ({
         />
       )}
 
-      {isDependencyInputShow ? (        <Form layout="inline">
+      {isDependencyInputShow ? (
+        <Form layout="inline">
           <Row gutter={8} style={{ width: '100%' }}>
             <Col span={14}>
               <Form.Item name="taskName" style={{ marginBottom: 0 }}>

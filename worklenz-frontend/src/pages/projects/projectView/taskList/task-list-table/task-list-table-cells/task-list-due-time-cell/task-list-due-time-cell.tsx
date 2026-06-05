@@ -50,7 +50,6 @@ const TaskListDueTimeCell: React.FC<TaskListDueTimeCellProps> = memo(({ task, di
         width: '100%',
         opacity: disabled ? 0.4 : 1,
         cursor: disabled ? 'not-allowed' : undefined,
-        pointerEvents: disabled ? 'none' : undefined,
       }}
       className="due-time-picker"
       allowClear

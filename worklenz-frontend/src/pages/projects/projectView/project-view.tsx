@@ -138,8 +138,20 @@ const ProjectView = React.memo(() => {
     const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
     const requestedTab = filteredTabItems.find(item => item.key === urlParams.tab);
 
-    // If tab is disabled, redirect to first available tab and show upgrade modal
-    if (requestedTab?.disabled) {
+    // `canCreateTask` defaults to `true` until the project data loads, then may flip to
+    // `false` and drop permission-gated tabs (e.g. roadmap). Wait for the project to be
+    // loaded before redirecting away from an unavailable tab — otherwise the requested
+    // tab renders briefly and then jumps, producing a visible URL/tab flash on load.
+    const projectReady = !!selectedProject;
+
+    if (projectReady && !requestedTab) {
+      // Tab isn't available to this user at all — fall back to the first available tab.
+      const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
+      if (firstAvailableTab) {
+        setActiveTab(firstAvailableTab.key);
+      }
+    } else if (requestedTab?.disabled) {
+      // If tab is disabled, redirect to first available tab and show upgrade modal
       const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
       if (firstAvailableTab) {
         setActiveTab(firstAvailableTab.key);
