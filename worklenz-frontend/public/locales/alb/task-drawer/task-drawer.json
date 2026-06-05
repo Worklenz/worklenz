@@ -85,6 +85,8 @@
       "edit": "Redakto",
       "delete": "Fshi",
       "confirmDeleteComment": "Jeni i sigurt që dëshironi ta fshini këtë koment?",
+      "edited": "(redaktuar)",
+      "messageDeleted": "Ky mesazh u fshi",
       "addCommentPlaceholder": "Shto një koment...",
       "cancel": "Anulo",
       "commentButton": "Komento",
