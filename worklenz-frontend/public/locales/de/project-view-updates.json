@@ -14,7 +14,7 @@
   "historyLockedBody": "Chatverlauf älter als 90 Tage ist im Business-Plan verfügbar.",
   "viewFullHistory": "Chatverlauf anzeigen",
   "upgradeNow": "Jetzt upgraden",
-  "inputHint": "Enter zum Senden  ·  Shift+Enter für neue Zeile",
+  "inputHint": "Enter zum Senden · Shift+Enter für neue Zeile",
   "reactions": {
     "like": "Gefällt mir",
     "love": "Liebe",
@@ -33,3 +33,4 @@
     "save": "Speichern"
   }
 }
+

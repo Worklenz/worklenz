@@ -302,8 +302,12 @@ const ProjectViewUpdates = () => {
     }
   };
 
-  const handleEdit = async (commentId: string) => {
+  const handleEdit = async (commentId: string, originalContent: string) => {
     if (!editContent.trim()) return;
+    if (editContent.trim() === originalContent.trim()) {
+      setEditingCommentId(null);
+      return;
+    }
 
     try {
       let contentToSave = editContent;
@@ -535,8 +539,7 @@ const ProjectViewUpdates = () => {
                       }
                       content={
                         <div className="comment-wrapper" style={{ position: 'relative' }}>
-                          <div className="comment-hover-bar">
-                            <div className="quick-reactions">
+<div className="comment-hover-bar" style={{ display: editingCommentId === item.id ? 'none' : 'flex' }}>                            <div className="quick-reactions">
                               <Tooltip title={t('reactions.like', { defaultValue: 'Like' })}>
                                 <span
                                   className="quick-emoji"
@@ -675,7 +678,7 @@ const ProjectViewUpdates = () => {
                                   <Button
                                     size="small"
                                     type="primary"
-                                    onClick={() => handleEdit(item.id!)}
+                                    onClick={() => handleEdit(item.id!, item.content || '')}
                                   >
                                     {t('actions.save', { defaultValue: 'Save' })}
                                   </Button>
@@ -788,7 +791,7 @@ const ProjectViewUpdates = () => {
           </div>
           <Flex justify="space-between" align="center">
             <span style={{ fontSize: 11, color: token.colorTextQuaternary, userSelect: 'none' }}>
-              {t('inputHint', { defaultValue: 'Enter to send . Shift+Enter for new line' })}
+              {t('inputHint', { defaultValue: 'Enter to send · Shift+Enter for new line' })}
             </span>
             <Button
               type="primary"

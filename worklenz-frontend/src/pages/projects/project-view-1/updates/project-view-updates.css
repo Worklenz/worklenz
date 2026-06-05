@@ -92,7 +92,7 @@
 }
 
 /* Make sure the textarea is positioned correctly */
-.ant-mentions > textarea {
+.ant-mentions>textarea {
   position: relative;
   z-index: 2;
   background: transparent !important;
@@ -125,9 +125,6 @@
   position: relative;
 }
 
-/* ========== END MENTION INPUT HIGHLIGHTING ========== */
-
-/* ========== CUSTOM MENTIONS INPUT STYLES ========== */
 
 /* Custom mentions wrapper */
 .custom-mentions-wrapper {
@@ -298,7 +295,7 @@
 .theme-light .current-user-comment .mentions {
   background: #d1e9ff;
   border-color: #b3d8ff;
-     border: none;
+  border: none;
   padding: 0;
   margin: 0;
 }
@@ -306,7 +303,7 @@
 .theme-dark .current-user-comment .mentions {
   background: #2a4a6d;
   border-color: #3a5a7d;
-     border: none;
+  border: none;
   padding: 0;
   margin: 0;
 }
@@ -341,7 +338,7 @@
   margin-bottom: 0;
   white-space: pre-wrap;
   word-break: break-word;
-   position: relative;
+  position: relative;
   z-index: 1;
 }
 
@@ -350,28 +347,28 @@
   margin-bottom: 0;
   white-space: pre-wrap;
   word-break: break-word;
-   position: relative;
+  position: relative;
   z-index: 1;
 }
 
 /* Comment actions styling */
-.theme-light .ant-comment-actions > li > span {
+.theme-light .ant-comment-actions>li>span {
   color: #707070;
   transition: color 0.3s;
   font-size: 11px;
 }
 
-.theme-dark .ant-comment-actions > li > span {
+.theme-dark .ant-comment-actions>li>span {
   color: #d1d0d3;
   transition: color 0.3s;
   font-size: 11px;
 }
 
-.theme-light .ant-comment-actions > li > span:hover {
+.theme-light .ant-comment-actions>li>span:hover {
   color: #1890ff;
 }
 
-.theme-dark .ant-comment-actions > li > span:hover {
+.theme-dark .ant-comment-actions>li>span:hover {
   color: #1890ff;
 }
 
@@ -453,24 +450,24 @@
 }
 
 /* Action buttons hover */
-.ant-comment .ant-comment-actions > li {
+.ant-comment .ant-comment-actions>li {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.ant-comment:hover .ant-comment-actions > li {
+.ant-comment:hover .ant-comment-actions>li {
   visibility: visible;
   opacity: 1;
 }
 
 /* Always show emoji picker */
-.ant-comment .ant-comment-actions > li:last-child {
+.ant-comment .ant-comment-actions>li:last-child {
   visibility: visible;
   opacity: 1;
 }
 
-.current-user-comment .ant-comment-actions > li {
+.current-user-comment .ant-comment-actions>li {
   float: right;
 }
 
@@ -552,7 +549,7 @@
 }
 
 /* Constrain width for better readability */
-.updates-list-container > div {
+.updates-list-container>div {
   max-width: 900px;
   margin: 0 auto;
 }
@@ -571,14 +568,21 @@
 /* Comment wrapper for hover actions */
 .comment-wrapper {
   position: relative;
-  isolation:isolation;
+  z-index: 1;
+  overflow: visible;
+}
+
+
+.comment-wrapper:hover {
+  z-index: 200;
 }
 
 /* Hover bar - appears above message */
 .comment-hover-bar {
   position: absolute;
-  top: -40px;
-  right: 10px;
+  top: 0px;
+  right: 0px;
+   transform: translateY(-100%);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -591,7 +595,7 @@
     visibility 0.2s 0.3s;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  pointer-events:none;
+  pointer-events: none;
 }
 
 .theme-light .comment-hover-bar {
@@ -604,11 +608,11 @@
   border: 1px solid #3a3a3a;
 }
 
-.ant-comment:hover .comment-hover-bar {
+.comment-wrapper:hover .comment-hover-bar {
   opacity: 1;
   visibility: visible;
   transition-delay: 0.5s;
-  pointer-events:auto;
+  pointer-events: auto;
 }
 
 /* Quick reactions container */
