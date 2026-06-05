@@ -6,6 +6,7 @@ import verifyProjectAccess from "../../middlewares/verify-project-access";
 import projectFilesValidator, {
   MAX_PROJECT_FILE_SIZE_BYTES,
 } from "../../middlewares/validators/project-files-validator";
+import { presignRateLimiter } from "../../middlewares/project-files-presign-rate-limiter";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { ServerResponse } from "../../models/server-response";
 
@@ -72,6 +73,7 @@ projectFilesApiRouter.post(
 // Async presigned-URL upload — Step 1: get a presigned PUT URL
 projectFilesApiRouter.post(
   "/presign",
+  presignRateLimiter,
   verifyProjectAccess("params", "projectId"),
   safeControllerFunction(ProjectFilesController.presign),
 );

@@ -12,6 +12,7 @@ import {
   createPresignedUrlWithClient,
   deleteObject,
   getKey,
+  getObjectSize,
   getProjectFileStorageKey,
   objectExists,
   uploadBuffer,
@@ -41,12 +42,30 @@ const MAX_PRESIGN_FILE_SIZE_BYTES = 250 * 1024 * 1024;
 // cleaned up. Matches the presigned URL expiry (15 min) plus a small buffer.
 const PRESIGN_EXPIRY_MS = 20 * 60 * 1000;
 
-const sanitizeFileName = (fileName: string, extension: string): string => {
+// Sanitize a filename for use as the *display name* (the `name` column shown in
+// the UI). The storage key is derived from a random fileId, never the filename,
+// so we only need to strip characters that are dangerous for display/paths —
+// not flatten every space or parenthesis into underscores. This keeps names
+// like "My Report (Final).pdf" readable instead of "My_Report__Final_.pdf".
+const sanitizeDisplayName = (fileName: string, extension: string): string => {
   const parsed = path.parse(fileName);
   const baseName = parsed.name || "file";
-  const normalizedBase = baseName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  // Strip characters that are dangerous for paths, filesystems and — critically
+  // — the download Content-Disposition header (the stored name is reflected
+  // unquoted into `attachment; filename=...`), while preserving spaces,
+  // parentheses and other readable characters. Removed set: path separators
+  // (/ \), ASCII control chars (incl. CR/LF), the header-breaking quote/
+  // semicolon/comma, and Windows-reserved chars (< > : " | ? *). Then collapse
+  // whitespace. The storage key is derived from a random fileId (never the
+  // filename), so this name is purely for display and can stay human-readable.
+  // eslint-disable-next-line no-control-regex
+  const normalizedBase = baseName
+    .replace(/[/\\<>:"|?*;,\x00-\x1f\x7f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const safeBase = normalizedBase || "file";
   const maxBaseLength = Math.max(1, 255 - (extension ? extension.length + 1 : 0));
-  const trimmedBase = normalizedBase.slice(0, maxBaseLength);
+  const trimmedBase = safeBase.slice(0, maxBaseLength);
   return extension ? `${trimmedBase}.${extension}` : trimmedBase;
 };
 
@@ -449,7 +468,7 @@ export default class ProjectFilesController extends WorklenzControllerBase {
 
     // --- Generate storage key and presigned URL ---
     const fileId = randomUUID();
-    const cleanFileName = sanitizeFileName(filename, extension);
+    const cleanFileName = sanitizeDisplayName(filename, extension);
     const storageKey = getProjectFileStorageKey(teamId, projectId, fileId, extension);
 
     const uploadUrl = await createPresignedUploadUrl(storageKey);
@@ -539,7 +558,10 @@ export default class ProjectFilesController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Upload session expired. Please try again."));
     }
 
-    // Verify the object actually landed in storage
+    // Verify the object actually landed in storage and read its real size.
+    // The browser PUT directly to storage, so the client-reported `size` from
+    // presign cannot be trusted — this HeadObject is the only authoritative
+    // size check before we make the record visible.
     const storageKey = getProjectFileStorageKey(
       record.team_id,
       record.project_id,
@@ -547,36 +569,48 @@ export default class ProjectFilesController extends WorklenzControllerBase {
       record.type,
     );
 
-    const exists = await objectExists(storageKey);
+    const actualSize = await getObjectSize(storageKey);
 
-    if (!exists) {
+    if (actualSize === null) {
       return res
         .status(422)
         .send(new ServerResponse(false, null, "File not found in storage. The upload may have failed — please try again."));
     }
 
-    // Mark the record as active
+    // Reject (and clean up) uploads that exceeded the size limit despite a
+    // smaller client-reported size at presign time.
+    if (actualSize > MAX_PRESIGN_FILE_SIZE_BYTES) {
+      void deleteObject(storageKey);
+      await db.query("DELETE FROM project_files WHERE id = $1", [file_id]);
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Max file size is 250 MB per file.").withTitle("Upload failed!"));
+    }
+
+    // Mark the record as active, persisting the actual storage size (not the
+    // client-reported one). The UPDATE re-asserts team/project ownership as
+    // defense-in-depth against any SELECT/UPDATE drift, and pulls the uploader
+    // name via a sub-select to avoid a second round-trip.
     const confirmResult = await db.query(
-      `UPDATE project_files
-       SET status = 'active'
-       WHERE id = $1
-       RETURNING id, name, size, type, created_at, uploaded_by;`,
-      [file_id],
+      `UPDATE project_files pf
+       SET status = 'active', size = $4
+       WHERE pf.id = $1
+         AND pf.team_id = $2
+         AND pf.project_id = $3
+         AND pf.status = 'pending'
+       RETURNING pf.id, pf.name, pf.size, pf.type, pf.created_at,
+                 COALESCE((SELECT name FROM users WHERE id = pf.uploaded_by), '') AS uploaded_by;`,
+      [file_id, teamId, projectId, actualSize],
     );
+
+    if (!confirmResult.rowCount) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Pending upload record not found"));
+    }
 
     const [data] = confirmResult.rows;
 
-    const uploaderResult = await db.query(
-      "SELECT name FROM users WHERE id = $1",
-      [userId],
-    );
-    const uploadedBy = uploaderResult.rows?.[0]?.name || "";
-
-    return res.status(200).send(
-      new ServerResponse(true, {
-        ...data,
-        uploaded_by: uploadedBy,
-      }),
-    );
+    return res.status(200).send(new ServerResponse(true, data));
   }
 }

@@ -673,17 +673,30 @@ export async function createPresignedUploadUrl(
  * Used by the confirm endpoint to prevent phantom DB records.
  */
 export async function objectExists(key: string): Promise<boolean> {
+  return (await getObjectSize(key)) !== null;
+}
+
+/**
+ * Return the actual size (in bytes) of an object in storage, or null if it
+ * doesn't exist. Used by the confirm endpoint to validate the real uploaded
+ * size against the client-reported size from presign — the browser PUTs
+ * directly to storage, so this is the only trustworthy size check.
+ */
+export async function getObjectSize(key: string): Promise<number | null> {
   try {
     if (STORAGE_PROVIDER === "azure") {
-      if (!azureContainerClient) return false;
+      if (!azureContainerClient) return null;
       const blobClient = azureContainerClient.getBlockBlobClient(key);
-      return await blobClient.exists();
+      const props = await blobClient.getProperties();
+      return props.contentLength ?? null;
     }
 
     // S3 / MinIO — HeadObject throws if the key doesn't exist
-    await s3Client.send(new HeadObjectCommand({ Bucket: BUCKET, Key: key }));
-    return true;
+    const head = await s3Client.send(
+      new HeadObjectCommand({ Bucket: BUCKET, Key: key }),
+    );
+    return head.ContentLength ?? null;
   } catch {
-    return false;
+    return null;
   }
 }

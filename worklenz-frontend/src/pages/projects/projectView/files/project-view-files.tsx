@@ -27,7 +27,7 @@ import {
 } from '@/shared/antd-imports';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import projectFilesApiService from '@/api/projects/project-files.api.service';
@@ -151,6 +151,11 @@ const ProjectViewFiles = () => {
   const [previewDownloadFn, setPreviewDownloadFn] = useState<(() => void) | null>(null);
   const [isStorageUpgradePopoverOpen, setIsStorageUpgradePopoverOpen] = useState(false);
   const [oversizedFileSizeMb, setOversizedFileSizeMb] = useState<number | null>(null);
+
+  // Aborts in-flight direct uploads when the uploader is closed or the
+  // component unmounts, so the browser stops PUTting bytes and the backend
+  // never receives a confirm for an abandoned upload.
+  const uploadAbortRef = useRef<AbortController | null>(null);
 
   const GB = 1024 * MB;
   const storageTotalBytes = storageInfo?.total ? storageInfo.total * GB : null;
@@ -344,9 +349,15 @@ const ProjectViewFiles = () => {
   };
 
   const closeUploader = () => {
+    uploadAbortRef.current?.abort();
     setIsUploaderOpen(false);
     resetUploader();
   };
+
+  // Abort any in-flight upload if the component unmounts mid-upload.
+  useEffect(() => {
+    return () => uploadAbortRef.current?.abort();
+  }, []);
 
   const beforeUpload: UploadProps['beforeUpload'] = file => {
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -419,6 +430,9 @@ const ProjectViewFiles = () => {
       return;
     }
 
+    const abortController = new AbortController();
+    uploadAbortRef.current = abortController;
+
     try {
       setUploading(true);
 
@@ -449,7 +463,8 @@ const ProjectViewFiles = () => {
 
           const { file_id, upload_url } = presignResponse.body;
 
-          // Step 2 — upload directly to S3/Azure (progress tracked via XHR)
+          // Step 2 — upload directly to S3/Azure (progress tracked via XHR).
+          // The shared AbortSignal lets closeUploader()/unmount cancel the PUT.
           await projectFilesApiService.uploadDirect(
             upload_url,
             rawFile,
@@ -459,7 +474,8 @@ const ProjectViewFiles = () => {
                 status: 'uploading',
                 percent,
               }));
-            }
+            },
+            abortController.signal
           );
 
           // Step 3 — confirm with backend so it marks the DB record active
@@ -501,6 +517,9 @@ const ProjectViewFiles = () => {
           }));
 
           logger.error('Error uploading file', error);
+
+          // Stop processing the remaining queue if the user cancelled.
+          if (abortController.signal.aborted) break;
         }
       }
 
@@ -517,6 +536,7 @@ const ProjectViewFiles = () => {
       message.error(t('uploadFailed', { defaultValue: 'Upload failed. Please try again.' }));
     } finally {
       setUploading(false);
+      uploadAbortRef.current = null;
     }
   };
 
