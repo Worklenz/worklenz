@@ -111,7 +111,7 @@ const ServicesPage: React.FC = () => {
     <div>
       {/* Page Header */}
       <div style={{ marginBottom: 24 }}>
-        <Title level={4} style={{ marginBottom: 4 }}>
+        <Title level={3} style={{ marginBottom: 4 }}>
           <AppstoreOutlined style={{ marginRight: 8 }} />
           {t('services.title')} ({services.length})
         </Title>
