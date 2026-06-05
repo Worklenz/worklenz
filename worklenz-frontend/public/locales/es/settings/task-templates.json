@@ -5,5 +5,6 @@
   "deleteToolTip": "Eliminar",
   "confirmText": "¿Estás seguro?",
   "okText": "Sí",
-  "cancelText": "Cancelar"
+  "cancelText": "Cancelar",
+  "totalItems": "Total de elementos"
 }

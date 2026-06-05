@@ -29,6 +29,7 @@ const ProjectTemplatesSettings = () => {
 
   const [projectTemplates, setProjectTemplates] = useState<ICustomTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(10);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const navigate = useNavigate();
 
@@ -171,10 +172,13 @@ const ProjectTemplatesSettings = () => {
         // ✅ FIXED: added pageSize, showSizeChanger and showTotal for full pagination support
         pagination={{
           size: 'small',
-          pageSize: 10,
+          pageSize,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
           showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
+          onShowSizeChange: (_, size) => {
+      setPageSize(size);
+    },
         }}
         rowClassName={(_, index) =>
           `no-border-row ${index % 2 === 0 ? '' : themeMode === 'dark' ? 'dark-alternate-row-color' : 'alternate-row-color'}`
