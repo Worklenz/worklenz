@@ -58,6 +58,7 @@ import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
@@ -104,16 +105,17 @@ const ProjectView = React.memo(() => {
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
+  const { canCreateTask } = useTaskCreationPermission();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
-    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
     return {
       tab: searchParams.get('tab') || filteredTabItems[0]?.key || 'tasks-list',
       pinnedTab: searchParams.get('pinned_tab') || '',
       taskId: searchParams.get('task') || '',
     };
-  }, [searchParams, currentSession, selectedProject]);
+  }, [searchParams, currentSession, selectedProject, canCreateTask]);
 
   const [activeTab, setActiveTab] = useState<string>(urlParams.tab);
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
@@ -133,11 +135,23 @@ const ProjectView = React.memo(() => {
   // Update local state when URL params change
   useEffect(() => {
     // Validate that the tab from URL is not disabled before setting it
-    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
     const requestedTab = filteredTabItems.find(item => item.key === urlParams.tab);
 
-    // If tab is disabled, redirect to first available tab and show upgrade modal
-    if (requestedTab?.disabled) {
+    // `canCreateTask` defaults to `true` until the project data loads, then may flip to
+    // `false` and drop permission-gated tabs (e.g. roadmap). Wait for the project to be
+    // loaded before redirecting away from an unavailable tab — otherwise the requested
+    // tab renders briefly and then jumps, producing a visible URL/tab flash on load.
+    const projectReady = !!selectedProject;
+
+    if (projectReady && !requestedTab) {
+      // Tab isn't available to this user at all — fall back to the first available tab.
+      const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
+      if (firstAvailableTab) {
+        setActiveTab(firstAvailableTab.key);
+      }
+    } else if (requestedTab?.disabled) {
+      // If tab is disabled, redirect to first available tab and show upgrade modal
       const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
       if (firstAvailableTab) {
         setActiveTab(firstAvailableTab.key);
@@ -441,7 +455,7 @@ const ProjectView = React.memo(() => {
   const handleTabChange = useCallback(
     (key: string) => {
       // Find the tab item to check if it's disabled
-      const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+      const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
       const tabItem = filteredTabItems.find(item => item.key === key);
 
       if (!tabItem) {
@@ -505,6 +519,7 @@ const ProjectView = React.memo(() => {
       selectedProject,
       projectId,
       trackMixpanelEvent,
+      canCreateTask,
     ]
   );
 
@@ -515,7 +530,7 @@ const ProjectView = React.memo(() => {
       return [];
     }
 
-    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject);
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
 
     const menuItems = filteredTabItems.map(item => {
       const premiumTabs = ['finance', 'project-insights-member-overview', 'roadmap', 'workload'];
@@ -590,7 +605,7 @@ const ProjectView = React.memo(() => {
     });
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject]);
+  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject, canCreateTask]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);

@@ -39,7 +39,7 @@ import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
 
-const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
+const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskViewModel; disabled?: boolean }) => {
   const { socket, connected } = useSocket();
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-drawer/task-drawer-recurring-config');
@@ -299,7 +299,7 @@ const TaskDrawerRecurringConfig = ({ task }: { task: ITaskViewModel }) => {
               </div>
             </Tooltip>
           ) : (
-            <Switch checked={recurring} onChange={handleChange} />
+            <Switch checked={recurring} onChange={handleChange} disabled={disabled} />
           )}
           &nbsp;
           {recurring && (

@@ -36,9 +36,10 @@ interface TaskDrawerDueDateProps {
   task: ITaskViewModel;
   t: TFunction;
   form: FormInstance;
+  disabled?: boolean;
 }
 
-const TaskDrawerDueDate = ({ task, t, form }: TaskDrawerDueDateProps) => {
+const TaskDrawerDueDate = ({ task, t, form, disabled = false }: TaskDrawerDueDateProps) => {
   const { socket } = useSocket();
   const [isShowStartDate, setIsShowStartDate] = useState(false);
   const dispatch = useAppDispatch();
@@ -168,6 +169,7 @@ const handleDueTimeChange = useCallback(
                 value={isValidStartDate ? startDayjs : null}
                 format={'MMM DD, YYYY'}
                 suffixIcon={null}
+                disabled={disabled}
               />
               <Typography.Text>-</Typography.Text>
             </>
@@ -178,6 +180,7 @@ const handleDueTimeChange = useCallback(
             onChange={handleEndDateChange}
             value={isValidDueDate ? dueDayjs : null}
             format={'MMM DD, YYYY'}
+            disabled={disabled}
           />
 
           <Button
@@ -204,6 +207,7 @@ const handleDueTimeChange = useCallback(
           placeholder={t('taskInfoTab.details.set-due-time', { defaultValue: 'Set due time' })}
           style={{ width: '160px' }}
           allowClear
+          disabled={disabled}
         />
       </Form.Item>
     </>

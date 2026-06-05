@@ -3,8 +3,9 @@ import db from "../../config/db";
 import TasksController from "../../controllers/tasks-controller";
 import { SocketEvents } from "../events";
 
-import { log_error, notifyProjectUpdates } from "../util";
+import { getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates } from "../util";
 import { getTaskDetails, logTotalMinutes } from "../../services/activity-logs/activity-logs.service";
+import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
 
 /**
  * Recursively updates all ancestor tasks' progress when a subtask changes
@@ -77,6 +78,11 @@ export async function on_time_estimation_change(io: Server, socket: Socket, data
     // (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_minutes_spent,
     const q = `UPDATE tasks SET total_minutes = $2 WHERE id = $1 RETURNING total_minutes, project_id, parent_task_id;`;
     const body = JSON.parse(data as string);
+
+    // Enforce restrict_task_creation: restricted users cannot modify tasks.
+    if (await isTaskCreationRestrictedForTask(getLoggedInUserIdFromSocket(socket), body.task_id)) {
+      return;
+    }
 
     const hours = body.total_hours || 0;
     const minutes = body.total_minutes || 0;

@@ -202,7 +202,8 @@ export const updateTabLabels = () => {
 // Function to get filtered tab items based on user permissions
 export const getFilteredTabItems = (
   currentSession: ILocalSession | null,
-  currentProject?: IProjectViewModel | null
+  currentProject?: IProjectViewModel | null,
+  canCreateTask?: boolean
 ): TabItems[] => {
   const hasFinancePermission = hasFinanceViewPermission(currentSession, currentProject);
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
@@ -210,6 +211,11 @@ export const getFilteredTabItems = (
 
   return tabItems
     .map(item => {
+      // Hide roadmap tab when user cannot create/edit tasks
+      if (item.key === 'roadmap' && canCreateTask === false) {
+        return null;
+      }
+
       // Handle finance tab specially
       if (item.key === 'finance') {
         // If user has finance permission but no business access, show tab as disabled

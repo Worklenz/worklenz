@@ -9,9 +9,10 @@ import './task-list-due-time-cell.css';
 
 interface TaskListDueTimeCellProps {
   task: Task;
+  disabled?: boolean;
 }
 
-const TaskListDueTimeCell: React.FC<TaskListDueTimeCellProps> = memo(({ task }) => {
+const TaskListDueTimeCell: React.FC<TaskListDueTimeCellProps> = memo(({ task, disabled = false }) => {
   const { socket, connected } = useSocket();
   const { t } = useTranslation('task-list-table');
 
@@ -43,9 +44,16 @@ const TaskListDueTimeCell: React.FC<TaskListDueTimeCellProps> = memo(({ task }) 
       changeOnScroll
       needConfirm={false}
       placeholder={t('setDueTime', { defaultValue: 'Set due time' })}
-      style={{ border: 'none', background: 'transparent', width: '100%' }}
+      style={{
+        border: 'none',
+        background: 'transparent',
+        width: '100%',
+        opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? 'not-allowed' : undefined,
+      }}
       className="due-time-picker"
       allowClear
+      disabled={disabled}
     />
   );
 });

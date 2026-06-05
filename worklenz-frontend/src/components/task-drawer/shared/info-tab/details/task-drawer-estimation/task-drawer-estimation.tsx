@@ -9,9 +9,10 @@ interface TaskDrawerEstimationProps {
   t: TFunction;
   task: ITaskViewModel;
   form: FormInstance<any>;
+  disabled?: boolean;
 }
 
-const TaskDrawerEstimation = ({ t, task, form }: TaskDrawerEstimationProps) => {
+const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEstimationProps) => {
   const { socket, connected } = useSocket();
 
   const handleTimeEstimationBlur = () => {
@@ -59,6 +60,7 @@ const TaskDrawerEstimation = ({ t, task, form }: TaskDrawerEstimationProps) => {
             precision={0}
             placeholder={t('taskInfoTab.details.hours')}
             onBlur={handleTimeEstimationBlur}
+            disabled={disabled}
           />
         </Form.Item>
         <Form.Item
@@ -86,6 +88,7 @@ const TaskDrawerEstimation = ({ t, task, form }: TaskDrawerEstimationProps) => {
             precision={0}
             placeholder={t('taskInfoTab.details.minutes')}
             onBlur={handleTimeEstimationBlur}
+            disabled={disabled}
           />
         </Form.Item>
       </Flex>

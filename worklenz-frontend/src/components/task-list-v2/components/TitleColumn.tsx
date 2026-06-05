@@ -236,7 +236,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="flex-1 min-w-0" ref={wrapperRef}>
                   <span
-                    className="text-sm text-gray-700 dark:text-gray-300 truncate cursor-text block"
+                    className={`text-sm text-gray-700 dark:text-gray-300 truncate block ${canCreateTask ? 'cursor-text' : 'cursor-default'}`}
                     style={{
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
@@ -246,6 +246,7 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
                       e.stopPropagation();
                       e.preventDefault();
                       if (task.is_parent_container) return;
+                      if (!canCreateTask) return;
                       onEditTaskName(true);
                     }}
                     onContextMenu={e => {

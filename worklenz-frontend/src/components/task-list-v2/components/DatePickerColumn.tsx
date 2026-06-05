@@ -16,6 +16,7 @@ interface DatePickerColumnProps {
   isDarkMode: boolean;
   activeDatePicker: string | null;
   onActiveDatePickerChange: (field: string | null) => void;
+  disabled?: boolean;
 }
 
 export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
@@ -28,6 +29,7 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
     isDarkMode,
     activeDatePicker,
     onActiveDatePickerChange,
+    disabled = false,
   }) => {
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
@@ -132,8 +134,13 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
           </div>
         ) : (
           <div
-            className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors text-center"
+            className={`rounded px-2 py-1 transition-colors text-center ${
+              disabled
+                ? 'opacity-40 cursor-not-allowed'
+                : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
             onClick={e => {
+              if (disabled) return;
               e.stopPropagation();
               handleOpenDatePicker();
             }}

@@ -1,9 +1,10 @@
 import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { notifyProjectUpdates } from "../util";
+import { getLoggedInUserIdFromSocket, notifyProjectUpdates } from "../util";
 import { log_error } from "../../shared/utils";
 import { verifyTaskAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
 
 export async function on_task_due_time_change(_io: Server, socket: Socket, data?: string) {
   try {
@@ -12,6 +13,11 @@ export async function on_task_due_time_change(_io: Server, socket: Socket, data?
     const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, "TASK_DUE_TIME_CHANGE", "task", body.task_id);
+      return;
+    }
+
+    // Enforce restrict_task_creation: restricted users cannot modify tasks.
+    if (await isTaskCreationRestrictedForTask(getLoggedInUserIdFromSocket(socket), body.task_id)) {
       return;
     }
 
