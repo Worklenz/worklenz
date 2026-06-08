@@ -1,6 +1,7 @@
 import { Message, User } from '@/types/socket.types';
 import logger from '@/utils/errorLogger';
 import { Socket } from 'socket.io-client';
+import { SocketEvents } from '@/shared/socket-events';
 
 export class SocketService {
   private socket: Socket | null = null;
@@ -100,13 +101,11 @@ export class SocketService {
         return;
       }
 
-      this.socket.emit('join_room', { roomId }, (response: { success: boolean }) => {
-        if (response.success) {
-          resolve();
-        } else {
-          reject(new Error('Failed to join room'));
-        }
+      this.socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), {
+        type: 'join',
+        id: roomId,
       });
+      resolve();
     });
   }
 
@@ -117,13 +116,11 @@ export class SocketService {
         return;
       }
 
-      this.socket.emit('leave_room', { roomId }, (response: { success: boolean }) => {
-        if (response.success) {
-          resolve();
-        } else {
-          reject(new Error('Failed to leave room'));
-        }
+      this.socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), {
+        type: 'leave',
+        id: roomId,
       });
+      resolve();
     });
   }
 

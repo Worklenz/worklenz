@@ -17,6 +17,8 @@ import { CrownOutlined } from '@ant-design/icons';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
@@ -106,6 +108,7 @@ const ProjectView = React.memo(() => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
   const { canCreateTask } = useTaskCreationPermission();
+  const { socket } = useSocket();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
@@ -131,6 +134,34 @@ const ProjectView = React.memo(() => {
 
   // Initialize timer state from backend when project view loads
   useTimerInitialization();
+
+  // Join the project socket room while viewing this project so real-time task updates are delivered
+  useEffect(() => {
+    if (!socket || !projectId) {
+      return;
+    }
+
+    const joinPayload = {
+      type: 'join',
+      id: projectId,
+    };
+    const leavePayload = {
+      type: 'leave',
+      id: projectId,
+    };
+
+    socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), joinPayload);
+    const handleReconnect = () => {
+      socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), joinPayload);
+    };
+
+    socket.on('connect', handleReconnect);
+
+    return () => {
+      socket.off('connect', handleReconnect);
+      socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), leavePayload);
+    };
+  }, [socket, projectId]);
 
   // Update local state when URL params change
   useEffect(() => {
