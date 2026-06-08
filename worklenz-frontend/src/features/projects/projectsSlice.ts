@@ -8,6 +8,9 @@ import { IProjectManager } from '@/types/project/projectManager.types';
 import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
 import { ProjectGroupBy } from '@/types/project/project.types';
 
+const DEFAULT_PROJECT_SORT_FIELD = 'name';
+const DEFAULT_PROJECT_SORT_ORDER = 'ascend';
+
 interface ProjectState {
   projects: {
     data: IProjectViewModel[];
@@ -79,8 +82,8 @@ const initialState: ProjectState = {
   requestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: '',
-    order: '',
+    field: DEFAULT_PROJECT_SORT_FIELD,
+    order: DEFAULT_PROJECT_SORT_ORDER,
     search: '',
     filter: 0,
     statuses: null,
