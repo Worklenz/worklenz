@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import { Button, Tooltip, Popconfirm, message, dayjs } from '@/shared/antd-imports';
 import {
@@ -64,6 +64,9 @@ const AttachmentsPreview = ({
     }
   };
 
+  const handlePreviewOpen = () => setPreviewOpen(true);
+  const stopClickPropagation = (event: MouseEvent<HTMLButtonElement>) => event.stopPropagation();
+
   const handleDelete = async (id?: string) => {
     if (!id || !selectedTaskId) return;
     try {
@@ -92,7 +95,20 @@ const AttachmentsPreview = ({
     <>
       <div className="ant-upload-list-picture-card-container">
         {attachment && (
-          <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
+          <div
+            className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card"
+            style={{ cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onClick={handlePreviewOpen}
+            onKeyPress={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handlePreviewOpen();
+              }
+            }}
+            aria-label={`Preview attachment ${attachment.name}`}
+          >
             <Tooltip
               title={
                 <div>
@@ -124,6 +140,10 @@ const AttachmentsPreview = ({
                     rel="noopener noreferrer"
                     className="ant-upload-list-item-thumbnail"
                     href={attachment.url}
+                    onClick={event => {
+                      event.preventDefault();
+                      handlePreviewOpen();
+                    }}
                   >
                     {!isImageFile() && (
                       <span
@@ -141,7 +161,10 @@ const AttachmentsPreview = ({
                 type="text"
                 size="small"
                 title="Preview file"
-                onClick={() => setPreviewOpen(true)}
+                onClick={event => {
+                  event.stopPropagation();
+                  handlePreviewOpen();
+                }}
                 className="ant-upload-list-item-card-actions-btn"
               >
                 <EyeOutlined />
@@ -151,7 +174,10 @@ const AttachmentsPreview = ({
                 type="text"
                 size="small"
                 title="Download file"
-                onClick={() => download(attachment.id, attachment.name)}
+                onClick={event => {
+                  event.stopPropagation();
+                  void download(attachment.id, attachment.name);
+                }}
                 loading={downloading}
                 className="ant-upload-list-item-card-actions-btn"
               >
@@ -162,7 +188,10 @@ const AttachmentsPreview = ({
                 title="Delete Attachment"
                 description="Are you sure you want to delete this attachment?"
                 icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
-                onConfirm={() => handleDelete(attachment.id)}
+                onConfirm={event => {
+                  event?.stopPropagation();
+                  handleDelete(attachment.id);
+                }}
                 okText="Yes"
                 cancelText="No"
               >
@@ -171,6 +200,7 @@ const AttachmentsPreview = ({
                   size="small"
                   title="Remove file"
                   loading={deleting}
+                  onClick={event => event.stopPropagation()}
                   className="ant-upload-list-item-card-actions-btn"
                 >
                   <DeleteOutlined />
