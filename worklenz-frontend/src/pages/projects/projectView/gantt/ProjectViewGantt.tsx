@@ -27,6 +27,8 @@ import {
   setTaskFormViewModel,
   fetchTask,
 } from '@features/task-drawer/task-drawer.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { SocketEvents } from '@/shared/socket-events';
@@ -305,6 +307,11 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
     (updatedPhase: any) => {
       refetchTasks();
       refetchPhases();
+      // Also refresh the task-management slice so Task List updates immediately
+      if (projectId) {
+        dispatch(fetchTasksV3(projectId));
+        dispatch(fetchTaskGroups(projectId));
+      }
     },
     [refetchTasks, refetchPhases]
   );
@@ -335,6 +342,11 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         message.success('Phases reordered successfully');
         refetchPhases();
         refetchTasks();
+        // Refresh task-management slice so Task List view reflects new phase ordering
+        if (projectId) {
+          dispatch(fetchTasksV3(projectId));
+          dispatch(fetchTaskGroups(projectId));
+        }
       } catch (error: any) {
         console.error('Failed to reorder phases:', error);
         message.error(error?.data?.message || 'Failed to reorder phases');
