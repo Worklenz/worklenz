@@ -13,7 +13,7 @@ const RequestsPage: React.FC = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+
   const { data, isLoading, error } = useGetRequestsQuery({
     page,
     limit: pageSize
@@ -113,7 +113,7 @@ const RequestsPage: React.FC = () => {
       {/* Page Header */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <Title level={4} style={{ marginBottom: 4 }}>
+          <Title level={3} style={{ marginBottom: 4 }}>
             <FileTextOutlined style={{ marginRight: 8 }} />
             {t('requests.title')}
           </Title>
@@ -127,7 +127,7 @@ const RequestsPage: React.FC = () => {
           {t('requests.newRequest')}
         </Button>
       </div>
-      
+
       <Card size="small" styles={{ body: { padding: 0 } }}>
         <Spin spinning={isLoading}>
           {(data?.body?.requests && data.body.requests.length > 0) ? (

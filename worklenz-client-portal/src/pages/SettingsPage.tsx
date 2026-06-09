@@ -25,7 +25,7 @@ const SettingsPage: React.FC = () => {
   
   return (
     <div>
-      <Title level={2}>
+      <Title level={3}>
         <ShareAltOutlined /> {t('settings.title')}
       </Title>
       <p>{t('settings.description')}</p>

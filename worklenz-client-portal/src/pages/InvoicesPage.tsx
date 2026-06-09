@@ -110,7 +110,7 @@ const InvoicesPage: React.FC = () => {
     return (
       <div>
         <div style={{ marginBottom: 24 }}>
-          <Title level={4} style={{ marginBottom: 4 }}>
+          <Title level={3} style={{ marginBottom: 4 }}>
             <FileDoneOutlined style={{ marginRight: 8 }} />
             {t('invoices.title')}
           </Title>

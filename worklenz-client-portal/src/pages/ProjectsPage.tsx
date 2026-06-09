@@ -300,7 +300,7 @@ const ProjectsPage: React.FC = () => {
       {/* Page Header */}
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <Title level={4} style={{ marginBottom: 4 }}>
+          <Title level={3} style={{ marginBottom: 4 }}>
             <ProjectOutlined style={{ marginRight: 8 }} />
             {t('projects.title')}
           </Title>
