@@ -93,8 +93,8 @@ const initialState: ProjectState = {
   groupedRequestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: 'priority',
-    order: 'descend',
+    field: DEFAULT_PROJECT_SORT_FIELD,
+    order: DEFAULT_PROJECT_SORT_ORDER,
     search: '',
     groupBy: ProjectGroupBy.PRIORITY,
     filter: 0,
