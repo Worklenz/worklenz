@@ -47,7 +47,8 @@ const Configuration: React.FC = React.memo(() => {
         setLoading(true);
         const res = await adminCenterApiService.updateBillingConfiguration(values);
         if (res.done) {
-          fetchConfiguration();
+          await fetchConfiguration();
+          form.resetFields();
         }
       } catch (error) {
         logger.error('Error updating configuration:', error);
@@ -55,7 +56,7 @@ const Configuration: React.FC = React.memo(() => {
         setLoading(false);
       }
     },
-    [fetchConfiguration]
+    [fetchConfiguration, form]
   );
 
   const countryOptions = useMemo(
@@ -97,18 +98,18 @@ const Configuration: React.FC = React.memo(() => {
   return (
     <div>
       <Card title={<span style={titleStyle}>Billing Details</span>} style={cardStyle}>
-        <Form form={form} initialValues={configuration} onFinish={handleSave}>
+        <Form
+          form={form}
+          initialValues={configuration}
+          onFinish={handleSave}
+        >
           <Row gutter={[0, 0]}>
             <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item
                 name="name"
                 label="Name"
                 layout="vertical"
-                rules={[
-                  {
-                    required: true,
-                  },
-                ]}
+                rules={[{ required: true }]}
               >
                 <Input placeholder="Name" disabled />
               </Form.Item>
@@ -118,11 +119,7 @@ const Configuration: React.FC = React.memo(() => {
                 name="email"
                 label="Email Address"
                 layout="vertical"
-                rules={[
-                  {
-                    required: true,
-                  },
-                ]}
+                rules={[{ required: true }]}
               >
                 <Input placeholder="Email Address" disabled />
               </Form.Item>
@@ -203,7 +200,13 @@ const Configuration: React.FC = React.memo(() => {
           <Row>
             <Col xs={24} sm={24} md={8} lg={8} xl={8} style={{ ...buttonColStyle, marginTop: 8 }}>
               <Form.Item>
-                <Button type="primary" htmlType="submit" loading={loading} block>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  disabled={!form.isFieldsTouched()}
+                  block
+                >
                   Save
                 </Button>
               </Form.Item>
