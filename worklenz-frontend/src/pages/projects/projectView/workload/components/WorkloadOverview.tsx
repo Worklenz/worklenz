@@ -290,18 +290,20 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
+          overlayStyle={{ maxWidth: 'none' }}
+  overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
             title={
-              <div>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>Team composition and allocation status</div>
-                <div style={{ marginBottom: 4, opacity: 0.85 }}>Member Status:</div>
-                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li style={{ whiteSpace: 'nowrap' }}>Total Members: {summary.totalMembers}</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Overallocated: {summary.overallocatedMembers} (&gt;100% utilization)</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Underutilized: {summary.underutilizedMembers} (&lt;{alertThresholds.underutilization}% utilization)</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Optimal: {summary.totalMembers - summary.overallocatedMembers - summary.underutilizedMembers}</li>
-                </ul>
-              </div>
-            }
+  <div>
+    <div style={{ fontWeight: 600, marginBottom: 8 }}>Team composition and allocation status</div>
+    <div style={{ marginBottom: 4, opacity: 0.85 }}>Member Status:</div>
+    <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+      <li>Total Members: {summary.totalMembers}</li>
+      <li>Overallocated: {summary.overallocatedMembers} (&gt;100% utilization)</li>
+      <li>Underutilized: {summary.underutilizedMembers} (&lt;{alertThresholds.underutilization}% utilization)</li>
+      <li>Optimal: {summary.totalMembers - summary.overallocatedMembers - summary.underutilizedMembers}</li>
+    </ul>
+  </div>
+}
           >
             <Statistic
               title={
@@ -320,14 +322,16 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
+          overlayStyle={{ maxWidth: 'none' }}
+  overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
             title={
               <div>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>Total estimated workload across all team members</div>
                 <div style={{ marginBottom: 4, opacity: 0.85 }}>Includes:</div>
                 <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li style={{ whiteSpace: 'nowrap' }}>Estimated Hours: {summary.totalEstimatedHours}h</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Actual Hours Logged: {summary.totalActualHours}h</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Progress: {summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : summary.totalActualHours > 0 ? 100 : 0}%</li>
+                  <li >Estimated Hours: {summary.totalEstimatedHours}h</li>
+                  <li >Actual Hours Logged: {summary.totalActualHours}h</li>
+                  <li >Progress: {summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : summary.totalActualHours > 0 ? 100 : 0}%</li>
                 </ul>
               </div>
             }
@@ -360,14 +364,16 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
+            overlayStyle={{ maxWidth: 'none' }}
+            overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
             title={
               <div>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.averageUtilization')}</div>
                 <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li style={{ whiteSpace: 'nowrap' }}>Average: {summary.averageUtilization.toFixed(1)}%</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Members: {summary.totalMembers}</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Total Assigned: {summary.totalEstimatedHours}h</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Total Capacity: {summary.totalMembers > 0 && summary.averageUtilization > 0 ? Math.round((summary.totalEstimatedHours * 100) / summary.averageUtilization) : 0}h</li>
+                  <li>Average: {summary.averageUtilization.toFixed(1)}%</li>
+                  <li >Members: {summary.totalMembers}</li>
+                  <li >Total Assigned: {summary.totalEstimatedHours}h</li>
+                  <li >Total Capacity: {summary.totalMembers > 0 && summary.averageUtilization > 0 ? Math.round((summary.totalEstimatedHours * 100) / summary.averageUtilization) : 0}h</li>
                 </ul>
               </div>
             }
@@ -398,13 +404,15 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
+            overlayStyle={{ maxWidth: 'none' }}
+            overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
             title={
               <div>
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.criticalTasks')}</div>
                 <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
-                  <li style={{ whiteSpace: 'nowrap' }}>Critical Tasks: {summary.criticalTasks}</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Total Tasks: {summary.totalTasks}</li>
-                  <li style={{ whiteSpace: 'nowrap' }}>Critical Percentage: {summary.totalTasks > 0 ? Math.round((summary.criticalTasks / summary.totalTasks) * 100) : 0}%</li>
+                  <li >Critical Tasks: {summary.criticalTasks}</li>
+                  <li >Total Tasks: {summary.totalTasks}</li>
+                  <li >Critical Percentage: {summary.totalTasks > 0 ? Math.round((summary.criticalTasks / summary.totalTasks) * 100) : 0}%</li>
                 </ul>
               </div>
             }
