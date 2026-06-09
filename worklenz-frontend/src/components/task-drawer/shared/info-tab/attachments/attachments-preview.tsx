@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from 'react';
+import { useState } from 'react';
 import { ITaskAttachmentViewModel } from '@/types/tasks/task-attachment-view-model';
 import { Button, Tooltip, Popconfirm, message, dayjs } from '@/shared/antd-imports';
 import {
@@ -65,7 +65,6 @@ const AttachmentsPreview = ({
   };
 
   const handlePreviewOpen = () => setPreviewOpen(true);
-  const stopClickPropagation = (event: MouseEvent<HTMLButtonElement>) => event.stopPropagation();
 
   const handleDelete = async (id?: string) => {
     if (!id || !selectedTaskId) return;
@@ -101,7 +100,7 @@ const AttachmentsPreview = ({
             role="button"
             tabIndex={0}
             onClick={handlePreviewOpen}
-            onKeyPress={event => {
+            onKeyDown={event => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 handlePreviewOpen();
@@ -190,7 +189,7 @@ const AttachmentsPreview = ({
                 icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
                 onConfirm={event => {
                   event?.stopPropagation();
-                  handleDelete(attachment.id);
+                  void handleDelete(attachment.id);
                 }}
                 okText="Yes"
                 cancelText="No"
