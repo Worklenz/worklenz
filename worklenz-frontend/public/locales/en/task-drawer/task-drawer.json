@@ -111,6 +111,7 @@
       "maxFilesError": "You can only upload a maximum of {{count}} files",
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
+      "enterHint": "Enter to send  ·  Shift+Enter for new line",
       "fileTooLargeToSend": "Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.",
       "historyLockedBoundary": "Comment history is limited to the last 90 days on this plan",
       "historyLockedTitle": "Comment History Locked",

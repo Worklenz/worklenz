@@ -25,6 +25,7 @@ interface CustomMentionsInputProps {
   value: string;
   onChange: (value: string) => void;
   onSelect?: (option: MentionOption) => void;
+  onSubmit?: () => void;
   themeMode: string;
   options: MentionOption[];
   placeholder?: string;
@@ -38,6 +39,7 @@ const CustomMentionsInput = ({
   value,
   onChange,
   onSelect,
+  onSubmit,
   themeMode,
   options,
   placeholder,
@@ -56,6 +58,9 @@ const CustomMentionsInput = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isComposingRef = useRef(false);
   const isUpdatingRef = useRef(false);
+  // Blocks the useEffect from rewriting the DOM on the onChange call that
+  // immediately follows a Shift+Enter (the <br> is already in the DOM).
+  const skipNextRenderRef = useRef(false);
 
   // Recalculate dropdown position whenever it opens or the window scrolls/resizes
   const updateDropdownPos = () => {
@@ -163,19 +168,24 @@ const CustomMentionsInput = ({
     ranges.sort((a, b) => a.start - b.start);
 
     // Step 4: build final HTML
+    // Escape plain text AND convert \n to <br> so newlines survive the
+    // round-trip through the value string.
+    const plainSegmentToHtml = (segment: string) =>
+      escapeHtml(segment).replace(/\n/g, '<br>');
+
     let result = '';
     let cursor = 0;
 
     for (const range of ranges) {
       if (range.start > cursor) {
-        result += escapeHtml(text.slice(cursor, range.start));
+        result += plainSegmentToHtml(text.slice(cursor, range.start));
       }
       result += range.html;
       cursor = range.end;
     }
 
     if (cursor < text.length) {
-      result += escapeHtml(text.slice(cursor));
+      result += plainSegmentToHtml(text.slice(cursor));
     }
 
     return result;
@@ -192,6 +202,10 @@ const CustomMentionsInput = ({
         plainText += node.textContent || '';
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as Element;
+        if (el.tagName === 'BR') {
+          plainText += '\n';
+          return;
+        }
         if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           // Use the trimmed text content so internal padding spaces don't leak into the value
           plainText += (node.textContent || '').trim();
@@ -509,6 +523,43 @@ const CustomMentionsInput = ({
         e.preventDefault();
         setIsDropdownOpen(false);
       }
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (e.shiftKey) {
+        e.preventDefault();
+        if (!editableRef.current) return;
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+
+        const br = document.createElement('br');
+        range.insertNode(br);
+
+        // A trailing <br> needs a following text node so the cursor lands after it.
+        if (!br.nextSibling) {
+          br.parentNode?.appendChild(document.createTextNode(''));
+        }
+
+        const newRange = document.createRange();
+        newRange.setStartAfter(br);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+
+        // Prevent the useEffect from wiping the <br> the browser just inserted.
+        skipNextRenderRef.current = true;
+
+        const updated = extractPlainText(editableRef.current.innerHTML);
+        onChange(updated);
+      } else {
+        e.preventDefault();
+        if (value?.trim() && onSubmit) onSubmit();
+      }
     }
   };
 
@@ -629,6 +680,11 @@ const CustomMentionsInput = ({
 
   // Sync highlighted HTML when value / options / theme changes
   useEffect(() => {
+    if (skipNextRenderRef.current) {
+      skipNextRenderRef.current = false;
+      return;
+    }
+
     if (editableRef.current && value !== undefined && !isUpdatingRef.current) {
       isUpdatingRef.current = true;
 

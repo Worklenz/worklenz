@@ -454,6 +454,7 @@ const InfoTabFooter = () => {
                   memberSelectHandler(option as IMentionMemberSelectOption)
                 }
                 onChange={handleCommentChange}
+                onSubmit={handleSubmit}
                 prefix="@"
                 filterOption={(input: string, option: any) => {
                   if (!input) return true;
@@ -480,6 +481,14 @@ const InfoTabFooter = () => {
                 }}
               >{`${characterLength}/5000`}</span>
             </div>
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: 11, marginTop: 4, display: 'block' }}
+            >
+              {t('taskInfoTab.comments.enterHint', {
+                defaultValue: 'Enter to send  ·  Shift+Enter for new line',
+              })}
+            </Typography.Text>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>

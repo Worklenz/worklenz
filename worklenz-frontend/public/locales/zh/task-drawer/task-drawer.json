@@ -94,6 +94,7 @@
       "maxFilesError": "您最多只能上传 {{count}} 个文件",
       "processFilesError": "处理文件失败",
       "addCommentError": "请添加评论或附加文件",
+      "enterHint": "Enter 发送  ·  Shift+Enter 换行",
       "fileTooLargeToSend": "评论中的文件超过 25MB 需要 Business 方案。请移除此文件或升级后继续。",
       "historyLockedBoundary": "评论记录在此方案中仅限最近 90 天",
       "historyLockedTitle": "评论历史已锁定",
