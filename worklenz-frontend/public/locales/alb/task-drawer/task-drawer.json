@@ -94,6 +94,7 @@
       "maxFilesError": "Mund të ngarkoni maksimumi {{count}} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "enterHint": "Enter për të dërguar  ·  Shift+Enter për rresht të ri",
       "fileTooLargeToSend": "Skedarët mbi 25MB në komente kërkojnë planin Business. Hiqeni këtë skedar ose bëni upgrade për të vazhduar.",
       "historyLockedBoundary": "Komentet janë të kufizuara në 90 ditët e fundit në këtë plan",
       "historyLockedTitle": "Historiku i komenteve i bllokuar",

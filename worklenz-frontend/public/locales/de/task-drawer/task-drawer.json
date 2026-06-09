@@ -92,6 +92,7 @@
       "maxFilesError": "Sie können maximal {{count}} Dateien hochladen",
       "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
+      "enterHint": "Enter zum Senden  ·  Shift+Enter für neue Zeile",
       "fileTooLargeToSend": "Dateien über 25MB in Kommentaren erfordern den Business-Plan. Entfernen Sie diese Datei oder führen Sie ein Upgrade durch.",
       "historyLockedBoundary": "Kommentare sind in diesem Plan auf die letzten 90 Tage begrenzt",
       "historyLockedTitle": "Kommentarverlauf gesperrt",

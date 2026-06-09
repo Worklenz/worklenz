@@ -92,6 +92,7 @@
       "maxFilesError": "Solo puedes subir un máximo de {{count}} archivos",
       "processFilesError": "Error al procesar archivos",
       "addCommentError": "Por favor añade un comentario o adjunta archivos",
+      "enterHint": "Enter para enviar  ·  Shift+Enter para nueva línea",
       "fileTooLargeToSend": "Los archivos de más de 25MB en comentarios requieren el plan Business. Quita este archivo o actualiza para continuar.",
       "historyLockedBoundary": "El historial de comentarios está limitado a los últimos 90 días en este plan",
       "historyLockedTitle": "Historial de comentarios bloqueado",
