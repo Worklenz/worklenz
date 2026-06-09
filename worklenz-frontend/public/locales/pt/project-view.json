@@ -12,5 +12,11 @@
   "pinnedTab": "Fixada como aba padrão",
   "pinTab": "Fixar como aba padrão",
   "unpinTab": "Desfixar aba padrão",
-  "finance": "Finance"
+  "finance": "Finance",
+  "projectUpdated": "Projeto Atualizado",
+  "projectDataUpdatedDesc": "Um membro da equipe atualizou este projeto.",
+  "projectHealthUpdatedDesc": "A saúde do projeto foi atualizada.",
+  "projectStatusUpdatedDesc": "O status do projeto foi atualizado.",
+  "projectDatesUpdatedDesc": "As datas do projeto foram atualizadas.",
+  "projectCategoryUpdatedDesc": "A categoria do projeto foi atualizada."
 }
