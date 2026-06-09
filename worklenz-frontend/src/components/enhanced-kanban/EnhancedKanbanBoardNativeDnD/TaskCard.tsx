@@ -513,7 +513,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 type="text"
                 icon={<InboxOutlined style={{ color: '#6b7280', fontSize: 16 }} />}
                 style={{
-                  color: '#6b7280',
+                  color: !canCreateTask ? '#9ca3af' : '#6b7280',
                   width: '100%',
                   textAlign: 'left',
                   padding: '8px 16px',
@@ -523,33 +523,37 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                   alignItems: 'center',
                   gap: '8px',
                   whiteSpace: 'nowrap',
+                  opacity: !canCreateTask ? 0.4 : 1,
+                  cursor: !canCreateTask ? 'not-allowed' : 'pointer',
                 }}
-                onClick={() => handleArchiveTask(selectedTask || null)}
+                disabled={!canCreateTask}
+                onClick={canCreateTask ? () => handleArchiveTask(selectedTask || null) : undefined}
               >
                 {archived
                   ? t('unarchive', { defaultValue: 'Unarchive' })
                   : t('archive', { defaultValue: 'Archive' })}
               </Button>
-              {canCreateTask && (
-                <Button
-                  type="text"
-                  icon={<DeleteOutlined style={{ color: '#ef4444', fontSize: 16 }} />}
-                  style={{
-                    color: '#ef4444',
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '8px 16px',
-                    fontWeight: 500,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={() => handleDeleteTask(selectedTask || null)}
-                >
-                  {t('delete')}
-                </Button>
-              )}
+              <Button
+                type="text"
+                icon={<DeleteOutlined style={{ color: !canCreateTask ? '#fca5a5' : '#ef4444', fontSize: 16 }} />}
+                style={{
+                  color: !canCreateTask ? '#fca5a5' : '#ef4444',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 16px',
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  whiteSpace: 'nowrap',
+                  opacity: !canCreateTask ? 0.4 : 1,
+                  cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+                }}
+                disabled={!canCreateTask}
+                onClick={canCreateTask ? () => handleDeleteTask(selectedTask || null) : undefined}
+              >
+                {t('delete')}
+              </Button>
             </div>,
             document.body
           )}
@@ -632,7 +636,11 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                 <div className="relative">
                   <div
                     ref={dateButtonRef}
-                    className="task-due-date cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-1 py-0.5 transition-colors"
+                    className={`task-due-date rounded px-1 py-0.5 transition-colors ${
+                      canCreateTask
+                        ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700'
+                        : 'cursor-default opacity-60'
+                    }`}
                     style={{
                       fontSize: 10,
                       color: '#888',
@@ -640,8 +648,8 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                       whiteSpace: 'nowrap',
                       display: 'inline-block',
                     }}
-                    onClick={handleDateClick}
-                    title={t('clickToChangeDate')}
+                    onClick={canCreateTask ? handleDateClick : undefined}
+                    title={canCreateTask ? t('clickToChangeDate') : undefined}
                   >
                     {isUpdating ? (
                       <div className="w-3 h-3 border border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
@@ -769,6 +777,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                     groupId={groupId}
                     isDarkMode={themeMode === 'dark'}
                     kanbanMode={true}
+                    disabled={!canCreateTask}
                   />}
                   {(task.sub_tasks_count ?? 0) > 0 && (
                     <button
@@ -899,6 +908,7 @@ const TaskCard: React.FC<TaskCardProps> = memo(
                             groupId={groupId}
                             isDarkMode={themeMode === 'dark'}
                             kanbanMode={true}
+                            disabled={!canCreateTask}
                           />
                         </span>
                       </li>

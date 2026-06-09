@@ -16,9 +16,10 @@ import './task-drawer-title-section.css';
 type Props = {
   inputRef: React.RefObject<InputRef | null>;
   t: TFunction;
+  canCreateTask?: boolean;
 };
 
-const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
+const TaskDrawerTitleSection = ({ inputRef, t, canCreateTask = true }: Props) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const [isEditing, setIsEditing] = useState(false);
@@ -62,6 +63,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
   };
 
   const handleStartEditing = () => {
+    if (!canCreateTask) return;
     // Capture the name before the user starts typing so blur can detect a real change
     originalNameRef.current = decodedTaskName || taskName;
     setIsEditing(true);
@@ -151,7 +153,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             className="task-name-display task-name-display--large"
             style={{
               margin: 0,
-              cursor: 'text',
+              cursor: canCreateTask ? 'text' : 'default',
               lineHeight: 1.3,
               fontWeight: 700,
               fontSize: '22px',

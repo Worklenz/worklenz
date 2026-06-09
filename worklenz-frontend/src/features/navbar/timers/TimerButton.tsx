@@ -24,6 +24,133 @@ import NavbarTimer from './NavbarTimer';
 const { Text } = Typography;
 const { useToken } = theme;
 
+interface RecentTimeLogItemProps {
+  log: IRecentTimeLog;
+  isRunning: boolean;
+  startTime?: string;
+  onTimerChange: () => void;
+  token: ReturnType<typeof useToken>['token'];
+  t: (key: string, options?: Record<string, unknown>) => string;
+}
+
+const RecentTimeLogItem = ({
+  log,
+  isRunning,
+  startTime,
+  onTimerChange,
+  token,
+  t,
+}: RecentTimeLogItemProps) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const formatTimeSpent = (seconds: number | undefined): string => {
+    if (!seconds || seconds === 0) return '0m 0s';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const h = hours > 0 ? `${hours}h` : '';
+    const m = `${minutes}m`;
+    const s = `${secs}s`;
+    return `${h} ${m} ${s}`.trim();
+  };
+
+  return (
+    <List.Item
+      style={{
+        padding: '12px 16px',
+        borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        backgroundColor: 'transparent',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div style={{ width: '100%' }}>
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+            }}
+          >
+            <Text
+              strong
+              style={{
+                fontSize: 14,
+                color: token.colorText,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                minWidth: 0,
+              }}
+              title={log.task_name || t('timerButton.unnamedTask')}
+            >
+              {log.task_name || t('timerButton.unnamedTask')}
+            </Text>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: token.colorTextSecondary,
+                backgroundColor: token.colorFillQuaternary,
+                padding: '2px 8px',
+                borderRadius: token.borderRadiusSM,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                maxWidth: '40%',
+                flexShrink: 0,
+              }}
+              title={log.project_name || t('timerButton.unnamedProject')}
+            >
+              {log.project_name || t('timerButton.unnamedProject')}
+            </Text>
+          </div>
+          {log.parent_task_name && (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {t('timerButton.parent')}: {log.parent_task_name}
+            </Text>
+          )}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: 4,
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
+            </Text>
+            {isHovered ? (
+              <NavbarTimer
+                taskId={log.task_id}
+                isRunning={isRunning}
+                startTime={startTime}
+                onTimerChange={onTimerChange}
+              />
+            ) : (
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: token.colorTextSecondary,
+                  fontFamily: 'monospace',
+                }}
+              >
+                {formatTimeSpent(log.time_spent)}
+              </Text>
+            )}
+          </div>
+        </Space>
+      </div>
+    </List.Item>
+  );
+};
+
 const TimerButton = () => {
   const [runningTimers, setRunningTimers] = useState<IRunningTimer[]>([]);
   const [recentTimeLogs, setRecentTimeLogs] = useState<IRecentTimeLog[]>([]);
@@ -343,107 +470,19 @@ const TimerButton = () => {
                 renderItem={log => {
                   if (!log || !log.task_id) return null;
 
-                  const [isHovered, setIsHovered] = useState(false);
+                  const isRunning = runningTimers.some(timer => timer.task_id === log.task_id);
+                  const startTime = runningTimers.find(timer => timer.task_id === log.task_id)?.start_time;
 
                   return (
-                    <List.Item
-                      style={{
-                        padding: '12px 16px',
-                        borderBottom: `1px solid ${token.colorBorderSecondary}`,
-                        backgroundColor: 'transparent',
-                      }}
-                      onMouseEnter={() => setIsHovered(true)}
-                      onMouseLeave={() => setIsHovered(false)}
-                    >
-                      <div style={{ width: '100%' }}>
-                        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              gap: 8,
-                              width: '100%',
-                            }}
-                          >
-                            <Text
-                              strong
-                              style={{
-                                fontSize: 14,
-                                color: token.colorText,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                flex: 1,
-                                minWidth: 0,
-                              }}
-                              title={log.task_name || t('timerButton.unnamedTask')}
-                            >
-                              {log.task_name || t('timerButton.unnamedTask')}
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 500,
-                                color: token.colorTextSecondary,
-                                backgroundColor: token.colorFillQuaternary,
-                                padding: '2px 8px',
-                                borderRadius: token.borderRadiusSM,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                maxWidth: '40%',
-                                flexShrink: 0,
-                              }}
-                              title={log.project_name || t('timerButton.unnamedProject')}
-                            >
-                              {log.project_name || t('timerButton.unnamedProject')}
-                            </Text>
-                          </div>
-                          {log.parent_task_name && (
-                            <Text type="secondary" style={{ fontSize: 11 }}>
-                              {t('timerButton.parent')}: {log.parent_task_name}
-                            </Text>
-                          )}
-                          <div
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              marginTop: 4,
-                            }}
-                          >
-                            <Text type="secondary" style={{ fontSize: 11 }}>
-                              {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
-                            </Text>
-                            {isHovered ? (
-                              <NavbarTimer
-                                taskId={log.task_id}
-                                isRunning={runningTimers.some(
-                                  timer => timer.task_id === log.task_id
-                                )}
-                                startTime={
-                                  runningTimers.find(timer => timer.task_id === log.task_id)
-                                    ?.start_time
-                                }
-                                onTimerChange={fetchTimerData}
-                              />
-                            ) : (
-                              <Text
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: 500,
-                                  color: token.colorTextSecondary,
-                                  fontFamily: 'monospace',
-                                }}
-                              >
-                                {formatTimeSpent(log.time_spent)}
-                              </Text>
-                            )}
-                          </div>
-                        </Space>
-                      </div>
-                    </List.Item>
+                    <RecentTimeLogItem
+                      key={log.task_id}
+                      log={log}
+                      isRunning={isRunning}
+                      startTime={startTime}
+                      onTimerChange={fetchTimerData}
+                      token={token}
+                      t={t}
+                    />
                   );
                 }}
               />

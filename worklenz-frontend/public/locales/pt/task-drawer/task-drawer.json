@@ -83,6 +83,8 @@
       "edit": "Editar",
       "delete": "Excluir",
       "confirmDeleteComment": "Tem certeza de que deseja excluir este comentário?",
+      "edited": "(editado)",
+      "messageDeleted": "Esta mensagem foi apagada",
       "addCommentPlaceholder": "Adicionar um comentário...",
       "cancel": "Cancelar",
       "commentButton": "Comentar",

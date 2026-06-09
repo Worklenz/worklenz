@@ -17,9 +17,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface TaskDrawerBillableProps {
   task?: ITaskViewModel | null;
+  disabled?: boolean;
 }
 
-const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
+const TaskDrawerBillable = ({ task = null, disabled = false }: TaskDrawerBillableProps) => {
   const { socket, connected } = useSocket();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -149,12 +150,13 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
 
   return (
     <Flex gap={8} align="center">
-      <Switch checked={localBillable} onChange={handleBillableChange} />
+      <Switch checked={localBillable} onChange={handleBillableChange} disabled={disabled} />
       <Button
         size="small"
         type="default"
+        disabled={disabled}
         onClick={() => {
-          if (projectId) {
+          if (!disabled && projectId) {
             navigate(`/worklenz/projects/${projectId}?tab=finance`);
           }
         }}

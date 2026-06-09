@@ -263,6 +263,7 @@ export const useTaskRowColumns = ({
                 isDarkMode={isDarkMode}
                 activeDatePicker={activeDatePicker}
                 onActiveDatePickerChange={setActiveDatePicker}
+                disabled={!canCreateTask}
               />
             );
 
@@ -277,6 +278,7 @@ export const useTaskRowColumns = ({
                 isDarkMode={isDarkMode}
                 activeDatePicker={activeDatePicker}
                 onActiveDatePickerChange={setActiveDatePicker}
+                disabled={!canCreateTask}
               />
             );
 
@@ -286,7 +288,7 @@ export const useTaskRowColumns = ({
                 className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
                 style={{ width }}
               >
-                <TaskListDueTimeCell task={task} />
+                <TaskListDueTimeCell task={task} disabled={!canCreateTask} />
               </div>
             );
 
@@ -320,7 +322,7 @@ export const useTaskRowColumns = ({
             );
 
           case 'estimation':
-            return <EstimationColumn width={width} task={task} />;
+            return <EstimationColumn width={width} task={task} disabled={!canCreateTask} />;
 
           case 'completedDate':
             return <DateColumn width={width} formattedDate={formattedDates.completed} />;

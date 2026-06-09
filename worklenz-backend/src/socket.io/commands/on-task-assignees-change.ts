@@ -11,6 +11,7 @@ import { ExternalNotificationsService } from "../../services/external-notificati
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {isTaskCreationRestricted} from "../../shared/task-creation-restriction";
 
 interface TaskAssigneesChangeData {
   task_id: string;
@@ -19,18 +20,6 @@ interface TaskAssigneesChangeData {
   project_id: string;
   reporter_id: string;
   mode: number; // 0 for assign, 1 for unassign
-}
-
-async function isTaskCreationRestricted(userId: string, projectId: string): Promise<boolean> {
-  try {
-    const result = await db.query(
-      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
-      [userId, projectId]
-    );
-    return result.rows[0]?.restricted === true;
-  } catch {
-    return false;
-  }
 }
 
 export async function on_task_assignees_change(
