@@ -309,7 +309,7 @@ const ProjectsReportsTable = () => {
   const tableRowProps = useMemo(
     () => ({
       style: { height: 56, cursor: 'pointer' },
-      className: 'group even:bg-[#4e4e4e10]',
+      className: 'group',
     }),
     []
   );
