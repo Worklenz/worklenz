@@ -135,7 +135,6 @@ const ProjectView = React.memo(() => {
   // Initialize timer state from backend when project view loads
   useTimerInitialization();
 
-  // Join the project socket room while viewing this project so real-time task updates are delivered
   useEffect(() => {
     if (!socket || !projectId) {
       return;

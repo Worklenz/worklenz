@@ -1,7 +1,6 @@
 import { Message, User } from '@/types/socket.types';
 import logger from '@/utils/errorLogger';
 import { Socket } from 'socket.io-client';
-import { SocketEvents } from '@/shared/socket-events';
 
 export class SocketService {
   private socket: Socket | null = null;
@@ -91,37 +90,6 @@ export class SocketService {
 
     this.socket.on('user_status_changed', callback);
     return () => this.socket?.off('user_status_changed', callback);
-  }
-
-  // Room Methods
-  public joinRoom(roomId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket) {
-        reject(new Error('Socket not initialized'));
-        return;
-      }
-
-      this.socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), {
-        type: 'join',
-        id: roomId,
-      });
-      resolve();
-    });
-  }
-
-  public leaveRoom(roomId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket) {
-        reject(new Error('Socket not initialized'));
-        return;
-      }
-
-      this.socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), {
-        type: 'leave',
-        id: roomId,
-      });
-      resolve();
-    });
   }
 
   // Custom Event Handler
