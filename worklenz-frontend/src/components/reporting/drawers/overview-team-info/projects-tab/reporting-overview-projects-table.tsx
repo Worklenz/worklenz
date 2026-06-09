@@ -61,6 +61,7 @@ const ReportingOverviewProjectsTable = ({
   const { socket } = useSocket();
 
   const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationProps>({
@@ -80,11 +81,11 @@ const ReportingOverviewProjectsTable = ({
         prev.map(project =>
           project.id === data.id
             ? {
-                ...project,
-                project_health: data.health_id,
-                health_name: data.name,
-                health_color: data.color_code,
-              }
+              ...project,
+              project_health: data.health_id,
+              health_name: data.name,
+              health_color: data.color_code,
+            }
             : project
         )
       );
@@ -302,7 +303,7 @@ const ReportingOverviewProjectsTable = ({
   const tableRowProps = useMemo(
     () => ({
       style: { height: 56, cursor: 'pointer' },
-      className: 'group even:bg-[#4e4e4e10]',
+      className: 'group',
     }),
     []
   );
@@ -314,11 +315,18 @@ const ReportingOverviewProjectsTable = ({
           Table: {
             cellPaddingBlock: 12,
             cellPaddingInline: 10,
+            headerBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            bodySortBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            headerSortActiveBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            headerSortHoverBg: themeMode === 'dark' ? '#2a2a2a' : '#edebf0',
+            rowHoverBg: themeMode === 'dark' ? '#2a2a2a' : '#edebf0',
+            fixedHeaderSortActiveBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            colorBgContainer: themeMode === 'dark' ? '#181818' : '#ffffff',
           },
         },
       },
     }),
-    []
+    [themeMode]
   );
 
   const fetchOverviewProjects = async () => {
