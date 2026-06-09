@@ -24,6 +24,8 @@ settingsApiRouter.put("/profile", profileSettingsBodyValidator, safeControllerFu
 
 settingsApiRouter.put("/team-name/:id", idParamValidator, teamSettingsBodyValidator, safeControllerFunction(ProfileSettingsController.update_team_name));
 
+settingsApiRouter.put("/mobile-app-banner-dismissed", safeControllerFunction(ProfileSettingsController.dismissMobileAppBanner));
+
 // Client Portal Settings (for organization-side management)
 settingsApiRouter.get("/client-portal", safeControllerFunction(ClientPortalSettingsController.getSettings));
 settingsApiRouter.put("/client-portal", safeControllerFunction(ClientPortalSettingsController.updateSettings));

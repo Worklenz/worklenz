@@ -8,6 +8,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION sys_insert_project_priorities() RETURNS VOID AS
+$$
+BEGIN
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('Medium', 1, '#fbc84c', '#FFC227');
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('Low', 0, '#75c997', '#46D980');
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('High', 2, '#f37070', '#FF4141');
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('Critical', 3, '#8B1A1A', '#B22222');
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION sys_insert_project_access_levels() RETURNS VOID AS
 $$
 BEGIN
@@ -126,6 +136,7 @@ $$ LANGUAGE plpgsql;
 
 
 SELECT sys_insert_task_priorities();
+SELECT sys_insert_project_priorities();
 SELECT sys_insert_project_access_levels();
 SELECT sys_insert_task_status_categories();
 SELECT sys_insert_project_statuses();
@@ -134,6 +145,7 @@ SELECT sys_insert_license_types();
 -- SELECT sys_insert_project_templates();
 
 DROP FUNCTION sys_insert_task_priorities();
+DROP FUNCTION sys_insert_project_priorities();
 DROP FUNCTION sys_insert_project_access_levels();
 DROP FUNCTION sys_insert_task_status_categories();
 DROP FUNCTION sys_insert_project_statuses();

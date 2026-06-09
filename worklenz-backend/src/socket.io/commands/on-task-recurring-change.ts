@@ -2,11 +2,17 @@ import { Server, Socket } from "socket.io";
 import { getLoggedInUserIdFromSocket, log_error } from "../util";
 import { SocketEvents } from "../events";
 import TasksRecurringController from "../../controllers/task-recurring-controller";
+import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
 
 export async function on_task_recurring_change(_io: Server, socket: Socket, data?: { task_id?: string, schedule_id?: string }) {
     if (!data?.task_id) return;
     try {
         const userId = getLoggedInUserIdFromSocket(socket);
+
+        // Enforce restrict_task_creation: restricted users cannot modify tasks.
+        if (await isTaskCreationRestrictedForTask(userId, data.task_id)) {
+            return;
+        }
 
         if (!data.schedule_id) {
             const scheduleData = await TasksRecurringController.createTaskSchedule(data.task_id, userId);

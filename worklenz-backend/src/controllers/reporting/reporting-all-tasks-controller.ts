@@ -240,11 +240,13 @@ export default class ReportingAllTasksController extends ReportingControllerBase
 
     // Define columns
     sheet.columns = [
+      { header: "Task Key", key: "task_key", width: 15 },
       { header: "Task", key: "task", width: 40 },
       { header: "Project", key: "project", width: 30 },
       { header: "Status", key: "status", width: 20 },
       { header: "Priority", key: "priority", width: 20 },
       { header: "Assignees", key: "assignees", width: 30 },
+      { header: "Labels", key: "labels", width: 30 },
       { header: "Start Date", key: "start_date", width: 20 },
       { header: "Due Date", key: "due_date", width: 20 },
       { header: "Completed Date", key: "completed_on", width: 20 },
@@ -265,13 +267,16 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     // Add data
     for (const task of tasks) {
       const assigneeNames = (task.names as any[] || []).map(a => a.name).join(", ");
+      const labelNames = (task.labels as any[] || []).map((l: any) => l.name).join(", ");
 
       sheet.addRow({
+        task_key: task.task_key || "-",
         task: task.name,
         project: task.project_name,
         status: task.status_name,
         priority: task.priority_name,
         assignees: assigneeNames,
+        labels: labelNames || "-",
         start_date: task.start_date ? moment(task.start_date).format("YYYY-MM-DD") : "-",
         due_date: task.end_date ? moment(task.end_date).format("YYYY-MM-DD") : "-",
         completed_on: task.completed_at ? moment(task.completed_at).format("YYYY-MM-DD") : "-",
@@ -304,11 +309,13 @@ export default class ReportingAllTasksController extends ReportingControllerBase
 
     // Define columns
     sheet.columns = [
+      { header: "Task Key", key: "task_key", width: 15 },
       { header: "Task", key: "task", width: 40 },
       { header: "Project", key: "project", width: 30 },
       { header: "Status", key: "status", width: 20 },
       { header: "Priority", key: "priority", width: 20 },
       { header: "Assignees", key: "assignees", width: 30 },
+      { header: "Labels", key: "labels", width: 30 },
       { header: "Start Date", key: "start_date", width: 20 },
       { header: "Due Date", key: "due_date", width: 20 },
       { header: "Completed Date", key: "completed_on", width: 20 },
@@ -322,13 +329,16 @@ export default class ReportingAllTasksController extends ReportingControllerBase
     // Add data
     for (const task of tasks) {
       const assigneeNames = (task.names as any[] || []).map(a => a.name).join(", ");
+      const labelNames = (task.labels as any[] || []).map((l: any) => l.name).join(", ");
 
       sheet.addRow({
+        task_key: task.task_key || "-",
         task: task.name,
         project: task.project_name,
         status: task.status_name,
         priority: task.priority_name,
         assignees: assigneeNames,
+        labels: labelNames || "-",
         start_date: task.start_date ? moment(task.start_date).format("YYYY-MM-DD") : "-",
         due_date: task.end_date ? moment(task.end_date).format("YYYY-MM-DD") : "-",
         completed_on: task.completed_at ? moment(task.completed_at).format("YYYY-MM-DD") : "-",

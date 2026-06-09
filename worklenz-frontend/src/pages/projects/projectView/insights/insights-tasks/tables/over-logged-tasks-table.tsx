@@ -8,8 +8,13 @@ import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
 
-const OverLoggedTasksTable = () => {
-  const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
+const OverLoggedTasksTable = ({
+  projectId,
+  includeArchivedTasks,
+}: {
+  projectId: string;
+  includeArchivedTasks: boolean;
+}) => {
 
   const [overLoggedTaskList, setOverLoggedTaskList] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);

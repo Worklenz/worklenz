@@ -10,8 +10,8 @@
   "phaseColumn": "Phase",
   "statusColumn": "Status",
   "priorityColumn": "Priority",
-  "timeTrackingColumn": "Time Tracking",
-  "timetrackingColumn": "Time Tracking",
+  "timeTrackingColumn": "Time",
+  "timetrackingColumn": "Time",
   "estimationColumn": "Estimation",
   "startDateColumn": "Start Date",
   "startdateColumn": "Start Date",
@@ -84,6 +84,13 @@
   "clearStartDate": "Clear start date",
   "dueDatePlaceholder": "Due Date",
   "startDatePlaceholder": "Start Date",
+
+  "exampleTasks": {
+    "prefix": "e.g.",
+    "task1": "Define project scope and objectives",
+    "task2": "Review and align with stakeholders",
+    "task3": "Schedule kickoff meeting"
+  },
 
   "emptyStates": {
     "noTaskGroups": "No task groups found",

@@ -37,6 +37,8 @@ import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-dra
 import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -49,6 +51,8 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const attachmentSizeLimitMb = hasBusinessAccess
     ? BUSINESS_ATTACHMENT_SIZE_LIMIT_MB
     : FREE_ATTACHMENT_SIZE_LIMIT_MB;
@@ -97,6 +101,12 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     const oversizedFiles = files.filter(file => file.size > attachmentSizeLimitBytes);
     if (oversizedFiles.length > 0) {
       if (!hasBusinessAccess) {
+        if (isAppSumoUser) {
+          trackAppSumoEvent(AppSumoUpsellEvents.OVERSIZED_FILE_BLOCKED, {
+            feature: 'task_attachments',
+            file_count: oversizedFiles.length,
+          });
+        }
         dispatch(toggleUpgradeModal());
       }
       return;
@@ -188,7 +198,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     {
       key: 'details',
       label: <Typography.Text strong>{t('taskInfoTab.details.title')}</Typography.Text>,
-      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} />,
+      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} canCreateTask={canCreateTask} />,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
@@ -248,6 +258,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
           taskDependencies={taskDependencies}
           loadingTaskDependencies={loadingTaskDependencies}
           refreshTaskDependencies={() => fetchTaskDependencies()}
+          canCreateTask={canCreateTask}
         />
       ),
       style: panelStyle,
@@ -262,7 +273,12 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
             attachments={taskAttachments}
             onDelete={() => fetchTaskAttachments()}
             onUpload={() => fetchTaskAttachments()}
-            onUpgradeRequested={() => dispatch(toggleUpgradeModal())}
+            onUpgradeRequested={() => {
+              if (isAppSumoUser) {
+                trackAppSumoEvent(AppSumoUpsellEvents.TASK_ATTACHMENT_UPGRADE_CLICKED, { feature: 'task_attachments' });
+              }
+              dispatch(toggleUpgradeModal());
+            }}
             t={t}
             loadingTask={loadingTask}
             uploading={processingUpload}

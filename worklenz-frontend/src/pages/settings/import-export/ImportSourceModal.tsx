@@ -476,8 +476,6 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         const hierarchyResp = await autoImportHierarchy(job.id);
         if (Array.isArray(hierarchyResp)) setHierarchyRows(hierarchyResp as any);
         autoMappedRef.current = true;
-        if (!suppressToast)
-          message.success(t('importStep.autoMapped', 'Fields and hierarchy auto-mapped'));
       } catch (err) {
         if (!suppressToast)
           message.error(t('importStep.autoMapError', 'Auto-mapping failed. Please try again.'));

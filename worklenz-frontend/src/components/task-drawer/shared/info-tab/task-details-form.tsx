@@ -21,6 +21,7 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
+  canCreateTask?: boolean;
 }
 
 // Custom wrapper that enforces stricter rules for displaying progress input
@@ -62,7 +63,7 @@ const ConditionalProgressInput = ({ task, form }: ConditionalProgressInputProps)
   return null;
 };
 
-const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => {
+const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true }: TaskDetailsFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
@@ -168,10 +169,10 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         </Form.Item>
 
      {taskFormViewModel?.task && (
-  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} />
+  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} disabled={!canCreateTask} />
 )}
 
-        <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
+        <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} disabled={!canCreateTask} />
 
         {taskFormViewModel?.task && (
           <ConditionalProgressInput task={taskFormViewModel?.task as ITaskViewModel} form={form} />
@@ -184,15 +185,15 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         <TaskDrawerLabels task={taskFormViewModel?.task as ITaskViewModel} t={t} />
 
         <Form.Item name="billable" label={t('taskInfoTab.details.billable')}>
-          <TaskDrawerBillable task={taskFormViewModel?.task as ITaskViewModel} />
+          <TaskDrawerBillable task={taskFormViewModel?.task as ITaskViewModel} disabled={!canCreateTask} />
         </Form.Item>
 
         <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
-          <TaskDrawerRecurringConfig task={taskFormViewModel?.task as ITaskViewModel} />
+          <TaskDrawerRecurringConfig task={taskFormViewModel?.task as ITaskViewModel} disabled={!canCreateTask} />
         </Form.Item>
 
         <Form.Item name="notify" label={t('taskInfoTab.details.notify')}>
-          <NotifyMemberSelector task={taskFormViewModel?.task as ITaskViewModel} t={t} />
+          <NotifyMemberSelector task={taskFormViewModel?.task as ITaskViewModel} t={t} disabled={!canCreateTask} />
         </Form.Item>
       </Form>
     </ConfigProvider>

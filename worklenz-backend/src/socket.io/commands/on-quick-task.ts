@@ -11,22 +11,7 @@ import momentTime from "moment-timezone";
 import { logEndDateChange, logStartDateChange, logStatusChange } from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
-
-/**
- * Returns TRUE when the restrict_task_creation feature is active for the given user/project.
- * Checks both project-level and org-level flags via the DB helper function.
- */
-async function isTaskCreationRestricted(userId: string, projectId: string): Promise<boolean> {
-  try {
-    const result = await db.query(
-      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
-      [userId, projectId]
-    );
-    return result.rows[0]?.restricted === true;
-  } catch {
-    return false;
-  }
-}
+import { isTaskCreationRestricted } from "../../shared/task-creation-restriction";
 
 export async function getTaskCompleteInfo(task: any) {
   if (!task) return null;

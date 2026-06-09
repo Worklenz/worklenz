@@ -23,6 +23,8 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import {
   MixpanelBillingEvents,
   PlanSelectionEventProps,
@@ -66,6 +68,7 @@ const UpgradePlans = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal', 'admin-center/overview']);
   const { trackMixpanelEvent } = useMixpanelTracking();
+  const { trackAppSumoEvent } = useAppSumoTracking();
   const { isLicenseExpired } = useAuthStatus();
 
   // Redux state
@@ -429,6 +432,9 @@ const UpgradePlans = () => {
       is_small_team: teamSize <= TEAM_SIZE_THRESHOLD,
     };
     trackMixpanelEvent(MixpanelBillingEvents.PLAN_SELECTED, eventProps);
+    if (isAppSumoUser) {
+      trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PLAN_SELECTED, { selected_plan: planType });
+    }
 
     trackMixpanelEvent(MixpanelBillingEvents.PLAN_COMPARED, {
       user_type: getUserType,
@@ -585,6 +591,14 @@ const UpgradePlans = () => {
       setTeamSize(actualTeamSize);
     }
   }, [billingInfo, isAppSumoUser]);
+
+  useEffect(() => {
+    if (!isAppSumoUser) return;
+    trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_MODAL_VIEWED);
+    return () => {
+      trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_MODAL_DISMISSED);
+    };
+  }, [isAppSumoUser]);
 
   useEffect(() => {
     return () => {
@@ -897,8 +911,11 @@ const UpgradePlans = () => {
                   )}
                   onPrimaryAction={() => {
                     handlePlanSelect('enterprise');
+                    if (isAppSumoUser) {
+                      trackAppSumoEvent(AppSumoUpsellEvents.TALK_TO_SALES_CLICKED);
+                    }
                     window.open(
-                      'mailto:sales@worklenz.com?subject=Enterprise%20Plan%20Inquiry',
+                      'mailto:info@worklenz.com?subject=Enterprise%20Plan%20Inquiry',
                       '_blank'
                     );
                   }}

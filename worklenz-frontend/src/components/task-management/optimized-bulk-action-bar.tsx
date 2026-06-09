@@ -832,26 +832,30 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           />
 
           {/* Change Assignees */}
-          {canCreateTask && (
-            <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
-              <Dropdown
-                dropdownRender={() => assigneesDropdownContent}
-                open={assigneeDropdownOpen}
-                onOpenChange={onAssigneeDropdownOpenChange}
-                trigger={['click']}
-                placement="top"
-                arrow
-              >
-                <Button
-                  icon={<UsergroupAddOutlined />}
-                  style={makeButtonStyle()}
-                  size="small"
-                  type="text"
-                  loading={loadingStates.assignMembers}
-                />
-              </Dropdown>
-            </Tooltip>
-          )}
+          <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
+            <Dropdown
+              dropdownRender={() => assigneesDropdownContent}
+              open={canCreateTask ? assigneeDropdownOpen : false}
+              onOpenChange={canCreateTask ? onAssigneeDropdownOpenChange : undefined}
+              trigger={['click']}
+              placement="top"
+              arrow
+              disabled={!canCreateTask}
+            >
+              <Button
+                icon={<UsergroupAddOutlined />}
+                style={{
+                  ...makeButtonStyle(),
+                  opacity: !canCreateTask ? 0.4 : 1,
+                  cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+                }}
+                size="small"
+                type="text"
+                loading={loadingStates.assignMembers}
+                disabled={!canCreateTask}
+              />
+            </Dropdown>
+          </Tooltip>
 
           {/* Set Start Date — NEW */}
           <Tooltip
@@ -859,11 +863,12 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             placement="top"
           >
             <Dropdown
-              open={startDateDropdownOpen}
-              onOpenChange={onStartDateDropdownOpenChange}
+              open={canCreateTask ? startDateDropdownOpen : false}
+              onOpenChange={canCreateTask ? onStartDateDropdownOpenChange : undefined}
               trigger={['click']}
               placement="top"
               arrow
+              disabled={!canCreateTask}
               dropdownRender={() => (
                 <div style={datePickerDropdownStyle}>
                   <DatePicker
@@ -879,11 +884,16 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             >
               <Button
                 icon={<CalendarOutlined />}
-                style={makeButtonStyle()}
+                style={{
+                  ...makeButtonStyle(),
+                  opacity: !canCreateTask ? 0.4 : 1,
+                  cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+                }}
                 className="bulk-action-start-date-btn"
                 size="small"
                 type="text"
                 loading={loadingStates.startDate}
+                disabled={!canCreateTask}
               />
             </Dropdown>
           </Tooltip>
@@ -891,11 +901,12 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Set Due Date */}
           <Tooltip title={t('SET_DUE_DATE')} placement="top">
             <Dropdown
-              open={dueDateDropdownOpen}
-              onOpenChange={onDueDateDropdownOpenChange}
+              open={canCreateTask ? dueDateDropdownOpen : false}
+              onOpenChange={canCreateTask ? onDueDateDropdownOpenChange : undefined}
               trigger={['click']}
               placement="top"
               arrow
+              disabled={!canCreateTask}
               dropdownRender={() => (
                 <div style={datePickerDropdownStyle}>
                   <DatePicker
@@ -911,11 +922,16 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             >
               <Button
                 icon={<Calendar1 size={15} />}
-                style={makeButtonStyle()}
+                style={{
+                  ...makeButtonStyle(),
+                  opacity: !canCreateTask ? 0.4 : 1,
+                  cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+                }}
                 className="bulk-action-due-date-btn"
                 size="small"
                 type="text"
                 loading={loadingStates.dueDate}
+                disabled={!canCreateTask}
               />
             </Dropdown>
           </Tooltip>
@@ -933,34 +949,39 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           >
             <Button
               icon={<InboxOutlined />}
-              style={makeButtonStyle()}
+              style={{
+                ...makeButtonStyle(),
+                opacity: !canCreateTask ? 0.4 : 1,
+                cursor: !canCreateTask ? 'not-allowed' : 'pointer',
+              }}
               size="small"
               type="text"
               loading={loadingStates.archive}
-              onClick={handleArchive}
+              onClick={canCreateTask ? handleArchive : undefined}
+              disabled={!canCreateTask}
             />
           </Tooltip>
 
           {/* Delete */}
-          {canCreateTask && (
-            <Popconfirm
-              title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
-              description={t('DELETE_TASKS_WARNING')}
-              onConfirm={handleDelete}
-              okText={t('DELETE')}
-              cancelText={t('CANCEL')}
-              okType="danger"
-              placement="top"
-            >
-              <ActionButton
-                icon={<DeleteOutlined />}
-                tooltip={t('DELETE')}
-                loading={loadingStates.delete}
-                danger
-                isDarkMode={isDarkMode}
-              />
-            </Popconfirm>
-          )}
+          <Popconfirm
+            title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
+            description={t('DELETE_TASKS_WARNING')}
+            onConfirm={handleDelete}
+            okText={t('DELETE')}
+            cancelText={t('CANCEL')}
+            okType="danger"
+            placement="top"
+            disabled={!canCreateTask}
+          >
+            <ActionButton
+              icon={<DeleteOutlined />}
+              tooltip={t('DELETE')}
+              loading={loadingStates.delete}
+              danger
+              disabled={!canCreateTask}
+              isDarkMode={isDarkMode}
+            />
+          </Popconfirm>
 
           {/* More Options — Only for owners/admins */}
           {isOwnerOrAdmin && (

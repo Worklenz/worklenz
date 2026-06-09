@@ -83,6 +83,8 @@
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
+      "edited": "(bearbeitet)",
+      "messageDeleted": "Diese Nachricht wurde gelöscht",
       "addCommentPlaceholder": "Kommentar hinzufügen...",
       "cancel": "Abbrechen",
       "commentButton": "Kommentieren",

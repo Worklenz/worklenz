@@ -283,7 +283,7 @@ const TaskDrawer = () => {
   return (
     <Drawer {...drawerProps}>
       {/* Project name + task name — below the header, above the tabs */}
-      <TaskDrawerTitleSection inputRef={taskNameInputRef} t={t} />
+      <TaskDrawerTitleSection inputRef={taskNameInputRef} t={t} canCreateTask={canCreateTask} />
 
       {/* Tabs */}
       <div style={{ padding: '0 24px' }}>

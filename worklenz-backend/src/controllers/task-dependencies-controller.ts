@@ -5,6 +5,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import { isTaskCreationRestrictedForTask } from "../shared/task-creation-restriction";
 
 export default class TaskdependenciesController extends WorklenzControllerBase {
   @HandleExceptions({
@@ -16,6 +17,14 @@ export default class TaskdependenciesController extends WorklenzControllerBase {
   })
   public static async saveTaskDependency(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {task_id, related_task_id, dependency_type } = req.body;
+
+    // Enforce restrict_task_creation: restricted users cannot modify tasks.
+    if (await isTaskCreationRestrictedForTask(req.user?.id, task_id)) {
+      return res.status(403).send(
+        new ServerResponse(false, null, "Task creation is restricted. Please contact admin for access.")
+      );
+    }
+
     const q = `SELECT insert_task_dependency($1, $2, $3);`;
     const result = await db.query(q, [task_id, related_task_id, dependency_type]);
     // Bump task updated_at so "Updated X ago" reflects the new dependency
@@ -49,7 +58,15 @@ export default class TaskdependenciesController extends WorklenzControllerBase {
 
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {id} = req.params;
-    
+
+    // Enforce restrict_task_creation: restricted users cannot modify tasks.
+    const owning = await db.query(`SELECT task_id FROM task_dependencies WHERE id = $1;`, [id]);
+    if (await isTaskCreationRestrictedForTask(req.user?.id, owning.rows[0]?.task_id)) {
+      return res.status(403).send(
+        new ServerResponse(false, null, "Task creation is restricted. Please contact admin for access.")
+      );
+    }
+
     const q = `DELETE FROM task_dependencies WHERE id = $1 RETURNING task_id;`;
     const result = await db.query(q, [id]);
     const [data] = result.rows;

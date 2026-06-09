@@ -15,6 +15,8 @@ import logger from '@/utils/errorLogger';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface TaskDrawerTimeLogProps {
   t: TFunction;
@@ -31,6 +33,8 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   const { started, timeString, handleStartTimer, handleStopTimer } = useTaskTimerWithConflictCheck(
     selectedTaskId || '',
@@ -137,7 +141,15 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
             <Popover
               trigger="click"
               open={isHistoryPopoverOpen}
-              onOpenChange={setIsHistoryPopoverOpen}
+              onOpenChange={open => {
+                setIsHistoryPopoverOpen(open);
+                if (isAppSumoUser) {
+                  trackAppSumoEvent(
+                    open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                    { feature: 'time_log_history' }
+                  );
+                }
+              }}
               title={t('taskTimeLogTab.historyLockedTitle', {
                 defaultValue: 'Time Log History Locked',
               })}
@@ -153,6 +165,10 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
                     type="primary"
                     onClick={() => {
                       setIsHistoryPopoverOpen(false);
+                      if (isAppSumoUser) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'time_log_history' });
+                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'time_log_history' });
+                      }
                       dispatch(toggleUpgradeModal());
                     }}
                   >

@@ -93,7 +93,7 @@ BEGIN
 END;
 $$;
 
--- 4. Update create_project to include the new column
+-- 4. Update create_project to include both priority_id (sys_project_priorities) and restrict_task_creation
 CREATE OR REPLACE FUNCTION create_project(_body json) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -125,12 +125,13 @@ BEGIN
         INSERT INTO clients (name, team_id) VALUES (_client_name, _team_id) RETURNING id INTO _client_id;
     END IF;
 
-    INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, start_date,
+    INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, priority_id, start_date,
                           end_date, folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
                           use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator,
                           restrict_task_creation)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id, _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
+            COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
             (_body ->> 'start_date')::TIMESTAMPTZ, (_body ->> 'end_date')::TIMESTAMPTZ,
             (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
             (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER,
@@ -164,7 +165,7 @@ BEGIN
 END;
 $$;
 
--- 5. Update update_project to include the new column
+-- 5. Update update_project to include both priority_id (sys_project_priorities) and restrict_task_creation
 CREATE OR REPLACE FUNCTION update_project(_body json) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -205,6 +206,7 @@ BEGIN
         color_code               = (_body ->> 'color_code')::TEXT,
         status_id                = (_body ->> 'status_id')::UUID,
         health_id                = (_body ->> 'health_id')::UUID,
+        priority_id              = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
         key                      = (_body ->> 'key')::TEXT,
         start_date               = (_body ->> 'start_date')::TIMESTAMPTZ,
         end_date                 = (_body ->> 'end_date')::TIMESTAMPTZ,

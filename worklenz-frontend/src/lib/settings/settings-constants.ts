@@ -18,6 +18,7 @@ import {
   DollarCircleOutlined,
   ApiOutlined,
 } from '@/shared/antd-imports';
+import { MobileOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
@@ -50,6 +51,9 @@ const AppearanceSettings = lazy(() => import('@/pages/settings/appearance/appear
 const AccountDeletion = lazy(() => import('@/pages/settings/account-deletion/AccountDeletion'));
 const IntegrationsSettings = lazy(
   () => import('@/pages/settings/integrations/IntegrationsSettings')
+);
+const MobileAppSettings = lazy(
+  () => import('@/pages/settings/mobile-app/mobile-app-settings')
 );
 const ConfigurationSettings = lazy(
   () => import('@/pages/settings/configuration/configuration-settings')
@@ -122,6 +126,16 @@ export const settingsItems: SettingMenuItem[] = [
     groupDefaultValue: 'Account & Personal',
     icon: React.createElement(GlobalOutlined),
     element: React.createElement(LanguageAndRegionSettings),
+  },
+  {
+    key: 'mobile-app',
+    name: 'mobile-app',
+    defaultValue: 'Mobile App',
+    endpoint: 'mobile-app',
+    groupKey: 'account-personal',
+    groupDefaultValue: 'Account & Personal',
+    icon: React.createElement(MobileOutlined),
+    element: React.createElement(MobileAppSettings),
   },
   // Admin only items
   {

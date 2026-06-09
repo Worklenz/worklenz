@@ -135,6 +135,45 @@ export interface BusinessTrialConversionEventProps extends BusinessTrialEventPro
   error_message?: string;
 }
 
+// AppSumo upsell funnel events (fires only when current_plan = appsumo)
+export enum AppSumoUpsellEvents {
+  // Global upgrade funnel — fires at all 14 touchpoints
+  UPGRADE_PROMPT_SHOWN = 'appsumo_upgrade_prompt_shown',
+  UPGRADE_PROMPT_DISMISSED = 'appsumo_upgrade_prompt_dismissed',
+  UPGRADE_NOW_CLICKED = 'appsumo_upgrade_now_clicked',
+  UPGRADE_MODAL_VIEWED = 'appsumo_upgrade_modal_viewed',
+  UPGRADE_MODAL_DISMISSED = 'appsumo_upgrade_modal_dismissed',
+  UPGRADE_PLAN_SELECTED = 'appsumo_upgrade_plan_selected',
+  TALK_TO_SALES_CLICKED = 'appsumo_upgrade_talk_to_sales_clicked',
+  // Seat limit
+  SEAT_LIMIT_MODAL_SHOWN = 'appsumo_seat_limit_blocking_modal_shown',
+  SEAT_LIMIT_DEACTIVATE_CHOSEN = 'appsumo_seat_limit_deactivate_path_chosen',
+  SEAT_LIMIT_INVITE_CANCELLED = 'appsumo_seat_limit_invite_cancelled',
+  SEAT_LIMIT_ADD_MORE_CLICKED = 'appsumo_seat_limit_add_more_clicked',
+  // Feature gates
+  CUSTOM_FIELD_LIMIT_HIT = 'appsumo_custom_field_limit_hit',
+  CLIENT_PORTAL_GATED_CLICK = 'appsumo_client_portal_gated_click',
+  PROJECT_FINANCE_GATED_CLICK = 'appsumo_project_finance_gated_click',
+  ORG_LOGO_GATED_CLICK = 'appsumo_org_logo_change_gated_click',
+  // File & storage
+  STORAGE_ADD_MORE_CLICKED = 'appsumo_storage_add_more_clicked',
+  OVERSIZED_FILE_BLOCKED = 'appsumo_oversized_file_blocked',
+  TASK_ATTACHMENT_UPGRADE_CLICKED = 'appsumo_task_attachment_upgrade_link_clicked',
+  COMMENT_ATTACHMENT_REPLACED = 'appsumo_comment_attachment_file_replaced',
+  // History locks
+  LOCKED_HISTORY_VIEW_CLICKED = 'appsumo_locked_history_view_clicked',
+}
+
+export interface AppSumoUpsellEventProps {
+  user_id?: string;
+  workspace_id?: string;
+  current_plan?: string;
+  appsumo_codes_redeemed?: number;
+  appsumo_seat_limit?: number;
+  feature?: string;
+  [key: string]: unknown;
+}
+
 // Event names enum for consistency
 export enum MixpanelBillingEvents {
   // Upgrade button events

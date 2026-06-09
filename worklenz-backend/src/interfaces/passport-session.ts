@@ -20,4 +20,5 @@ export interface IPassportSession extends IUser {
   is_expired?: boolean;
   owner_id?: string;
   subscription_status?: string;
+  mobile_app_banner_dismissed?: boolean;
 }

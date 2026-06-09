@@ -38,7 +38,7 @@ import { setProject, setProjectId } from '@/features/project/project.slice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
-import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
+import { fetchProjectPriorities } from '@/features/projects/priority/projectPrioritySlice';
 
 import ProjectManagerDropdown from '../project-manager-dropdown/project-manager-dropdown';
 import ProjectBasicInfo from './project-basic-info/project-basic-info';
@@ -100,7 +100,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
-  const { priorities } = useAppSelector(state => state.priorityReducer);
+  const { priorities } = useAppSelector(state => state.projectPriorityReducer);
   const defaultPriorityId = useMemo(
     () => priorities.find(priority => priority.name === 'Medium')?.id,
     [priorities]
@@ -184,7 +184,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       if (projectStatuses.length === 0) fetchPromises.push(dispatch(fetchProjectStatuses()));
       if (projectCategories.length === 0) fetchPromises.push(dispatch(fetchProjectCategories()));
       if (projectHealths.length === 0) fetchPromises.push(dispatch(fetchProjectHealth()));
-      if (priorities.length === 0) fetchPromises.push(dispatch(fetchPriorities()));
+      if (priorities.length === 0) fetchPromises.push(dispatch(fetchProjectPriorities()));
       if (!clients.data?.length) {
         fetchPromises.push(
           dispatch(fetchClients({ index: 1, size: 5, field: null, order: null, search: null }))

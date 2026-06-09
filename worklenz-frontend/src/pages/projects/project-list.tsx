@@ -66,7 +66,7 @@ import {
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
-import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
+import { fetchProjectPriorities } from '@/features/projects/priority/projectPrioritySlice';
 import { setProjectId } from '@/features/project/project.slice';
 import { setProject } from '@/features/project/project.slice';
 import { createPortal } from 'react-dom';
@@ -126,7 +126,7 @@ const ProjectList: React.FC = () => {
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const { projectHealths } = useAppSelector(state => state.projectHealthReducer);
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
-  const { priorities } = useAppSelector(state => state.priorityReducer);
+  const { priorities } = useAppSelector(state => state.projectPriorityReducer);
   const { filteredCategories, filteredStatuses, filteredPriorities } = useAppSelector(
     state => state.projectsReducer
   );
@@ -609,7 +609,6 @@ const ProjectList: React.FC = () => {
   const handleProjectHover = useCallback((project_id: string | undefined) => {
     if (project_id) {
       import('@/pages/projects/projectView/project-view').catch(() => {});
-      import('@/components/task-management/task-list-board').catch(() => {});
     }
   }, []);
 
@@ -857,10 +856,11 @@ const ProjectList: React.FC = () => {
       if (projectStatuses.length === 0) promises.push(dispatch(fetchProjectStatuses()));
       if (projectCategories.length === 0) promises.push(dispatch(fetchProjectCategories()));
       if (projectHealths.length === 0) promises.push(dispatch(fetchProjectHealth()));
+      if (priorities.length === 0) promises.push(dispatch(fetchProjectPriorities()));
       if (promises.length > 0) await Promise.allSettled(promises);
     };
     loadLookups();
-  }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length]);
+  }, [dispatch, projectStatuses.length, projectCategories.length, projectHealths.length, priorities.length]);
 
   useEffect(() => {
     const currentSearch =

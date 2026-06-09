@@ -52,4 +52,6 @@ export interface ILocalSession extends IUserType {
   // Timestamp fields
   created_at?: string;
   updated_at?: string;
+  // Mobile app banner
+  mobile_app_banner_dismissed?: boolean;
 }

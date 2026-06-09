@@ -28,6 +28,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 const TaskDrawerActivityLog = () => {
   const dispatch = useAppDispatch();
@@ -39,6 +41,8 @@ const TaskDrawerActivityLog = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   useEffect(() => {
     fetchActivityLogs();
@@ -289,7 +293,15 @@ const TaskDrawerActivityLog = () => {
             <Popover
               trigger="click"
               open={isHistoryPopoverOpen}
-              onOpenChange={setIsHistoryPopoverOpen}
+              onOpenChange={open => {
+                setIsHistoryPopoverOpen(open);
+                if (isAppSumoUser) {
+                  trackAppSumoEvent(
+                    open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                    { feature: 'task_activity_history' }
+                  );
+                }
+              }}
               title={t('taskActivityLogTab.historyLockedTitle', {
                 defaultValue: 'Activity History Locked',
               })}
@@ -305,6 +317,10 @@ const TaskDrawerActivityLog = () => {
                     type="primary"
                     onClick={() => {
                       setIsHistoryPopoverOpen(false);
+                      if (isAppSumoUser) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'task_activity_history' });
+                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'task_activity_history' });
+                      }
                       dispatch(toggleUpgradeModal());
                     }}
                   >

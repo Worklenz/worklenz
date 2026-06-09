@@ -9,7 +9,7 @@ import {
 } from '@/api/schedule/scheduleApi';
 import { Empty, Spin } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
-import GroupByFilterDropdown from '@/pages/projects/project-view-1/taskList/taskListFilters/GroupByFilterDropdown';
+import GroupByFilterDropdown from '@/components/project-task-filters/filter-dropdowns/group-by-filter-dropdown';
 import { setMembers } from '@/features/tasks/tasks.slice';
 import ScheduleTaskGroupHeader from '@/components/schedule/ScheduleTaskGroupHeader';
 import ScheduleTaskRow from '@/components/schedule/ScheduleTaskRow';
@@ -244,7 +244,7 @@ const WithStartAndEndDates = () => {
         <>
           {/* Show group by filter for project tasks */}
           <div style={{ marginBottom: '16px' }}>
-            <GroupByFilterDropdown position="list" />
+            <GroupByFilterDropdown />
           </div>
 
           {projectTasksLoading ? (

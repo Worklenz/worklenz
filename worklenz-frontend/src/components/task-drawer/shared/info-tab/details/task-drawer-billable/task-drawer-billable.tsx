@@ -11,13 +11,16 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useEffect, useState } from 'react';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useNavigate } from 'react-router-dom';
 
 interface TaskDrawerBillableProps {
   task?: ITaskViewModel | null;
+  disabled?: boolean;
 }
 
-const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
+const TaskDrawerBillable = ({ task = null, disabled = false }: TaskDrawerBillableProps) => {
   const { socket, connected } = useSocket();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -26,6 +29,8 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
   const navigate = useNavigate();
   const isRestricted = shouldRestrictBillableFeature(currentSession);
   const [isSpendPopoverOpen, setIsSpendPopoverOpen] = useState(false);
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const projectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Read billable status directly from Redux to ensure real-time updates
@@ -83,7 +88,17 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
           trigger="click"
           placement="bottomLeft"
           open={isSpendPopoverOpen}
-          onOpenChange={setIsSpendPopoverOpen}
+          onOpenChange={open => {
+            setIsSpendPopoverOpen(open);
+            if (isAppSumoUser) {
+              if (open) {
+                trackAppSumoEvent(AppSumoUpsellEvents.PROJECT_FINANCE_GATED_CLICK, { feature: 'project_finance' });
+                trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN, { feature: 'project_finance' });
+              } else {
+                trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED, { feature: 'project_finance' });
+              }
+            }
+          }}
           title={
             <Flex align="center" justify="space-between" style={{ width: 240 }}>
               <Typography.Text strong>
@@ -114,6 +129,9 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
                 type="primary"
                 onClick={() => {
                   setIsSpendPopoverOpen(false);
+                  if (isAppSumoUser) {
+                    trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'project_finance' });
+                  }
                   dispatch(toggleUpgradeModal());
                 }}
               >
@@ -132,12 +150,13 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
 
   return (
     <Flex gap={8} align="center">
-      <Switch checked={localBillable} onChange={handleBillableChange} />
+      <Switch checked={localBillable} onChange={handleBillableChange} disabled={disabled} />
       <Button
         size="small"
         type="default"
+        disabled={disabled}
         onClick={() => {
-          if (projectId) {
+          if (!disabled && projectId) {
             navigate(`/worklenz/projects/${projectId}?tab=finance`);
           }
         }}
