@@ -61,7 +61,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 
   // category selection options
   const categoryOptions = filteredCategoriesData.map(category => ({
-    key: category.id,
+    key: category.id as string,
     label: (
       <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <Badge color={category.color_code} /> {category.name}
@@ -194,10 +194,14 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
           fontSize: 13,
           height: 22,
           backgroundColor: selectedCategory.id
-            ? `${selectedCategory.color_code}33`
+            ? themeWiseColor(
+              `${selectedCategory.color_code}33`,   // light: 20% opacity (existing)
+              `${selectedCategory.color_code}55`,   // dark: 33% opacity (more visible)
+              themeMode
+            )
             : colors.transparent,
           color: selectedCategory.id
-            ? colors.darkGray
+            ? themeWiseColor(colors.darkGray, colors.white, themeMode)
             : themeWiseColor(colors.darkGray, colors.white, themeMode),
           border: selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`,
           cursor: 'pointer',
@@ -207,7 +211,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 
         <DownOutlined />
       </Flex>
-    </Dropdown>
+    </Dropdown >
   );
 };
 
