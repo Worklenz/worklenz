@@ -15,6 +15,7 @@ const Configuration: React.FC = React.memo(() => {
   const [countries, setCountries] = useState<IBillingConfigurationCountry[]>([]);
   const [configuration, setConfiguration] = useState<IBillingConfiguration>();
   const [loading, setLoading] = useState(false);
+  const [isFormDirty, setIsFormDirty] = useState(false); // NEW
   const [form] = Form.useForm();
 
   const fetchCountries = useCallback(async () => {
@@ -33,6 +34,7 @@ const Configuration: React.FC = React.memo(() => {
     if (res.done) {
       setConfiguration(res.body);
       form.setFieldsValue(res.body);
+      setIsFormDirty(false); // RESET on load
     }
   }, [form]);
 
@@ -41,13 +43,17 @@ const Configuration: React.FC = React.memo(() => {
     fetchConfiguration();
   }, [fetchCountries, fetchConfiguration]);
 
+  const handleValuesChange = useCallback(() => {
+    setIsFormDirty(true); // NEW
+  }, []);
+
   const handleSave = useCallback(
     async (values: any) => {
       try {
         setLoading(true);
         const res = await adminCenterApiService.updateBillingConfiguration(values);
         if (res.done) {
-          fetchConfiguration();
+          await fetchConfiguration(); // resets isFormDirty inside
         }
       } catch (error) {
         logger.error('Error updating configuration:', error);
@@ -97,18 +103,19 @@ const Configuration: React.FC = React.memo(() => {
   return (
     <div>
       <Card title={<span style={titleStyle}>Billing Details</span>} style={cardStyle}>
-        <Form form={form} initialValues={configuration} onFinish={handleSave}>
+        <Form
+          form={form}
+          initialValues={configuration}
+          onFinish={handleSave}
+          onValuesChange={handleValuesChange} // NEW
+        >
           <Row gutter={[0, 0]}>
             <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
               <Form.Item
                 name="name"
                 label="Name"
                 layout="vertical"
-                rules={[
-                  {
-                    required: true,
-                  },
-                ]}
+                rules={[{ required: true }]}
               >
                 <Input placeholder="Name" disabled />
               </Form.Item>
@@ -118,11 +125,7 @@ const Configuration: React.FC = React.memo(() => {
                 name="email"
                 label="Email Address"
                 layout="vertical"
-                rules={[
-                  {
-                    required: true,
-                  },
-                ]}
+                rules={[{ required: true }]}
               >
                 <Input placeholder="Email Address" disabled />
               </Form.Item>
@@ -203,7 +206,13 @@ const Configuration: React.FC = React.memo(() => {
           <Row>
             <Col xs={24} sm={24} md={8} lg={8} xl={8} style={{ ...buttonColStyle, marginTop: 8 }}>
               <Form.Item>
-                <Button type="primary" htmlType="submit" loading={loading} block>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  disabled={!isFormDirty} // NEW
+                  block
+                >
                   Save
                 </Button>
               </Form.Item>
