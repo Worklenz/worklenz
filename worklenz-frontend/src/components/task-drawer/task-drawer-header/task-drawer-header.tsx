@@ -77,10 +77,10 @@ const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
   }, [selectedTaskId, dispatch, navigationContext]);
 
   const handleCopyTaskLink = async () => {
-    if (!selectedTaskId || !taskFormViewModel?.task?.project_id) return;
+    if (!selectedTaskId) return;
 
     try {
-      const taskLink = `${window.location.origin}/worklenz/projects/${taskFormViewModel.task.project_id}?tab=tasks-list&pinned_tab=tasks-list&task=${selectedTaskId}`;
+      const taskLink = `${window.location.origin}/worklenz/t/${selectedTaskId}`;
 
       await navigator.clipboard.writeText(taskLink);
 

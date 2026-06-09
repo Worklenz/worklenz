@@ -455,10 +455,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   }, [task?.id, projectId, dispatch, onClose]);
 
   const handleCopyLink = useCallback(async () => {
-    if (!projectId || !task.id) return;
+    if (!task.id) return;
 
     try {
-      const taskLink = `${window.location.origin}/worklenz/projects/${projectId}?tab=tasks-list&pinned_tab=tasks-list&task=${task.id}`;
+      const taskLink = `${window.location.origin}/worklenz/t/${task.id}`;
       await navigator.clipboard.writeText(taskLink);
       message.success(t('contextMenu.linkCopied'));
     } catch (error) {
@@ -467,7 +467,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, onClose, t]);
+  }, [task.id, onClose, t]);
 
   const handleDuplicateTask = useCallback(async () => {
     if (!projectId || !task.id) return;

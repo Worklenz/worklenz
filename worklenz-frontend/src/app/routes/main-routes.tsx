@@ -32,6 +32,12 @@ const ProjectView = lazy(
     'ProjectView'
   )
 );
+const TaskShortLinkRedirect = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/projects/projectView/TaskShortLinkRedirect'),
+    'TaskShortLinkRedirect'
+  )
+);
 const Unauthorized = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/unauthorized/unauthorized'),
@@ -151,6 +157,14 @@ const mainRoutes: RouteObject[] = [
             <AdminGuard>
               <Schedule />
             </AdminGuard>
+          </Suspense>
+        ),
+      },
+      {
+        path: 't/:taskId',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <TaskShortLinkRedirect />
           </Suspense>
         ),
       },
