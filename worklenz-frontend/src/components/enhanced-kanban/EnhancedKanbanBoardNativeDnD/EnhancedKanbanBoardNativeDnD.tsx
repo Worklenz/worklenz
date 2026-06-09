@@ -197,20 +197,15 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
           const [movedItem] = newPhaseList.splice(fromIdx, 1);
           newPhaseList.splice(toIdx, 0, movedItem);
           dispatch(updatePhaseListOrder(newPhaseList));
-            await phasesApiService.updatePhaseOrder(projectId, {
-              from_index: fromIdx,
-              to_index: toIdx,
-              phases: newPhaseList,
-              project_id: projectId,
-            });
-            // Refresh task list and groups so Task List reflects new phase ordering immediately
-            try {
-              dispatch(fetchTasksV3(projectId) as any);
-              dispatch(fetchTaskGroups(projectId) as any);
-            } catch (e) {
-              // non-blocking: log and continue
-              logger.error('Error refreshing tasks after phase reorder', e);
-            }
+          await phasesApiService.updatePhaseOrder(projectId, {
+            from_index: fromIdx,
+            to_index: toIdx,
+            phases: newPhaseList,
+            project_id: projectId,
+          });
+          // Refresh task list and groups so Task List reflects new phase ordering immediately
+          dispatch(fetchTasksV3(projectId) as any);
+          dispatch(fetchTaskGroups(projectId) as any);
         }
       } catch (err) {
         logger.error('Failed to update column order', err);

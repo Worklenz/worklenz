@@ -313,7 +313,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         dispatch(fetchTaskGroups(projectId));
       }
     },
-    [refetchTasks, refetchPhases]
+    [refetchTasks, refetchPhases, dispatch, projectId]
   );
 
   const handlePhaseReorder = useCallback(
@@ -352,7 +352,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         message.error(error?.data?.message || 'Failed to reorder phases');
       }
     },
-    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks]
+    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks, dispatch]
   );
 
   const handleCreateQuickTask = useCallback(
