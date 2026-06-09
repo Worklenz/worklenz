@@ -73,3 +73,32 @@
   .ant-select-selector {
   box-shadow: none;
 }
+.dark {
+  --table-cell-bg: #1f1f1f;   /* ← slightly lighter than base for visible alternation */
+  --hover-bg: #2a2a2a;         /* ← was #000, now consistent with tableConfig */
+  --base-bg: #181818;
+}
+
+/* ── Fix: alternating rows for ALL cells ── */
+.ant-table-wrapper .ant-table-tbody > tr:nth-child(odd) > td {
+  background-color: var(--base-bg) !important;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr:nth-child(even) > td {
+  background-color: var(--table-cell-bg) !important;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr:hover > td {
+  background-color: var(--hover-bg) !important;
+}
+
+/* ── Fix: all header cells same background ── */
+.ant-table-wrapper .ant-table-thead > tr > th,
+.ant-table-wrapper .ant-table-thead > tr > td,
+.ant-table-wrapper .ant-table-thead > tr > th.ant-table-column-has-sorters {
+  background-color: var(--base-bg) !important;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th.ant-table-column-has-sorters:hover {
+  background-color: var(--hover-bg) !important;
+}
