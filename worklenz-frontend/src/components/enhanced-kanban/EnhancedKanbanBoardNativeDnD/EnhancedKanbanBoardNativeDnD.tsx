@@ -26,6 +26,8 @@ import {
   updateEnhancedKanbanTaskPriority,
   selectKanbanLoadedProjectId,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
@@ -201,6 +203,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
             phases: newPhaseList,
             project_id: projectId,
           });
+          // Refresh task list and groups so Task List reflects new phase ordering immediately
+          dispatch(fetchTasksV3(projectId) as any);
+          dispatch(fetchTaskGroups(projectId) as any);
         }
       } catch (err) {
         logger.error('Failed to update column order', err);
