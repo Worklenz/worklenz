@@ -15,7 +15,6 @@ const Configuration: React.FC = React.memo(() => {
   const [countries, setCountries] = useState<IBillingConfigurationCountry[]>([]);
   const [configuration, setConfiguration] = useState<IBillingConfiguration>();
   const [loading, setLoading] = useState(false);
-  const [isFormDirty, setIsFormDirty] = useState(false); // NEW
   const [form] = Form.useForm();
 
   const fetchCountries = useCallback(async () => {
@@ -34,7 +33,6 @@ const Configuration: React.FC = React.memo(() => {
     if (res.done) {
       setConfiguration(res.body);
       form.setFieldsValue(res.body);
-      setIsFormDirty(false); // RESET on load
     }
   }, [form]);
 
@@ -43,17 +41,14 @@ const Configuration: React.FC = React.memo(() => {
     fetchConfiguration();
   }, [fetchCountries, fetchConfiguration]);
 
-  const handleValuesChange = useCallback(() => {
-    setIsFormDirty(true); // NEW
-  }, []);
-
   const handleSave = useCallback(
     async (values: any) => {
       try {
         setLoading(true);
         const res = await adminCenterApiService.updateBillingConfiguration(values);
         if (res.done) {
-          await fetchConfiguration(); // resets isFormDirty inside
+          await fetchConfiguration();
+          form.resetFields();
         }
       } catch (error) {
         logger.error('Error updating configuration:', error);
@@ -61,7 +56,7 @@ const Configuration: React.FC = React.memo(() => {
         setLoading(false);
       }
     },
-    [fetchConfiguration]
+    [fetchConfiguration, form]
   );
 
   const countryOptions = useMemo(
@@ -107,7 +102,6 @@ const Configuration: React.FC = React.memo(() => {
           form={form}
           initialValues={configuration}
           onFinish={handleSave}
-          onValuesChange={handleValuesChange} // NEW
         >
           <Row gutter={[0, 0]}>
             <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
@@ -210,7 +204,7 @@ const Configuration: React.FC = React.memo(() => {
                   type="primary"
                   htmlType="submit"
                   loading={loading}
-                  disabled={!isFormDirty} // NEW
+                  disabled={!form.isFieldsTouched()}
                   block
                 >
                   Save
