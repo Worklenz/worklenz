@@ -17,6 +17,8 @@ import { CrownOutlined } from '@ant-design/icons';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
@@ -54,6 +56,7 @@ import { setProjectId as setInsightsProjectId } from '@/features/projects/insigh
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ProjectViewSkeleton from './project-view-skeleton';
 import { useTranslation } from 'react-i18next';
+import alertService from '@/services/alerts/alertService';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -106,6 +109,7 @@ const ProjectView = React.memo(() => {
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isLicenseExpired } = useAuthStatus();
   const { canCreateTask } = useTaskCreationPermission();
+  const { socket } = useSocket();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
@@ -131,6 +135,54 @@ const ProjectView = React.memo(() => {
 
   // Initialize timer state from backend when project view loads
   useTimerInitialization();
+
+  useEffect(() => {
+    if (!socket || !projectId) {
+      return;
+    }
+
+    const joinPayload = {
+      type: 'join',
+      id: projectId,
+    };
+    const leavePayload = {
+      type: 'leave',
+      id: projectId,
+    };
+
+    socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), joinPayload);
+    const handleReconnect = () => {
+      socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), joinPayload);
+    };
+
+    socket.on('connect', handleReconnect);
+
+    return () => {
+      socket.off('connect', handleReconnect);
+      socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), leavePayload);
+    };
+  }, [socket, projectId]);
+
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    const notify = (descKey: string) => () =>
+      alertService.info(t('projectUpdated'), t(descKey));
+
+    const handlers: Record<string, () => void> = {
+      [SocketEvents.PROJECT_DATA_CHANGE.toString()]:       notify('projectDataUpdatedDesc'),
+      [SocketEvents.PROJECT_HEALTH_CHANGE.toString()]:     notify('projectHealthUpdatedDesc'),
+      [SocketEvents.PROJECT_STATUS_CHANGE.toString()]:     notify('projectStatusUpdatedDesc'),
+      [SocketEvents.PROJECT_START_DATE_CHANGE.toString()]: notify('projectDatesUpdatedDesc'),
+      [SocketEvents.PROJECT_END_DATE_CHANGE.toString()]:   notify('projectDatesUpdatedDesc'),
+      [SocketEvents.PROJECT_CATEGORY_CHANGE.toString()]:   notify('projectCategoryUpdatedDesc'),
+    };
+
+    Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));
+    return () => {
+      Object.entries(handlers).forEach(([event, handler]) => socket.off(event, handler));
+    };
+  }, [socket, projectId, t]);
 
   // Update local state when URL params change
   useEffect(() => {

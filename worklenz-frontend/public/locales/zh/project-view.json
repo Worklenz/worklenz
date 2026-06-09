@@ -12,5 +12,11 @@
   "pinnedTab": "已固定为默认标签页",
   "pinTab": "固定为默认标签页",
   "unpinTab": "取消固定默认标签页",
-  "finance": "财务"
+  "finance": "财务",
+  "projectUpdated": "项目已更新",
+  "projectDataUpdatedDesc": "团队成员已更新此项目。",
+  "projectHealthUpdatedDesc": "项目健康状态已更新。",
+  "projectStatusUpdatedDesc": "项目状态已更新。",
+  "projectDatesUpdatedDesc": "项目日期已更新。",
+  "projectCategoryUpdatedDesc": "项目类别已更新。"
 }
