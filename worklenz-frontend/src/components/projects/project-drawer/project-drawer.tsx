@@ -1118,7 +1118,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
             label={t('budgetCurrencyLabel', { defaultValue: 'Currency' })}
             rules={[
               {
-                required: true,
+                required: false,
                 message: t('budgetCurrencyRequired', { defaultValue: 'Please select a currency' }),
               },
             ]}
