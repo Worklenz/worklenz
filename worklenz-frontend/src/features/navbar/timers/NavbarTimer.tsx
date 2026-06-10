@@ -70,6 +70,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
   const handleStartTimer = async () => {
     try {
+      const startTimestamp = Date.now();
       // Check for conflicting timers
       const response = await taskTimeLogsApiService.getRunningTimers();
       const runningTimers = response.body || [];
@@ -77,15 +78,15 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
       if (conflictingTimer) {
         Modal.confirm({
-          title: t('timer.conflictTitle', { defaultValue: 'Timer Conflict' }),
-          content: t('timer.conflictMessage', {
+          title: t('timerButton.conflictTitle', { defaultValue: 'Timer Conflict' }),
+          content: t('timerButton.conflictMessage', {
             taskName: conflictingTimer.task_name,
             projectName: conflictingTimer.project_name,
             defaultValue:
               'Another timer is running for "{{taskName}}" in project "{{projectName}}". Do you want to stop it and start this timer?',
           }),
-          okText: t('timer.stopAndStart', { defaultValue: 'Stop and Start' }),
-          cancelText: t('timer.cancel', { defaultValue: 'Cancel' }),
+          okText: t('timerButton.stopAndStart', { defaultValue: 'Stop and Start' }),
+          cancelText: t('timerButton.cancel', { defaultValue: 'Cancel' }),
           onOk: () => {
             // Stop conflicting timer
             socket?.emit(
@@ -98,7 +99,6 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
             // Start new timer
             setTimeout(() => {
-              const startTimestamp = Date.now();
               socket?.emit(
                 SocketEvents.TASK_TIMER_START.toString(),
                 JSON.stringify({ task_id: taskId })
@@ -111,7 +111,6 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
         });
       } else {
         // No conflict, start timer directly
-        const startTimestamp = Date.now();
         socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
         dispatch(updateTaskTimeTracking({ taskId, timeTracking: startTimestamp }));
         setLocalRunning(true);

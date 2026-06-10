@@ -47,7 +47,11 @@
     "timerRunning": "{{count}} kohëmatës në punë",
     "timerRunning_other": "{{count}} kohëmatës në punë",
     "recentLog": "{{count}} regjistër i fundit",
-    "recentLog_other": "{{count}} regjistrat e fundit"
+    "recentLog_other": "{{count}} regjistrat e fundit",
+    "conflictTitle": "Konflikt Kohëmatësi",
+    "conflictMessage": "Një tjetër kohëmatës po ekzekutohet për \"{{taskName}}\" në projektin \"{{projectName}}\". Dëshironi ta ndaloni dhe ta filloni këtë kohëmatës?",
+    "stopAndStart": "Ndalo dhe Fillo",
+    "cancel": "Anulo"
   },
   "reporting": "Reports",
   "clientPortalUpgradePopoverTitle": "Portali i Klientit",

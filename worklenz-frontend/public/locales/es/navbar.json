@@ -47,7 +47,11 @@
     "timerRunning": "{{count}} temporizador en ejecución",
     "timerRunning_other": "{{count}} temporizadores en ejecución",
     "recentLog": "{{count}} registro reciente",
-    "recentLog_other": "{{count}} registros recientes"
+    "recentLog_other": "{{count}} registros recientes",
+    "conflictTitle": "Conflicto de Temporizador",
+    "conflictMessage": "Otro temporizador está ejecutándose para \"{{taskName}}\" en proyecto \"{{projectName}}\". ¿Deseas detenerlo e iniciar este temporizador?",
+    "stopAndStart": "Detener e Iniciar",
+    "cancel": "Cancelar"
   },
   "reporting": "Reports",
   "clientPortalUpgradePopoverTitle": "Portal del Cliente",
