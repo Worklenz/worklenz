@@ -33,6 +33,7 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase from "./tasks-controller-base";
 import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
+import { syncTaskDescriptionLinks } from "../shared/url-extractor";
 import {
   IActivityLog,
   IActivityLogAttributeTypes,
@@ -367,6 +368,11 @@ export default class TasksController extends TasksControllerBase {
 
     if (task) {
       this.sendAssignmentNotifications(task, userId);
+    }
+
+    if ("description" in req.body) {
+      const teamId = req.user?.team_id as string;
+      void syncTaskDescriptionLinks(req.body.project_id, req.body.id, teamId, req.body.description || "");
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

@@ -26,6 +26,7 @@ import {
   ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
+import { ProjectLinksTab } from './components/ProjectLinksTab';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -138,7 +139,7 @@ const ProjectViewFiles = () => {
     pageSize: DEFAULT_PAGE_SIZE,
   });
 
-  const [activeTab, setActiveTab] = useState<'project' | 'task'>('project');
+  const [activeTab, setActiveTab] = useState<'project' | 'task' | 'links'>('project');
   const [taskAttachments, setTaskAttachments] = useState<ITaskAttachmentViewModel[]>([]);
   const [taskAttachmentsLoading, setTaskAttachmentsLoading] = useState(false);
   const [deletingTaskAttachmentId, setDeletingTaskAttachmentId] = useState<string | null>(null);
@@ -834,9 +835,13 @@ const ProjectViewFiles = () => {
                 label: t('taskAttachmentsTab', { defaultValue: 'Task Attachments' }),
                 value: 'task',
               },
+              {
+                label: t('linksTab', { defaultValue: 'Links' }),
+                value: 'links',
+              },
             ]}
             value={activeTab}
-            onChange={v => setActiveTab(v as 'project' | 'task')}
+            onChange={v => setActiveTab(v as 'project' | 'task' | 'links')}
           />
 
           {activeTab === 'project' && (
@@ -965,6 +970,8 @@ const ProjectViewFiles = () => {
           }}
         />
       )}
+
+      {activeTab === 'links' && <ProjectLinksTab active={activeTab === 'links'} />}
 
       <FilePreviewModal
         open={previewOpen}
