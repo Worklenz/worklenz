@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Form,
   Switch,
@@ -91,6 +91,8 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
   const [intervalMonths, setIntervalMonths] = useState(1);
   const [loadingData, setLoadingData] = useState(false);
   const [updatingData, setUpdatingData] = useState(false);
+  const [isTogglingRecurring, setIsTogglingRecurring] = useState(false);
+  const toggleRecurringTimeoutRef = useRef<number | null>(null);
   const [scheduleData, setScheduleData] = useState<ITaskRecurringSchedule>({});
   const [recurringMode, setRecurringMode] = useState<IRecurringMode>(IRecurringMode.CreateTask);
   const [targetStatusId, setTargetStatusId] = useState<string | null>(null);
@@ -103,16 +105,32 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
       return;
     }
 
-    if (!task.id) return;
+    if (isTogglingRecurring || !task.id) return;
+
+    setIsTogglingRecurring(true);
+
+    if (toggleRecurringTimeoutRef.current) {
+      window.clearTimeout(toggleRecurringTimeoutRef.current);
+    }
 
     socket?.emit(SocketEvents.TASK_RECURRING_CHANGE.toString(), {
       task_id: task.id,
       schedule_id: task.schedule_id,
     });
 
+    toggleRecurringTimeoutRef.current = window.setTimeout(() => {
+      setIsTogglingRecurring(false);
+      toggleRecurringTimeoutRef.current = null;
+    }, 10000);
+
     socket?.once(
       SocketEvents.TASK_RECURRING_CHANGE.toString(),
       (schedule: ITaskRecurringScheduleData) => {
+        if (toggleRecurringTimeoutRef.current) {
+          window.clearTimeout(toggleRecurringTimeoutRef.current);
+          toggleRecurringTimeoutRef.current = null;
+        }
+
         if (schedule.id && schedule.schedule_type) {
           const selected = repeatOptions.find(e => e.value == schedule.schedule_type);
           if (selected) setRepeatOption(selected);
@@ -134,6 +152,7 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
 
         setRecurring(checked);
         if (!checked) setShowConfig(false);
+        setIsTogglingRecurring(false);
       }
     );
   };
@@ -282,6 +301,14 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
     if (task.schedule_id) void getScheduleData();
     if (task.project_id) void fetchTaskStatuses();
     socket?.on(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
+
+    return () => {
+      socket?.off(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
+      if (toggleRecurringTimeoutRef.current) {
+        window.clearTimeout(toggleRecurringTimeoutRef.current);
+        toggleRecurringTimeoutRef.current = null;
+      }
+    };
   }, [task?.schedule_id]);
 
   return (
@@ -299,7 +326,12 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
               </div>
             </Tooltip>
           ) : (
-            <Switch checked={recurring} onChange={handleChange} disabled={disabled} />
+            <Switch
+              checked={recurring}
+              onChange={handleChange}
+              disabled={disabled || isTogglingRecurring}
+              loading={isTogglingRecurring}
+            />
           )}
           &nbsp;
           {recurring && (
