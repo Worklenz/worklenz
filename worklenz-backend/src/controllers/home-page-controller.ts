@@ -196,23 +196,23 @@ export default class HomePageController extends WorklenzControllerBase {
     let params: any[];
     let result: any[];
 
- if (isCalendarView == "true") {
-  const selectedDate = req.query.selected_date as string;
-  const calendarClosure = `AND t.end_date::DATE = $3::DATE`;
-  params = [teamId, userId, selectedDate];
-  result = await this.getTasksResult(groupByClosure, calendarClosure, params, teamId as string, userId as string);
-} else {
-  params = [teamId, userId];
-  // ✅ FIX: pass "" so ALL tasks are fetched regardless of selected tab
-  result = await this.getTasksResult(groupByClosure, "", params, teamId as string, userId as string);
-}
+    if (isCalendarView == "true") {
+      const selectedDate = req.query.selected_date as string;
+      const calendarClosure = `AND t.end_date::DATE = $3::DATE`;
+      params = [teamId, userId, selectedDate];
+      result = await this.getTasksResult(groupByClosure, calendarClosure, params, teamId as string, userId as string);
+    } else {
+      params = [teamId, userId];
+      // ✅ FIX: pass "" so ALL tasks are fetched regardless of selected tab
+      result = await this.getTasksResult(groupByClosure, "", params, teamId as string, userId as string);
+    }
 
-// ✅ FIX: counts calculated from full task list, not tab-filtered subset
-const counts = await this.getCountsByGroup(result, timeZone, today);
+    // ✅ FIX: counts calculated from full task list, not tab-filtered subset
+    const counts = await this.getCountsByGroup(result, timeZone, today);
 
-if (isCalendarView != "true") {
-  result = await this.groupByDate(currentTab as string, result, timeZone, today);
-}
+    if (isCalendarView != "true") {
+      result = await this.groupByDate(currentTab as string, result, timeZone, today);
+    }
     // const counts = await this.getCountsResult(groupByClosure, teamId as string, userId as string);
 
     const data = {
@@ -223,6 +223,7 @@ if (isCalendarView != "true") {
       overdue: counts.overdue,
       no_due_date: counts.no_due_date,
     };
+    res.set('Cache-Control', 'no-store');
 
     return res.status(200).send(new ServerResponse(true, data));
   }
@@ -354,8 +355,8 @@ if (isCalendarView != "true") {
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
     const month = req.query.month as string; // Format: YYYY-MM
-    const currentGroup = this.isValidGroup(req.query.group_by as string) 
-      ? req.query.group_by 
+    const currentGroup = this.isValidGroup(req.query.group_by as string)
+      ? req.query.group_by
       : this.GROUP_BY_ASSIGNED_TO_ME;
 
     const groupByClosure = this.getTasksByGroupClosure(currentGroup as string);

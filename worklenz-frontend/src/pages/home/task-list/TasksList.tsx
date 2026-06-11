@@ -328,9 +328,11 @@ const TasksList: React.FC = React.memo(() => {
           <Table
             className="custom-two-colors-row-table"
             dataSource={
-              data?.body?.tasks
-                ? data.body.tasks.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                : []
+              homeTasksFetching
+                ? []
+                : data?.body?.tasks
+                  ? data.body.tasks.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                  : []
             }
             rowKey={record => record.id || ''}
             columns={columns as TableProps<IMyTask>['columns']}
