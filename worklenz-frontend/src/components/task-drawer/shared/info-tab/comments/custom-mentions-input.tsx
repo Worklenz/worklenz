@@ -26,7 +26,7 @@ interface CustomMentionsInputProps {
   onChange: (value: string) => void;
   onSelect?: (option: MentionOption) => void;
   onSubmit?: () => void;
-  themeMode: string;
+  themeMode: 'light' | 'dark';
   options: MentionOption[];
   placeholder?: string;
   autoFocus?: boolean;
@@ -199,7 +199,8 @@ const CustomMentionsInput = ({
 
     const walkNodes = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE) {
-        plainText += node.textContent || '';
+        plainText += (node.textContent || '').replace(/\u200B/g, '');
+
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node as Element;
         if (el.tagName === 'BR') {
@@ -208,7 +209,8 @@ const CustomMentionsInput = ({
         }
         if (el.getAttribute('data-mention') === 'true' || el.getAttribute('data-url') === 'true') {
           // Use the trimmed text content so internal padding spaces don't leak into the value
-          plainText += (node.textContent || '').trim();
+         plainText += (node.textContent || '').replace(/\u200B/g, '');
+
         } else {
           for (let i = 0; i < node.childNodes.length; i++) {
             walkNodes(node.childNodes[i]);
@@ -397,9 +399,10 @@ const CustomMentionsInput = ({
         const spaceIndex = textAfterAt.indexOf(' ');
 
         if (spaceIndex === -1) {
-          const filtered = options.filter(opt =>
+                    const filtered = options.filter((opt: MentionOption) =>
             filterOption ? filterOption(textAfterAt, opt) : true
           );
+
           setFilteredOptions(filtered);
           setIsDropdownOpen(filtered.length > 0);
           setSelectedIndex(0);
@@ -537,19 +540,22 @@ const CustomMentionsInput = ({
         const range = selection.getRangeAt(0);
         range.deleteContents();
 
-        const br = document.createElement('br');
+            const br = document.createElement('br');
         range.insertNode(br);
 
-        // A trailing <br> needs a following text node so the cursor lands after it.
-        if (!br.nextSibling) {
-          br.parentNode?.appendChild(document.createTextNode(''));
-        }
+        // Insert a zero-width space after the <br> as a stable cursor anchor.
+        // Without it the browser has nowhere to place the caret on the new
+        // line and it snaps back to the line above. \u200B is stripped in
+        // extractPlainText so it never leaks into the comment value.
+        const anchor = document.createTextNode('\u200B');
+        br.parentNode?.insertBefore(anchor, br.nextSibling);
 
         const newRange = document.createRange();
-        newRange.setStartAfter(br);
+        newRange.setStart(anchor, 1);
         newRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(newRange);
+
 
         // Prevent the useEffect from wiping the <br> the browser just inserted.
         skipNextRenderRef.current = true;
