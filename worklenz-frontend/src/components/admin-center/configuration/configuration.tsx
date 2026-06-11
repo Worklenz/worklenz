@@ -1,5 +1,5 @@
 import { Button, Card, Col, Divider, Form, Input, Row, Select } from '@/shared/antd-imports';
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { RootState } from '../../../app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IBillingConfigurationCountry } from '@/types/admin-center/country.types';
@@ -15,7 +15,11 @@ const Configuration: React.FC = React.memo(() => {
   const [countries, setCountries] = useState<IBillingConfigurationCountry[]>([]);
   const [configuration, setConfiguration] = useState<IBillingConfiguration>();
   const [loading, setLoading] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [form] = Form.useForm();
+
+  // Holds the last-saved values so we can diff against them on every field change
+  const savedConfigRef = useRef<IBillingConfiguration | null>(null);
 
   const fetchCountries = useCallback(async () => {
     try {
@@ -33,6 +37,9 @@ const Configuration: React.FC = React.memo(() => {
     if (res.done) {
       setConfiguration(res.body);
       form.setFieldsValue(res.body);
+      // Snapshot the server truth so handleValuesChange can diff against it
+      savedConfigRef.current = res.body;
+      setIsDirty(false);
     }
   }, [form]);
 
@@ -41,14 +48,30 @@ const Configuration: React.FC = React.memo(() => {
     fetchConfiguration();
   }, [fetchCountries, fetchConfiguration]);
 
+  // Fired on every field change by Ant Design's onValuesChange prop.
+  // Compares live form values against the saved snapshot to set isDirty.
+  // This also correctly handles the case where the user reverts a change back
+  // to the original value — the button will disable again.
+  const handleValuesChange = useCallback(() => {
+    if (!savedConfigRef.current) return;
+    const current = form.getFieldsValue();
+    const saved = savedConfigRef.current as Record<string, unknown>;
+    const changed = Object.keys(current).some(
+      key => current[key] !== saved[key]
+    );
+    setIsDirty(changed);
+  }, [form]);
+
   const handleSave = useCallback(
     async (values: any) => {
       try {
         setLoading(true);
         const res = await adminCenterApiService.updateBillingConfiguration(values);
         if (res.done) {
+          // Re-fetch to sync with server; fetchConfiguration also resets isDirty
+          // and updates savedConfigRef — no need for form.resetFields() which
+          // would revert to the stale initialValues from the first render.
           await fetchConfiguration();
-          form.resetFields();
         }
       } catch (error) {
         logger.error('Error updating configuration:', error);
@@ -56,7 +79,7 @@ const Configuration: React.FC = React.memo(() => {
         setLoading(false);
       }
     },
-    [fetchConfiguration, form]
+    [fetchConfiguration]
   );
 
   const countryOptions = useMemo(
@@ -102,6 +125,7 @@ const Configuration: React.FC = React.memo(() => {
           form={form}
           initialValues={configuration}
           onFinish={handleSave}
+          onValuesChange={handleValuesChange}
         >
           <Row gutter={[0, 0]}>
             <Col xs={24} sm={24} md={8} lg={8} xl={8} style={colStyle}>
@@ -204,7 +228,7 @@ const Configuration: React.FC = React.memo(() => {
                   type="primary"
                   htmlType="submit"
                   loading={loading}
-                  disabled={!form.isFieldsTouched()}
+                  disabled={!isDirty}
                   block
                 >
                   Save
