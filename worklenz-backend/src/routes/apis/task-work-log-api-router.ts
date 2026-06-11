@@ -14,6 +14,10 @@ taskWorkLogApiRouter.get("/task/:id", idParamValidator, verifyTaskAccess('params
 taskWorkLogApiRouter.get("/export/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(TaskWorklogController.exportLog));
 taskWorkLogApiRouter.put("/:id", taskTimeLogValidator, idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.update));
 taskWorkLogApiRouter.delete("/:id", idParamValidator, verifyTaskAccessViaWorkLog('params', 'id'), safeControllerFunction(TaskWorklogController.deleteById));
+taskWorkLogApiRouter.get("/my-tasks", safeControllerFunction(TaskWorklogController.getMyTasksWithLogs));
+taskWorkLogApiRouter.get("/my-summary", safeControllerFunction(TaskWorklogController.getMySummary));
+taskWorkLogApiRouter.get("/my-recent-projects", safeControllerFunction(TaskWorklogController.getMyRecentProjects));
+taskWorkLogApiRouter.get("/my-tasks-in-project", safeControllerFunction(TaskWorklogController.getMyTasksInProject));
 taskWorkLogApiRouter.get("/running-timers", safeControllerFunction(TaskWorklogController.getAllRunningTimers));
 taskWorkLogApiRouter.get("/recent-logs", safeControllerFunction(TaskWorklogController.getRecentTimeLogs));
 

@@ -38,6 +38,7 @@
     "acceptAndJoin": "Accept & Join",
     "noNotifications": "No notifications"
   },
+  "timeEntries": "Time Entries",
   "timerButton": {
     "runningTimers": "Running Timers",
     "recentTimeLogs": "Recent Time Logs",
@@ -52,6 +53,7 @@
     "timerRunning": "{{count}} timer running",
     "timerRunning_other": "{{count}} timers running",
     "recentLog": "{{count}} recent log",
-    "recentLog_other": "{{count}} recent logs"
+    "recentLog_other": "{{count}} recent logs",
+    "logTime": "Log time"
   }
 }

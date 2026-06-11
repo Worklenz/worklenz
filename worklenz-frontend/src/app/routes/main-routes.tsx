@@ -19,6 +19,12 @@ const ProjectList = lazy(
 const Schedule = lazy(
   ChunkErrorHandler.wrapLazyImport(() => import('@/pages/schedule/schedule'), 'Schedule')
 );
+const TimeEntriesPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/time-entries/TimeEntriesPage'),
+    'TimeEntriesPage'
+  )
+);
 const TeamLeadReports = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/team-lead-reports/team-lead-reports'),
@@ -137,6 +143,14 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <ProjectList />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'time-entries',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <TimeEntriesPage />
           </Suspense>
         ),
       },

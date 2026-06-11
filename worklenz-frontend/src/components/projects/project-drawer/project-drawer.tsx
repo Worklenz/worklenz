@@ -102,7 +102,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
   const { priorities } = useAppSelector(state => state.projectPriorityReducer);
   const defaultPriorityId = useMemo(
-    () => priorities.find(priority => priority.name === 'Medium')?.id,
+    () => (priorities ?? []).find(priority => priority.name === 'Medium')?.id,
     [priorities]
   );
 
