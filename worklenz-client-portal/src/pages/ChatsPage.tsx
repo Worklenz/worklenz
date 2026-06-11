@@ -296,7 +296,7 @@ const ChatsPage: React.FC = () => {
       <Flex vertical gap={8}>
         <Flex align="center" gap={12}>
           <MessageOutlined style={{ fontSize: 20 }} />
-          <Title level={2} style={{ margin: 0 }}>{t('chats.title')}</Title>
+          <Title level={3} style={{ margin: 0 }}>{t('chats.title')}</Title>
           {getTotalUnreadCount() > 0 && (
             <Badge count={getTotalUnreadCount()} style={{ backgroundColor: '#ff4d4f' }} />
           )}
