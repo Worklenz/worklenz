@@ -53,7 +53,6 @@
     "conflictMessage": "Ein weiterer Timer läuft für \"{{taskName}}\" im Projekt \"{{projectName}}\". Möchten Sie ihn beenden und diesen Timer starten?",
     "stopAndStart": "Beenden und Starten",
     "cancel": "Abbrechen"
-    "recentLog_other": "{{count}} letzte Protokolle"
   },
   "clientPortalUpgradePopoverTitle": "Kundenportal",
   "clientPortalUpgradePopoverBody": "Teilen Sie den Projektfortschritt mit Ihren Kunden über ein gebrandetes Portal. Verfügbar im Business-Plan.",
