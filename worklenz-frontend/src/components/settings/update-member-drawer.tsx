@@ -40,12 +40,17 @@ import { RolePermissionsPopover } from './role-permissions-popover';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
-  // Pass the current name from the table row so the drawer title shows
-  // the correct (already-updated) name instantly, without waiting for getById
   selectedMemberName?: string | null;
   onNameUpdate?: (memberId: string, newName: string) => void;
   onRoleUpdate?: (memberId: string, newRoleName: string) => void;
   onJobTitleUpdate?: (memberId: string, newJobTitle: string) => void;
+  // NEW: called after a team lead is assigned or removed so the table
+  // row updates immediately without a full refetch
+  onTeamLeadUpdate?: (
+    memberId: string,
+    teamLeadId: string | null,
+    teamLeadName: string | null
+  ) => void;
   initialRoleName?: string;
 };
 
@@ -55,6 +60,7 @@ const UpdateMemberDrawer = ({
   onNameUpdate,
   onRoleUpdate,
   onJobTitleUpdate,
+  onTeamLeadUpdate,
   initialRoleName,
 }: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
@@ -80,9 +86,6 @@ const UpdateMemberDrawer = ({
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
-  // Use the name from the parent table row while the drawer is loading its own fetch.
-  // Once getById completes, teamMember.name takes over (which will be the same value).
-  // This prevents the flash: updated name → old name → updated name.
   const displayName = teamMember?.name ?? selectedMemberName ?? '';
 
   const isOwnAccount = useMemo(() => {
@@ -169,14 +172,12 @@ const UpdateMemberDrawer = ({
     }
   };
 
-  // Handle scroll to load more job titles
   const handleJobTitleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
     const scrollTop = target.scrollTop;
     const scrollHeight = target.scrollHeight;
     const clientHeight = target.clientHeight;
 
-    // Check if scrolled to the very end of the list
     if (scrollTop + clientHeight >= scrollHeight) {
       const hasMore = jobTitles.length < jobTitlesTotal;
       if (hasMore && !jobTitlesLoading) {
@@ -264,13 +265,19 @@ const UpdateMemberDrawer = ({
         const currentManagerId = teamMember?.reports_to_member_id;
         const newManagerId = values.manager;
 
+        // Handle team lead assignment changes and notify parent immediately
         if (currentManagerId !== newManagerId) {
           if (newManagerId) {
             await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
+            // Find the selected team lead's name so the table cell updates right away
+            const assignedLead = teamLeads.find(lead => lead.id === newManagerId);
+            onTeamLeadUpdate?.(selectedMemberId, newManagerId, assignedLead?.name ?? null);
           } else if (currentManagerId) {
             await teamManagementApiService.removeManagerAssignment(selectedMemberId);
+            onTeamLeadUpdate?.(selectedMemberId, null, null);
           }
         }
+
         const selectedJobTitleId = form.getFieldValue('jobTitle');
         const resolvedJobTitle =
           jobTitles.find(j => j.id === selectedJobTitleId)?.name ?? selectedJobTitleId ?? '';
@@ -288,6 +295,7 @@ const UpdateMemberDrawer = ({
               : accessValue === 'admin'
                 ? 'Admin'
                 : 'Member';
+
         onNameUpdate?.(selectedMemberId, resolvedName);
         onRoleUpdate?.(selectedMemberId, newRoleName);
         onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
@@ -325,7 +333,6 @@ const UpdateMemberDrawer = ({
   const afterOpenChange = async (visible: boolean) => {
     if (visible) {
       form.resetFields();
-      // Reset job titles pagination state
       setJobTitles([]);
       setJobTitlesPage(1);
       setJobTitlesTotal(0);
@@ -379,8 +386,6 @@ const UpdateMemberDrawer = ({
                 textTransform: 'capitalize',
               }}
             >
-              {/* Use displayName so the correct (updated) name shows immediately
-                  while getById is still in flight, preventing the old-name flash */}
               {displayName}
             </Typography.Text>
             <Typography.Text
