@@ -7,6 +7,17 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 
 const MAX_PAGE_SIZE = 100;
 
+// Only http(s) links may be stored — reject javascript:, data:, file: and
+// other schemes that should never become a clickable project link.
+function isValidHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default class ProjectLinksController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async list(
@@ -61,16 +72,16 @@ export default class ProjectLinksController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null, "Title and URL are required"));
     }
 
-    try {
-      new URL(url);
-    } catch {
+    if (!isValidHttpUrl(url.trim())) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid URL"));
     }
 
     const q = `
       INSERT INTO project_links (project_id, team_id, title, url, description, source_type, added_by)
       VALUES ($1, $2, $3, $4, $5, 'manual', $6)
-      RETURNING id, title, url, description, source_type, added_by, created_at, updated_at
+      RETURNING id, title, url, description, source_type, added_by,
+        (SELECT name FROM users WHERE id = added_by) AS added_by_name,
+        created_at, updated_at
     `;
 
     const result = await db.query(q, [projectId, teamId, title.trim(), url.trim(), description?.trim() || null, userId]);
@@ -83,20 +94,24 @@ export default class ProjectLinksController extends WorklenzControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { projectId, linkId } = req.params;
-    const { title, description } = req.body;
+    const { title, url, description } = req.body;
 
-    if (!title?.trim()) {
-      return res.status(400).send(new ServerResponse(false, null, "Title is required"));
+    if (!title?.trim() || !url?.trim()) {
+      return res.status(400).send(new ServerResponse(false, null, "Title and URL are required"));
+    }
+
+    if (!isValidHttpUrl(url.trim())) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid URL"));
     }
 
     const q = `
       UPDATE project_links
-      SET title = $1, description = $2, updated_at = NOW()
-      WHERE id = $3 AND project_id = $4 AND source_type = 'manual'
+      SET title = $1, url = $2, description = $3, updated_at = NOW()
+      WHERE id = $4 AND project_id = $5 AND source_type = 'manual'
       RETURNING id
     `;
 
-    const result = await db.query(q, [title.trim(), description?.trim() || null, linkId, projectId]);
+    const result = await db.query(q, [title.trim(), url.trim(), description?.trim() || null, linkId, projectId]);
     if (!result.rowCount) {
       return res.status(404).send(new ServerResponse(false, null, "Link not found or cannot be edited"));
     }

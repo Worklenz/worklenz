@@ -868,7 +868,7 @@ const ProjectViewFiles = () => {
         </Flex>
       }
     >
-      {activeTab === 'project' ? (
+      {activeTab === 'project' && (
         <>
           {isOwnerOrAdmin && (
             <>
@@ -949,7 +949,9 @@ const ProjectViewFiles = () => {
             onChange={handleTableChange}
           />
         </>
-      ) : (
+      )}
+
+      {activeTab === 'task' && (
         <Table<ITaskAttachmentViewModel>
           dataSource={taskAttachments}
           columns={taskAttachmentColumns}

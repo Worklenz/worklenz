@@ -31,3 +31,23 @@ export const isBlockedExtension = (
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   return blockedExtensions.includes(ext);
 };
+
+// Prepend https:// when the user omits the scheme (e.g. "example.com") so a
+// bare domain still produces a usable, openable link.
+export const normalizeUrl = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) return trimmed;
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)) return `https://${trimmed}`;
+  return trimmed;
+};
+
+// Only http(s) links are allowed — this rejects javascript:, data:, file: and
+// other schemes that should never be stored as a clickable project link.
+export const isValidHttpUrl = (value: string): boolean => {
+  try {
+    const parsed = new URL(normalizeUrl(value));
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};

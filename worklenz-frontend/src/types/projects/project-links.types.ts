@@ -25,5 +25,6 @@ export interface ICreateLinkBody {
 
 export interface IUpdateLinkBody {
   title: string;
+  url: string;
   description?: string;
 }

@@ -1,6 +1,7 @@
 import { Form, Input, Modal } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { ICreateLinkBody } from '@/types/projects/project-links.types';
+import { isValidHttpUrl, normalizeUrl } from '../utils';
 
 interface AddLinkModalProps {
   open: boolean;
@@ -15,7 +16,7 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({ open, loading, onSub
 
   const handleOk = async () => {
     const values = await form.validateFields();
-    onSubmit(values);
+    onSubmit({ ...values, url: normalizeUrl(values.url) });
     form.resetFields();
   };
 
@@ -49,13 +50,8 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({ open, loading, onSub
             { required: true, message: t('invalidUrl', { defaultValue: 'Please enter a valid URL' }) },
             {
               validator: (_, value) => {
-                if (!value) return Promise.resolve();
-                try {
-                  new URL(value);
-                  return Promise.resolve();
-                } catch {
-                  return Promise.reject(t('invalidUrl', { defaultValue: 'Please enter a valid URL' }));
-                }
+                if (!value || isValidHttpUrl(value)) return Promise.resolve();
+                return Promise.reject(t('invalidUrl', { defaultValue: 'Please enter a valid URL' }));
               },
             },
           ]}

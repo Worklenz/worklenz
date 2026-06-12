@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import { AddLinkModal } from './AddLinkModal';
+import { isValidHttpUrl, normalizeUrl } from '../utils';
 import { useProjectLinks } from '../hooks/useProjectLinks';
 import type { ICreateLinkBody, IProjectLink, IUpdateLinkBody } from '@/types/projects/project-links.types';
 import { colors } from '@/styles/colors';
@@ -33,13 +34,13 @@ const EditLinkModal: React.FC<EditLinkModalProps> = ({ link, open, loading, onSu
 
   React.useEffect(() => {
     if (open && link) {
-      form.setFieldsValue({ title: link.title, description: link.description });
+      form.setFieldsValue({ title: link.title, url: link.url, description: link.description });
     }
   }, [open, link, form]);
 
   const handleOk = async () => {
     const values = await form.validateFields();
-    onSubmit(values);
+    onSubmit({ ...values, url: normalizeUrl(values.url) });
   };
 
   return (
@@ -58,6 +59,21 @@ const EditLinkModal: React.FC<EditLinkModalProps> = ({ link, open, loading, onSu
           rules={[{ required: true, message: t('linkTitleRequired', { defaultValue: 'Title is required' }) }]}
         >
           <Input maxLength={255} />
+        </Form.Item>
+        <Form.Item
+          name="url"
+          label={t('linkUrl', { defaultValue: 'URL' })}
+          rules={[
+            { required: true, message: t('invalidUrl', { defaultValue: 'Please enter a valid URL' }) },
+            {
+              validator: (_, value) => {
+                if (!value || isValidHttpUrl(value)) return Promise.resolve();
+                return Promise.reject(t('invalidUrl', { defaultValue: 'Please enter a valid URL' }));
+              },
+            },
+          ]}
+        >
+          <Input placeholder="https://example.com" />
         </Form.Item>
         <Form.Item name="description" label={t('linkDescription', { defaultValue: 'Description' })}>
           <Input.TextArea rows={3} maxLength={1000} />
