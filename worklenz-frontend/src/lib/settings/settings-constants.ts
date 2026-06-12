@@ -236,6 +236,7 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(DollarCircleOutlined),
     element: React.createElement(RateCardSettings),
     businessPlanRequired: true,
+    adminOnly: true,
   },
   {
     key: 'teams',
