@@ -22,6 +22,12 @@ export const navRoutes: NavRoutesType[] = [
     freePlanFeature: true,
   },
   {
+    name: 'timeEntries',
+    path: '/worklenz/time-entries',
+    adminOnly: false,
+    freePlanFeature: false,
+  },
+  {
     name: 'schedule',
     path: '/worklenz/schedule',
     adminOnly: true,

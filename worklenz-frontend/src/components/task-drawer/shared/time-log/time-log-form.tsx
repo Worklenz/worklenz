@@ -18,6 +18,8 @@ interface TimeLogFormProps {
   onSubmitSuccess?: () => void;
   initialValues?: ITaskLogViewModel;
   mode?: 'create' | 'edit';
+  taskId?: string;
+  projectId?: string;
 }
 
 type TimeLogInputMode = 'duration' | 'timeRange';
@@ -36,6 +38,8 @@ const TimeLogForm = ({
   onSubmitSuccess,
   initialValues,
   mode = 'create',
+  taskId: taskIdProp,
+  projectId: projectIdProp,
 }: TimeLogFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
@@ -211,8 +215,8 @@ const TimeLogForm = ({
       const diff = formattedEndTime.diff(formattedStartTime, 'seconds');
 
       return {
-        id: mode === 'edit' && initialValues?.id ? initialValues.id : taskFormViewModel?.task?.id,
-        project_id: taskFormViewModel?.task?.project_id as string,
+        id: mode === 'edit' && initialValues?.id ? initialValues.id : (taskIdProp ?? taskFormViewModel?.task?.id),
+        project_id: (projectIdProp ?? taskFormViewModel?.task?.project_id) as string,
         formatted_start: formattedStartTime.toISOString(),
         seconds_spent: Math.floor(Math.abs(diff)),
         description: values.description,
@@ -230,8 +234,8 @@ const TimeLogForm = ({
       .millisecond(0);
 
     return {
-      id: mode === 'edit' && initialValues?.id ? initialValues.id : taskFormViewModel?.task?.id,
-      project_id: taskFormViewModel?.task?.project_id as string,
+      id: mode === 'edit' && initialValues?.id ? initialValues.id : (taskIdProp ?? taskFormViewModel?.task?.id),
+      project_id: (projectIdProp ?? taskFormViewModel?.task?.project_id) as string,
       formatted_start: formattedStartTime.toISOString(),
       seconds_spent: secondsSpent,
       description: values.description,
@@ -290,8 +294,8 @@ const TimeLogForm = ({
 
     if (!currentSession) return;
 
-    const assignees = taskFormViewModel?.task?.assignees as string[];
-    if (currentSession && !assignees.includes(currentSession?.team_member_id as string)) {
+    const assignees = taskFormViewModel?.task?.assignees as string[] | undefined;
+    if (assignees && !assignees.includes(currentSession?.team_member_id as string)) {
       quickAssignMember(currentSession);
     }
 

@@ -6,6 +6,50 @@ import { getUserSession } from '@/utils/session-helper';
 
 const rootUrl = `${API_BASE_URL}/task-time-log`;
 
+export interface IMyTaskTimeLog {
+  id: string;
+  time_spent: number;
+  description: string | null;
+  created_at: string;
+  logged_by_timer: boolean;
+}
+
+export interface IMyTaskWithLogs {
+  task_id: string;
+  task_name: string;
+  due_date: string | null;
+  done: boolean;
+  project_id: string;
+  project_name: string;
+  project_color: string;
+  total_time_spent: number;
+  time_logs: IMyTaskTimeLog[];
+}
+
+export interface IMyTasksResponse {
+  tasks: IMyTaskWithLogs[];
+  fallback_date: string | null;
+  total: number;
+}
+
+export interface IMySummary {
+  today_total: number;
+  week_total: number;
+}
+
+export interface IRecentProject {
+  id: string;
+  name: string;
+  color_code: string;
+}
+
+export interface ITaskInProject {
+  id: string;
+  name: string;
+  due_date: string | null;
+  task_no: number;
+}
+
 export interface IRunningTimer {
   task_id: string;
   start_time: string;
@@ -66,5 +110,38 @@ export const taskTimeLogsApiService = {
 
   exportToExcel(taskId: string) {
     window.location.href = `${import.meta.env.VITE_API_URL}${API_BASE_URL}/task-time-log/export/${taskId}`;
+  },
+
+  getMyTasksWithLogs: async (params: {
+    date_filter?: string;
+    project_id?: string;
+    search?: string;
+    date_from?: string;
+    date_to?: string;
+    page?: number;
+    page_size?: number;
+  }): Promise<IServerResponse<IMyTasksResponse>> => {
+    const response = await apiClient.get(`${rootUrl}/my-tasks`, { params });
+    return response.data;
+  },
+
+  getMySummary: async (): Promise<IServerResponse<IMySummary>> => {
+    const response = await apiClient.get(`${rootUrl}/my-summary`);
+    return response.data;
+  },
+
+  getMyRecentProjects: async (): Promise<IServerResponse<IRecentProject[]>> => {
+    const response = await apiClient.get(`${rootUrl}/my-recent-projects`);
+    return response.data;
+  },
+
+  getMyTasksInProject: async (
+    projectId: string,
+    search?: string,
+  ): Promise<IServerResponse<ITaskInProject[]>> => {
+    const response = await apiClient.get(`${rootUrl}/my-tasks-in-project`, {
+      params: { project_id: projectId, search },
+    });
+    return response.data;
   },
 };

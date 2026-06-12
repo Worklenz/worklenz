@@ -342,6 +342,215 @@ export default class TaskWorklogController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async getMyTasksWithLogs(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const { date_filter, project_id, search, date_from, date_to } = req.query as Record<string, string>;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(req.query.page_size as string) || 20));
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+    const teamMemberId = req.user?.team_member_id;
+
+    const buildQuery = (dateCondition: string, extraParams: any[], extraConditions: string[], havingClause: string, pg: number, pgSize: number) => {
+      const baseParams: any[] = [teamMemberId, teamId, userId, ...extraParams];
+      const limitIdx = baseParams.length + 1;
+      const offsetIdx = baseParams.length + 2;
+      const offset = (pg - 1) * pgSize;
+      const allParams = [...baseParams, pgSize, offset];
+      const baseConditions = [
+        `ta.team_member_id = $1`,
+        `p.team_id = $2`,
+        `t.archived = FALSE`,
+        `NOT EXISTS (SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $3)`,
+        dateCondition,
+        ...extraConditions,
+      ];
+      const q = `
+        SELECT
+          t.id AS task_id,
+          t.name AS task_name,
+          t.end_date AS due_date,
+          t.done,
+          p.id AS project_id,
+          p.name AS project_name,
+          p.color_code AS project_color,
+          COALESCE(SUM(twl.time_spent), 0) AS total_time_spent,
+          COALESCE(
+            JSON_AGG(
+              JSON_BUILD_OBJECT(
+                'id', twl.id,
+                'time_spent', twl.time_spent,
+                'description', twl.description,
+                'created_at', twl.created_at,
+                'logged_by_timer', twl.logged_by_timer
+              ) ORDER BY twl.created_at DESC
+            ) FILTER (WHERE twl.id IS NOT NULL),
+            '[]'::JSON
+          ) AS time_logs,
+          COUNT(*) OVER() AS total_count
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        JOIN tasks_assignees ta ON ta.task_id = t.id
+        LEFT JOIN task_work_log twl ON twl.task_id = t.id AND twl.user_id = $3
+        WHERE ${baseConditions.join(' AND ')}
+        GROUP BY t.id, t.name, t.end_date, t.done, p.id, p.name, p.color_code
+        ${havingClause}
+        ORDER BY t.end_date ASC NULLS LAST
+        LIMIT $${limitIdx} OFFSET $${offsetIdx}
+      `;
+      return { q, params: allParams };
+    };
+
+    const extraParams: any[] = [];
+    const extraConditions: string[] = [];
+    let paramIdx = 4;
+
+    if (search) {
+      extraConditions.push(`(t.name ILIKE $${paramIdx} OR CAST(t.task_no AS TEXT) = $${paramIdx + 1})`);
+      extraParams.push(`%${search}%`, search);
+      paramIdx += 2;
+    }
+
+    if (project_id) {
+      extraConditions.push(`t.project_id = $${paramIdx}::uuid`);
+      extraParams.push(project_id);
+      paramIdx++;
+    }
+
+    const activeFilter = date_filter || "today";
+
+    if (activeFilter === "custom" && date_from && date_to) {
+      extraConditions.push(`t.end_date::date BETWEEN $${paramIdx}::date AND $${paramIdx + 1}::date`);
+      extraParams.push(date_from, date_to);
+      paramIdx += 2;
+    }
+
+    const getDateCondition = (filter: string) => {
+      switch (filter) {
+        case "today":          return `t.end_date::date = CURRENT_DATE`;
+        case "yesterday":      return `t.end_date::date = (CURRENT_DATE - INTERVAL '1 day')::date`;
+        case "last_week":      return `t.end_date::date >= (CURRENT_DATE - INTERVAL '7 days')::date AND t.end_date::date < CURRENT_DATE`;
+        case "overdue":        return `t.end_date IS NOT NULL AND t.end_date::date < CURRENT_DATE AND t.done = FALSE`;
+        case "no_logged_time": return `TRUE`;
+        case "custom":         return `TRUE`;
+        default:               return `TRUE`;
+      }
+    };
+
+    const noLoggedTimeHaving = activeFilter === "no_logged_time"
+      ? `HAVING COALESCE(SUM(twl.time_spent), 0) = 0`
+      : "";
+
+    if (activeFilter === "today" && !search && !project_id) {
+      const todayQ = buildQuery(`t.end_date::date = CURRENT_DATE`, extraParams, extraConditions, "", page, pageSize);
+      let result = await db.query(todayQ.q, todayQ.params);
+      let fallbackDate: string | null = null;
+
+      if (result.rows.length === 0) {
+        const yQ = buildQuery(`t.end_date::date = (CURRENT_DATE - INTERVAL '1 day')::date`, extraParams, extraConditions, "", page, pageSize);
+        result = await db.query(yQ.q, yQ.params);
+
+        if (result.rows.length === 0) {
+          const recentQ = buildQuery(`t.end_date IS NOT NULL`, extraParams, extraConditions, "", page, pageSize);
+          result = await db.query(recentQ.q, recentQ.params);
+          if (result.rows.length > 0) fallbackDate = result.rows[0].due_date;
+        } else {
+          fallbackDate = "yesterday";
+        }
+      }
+
+      const total = result.rows[0]?.total_count ? parseInt(result.rows[0].total_count) : 0;
+      return res.status(200).send(new ServerResponse(true, { tasks: result.rows, fallback_date: fallbackDate, total }));
+    }
+
+    const { q, params } = buildQuery(getDateCondition(activeFilter), extraParams, extraConditions, noLoggedTimeHaving, page, pageSize);
+    const result = await db.query(q, params);
+    const total = result.rows[0]?.total_count ? parseInt(result.rows[0].total_count) : 0;
+    return res.status(200).send(new ServerResponse(true, { tasks: result.rows, fallback_date: null, total }));
+  }
+
+  @HandleExceptions()
+  public static async getMySummary(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const q = `
+      SELECT
+        COALESCE(SUM(twl.time_spent) FILTER (WHERE twl.created_at::date = CURRENT_DATE), 0) AS today_total,
+        COALESCE(SUM(twl.time_spent) FILTER (WHERE twl.created_at >= date_trunc('week', CURRENT_DATE)), 0) AS week_total
+      FROM task_work_log twl
+      JOIN tasks t ON twl.task_id = t.id
+      JOIN projects p ON t.project_id = p.id
+      WHERE twl.user_id = $1
+        AND p.team_id = $2;
+    `;
+    const result = await db.query(q, [req.user?.id, req.user?.team_id]);
+    return res.status(200).send(new ServerResponse(true, result.rows[0] || { today_total: 0, week_total: 0 }));
+  }
+
+  @HandleExceptions()
+  public static async getMyRecentProjects(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const q = `
+      SELECT DISTINCT ON (p.id)
+        p.id,
+        p.name,
+        p.color_code
+      FROM task_work_log twl
+      JOIN tasks t ON twl.task_id = t.id
+      JOIN projects p ON t.project_id = p.id
+      WHERE twl.user_id = $1
+        AND p.team_id = $2
+        AND t.archived = FALSE
+        AND NOT EXISTS (SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $1)
+      ORDER BY p.id, twl.created_at DESC
+      LIMIT 3;
+    `;
+    const result = await db.query(q, [req.user?.id, req.user?.team_id]);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async getMyTasksInProject(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const { project_id, search } = req.query as Record<string, string>;
+    if (!project_id) return res.status(200).send(new ServerResponse(false, [], "project_id is required"));
+
+    const params: any[] = [project_id, req.user?.team_member_id];
+    const conditions: string[] = [
+      `t.project_id = $1::uuid`,
+      `ta.team_member_id = $2`,
+      `t.archived = FALSE`,
+    ];
+
+    if (search) {
+      conditions.push(`(t.name ILIKE $3 OR CAST(t.task_no AS TEXT) = $4)`);
+      params.push(`%${search}%`, search);
+    }
+
+    const q = `
+      SELECT DISTINCT
+        t.id,
+        t.name,
+        t.end_date AS due_date,
+        t.task_no
+      FROM tasks t
+      JOIN tasks_assignees ta ON ta.task_id = t.id
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY t.end_date ASC NULLS LAST
+      LIMIT 50;
+    `;
+    const result = await db.query(q, params);
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
   public static async getRecentTimeLogs(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,

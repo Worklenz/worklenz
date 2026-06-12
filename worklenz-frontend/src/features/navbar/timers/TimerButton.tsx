@@ -9,7 +9,9 @@ import {
   Divider,
   theme,
 } from '@/shared/antd-imports';
+import { PlusOutlined } from '@ant-design/icons';
 import { useEffect, useState, useCallback } from 'react';
+import { LogTimeModal } from '@/components/time-entries/LogTimeModal';
 import { useTranslation } from 'react-i18next';
 import {
   taskTimeLogsApiService,
@@ -157,6 +159,7 @@ const TimerButton = () => {
   const [loading, setLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [logTimeOpen, setLogTimeOpen] = useState(false);
   const { t } = useTranslation('navbar');
   const { token } = useToken();
   const { socket, connected } = useSocket();
@@ -491,32 +494,42 @@ const TimerButton = () => {
 
           {/* Empty State */}
           {!hasRunning && !hasRecent && (
-            <div style={{ padding: 16, textAlign: 'center' }}>
+            <div style={{ padding: '16px 16px 8px' }}>
               <Text type="secondary">{t('timerButton.noTimersOrLogs')}</Text>
             </div>
           )}
 
-          {/* Footer Summary */}
-          {(hasRunning || hasRecent) && (
-            <>
-              <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
-              <div
-                style={{
-                  padding: '8px 16px',
-                  textAlign: 'center',
-                  backgroundColor: token.colorFillQuaternary,
-                  borderBottomLeftRadius: token.borderRadius,
-                  borderBottomRightRadius: token.borderRadius,
-                }}
-              >
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  {hasRunning && t('timerButton.timerRunning', { count: timerCount() })}
-                  {hasRunning && hasRecent && ' • '}
-                  {hasRecent && t('timerButton.recentLog', { count: recentTimeLogs.length })}
-                </Text>
-              </div>
-            </>
-          )}
+          {/* Footer: summary + Log time */}
+          <Divider style={{ margin: 0, borderColor: token.colorBorderSecondary }} />
+          <div
+            style={{
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: token.colorFillQuaternary,
+              borderBottomLeftRadius: token.borderRadius,
+              borderBottomRightRadius: token.borderRadius,
+            }}
+          >
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {hasRunning && t('timerButton.timerRunning', { count: timerCount() })}
+              {hasRunning && hasRecent && ' • '}
+              {hasRecent && t('timerButton.recentLog', { count: recentTimeLogs.length })}
+            </Text>
+            <Button
+              type="link"
+              size="small"
+              icon={<PlusOutlined />}
+              style={{ fontSize: 12, padding: 0 }}
+              onClick={() => {
+                setDropdownOpen(false);
+                setLogTimeOpen(true);
+              }}
+            >
+              {t('timerButton.logTime', { defaultValue: 'Log time' })}
+            </Button>
+          </div>
         </div>
       );
     } catch (error) {
@@ -542,30 +555,37 @@ const TimerButton = () => {
 
   try {
     return (
-      <Dropdown
-        popupRender={() => renderDropdownContent()}
-        trigger={['click']}
-        placement="bottomRight"
-        open={dropdownOpen}
-        onOpenChange={handleDropdownOpenChange}
-      >
-        <Tooltip title={t('timerButton.runningTimers')}>
-          <Button
-            style={{ height: '62px', width: '60px' }}
-            type="text"
-            icon={
-              hasRunningTimers() ? (
-                <Badge count={timerCount()}>
+      <>
+        <Dropdown
+          popupRender={() => renderDropdownContent()}
+          trigger={['click']}
+          placement="bottomRight"
+          open={dropdownOpen}
+          onOpenChange={handleDropdownOpenChange}
+        >
+          <Tooltip title={t('timerButton.runningTimers')}>
+            <Button
+              style={{ height: '62px', width: '60px' }}
+              type="text"
+              icon={
+                hasRunningTimers() ? (
+                  <Badge count={timerCount()}>
+                    <TimerIcon size={22} />
+                  </Badge>
+                ) : (
                   <TimerIcon size={22} />
-                </Badge>
-              ) : (
-                <TimerIcon size={22} />
-              )
-            }
-            loading={loading}
-          />
-        </Tooltip>
-      </Dropdown>
+                )
+              }
+              loading={loading}
+            />
+          </Tooltip>
+        </Dropdown>
+        <LogTimeModal
+          open={logTimeOpen}
+          onClose={() => setLogTimeOpen(false)}
+          onSuccess={fetchTimerData}
+        />
+      </>
     );
   } catch (error) {
     logError('Error rendering TimerButton', error);
