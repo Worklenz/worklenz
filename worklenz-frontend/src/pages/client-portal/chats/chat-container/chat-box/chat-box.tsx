@@ -63,6 +63,7 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
     return null;
   }, [openedChat.id, openedChat.clientId]);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const {
     data: messagesData,
     isLoading,
@@ -225,9 +226,17 @@ const ChatBox = ({ openedChat }: ChatBoxProps) => {
         <Tooltip title={t('refresh')}>
           <Button
             type="text"
-            icon={<ReloadOutlined />}
-            onClick={() => refetch()}
-            loading={isLoading}
+            icon={<ReloadOutlined
+              style={{
+                animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+              }}
+            />
+            }
+            onClick={async () => {
+              setIsRefreshing(true);
+              await refetch();
+              setTimeout(() => setIsRefreshing(false), 800);
+            }}
           />
         </Tooltip>
       </Flex>

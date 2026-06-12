@@ -21,7 +21,7 @@ const ClientPortalChats = () => {
 
   // API hooks - using organization-side endpoint (clientId is optional)
   const { data: chatsData, isLoading, error, refetch } = useGetOrganizationChatsQuery({});
-  const chats = chatsData?.chats || [];
+  const chats = Array.isArray(chatsData) ? chatsData : chatsData?.chats || [];
 
   // Track page visit
   useEffect(() => {
@@ -35,7 +35,8 @@ const ClientPortalChats = () => {
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
   }, [trackMixpanelEvent, chats]);
 
-  const handleRefresh = () => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefresh = async () => {
     const actionProps: ClientPortalActionEventProps = {
       action_type: 'refresh',
       item_type: 'chat',
@@ -45,7 +46,9 @@ const ClientPortalChats = () => {
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CHAT_REFRESHED, actionProps);
-    refetch();
+    setIsRefreshing(true);
+    await refetch();
+    setTimeout(() => setIsRefreshing(false), 800);
   };
 
   return (
@@ -94,9 +97,12 @@ const ClientPortalChats = () => {
             <Tooltip title={t('refresh') || 'Refresh'}>
               <Button
                 type="text"
-                icon={<ReloadOutlined />}
+                icon={<ReloadOutlined
+                  style={{
+                    animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
+                  }}
+                />}
                 onClick={handleRefresh}
-                loading={isLoading}
               />
             </Tooltip>
           </Space>
