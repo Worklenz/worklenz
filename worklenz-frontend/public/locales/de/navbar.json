@@ -48,7 +48,11 @@
     "timerRunning": "{{count}} Timer läuft",
     "timerRunning_other": "{{count}} Timer laufen",
     "recentLog": "{{count}} letztes Protokoll",
-    "recentLog_other": "{{count}} letzte Protokolle"
+    "recentLog_other": "{{count}} letzte Protokolle",
+    "conflictTitle": "Timer-Konflikt",
+    "conflictMessage": "Ein weiterer Timer läuft für \"{{taskName}}\" im Projekt \"{{projectName}}\". Möchten Sie ihn beenden und diesen Timer starten?",
+    "stopAndStart": "Beenden und Starten",
+    "cancel": "Abbrechen"
   },
   "clientPortalUpgradePopoverTitle": "Kundenportal",
   "clientPortalUpgradePopoverBody": "Teilen Sie den Projektfortschritt mit Ihren Kunden über ein gebrandetes Portal. Verfügbar im Business-Plan.",
