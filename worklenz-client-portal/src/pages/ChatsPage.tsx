@@ -427,7 +427,6 @@ const ChatsPage: React.FC = () => {
                   icon={<SendOutlined />}
                   onClick={sendMessage}
                   loading={isSending}
-                  disabled={!newMessage.trim()}
                 >
                   {t('chats.send')}
                 </Button>
