@@ -65,6 +65,7 @@ const api = createApi({
         return url;
       },
       providesTags: ['myTasks'],
+      keepUnusedDataFor: 0,
     }),
     getProjects: builder.query<IServerResponse<IProject[]>, { view: number }>({
       query: ({ view }) => `${rootUrl}/projects?view=${view}`,

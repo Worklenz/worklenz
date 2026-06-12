@@ -47,7 +47,10 @@ const ListView = ({ model, refetch }: ListViewProps) => {
       type="card"
       activeKey={homeTasksConfig.current_tab || 'All'}
       items={tabItems}
-      onChange={key => dispatch(setHomeTasksConfig({ ...homeTasksConfig, current_tab: key }))}
+      onChange={key => {
+        dispatch(setHomeTasksConfig({ ...homeTasksConfig, current_tab: key }));
+        refetch();
+      }}
     />
   );
 };
