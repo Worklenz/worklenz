@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Form,
   Switch,
@@ -38,6 +38,9 @@ import { statusApiService } from '@/api/taskAttributes/status/status.api.service
 import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 
 const monthlyDateOptions = Array.from({ length: 28 }, (_, i) => i + 1);
+
+// Named constant instead of magic number
+const RECURRING_TOGGLE_TIMEOUT_MS = 10_000;
 
 const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskViewModel; disabled?: boolean }) => {
   const { socket, connected } = useSocket();
@@ -91,6 +94,11 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
   const [intervalMonths, setIntervalMonths] = useState(1);
   const [loadingData, setLoadingData] = useState(false);
   const [updatingData, setUpdatingData] = useState(false);
+  const [isTogglingRecurring, setIsTogglingRecurring] = useState(false);
+  const toggleRecurringTimeoutRef = useRef<number | null>(null);
+  // FIX: Track the in-flight once-handler so it can be cancelled from both
+  // the safety timeout and the useEffect unmount cleanup.
+  const toggleResponseHandlerRef = useRef<((schedule: ITaskRecurringScheduleData) => void) | null>(null);
   const [scheduleData, setScheduleData] = useState<ITaskRecurringSchedule>({});
   const [recurringMode, setRecurringMode] = useState<IRecurringMode>(IRecurringMode.CreateTask);
   const [targetStatusId, setTargetStatusId] = useState<string | null>(null);
@@ -103,39 +111,67 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
       return;
     }
 
-    if (!task.id) return;
+    if (isTogglingRecurring || !task.id) return;
+
+    setIsTogglingRecurring(true);
+
+    if (toggleRecurringTimeoutRef.current) {
+      window.clearTimeout(toggleRecurringTimeoutRef.current);
+    }
 
     socket?.emit(SocketEvents.TASK_RECURRING_CHANGE.toString(), {
       task_id: task.id,
       schedule_id: task.schedule_id,
     });
 
-    socket?.once(
-      SocketEvents.TASK_RECURRING_CHANGE.toString(),
-      (schedule: ITaskRecurringScheduleData) => {
-        if (schedule.id && schedule.schedule_type) {
-          const selected = repeatOptions.find(e => e.value == schedule.schedule_type);
-          if (selected) setRepeatOption(selected);
-        }
-        dispatch(updateRecurringChange(schedule));
-        dispatch(
-          setTaskRecurringSchedule({ schedule_id: schedule.id as string, task_id: task.id })
-        );
-
-        // Update Redux state with recurring task status
-        dispatch(
-          updateTaskCounts({
-            taskId: task.id,
-            counts: {
-              schedule_id: (schedule.id as string) || null,
-            },
-          })
-        );
-
-        setRecurring(checked);
-        if (!checked) setShowConfig(false);
+    // FIX (medium): Build the once-handler as a named function stored in a ref
+    // so we can remove it explicitly from both the safety timeout and unmount cleanup.
+    const onToggleResponse = (schedule: ITaskRecurringScheduleData) => {
+      // Handler fired — cancel the safety timeout
+      if (toggleRecurringTimeoutRef.current) {
+        window.clearTimeout(toggleRecurringTimeoutRef.current);
+        toggleRecurringTimeoutRef.current = null;
       }
-    );
+      // Clear the ref now that it has run
+      toggleResponseHandlerRef.current = null;
+
+      if (schedule.id && schedule.schedule_type) {
+        const selected = repeatOptions.find(e => e.value == schedule.schedule_type);
+        if (selected) setRepeatOption(selected);
+      }
+      dispatch(updateRecurringChange(schedule));
+      dispatch(
+        setTaskRecurringSchedule({ schedule_id: schedule.id as string, task_id: task.id })
+      );
+
+      // Update Redux state with recurring task status
+      dispatch(
+        updateTaskCounts({
+          taskId: task.id,
+          counts: {
+            schedule_id: (schedule.id as string) || null,
+          },
+        })
+      );
+
+      setRecurring(checked);
+      if (!checked) setShowConfig(false);
+      setIsTogglingRecurring(false);
+    };
+
+    toggleResponseHandlerRef.current = onToggleResponse;
+    socket?.once(SocketEvents.TASK_RECURRING_CHANGE.toString(), onToggleResponse);
+
+    // FIX (medium): Also remove the stale once-handler when the safety timeout
+    // fires, so a late server response can't overwrite state the user has since changed.
+    toggleRecurringTimeoutRef.current = window.setTimeout(() => {
+      if (toggleResponseHandlerRef.current) {
+        socket?.off(SocketEvents.TASK_RECURRING_CHANGE.toString(), toggleResponseHandlerRef.current);
+        toggleResponseHandlerRef.current = null;
+      }
+      setIsTogglingRecurring(false);
+      toggleRecurringTimeoutRef.current = null;
+    }, RECURRING_TOGGLE_TIMEOUT_MS);
   };
 
   const configVisibleChange = (visible: boolean) => {
@@ -271,6 +307,8 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
     }
   };
 
+  // NOTE: handleResponse is currently a no-op (early-returns immediately).
+  // Consider removing it in a follow-up once confirmed unused.
   const handleResponse = (response: ITaskRecurringScheduleData) => {
     if (!task || !response.task_id) return;
   };
@@ -282,6 +320,24 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
     if (task.schedule_id) void getScheduleData();
     if (task.project_id) void fetchTaskStatuses();
     socket?.on(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
+
+    return () => {
+      // Remove the persistent listener
+      socket?.off(SocketEvents.TASK_RECURRING_CHANGE.toString(), handleResponse);
+
+      // FIX (low): Remove any in-flight per-toggle once-handler so it can't fire
+      // on an unmounted component if the drawer closes while a toggle is in flight.
+      if (toggleResponseHandlerRef.current) {
+        socket?.off(SocketEvents.TASK_RECURRING_CHANGE.toString(), toggleResponseHandlerRef.current);
+        toggleResponseHandlerRef.current = null;
+      }
+
+      // Clear the safety timeout so it doesn't attempt setState after unmount
+      if (toggleRecurringTimeoutRef.current) {
+        window.clearTimeout(toggleRecurringTimeoutRef.current);
+        toggleRecurringTimeoutRef.current = null;
+      }
+    };
   }, [task?.schedule_id]);
 
   return (
@@ -299,7 +355,12 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
               </div>
             </Tooltip>
           ) : (
-            <Switch checked={recurring} onChange={handleChange} disabled={disabled} />
+            <Switch
+              checked={recurring}
+              onChange={handleChange}
+              disabled={disabled || isTogglingRecurring}
+              loading={isTogglingRecurring}
+            />
           )}
           &nbsp;
           {recurring && (
