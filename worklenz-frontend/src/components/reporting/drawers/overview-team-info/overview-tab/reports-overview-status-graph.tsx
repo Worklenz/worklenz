@@ -53,9 +53,14 @@ const OverviewReportsProjectStatusGraph = ({
       },
       tooltip: {
         callbacks: {
+          title: contexts => {
+            const label = contexts[0]?.label ?? '';
+            return t(`${label}Text`);
+          },
           label: context => {
             const value = context.raw as number;
-            return `${context.label}: ${value} task${value !== 1 ? 's' : ''}`;
+            const translatedLabel = t(`${context.label}Text`);
+            return `${translatedLabel}: ${value} project${value !== 1 ? 's' : ''}`;
           },
         },
       },
