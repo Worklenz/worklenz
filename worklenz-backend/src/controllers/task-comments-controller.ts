@@ -14,6 +14,7 @@ import { sendTaskComment } from "../shared/email-notifications";
 import { getRootDir, uploadBase64, getKey, getTaskAttachmentKey, createPresignedUrlWithClient } from "../shared/s3";
 import { getFreePlanSettings, getUsedStorage } from "../shared/paddle-utils";
 import { ExternalNotificationsService } from "../services/external-notifications.service";
+import { syncCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
 
 interface ITaskAssignee {
   team_member_id: string;
@@ -303,6 +304,8 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       log_error("Error sending external notifications for comment:", notifError);
     }
 
+    void syncCommentLinks(response.project_id, task_id, commentId, req.user?.team_id as string, commentContent);
+
     return res.status(200).send(new ServerResponse(true, commentdata));
   } // ← end of create()
 
@@ -415,6 +418,11 @@ export default class TaskCommentsController extends WorklenzControllerBase {
           }
         }
       }
+    }
+
+    const projectRow = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [updatedComment.task_id]);
+    if (projectRow.rows[0]) {
+      void syncCommentLinks(projectRow.rows[0].project_id, updatedComment.task_id, commentId, req.user?.team_id as string, commentContent);
     }
 
     return res.status(200).send(new ServerResponse(true, {
@@ -535,6 +543,9 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       RETURNING id;
     `;
     const result = await db.query(q, [req.params.id, req.params.taskId, req.user?.id || null]);
+    if (result.rowCount) {
+      void deleteCommentLinks(req.params.id);
+    }
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
