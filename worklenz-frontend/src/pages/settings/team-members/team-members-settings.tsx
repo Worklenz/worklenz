@@ -100,15 +100,12 @@ const TeamMembersSettings = () => {
     is_appsumo_user: boolean;
   } | null>(null);
 
-  // Only count active members for seat usage (deactivated members don't consume seats)
   const totalUsedSeats = billingInfo?.total_used ?? 0;
   const totalAvailableSeats = billingInfo?.total_seats ?? 0;
   const hasReachedSeatLimit =
     !hasBusinessFeatureAccess(currentSession) &&
     totalAvailableSeats > 0 &&
     totalUsedSeats >= totalAvailableSeats;
-  // Show warning when total roster (including deactivated) exceeds the plan seat limit,
-  // indicating some members had to be deactivated to stay within the limit.
   const isSeatUsageOverLimit =
     totalAvailableSeats > 0 && (model.total ?? 0) > totalAvailableSeats;
 
@@ -145,7 +142,6 @@ const TeamMembersSettings = () => {
         record.email || ''
       );
 
-      // When re-activating a member, the backend may reject due to seat limit
       if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
         setSeatLimitData(res.body);
         setSeatLimitModalOpen(true);
@@ -161,40 +157,36 @@ const TeamMembersSettings = () => {
             const inviteData = JSON.parse(pendingTeamInvite);
             const inviteRes = await teamMembersApiService.createTeamMember(inviteData);
             if (inviteRes.done) {
-              message.success(t('memberDeactivatedInviteSent', { 
+              message.success(t('memberDeactivatedInviteSent', {
                 defaultValue: t('memberDeactivatedInviteSent')
               }));
               localStorage.removeItem('pendingTeamInvite');
             }
           } catch (error) {
-            // Error sending pending invite
             localStorage.removeItem('pendingTeamInvite');
           }
         }
-        
-        // Check for pending project invite and auto-send after deactivation
+
         const pendingProjectInvite = localStorage.getItem('pendingProjectInvite');
         if (pendingProjectInvite && !record.active) {
           try {
             const inviteData = JSON.parse(pendingProjectInvite);
-            // Send invites for each email in the pending project invite
-            const invitePromises = inviteData.emails.map((email: string) => 
+            const invitePromises = inviteData.emails.map((email: string) =>
               projectMembersApiService.inviteByEmail({
                 email: email.trim(),
                 project_id: inviteData.projectId,
-                role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' : 
+                role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' :
                           inviteData.access === 'admin' ? 'ADMIN' : 'MEMBER',
                 is_admin: inviteData.access === 'admin',
               })
             );
             await Promise.all(invitePromises);
-            message.success(t('memberDeactivatedProjectInviteSent', { 
+            message.success(t('memberDeactivatedProjectInviteSent', {
               defaultValue: t('memberDeactivatedProjectInviteSent'),
               projectName: inviteData.projectName,
             }));
             localStorage.removeItem('pendingProjectInvite');
           } catch (error) {
-            // Error sending pending project invite
             localStorage.removeItem('pendingProjectInvite');
           }
         }
@@ -216,7 +208,6 @@ const TeamMembersSettings = () => {
     if (isAppSumoUser) {
       trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_DEACTIVATE_CHOSEN, { feature: 'team_members' });
     }
-    // Scroll to the members table so the user can deactivate someone
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -260,6 +251,26 @@ const TeamMembersSettings = () => {
     }));
   }, []);
 
+  // NEW: updates the team lead columns in the table row immediately after
+  // the drawer saves, without waiting for a full getTeamMembers() refetch
+  const handleTeamLeadUpdate = useCallback(
+    (memberId: string, teamLeadId: string | null, teamLeadName: string | null) => {
+      setModel(prevModel => ({
+        ...prevModel,
+        data: prevModel.data?.map(member =>
+          member.id === memberId
+            ? {
+                ...member,
+                reports_to_member_id: teamLeadId,
+                current_team_lead_name: teamLeadName,
+              }
+            : member
+        ),
+      }));
+    },
+    []
+  );
+
   const handleRefresh = useCallback(() => {
     setIsLoading(true);
     getTeamMembers().finally(() => setIsLoading(false));
@@ -298,7 +309,8 @@ const TeamMembersSettings = () => {
       setIsLoading(true);
       const res = await teamManagementApiService.removeManagerAssignment(member.id);
       if (res.done) {
-        await getTeamMembers();
+        // Update the row immediately instead of refetching the whole list
+        handleTeamLeadUpdate(member.id, null, null);
       }
     } catch (error) {
       // Error removing team lead assignment
@@ -754,8 +766,6 @@ const TeamMembersSettings = () => {
                 placement="bottomRight"
                 open={isSeatLimitPopoverOpen}
                 onOpenChange={open => {
-                  // Only allow opening via the button when seat limit is reached;
-                  // always allow closing (open === false) so outside-click works.
                   if (!open || hasReachedSeatLimit) {
                     setIsSeatLimitPopoverOpen(open);
                     if (isAppSumoUser) {
@@ -788,8 +798,7 @@ const TeamMembersSettings = () => {
                   <Flex vertical gap={12} style={{ maxWidth: 280 }}>
                     <Typography.Text>
                       {t('workspaceSeatLimitPopoverBody', {
-                        defaultValue:
-                          t('workspaceSeatLimitPopoverBody'),
+                        defaultValue: t('workspaceSeatLimitPopoverBody'),
                         used: totalUsedSeats,
                         total: totalAvailableSeats,
                       })}
@@ -828,7 +837,6 @@ const TeamMembersSettings = () => {
                       if (!hasReachedSeatLimit) {
                         dispatch(toggleInviteMemberDrawer());
                       }
-                      // When hasReachedSeatLimit, the Popover's trigger="click" handles opening
                     }}
                   >
                     {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
@@ -888,7 +896,6 @@ const TeamMembersSettings = () => {
         />
       </Card>
 
-      {/* Floating Action Button for Bulk Assign */}
       {isPrivilegedUser && selectedMembers.length > 0 && (
         <div
           style={{
@@ -934,6 +941,7 @@ const TeamMembersSettings = () => {
           onNameUpdate={handleMemberNameUpdate}
           onRoleUpdate={handleRoleUpdate}
           onJobTitleUpdate={handleJobTitleUpdate}
+          onTeamLeadUpdate={handleTeamLeadUpdate}
           initialRoleName={selectedMemberRole || undefined}
         />,
         document.body
