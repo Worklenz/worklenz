@@ -784,8 +784,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
 
     const project = projectResult.rows[0];
-    const userName = req.user?.name || "Unknown User";
-    
+
     // Log project deletion
     await ActivityLoggingService.logProjectDeleted(
       req.user?.team_id || "",
@@ -794,12 +793,14 @@ export default class ProjectsController extends WorklenzControllerBase {
       project.name
     );
 
-    // Delete the project
-    const deleteQ = `DELETE
-                     FROM projects
-                     WHERE id = $1
-                       AND team_id = $2`;
-    const result = await db.query(deleteQ, [req.params.id, req.user?.team_id || null]);
+    // Explicitly delete all tasks first to avoid FK constraint errors on
+    // databases where ON DELETE CASCADE may not have been applied yet.
+    // Child records (subtasks, assignees, comments, etc.) cascade off tasks.
+    await db.query(`DELETE FROM tasks WHERE project_id = $1`, [req.params.id]);
+
+    // Delete the project — remaining related data (members, statuses, phases,
+    // labels, files, etc.) is handled by DB-level cascade constraints.
+    await db.query(`DELETE FROM projects WHERE id = $1 AND team_id = $2`, [req.params.id, req.user?.team_id || null]);
     
     return res.status(200).send(new ServerResponse(true, { 
       message: `Project "${project.name}" has been successfully deleted`,

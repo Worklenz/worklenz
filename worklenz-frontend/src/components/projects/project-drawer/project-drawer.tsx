@@ -10,6 +10,7 @@ import {
   Flex,
   Form,
   Input,
+  Modal,
   notification,
   Popconfirm,
   Select,
@@ -90,6 +91,8 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
   );
   const [isFormValid, setIsFormValid] = useState<boolean>(true);
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+
 
   // Selectors
   const { clients, loading: loadingClients } = useAppSelector(state => state.clientReducer);
@@ -553,8 +556,10 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
 
   const handleDeleteProject = async () => {
     if (!projectId) return;
+    setIsDeleteModalOpen(false);
 
     try {
+      const projectName = project?.name ?? '';
       const res = await deleteProject(projectId);
       if (res?.data?.done) {
         dispatch(setProject({} as IProjectViewModel));
@@ -563,7 +568,18 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         dispatch(toggleProjectDrawer());
         navigate('/worklenz/projects');
         refetchProjects();
-        window.location.reload();
+
+        // Show the notification after navigating — reload is deferred so the
+        // toast has time to render before the page refreshes.
+        notification.success({
+          message: 'Project deleted',
+          description: `"${projectName}" has been permanently deleted.`,
+          duration: 3,
+        });
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
       } else {
         notification.error({ message: res?.data?.message });
         logger.error('Error deleting project', res?.data?.message);
@@ -572,6 +588,11 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
       logger.error('Error deleting project', error);
     }
   };
+
+  const showDeleteModal = () => setIsDeleteModalOpen(true);
+  const hideDeleteModal = () => setIsDeleteModalOpen(false);
+
+
 
   // ─── Date disabling helpers ───────────────────────────────────────────────
   const disabledStartDate = useCallback(
@@ -671,7 +692,7 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
           <Form.Item name="notes" label={t('notes')}>
             <Input.TextArea
               placeholder={t('enterNotes')}
-              disabled={!isProjectManager && !isOwnerorAdmin} 
+              disabled={!isProjectManager && !isOwnerorAdmin}
               maxLength={500}
               showCount
             />
@@ -1156,17 +1177,63 @@ export const ProjectDrawer = ({ onClose }: { onClose: () => void }) => {
         <Flex justify="space-between">
           <Space>
             {editMode && (isProjectManager || isOwnerorAdmin) && (
-              <Popconfirm
-                title={t('deleteConfirmation')}
-                description={t('deleteConfirmationDescription')}
-                onConfirm={handleDeleteProject}
-                okText={t('yes')}
-                cancelText={t('no')}
-              >
-                <Button danger type="dashed" loading={isDeletingProject}>
+              <>
+                <Button
+                  danger
+                  type="dashed"
+                  loading={isDeletingProject}
+                  onClick={showDeleteModal}
+                >
                   {t('delete')}
                 </Button>
-              </Popconfirm>
+
+                <Modal
+                  open={isDeleteModalOpen}
+                  onCancel={hideDeleteModal}
+                  footer={null}
+                  width={480}
+                  centered
+                  title={t('deleteConfirmation', { name: project?.name ?? '' })}
+                  styles={{
+                    header: {
+                      borderBottom: '1px solid #303030',
+                      paddingBottom: 16,
+                      marginBottom: 20,
+                    },
+                  }}
+                >
+                  <div
+                    style={{
+                      borderBottom: '1px solid #303030',
+                      paddingBottom: 20,
+                      marginBottom: 20,
+                    }}
+                  >
+                    <p style={{ marginBottom: 12 }}>
+                      {t('deleteConfirmationDescription')}
+                    </p>
+                    <ul style={{ paddingLeft: 20, marginBottom: 16, listStyleType: 'disc' }}>
+                      <li style={{ marginBottom: 6 }}>{t('deleteConfirmationItem1')}</li>
+                      <li style={{ marginBottom: 6 }}>{t('deleteConfirmationItem2')}</li>
+                      <li style={{ marginBottom: 6 }}>{t('deleteConfirmationItem3')}</li>
+                      <li style={{ marginBottom: 6 }}>{t('deleteConfirmationItem4')}</li>
+                    </ul>
+                    <p style={{ fontWeight: 500, marginBottom: 4 }}>
+                      {t('deleteConfirmationWarning')}
+                    </p>
+                  </div>
+                  <Flex justify="flex-end" gap={8}>
+                    <Button onClick={hideDeleteModal}>{t('cancel')}</Button>
+                    <Button
+                      type="primary"
+                      loading={isDeletingProject}
+                      onClick={handleDeleteProject}
+                    >
+                      {t('deleteProject')}
+                    </Button>
+                  </Flex>
+                </Modal>
+              </>
             )}
           </Space>
           <Space>
