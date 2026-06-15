@@ -38,13 +38,38 @@ export const getProjectComments = createAsyncThunk(
 
 export const createProjectComment = createAsyncThunk(
   'updates/createProjectComment',
-  async (data: IProjectCommentsCreateRequest, { rejectWithValue }) => {
+  async (data: IProjectCommentsCreateRequest, { rejectWithValue, getState }) => {
     try {
       const response = await projectCommentsApiService.createProjectComment(data);
       if (response.done) {
         // The API returns { comment: { ... } } in response.body
         const commentData = (response.body as any).comment;
-        return commentData as IProjectUpdateCommentViewModel;
+
+        // create_project_comment() only returns id/content/project_name/team_name,
+        // so the sender's optimistic render is missing the fields the comment list
+        // needs (date, owner, avatar). Enrich from the current user + a client
+        // timestamp; the socket-triggered refetch later replaces this with the
+        // authoritative server row.
+        const state = getState() as any;
+        const currentUser = state.userReducer || {};
+        const now = new Date().toISOString();
+        const enriched: IProjectUpdateCommentViewModel = {
+          ...commentData,
+          user_id: commentData.user_id || currentUser.id,
+          created_by: commentData.created_by || currentUser.name,
+          avatar_url: commentData.avatar_url || currentUser.avatar_url,
+          created_at: commentData.created_at || now,
+          updated_at: commentData.updated_at || now,
+          reactions: commentData.reactions || [],
+          mentions:
+            commentData.mentions ||
+            ((data.mentions || []).map((m: any) => ({
+              user_id: m.id || m.user_id,
+              user_name: m.name,
+              user_email: m.email,
+            })) as any),
+        };
+        return enriched;
       }
       return rejectWithValue(response.message);
     } catch (error: any) {

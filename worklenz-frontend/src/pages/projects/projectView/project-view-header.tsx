@@ -71,6 +71,7 @@ import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+import styles from './project-view-header.module.css';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -369,7 +370,12 @@ const ProjectViewHeader = memo(() => {
           key="template"
           title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}
         >
-          <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
+          <Button
+            className={styles.actionButton}
+            shape="circle"
+            icon={<SaveOutlined />}
+            onClick={handleSaveAsTemplate}
+          />
         </Tooltip>
       );
     }
@@ -379,17 +385,23 @@ const ProjectViewHeader = memo(() => {
         key="settings"
         title={t('settingsTooltip', { defaultValue: 'Open project settings' })}
       >
-        <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
+        <Button
+          className={styles.actionButton}
+          shape="circle"
+          icon={<SettingOutlined />}
+          onClick={handleSettingsClick}
+        />
       </Tooltip>
     );
 
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <ProjectIntegrationsButton
-          key="integrations"
-          projectId={selectedProject?.id || ''}
-          projectName={selectedProject?.name}
-        />
+        <div key="integrations" className={styles.actionButton}>
+          <ProjectIntegrationsButton
+            projectId={selectedProject?.id || ''}
+            projectName={selectedProject?.name}
+          />
+        </div>
       );
     }
 
@@ -403,14 +415,17 @@ const ProjectViewHeader = memo(() => {
         }
       >
         <Button
+          className={styles.subscribeButton}
           shape="round"
           loading={subscriptionLoading}
           icon={selectedProject?.subscribed ? <BellFilled /> : <BellOutlined />}
           onClick={handleSubscribe}
         >
-          {selectedProject?.subscribed
-            ? t('unsubscribe', { defaultValue: 'Unsubscribe' })
-            : t('subscribe', { defaultValue: 'Subscribe' })}
+          <span className={styles.buttonLabel}>
+            {selectedProject?.subscribed
+              ? t('unsubscribe', { defaultValue: 'Unsubscribe' })
+              : t('subscribe', { defaultValue: 'Subscribe' })}
+          </span>
         </Button>
       </Tooltip>
     );
@@ -423,11 +438,12 @@ const ProjectViewHeader = memo(() => {
         >
           <Button
             key="invite"
+            className={styles.inviteButton}
             type="primary"
             icon={<UsergroupAddOutlined />}
             onClick={handleInvite}
           >
-            {t('invite', { defaultValue: 'Invite' })}
+            <span className={styles.buttonLabel}>{t('invite', { defaultValue: 'Invite' })}</span>
           </Button>
         </Tooltip>
       );
@@ -441,6 +457,7 @@ const ProjectViewHeader = memo(() => {
         >
           <Dropdown.Button
             key="create-task-dropdown"
+            className={styles.createTaskButton}
             loading={creatingTask}
             type="primary"
             icon={<DownOutlined />}
@@ -448,7 +465,7 @@ const ProjectViewHeader = memo(() => {
             trigger={['click']}
             onClick={handleCreateTask}
           >
-            <EditOutlined /> {t('createTask', { defaultValue: 'Create task' })}
+            <EditOutlined /> <span className={styles.buttonLabel}>{t('createTask', { defaultValue: 'Create task' })}</span>
           </Dropdown.Button>
         </Tooltip>
       );
@@ -460,19 +477,20 @@ const ProjectViewHeader = memo(() => {
         >
           <Button
             key="create-task"
+            className={styles.createTaskButton}
             loading={creatingTask}
             type="primary"
             icon={<EditOutlined />}
             onClick={handleCreateTask}
           >
-            {t('createTask', { defaultValue: 'Create task' })}
+            <span className={styles.buttonLabel}>{t('createTask', { defaultValue: 'Create task' })}</span>
           </Button>
         </Tooltip>
       );
     }
 
     return (
-      <Flex gap={4} align="center">
+      <Flex gap={4} align="center" className={styles.actionsContainer}>
         {actions}
       </Flex>
     );
@@ -495,9 +513,10 @@ const ProjectViewHeader = memo(() => {
 
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={4} align="center">
+      <Flex gap={4} align="center" wrap className={styles.titleContainer}>
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
+            className={styles.backButton}
             style={{
               fontSize: 16,
               cursor: 'pointer',
@@ -509,10 +528,10 @@ const ProjectViewHeader = memo(() => {
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
-        <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
+        <Typography.Title level={4} className={styles.projectTitle} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
           {selectedProject?.name}
         </Typography.Title>
-        {projectAttributes}
+        <div className={styles.projectAttributes}>{projectAttributes}</div>
       </Flex>
     ),
     [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
@@ -529,26 +548,24 @@ const ProjectViewHeader = memo(() => {
   return (
     <>
       <div
-        className="site-page-header"
+        className={`site-page-header ${styles.headerContainer}`}
         style={{
           paddingInline: 0,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px 0',
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
-        <Flex gap={4} align="center" style={{ marginLeft: '16px', flexShrink: 0 }}>
-          <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
-            <Button
-              shape="circle"
-              icon={<SyncOutlined spin={projectTasksFetching} />}
-              onClick={handleRefresh}
-            />
-          </Tooltip>
-          {headerActions}
-        </Flex>
+        <div className={styles.headerContent}>
+          <div className={styles.titleSection}>{pageHeaderTitle}</div>
+          <Flex gap={4} align="center" className={styles.actionsSection}>
+            <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
+              <Button
+                shape="circle"
+                icon={<SyncOutlined spin={projectTasksFetching} />}
+                onClick={handleRefresh}
+              />
+            </Tooltip>
+            {headerActions}
+          </Flex>
+        </div>
       </div>
       {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}

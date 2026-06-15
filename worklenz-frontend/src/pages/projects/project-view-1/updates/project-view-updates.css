@@ -351,6 +351,20 @@
   z-index: 1;
 }
 
+/* Auto-detected links should read as links, not inherit the bubble text color */
+.comment-content-light a,
+.comment-content-dark a {
+  color: #1890ff;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.comment-content-light a:hover,
+.comment-content-dark a:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
 /* Comment actions styling */
 .theme-light .ant-comment-actions>li>span {
   color: #707070;

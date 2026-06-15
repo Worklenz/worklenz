@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Flex, Form, Input, Modal, Popconfirm, Table, Tag, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, LinkOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, LinkOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -85,9 +85,15 @@ const EditLinkModal: React.FC<EditLinkModalProps> = ({ link, open, loading, onSu
 
 interface ProjectLinksTabProps {
   active: boolean;
+  addModalOpen: boolean;
+  onAddModalOpenChange: (open: boolean) => void;
 }
 
-export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({ active }) => {
+export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({
+  active,
+  addModalOpen,
+  onAddModalOpenChange,
+}) => {
   const { t } = useTranslation('project-view-files');
   const navigate = useNavigate();
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -95,7 +101,6 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({ active }) => {
   const { links, loading, total, pageIndex, pageSize, setPageIndex, addLink, editLink, removeLink } =
     useProjectLinks(active);
 
-  const [addModalOpen, setAddModalOpen] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
@@ -106,7 +111,7 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({ active }) => {
     setAddLoading(true);
     const ok = await addLink(values);
     setAddLoading(false);
-    if (ok) setAddModalOpen(false);
+    if (ok) onAddModalOpenChange(false);
   };
 
   const handleEditOpen = (link: IProjectLink) => {
@@ -256,22 +261,13 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({ active }) => {
 
   return (
     <>
-      <Flex justify="flex-end" style={{ marginBottom: 12 }}>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => setAddModalOpen(true)}
-        >
-          {t('addLink', { defaultValue: 'Add Link' })}
-        </Button>
-      </Flex>
-
       <Table<IProjectLink>
         columns={columns}
         dataSource={links}
         rowKey="id"
         loading={loading}
         size="small"
+        scroll={{ x: 'max-content' }}
         pagination={{
           current: pageIndex,
           pageSize,
@@ -298,7 +294,7 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({ active }) => {
         open={addModalOpen}
         loading={addLoading}
         onSubmit={handleAdd}
-        onCancel={() => setAddModalOpen(false)}
+        onCancel={() => onAddModalOpenChange(false)}
       />
 
       <EditLinkModal

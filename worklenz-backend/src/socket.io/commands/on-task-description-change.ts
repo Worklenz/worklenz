@@ -2,13 +2,14 @@ import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 
-import { log_error, notifyProjectUpdates } from "../util";
+import { log_error, notifyProjectUpdates, getLoggedInUserIdFromSocket } from "../util";
 import sanitize from "sanitize-html";
 import {
   getTaskDetails,
   logDescriptionChange,
 } from "../../services/activity-logs/activity-logs.service";
 import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import { syncTaskDescriptionLinks } from "../../shared/url-extractor";
 
 export async function on_task_description_change(
   _io: Server,
@@ -36,6 +37,24 @@ export async function on_task_description_change(
         .trim() || null;
 
     await db.query(q, [body.task_id, sanitize(description)]);
+
+    // Sync any URLs in the description into the project Links tab
+    try {
+      const linkRow = await db.query(
+        `SELECT t.project_id, p.team_id
+           FROM tasks t
+           LEFT JOIN projects p ON p.id = t.project_id
+          WHERE t.id = $1`,
+        [body.task_id]
+      );
+      const meta = linkRow.rows[0];
+      if (meta?.project_id && meta?.team_id) {
+        const userId = getLoggedInUserIdFromSocket(socket) ?? undefined;
+        void syncTaskDescriptionLinks(meta.project_id, body.task_id, meta.team_id, description || "", userId);
+      }
+    } catch (e) {
+      log_error(e);
+    }
 
     socket.emit(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), {
       id: body.task_id,

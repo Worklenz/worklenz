@@ -72,6 +72,45 @@ const escapeHtml = (text: string) => {
   return div.innerHTML;
 };
 
+// Wrap bare http(s) URLs that appear as plain text in anchors so they render as
+// clickable links. Walks text nodes only, leaving existing <a> tags and mention
+// spans untouched.
+const autoLinkUrls = (html: string) => {
+  if (!html || !/https?:\/\//i.test(html)) return html;
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+  const targets: Text[] = [];
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    if ((node.parentElement as HTMLElement)?.closest('a')) continue;
+    if (/https?:\/\//i.test(node.nodeValue || '')) targets.push(node as Text);
+  }
+  targets.forEach(textNode => {
+    const text = textNode.nodeValue || '';
+    const frag = doc.createDocumentFragment();
+    const re = /https?:\/\/[^\s<>"]+/gi;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = re.exec(text))) {
+      const url = match[0].replace(/[.,;:!?)]+$/, '');
+      if (match.index > lastIndex) {
+        frag.appendChild(doc.createTextNode(text.slice(lastIndex, match.index)));
+      }
+      const a = doc.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+      a.textContent = url;
+      frag.appendChild(a);
+      lastIndex = match.index + url.length;
+    }
+    if (lastIndex < text.length) frag.appendChild(doc.createTextNode(text.slice(lastIndex)));
+    textNode.parentNode?.replaceChild(frag, textNode);
+  });
+  return doc.body.innerHTML;
+};
+
 const ProjectViewUpdates = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const dispatch = useAppDispatch();
@@ -395,7 +434,7 @@ const ProjectViewUpdates = () => {
 
   const renderCommentContent = (htmlContent: string, mentions?: any[]) => {
     const processedContent = mentions ? processMentions(htmlContent, mentions) : htmlContent;
-    return <div dangerouslySetInnerHTML={{ __html: processedContent }} />;
+    return <div dangerouslySetInnerHTML={{ __html: autoLinkUrls(processedContent) }} />;
   };
 
   const renderTimeSeparator = (date: string) => (

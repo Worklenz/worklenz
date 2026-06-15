@@ -75,12 +75,12 @@ export async function syncProjectCommentLinks(
   try {
     const urls = extractUrls(content);
     await db.query(
-      `DELETE FROM project_links WHERE source_comment_id = $1 AND source_type = 'project_comment'`,
+      `DELETE FROM project_links WHERE source_project_comment_id = $1 AND source_type = 'project_comment'`,
       [commentId]
     );
     for (const url of urls) {
       await db.query(
-        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_comment_id, added_by)
+        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_project_comment_id, added_by)
          VALUES ($1, $2, $3, $4, 'project_comment', $5, $6)`,
         [projectId, teamId, url, url, commentId, userId]
       );
@@ -93,7 +93,7 @@ export async function syncProjectCommentLinks(
 export async function deleteCommentLinks(commentId: string): Promise<void> {
   try {
     await db.query(
-      `DELETE FROM project_links WHERE source_comment_id = $1`,
+      `DELETE FROM project_links WHERE source_comment_id = $1 OR source_project_comment_id = $1`,
       [commentId]
     );
   } catch (e) {

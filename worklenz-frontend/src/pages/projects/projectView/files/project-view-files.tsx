@@ -20,6 +20,7 @@ import {
   DeleteOutlined,
   InboxOutlined,
   ImportOutlined,
+  PlusOutlined,
   SearchOutlined,
   CheckCircleTwoTone,
   CloseCircleTwoTone,
@@ -140,6 +141,7 @@ const ProjectViewFiles = () => {
   });
 
   const [activeTab, setActiveTab] = useState<'project' | 'task' | 'links'>('project');
+  const [linkAddModalOpen, setLinkAddModalOpen] = useState(false);
   const [taskAttachments, setTaskAttachments] = useState<ITaskAttachmentViewModel[]>([]);
   const [taskAttachmentsLoading, setTaskAttachmentsLoading] = useState(false);
   const [deletingTaskAttachmentId, setDeletingTaskAttachmentId] = useState<string | null>(null);
@@ -824,7 +826,7 @@ const ProjectViewFiles = () => {
     <Card
       style={{ width: '100%' }}
       title={
-        <Flex justify="space-between" align="center">
+        <Flex justify="space-between" align="center" wrap gap={8}>
           <Segmented
             options={[
               {
@@ -845,11 +847,11 @@ const ProjectViewFiles = () => {
           />
 
           {activeTab === 'project' && (
-            <Space size={8}>
+            <Space size={8} wrap style={{ justifyContent: 'flex-end' }}>
               <Input
                 allowClear
                 placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
-                style={{ width: 280 }}
+                style={{ width: 280, maxWidth: '100%' }}
                 onChange={e => handleSearch(e.target.value)}
                 value={searchValue}
                 suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
@@ -864,6 +866,17 @@ const ProjectViewFiles = () => {
                 {t('uploadButton', { defaultValue: 'Upload' })}
               </Button>
             </Space>
+          )}
+
+          {activeTab === 'links' && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setLinkAddModalOpen(true)}
+              disabled={!projectId}
+            >
+              {t('addLink', { defaultValue: 'Add Link' })}
+            </Button>
           )}
         </Flex>
       }
@@ -937,6 +950,7 @@ const ProjectViewFiles = () => {
             columns={columns}
             rowKey={record => record.id}
             loading={loading}
+            scroll={{ x: 'max-content' }}
             locale={{ emptyText: t('emptyText', { defaultValue: 'There are no files yet.' }) }}
             pagination={{
               total: paginationConfig.total,
@@ -957,6 +971,7 @@ const ProjectViewFiles = () => {
           columns={taskAttachmentColumns}
           rowKey={record => record.id || ''}
           loading={taskAttachmentsLoading}
+          scroll={{ x: 'max-content' }}
           locale={{
             emptyText: t('taskAttachmentsEmptyText', {
               defaultValue: 'No task attachments found.',
@@ -973,7 +988,13 @@ const ProjectViewFiles = () => {
         />
       )}
 
-      {activeTab === 'links' && <ProjectLinksTab active={activeTab === 'links'} />}
+      {activeTab === 'links' && (
+        <ProjectLinksTab
+          active={activeTab === 'links'}
+          addModalOpen={linkAddModalOpen}
+          onAddModalOpenChange={setLinkAddModalOpen}
+        />
+      )}
 
       <FilePreviewModal
         open={previewOpen}
