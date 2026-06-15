@@ -91,8 +91,19 @@ const Navbar = () => {
   useEffect(() => {
     // Shared loader — used by all event sources below
     const loadNavRoutes = () => {
-      const updated: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
-      setNavRoutesList(updated);
+      // Load user customizations (names of routes user wants visible)
+      const pinnedRouteNames: string[] = getJSONFromLocalStorage('navRoutesPinned') || [];
+
+      // Start with all default routes
+      let routes = [...navRoutes];
+
+      // If user has customizations, show only pinned routes + custom routes
+      // Otherwise show all defaults
+      if (pinnedRouteNames.length > 0) {
+        routes = routes.filter(route => pinnedRouteNames.includes(route.name));
+      }
+
+      setNavRoutesList(routes);
     };
 
     // Initial load
