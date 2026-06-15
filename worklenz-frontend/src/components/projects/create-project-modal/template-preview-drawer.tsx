@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
+  Empty,
   Flex,
+  Image,
+  List,
   Modal,
   Skeleton,
   Tag,
@@ -24,172 +27,6 @@ interface TemplatePreviewDrawerProps {
   onUseTemplate: (templateId: string) => void;
 }
 
-// ─── Board preview ──────────────────────────────────────────────────────────
-// Groups tasks by status_name and renders a mini kanban board
-const BoardPreview = ({ template, token }: { template: IProjectTemplate; token: any }) => {
-  const { t } = useTranslation('template-drawer');
-
-  // Build columns: one per unique status
-  const columns: Record<string, { tasks: typeof template.tasks; color?: string }> = {};
-  (template.status ?? []).forEach(s => {
-    if (s.name) columns[s.name] = { tasks: [], color: s.color_code };
-  });
-
-  (template.tasks ?? []).forEach(task => {
-    const col = task.status_name ?? '';
-    if (!columns[col]) columns[col] = { tasks: [] };
-    columns[col].tasks!.push(task);
-  });
-
-  const colEntries = Object.entries(columns);
-  if (colEntries.length === 0) return null;
-
-  return (
-    <div>
-      <Text strong style={{ fontSize: 12, color: token.colorTextSecondary, display: 'block', marginBottom: 8 }}>
-        {t('boardPreview', { defaultValue: 'BOARD PREVIEW' }).toUpperCase()}
-      </Text>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${Math.min(colEntries.length, 4)}, 1fr)`,
-          gap: 8,
-          marginBottom: 20,
-        }}
-      >
-        {colEntries.map(([statusName, col]) => (
-          <div
-            key={statusName}
-            style={{
-              background: token.colorBgElevated,
-              border: `1px solid ${token.colorBorder}`,
-              borderRadius: 6,
-              padding: '8px 8px 4px',
-              minHeight: 60,
-            }}
-          >
-            {/* Column header */}
-            <Flex justify="space-between" align="center" style={{ marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, fontWeight: 600, color: token.colorText }}>
-                {statusName}
-              </Text>
-              <Text style={{ fontSize: 11, color: token.colorTextTertiary }}>
-                {col.tasks?.length ?? 0}
-              </Text>
-            </Flex>
-            {/* Task cards — show up to 3 */}
-            {(col.tasks ?? []).slice(0, 3).map((task, i) => (
-              <div
-                key={i}
-                style={{
-                  background: token.colorBgContainer,
-                  border: `1px solid ${token.colorBorderSecondary}`,
-                  borderRadius: 4,
-                  padding: '4px 6px',
-                  marginBottom: 4,
-                  fontSize: 11,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 11, color: token.colorText }}
-                  ellipsis
-                >
-                  {task.name}
-                </Text>
-                {task.labels && task.labels.length > 0 && (
-                  <div style={{ marginTop: 2 }}>
-                    <Tag
-                      style={{
-                        fontSize: 10,
-                        padding: '0 4px',
-                        lineHeight: '16px',
-                        margin: 0,
-                        borderColor: token.colorBorder,
-                        background: token.colorFillSecondary,
-                        color: token.colorTextSecondary,
-                      }}
-                    >
-                      {task.labels[0].name}
-                    </Tag>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ─── Tasks list ─────────────────────────────────────────────────────────────
-const TasksList = ({ template, token }: { template: IProjectTemplate; token: any }) => {
-  const { t } = useTranslation('template-drawer');
-  const tasks = template.tasks ?? [];
-  if (tasks.length === 0) return null;
-
-  // Status → color mapping from template.status
-  const statusColors: Record<string, string> = {};
-  (template.status ?? []).forEach(s => {
-    if (s.name && s.color_code) statusColors[s.name] = s.color_code;
-  });
-
-  return (
-    <div>
-      <Text strong style={{ fontSize: 12, color: token.colorTextSecondary, display: 'block', marginBottom: 8 }}>
-        {t('sampleTasks', { defaultValue: 'SAMPLE TASKS INCLUDED' }).toUpperCase()}
-      </Text>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {tasks.slice(0, 8).map((task, i) => (
-          <Flex
-            key={i}
-            justify="space-between"
-            align="center"
-            style={{
-              background: token.colorBgContainer,
-              border: `1px solid ${token.colorBorder}`,
-              borderRadius: 4,
-              padding: '5px 10px',
-            }}
-          >
-            <Flex align="center" gap={8}>
-              {/* Checkbox placeholder */}
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: 3,
-                  border: `1.5px solid ${token.colorBorder}`,
-                  flexShrink: 0,
-                }}
-              />
-              <Text style={{ fontSize: 12, color: token.colorText }}>{task.name}</Text>
-            </Flex>
-            {task.status_name && (
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: statusColors[task.status_name] ?? token.colorTextSecondary,
-                  flexShrink: 0,
-                  marginLeft: 8,
-                }}
-              >
-                {task.status_name}
-              </Text>
-            )}
-          </Flex>
-        ))}
-        {tasks.length > 8 && (
-          <Text type="secondary" style={{ fontSize: 11, textAlign: 'center', paddingTop: 4 }}>
-            +{tasks.length - 8} {t('moreTasks', { defaultValue: 'more tasks' })}
-          </Text>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ─── Main component ─────────────────────────────────────────────────────────
 export const TemplatePreviewDrawer = ({
   templateId,
   templateName,
@@ -214,6 +51,123 @@ export const TemplatePreviewDrawer = ({
       .finally(() => setLoading(false));
   }, [open, templateId]);
 
+  // ─── Exact same renderTemplateDetails as the old TemplateDrawer ──────────
+  const renderTemplateDetails = () => {
+    if (!template) {
+      return <Empty description={t('noTemplateSelected', { defaultValue: 'No template selected' })} />;
+    }
+
+    const tagStyle = (colorCode?: string) => ({
+      color: token.colorText,
+      marginBottom: '8px',
+      backgroundColor: colorCode ? undefined : token.colorBgContainer,
+      borderColor: colorCode ? undefined : token.colorBorder,
+    });
+
+    const detailRow = (label: string, content: React.ReactNode) => (
+      <div className="template-detail-row" style={{ marginTop: 12 }}>
+        <div style={{ marginBottom: 6 }}>
+          <Text strong style={{ color: token.colorText }}>{label}</Text>
+        </div>
+        <div>{content}</div>
+      </div>
+    );
+
+    return (
+      <div>
+        {/* Description */}
+        {detailRow(
+          t('description', { defaultValue: 'Description' }),
+          <Text style={{ color: token.colorText }}>
+            {template.description || t('noDescription', { defaultValue: 'No description' })}
+          </Text>
+        )}
+
+        {/* Phases */}
+        {detailRow(
+          t('phase', { defaultValue: 'Phases' }),
+          template.phases?.length ? (
+            <div>
+              {template.phases.map(phase => (
+                <Tag key={phase.name} color={phase.color_code} style={tagStyle(phase.color_code)}>
+                  {phase.name}
+                </Tag>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">{t('noPhases', { defaultValue: 'No phases' })}</Text>
+          )
+        )}
+
+        {/* Statuses */}
+        {detailRow(
+          t('statuses', { defaultValue: 'Statuses' }),
+          template.status?.length ? (
+            <div>
+              {template.status.map(status => (
+                <Tag key={status.name} color={status.color_code} style={tagStyle(status.color_code)}>
+                  {status.name}
+                </Tag>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">{t('noStatuses', { defaultValue: 'No statuses' })}</Text>
+          )
+        )}
+
+        {/* Priorities */}
+        {detailRow(
+          t('priorities', { defaultValue: 'Priorities' }),
+          template.priorities?.length ? (
+            <div>
+              {template.priorities.map(priority => (
+                <Tag key={priority.name} color={priority.color_code} style={tagStyle(priority.color_code)}>
+                  {priority.name}
+                </Tag>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">{t('noPriorities', { defaultValue: 'No priorities' })}</Text>
+          )
+        )}
+
+        {/* Labels */}
+        {detailRow(
+          t('labels', { defaultValue: 'Labels' }),
+          template.labels?.length ? (
+            <div>
+              {template.labels.map(label => (
+                <Tag key={label.name} color={label.color_code} style={tagStyle(label.color_code)}>
+                  {label.name}
+                </Tag>
+              ))}
+            </div>
+          ) : (
+            <Text type="secondary">{t('noLabels', { defaultValue: 'No labels' })}</Text>
+          )
+        )}
+
+        {/* Tasks */}
+        {detailRow(
+          t('tasks', { defaultValue: 'Tasks' }),
+          template.tasks?.length ? (
+            <List
+              size="small"
+              dataSource={template.tasks}
+              renderItem={item => (
+                <List.Item key={item.name} style={{ padding: '4px 0', borderColor: token.colorBorder }}>
+                  <Text style={{ color: token.colorText }}>{item.name}</Text>
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Text type="secondary">{t('noTasks', { defaultValue: 'No tasks' })}</Text>
+          )
+        )}
+      </div>
+    );
+  };
+
   const displayName = template?.name ?? templateName ?? '';
   const taskCount = template?.tasks?.length ?? 0;
   const phaseCount = template?.phases?.length ?? 0;
@@ -224,9 +178,9 @@ export const TemplatePreviewDrawer = ({
       onCancel={onClose}
       footer={null}
       destroyOnClose
-      width={680}
+      width={600}
       styles={{
-        body: { padding: 0, maxHeight: '70vh', overflowY: 'auto' },
+        body: { padding: 0, maxHeight: '72vh', overflowY: 'auto' },
         content: { padding: 0, overflow: 'hidden' },
       }}
       title={null}
@@ -256,24 +210,25 @@ export const TemplatePreviewDrawer = ({
             }}
           >
             {template?.image_url ? (
-              <img src={template.image_url} alt={displayName} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+              <img
+                src={template.image_url}
+                alt={displayName}
+                style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }}
+              />
             ) : (
               getTemplateIcon(displayName)
             )}
           </div>
 
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Text type="secondary" style={{ fontSize: 10, letterSpacing: 1, display: 'block' }}>
-              {t('templatePreview', { defaultValue: 'SOFTWARE DEV TEMPLATE' }).toUpperCase()}
-            </Text>
-            <Title level={4} style={{ margin: '2px 0 4px', color: token.colorText }}>
+            <Title level={5} style={{ margin: '0 0 4px', color: token.colorText }}>
               {loading ? '—' : displayName}
             </Title>
             {template?.description && (
               <Text type="secondary" style={{ fontSize: 12 }}>{template.description}</Text>
             )}
             {!loading && (taskCount > 0 || phaseCount > 0) && (
-              <Flex gap={16} style={{ marginTop: 6 }}>
+              <Flex gap={12} style={{ marginTop: 4 }}>
                 {taskCount > 0 && (
                   <Text type="secondary" style={{ fontSize: 12 }}>
                     <strong>{taskCount}</strong> {t('sampleTasksCount', { defaultValue: 'sample tasks' })}
@@ -293,7 +248,7 @@ export const TemplatePreviewDrawer = ({
             )}
           </div>
 
-          {/* Close */}
+          {/* Close button */}
           <button
             type="button"
             onClick={onClose}
@@ -313,15 +268,21 @@ export const TemplatePreviewDrawer = ({
         </Flex>
       </div>
 
-      {/* ── Body ── */}
-      <div style={{ padding: '16px 20px' }}>
-        <Skeleton active loading={loading} paragraph={{ rows: 10 }}>
-          {template && (
-            <>
-              <BoardPreview template={template} token={token} />
-              <TasksList template={template} token={token} />
-            </>
+      {/* ── Body — exact same details as old TemplateDrawer ── */}
+      <div style={{ padding: '16px 24px' }}>
+        <Skeleton active loading={loading} paragraph={{ rows: 8 }}>
+          {/* Cover image if present */}
+          {template?.image_url && (
+            <div style={{ marginBottom: 16 }}>
+              <Image
+                preview={false}
+                src={template.image_url}
+                alt={template.name}
+                style={{ width: '100%', borderRadius: 8 }}
+              />
+            </div>
           )}
+          {renderTemplateDetails()}
         </Skeleton>
       </div>
 
