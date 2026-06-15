@@ -744,8 +744,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
         q = `
           SELECT id,
                  name,
-                 (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id),
-                 (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                COALESCE(task_statuses.color_code,
+                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                 ) AS color_code,
+                 COALESCE(task_statuses.color_code,
+                   (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                 ) AS color_code_dark,
+                 category_id
                  category_id
           FROM task_statuses
           WHERE project_id = $1

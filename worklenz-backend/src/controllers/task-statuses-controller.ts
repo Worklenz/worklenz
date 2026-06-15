@@ -1,8 +1,8 @@
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {ServerResponse} from "../models/server-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 
@@ -36,18 +36,21 @@ export default class TaskStatusesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null));
 
     const q = `
-      SELECT task_statuses.id,
-             task_statuses.name,
-             stsc.color_code,
-             stsc.name AS category_name,
-             task_statuses.category_id,
-             stsc.description
-      FROM task_statuses
-             INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
-      WHERE project_id = $1
-        AND team_id = $2
-      ORDER BY task_statuses.sort_order;
-    `;
+  SELECT task_statuses.id,
+         task_statuses.name,
+         COALESCE(task_statuses.color_code, stsc.color_code) AS color_code,
+         stsc.color_code                                      AS category_color_code,
+         stsc.color_code_dark                                 AS color_code_dark,
+         stsc.name                                            AS category_name,
+         task_statuses.category_id,
+         stsc.description
+  FROM task_statuses
+         INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
+  WHERE project_id = $1
+    AND team_id = $2
+  ORDER BY task_statuses.sort_order;
+`;
+
     const result = await db.query(q, [req.query.project, req.user?.team_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -159,6 +162,39 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     const result = await db.query(q, [JSON.stringify(req.body.status_order)]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async updateColor(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    let colorCode = req.body.color_code || null;
+
+    if (colorCode) {
+      // Strip alpha channel — keep only #RRGGBB
+      if (colorCode.startsWith('#')) {
+        colorCode = colorCode.substring(0, 7);
+      }
+
+      // Validate hex format
+      const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+      if (!hexColorRegex.test(colorCode)) {
+        colorCode = null; // fall back to category default
+      } else {
+        colorCode = colorCode.toLowerCase();
+      }
+    }
+
+    const q = `
+    UPDATE task_statuses
+    SET color_code = $3
+    WHERE id = $1
+      AND project_id = $2
+    RETURNING id, name, color_code;
+  `;
+
+    const result = await db.query(q, [req.params.id, req.query.current_project_id, colorCode]);
+    const [data] = result.rows;
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
 
   @HandleExceptions({
     raisedExceptions: {
