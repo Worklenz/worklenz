@@ -119,6 +119,47 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
     return html.replace(mentionRegex, '$1<span class="mentions">@$2</span>');
   }, []);
 
+  // Wrap bare http(s) URLs that appear as plain text in anchors so they render
+  // as clickable links. Walks text nodes only, so existing <a> tags and mention
+  // spans are left untouched. Display-only — does not change what is stored.
+  const autoLinkUrls = useCallback((html: string) => {
+    if (!html || !/https?:\/\//i.test(html)) return html;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+    const targets: Text[] = [];
+    let current: Node | null;
+    while ((current = walker.nextNode())) {
+      if (current.parentElement?.closest('a')) continue; // already a link
+      if (/https?:\/\//i.test(current.nodeValue || '')) targets.push(current as Text);
+    }
+    targets.forEach(textNode => {
+      const text = textNode.nodeValue || '';
+      const frag = doc.createDocumentFragment();
+      const re = /https?:\/\/[^\s<>"]+/gi;
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = re.exec(text))) {
+        const url = match[0].replace(/[.,;:!?)]+$/, '');
+        if (match.index > lastIndex) {
+          frag.appendChild(doc.createTextNode(text.slice(lastIndex, match.index)));
+        }
+        const a = doc.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+        a.textContent = url;
+        frag.appendChild(a);
+        lastIndex = match.index + url.length;
+      }
+      if (lastIndex < text.length) {
+        frag.appendChild(doc.createTextNode(text.slice(lastIndex)));
+      }
+      textNode.parentNode?.replaceChild(frag, textNode);
+    });
+    return doc.body.innerHTML;
+  }, []);
+
   const emitDescriptionChange = useCallback(() => {
     if (!taskId) return;
     const sanitizedContent = DOMPurify.sanitize(content || '',{ ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'] });
@@ -226,7 +267,7 @@ const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEdi
               ref={contentRef}
               className="description-content"
               dangerouslySetInnerHTML={{ __html:  (() => {
- const result = processHTML(processMentions(content));
+ const result = processHTML(autoLinkUrls(processMentions(content)));
 
  return result;
 })()
