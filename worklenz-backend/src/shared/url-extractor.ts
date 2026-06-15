@@ -18,7 +18,8 @@ export async function syncTaskDescriptionLinks(
   projectId: string,
   taskId: string,
   teamId: string,
-  description: string
+  description: string,
+  userId?: string
 ): Promise<void> {
   try {
     const urls = extractUrls(description);
@@ -28,9 +29,9 @@ export async function syncTaskDescriptionLinks(
     );
     for (const url of urls) {
       await db.query(
-        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_task_id)
-         VALUES ($1, $2, $3, $4, 'task_description', $5)`,
-        [projectId, teamId, url, url, taskId]
+        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_task_id, added_by)
+         VALUES ($1, $2, $3, $4, 'task_description', $5, $6)`,
+        [projectId, teamId, url, url, taskId, userId ?? null]
       );
     }
   } catch (e) {
@@ -43,7 +44,8 @@ export async function syncCommentLinks(
   taskId: string,
   commentId: string,
   teamId: string,
-  content: string
+  content: string,
+  userId?: string
 ): Promise<void> {
   try {
     const urls = extractUrls(content);
@@ -53,9 +55,34 @@ export async function syncCommentLinks(
     );
     for (const url of urls) {
       await db.query(
-        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_task_id, source_comment_id)
-         VALUES ($1, $2, $3, $4, 'task_comment', $5, $6)`,
-        [projectId, teamId, url, url, taskId, commentId]
+        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_task_id, source_comment_id, added_by)
+         VALUES ($1, $2, $3, $4, 'task_comment', $5, $6, $7)`,
+        [projectId, teamId, url, url, taskId, commentId, userId ?? null]
+      );
+    }
+  } catch (e) {
+    log_error(e);
+  }
+}
+
+export async function syncProjectCommentLinks(
+  projectId: string,
+  commentId: string,
+  teamId: string,
+  content: string,
+  userId: string
+): Promise<void> {
+  try {
+    const urls = extractUrls(content);
+    await db.query(
+      `DELETE FROM project_links WHERE source_comment_id = $1 AND source_type = 'project_comment'`,
+      [commentId]
+    );
+    for (const url of urls) {
+      await db.query(
+        `INSERT INTO project_links (project_id, team_id, title, url, source_type, source_comment_id, added_by)
+         VALUES ($1, $2, $3, $4, 'project_comment', $5, $6)`,
+        [projectId, teamId, url, url, commentId, userId]
       );
     }
   } catch (e) {

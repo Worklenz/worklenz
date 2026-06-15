@@ -372,7 +372,7 @@ export default class TasksController extends TasksControllerBase {
 
     if ("description" in req.body) {
       const teamId = req.user?.team_id as string;
-      void syncTaskDescriptionLinks(req.body.project_id, req.body.id, teamId, req.body.description || "");
+      void syncTaskDescriptionLinks(req.body.project_id, req.body.id, teamId, req.body.description || "", userId);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

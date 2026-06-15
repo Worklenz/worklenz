@@ -118,7 +118,7 @@ const Navbar = () => {
     // It does NOT fire in the same tab that wrote — that's covered by the custom
     // event above — so together these two cover every possible scenario.
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'navRoutes') loadNavRoutes();
+      if (e.key === 'navRoutesPinned') loadNavRoutes();
     };
     window.addEventListener('storage', handleStorageChange);
 

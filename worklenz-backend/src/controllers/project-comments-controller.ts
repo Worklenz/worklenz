@@ -13,6 +13,7 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import { getBaseUrl } from "../cron_jobs/helpers";
+import { syncProjectCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
 
 interface IMailConfig {
   message: string;
@@ -105,6 +106,11 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
     const q = `SELECT create_project_comment($1) AS comment`;
     const result = await db.query(q, [JSON.stringify(body)]);
     const [data] = result.rows;
+
+    // Extract and sync links from comment content
+    if (teamId && userId) {
+      void syncProjectCommentLinks(projectId, data.comment.id, teamId, commentContent, userId);
+    }
 
     const projectMembers = await this.getMembersList(projectId);
 
@@ -296,9 +302,14 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const commentId = req.params.id;
     const q = `DELETE FROM project_comments WHERE id = $1 RETURNING id`;
-    const result = await db.query(q, [req.params.id]);
+    const result = await db.query(q, [commentId]);
     const [data] = result.rows;
+
+    // Delete associated links when comment is deleted
+    void deleteCommentLinks(commentId);
+
     return res.status(200).send(new ServerResponse(true, data));
   }
 

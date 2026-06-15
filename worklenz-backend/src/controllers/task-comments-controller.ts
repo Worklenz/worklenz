@@ -304,7 +304,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       log_error("Error sending external notifications for comment:", notifError);
     }
 
-    void syncCommentLinks(response.project_id, task_id, commentId, req.user?.team_id as string, commentContent);
+    void syncCommentLinks(response.project_id, task_id, commentId, req.user?.team_id as string, commentContent, req.user?.id);
 
     return res.status(200).send(new ServerResponse(true, commentdata));
   } // ← end of create()
@@ -422,7 +422,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const projectRow = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [updatedComment.task_id]);
     if (projectRow.rows[0]) {
-      void syncCommentLinks(projectRow.rows[0].project_id, updatedComment.task_id, commentId, req.user?.team_id as string, commentContent);
+      void syncCommentLinks(projectRow.rows[0].project_id, updatedComment.task_id, commentId, req.user?.team_id as string, commentContent, req.user?.id);
     }
 
     return res.status(200).send(new ServerResponse(true, {
