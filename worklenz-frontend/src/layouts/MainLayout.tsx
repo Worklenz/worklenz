@@ -55,8 +55,8 @@ const MainLayout = memo(() => {
 
   const contentClassName = [
     'px-4 sm:px-8 lg:px-12 xl:px-16 mx-auto w-full',
-    !isProjectView ? 'overflow-x-hidden max-w-[1400px]' : '',
-    isProjectListView ? 'overflow-x-hidden max-w-[1600px]' : '',
+    !isProjectView ? 'overflow-x-clip max-w-[1400px]' : '',   // ✅ changed from overflow-x-hidden
+    isProjectListView ? 'overflow-x-clip max-w-[1600px]' : '', // ✅ changed from overflow-x-hidden
   ]
     .filter(Boolean)
     .join(' ');

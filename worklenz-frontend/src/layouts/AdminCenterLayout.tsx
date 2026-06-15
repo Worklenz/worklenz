@@ -11,19 +11,28 @@ const AdminCenterLayout: React.FC = () => {
 
   return (
     <div className="my-6">
-      <Typography.Title level={4}>{t('adminCenter')}</Typography.Title>
-
       {isTablet ? (
-        <Flex gap={24} align="flex-start" className="w-full mt-6">
-          <Flex className="w-full max-w-60">
+        <Flex gap={24} align="flex-start" className="w-full">
+          {/* Sticky left column — title + sidebar together */}
+          <Flex
+            vertical
+            className="w-full max-w-60"
+            style={{ position: 'sticky', top: 80, height: 'fit-content' }}
+          >
+            <Typography.Title level={4} style={{ marginBottom: 24 }}>
+              {t('adminCenter')}
+            </Typography.Title>
             <AdminCenterSidebar />
           </Flex>
+
+          {/* Scrollable content */}
           <Flex className="w-full">
             <Outlet />
           </Flex>
         </Flex>
       ) : (
         <Flex vertical gap={24} className="mt-6">
+          <Typography.Title level={4}>{t('adminCenter')}</Typography.Title>
           <AdminCenterSidebar />
           <Outlet />
         </Flex>
