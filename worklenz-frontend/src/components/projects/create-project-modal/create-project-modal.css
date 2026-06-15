@@ -83,7 +83,8 @@
   height: 52px;
   border-radius: 6px;
   background: rgba(128, 128, 128, 0.08);
-  overflow: hidden;
+  /* overflow:hidden removed — preview button lives outside this div now */
+  position: relative;
 }
 
 .create-project-template-image {
@@ -91,12 +92,42 @@
   height: 100%;
   object-fit: cover;
   border-radius: 4px;
+  overflow: hidden;
 }
 
 .create-project-template-emoji {
   font-size: 26px;
   line-height: 1;
   user-select: none;
+}
+
+/* ─── Hover preview button ───────────────────────────────────────────────────── */
+.create-project-template-preview-btn {
+  position: absolute;
+  /* centered over the 52px thumbnail area */
+  top: 26px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  transition: box-shadow 0.15s;
+  z-index: 2;
+  /* ensure it's always on top and never clipped */
+  pointer-events: all;
+}
+
+.create-project-template-preview-btn:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.create-project-template-preview-btn:focus-visible {
+  outline: 2px solid rgba(24, 144, 255, 0.5);
+  outline-offset: 1px;
 }
 
 /* ─── Color swatch ────────────────────────────────────────────────────────────── */

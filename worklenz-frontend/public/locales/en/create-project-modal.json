@@ -12,6 +12,8 @@
   "searchTemplates": "Search templates",
   "templates": "Templates",
   "noTemplates": "No templates found.",
+  "preview": "Preview",
+  "previewTemplate": "Preview template",
   "configureHint": "Status, dates, manager, and more — set inside the project via the gear icon.",
   "editLaterHint": "You can edit everything after creating.",
   "cancel": "Cancel",

@@ -30,6 +30,8 @@ import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import logger from '@/utils/errorLogger';
+import { TemplatePreviewDrawer } from './template-preview-drawer';
+import { getTemplateIcon } from './template-icon';
 import './create-project-modal.css';
 
 type ProjectType = 'blank' | 'template';
@@ -40,49 +42,35 @@ interface CreateProjectModalProps {
 }
 
 // ─── Template card subcomponent ────────────────────────────────────────────
-
-// Emoji fallback icons matching the pattern used in account-setup/project-step.tsx
-const getTemplateIcon = (name?: string): string => {
-  if (!name) return '📁';
-  const n = name.toLowerCase();
-  if (n.includes('bug') || n.includes('qa') || n.includes('test')) return '🐛';
-  if (n.includes('sprint') || n.includes('scrum') || n.includes('agile')) return '🏃';
-  if (n.includes('software') || n.includes('development') || n.includes('dev')) return '💻';
-  if (n.includes('marketing') || n.includes('campaign')) return '📢';
-  if (n.includes('construction') || n.includes('building')) return '🏗️';
-  if (n.includes('startup') || n.includes('launch') || n.includes('release')) return '🚀';
-  if (n.includes('design') || n.includes('creative')) return '🎨';
-  if (n.includes('education') || n.includes('learning')) return '📚';
-  if (n.includes('event') || n.includes('planning')) return '📅';
-  if (n.includes('retail') || n.includes('sales')) return '🛍️';
-  if (n.includes('finance') || n.includes('budget')) return '💰';
-  if (n.includes('hr') || n.includes('human') || n.includes('recruit')) return '👥';
-  if (n.includes('health') || n.includes('medical')) return '🏥';
-  if (n.includes('research')) return '🔬';
-  if (n.includes('roadmap') || n.includes('product')) return '🗺️';
-  return '📁';
-};
 interface TemplateCardProps {
   template: IWorklenzTemplate;
   selected: boolean;
   onClick: () => void;
+  onPreview: () => void;
 }
 
-const TemplateCard = ({ template, selected, onClick }: TemplateCardProps) => {
+const TemplateCard = ({ template, selected, onClick, onPreview }: TemplateCardProps) => {
   const { token } = theme.useToken();
+  const { t } = useTranslation('create-project-modal');
+  const [hovered, setHovered] = useState(false);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className={`create-project-template-card${selected ? ' create-project-template-card--selected' : ''}`}
       style={{
         background: selected ? token.colorPrimaryBg : token.colorBgContainer,
         borderColor: selected ? token.colorPrimary : token.colorBorder,
         color: token.colorText,
+        position: 'relative',
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
       aria-pressed={selected}
       aria-label={template.name ?? ''}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
     >
       {/* Template thumbnail: real image if available, emoji icon otherwise */}
       <div className="create-project-template-thumbnail" aria-hidden="true">
@@ -98,6 +86,27 @@ const TemplateCard = ({ template, selected, onClick }: TemplateCardProps) => {
           </span>
         )}
       </div>
+
+      {/* Preview button — outside thumbnail so overflow:hidden doesn't clip it */}
+      {hovered && (
+        <button
+          type="button"
+          className="create-project-template-preview-btn"
+          style={{
+            background: token.colorBgContainer,
+            color: token.colorText,
+            borderColor: token.colorBorder,
+          }}
+          onClick={e => {
+            e.stopPropagation();
+            onPreview();
+          }}
+          aria-label={t('previewTemplate', { defaultValue: 'Preview template' })}
+        >
+          {t('preview', { defaultValue: 'Preview' })}
+        </button>
+      )}
+
       <Typography.Text
         strong
         style={{ fontSize: 12, color: token.colorText, display: 'block', marginTop: 6 }}
@@ -105,7 +114,15 @@ const TemplateCard = ({ template, selected, onClick }: TemplateCardProps) => {
       >
         {template.name}
       </Typography.Text>
-    </button>
+      {/* Task / phase counts */}
+      {(template.task_count || template.phase_count) ? (
+        <Typography.Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 2 }}>
+          {template.task_count ? `${template.task_count} tasks` : ''}
+          {template.task_count && template.phase_count ? ' · ' : ''}
+          {template.phase_count ? `${template.phase_count} phases` : ''}
+        </Typography.Text>
+      ) : null}
+    </div>
   );
 };
 
@@ -144,6 +161,11 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
   const [templates, setTemplates] = useState<IWorklenzTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Preview drawer state
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [previewTemplateName, setPreviewTemplateName] = useState<string | undefined>(undefined);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -384,6 +406,11 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
               template={tmpl}
               selected={selectedTemplateId === tmpl.id}
               onClick={() => setSelectedTemplateId(tmpl.id ?? null)}
+              onPreview={() => {
+                setPreviewTemplateId(tmpl.id ?? null);
+                setPreviewTemplateName(tmpl.name);
+                setPreviewOpen(true);
+              }}
             />
           ))}
         </div>
@@ -392,6 +419,7 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
   );
 
   return (
+    <>
     <Modal
       open={open}
       onCancel={onClose}
@@ -521,6 +549,19 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
         </Flex>
       </Form>
     </Modal>
+
+    {/* Template detail preview drawer — rendered outside Modal to avoid stacking context issues */}
+    <TemplatePreviewDrawer
+      templateId={previewTemplateId}
+      templateName={previewTemplateName}
+      open={previewOpen}
+      onClose={() => setPreviewOpen(false)}
+      onUseTemplate={id => {
+        setSelectedTemplateId(id);
+        setPreviewOpen(false);
+      }}
+    />
+    </>
   );
 };
 
