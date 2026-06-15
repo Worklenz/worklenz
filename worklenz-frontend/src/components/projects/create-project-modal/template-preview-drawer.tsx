@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
+  CloseOutlined,
+  Divider,
   Empty,
   Flex,
   Image,
@@ -17,7 +19,7 @@ import { IProjectTemplate } from '@/types/project-templates/project-templates.ty
 import { getTemplateIcon } from './template-icon';
 import logger from '@/utils/errorLogger';
 
-const { Text, Title } = Typography;
+const { Text, Title, Paragraph } = Typography;
 
 interface TemplatePreviewDrawerProps {
   templateId: string | null;
@@ -26,6 +28,43 @@ interface TemplatePreviewDrawerProps {
   onClose: () => void;
   onUseTemplate: (templateId: string) => void;
 }
+
+// ─── Detail row: fixed-width label + content ─────────────────────────────────
+const DetailRow = ({
+  label,
+  children,
+  token,
+}: {
+  label: string;
+  children: React.ReactNode;
+  token: any;
+}) => (
+  <div
+    style={{
+      display: 'grid',
+      gridTemplateColumns: '110px 1fr',
+      gap: '8px 16px',
+      alignItems: 'flex-start',
+      padding: '10px 0',
+      borderBottom: `1px solid ${token.colorBorderSecondary}`,
+    }}
+  >
+    <Text
+      strong
+      style={{
+        fontSize: 13,
+        color: token.colorTextSecondary,
+        paddingTop: 2,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {label}
+    </Text>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+      {children}
+    </div>
+  </div>
+);
 
 export const TemplatePreviewDrawer = ({
   templateId,
@@ -51,126 +90,21 @@ export const TemplatePreviewDrawer = ({
       .finally(() => setLoading(false));
   }, [open, templateId]);
 
-  // ─── Exact same renderTemplateDetails as the old TemplateDrawer ──────────
-  const renderTemplateDetails = () => {
-    if (!template) {
-      return <Empty description={t('noTemplateSelected', { defaultValue: 'No template selected' })} />;
-    }
+  const tagStyle = (colorCode?: string) => ({
+    color: token.colorText,
+    margin: 0,
+    backgroundColor: colorCode ? undefined : token.colorBgContainer,
+    borderColor: colorCode ? undefined : token.colorBorder,
+  });
 
-    const tagStyle = (colorCode?: string) => ({
-      color: token.colorText,
-      marginBottom: '8px',
-      backgroundColor: colorCode ? undefined : token.colorBgContainer,
-      borderColor: colorCode ? undefined : token.colorBorder,
-    });
-
-    const detailRow = (label: string, content: React.ReactNode) => (
-      <div className="template-detail-row" style={{ marginTop: 12 }}>
-        <div style={{ marginBottom: 6 }}>
-          <Text strong style={{ color: token.colorText }}>{label}</Text>
-        </div>
-        <div>{content}</div>
-      </div>
-    );
-
-    return (
-      <div>
-        {/* Description */}
-        {detailRow(
-          t('description', { defaultValue: 'Description' }),
-          <Text style={{ color: token.colorText }}>
-            {template.description || t('noDescription', { defaultValue: 'No description' })}
-          </Text>
-        )}
-
-        {/* Phases */}
-        {detailRow(
-          t('phase', { defaultValue: 'Phases' }),
-          template.phases?.length ? (
-            <div>
-              {template.phases.map(phase => (
-                <Tag key={phase.name} color={phase.color_code} style={tagStyle(phase.color_code)}>
-                  {phase.name}
-                </Tag>
-              ))}
-            </div>
-          ) : (
-            <Text type="secondary">{t('noPhases', { defaultValue: 'No phases' })}</Text>
-          )
-        )}
-
-        {/* Statuses */}
-        {detailRow(
-          t('statuses', { defaultValue: 'Statuses' }),
-          template.status?.length ? (
-            <div>
-              {template.status.map(status => (
-                <Tag key={status.name} color={status.color_code} style={tagStyle(status.color_code)}>
-                  {status.name}
-                </Tag>
-              ))}
-            </div>
-          ) : (
-            <Text type="secondary">{t('noStatuses', { defaultValue: 'No statuses' })}</Text>
-          )
-        )}
-
-        {/* Priorities */}
-        {detailRow(
-          t('priorities', { defaultValue: 'Priorities' }),
-          template.priorities?.length ? (
-            <div>
-              {template.priorities.map(priority => (
-                <Tag key={priority.name} color={priority.color_code} style={tagStyle(priority.color_code)}>
-                  {priority.name}
-                </Tag>
-              ))}
-            </div>
-          ) : (
-            <Text type="secondary">{t('noPriorities', { defaultValue: 'No priorities' })}</Text>
-          )
-        )}
-
-        {/* Labels */}
-        {detailRow(
-          t('labels', { defaultValue: 'Labels' }),
-          template.labels?.length ? (
-            <div>
-              {template.labels.map(label => (
-                <Tag key={label.name} color={label.color_code} style={tagStyle(label.color_code)}>
-                  {label.name}
-                </Tag>
-              ))}
-            </div>
-          ) : (
-            <Text type="secondary">{t('noLabels', { defaultValue: 'No labels' })}</Text>
-          )
-        )}
-
-        {/* Tasks */}
-        {detailRow(
-          t('tasks', { defaultValue: 'Tasks' }),
-          template.tasks?.length ? (
-            <List
-              size="small"
-              dataSource={template.tasks}
-              renderItem={item => (
-                <List.Item key={item.name} style={{ padding: '4px 0', borderColor: token.colorBorder }}>
-                  <Text style={{ color: token.colorText }}>{item.name}</Text>
-                </List.Item>
-              )}
-            />
-          ) : (
-            <Text type="secondary">{t('noTasks', { defaultValue: 'No tasks' })}</Text>
-          )
-        )}
-      </div>
-    );
-  };
+  const noValue = (msg: string) => (
+    <Text type="secondary" style={{ fontSize: 13 }}>{msg}</Text>
+  );
 
   const displayName = template?.name ?? templateName ?? '';
-  const taskCount = template?.tasks?.length ?? 0;
-  const phaseCount = template?.phases?.length ?? 0;
+  const taskCount   = template?.tasks?.length ?? 0;
+  const phaseCount  = template?.phases?.length ?? 0;
+  const labelCount  = template?.labels?.length ?? 0;
 
   return (
     <Modal
@@ -178,127 +112,235 @@ export const TemplatePreviewDrawer = ({
       onCancel={onClose}
       footer={null}
       destroyOnClose
-      width={600}
+      width={780}
       styles={{
-        body: { padding: 0, maxHeight: '72vh', overflowY: 'auto' },
-        content: { padding: 0, overflow: 'hidden' },
+        body:    { padding: 0 },
+        content: { padding: 0, overflow: 'hidden', borderRadius: 8 },
+        mask:    { backdropFilter: 'blur(2px)' },
       }}
       title={null}
       closable={false}
     >
-      {/* ── Header ── */}
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div
         style={{
           background: token.colorBgElevated,
-          padding: '16px 20px 14px',
+          padding: '20px 24px 16px',
           borderBottom: `1px solid ${token.colorBorder}`,
         }}
       >
-        <Flex align="flex-start" gap={12}>
-          {/* Icon */}
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 8,
-              background: token.colorPrimary,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 20,
-              flexShrink: 0,
-            }}
-          >
-            {template?.image_url ? (
-              <img
-                src={template.image_url}
-                alt={displayName}
-                style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }}
-              />
-            ) : (
-              getTemplateIcon(displayName)
-            )}
-          </div>
+        <Flex align="flex-start" gap={14} justify="space-between">
+          <Flex align="flex-start" gap={14} style={{ flex: 1, minWidth: 0 }}>
+            {/* Emoji / image icon */}
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 10,
+                background: token.colorPrimaryBg,
+                border: `1px solid ${token.colorPrimaryBorder}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                flexShrink: 0,
+                overflow: 'hidden',
+              }}
+            >
+              {template?.image_url ? (
+                <img
+                  src={template.image_url}
+                  alt={displayName}
+                  style={{ width: 48, height: 48, objectFit: 'cover' }}
+                />
+              ) : (
+                getTemplateIcon(displayName)
+              )}
+            </div>
 
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Title level={5} style={{ margin: '0 0 4px', color: token.colorText }}>
-              {loading ? '—' : displayName}
-            </Title>
-            {template?.description && (
-              <Text type="secondary" style={{ fontSize: 12 }}>{template.description}</Text>
-            )}
-            {!loading && (taskCount > 0 || phaseCount > 0) && (
-              <Flex gap={12} style={{ marginTop: 4 }}>
-                {taskCount > 0 && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    <strong>{taskCount}</strong> {t('sampleTasksCount', { defaultValue: 'sample tasks' })}
-                  </Text>
-                )}
-                {phaseCount > 0 && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    <strong>{phaseCount}</strong> {t('phases', { defaultValue: 'phases' })}
-                  </Text>
-                )}
-                {(template?.labels?.length ?? 0) > 0 && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    <strong>{template!.labels!.length}</strong> {t('labels', { defaultValue: 'labels' })}
-                  </Text>
-                )}
-              </Flex>
-            )}
-          </div>
+            {/* Name + meta */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <Title
+                level={4}
+                style={{ margin: '0 0 4px', color: token.colorText, lineHeight: 1.3 }}
+              >
+                {loading ? '—' : displayName}
+              </Title>
 
-          {/* Close button */}
-          <button
-            type="button"
+              {template?.description && (
+                <Paragraph
+                  type="secondary"
+                  style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.5 }}
+                  ellipsis={{ rows: 2, expandable: true }}
+                >
+                  {template.description}
+                </Paragraph>
+              )}
+
+              {/* Stat pills */}
+              {!loading && (taskCount > 0 || phaseCount > 0 || labelCount > 0) && (
+                <Flex gap={16} wrap="wrap">
+                  {taskCount > 0 && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      <strong style={{ color: token.colorText }}>{taskCount}</strong>{' '}
+                      {t('sampleTasksCount', { defaultValue: 'sample tasks' })}
+                    </Text>
+                  )}
+                  {phaseCount > 0 && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      <strong style={{ color: token.colorText }}>{phaseCount}</strong>{' '}
+                      {t('phases', { defaultValue: 'phases' })}
+                    </Text>
+                  )}
+                  {labelCount > 0 && (
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      <strong style={{ color: token.colorText }}>{labelCount}</strong>{' '}
+                      {t('labels', { defaultValue: 'labels' })}
+                    </Text>
+                  )}
+                </Flex>
+              )}
+            </div>
+          </Flex>
+
+          {/* Close */}
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: token.colorTextSecondary,
-              fontSize: 18,
-              lineHeight: 1,
-              padding: 4,
-            }}
+            style={{ color: token.colorTextSecondary, flexShrink: 0 }}
             aria-label="Close"
-          >
-            ×
-          </button>
+          />
         </Flex>
       </div>
 
-      {/* ── Body — exact same details as old TemplateDrawer ── */}
-      <div style={{ padding: '16px 24px' }}>
-        <Skeleton active loading={loading} paragraph={{ rows: 8 }}>
-          {/* Cover image if present */}
-          {template?.image_url && (
-            <div style={{ marginBottom: 16 }}>
-              <Image
-                preview={false}
-                src={template.image_url}
-                alt={template.name}
-                style={{ width: '100%', borderRadius: 8 }}
-              />
-            </div>
+      {/* ── Body ───────────────────────────────────────────────────────────── */}
+      <div
+        style={{
+          padding: '8px 24px 20px',
+          maxHeight: '60vh',
+          overflowY: 'auto',
+          background: token.colorBgContainer,
+        }}
+      >
+        <Skeleton active loading={loading} paragraph={{ rows: 10 }}>
+          {!template ? (
+            <Empty
+              description={t('noTemplateSelected', { defaultValue: 'No template selected' })}
+              style={{ padding: '32px 0' }}
+            />
+          ) : (
+            <>
+              {/* Cover image */}
+              {template.image_url && (
+                <div style={{ marginBottom: 16, marginTop: 16 }}>
+                  <Image
+                    preview={false}
+                    src={template.image_url}
+                    alt={template.name}
+                    style={{ width: '100%', borderRadius: 8 }}
+                  />
+                </div>
+              )}
+
+              <div style={{ marginTop: 8 }}>
+                {/* Description */}
+                <DetailRow label={t('description', { defaultValue: 'Description' })} token={token}>
+                  <Text style={{ fontSize: 13, color: token.colorText, lineHeight: 1.6 }}>
+                    {template.description ||
+                      noValue(t('noDescription', { defaultValue: 'No description' }))}
+                  </Text>
+                </DetailRow>
+
+                {/* Phases */}
+                <DetailRow label={t('phase', { defaultValue: 'Phases' })} token={token}>
+                  {template.phases?.length
+                    ? template.phases.map(p => (
+                        <Tag key={p.name} color={p.color_code} style={tagStyle(p.color_code)}>
+                          {p.name}
+                        </Tag>
+                      ))
+                    : noValue(t('noPhases', { defaultValue: 'No phases' }))}
+                </DetailRow>
+
+                {/* Statuses */}
+                <DetailRow label={t('statuses', { defaultValue: 'Statuses' })} token={token}>
+                  {template.status?.length
+                    ? template.status.map(s => (
+                        <Tag key={s.name} color={s.color_code} style={tagStyle(s.color_code)}>
+                          {s.name}
+                        </Tag>
+                      ))
+                    : noValue(t('noStatuses', { defaultValue: 'No statuses' }))}
+                </DetailRow>
+
+                {/* Priorities */}
+                <DetailRow label={t('priorities', { defaultValue: 'Priorities' })} token={token}>
+                  {template.priorities?.length
+                    ? template.priorities.map(p => (
+                        <Tag key={p.name} color={p.color_code} style={tagStyle(p.color_code)}>
+                          {p.name}
+                        </Tag>
+                      ))
+                    : noValue(t('noPriorities', { defaultValue: 'No priorities' }))}
+                </DetailRow>
+
+                {/* Labels */}
+                <DetailRow label={t('labels', { defaultValue: 'Labels' })} token={token}>
+                  {template.labels?.length
+                    ? template.labels.map(l => (
+                        <Tag key={l.name} color={l.color_code} style={tagStyle(l.color_code)}>
+                          {l.name}
+                        </Tag>
+                      ))
+                    : noValue(t('noLabels', { defaultValue: 'No labels' }))}
+                </DetailRow>
+
+                {/* Tasks */}
+                <DetailRow label={t('tasks', { defaultValue: 'Tasks' })} token={token}>
+                  {template.tasks?.length ? (
+                    <List
+                      size="small"
+                      dataSource={template.tasks}
+                      style={{ width: '100%' }}
+                      renderItem={item => (
+                        <List.Item
+                          style={{
+                            padding: '5px 0',
+                            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, color: token.colorText }}>
+                            {item.name}
+                          </Text>
+                        </List.Item>
+                      )}
+                    />
+                  ) : (
+                    noValue(t('noTasks', { defaultValue: 'No tasks' }))
+                  )}
+                </DetailRow>
+              </div>
+            </>
           )}
-          {renderTemplateDetails()}
         </Skeleton>
       </div>
 
-      {/* ── Footer ── */}
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
       <div
         style={{
-          padding: '12px 20px',
+          padding: '12px 24px',
           borderTop: `1px solid ${token.colorBorder}`,
-          background: token.colorBgContainer,
+          background: token.colorBgElevated,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
       >
         <Text type="secondary" style={{ fontSize: 12 }}>
-          {t('customizeAfterCreating', { defaultValue: 'You can customize everything after creating.' })}
+          {t('customizeAfterCreating', {
+            defaultValue: 'You can customize everything after creating.',
+          })}
         </Text>
         <Flex gap={8}>
           <Button onClick={onClose}>

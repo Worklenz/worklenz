@@ -483,7 +483,7 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
             }
             style={{ marginBottom: 12 }}
           >
-            <Flex gap={6} wrap="wrap" role="group" aria-label={t('projectColor', { defaultValue: 'Project color' })}>
+            <Flex gap={10} wrap="wrap" role="group" aria-label={t('projectColor', { defaultValue: 'Project color' })}>
               {projectColors.map(color => (
                 <ColorSwatch
                   key={color}
