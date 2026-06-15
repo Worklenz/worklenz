@@ -1,6 +1,7 @@
 export interface IWorklenzTemplate {
   id?: string;
   name?: string;
+  image_url?: string;
 }
 
 interface IPhase {

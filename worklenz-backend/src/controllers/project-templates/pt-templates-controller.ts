@@ -24,7 +24,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name FROM pt_project_templates ORDER BY name;`;
+    const q = `SELECT id, name, image_url FROM pt_project_templates ORDER BY name;`;
     const result = await db.query(q, []);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }

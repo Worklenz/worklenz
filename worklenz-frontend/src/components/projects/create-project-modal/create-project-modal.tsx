@@ -40,6 +40,28 @@ interface CreateProjectModalProps {
 }
 
 // ─── Template card subcomponent ────────────────────────────────────────────
+
+// Emoji fallback icons matching the pattern used in account-setup/project-step.tsx
+const getTemplateIcon = (name?: string): string => {
+  if (!name) return '📁';
+  const n = name.toLowerCase();
+  if (n.includes('bug') || n.includes('qa') || n.includes('test')) return '🐛';
+  if (n.includes('sprint') || n.includes('scrum') || n.includes('agile')) return '🏃';
+  if (n.includes('software') || n.includes('development') || n.includes('dev')) return '💻';
+  if (n.includes('marketing') || n.includes('campaign')) return '📢';
+  if (n.includes('construction') || n.includes('building')) return '🏗️';
+  if (n.includes('startup') || n.includes('launch') || n.includes('release')) return '🚀';
+  if (n.includes('design') || n.includes('creative')) return '🎨';
+  if (n.includes('education') || n.includes('learning')) return '📚';
+  if (n.includes('event') || n.includes('planning')) return '📅';
+  if (n.includes('retail') || n.includes('sales')) return '🛍️';
+  if (n.includes('finance') || n.includes('budget')) return '💰';
+  if (n.includes('hr') || n.includes('human') || n.includes('recruit')) return '👥';
+  if (n.includes('health') || n.includes('medical')) return '🏥';
+  if (n.includes('research')) return '🔬';
+  if (n.includes('roadmap') || n.includes('product')) return '🗺️';
+  return '📁';
+};
 interface TemplateCardProps {
   template: IWorklenzTemplate;
   selected: boolean;
@@ -62,19 +84,19 @@ const TemplateCard = ({ template, selected, onClick }: TemplateCardProps) => {
       aria-pressed={selected}
       aria-label={template.name ?? ''}
     >
-      {/* Mini board thumbnail */}
+      {/* Template thumbnail: real image if available, emoji icon otherwise */}
       <div className="create-project-template-thumbnail" aria-hidden="true">
-        {[3, 2, 4].map((count, i) => (
-          <div key={i} className="create-project-template-column">
-            {Array.from({ length: count }).map((_, j) => (
-              <div
-                key={j}
-                className="create-project-template-bar"
-                style={{ opacity: 0.5 + j * 0.15, background: token.colorPrimary }}
-              />
-            ))}
-          </div>
-        ))}
+        {template.image_url ? (
+          <img
+            src={template.image_url}
+            alt={template.name}
+            className="create-project-template-image"
+          />
+        ) : (
+          <span className="create-project-template-emoji">
+            {getTemplateIcon(template.name)}
+          </span>
+        )}
       </div>
       <Typography.Text
         strong

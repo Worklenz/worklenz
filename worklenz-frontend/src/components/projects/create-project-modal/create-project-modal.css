@@ -77,26 +77,26 @@
 /* ─── Mini board thumbnail ────────────────────────────────────────────────────── */
 .create-project-template-thumbnail {
   display: flex;
-  gap: 3px;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 44px;
-  align-items: flex-end;
-  padding: 4px;
-  border-radius: 4px;
+  height: 52px;
+  border-radius: 6px;
   background: rgba(128, 128, 128, 0.08);
+  overflow: hidden;
 }
 
-.create-project-template-column {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  justify-content: flex-end;
+.create-project-template-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
 }
 
-.create-project-template-bar {
-  height: 6px;
-  border-radius: 2px;
+.create-project-template-emoji {
+  font-size: 26px;
+  line-height: 1;
+  user-select: none;
 }
 
 /* ─── Color swatch ────────────────────────────────────────────────────────────── */
