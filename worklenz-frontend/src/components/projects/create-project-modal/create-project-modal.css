@@ -1,0 +1,126 @@
+/* ─── Type selector ──────────────────────────────────────────────────────────── */
+.create-project-type-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.create-project-type-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 12px;
+  border: 1.5px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  text-align: center;
+  width: 100%;
+  background: transparent;
+  outline: none;
+}
+
+.create-project-type-card:hover {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+}
+
+.create-project-type-card:focus-visible {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.4);
+}
+
+.create-project-type-card--selected {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* ─── Template browser ───────────────────────────────────────────────────────── */
+.create-project-template-browser {
+  margin-bottom: 12px;
+}
+
+.create-project-template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.create-project-template-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 6px 6px;
+  border: 1.5px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  text-align: center;
+  width: 100%;
+  background: transparent;
+  outline: none;
+}
+
+.create-project-template-card:hover {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+}
+
+.create-project-template-card:focus-visible {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.4);
+}
+
+.create-project-template-card--selected {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.25);
+}
+
+/* ─── Mini board thumbnail ────────────────────────────────────────────────────── */
+.create-project-template-thumbnail {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 44px;
+  align-items: flex-end;
+  padding: 4px;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.08);
+}
+
+.create-project-template-column {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.create-project-template-bar {
+  height: 6px;
+  border-radius: 2px;
+}
+
+/* ─── Color swatch ────────────────────────────────────────────────────────────── */
+.create-project-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  padding: 0;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.create-project-color-swatch:hover {
+  transform: scale(1.2);
+}
+
+.create-project-color-swatch:focus-visible {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.6);
+}
+
+.create-project-color-swatch--selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px currentColor;
+  transform: scale(1.15);
+}

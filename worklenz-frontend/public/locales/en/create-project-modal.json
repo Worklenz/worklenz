@@ -1,0 +1,21 @@
+{
+  "title": "Create a new project",
+  "subtitle": "Start blank or pick a template — configure the rest later.",
+  "projectNamePlaceholder": "Project name",
+  "projectTypeLabel": "Project type",
+  "blankProject": "Blank project",
+  "blankProjectDesc": "Empty board you can shape from scratch.",
+  "fromTemplate": "From a template",
+  "fromTemplateDesc": "Pre-built phases, labels, and sample tasks.",
+  "projectColor": "Project color",
+  "searchTemplates": "Search templates",
+  "templates": "Templates",
+  "noTemplates": "No templates found.",
+  "configureHint": "Status, dates, manager, and more — set inside the project via the gear icon.",
+  "editLaterHint": "You can edit everything after creating.",
+  "cancel": "Cancel",
+  "createProject": "Create project",
+  "nameRequired": "Enter a project name to continue.",
+  "createError": "Failed to create project. Please try again.",
+  "csrfError": "Security token missing. Please refresh and try again."
+}
