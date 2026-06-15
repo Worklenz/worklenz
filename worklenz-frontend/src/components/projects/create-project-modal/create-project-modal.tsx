@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -18,9 +18,11 @@ import {
 } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import { projectColors } from '@/lib/project/project-constants';
 import { useCreateProjectMutation } from '@/api/projects/projects.v1.api.service';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
+import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { IWorklenzTemplate } from '@/types/project-templates/project-templates.types';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
@@ -125,6 +127,20 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
   const nameInputRef = useRef<HTMLInputElement>(null);
   const hasLoadedTemplates = useRef(false);
 
+  // Get the default project status (required by the backend validator)
+  const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
+  const defaultStatusId = useMemo(
+    () => projectStatuses.find(s => s.is_default)?.id ?? projectStatuses[0]?.id,
+    [projectStatuses]
+  );
+
+  // Ensure statuses are loaded (they may already be in Redux from ProjectDrawer usage)
+  useEffect(() => {
+    if (projectStatuses.length === 0) {
+      dispatch(fetchProjectStatuses());
+    }
+  }, [dispatch, projectStatuses.length]);
+
   // Focus name input when modal opens
   useEffect(() => {
     if (open) {
@@ -217,6 +233,7 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
       const projectModel: IProjectViewModel = {
         name,
         color_code: selectedColor,
+        status_id: defaultStatusId,
       };
 
       const response = await createProject(projectModel);
@@ -268,7 +285,7 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
     [handleCreate, projectName, isCreating]
   );
 
-  const canCreate = projectName.trim().length > 0 && (projectType === 'blank' || !!selectedTemplateId);
+  const canCreate = projectName.trim().length > 0 && !!defaultStatusId && (projectType === 'blank' || !!selectedTemplateId);
 
   // ─── Type selector cards ─────────────────────────────────────────────────
   const blankCard = (
