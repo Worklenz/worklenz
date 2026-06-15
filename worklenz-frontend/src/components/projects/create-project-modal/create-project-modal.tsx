@@ -196,8 +196,9 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
   );
 
   const handleCreate = useCallback(async () => {
+    // For blank projects a name is mandatory; for templates the backend uses the template name
     const name = projectName.trim();
-    if (!name) return;
+    if (projectType === 'blank' && !name) return;
 
     setError(null);
 
@@ -274,18 +275,21 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
       logger.error('Error creating project', err);
       setError(t('createError', { defaultValue: 'Failed to create project. Please try again.' }));
     }
-  }, [projectName, projectType, selectedTemplateId, selectedColor, createProject, dispatch, navigate, onClose, t, trackMixpanelEvent]);
+  }, [projectName, projectType, selectedTemplateId, selectedColor, defaultStatusId, createProject, dispatch, navigate, onClose, t, trackMixpanelEvent]);
+
+  const canCreate =
+    (projectType === 'blank'
+      ? projectName.trim().length > 0 && !!defaultStatusId  // blank: name + status required
+      : !!selectedTemplateId);                               // template: just pick a template
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && projectName.trim() && !isCreating) {
+      if (e.key === 'Enter' && canCreate && !isCreating) {
         handleCreate();
       }
     },
-    [handleCreate, projectName, isCreating]
+    [handleCreate, canCreate, isCreating]
   );
-
-  const canCreate = projectName.trim().length > 0 && !!defaultStatusId && (projectType === 'blank' || !!selectedTemplateId);
 
   // ─── Type selector cards ─────────────────────────────────────────────────
   const blankCard = (
@@ -391,7 +395,11 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
           <Input
             ref={nameInputRef as any}
             size="large"
-            placeholder={t('projectNamePlaceholder', { defaultValue: 'Project name' })}
+            placeholder={
+              projectType === 'template'
+                ? t('projectNamePlaceholderTemplate', { defaultValue: 'Project name (uses template name if left blank)' })
+                : t('projectNamePlaceholder', { defaultValue: 'Project name' })
+            }
             value={projectName}
             onChange={e => setProjectName(e.target.value)}
             maxLength={100}
@@ -470,8 +478,10 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
             </Button>
             <Tooltip
               title={
-                !projectName.trim()
-                  ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
+                !canCreate
+                  ? projectType === 'template'
+                    ? t('templateRequired', { defaultValue: 'Select a template to continue.' })
+                    : t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
                   : undefined
               }
             >

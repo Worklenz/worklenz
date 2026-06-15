@@ -2,6 +2,7 @@
   "title": "Create a new project",
   "subtitle": "Start blank or pick a template — configure the rest later.",
   "projectNamePlaceholder": "Project name",
+  "projectNamePlaceholderTemplate": "Project name (uses template name if left blank)",
   "projectTypeLabel": "Project type",
   "blankProject": "Blank project",
   "blankProjectDesc": "Empty board you can shape from scratch.",
@@ -16,6 +17,7 @@
   "cancel": "Cancel",
   "createProject": "Create project",
   "nameRequired": "Enter a project name to continue.",
+  "templateRequired": "Select a template to continue.",
   "createError": "Failed to create project. Please try again.",
   "csrfError": "Security token missing. Please refresh and try again."
 }
