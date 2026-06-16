@@ -1,11 +1,19 @@
-import {SendEmailCommand, SESClient} from "@aws-sdk/client-ses";
-import {Validator} from "jsonschema";
-import {QueryResult} from "pg";
-import {log_error, isValidateEmail} from "./utils";
+import nodemailer from "nodemailer";
+import { Validator } from "jsonschema";
+import { QueryResult } from "pg";
+import { log_error, isValidateEmail } from "./utils";
 import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
-const sesClient = new SESClient({region: process.env.AWS_REGION});
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 export interface IEmail {
   to?: string[];
@@ -50,6 +58,11 @@ async function filterBouncedEmails(emails: string[]): Promise<void> {
 }
 
 export async function sendEmail(email: IEmail): Promise<string | null> {
+  if (process.env.ENABLE_EMAIL !== "true") {
+    console.log("EMAIL DESACTIVADO (ENABLE_EMAIL=false)");
+    return null;
+  }
+
   try {
     const options = {...email} as IEmail;
     options.to = Array.isArray(options.to) ? Array.from(new Set(options.to)) : [];
@@ -72,27 +85,14 @@ export async function sendEmail(email: IEmail): Promise<string | null> {
 
     const charset = "UTF-8";
 
-    const command = new SendEmailCommand({
-      Destination: {
-        ToAddresses: options.to
-      },
-      Message: {
-        Subject: {
-          Charset: charset,
-          Data: options.subject
-        },
-        Body: {
-          Html: {
-            Charset: charset,
-            Data: options.html
-          }
-        }
-      },
-      Source: "Worklenz <noreply@worklenz.com>"
+    await transporter.sendMail({
+      from: process.env.FROM_EMAIL || "Worklenz <no-reply@worklenz.com>",
+      to: options.to.join(","),
+                               subject: options.subject,
+                               html: options.html,
     });
 
-    const res = await sesClient.send(command);
-    return res.MessageId || null;
+    return "SMTP_OK";
   } catch (e) {
     log_error(e);
   }
