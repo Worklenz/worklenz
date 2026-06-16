@@ -42,6 +42,22 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
   }
 
   @HandleExceptions()
+  public static async getCustomTemplateById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const data = await ProjectTemplatesController.getCustomTemplateData(id);
+    if (!data) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+
+  @HandleExceptions()
   public static async deleteCustomTemplate(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
@@ -172,7 +188,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       }
     }
 
-    const { template_id } = req.body;
+    const { template_id, project_name } = req.body;
     let project_id: string | null = null;
 
     const data = await this.getTemplateData(template_id);
@@ -181,10 +197,10 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       const tasks = data.tasks;
       const phases = data.phases;
       const labels = data.labels;
-      
+
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
-        name: data.name,
+        name: (project_name && project_name.trim()) ? project_name.trim() : data.name,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
         color_code: data.color_code,
@@ -324,21 +340,23 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       }
     }
 
-    const { template_id } = req.body;
+    const { template_id, project_name } = req.body;
     let project_id: string | null = null;
 
     const data = await this.getCustomTemplateData(template_id);
-    
+
     if (data) {
       // Store the nested arrays separately
       const tasks = data.tasks;
       const phases = data.phases;
       const status = data.status;
       const labels = data.labels;
-      
+
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
-        name: data.name,
+        name: (project_name && typeof project_name === "string" && project_name.trim())
+          ? project_name.trim()
+          : data.name,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
         color_code: data.color_code,
@@ -353,7 +371,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
         man_days: 0,
         hours_per_day: 8
       };
-      
+
       project_id = await this.importTemplate(projectData);
 
       await this.deleteDefaultStatusForProject(project_id as string);
