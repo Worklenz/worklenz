@@ -73,11 +73,6 @@ const { Search } = Input;
 const { Option } = Select;
 
 const getPrimaryClientLabel = (record: any): string => {
-  const companyName = record.company_name?.trim();
-  if (companyName) {
-    return companyName;
-  }
-
   return record.name?.trim() || '-';
 };
 
@@ -206,12 +201,12 @@ const ClientsTable = () => {
           <Typography.Text type="secondary">
             {filters.search || filters.status !== 'all'
               ? t('noClientsMatchingFilters', {
-                  defaultValue: 'No clients match the current filters.',
-                })
+                defaultValue: 'No clients match the current filters.',
+              })
               : t('noClientsDescription', {
-                  defaultValue:
-                    "You haven't added any clients yet. Add your first client to start managing their portal access.",
-                })}
+                defaultValue:
+                  "You haven't added any clients yet. Add your first client to start managing their portal access.",
+              })}
           </Typography.Text>
         </div>
       }
@@ -349,7 +344,7 @@ const ClientsTable = () => {
       patches.forEach(p => p.undo?.());
       message.error(
         error?.data?.message ||
-          t('activateClientErrorMessage', { defaultValue: 'Failed to activate client' })
+        t('activateClientErrorMessage', { defaultValue: 'Failed to activate client' })
       );
     }
   };
@@ -837,22 +832,22 @@ const ClientsTable = () => {
       // Show Activate or Deactivate based on client status
       record.status === 'inactive'
         ? {
-            key: 'activate',
-            label: t('activateTooltip', { defaultValue: 'Activate Client' }),
-            icon: <EditOutlined />,
-            onClick: () => {
-              handleActivateClientWithConfirmation(record.id);
-            },
-          }
+          key: 'activate',
+          label: t('activateTooltip', { defaultValue: 'Activate Client' }),
+          icon: <EditOutlined />,
+          onClick: () => {
+            handleActivateClientWithConfirmation(record.id);
+          },
+        }
         : {
-            key: 'deactivate',
-            label: t('deactivateTooltip', { defaultValue: 'Deactivate Client' }),
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: () => {
-              handleDeactivateClientWithConfirmation(record.id);
-            },
-          }
+          key: 'deactivate',
+          label: t('deactivateTooltip', { defaultValue: 'Deactivate Client' }),
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: () => {
+            handleDeactivateClientWithConfirmation(record.id);
+          },
+        }
     );
 
     return menuItems;
@@ -870,6 +865,11 @@ const ClientsTable = () => {
           <Typography.Text strong style={{ textTransform: 'capitalize' }}>
             {getPrimaryClientLabel(record)}
           </Typography.Text>
+          {record.company_name?.trim() && (
+            <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
+              {record.company_name}
+            </Typography.Text>
+          )}
           {record.email?.trim() && (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
               {record.email}
@@ -930,8 +930,7 @@ const ClientsTable = () => {
           >
             <QuestionCircleOutlined
               style={{
-                color: themeWiseColor({ dark: '#8c8c8c', light: '#595959' }, isDarkMode),
-                fontSize: 14,
+                color: themeWiseColor('#8c8c8c', '#595959', themeMode), fontSize: 14,
               }}
             />
           </Tooltip>
