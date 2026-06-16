@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 
-export type DateFilter = 'today' | 'yesterday' | 'last_week' | 'overdue' | 'no_logged_time' | 'custom';
+export type DateFilter = 'today' | 'yesterday' | 'last_week' | 'no_logged_time' | 'custom';
 
 interface Project {
   id: string;
@@ -55,11 +55,11 @@ export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
     }
   };
 
+  // Date filters operate on when time was logged, not the task due date.
   const dateOptions = [
-    { label: t('filterDueToday', { defaultValue: 'Due Today' }), value: 'today' },
+    { label: t('filterToday', { defaultValue: 'Logged Today' }), value: 'today' },
     { label: t('filterYesterday', { defaultValue: 'Yesterday' }), value: 'yesterday' },
     { label: t('filterLastWeek', { defaultValue: 'Last Week' }), value: 'last_week' },
-    { label: t('filterOverdue', { defaultValue: 'Overdue' }), value: 'overdue' },
     { label: t('filterNoLoggedTime', { defaultValue: 'No Logged Time' }), value: 'no_logged_time' },
     { label: t('filterCustomRange', { defaultValue: 'Custom Range' }), value: 'custom' },
   ];

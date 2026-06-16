@@ -353,7 +353,12 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const teamId = req.user?.team_id;
     const teamMemberId = req.user?.team_member_id;
 
-    const buildQuery = (dateCondition: string, extraParams: any[], extraConditions: string[], havingClause: string, pg: number, pgSize: number) => {
+    // The date filters operate on the LOG date (task_work_log.created_at), i.e.
+    // when time was logged — not the task due date. The date predicate is applied
+    // inside the LEFT JOIN so only in-period logs are aggregated, and a task only
+    // surfaces when it has matching logs (logHaving). "no_logged_time" is the one
+    // exception: it joins ALL of the user's logs and keeps tasks with zero total.
+    const buildQuery = (logDateCondition: string, logHaving: string, extraParams: any[], extraConditions: string[], pg: number, pgSize: number) => {
       const baseParams: any[] = [teamMemberId, teamId, userId, ...extraParams];
       const limitIdx = baseParams.length + 1;
       const offsetIdx = baseParams.length + 2;
@@ -364,9 +369,9 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         `p.team_id = $2`,
         `t.archived = FALSE`,
         `NOT EXISTS (SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $3)`,
-        dateCondition,
         ...extraConditions,
       ];
+      const joinDate = logDateCondition ? ` AND ${logDateCondition}` : "";
       const q = `
         SELECT
           t.id AS task_id,
@@ -377,6 +382,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
           p.name AS project_name,
           p.color_code AS project_color,
           COALESCE(SUM(twl.time_spent), 0) AS total_time_spent,
+          MAX(twl.created_at) AS last_logged_at,
           COALESCE(
             JSON_AGG(
               JSON_BUILD_OBJECT(
@@ -393,11 +399,11 @@ export default class TaskWorklogController extends WorklenzControllerBase {
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         JOIN tasks_assignees ta ON ta.task_id = t.id
-        LEFT JOIN task_work_log twl ON twl.task_id = t.id AND twl.user_id = $3
+        LEFT JOIN task_work_log twl ON twl.task_id = t.id AND twl.user_id = $3${joinDate}
         WHERE ${baseConditions.join(' AND ')}
         GROUP BY t.id, t.name, t.end_date, t.done, p.id, p.name, p.color_code
-        ${havingClause}
-        ORDER BY t.end_date ASC NULLS LAST
+        ${logHaving}
+        ORDER BY MAX(twl.created_at) DESC NULLS LAST, t.end_date ASC NULLS LAST
         LIMIT $${limitIdx} OFFSET $${offsetIdx}
       `;
       return { q, params: allParams };
@@ -421,41 +427,50 @@ export default class TaskWorklogController extends WorklenzControllerBase {
 
     const activeFilter = date_filter || "today";
 
+    // Tasks must have logged time in the period -> require a non-zero total.
+    const hasLoggedTimeHaving = `HAVING COALESCE(SUM(twl.time_spent), 0) > 0`;
+
+    let logDateCondition = "";
+    let logHaving = hasLoggedTimeHaving;
+
     if (activeFilter === "custom" && date_from && date_to) {
-      extraConditions.push(`t.end_date::date BETWEEN $${paramIdx}::date AND $${paramIdx + 1}::date`);
+      logDateCondition = `twl.created_at::date BETWEEN $${paramIdx}::date AND $${paramIdx + 1}::date`;
       extraParams.push(date_from, date_to);
       paramIdx += 2;
+    } else {
+      switch (activeFilter) {
+        case "today":
+          logDateCondition = `twl.created_at::date = CURRENT_DATE`;
+          break;
+        case "yesterday":
+          logDateCondition = `twl.created_at::date = (CURRENT_DATE - INTERVAL '1 day')::date`;
+          break;
+        case "last_week":
+          logDateCondition = `twl.created_at::date >= (CURRENT_DATE - INTERVAL '7 days')::date AND twl.created_at::date < CURRENT_DATE`;
+          break;
+        case "no_logged_time":
+          // Join ALL of the user's logs, keep tasks with zero total time.
+          logDateCondition = "";
+          logHaving = `HAVING COALESCE(SUM(twl.time_spent), 0) = 0`;
+          break;
+        default:
+          logDateCondition = `twl.created_at::date = CURRENT_DATE`;
+      }
     }
 
-    const getDateCondition = (filter: string) => {
-      switch (filter) {
-        case "today":          return `t.end_date::date = CURRENT_DATE`;
-        case "yesterday":      return `t.end_date::date = (CURRENT_DATE - INTERVAL '1 day')::date`;
-        case "last_week":      return `t.end_date::date >= (CURRENT_DATE - INTERVAL '7 days')::date AND t.end_date::date < CURRENT_DATE`;
-        case "overdue":        return `t.end_date IS NOT NULL AND t.end_date::date < CURRENT_DATE AND t.done = FALSE`;
-        case "no_logged_time": return `TRUE`;
-        case "custom":         return `TRUE`;
-        default:               return `TRUE`;
-      }
-    };
-
-    const noLoggedTimeHaving = activeFilter === "no_logged_time"
-      ? `HAVING COALESCE(SUM(twl.time_spent), 0) = 0`
-      : "";
-
     if (activeFilter === "today" && !search && !project_id) {
-      const todayQ = buildQuery(`t.end_date::date = CURRENT_DATE`, extraParams, extraConditions, "", page, pageSize);
+      const todayQ = buildQuery(`twl.created_at::date = CURRENT_DATE`, hasLoggedTimeHaving, extraParams, extraConditions, page, pageSize);
       let result = await db.query(todayQ.q, todayQ.params);
       let fallbackDate: string | null = null;
 
       if (result.rows.length === 0) {
-        const yQ = buildQuery(`t.end_date::date = (CURRENT_DATE - INTERVAL '1 day')::date`, extraParams, extraConditions, "", page, pageSize);
+        const yQ = buildQuery(`twl.created_at::date = (CURRENT_DATE - INTERVAL '1 day')::date`, hasLoggedTimeHaving, extraParams, extraConditions, page, pageSize);
         result = await db.query(yQ.q, yQ.params);
 
         if (result.rows.length === 0) {
-          const recentQ = buildQuery(`t.end_date IS NOT NULL`, extraParams, extraConditions, "", page, pageSize);
+          const recentQ = buildQuery("", hasLoggedTimeHaving, extraParams, extraConditions, page, pageSize);
           result = await db.query(recentQ.q, recentQ.params);
-          if (result.rows.length > 0) fallbackDate = result.rows[0].due_date;
+          if (result.rows.length > 0) fallbackDate = result.rows[0].last_logged_at;
         } else {
           fallbackDate = "yesterday";
         }
@@ -465,7 +480,7 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, { tasks: result.rows, fallback_date: fallbackDate, total }));
     }
 
-    const { q, params } = buildQuery(getDateCondition(activeFilter), extraParams, extraConditions, noLoggedTimeHaving, page, pageSize);
+    const { q, params } = buildQuery(logDateCondition, logHaving, extraParams, extraConditions, page, pageSize);
     const result = await db.query(q, params);
     const total = result.rows[0]?.total_count ? parseInt(result.rows[0].total_count) : 0;
     return res.status(200).send(new ServerResponse(true, { tasks: result.rows, fallback_date: null, total }));
