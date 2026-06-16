@@ -61,6 +61,7 @@
   "linkLastModified": "Modifikuar së fundi",
   "invalidUrl": "Ju lutemi shkruani një URL të vlefshme",
   "deleteLink": "Fshi lidhjen",
+  "openTask": "Hap detyrën",
   "fromTask": "Nga: {{taskName}}",
   "noLinks": "Ende nuk ka lidhje. Klikoni \"Shto Lidhje\" për të shtuar lidhjen tuaj të parë."
 }

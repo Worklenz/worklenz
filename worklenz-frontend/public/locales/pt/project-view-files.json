@@ -61,6 +61,7 @@
   "linkLastModified": "Última modificação",
   "invalidUrl": "Por favor, insira uma URL válida",
   "deleteLink": "Excluir link",
+  "openTask": "Abrir tarefa",
   "fromTask": "De: {{taskName}}",
   "noLinks": "Ainda não há links. Clique em \"Adicionar Link\" para adicionar seu primeiro link."
 }

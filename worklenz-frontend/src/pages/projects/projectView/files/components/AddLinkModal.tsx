@@ -17,7 +17,6 @@ export const AddLinkModal: React.FC<AddLinkModalProps> = ({ open, loading, onSub
   const handleOk = async () => {
     const values = await form.validateFields();
     onSubmit({ ...values, url: normalizeUrl(values.url) });
-    form.resetFields();
   };
 
   const handleCancel = () => {

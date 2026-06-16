@@ -61,6 +61,7 @@
   "linkLastModified": "Last Modified",
   "invalidUrl": "Please enter a valid URL",
   "deleteLink": "Delete link",
+  "openTask": "Open task",
   "fromTask": "From: {{taskName}}",
   "noLinks": "No links yet. Click \"Add Link\" to add your first link."
 }

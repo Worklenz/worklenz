@@ -61,6 +61,7 @@
   "linkLastModified": "最后修改",
   "invalidUrl": "请输入有效的网址",
   "deleteLink": "删除链接",
+  "openTask": "打开任务",
   "fromTask": "来自：{{taskName}}",
   "noLinks": "暂无链接。点击\"添加链接\"添加您的第一个链接。"
 }

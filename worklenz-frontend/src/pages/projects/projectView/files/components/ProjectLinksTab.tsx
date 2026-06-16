@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Button, Flex, Form, Input, Modal, Popconfirm, Table, Tag, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, LinkOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, LinkOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import type { TableProps } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { durationDateFormat } from '@utils/durationDateFormat';
 import { AddLinkModal } from './AddLinkModal';
 import { isValidHttpUrl, normalizeUrl } from '../utils';
@@ -96,6 +98,7 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({
 }) => {
   const { t } = useTranslation('project-view-files');
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { projectId } = useAppSelector(state => state.projectReducer);
 
   const { links, loading, total, pageIndex, pageSize, setPageIndex, addLink, editLink, removeLink } =
@@ -134,6 +137,11 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({
     setDeletingId(linkId);
     await removeLink(linkId);
     setDeletingId(null);
+  };
+
+  const handleOpenTaskDrawer = (taskId: string) => {
+    dispatch(setSelectedTaskId(taskId));
+    dispatch(setShowTaskDrawer(true));
   };
 
   const handleRowClick = (record: IProjectLink) => {
@@ -224,37 +232,50 @@ export const ProjectLinksTab: React.FC<ProjectLinksTabProps> = ({
     {
       key: 'actions',
       title: t('actionsColumn', { defaultValue: 'Actions' }),
-      width: 100,
+      width: 120,
       render: (_: unknown, record) => {
-        if (record.source_type !== 'manual') return null;
-        return (
-          <Flex gap={8} align="center">
-            <Tooltip title={t('editLink', { defaultValue: 'Edit link' })}>
-              <Button
-                size="small"
-                icon={<EditOutlined />}
-                onClick={e => { e.stopPropagation(); handleEditOpen(record); }}
-              />
-            </Tooltip>
-            <Popconfirm
-              title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
-              okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
-              cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
-              icon={<DeleteOutlined style={{ color: colors.vibrantOrange }} />}
-              onConfirm={e => { e?.stopPropagation(); void handleDelete(record.id); }}
-            >
-              <Tooltip title={t('deleteLink', { defaultValue: 'Delete link' })}>
+        if (record.source_type === 'manual') {
+          return (
+            <Flex gap={8} align="center">
+              <Tooltip title={t('editLink', { defaultValue: 'Edit link' })}>
                 <Button
                   size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  loading={deletingId === record.id}
-                  onClick={e => e.stopPropagation()}
+                  icon={<EditOutlined />}
+                  onClick={e => { e.stopPropagation(); handleEditOpen(record); }}
                 />
               </Tooltip>
-            </Popconfirm>
-          </Flex>
-        );
+              <Popconfirm
+                title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
+                okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
+                cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
+                icon={<DeleteOutlined style={{ color: colors.vibrantOrange }} />}
+                onConfirm={e => { e?.stopPropagation(); void handleDelete(record.id); }}
+              >
+                <Tooltip title={t('deleteLink', { defaultValue: 'Delete link' })}>
+                  <Button
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    loading={deletingId === record.id}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </Flex>
+          );
+        }
+        if (record.source_task_id) {
+          return (
+            <Tooltip title={t('openTask', { defaultValue: 'Open task' })}>
+              <Button
+                size="small"
+                icon={<ArrowRightOutlined />}
+                onClick={e => { e.stopPropagation(); handleOpenTaskDrawer(record.source_task_id!); }}
+              />
+            </Tooltip>
+          );
+        }
+        return null;
       },
     },
   ];
