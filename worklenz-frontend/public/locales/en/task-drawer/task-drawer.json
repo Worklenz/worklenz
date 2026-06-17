@@ -145,7 +145,7 @@
       "workDescription": "Work Description",
       "descriptionPlaceholder": "Add a description",
       "logTime": "Log time",
-      "updateTime": "Update time",
+      "updateTime": "Update",
       "cancel": "Cancel",
       "durationHelper": "Log total time with hours and minutes.",
       "timeRangeHelper": "Log time by selecting start and end times.",
@@ -155,7 +155,13 @@
       "hoursMinError": "Hours must be 0 or greater",
       "minutesRangeError": "Minutes must be between 0 and 59",
       "durationGreaterThanZeroError": "Duration must be greater than 0 minutes",
-      "endTimeAfterStartError": "End time must be after start time"
+      "endTimeAfterStartError": "End time must be after start time",
+      "moveToProject": "Move to Project",
+      "moveToProjectTooltip": "Reassign this time log to a different project",
+      "selectProject": "Search project...",
+      "moveToTask": "Move to Task",
+      "moveToTaskTooltip": "Reassign this time log to a different task.",
+      "selectTask": "Select task..."
     }
   },
   "taskActivityLogTab": {

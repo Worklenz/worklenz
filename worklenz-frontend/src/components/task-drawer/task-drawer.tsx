@@ -228,6 +228,8 @@ const TaskDrawer = () => {
             onSubmitSuccess={handleTimeLogSubmitSuccess}
             initialValues={timeLogEditing.logBeingEdited || undefined}
             mode={timeLogEditing.logBeingEdited ? 'edit' : 'create'}
+            allowReassign={!!timeLogEditing.logBeingEdited}
+
           />
         );
       }
