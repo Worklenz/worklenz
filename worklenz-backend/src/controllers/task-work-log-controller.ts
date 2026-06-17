@@ -439,9 +439,6 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       paramIdx += 2;
     } else {
       switch (activeFilter) {
-        case "today":
-          logDateCondition = `twl.created_at::date = CURRENT_DATE`;
-          break;
         case "yesterday":
           logDateCondition = `twl.created_at::date = (CURRENT_DATE - INTERVAL '1 day')::date`;
           break;
@@ -458,26 +455,11 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       }
     }
 
-    if (activeFilter === "today" && !search && !project_id) {
+    if (activeFilter === "today") {
       const todayQ = buildQuery(`twl.created_at::date = CURRENT_DATE`, hasLoggedTimeHaving, extraParams, extraConditions, page, pageSize);
-      let result = await db.query(todayQ.q, todayQ.params);
-      let fallbackDate: string | null = null;
-
-      if (result.rows.length === 0) {
-        const yQ = buildQuery(`twl.created_at::date = (CURRENT_DATE - INTERVAL '1 day')::date`, hasLoggedTimeHaving, extraParams, extraConditions, page, pageSize);
-        result = await db.query(yQ.q, yQ.params);
-
-        if (result.rows.length === 0) {
-          const recentQ = buildQuery("", hasLoggedTimeHaving, extraParams, extraConditions, page, pageSize);
-          result = await db.query(recentQ.q, recentQ.params);
-          if (result.rows.length > 0) fallbackDate = result.rows[0].last_logged_at;
-        } else {
-          fallbackDate = "yesterday";
-        }
-      }
-
+      const result = await db.query(todayQ.q, todayQ.params);
       const total = result.rows[0]?.total_count ? parseInt(result.rows[0].total_count) : 0;
-      return res.status(200).send(new ServerResponse(true, { tasks: result.rows, fallback_date: fallbackDate, total }));
+      return res.status(200).send(new ServerResponse(true, { tasks: result.rows, fallback_date: null, total }));
     }
 
     const { q, params } = buildQuery(logDateCondition, logHaving, extraParams, extraConditions, page, pageSize);
