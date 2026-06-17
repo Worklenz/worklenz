@@ -47,10 +47,19 @@ export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
   }, []);
 
-  const handleRangeChange = (_: [Dayjs | null, Dayjs | null] | null, dateStrings: [string, string]) => {
-    if (dateStrings[0] && dateStrings[1]) {
+  const [dateError, setDateError] = React.useState<string | null>(null);
+
+  const handleRangeChange = (dates: [Dayjs | null, Dayjs | null] | null, dateStrings: [string, string]) => {
+    if (dates && dates[0] && dates[1]) {
+      if (dates[1].isBefore(dates[0], 'day')) {
+        setDateError('End date must not be before start date.');
+        onDateRangeChange(null);
+        return;
+      }
+      setDateError(null);
       onDateRangeChange([dateStrings[0], dateStrings[1]]);
     } else {
+      setDateError(null);
       onDateRangeChange(null);
     }
   };
@@ -72,12 +81,18 @@ export const TimeEntriesFilters: React.FC<TimeEntriesFiltersProps> = ({
         onChange={v => onDateFilterChange(v as DateFilter)}
       />
       {dateFilter === 'custom' && (
-        <DatePicker.RangePicker
-          value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
-          onChange={handleRangeChange}
-          format="YYYY-MM-DD"
-          allowClear
-        />
+        <Flex vertical gap={4}>
+          <DatePicker.RangePicker
+            value={dateRange ? [dayjs(dateRange[0]), dayjs(dateRange[1])] : null}
+            onChange={handleRangeChange}
+            format="YYYY-MM-DD"
+            allowClear
+            order={false}
+          />
+          {dateError && (
+            <span style={{ color: '#ff4d4f', fontSize: 12 }}>{dateError}</span>
+          )}
+        </Flex>
       )}
       <Select
         allowClear
