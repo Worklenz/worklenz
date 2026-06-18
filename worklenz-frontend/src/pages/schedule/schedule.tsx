@@ -25,6 +25,10 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 // Lazy load TaskDrawer
 const TaskDrawer = lazy(() => import('@/components/task-drawer/task-drawer'));
+const StatusDrawer = lazy(
+  () => import('@/components/project-task-filters/create-status-drawer/create-status-drawer')
+);
+
 
 const { Option } = Select;
 
@@ -186,7 +190,9 @@ const Schedule: React.FC = () => {
 
       <ScheduleSettingsDrawer />
       <ScheduleDrawer />
-
+      <Suspense fallback={null}>
+        <StatusDrawer />
+      </Suspense>
       {/* Task Drawer for opening individual tasks */}
       {createPortal(
         <Suspense fallback={null}>
