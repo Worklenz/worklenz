@@ -60,7 +60,7 @@
   flex-direction: column;
   align-items: stretch;
   padding: 8px;
-  border: 1px solid;
+  border: 1px solid var(--create-project-border);
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
@@ -125,7 +125,7 @@
 .create-project-template-board span {
   position: relative;
   display: block;
-  border: 1px solid currentColor;
+  border: 1px solid var(--create-project-text-secondary);
   border-radius: 4px;
   opacity: 0.55;
 }
@@ -137,7 +137,7 @@
   right: 6px;
   height: 6px;
   border-radius: 3px;
-  background: currentColor;
+  background: var(--create-project-text-secondary);
   content: "";
   opacity: 0.85;
 }
@@ -255,7 +255,7 @@
 
 .create-project-footer {
   padding: 14px 16px;
-  border-top: 1px solid;
+  border-top: 1px solid var(--create-project-border-secondary);
 }
 
 @media (max-width: 768px) {
