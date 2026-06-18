@@ -17,13 +17,15 @@ import { colors } from '@/styles/colors';
 import './project-category-cell.css';
 import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { addCategory } from '@features/settings/categories/categoriesSlice';
+import { addCategory } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { setSelectedProjectCategory } from '@/features/reporting/projectReports/project-reports-slice';
+import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
+import logger from '@/utils/errorLogger';
 
 // Update the props interface to include projectId
 interface ProjectCategoryCellProps {
@@ -51,6 +53,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
 
   // filter categories based on search query
   const filteredCategoriesData = useMemo(() => {
@@ -85,20 +88,53 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
         })
       );
     }
+    setDropdownOpen(false);
+
   };
 
-  //   function to handle add a new category
-  const handleCreateCategory = (name: string) => {
-    if (name.length > 0) {
-      const newCategory: IProjectCategory = {
-        id: nanoid(),
-        name,
-        color_code: '#1E90FF',
-      };
 
-      dispatch(addCategory(newCategory));
+  //   function to handle add a new category
+  const handleCreateCategory = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    const exists = projectCategories.some(
+      c => c.name?.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exists) return;
+
+    try {
+      const res = await categoriesApiService.createCategory({
+        name: trimmed,
+        color_code: '#1E90FF',
+      });
+      if (res.done) {
+        // Add to dropdown list
+        dispatch(addCategory(res.body));
+
+        // Update the cell label immediately
+        setSelectedCategory(res.body);
+
+        // Assign the new category to this project
+        if (connected && socket) {
+          socket.emit(
+            SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
+            JSON.stringify({
+              project_id: projectId,
+              category_id: res.body.id,
+            })
+          );
+        }
+
+        // Close the dropdown
+        setDropdownOpen(false);
+      }
+    } catch (error) {
+      logger.error('handleCreateCategory', error);
+    } finally {
       setSearchQuery('');
     }
+
   };
 
   // dropdown items
@@ -108,21 +144,29 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       label: (
         <Card className="project-category-dropdown-card" variant="borderless">
           <Flex vertical gap={4}>
-            <Input
-              ref={categoryInputRef}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('searchByNameInputPlaceholder')}
+            <div
               onKeyDown={e => {
-                const isCategory = filteredCategoriesData.findIndex(
-                  category => category.name?.toLowerCase() === searchQuery.toLowerCase()
-                );
-                if (isCategory === -1 && e.key === 'Enter') {
-                  // handle category creation logic
-                  handleCreateCategory(searchQuery);
+                if (e.key === 'Enter') {
+                  e.stopPropagation(); // ← prevents Dropdown/Menu from intercepting Enter
                 }
               }}
-            />
+            >
+              <Input
+                ref={categoryInputRef}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.currentTarget.value)}
+                placeholder={t('searchByNameInputPlaceholder')}
+                onKeyDown={e => {
+                  const isCategory = filteredCategoriesData.findIndex(
+                    category => category.name?.toLowerCase() === searchQuery.toLowerCase()
+                  );
+                  if (isCategory === -1 && e.key === 'Enter') {
+                    // handle category creation logic
+                    handleCreateCategory(searchQuery);
+                  }
+                }}
+              />
+            </div>
             {filteredCategoriesData.length === 0 && (
               <Typography.Text style={{ color: colors.lightGray }}>
                 Hit enter to create!
@@ -142,13 +186,16 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
       if (parsedData && parsedData.project_id === projectId) {
         // Update local state
-        setSelectedCategory(parsedData.category);
+        const socketCategory = parsedData.category;
+        const fullCategory =
+          projectCategories.find(c => c.id === socketCategory?.id) || socketCategory;
 
-        // Update redux store
+        setSelectedCategory(fullCategory);
+
         dispatch(
           updateProjectCategory({
             projectId: parsedData.project_id,
-            category: parsedData.category,
+            category: fullCategory,
           })
         );
       }
@@ -173,7 +220,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
         socket.off(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
       };
     }
-  }, [connected, socket]);
+  }, [connected, socket, projectCategories]);
 
   return (
     <Dropdown
@@ -181,7 +228,11 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       menu={{ items: projectCategoryCellItems }}
       placement="bottomRight"
       trigger={['click']}
-      onOpenChange={handleCategoryDropdownOpen}
+      open={dropdownOpen}
+      onOpenChange={(open) => {
+        setDropdownOpen(open);
+        handleCategoryDropdownOpen(open);
+      }}
     >
       <Flex
         gap={6}
