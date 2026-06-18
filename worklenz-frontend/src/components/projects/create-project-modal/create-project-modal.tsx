@@ -1,13 +1,16 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Alert,
-  AppstoreOutlined,
+  ArrowRightOutlined,
   Button,
+  EyeOutlined,
   FileOutlined,
   Flex,
   Form,
+  InfoCircleOutlined,
   Input,
   Modal,
   SearchOutlined,
@@ -16,6 +19,7 @@ import {
   Typography,
   theme,
 } from '@/shared/antd-imports';
+import type { InputRef } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -34,99 +38,117 @@ import { TemplatePreviewDrawer } from './template-preview-drawer';
 import { getTemplateIcon } from './template-icon';
 import './create-project-modal.css';
 
-type ProjectType = 'blank' | 'template';
-
 interface CreateProjectModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-// ─── Template card subcomponent ────────────────────────────────────────────
+interface ApiErrorWithStatus {
+  status?: number | string;
+}
+
+interface CreateProjectCssVariables extends CSSProperties {
+  '--create-project-bg-container': string;
+  '--create-project-border': string;
+  '--create-project-border-secondary': string;
+  '--create-project-fill-quaternary': string;
+  '--create-project-primary': string;
+  '--create-project-primary-bg': string;
+  '--create-project-text-secondary': string;
+}
+
 interface TemplateCardProps {
   template: IWorklenzTemplate;
   selected: boolean;
   onClick: () => void;
-  onPreview: () => void;
+  onPreview?: () => void;
+  isBlank?: boolean;
 }
 
-const TemplateCard = ({ template, selected, onClick, onPreview }: TemplateCardProps) => {
+const TemplateCard = ({
+  template,
+  selected,
+  onClick,
+  onPreview,
+  isBlank = false,
+}: TemplateCardProps) => {
   const { token } = theme.useToken();
   const { t } = useTranslation('create-project-modal');
-  const [hovered, setHovered] = useState(false);
 
   return (
-    <div
+    <button
+      type="button"
       className={`create-project-template-card${selected ? ' create-project-template-card--selected' : ''}`}
       style={{
         background: selected ? token.colorPrimaryBg : token.colorBgContainer,
         borderColor: selected ? token.colorPrimary : token.colorBorder,
-        color: token.colorText,
-        position: 'relative',
+        color: selected ? token.colorPrimary : token.colorText,
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       onClick={onClick}
-      role="button"
-      tabIndex={0}
       aria-pressed={selected}
-      aria-label={template.name ?? ''}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick(); }}
     >
-      {/* Template thumbnail: real image if available, emoji icon otherwise */}
-      <div className="create-project-template-thumbnail" aria-hidden="true">
-        {template.image_url ? (
-          <img
-            src={template.image_url}
-            alt={template.name}
-            className="create-project-template-image"
-          />
+      <span className="create-project-template-thumbnail" aria-hidden="true">
+        {isBlank ? (
+          <span className="create-project-blank-thumbnail">
+            <FileOutlined />
+          </span>
+        ) : template.image_url ? (
+          <img src={template.image_url} alt="" className="create-project-template-image" />
         ) : (
-          <span className="create-project-template-emoji">
-            {getTemplateIcon(template.name)}
+          <span className="create-project-template-board">
+            <span />
+            <span />
+            <span />
           </span>
         )}
-      </div>
+      </span>
 
-      {/* Preview button — outside thumbnail so overflow:hidden doesn't clip it */}
-      {hovered && (
-        <button
-          type="button"
-          className="create-project-template-preview-btn"
-          style={{
-            background: token.colorBgContainer,
-            color: token.colorText,
-            borderColor: token.colorBorder,
-          }}
-          onClick={e => {
-            e.stopPropagation();
-            onPreview();
-          }}
-          aria-label={t('previewTemplate', { defaultValue: 'Preview template' })}
-        >
-          {t('preview', { defaultValue: 'Preview' })}
-        </button>
-      )}
-
-      <Typography.Text
-        strong
-        style={{ fontSize: 12, color: token.colorText, display: 'block', marginTop: 6 }}
-        ellipsis
-      >
-        {template.name}
-      </Typography.Text>
-      {/* Task / phase counts */}
-      {(template.task_count || template.phase_count) ? (
-        <Typography.Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 2 }}>
-          {template.task_count ? `${template.task_count} tasks` : ''}
-          {template.task_count && template.phase_count ? ' · ' : ''}
-          {template.phase_count ? `${template.phase_count} phases` : ''}
+      <span className="create-project-template-card-body">
+        <Typography.Text strong ellipsis style={{ color: token.colorText }}>
+          {template.name}
         </Typography.Text>
-      ) : null}
-    </div>
+        <Typography.Text
+          type="secondary"
+          ellipsis={{ tooltip: template.name }}
+          style={{ fontSize: 12 }}
+        >
+          {isBlank
+            ? t('blankProjectDesc', { defaultValue: 'Empty project you can shape from scratch.' })
+            : t('templateMeta', {
+                defaultValue: '{{tasks}} tasks, {{phases}} phases',
+                tasks: template.task_count ?? 0,
+                phases: template.phase_count ?? 0,
+              })}
+        </Typography.Text>
+      </span>
+
+      {!isBlank && onPreview && (
+        <Tooltip title={t('previewTemplate', { defaultValue: 'Preview template' })}>
+          <span
+            role="button"
+            tabIndex={0}
+            className="create-project-template-preview-btn"
+            onClick={event => {
+              event.stopPropagation();
+              onPreview();
+            }}
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                event.stopPropagation();
+                onPreview();
+              }
+            }}
+            aria-label={t('previewTemplate', { defaultValue: 'Preview template' })}
+          >
+            <EyeOutlined />
+          </span>
+        </Tooltip>
+      )}
+    </button>
   );
 };
 
-// ─── Color swatch subcomponent ─────────────────────────────────────────────
 interface ColorSwatchProps {
   color: string;
   selected: boolean;
@@ -140,11 +162,10 @@ const ColorSwatch = ({ color, selected, onClick }: ColorSwatchProps) => (
     aria-label={color}
     aria-pressed={selected}
     className={`create-project-color-swatch${selected ? ' create-project-color-swatch--selected' : ''}`}
-    style={{ background: color }}
+    style={{ background: color, color }}
   />
 );
 
-// ─── Main component ─────────────────────────────────────────────────────────
 export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) => {
   const { t } = useTranslation('create-project-modal');
   const { token } = theme.useToken();
@@ -155,102 +176,112 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
 
   const [projectName, setProjectName] = useState('');
   const [selectedColor, setSelectedColor] = useState(projectColors[0]);
-  const [projectType, setProjectType] = useState<ProjectType>('blank');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [templateSearch, setTemplateSearch] = useState('');
   const [templates, setTemplates] = useState<IWorklenzTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Preview drawer state
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [previewTemplateName, setPreviewTemplateName] = useState<string | undefined>(undefined);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<InputRef>(null);
   const hasLoadedTemplates = useRef(false);
 
-  // Get the default project status (required by the backend validator)
   const { projectStatuses } = useAppSelector(state => state.projectStatusesReducer);
   const defaultStatusId = useMemo(
-    () => projectStatuses.find(s => s.is_default)?.id ?? projectStatuses[0]?.id,
+    () => projectStatuses.find(status => status.is_default)?.id ?? projectStatuses[0]?.id,
     [projectStatuses]
   );
 
-  // Ensure statuses are loaded (they may already be in Redux from ProjectDrawer usage)
+  const blankTemplate = useMemo<IWorklenzTemplate>(
+    () => ({
+      name: t('blankProject', { defaultValue: 'Blank project' }),
+      task_count: 0,
+      phase_count: 0,
+    }),
+    [t]
+  );
+
+  const modalCssVariables = useMemo<CreateProjectCssVariables>(
+    () => ({
+      '--create-project-bg-container': token.colorBgContainer,
+      '--create-project-border': token.colorBorder,
+      '--create-project-border-secondary': token.colorBorderSecondary,
+      '--create-project-fill-quaternary': token.colorFillQuaternary,
+      '--create-project-primary': token.colorPrimary,
+      '--create-project-primary-bg': token.colorPrimaryBg,
+      '--create-project-text-secondary': token.colorTextSecondary,
+    }),
+    [token]
+  );
+
   useEffect(() => {
     if (projectStatuses.length === 0) {
       dispatch(fetchProjectStatuses());
     }
   }, [dispatch, projectStatuses.length]);
 
-  // Focus name input when modal opens
-  useEffect(() => {
-    if (open) {
-      setProjectName('');
-      setSelectedColor(projectColors[0]);
-      setProjectType('blank');
-      setSelectedTemplateId(null);
-      setTemplateSearch('');
-      setError(null);
-      form.resetFields();
-      hasLoadedTemplates.current = false;
-      setTimeout(() => nameInputRef.current?.focus(), 100);
-      // Pre-warm the CSRF token so it's ready before the user clicks Create
-      // (mirrors what the old ProjectDrawer did on open)
-      refreshCsrfToken().catch(() => {
-        // non-fatal — ensureCsrfToken will retry on submit
-      });
-    }
-  }, [open, form]);
-
-  // Load templates once when template type is first selected
   const loadTemplates = useCallback(async () => {
     if (hasLoadedTemplates.current) return;
     try {
+      hasLoadedTemplates.current = true;
       setLoadingTemplates(true);
       const res = await projectTemplatesApiService.getWorklenzTemplates();
       if (res.done) {
         setTemplates(res.body);
-        if (res.body.length > 0) {
-          setSelectedTemplateId(res.body[0].id ?? null);
-        }
       }
     } catch (err) {
       logger.error('Failed to load templates', err);
+      setError(
+        t('templateLoadError', { defaultValue: 'Failed to load templates. Please try again.' })
+      );
     } finally {
       setLoadingTemplates(false);
-      hasLoadedTemplates.current = true;
     }
-  }, []);
+  }, [t]);
 
-  const handleTypeChange = useCallback(
-    (type: ProjectType) => {
-      setProjectType(type);
-      if (type === 'template') {
-        loadTemplates();
-      }
-    },
-    [loadTemplates]
-  );
+  useEffect(() => {
+    if (open) {
+      setProjectName('');
+      setSelectedColor(projectColors[0]);
+      setSelectedTemplateId(null);
+      setTemplateSearch('');
+      setTemplates([]);
+      setError(null);
+      form.resetFields();
+      hasLoadedTemplates.current = false;
+      setTimeout(() => nameInputRef.current?.focus(), 100);
+      refreshCsrfToken().catch(() => undefined);
+      loadTemplates();
+    }
+  }, [open, form, loadTemplates]);
 
-  const filteredTemplates = templates.filter(t =>
-    (t.name ?? '').toLowerCase().includes(templateSearch.toLowerCase())
-  );
+  const filteredTemplates = useMemo(() => {
+    const query = templateSearch.trim().toLowerCase();
+    if (!query) return templates;
+    return templates.filter(template => (template.name ?? '').toLowerCase().includes(query));
+  }, [templates, templateSearch]);
+
+  const selectedTemplateName = useMemo(() => {
+    if (!selectedTemplateId) return t('blankProject', { defaultValue: 'Blank project' });
+    return templates.find(template => template.id === selectedTemplateId)?.name ?? '';
+  }, [selectedTemplateId, templates, t]);
 
   const handleCreate = useCallback(async () => {
-    // For blank projects a name is mandatory; for templates the backend uses the template name
     const name = projectName.trim();
-    if (projectType === 'blank' && !name) return;
+    if (!name) return;
 
     setError(null);
 
     try {
-      if (projectType === 'template' && selectedTemplateId) {
-        // Create from template — uses apiClient (axios) which handles CSRF via interceptor
+      if (selectedTemplateId) {
         const res = await projectTemplatesApiService.createFromWorklenzTemplate({
           template_id: selectedTemplateId,
+          project_name: name,
+          color_code: selectedColor,
         });
         if (res.done && res.body.project_id) {
           trackMixpanelEvent(evt_projects_create);
@@ -260,18 +291,18 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
             `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list&new_project=1`
           );
         } else {
-          setError(t('createError', { defaultValue: 'Failed to create project. Please try again.' }));
+          setError(
+            t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+          );
         }
         return;
       }
 
-      // Ensure the CSRF token is in memory before RTK Query prepareHeaders runs.
-      // RTK Query uses fetchBaseQuery (native fetch), not axios, so the axios
-      // interceptor's auto-retry doesn't apply here. We pre-fetch the token so
-      // prepareHeaders can read it synchronously from the in-memory cache.
       const csrfToken = await ensureCsrfToken();
       if (!csrfToken) {
-        setError(t('csrfError', { defaultValue: 'Security token missing. Please refresh and try again.' }));
+        setError(
+          t('csrfError', { defaultValue: 'Security token missing. Please refresh and try again.' })
+        );
         return;
       }
 
@@ -292,11 +323,20 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
         setTimeout(() => {
           window.location.reload();
         }, 100);
-      } else if ((response as any)?.error?.status === 403) {
-        // 403 means CSRF token was rejected by the server — refresh and retry once
+        return;
+      }
+
+      const responseError =
+        'error' in response ? (response.error as ApiErrorWithStatus) : undefined;
+
+      if (responseError?.status === 403) {
         const newToken = await refreshCsrfToken();
         if (!newToken) {
-          setError(t('csrfError', { defaultValue: 'Security token missing. Please refresh and try again.' }));
+          setError(
+            t('csrfError', {
+              defaultValue: 'Security token missing. Please refresh and try again.',
+            })
+          );
           return;
         }
         const retryResponse = await createProject(projectModel);
@@ -310,257 +350,264 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
             window.location.reload();
           }, 100);
         } else {
-          setError(retryResponse?.data?.message ?? t('createError', { defaultValue: 'Failed to create project. Please try again.' }));
+          setError(
+            retryResponse?.data?.message ??
+              t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+          );
         }
-      } else {
-        setError(response?.data?.message ?? t('createError', { defaultValue: 'Failed to create project. Please try again.' }));
+        return;
       }
+
+      setError(
+        response?.data?.message ??
+          t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+      );
     } catch (err) {
       logger.error('Error creating project', err);
       setError(t('createError', { defaultValue: 'Failed to create project. Please try again.' }));
     }
-  }, [projectName, projectType, selectedTemplateId, selectedColor, defaultStatusId, createProject, dispatch, navigate, onClose, t, trackMixpanelEvent]);
+  }, [
+    projectName,
+    selectedTemplateId,
+    selectedColor,
+    defaultStatusId,
+    createProject,
+    dispatch,
+    navigate,
+    onClose,
+    t,
+    trackMixpanelEvent,
+  ]);
 
   const canCreate =
-    (projectType === 'blank'
-      ? projectName.trim().length > 0 && !!defaultStatusId  // blank: name + status required
-      : !!selectedTemplateId);                               // template: just pick a template
+    (projectName.trim().length > 0 || selectedTemplateId) && (selectedTemplateId ? true : !!defaultStatusId);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && canCreate && !isCreating) {
+    (event: KeyboardEvent) => {
+      if (event.key === 'Enter' && canCreate && !isCreating) {
         handleCreate();
       }
     },
     [handleCreate, canCreate, isCreating]
   );
 
-  // ─── Type selector cards ─────────────────────────────────────────────────
-  const blankCard = (
-    <button
-      type="button"
-      className={`create-project-type-card${projectType === 'blank' ? ' create-project-type-card--selected' : ''}`}
-      style={{
-        background: projectType === 'blank' ? token.colorPrimaryBg : token.colorBgContainer,
-        borderColor: projectType === 'blank' ? token.colorPrimary : token.colorBorder,
-        color: token.colorText,
-      }}
-      onClick={() => handleTypeChange('blank')}
-      aria-pressed={projectType === 'blank'}
-    >
-      <FileOutlined style={{ fontSize: 20, color: projectType === 'blank' ? token.colorPrimary : token.colorTextSecondary }} />
-      <Typography.Text strong style={{ fontSize: 13, color: token.colorText }}>
-        {t('blankProject', { defaultValue: 'Blank project' })}
-      </Typography.Text>
-      <Typography.Text type="secondary" style={{ fontSize: 12, textAlign: 'center' }}>
-        {t('blankProjectDesc', { defaultValue: 'Empty board you can shape from scratch.' })}
-      </Typography.Text>
-    </button>
-  );
-
-  const templateCard = (
-    <button
-      type="button"
-      className={`create-project-type-card${projectType === 'template' ? ' create-project-type-card--selected' : ''}`}
-      style={{
-        background: projectType === 'template' ? token.colorPrimaryBg : token.colorBgContainer,
-        borderColor: projectType === 'template' ? token.colorPrimary : token.colorBorder,
-        color: token.colorText,
-      }}
-      onClick={() => handleTypeChange('template')}
-      aria-pressed={projectType === 'template'}
-    >
-      <AppstoreOutlined style={{ fontSize: 20, color: projectType === 'template' ? token.colorPrimary : token.colorTextSecondary }} />
-      <Typography.Text strong style={{ fontSize: 13, color: token.colorText }}>
-        {t('fromTemplate', { defaultValue: 'From a template' })}
-      </Typography.Text>
-      <Typography.Text type="secondary" style={{ fontSize: 12, textAlign: 'center' }}>
-        {t('fromTemplateDesc', { defaultValue: 'Pre-built phases, labels, and sample tasks.' })}
-      </Typography.Text>
-    </button>
-  );
-
-  // ─── Template browser section ────────────────────────────────────────────
-  const templateBrowser = projectType === 'template' && (
-    <div className="create-project-template-browser">
-      <Input
-        size="small"
-        placeholder={t('searchTemplates', { defaultValue: 'Search templates' })}
-        prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
-        value={templateSearch}
-        onChange={e => setTemplateSearch(e.target.value)}
-        style={{ marginBottom: 8 }}
-        aria-label={t('searchTemplates', { defaultValue: 'Search templates' })}
-      />
-      {loadingTemplates ? (
-        <Skeleton active paragraph={{ rows: 2 }} title={false} />
-      ) : filteredTemplates.length === 0 ? (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {t('noTemplates', { defaultValue: 'No templates found.' })}
-        </Typography.Text>
-      ) : (
-        <div className="create-project-template-grid" role="listbox" aria-label={t('templates', { defaultValue: 'Templates' })}>
-          {filteredTemplates.map(tmpl => (
-            <TemplateCard
-              key={tmpl.id}
-              template={tmpl}
-              selected={selectedTemplateId === tmpl.id}
-              onClick={() => setSelectedTemplateId(tmpl.id ?? null)}
-              onPreview={() => {
-                setPreviewTemplateId(tmpl.id ?? null);
-                setPreviewTemplateName(tmpl.name);
-                setPreviewOpen(true);
-              }}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <>
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      destroyOnClose
-      width={520}
-      title={
-        <div>
-          <Typography.Text strong style={{ fontSize: 16 }}>
-            {t('title', { defaultValue: 'Create a new project' })}
-          </Typography.Text>
-          <br />
-          <Typography.Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
-            {t('subtitle', { defaultValue: 'Start blank or pick a template — configure the rest later.' })}
-          </Typography.Text>
-        </div>
-      }
-      styles={{ body: { paddingTop: 8 } }}
-    >
-      <Form form={form} layout="vertical" onKeyDown={handleKeyDown}>
-        {/* Project name input */}
-        <Form.Item style={{ marginBottom: 12 }}>
-          <Input
-            ref={nameInputRef as any}
-            size="large"
-            placeholder={
-              projectType === 'template'
-                ? t('projectNamePlaceholderTemplate', { defaultValue: 'Project name (uses template name if left blank)' })
-                : t('projectNamePlaceholder', { defaultValue: 'Project name' })
-            }
-            value={projectName}
-            onChange={e => setProjectName(e.target.value)}
-            maxLength={100}
-            aria-label={t('projectNamePlaceholder', { defaultValue: 'Project name' })}
-            autoComplete="off"
-          />
-        </Form.Item>
-
-        {/* Blank / Template type selector */}
-        <Form.Item style={{ marginBottom: 12 }}>
-          <div
-            className="create-project-type-selector"
-            role="group"
-            aria-label={t('projectTypeLabel', { defaultValue: 'Project type' })}
-          >
-            {blankCard}
-            {templateCard}
+      <Modal
+        open={open}
+        onCancel={onClose}
+        footer={null}
+        destroyOnClose
+        width={880}
+        className="create-project-modal"
+        title={
+          <div>
+            <Typography.Text strong style={{ fontSize: 16 }}>
+              {t('title', { defaultValue: 'New project' })}
+            </Typography.Text>
+            <br />
+            <Typography.Text type="secondary" style={{ fontSize: 13, fontWeight: 400 }}>
+              {t('subtitle', { defaultValue: 'Name it, then start blank or grab a template.' })}
+            </Typography.Text>
           </div>
-        </Form.Item>
-
-        {/* Template browser (shown when "From a template" selected) */}
-        {templateBrowser}
-
-        {/* Color picker (shown for blank projects) */}
-        {projectType === 'blank' && (
-          <Form.Item
-            label={
-              <Typography.Text style={{ fontSize: 13 }}>
-                {t('projectColor', { defaultValue: 'Project color' })}
-              </Typography.Text>
-            }
-            style={{ marginBottom: 12 }}
-          >
-            <Flex gap={10} wrap="wrap" role="group" aria-label={t('projectColor', { defaultValue: 'Project color' })}>
-              {projectColors.map(color => (
-                <ColorSwatch
-                  key={color}
-                  color={color}
-                  selected={selectedColor === color}
-                  onClick={() => setSelectedColor(color)}
-                />
-              ))}
-            </Flex>
-          </Form.Item>
-        )}
-
-        {/* Info hint */}
-        <Typography.Text
-          type="secondary"
-          style={{ fontSize: 12, display: 'block', marginBottom: 12 }}
-        >
-          <span role="img" aria-hidden="true">ℹ️</span>{' '}
-          {t('configureHint', { defaultValue: 'Status, dates, manager, and more — set inside the project via the gear icon.' })}
-        </Typography.Text>
-
-        {/* Error */}
-        {error && (
-          <Alert
-            type="error"
-            message={error}
-            showIcon
-            style={{ marginBottom: 12 }}
-            closable
-            onClose={() => setError(null)}
-          />
-        )}
-
-        {/* Footer actions */}
-        <Flex justify="space-between" align="center">
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('editLaterHint', { defaultValue: 'You can edit everything after creating.' })}
-          </Typography.Text>
-          <Flex gap={8}>
-            <Button onClick={onClose} disabled={isCreating}>
-              {t('cancel', { defaultValue: 'Cancel' })}
-            </Button>
-            <Tooltip
-              title={
-                !canCreate
-                  ? projectType === 'template'
-                    ? t('templateRequired', { defaultValue: 'Select a template to continue.' })
-                    : t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
-                  : undefined
-              }
-            >
-              <Button
-                type="primary"
-                onClick={handleCreate}
-                loading={isCreating}
-                disabled={!canCreate}
-                aria-label={t('createProject', { defaultValue: 'Create project' })}
+        }
+        styles={{ body: { padding: 0 } }}
+      >
+        <Form form={form} layout="vertical" onKeyDown={handleKeyDown} style={modalCssVariables}>
+          <div className="create-project-layout">
+            <aside className="create-project-config-panel">
+              <Form.Item
+                label={t('projectName', { defaultValue: 'Project name' })}
+                required
+                style={{ marginBottom: 16 }}
               >
-                {t('createProject', { defaultValue: 'Create project' })} →
-              </Button>
-            </Tooltip>
-          </Flex>
-        </Flex>
-      </Form>
-    </Modal>
+                <Input
+                  ref={nameInputRef}
+                  size="large"
+                  placeholder={t('projectNameExample', { defaultValue: 'e.g. Q3 Website Refresh' })}
+                  value={projectName}
+                  onChange={event => setProjectName(event.target.value)}
+                  maxLength={100}
+                  aria-label={t('projectName', { defaultValue: 'Project name' })}
+                  autoComplete="off"
+                />
+              </Form.Item>
 
-    {/* Template detail preview drawer — rendered outside Modal to avoid stacking context issues */}
-    <TemplatePreviewDrawer
-      templateId={previewTemplateId}
-      templateName={previewTemplateName}
-      open={previewOpen}
-      onClose={() => setPreviewOpen(false)}
-      onUseTemplate={id => {
-        setSelectedTemplateId(id);
-        setPreviewOpen(false);
-      }}
-    />
+              <Form.Item
+                label={t('projectColor', { defaultValue: 'Color' })}
+                style={{ marginBottom: 16 }}
+              >
+                <Flex
+                  gap={10}
+                  wrap="wrap"
+                  role="group"
+                  aria-label={t('projectColor', { defaultValue: 'Color' })}
+                >
+                  {projectColors.map(color => (
+                    <ColorSwatch
+                      key={color}
+                      color={color}
+                      selected={selectedColor === color}
+                      onClick={() => setSelectedColor(color)}
+                    />
+                  ))}
+                </Flex>
+              </Form.Item>
+
+              <div
+                className="create-project-starting-card"
+                style={{ borderColor: token.colorBorder, background: token.colorFillQuaternary }}
+              >
+                <Typography.Text className="create-project-starting-label" type="secondary">
+                  {t('startingFrom', { defaultValue: 'Starting from' })}
+                </Typography.Text>
+                <Typography.Text strong style={{ display: 'block', color: token.colorText }}>
+                  {selectedTemplateName}
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {selectedTemplateId
+                    ? t('templateSelectedHint', {
+                        defaultValue: 'Template structure will be copied into your project.',
+                      })
+                    : t('blankSelectedHint', {
+                        defaultValue:
+                          'Empty project. Pick a template on the right to get a head start.',
+                      })}
+                </Typography.Text>
+              </div>
+
+              <Typography.Text className="create-project-config-note" type="secondary">
+                <InfoCircleOutlined />{' '}
+                {t('configureHint', {
+                  defaultValue:
+                    'Status, dates, manager and more are set inside the project after creation.',
+                })}
+              </Typography.Text>
+            </aside>
+
+            <section className="create-project-template-panel">
+              <div className="create-project-template-toolbar">
+                <Typography.Text strong style={{ color: token.colorText }}>
+                  {t('templates', { defaultValue: 'Templates' })}
+                </Typography.Text>
+                <Input
+                  size="middle"
+                  placeholder={t('searchTemplates', { defaultValue: 'Search templates' })}
+                  prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+                  value={templateSearch}
+                  onChange={event => setTemplateSearch(event.target.value)}
+                  className="create-project-template-search"
+                  aria-label={t('searchTemplates', { defaultValue: 'Search templates' })}
+                />
+              </div>
+
+              <div
+                className="create-project-template-list"
+                role="listbox"
+                aria-label={t('templates', { defaultValue: 'Templates' })}
+              >
+                <TemplateCard
+                  template={blankTemplate}
+                  selected={!selectedTemplateId}
+                  onClick={() => setSelectedTemplateId(null)}
+                  isBlank
+                />
+                {loadingTemplates ? (
+                  <Skeleton active paragraph={{ rows: 4 }} title={false} />
+                ) : filteredTemplates.length === 0 ? (
+                  <Typography.Text type="secondary" className="create-project-template-empty">
+                    {t('noTemplates', { defaultValue: 'No templates found.' })}
+                  </Typography.Text>
+                ) : (
+                  filteredTemplates.map(template => (
+                    <TemplateCard
+                      key={template.id}
+                      template={template}
+                      selected={selectedTemplateId === template.id}
+                      onClick={() => setSelectedTemplateId(template.id ?? null)}
+                      onPreview={() => {
+                        setPreviewTemplateId(template.id ?? null);
+                        setPreviewTemplateName(template.name);
+                        setPreviewOpen(true);
+                      }}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          </div>
+
+          {error && (
+            <Alert
+              type="error"
+              message={error}
+              showIcon
+              className="create-project-error"
+              closable
+              onClose={() => setError(null)}
+            />
+          )}
+
+          <Flex
+            justify="space-between"
+            align="center"
+            className="create-project-footer"
+            style={{ borderColor: token.colorBorderSecondary }}
+          >
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {selectedTemplateId
+                ? t('templateFooterHint', {
+                    defaultValue: 'Selected template will be used for this project.',
+                  })
+                : t('blankFooterHint', {
+                    defaultValue: 'No template selected - will create blank.',
+                  })}
+            </Typography.Text>
+            <Flex gap={8}>
+              <Button onClick={onClose} disabled={isCreating}>
+                {t('cancel', { defaultValue: 'Cancel' })}
+              </Button>
+              <Tooltip
+                title={
+                  !canCreate
+                    ? selectedTemplateId
+                      ? undefined
+                      : t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
+                    : undefined
+                }
+              >
+                <Button
+                  type="primary"
+                  onClick={handleCreate}
+                  loading={isCreating}
+                  disabled={!canCreate}
+                  aria-label={
+                    selectedTemplateId
+                      ? t('createFromTemplate', { defaultValue: 'Create from template' })
+                      : t('createBlank', { defaultValue: 'Create blank' })
+                  }
+                >
+                  {selectedTemplateId
+                    ? t('createProject', { defaultValue: 'Create project' })
+                    : t('createBlank', { defaultValue: 'Create blank' })}{' '}
+                  <ArrowRightOutlined />
+                </Button>
+              </Tooltip>
+            </Flex>
+          </Flex>
+        </Form>
+      </Modal>
+
+      <TemplatePreviewDrawer
+        templateId={previewTemplateId}
+        templateName={previewTemplateName}
+        open={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        onUseTemplate={id => {
+          setSelectedTemplateId(id);
+          setPreviewOpen(false);
+        }}
+      />
     </>
   );
 };

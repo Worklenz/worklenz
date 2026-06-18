@@ -53,6 +53,8 @@ export const projectTemplatesApiService = {
 
   createFromWorklenzTemplate: async (body: {
     template_id: string;
+    project_name?: string;
+    color_code?: string;
   }): Promise<IServerResponse<IProjectTemplate>> => {
     const response = await apiClient.post(`${rootUrl}/import-template`, body);
     return response.data;
@@ -60,6 +62,8 @@ export const projectTemplatesApiService = {
 
   createFromCustomTemplate: async (body: {
     template_id: string;
+    project_name?: string;
+    color_code?: string;
   }): Promise<IServerResponse<IProjectTemplate>> => {
     const response = await apiClient.post(`${rootUrl}/import-custom-template`, body);
     return response.data;
