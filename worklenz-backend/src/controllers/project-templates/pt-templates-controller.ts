@@ -24,7 +24,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name FROM pt_project_templates ORDER BY name;`;
+    const q = `
+      SELECT
+        pt.id,
+        pt.name,
+        pt.image_url,
+        (SELECT COUNT(*) FROM pt_tasks WHERE template_id = pt.id)::int AS task_count,
+        (SELECT COUNT(*) FROM pt_phases WHERE template_id = pt.id)::int AS phase_count
+      FROM pt_project_templates pt
+      ORDER BY pt.name;
+    `;
     const result = await db.query(q, []);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -172,22 +181,27 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       }
     }
 
-    const { template_id } = req.body;
+    const { template_id, project_name, color_code } = req.body;
     let project_id: string | null = null;
 
     const data = await this.getTemplateData(template_id);
     if (data) {
+      const safeProjectName =
+        typeof project_name === "string" ? project_name.trim() : "";
+      const safeColorCode =
+        typeof color_code === "string" ? color_code.trim() : "";
+
       // Store the nested arrays separately
       const tasks = data.tasks;
       const phases = data.phases;
       const labels = data.labels;
-      
+
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
-        name: data.name,
+        name: safeProjectName || data.name,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
-        color_code: data.color_code,
+        color_code: safeColorCode || data.color_code,
         image_url: data.image_url,
         team_id: req.user?.team_id || null,
         user_id: req.user?.id || null,
@@ -324,24 +338,32 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       }
     }
 
-    const { template_id } = req.body;
+    const { template_id, project_name, color_code } = req.body;
     let project_id: string | null = null;
 
     const data = await this.getCustomTemplateData(template_id);
-    
+
     if (data) {
+      const safeProjectName =
+        typeof project_name === "string" ? project_name.trim() : "";
+      const safeColorCode =
+        typeof color_code === "string" ? color_code.trim() : "";
+
       // Store the nested arrays separately
       const tasks = data.tasks;
       const phases = data.phases;
       const status = data.status;
       const labels = data.labels;
-      
+
+      // If no project name provided, use template name as base (will be auto-generated with unique suffix in importTemplate)
+      const projectName = safeProjectName || data.name;
+
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
-        name: data.name,
+        name: projectName,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
-        color_code: data.color_code,
+        color_code: safeColorCode || data.color_code,
         team_id: req.user?.team_id || null,
         user_id: req.user?.id || null,
         folder_id: null,
@@ -353,7 +375,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
         man_days: 0,
         hours_per_day: 8
       };
-      
+
       project_id = await this.importTemplate(projectData);
 
       await this.deleteDefaultStatusForProject(project_id as string);
