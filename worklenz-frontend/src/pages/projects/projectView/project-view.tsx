@@ -55,6 +55,7 @@ import { resetState as resetEnhancedKanbanState, initKanbanGroupingFromServer, I
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ProjectViewSkeleton from './project-view-skeleton';
+import { ProjectSetupBanner } from '@/components/projects/project-setup-banner/project-setup-banner';
 import { useTranslation } from 'react-i18next';
 import alertService from '@/services/alerts/alertService';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
@@ -707,9 +708,17 @@ const ProjectView = React.memo(() => {
     return <ProjectViewSkeleton />;
   }
 
+  // Detect first-visit via `new_project=1` query param
+  const isNewProject = searchParams.get('new_project') === '1';
+
   return (
     <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
       <ProjectViewHeader />
+
+      {/* One-time setup banner for newly created projects */}
+      {isNewProject && projectId && (
+        <ProjectSetupBanner projectId={projectId} />
+      )}
 
       <Tabs
         className="project-view-tabs"

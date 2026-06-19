@@ -57,6 +57,28 @@ export enum IGroupBy {
 // Entity adapter for normalized state
 const tasksAdapter = createEntityAdapter<Task>();
 
+const applyTaskGroupingValue = (
+  task: Task | undefined,
+  grouping: string | undefined,
+  groupId: string
+) => {
+  if (!task) return;
+
+  switch (grouping) {
+    case IGroupBy.STATUS:
+      task.status = groupId;
+      break;
+    case IGroupBy.PRIORITY:
+      task.priority = groupId;
+      break;
+    case IGroupBy.PHASE:
+      task.phase = groupId;
+      break;
+    default:
+      break;
+  }
+};
+
 // Get the initial state from the adapter
 const initialState: TaskManagementState = {
   ids: [],
@@ -765,6 +787,7 @@ const taskManagementSlice = createSlice({
             ? [...group.taskIds, taskId]
             : group.taskIds.filter(id => id !== taskId),
       }));
+      applyTaskGroupingValue(state.entities[taskId], state.grouping, groupId);
     },
     moveTaskBetweenGroups: (
       state,
@@ -784,6 +807,7 @@ const taskManagementSlice = createSlice({
               ? group.taskIds.filter(id => id !== taskId)
               : group.taskIds,
       }));
+      applyTaskGroupingValue(state.entities[taskId], state.grouping, targetGroupId);
     },
     optimisticTaskMove: (
       state,
@@ -803,6 +827,7 @@ const taskManagementSlice = createSlice({
               ? group.taskIds.filter(id => id !== taskId)
               : group.taskIds,
       }));
+      applyTaskGroupingValue(state.entities[taskId], state.grouping, targetGroupId);
     },
     reorderTasksInGroup: (
       state,
@@ -872,8 +897,7 @@ const taskManagementSlice = createSlice({
             destinationGroup.taskIds.push(sourceTaskId); // Add to end if destination task not found
           }
 
-          // Do NOT update the task's grouping field (priority, phase, status) here.
-          // This will be handled by the socket event handler after backend confirmation.
+          applyTaskGroupingValue(newEntities[sourceTaskId], state.grouping, destinationGroupId);
 
           // Update order for affected tasks in both groups using the appropriate sort field
           const sortField = getSortOrderField(state.grouping);

@@ -65,24 +65,23 @@ const hasProcessedMentions = (content: string): boolean => {
 // to avoid false positives on arbitrary @-prefixed text.
 const processMentions = (content: string, knownNames?: string[]) => {
   if (!content) return '';
-
-  if (hasProcessedMentions(content)) {
-    return content;
-  }
+  if (hasProcessedMentions(content)) return content;
 
   if (knownNames && knownNames.length > 0) {
     let result = content;
     for (const name of knownNames) {
       const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Only highlight when the mention is followed by whitespace, end-of-string,
-      // or sentence punctuation — never when a word character follows directly.
-      const regex = new RegExp(`@${escaped}(?=[\\s.,;:!?)]|$)`, 'g');
-      result = result.replace(regex, `<span class="mentions">@${name}</span>`);
+      // Match @name only when followed by whitespace, punctuation, or end-of-string
+      // \b alone isn't enough — we need to exclude word chars after the name
+      const regex = new RegExp(`@${escaped}(?=\\s|[.,;:!?)]|$)`, 'g');
+      result = result.replace(
+        regex,
+        `<span class="mentions">@${name}</span>`
+      );
     }
     return result;
   }
 
-  // No known names — return content unchanged to avoid false positives.
   return content;
 };
 
@@ -211,15 +210,26 @@ const TaskComments = ({ taskId, t }: { taskId?: string; t: TFunction }) => {
           // Process content for display but preserve task_id from response
           sortedComments.forEach(comment => {
             if (comment.content) {
-              // Extract known mention names from this comment's mentions array
-              const knownNames = (comment as any).mentions
-                ? (comment as any).mentions
-                    .map((m: any) => m.user_name || m.name)
-                    .filter(Boolean) as string[]
-                : undefined;
+              // Primary: use the mentions array from backend
+              let knownNames: string[] | undefined = (comment as any).mentions
+                ?.map((m: any) => m.user_name || m.name)
+                .filter(Boolean) as string[] | undefined;
+
+              // Fallback: if mentions array is missing/empty, extract @names
+              // directly from raw content to handle the post-edit case where
+              // the backend may not return the mentions array populated
+              if (!knownNames || knownNames.length === 0) {
+                const extracted = Array.from(
+                  comment.content.matchAll(/@(\w+)/g),
+                  m => m[1]
+                );
+                if (extracted.length > 0) {
+                  knownNames = extracted;
+                }
+              }
+
               comment.content = processContent(comment.content, knownNames);
             }
-            // Ensure task_id is always set — fall back to the prop if backend omits it
             if (!comment.task_id) {
               comment.task_id = taskId;
             }

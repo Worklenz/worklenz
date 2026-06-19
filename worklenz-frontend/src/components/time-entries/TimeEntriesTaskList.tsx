@@ -96,7 +96,7 @@ export const TimeEntriesTaskList: React.FC<TimeEntriesTaskListProps> = ({
       {/* Fallback notice */}
       {fallbackLabel && (
         <Alert
-          message={t('fallbackNotice', { defaultValue: `Showing tasks due ${fallbackLabel}`, date: fallbackLabel })}
+          message={t('fallbackNotice', { defaultValue: `Showing time logged ${fallbackLabel}`, date: fallbackLabel })}
           type="info"
           showIcon
           style={{ borderRadius: 0, border: 'none', borderBottom: `1px solid ${token.colorBorderSecondary}` }}

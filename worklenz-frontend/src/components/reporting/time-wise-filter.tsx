@@ -13,6 +13,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 
 import { colors } from '@/styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -36,6 +37,7 @@ const TimeWiseFilter = () => {
   //   dateRange.length === 2 ? [dateRange[0], dateRange[1]] : null
   // );
   const [customRange, setCustomRange] = useState<[string, string] | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   // Format customRange for display
   const getDisplayLabel = () => {
@@ -47,11 +49,18 @@ const TimeWiseFilter = () => {
   };
 
   // Apply changes when date range is selected
-  const handleDateRangeChange = (dates: any, dateStrings: [string, string]) => {
-    if (dates) {
+  const handleDateRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
+    if (dates && dates[0] && dates[1]) {
+      if (dates[1].isBefore(dates[0], 'day')) {
+        setDateError('End date must not be before start date.');
+        setCustomRange(null);
+        return;
+      }
+      setDateError(null);
       setSelectedTimeFrame('');
-      setCustomRange([dates[0].$d.toString(), dates[1].$d.toString()]);
+      setCustomRange([dates[0].toDate().toString(), dates[1].toDate().toString()]);
     } else {
+      setDateError(null);
       setCustomRange(null);
     }
   };
@@ -243,7 +252,13 @@ const TimeWiseFilter = () => {
             style={{ width: '100%' }}
             size="middle"
             placeholder={['Start date', 'End date']}
+            order={false}
           />
+          {dateError && (
+            <Typography.Text type="danger" style={{ fontSize: 12 }}>
+              {dateError}
+            </Typography.Text>
+          )}
 
           <Flex justify="space-between" align="center">
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
