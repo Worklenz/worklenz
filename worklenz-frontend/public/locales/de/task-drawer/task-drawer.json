@@ -128,8 +128,7 @@
       "workDescription": "Arbeitsbeschreibung",
       "descriptionPlaceholder": "Beschreibung hinzufügen",
       "logTime": "Zeit protokollieren",
-      "updateTime": "Zeit aktualisieren",
-      "cancel": "Abbrechen",
+      "updateTime": "Aktualisieren",
       "durationHelper": "Gesamtzeit mit Stunden und Minuten erfassen.",
       "timeRangeHelper": "Zeit durch Auswahl von Start- und Endzeit erfassen.",
       "selectDateError": "Bitte wählen Sie ein Datum",
@@ -138,7 +137,13 @@
       "hoursMinError": "Stunden müssen 0 oder größer sein",
       "minutesRangeError": "Minuten müssen zwischen 0 und 59 liegen",
       "durationGreaterThanZeroError": "Die Dauer muss größer als 0 Minuten sein",
-      "endTimeAfterStartError": "Endzeit muss nach der Startzeit liegen"
+      "endTimeAfterStartError": "Endzeit muss nach der Startzeit liegen",
+      "moveToProject": "Zu Projekt verschieben",
+      "moveToProjectTooltip": "Diesen Zeiteintrag einem anderen Projekt zuweisen",
+      "selectProject": "Projekt suchen...",
+      "moveToTask": "Zu Aufgabe verschieben",
+      "moveToTaskTooltip": "Diesen Zeiteintrag einer anderen Aufgabe zuweisen",
+      "selectTask": "Aufgabe auswählen..."
     }
   },
   "taskActivityLogTab": {

@@ -130,8 +130,7 @@
       "workDescription": "Përshkrimi i punës",
       "descriptionPlaceholder": "Shto një përshkrim",
       "logTime": "Regjistro kohën",
-      "updateTime": "Përditëso kohën",
-      "cancel": "Anulo",
+      "updateTime": "Përditëso",
       "durationHelper": "Regjistro kohën totale me orë dhe minuta.",
       "timeRangeHelper": "Regjistro kohën duke zgjedhur orën e fillimit dhe përfundimit.",
       "selectDateError": "Ju lutemi zgjidhni një datë",
@@ -140,7 +139,13 @@
       "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
       "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
       "durationGreaterThanZeroError": "Kohëzgjatja duhet të jetë më e madhe se 0 minuta",
-      "endTimeAfterStartError": "Ora e përfundimit duhet të jetë pas orës së fillimit"
+      "endTimeAfterStartError": "Ora e përfundimit duhet të jetë pas orës së fillimit",
+      "moveToProject": "Zhvendos te projekti",
+      "moveToProjectTooltip": "Ricakto këtë regjistër kohe në një projekt tjetër",
+      "selectProject": "Kërko projekt...",
+      "moveToTask": "Zhvendos te detyra",
+      "moveToTaskTooltip": "Ricakto këtë regjistër kohe në një detyrë tjetër",
+      "selectTask": "Zgjidh detyrën..."
     }
   },
   "taskActivityLogTab": {

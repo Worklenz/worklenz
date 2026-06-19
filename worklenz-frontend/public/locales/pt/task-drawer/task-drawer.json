@@ -128,7 +128,7 @@
       "workDescription": "Descrição do trabalho",
       "descriptionPlaceholder": "Adicionar uma descrição",
       "logTime": "Registrar tempo",
-      "updateTime": "Atualizar tempo",
+      "updateTime": "Atualizar",
       "cancel": "Cancelar",
       "durationHelper": "Registre o tempo total com horas e minutos.",
       "timeRangeHelper": "Registre o tempo selecionando hora de início e término.",
@@ -138,7 +138,13 @@
       "hoursMinError": "As horas devem ser 0 ou mais",
       "minutesRangeError": "Os minutos devem estar entre 0 e 59",
       "durationGreaterThanZeroError": "A duração deve ser maior que 0 minutos",
-      "endTimeAfterStartError": "A hora de término deve ser posterior à hora de início"
+      "endTimeAfterStartError": "A hora de término deve ser posterior à hora de início",
+      "moveToProject": "Mover para projeto",
+      "moveToProjectTooltip": "Reatribuir este registro de tempo a um projeto diferente",
+      "selectProject": "Pesquisar projeto...",
+      "moveToTask": "Mover para tarefa",
+      "moveToTaskTooltip": "Reatribuir este registro de tempo a uma tarefa diferente",
+      "selectTask": "Selecionar tarefa..."
     }
   },
   "taskActivityLogTab": {

@@ -105,13 +105,25 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    const { seconds_spent, description, created_at, formatted_start } =
+    const { seconds_spent, description, formatted_start, new_task_id } =
       req.body;
+
+    // Fetch the old task_id before updating so we can notify both tasks via socket
+    const oldTaskRes = await db.query(
+      `SELECT task_id FROM task_work_log WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user?.id]
+    );
+    const oldTaskId: string | undefined = oldTaskRes.rows[0]?.task_id;
+
+    // If new_task_id is provided and differs from the current task, move the log
+    const targetTaskId = new_task_id || oldTaskId;
+
     const q = `
       UPDATE task_work_log
       SET time_spent  = $3,
           description = $4,
-          created_at  = $5
+          created_at  = $5,
+          task_id = $6
       WHERE id = $1
         AND user_id = $2
       RETURNING task_id;
@@ -122,17 +134,22 @@ export default class TaskWorklogController extends WorklenzControllerBase {
       seconds_spent,
       description || null,
       formatted_start,
+      targetTaskId,
     ];
     const result = await db.query(q, params);
     const [data] = result.rows;
 
+    const io = IO.getInstance();
+
     // Emit socket event to notify all clients about the time log update
-    if (data?.task_id) {
-      const io = IO.getInstance();
-      if (io) {
-        io.emit(SocketEvents.TASK_TIME_LOG_UPDATED.toString(), {
-          task_id: data.task_id,
-        });
+    if (io) {
+      // Notify the new (or same) task
+      if (data?.task_id) {
+        io.emit(SocketEvents.TASK_TIME_LOG_UPDATED.toString(), { task_id: data.task_id });
+      }
+      // If the log was moved, also notify the old task so its totals refresh
+      if (oldTaskId && oldTaskId !== data?.task_id) {
+        io.emit(SocketEvents.TASK_TIME_LOG_UPDATED.toString(), { task_id: oldTaskId });
       }
     }
 
@@ -519,33 +536,32 @@ export default class TaskWorklogController extends WorklenzControllerBase {
     const { project_id, search } = req.query as Record<string, string>;
     if (!project_id) return res.status(200).send(new ServerResponse(false, [], "project_id is required"));
 
-    const params: any[] = [project_id, req.user?.team_member_id];
+    const params: any[] = [project_id];
     const conditions: string[] = [
       `t.project_id = $1::uuid`,
-      `ta.team_member_id = $2`,
       `t.archived = FALSE`,
     ];
 
     if (search) {
-      conditions.push(`(t.name ILIKE $3 OR CAST(t.task_no AS TEXT) = $4)`);
+      conditions.push(`(t.name ILIKE $2 OR CAST(t.task_no AS TEXT) = $3)`);
       params.push(`%${search}%`, search);
     }
 
     const q = `
-      SELECT DISTINCT
+      SELECT
         t.id,
         t.name,
         t.end_date AS due_date,
         t.task_no
       FROM tasks t
-      JOIN tasks_assignees ta ON ta.task_id = t.id
       WHERE ${conditions.join(" AND ")}
-      ORDER BY t.end_date ASC NULLS LAST
-      LIMIT 50;
+      ORDER BY t.name ASC
+      LIMIT 500;
     `;
     const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
 
   @HandleExceptions()
   public static async getRecentTimeLogs(
