@@ -39,6 +39,13 @@ clientsApiRouter.delete("/portal/services/:id", idParamValidator, safeController
 // Organization-side Client Portal Management (moved from client-portal-api-router.ts)
 clientsApiRouter.get("/portal/clients", safeControllerFunction(ClientsController.getPortalClients));
 clientsApiRouter.post("/portal/clients", phoneNumberValidator, safeControllerFunction(ClientsController.createPortalClient));
+
+// Organization-side Client Portal Bulk Operations
+// NOTE: These MUST be defined before the /:id parameterized routes to avoid Express
+// matching "bulk-update" or "bulk-delete" as an :id parameter value.
+clientsApiRouter.put("/portal/clients/bulk-update", safeControllerFunction(ClientsController.bulkUpdatePortalClients));
+clientsApiRouter.delete("/portal/clients/bulk-delete", safeControllerFunction(ClientsController.bulkDeletePortalClients));
+
 clientsApiRouter.get("/portal/clients/:id", idParamValidator, safeControllerFunction(ClientsController.getPortalClientById));
 clientsApiRouter.get("/portal/clients/:id/details", idParamValidator, safeControllerFunction(ClientsController.getPortalClientDetails));
 clientsApiRouter.put("/portal/clients/:id", idParamValidator, phoneNumberValidator, safeControllerFunction(ClientsController.updatePortalClient));
@@ -70,10 +77,6 @@ clientsApiRouter.post("/portal/clients/:id/send-invitation", idParamValidator, s
 clientsApiRouter.get("/portal/clients/:id/stats", idParamValidator, safeControllerFunction(ClientsController.getPortalClientStats));
 clientsApiRouter.get("/portal/clients/:id/activity", idParamValidator, safeControllerFunction(ClientsController.getPortalClientActivity));
 clientsApiRouter.get("/portal/clients/:id/export", idParamValidator, safeControllerFunction(ClientsController.exportPortalClientData));
-
-// Organization-side Client Portal Bulk Operations
-clientsApiRouter.put("/portal/clients/bulk-update", safeControllerFunction(ClientsController.bulkUpdatePortalClients));
-clientsApiRouter.delete("/portal/clients/bulk-delete", safeControllerFunction(ClientsController.bulkDeletePortalClients));
 
 // Organization-side Client Portal Projects Management
 clientsApiRouter.get("/portal/projects", safeControllerFunction(ClientsController.getPortalProjects));
