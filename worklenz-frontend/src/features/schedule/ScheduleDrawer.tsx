@@ -105,7 +105,8 @@ const ScheduleDrawer = () => {
       title={
         selectedMember ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CustomAvatar avatarName={selectedMember.name || ''} size={32} />
+            <CustomAvatar avatarName={selectedMember.name || ''} avatarUrl={selectedMember.avatar_url}
+              size={32} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '14px', fontWeight: 600 }}>{selectedMember.name}</span>
               {selectedProject && (
