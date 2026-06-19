@@ -173,7 +173,7 @@ const ClientDetailsDrawer = () => {
       if (response?.done === false) {
         throw new Error(
           response?.message ||
-            t('updateClientErrorMessage', { defaultValue: 'Failed to update client' })
+          t('updateClientErrorMessage', { defaultValue: 'Failed to update client' })
         );
       }
 
@@ -231,22 +231,22 @@ const ClientDetailsDrawer = () => {
   const moreMenuItems =
     client?.status === 'inactive'
       ? [
-          {
-            key: 'activate',
-            label: t('activateButton') || 'Activate Client',
-            icon: <EditOutlined />,
-            onClick: handleActivateClient,
-          },
-        ]
+        {
+          key: 'activate',
+          label: t('activateButton') || 'Activate Client',
+          icon: <EditOutlined />,
+          onClick: handleActivateClient,
+        },
+      ]
       : [
-          {
-            key: 'deactivate',
-            label: t('deactivateButton') || 'Deactivate Client',
-            icon: <DeleteOutlined />,
-            danger: true,
-            onClick: handleDeactivateClient,
-          },
-        ];
+        {
+          key: 'deactivate',
+          label: t('deactivateButton') || 'Deactivate Client',
+          icon: <DeleteOutlined />,
+          danger: true,
+          onClick: handleDeactivateClient,
+        },
+      ];
 
   if (!selectedClientId || !isClientDetailsDrawerOpen) return null;
 
@@ -326,7 +326,7 @@ const ClientDetailsDrawer = () => {
             <Col span={12}>
               <Form.Item
                 name="name"
-                label={t('recordNameLabel', { defaultValue: 'Record Name (Internal)' })}
+                label={t('recordNameLabel', { defaultValue: 'Client Name (Internal)' })}
                 rules={[
                   {
                     required: true,
@@ -370,7 +370,7 @@ const ClientDetailsDrawer = () => {
             <Col span={12}>
               <Form.Item
                 name="company_name"
-                label={t('clientCompanyLabel', { defaultValue: 'Client / Company' })}
+                label={t('clientCompanyLabel', { defaultValue: 'Company Name' })}
               >
                 <Input
                   placeholder={

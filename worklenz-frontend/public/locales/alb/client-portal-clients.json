@@ -2,67 +2,55 @@
   "pageTitle": "Klientët",
   "pageDescription": "Menaxhoni klientët tuaj dhe qasjen e tyre në portal",
   "addClientButton": "Shto Klient",
-
   "totalClientsLabel": "Klientët Gjithsej",
   "activeClientsLabel": "Klientët Aktivë",
   "totalProjectsLabel": "Projektet Gjithsej",
   "totalTeamMembersLabel": "Anëtarët e Ekipit",
-
   "errorTitle": "Gabim",
   "loadingText": "Duke ngarkuar...",
   "refreshButton": "Rifresko",
   "clearFiltersButton": "Pastro Filtrat",
-
   "clientColumn": "Klienti",
   "statusColumn": "Statusi",
   "assignedProjectsColumn": "Projektet e Caktuara",
   "teamMembersColumn": "Anëtarët e Ekipit",
   "actionBtnsColumn": "Veprimet",
-
   "statusAll": "Të gjitha",
   "statusActive": "Aktiv",
   "statusInactive": "Joaktiv",
   "statusPending": "Në pritje",
-
   "viewDetailsTooltip": "Shiko Detajet",
   "editClientTooltip": "Redakto Klientin",
   "manageProjectsTooltip": "Menaxho Projektet",
   "manageTeamTooltip": "Menaxho Ekipin",
   "deleteTooltip": "Fshi",
-
   "deleteConfirmationTitle": "Fshi Klientin",
   "deleteConfirmationDescription": "Jeni i sigurt që doni të fshini këtë klient? Ky veprim nuk mund të zhbëhet.",
   "deleteConfirmationOk": "Fshi",
   "deleteConfirmationCancel": "Anulo",
-
   "searchClientsPlaceholder": "Kërko klientë...",
   "statusFilterPlaceholder": "Filtro sipas statusit",
-
   "paginationText": "Duke treguar",
   "ofText": "nga",
   "clientsText": "klientë",
-
   "addClientTitle": "Shto Klient të Ri",
   "createButton": "Krijo Klient",
   "cancelButton": "Anulo",
-
   "clientNameLabel": "Emri i Klientit",
   "clientNamePlaceholder": "Shkruani emrin e klientit",
   "clientNameRequired": "Ju lutemi shkruani emrin e klientit",
   "clientNameMinLength": "Emri duhet të ketë të paktën 2 karaktere",
-
+  "recordNameLabel": "Emri i Klientit",
+  "clientCompanyLabel": "Emri i Kompanisë",
   "emailLabel": "Adresa e Email-it",
   "emailPlaceholder": "Shkruani adresën e email-it",
   "emailRequired": "Ju lutemi shkruani adresën e email-it",
   "emailInvalid": "Ju lutemi shkruani një adresë email-i të vlefshme",
-
   "companyNameLabel": "Emri i Kompanisë",
   "companyNamePlaceholder": "Shkruani emrin e kompanisë (opsionale)",
-
   "phoneLabel": "Numri i Telefonit",
   "phonePlaceholder": "Shkruani numrin e telefonit (opsionale)",
   "phoneInvalid": "Ju lutemi shkruani një numër telefoni të vlefshëm",
-
   "addressLabel": "Adresa",
   "addressPlaceholder": "Shkruani adresën (opsionale)",
   "addressLine1Label": "Adresa",
@@ -76,12 +64,9 @@
   "countryLabel": "Vendi",
   "countryPlaceholder": "Vendi",
   "clientInvitationEmailInfo": "Një email ftese do t'i dërgohet klientit për t'u bashkuar me portalin. Mund të ndani gjithashtu lidhjen e ftesës nga faqja e Klientëve.",
-
   "contactPersonLabel": "Personi i Kontaktit",
   "contactPersonPlaceholder": "Shkruani emrin e personit të kontaktit",
-
   "statusLabel": "Statusi",
-
   "createClientSuccessMessage": "Klienti u krijua me sukses! Ndani lidhjen e ftesës së organizatës për t'i dhënë atij qasje në portal.",
   "createClientSuccessMessageWithInvite": "Klienti u krijua me sukses! Ftesa u dërgua në {email}",
   "createClientErrorMessage": "Dështoi krijimi i klientit",
@@ -89,28 +74,22 @@
   "updateClientErrorMessage": "Dështoi përditësimi i klientit",
   "deleteClientSuccessMessage": "Klienti u fshi me sukses",
   "deleteClientErrorMessage": "Dështoi fshirja e klientit",
-
   "closeButton": "Mbyll",
   "deleteButton": "Fshi Klientin",
   "editButton": "Redakto",
   "updateButton": "Përditëso Klientin",
-
   "editClientTitle": "Redakto Klientin",
   "errorLoadingClient": "Gabim në ngarkimin e të dhënave të klientit",
-
   "clientInformationTitle": "Informacioni i Klientit",
   "createdAtLabel": "Krijuar",
-
   "statisticsTitle": "Statistikat",
   "activeProjectsLabel": "Projektet Aktive",
   "totalRequestsLabel": "Kërkesat Gjithsej",
-
   "teamManagementTitle": "Menaxhimi i Ekipit",
   "clientPortalLinkLabel": "Lidhja e Portalit të Klientit",
   "clientPortalLinkDescription": "Ndani këtë lidhje me klientin tuaj për t'i dhënë atij qasje në portalin e tij",
   "clientPortalAccessInfo": "Pas krijimit të klientit, përdorni lidhjen e ftesës së organizatës nga faqja e Klientëve për t'i dhënë atij qasje në portal.",
   "linkCopiedMessage": "Lidhja u kopjua në të papastër",
-
   "organizationInviteLinkTitle": "Lidhja e Ftesës së Organizatës",
   "organizationInviteLinkDescription": "Ndani këtë lidhje të vetme me çdo klient për t'u lejuar atyre të bashkohen me portalin e klientëve të organizatës suaj. Lidhja skadon pas 7 ditësh për siguri dhe mund të rigjenerоhet sipas nevojës.",
   "generateLink": "Gjenero Lidhje",
@@ -130,7 +109,6 @@
   "noClientsMatchingFilters": "Asnjë klient nuk përputhet me filtrat aktualë.",
   "errorLoadingClients": "Gabim gjatë ngarkimit të klientëve",
   "errorLoadingClientsDescription": "Pati një gabim gjatë ngarkimit të klientëve tuaj. Ju lutemi provoni përsëri më vonë.",
-
   "projectSettingsTitle": "Cilësimet e Projektit",
   "assignProjectTitle": "Cakto Projekt të Ri",
   "selectProjectLabel": "Zgjidh Projektin",
@@ -154,7 +132,6 @@
   "projectAssignedErrorMessage": "Dështoi caktimi i projektit",
   "projectRemovedSuccessMessage": "Projekti u hoq me sukses",
   "projectRemovedErrorMessage": "Dështoi heqja e projektit",
-
   "portalStatusColumn": "Statusi i Portalit",
   "portalStatus": {
     "active": "Aktiv",
@@ -168,20 +145,17 @@
     "notInvited": "Nuk është ftuar: Ende nuk është dërguar asnjë ftesë.",
     "expired": "Ka skaduar: Ftesa e mëparshme ka skaduar dhe duhet ridërguar."
   },
-
   "inviteToPortalTooltip": "Fto në Portal",
   "resendInvitationTooltip": "Ridërgo Ftesën",
   "resendInviteEmailTooltip": "Ridërgo Email-in e Ftesës",
   "copyInviteLinkTooltip": "Kopjo Linkun e Ftesës",
   "resendInvitationSuccess": "Email-i i ftesës u dërgua me sukses!",
   "resendInvitationError": "Dështoi dërgimi i email-it të ftesës",
-
   "inviteSelectedToPortal": "Dërgo Ftesa për Portal",
   "selectClientsToInvite": "Ju lutemi zgjidhni klientët për t'i ftuar",
   "bulkInviteSuccessMessage": "ftesë(a) u gjenerua me sukses",
   "bulkInvitePartialFailMessage": "ftesë(a) dështoi",
   "bulkInviteErrorMessage": "Dështoi gjenerimi i ftesave",
-
   "deactivateConfirmationTitle": "Çaktivizo Klientin",
   "deactivateConfirmationDescription": "Jeni i sigurt që doni të çaktivizoni këtë klient? Ata do të humbasin qasjen në portal, por të gjitha të dhënat do të ruhen.",
   "deactivateConfirmationOk": "Çaktivizo",
@@ -201,10 +175,8 @@
   "selectClientsToDeactivate": "Ju lutemi zgjidhni klientët për t'i çaktivizuar",
   "bulkDeactivateSuccessMessage": "Klientët e zgjedhur u çaktivizuan me sukses",
   "bulkDeactivateErrorMessage": "Dështoi çaktivizimi i klientëve të zgjedhur",
-
   "inviteLinkGeneratedSuccess": "Lidhja e ftesës u gjenerua me sukses!",
   "inviteLinkGeneratedError": "Dështoi gjenerimi i lidhjes së ftesës",
-
   "invitationModalTitle": "Lidhja e Ftesës u Gjenerua",
   "invitationModalDescription": "Ndani këtë lidhje me klientin për ta ftuar të krijojë llogarinë e portalit. Lidhja do të skadë pas 7 ditësh.",
   "invitationModalFooterText": "Kur klienti klikon në këtë lidhje, ai do të jetë në gjendje të krijojë llogarinë e portalit dhe të hyjë në projektet dhe shërbimet e tij.",
