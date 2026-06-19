@@ -272,7 +272,8 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
 
   const handleCreate = useCallback(async () => {
     const name = projectName.trim();
-    if (!name) return;
+    // Allow creation without name when template is selected (will be auto-generated)
+    if (!name && !selectedTemplateId) return;
 
     setError(null);
 
@@ -280,7 +281,7 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
       if (selectedTemplateId) {
         const res = await projectTemplatesApiService.createFromWorklenzTemplate({
           template_id: selectedTemplateId,
-          project_name: name,
+          project_name: name || undefined, // Pass undefined if no name provided
           color_code: selectedColor,
         });
         if (res.done && res.body.project_id) {
@@ -418,13 +419,13 @@ export const CreateProjectModal = ({ open, onClose }: CreateProjectModalProps) =
             <aside className="create-project-config-panel">
               <Form.Item
                 label={t('projectName', { defaultValue: 'Project name' })}
-                required
+                required={!selectedTemplateId}
                 style={{ marginBottom: 16 }}
               >
                 <Input
                   ref={nameInputRef}
                   size="large"
-                  placeholder={t('projectNameExample', { defaultValue: 'e.g. Q3 Website Refresh' })}
+                  placeholder={selectedTemplateId ? t('projectNameOptional', { defaultValue: 'Optional - will use template name' }) : t('projectNameExample', { defaultValue: 'e.g. Q3 Website Refresh' })}
                   value={projectName}
                   onChange={event => setProjectName(event.target.value)}
                   maxLength={100}
