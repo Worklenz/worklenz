@@ -51,6 +51,22 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
   }
 
   @HandleExceptions()
+  public static async getCustomTemplateById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const data = await ProjectTemplatesController.getCustomTemplateData(id);
+    if (!data) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+
+  @HandleExceptions()
   public static async deleteCustomTemplate(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse

@@ -32,6 +32,12 @@ export const projectTemplatesApiService = {
     return response.data;
   },
 
+  getCustomTemplateById: async (templateId: string): Promise<IServerResponse<IProjectTemplate>> => {
+  const response = await apiClient.get(`${rootUrl}/custom-template/${templateId}`);
+  return response.data;
+},
+
+
   setupAccount: async (
     model: IAccountSetupRequest
   ): Promise<IServerResponse<IAccountSetupResponse>> => {

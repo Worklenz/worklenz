@@ -2,6 +2,7 @@ import './project-templates-settings.css';
 import {
   Button,
   Card,
+  notification,
   Popconfirm,
   Table,
   TableProps,
@@ -11,8 +12,9 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
+import { DeleteOutlined, EditOutlined, EyeOutlined } from '@/shared/antd-imports';
 import { ProjectTemplateRenameModal } from '@/components/project-templates/project-template-rename-modal';
+import { ProjectTemplatePreviewModal } from '@/components/project-templates/project-template-preview-modal';
 import { useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
@@ -33,9 +35,17 @@ const ProjectTemplatesSettings = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const navigate = useNavigate();
 
+
+  // Rename modal state
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [selectedTemplateName, setSelectedTemplateName] = useState<string>('');
+
+  // Preview modal state
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [previewTemplateName, setPreviewTemplateName] = useState<string>('');
+  const [importing, setImporting] = useState(false);
 
   useDocumentTitle('Project Templates');
 
@@ -62,6 +72,40 @@ const ProjectTemplatesSettings = () => {
     }
   };
 
+  const handleImportTemplate = async (templateId: string, projectName: string) => {
+    try {
+      setImporting(true);
+      const res = await projectTemplatesApiService.createFromCustomTemplate({
+        template_id: templateId, project_name: projectName,
+      });
+      if (res.done) {
+        notification.success({
+          message: t('importSuccess'),
+          placement: 'topRight',
+          style: { borderRadius: '4px' },
+        });
+        setPreviewModalVisible(false);
+        navigate(`/worklenz/projects/${(res.body as any)?.project_id ?? ''}`);
+      } else {
+        notification.error({
+          message: (res as any).message ?? t('importError'),
+          placement: 'topRight',
+          style: { borderRadius: '4px' },
+        });
+      }
+    } catch (error) {
+      logger.error('Failed to import template:', error);
+      notification.error({
+        message: t('importError'),
+        placement: 'topRight',
+        style: { borderRadius: '4px' },
+
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const columns: TableProps<ICustomTemplate>['columns'] = [
     {
       key: 'name',
@@ -72,6 +116,19 @@ const ProjectTemplatesSettings = () => {
       key: 'button',
       render: record => (
         <div className="button-visibilty">
+          <Tooltip title={t('previewToolTip')}>
+            <Button
+              size="small"
+              onClick={() => {
+                setPreviewTemplateId(record.id);
+                setPreviewTemplateName(record.name);
+                setPreviewModalVisible(true);
+              }}
+            >
+              <EyeOutlined />
+            </Button>
+          </Tooltip>
+
           <Tooltip title={t('editToolTip')}>
             <Button
               size="small"
@@ -168,7 +225,7 @@ const ProjectTemplatesSettings = () => {
         columns={columns}
         dataSource={projectTemplates}
         size="small"
-         showHeader={loading || projectTemplates.length > 0}
+        showHeader={loading || projectTemplates.length > 0}
         // ✅ FIXED: added pageSize, showSizeChanger and showTotal for full pagination support
         pagination={{
           size: 'small',
@@ -177,8 +234,8 @@ const ProjectTemplatesSettings = () => {
           pageSizeOptions: ['10', '20', '50'],
           showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
           onShowSizeChange: (_, size) => {
-      setPageSize(size);
-    },
+            setPageSize(size);
+          },
         }}
         rowClassName={(_, index) =>
           `no-border-row ${index % 2 === 0 ? '' : themeMode === 'dark' ? 'dark-alternate-row-color' : 'alternate-row-color'}`
@@ -195,6 +252,19 @@ const ProjectTemplatesSettings = () => {
           setSelectedTemplateName('');
           if (renamed) fetchProjectTemplates();
         }}
+      />
+
+      <ProjectTemplatePreviewModal
+        visible={previewModalVisible}
+        templateId={previewTemplateId}
+        templateName={previewTemplateName}
+        importing={importing}
+        onClose={() => {
+          setPreviewModalVisible(false);
+          setPreviewTemplateId(null);
+          setPreviewTemplateName('');
+        }}
+        onImport={handleImportTemplate}
       />
     </Card>
   );
