@@ -10,6 +10,8 @@ import {
   Flex,
   Select,
   Tooltip,
+  ColorPicker,
+
 } from '@/shared/antd-imports';
 import { PlusOutlined, HolderOutlined, EditOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +46,8 @@ import { ITaskStatusUpdateModel } from '@/types/tasks/task-status-update-model.t
 import { IKanbanTaskStatus } from '@/types/tasks/taskStatus.types';
 import { Modal as AntModal } from '@/shared/antd-imports';
 import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { updateGroupColor } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import './ManageStatusModal.css';
 
@@ -60,6 +64,8 @@ interface StatusItemProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onCategoryChange: (id: string, categoryId: string) => void;
+  onColorChange: (id: string, color: string) => void;
+
   isDarkMode: boolean;
   categories: any[];
 }
@@ -70,6 +76,8 @@ interface CategorySectionProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onCategoryChange: (id: string, categoryId: string) => void;
+  onColorChange: (id: string, color: string) => void;
+
   onCreateStatus: (categoryId: string, name: string) => void;
   isDarkMode: boolean;
   categories: any[];
@@ -89,6 +97,8 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   onRename,
   onDelete,
   onCategoryChange,
+  onColorChange,
+
   isDarkMode,
   categories,
 }) => {
@@ -96,7 +106,18 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(status.name || '');
   const [isHovered, setIsHovered] = useState(false);
+  const [color, setColor] = useState(status.color_code || '#a9a9a9');
+
   const inputRef = useRef<any>(null);
+
+  // Keep color in sync if status prop updates
+  useEffect(() => {
+    setColor(status.color_code || '#a9a9a9');
+  }, [status.color_code]);
+
+  const handleColorChangeComplete = useCallback(() => {
+    onColorChange(id, color);
+  }, [color, id, onColorChange]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -146,11 +167,10 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group relative py-1.5 px-2 rounded border transition-all duration-200 ${
-        isDarkMode
-          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 hover:border-gray-500'
-          : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
-      } ${isDragging ? 'shadow-lg opacity-50 rotate-2 scale-105' : 'shadow-sm hover:shadow-md'}`}
+      className={`group relative py-1.5 px-2 rounded border transition-all duration-200 ${isDarkMode
+        ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 hover:border-gray-500'
+        : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+        } ${isDragging ? 'shadow-lg opacity-50 rotate-2 scale-105' : 'shadow-sm hover:shadow-md'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -159,23 +179,40 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
         <div
           {...attributes}
           {...listeners}
-          className={`flex-shrink-0 cursor-grab active:cursor-grabbing p-1 rounded transition-all duration-200 ${
-            isDarkMode
-              ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-600'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-          }`}
+          className={`flex-shrink-0 cursor-grab active:cursor-grabbing p-1 rounded transition-all duration-200 ${isDarkMode
+            ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-600'
+            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            }`}
         >
           <HolderOutlined className="text-sm" />
         </div>
 
         {/* Status Color */}
-        <div
-          className="flex-shrink-0 w-2.5 h-2.5 rounded border shadow-sm"
-          style={{
-            backgroundColor: status.color_code || '#6b7280',
-            borderColor: isDarkMode ? '#6b7280' : '#d1d5db',
-          }}
-        />
+        {/* Status Color */}
+        <div className="flex-shrink-0 flex items-center gap-1">
+          <ColorPicker
+            value={color}
+            onChange={value => setColor(value.toHexString())}
+            size="small"
+            disabledAlpha
+            panelRender={panel => (
+              <div className="flex flex-col gap-2">
+                {panel}
+                <Button type="primary" size="small" block onClick={handleColorChangeComplete}>
+                  {t('apply')}
+                </Button>
+              </div>
+            )}
+          />
+          <div
+            className="w-2.5 h-2.5 rounded border shadow-sm"
+            style={{
+              backgroundColor: color,
+              borderColor: isDarkMode ? '#6b7280' : '#d1d5db',
+            }}
+          />
+        </div>
+
 
         {/* Status Name */}
         <div className="flex-1 min-w-0">
@@ -186,20 +223,18 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
               onChange={e => setEditName(e.target.value)}
               onBlur={handleSave}
               onKeyDown={handleKeyDown}
-              className={`font-medium text-xs border-0 px-1 py-1 shadow-none ${
-                isDarkMode
-                  ? 'bg-transparent text-gray-200 placeholder-gray-400'
-                  : 'bg-transparent text-gray-900 placeholder-gray-500'
-              }`}
+              className={`font-medium text-xs border-0 px-1 py-1 shadow-none ${isDarkMode
+                ? 'bg-transparent text-gray-200 placeholder-gray-400'
+                : 'bg-transparent text-gray-900 placeholder-gray-500'
+                }`}
               placeholder={t('enterStatusName')}
             />
           ) : (
             <Text
-              className={`text-xs font-medium cursor-pointer transition-colors select-none ${
-                isDarkMode
-                  ? 'text-gray-200 hover:text-gray-100'
-                  : 'text-gray-800 hover:text-gray-900'
-              }`}
+              className={`text-xs font-medium cursor-pointer transition-colors select-none ${isDarkMode
+                ? 'text-gray-200 hover:text-gray-100'
+                : 'text-gray-800 hover:text-gray-900'
+                }`}
               onClick={handleClick}
               title={t('rename')}
             >
@@ -210,9 +245,8 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
 
         {/* Hover Actions */}
         <div
-          className={`flex items-center gap-1 transition-all duration-200 ${
-            isHovered || isEditing ? 'opacity-100' : 'opacity-0'
-          }`}
+          className={`flex items-center gap-1 transition-all duration-200 ${isHovered || isEditing ? 'opacity-100' : 'opacity-0'
+            }`}
         >
           <Tooltip title={t('rename')}>
             <Button
@@ -220,11 +254,10 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
               size="small"
               icon={<EditOutlined />}
               onClick={() => setIsEditing(true)}
-              className={`h-6 w-6 flex items-center justify-center transition-all duration-200 ${
-                isDarkMode
-                  ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-600'
-                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`h-6 w-6 flex items-center justify-center transition-all duration-200 ${isDarkMode
+                ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-600'
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
             />
           </Tooltip>
           <Tooltip title={t('delete')}>
@@ -233,11 +266,10 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
               size="small"
               icon={<DeleteOutlined />}
               onClick={() => onDelete(id)}
-              className={`h-6 w-6 flex items-center justify-center transition-all duration-200 ${
-                isDarkMode
-                  ? 'text-red-400 hover:text-red-300 hover:bg-red-800'
-                  : 'text-red-500 hover:text-red-600 hover:bg-red-50'
-              }`}
+              className={`h-6 w-6 flex items-center justify-center transition-all duration-200 ${isDarkMode
+                ? 'text-red-400 hover:text-red-300 hover:bg-red-800'
+                : 'text-red-500 hover:text-red-600 hover:bg-red-50'
+                }`}
             />
           </Tooltip>
         </div>
@@ -254,6 +286,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   onDelete,
   onCategoryChange,
   onCreateStatus,
+  onColorChange,
+
   isDarkMode,
   categories,
   dragOverCategory,
@@ -308,33 +342,29 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg border transition-all duration-200 ${
-        isDarkMode
-          ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
-          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-      } ${isOver && isDraggedFromDifferentCategory ? (isDarkMode ? 'ring-2 ring-blue-500 bg-gray-700 shadow-xl' : 'ring-2 ring-blue-500 bg-blue-100 shadow-xl') : ''} shadow-sm hover:shadow-md`}
+      className={`rounded-lg border transition-all duration-200 ${isDarkMode
+        ? 'bg-gray-800 border-gray-700 hover:bg-gray-750'
+        : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+        } ${isOver && isDraggedFromDifferentCategory ? (isDarkMode ? 'ring-2 ring-blue-500 bg-gray-700 shadow-xl' : 'ring-2 ring-blue-500 bg-blue-100 shadow-xl') : ''} shadow-sm hover:shadow-md`}
       style={{ minHeight: '60px' }}
     >
       {/* Category Header */}
       <div
-        className={`px-3 py-2 border-b transition-colors ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}
+        className={`px-3 py-2 border-b transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'
+          }`}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Title
               level={5}
-              className={`m-0 font-semibold text-sm transition-colors ${
-                isDarkMode ? 'text-gray-100' : 'text-gray-800'
-              }`}
+              className={`m-0 font-semibold text-sm transition-colors ${isDarkMode ? 'text-gray-100' : 'text-gray-800'
+                }`}
             >
               {category.name}
             </Title>
             <span
-              className={`text-xs font-medium px-1.5 py-0.5 rounded transition-all ${
-                isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-              }`}
+              className={`text-xs font-medium px-1.5 py-0.5 rounded transition-all ${isDarkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                }`}
             >
               {statuses.length}
             </span>
@@ -345,11 +375,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               size="small"
               icon={<PlusOutlined />}
               onClick={() => onSetActiveAddCategory(category.id)}
-              className={`h-7 px-2 text-xs font-medium transition-all duration-200 ${
-                isDarkMode
-                  ? 'text-gray-300 hover:text-gray-200 hover:bg-gray-700'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-              }`}
+              className={`h-7 px-2 text-xs font-medium transition-all duration-200 ${isDarkMode
+                ? 'text-gray-300 hover:text-gray-200 hover:bg-gray-700'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                }`}
             >
               {t('addStatus')}
             </Button>
@@ -375,18 +404,16 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                     dragOverIndex !== null &&
                     dragOverIndex === index && (
                       <div
-                        className={`py-1.5 px-2 rounded border-2 border-dashed transition-all duration-200 ${
-                          isDarkMode
-                            ? 'border-blue-400 bg-blue-900/20 text-blue-300'
-                            : 'border-blue-400 bg-blue-50 text-blue-600'
-                        }`}
+                        className={`py-1.5 px-2 rounded border-2 border-dashed transition-all duration-200 ${isDarkMode
+                          ? 'border-blue-400 bg-blue-900/20 text-blue-300'
+                          : 'border-blue-400 bg-blue-50 text-blue-600'
+                          }`}
                       >
                         <div className="flex items-center gap-2 opacity-75">
                           <div className="flex-shrink-0 w-2.5 h-2.5 rounded border bg-gray-400" />
                           <Text
-                            className={`text-xs font-medium ${
-                              isDarkMode ? 'text-blue-300' : 'text-blue-600'
-                            }`}
+                            className={`text-xs font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'
+                              }`}
                           >
                             Drop here to move to {category.name}
                           </Text>
@@ -400,6 +427,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                     onRename={onRename}
                     onDelete={onDelete}
                     onCategoryChange={onCategoryChange}
+                    onColorChange={onColorChange}
+
                     isDarkMode={isDarkMode}
                     categories={categories}
                   />
@@ -412,18 +441,16 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               dragOverIndex !== null &&
               dragOverIndex >= statuses.length && (
                 <div
-                  className={`py-1.5 px-2 rounded border-2 border-dashed transition-all duration-200 ${
-                    isDarkMode
-                      ? 'border-blue-400 bg-blue-900/20 text-blue-300'
-                      : 'border-blue-400 bg-blue-50 text-blue-600'
-                  }`}
+                  className={`py-1.5 px-2 rounded border-2 border-dashed transition-all duration-200 ${isDarkMode
+                    ? 'border-blue-400 bg-blue-900/20 text-blue-300'
+                    : 'border-blue-400 bg-blue-50 text-blue-600'
+                    }`}
                 >
                   <div className="flex items-center gap-2 opacity-75">
                     <div className="flex-shrink-0 w-2.5 h-2.5 rounded border bg-gray-400" />
                     <Text
-                      className={`text-xs font-medium ${
-                        isDarkMode ? 'text-blue-300' : 'text-blue-600'
-                      }`}
+                      className={`text-xs font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'
+                        }`}
                     >
                       Drop here to move to {category.name}
                     </Text>
@@ -436,11 +463,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
         {/* Add Status Form — only renders for the active category */}
         {showAddForm && (
           <div
-            className={`mt-3 p-2 rounded border-2 border-dashed transition-all duration-200 ${
-              isDarkMode
-                ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
-                : 'border-gray-300 bg-white hover:border-gray-400'
-            } shadow-sm`}
+            className={`mt-3 p-2 rounded border-2 border-dashed transition-all duration-200 ${isDarkMode
+              ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+              : 'border-gray-300 bg-white hover:border-gray-400'
+              } shadow-sm`}
           >
             <div className="flex gap-2">
               <Input
@@ -448,11 +474,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                 value={newStatusName}
                 onChange={e => setNewStatusName(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className={`flex-1 ${
-                  isDarkMode
-                    ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                }`}
+                className={`flex-1 ${isDarkMode
+                  ? 'bg-gray-600 border-gray-500 text-gray-100 placeholder-gray-400'
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                  }`}
                 size="small"
                 autoFocus
               />
@@ -471,11 +496,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                   onSetActiveAddCategory(null);
                 }}
                 size="small"
-                className={`text-xs ${
-                  isDarkMode
-                    ? 'text-gray-300 hover:text-gray-200 border-gray-600'
-                    : 'text-gray-600 hover:text-gray-800 border-gray-300'
-                }`}
+                className={`text-xs ${isDarkMode
+                  ? 'text-gray-300 hover:text-gray-200 border-gray-600'
+                  : 'text-gray-600 hover:text-gray-800 border-gray-300'
+                  }`}
               >
                 {t('cancel')}
               </Button>
@@ -485,9 +509,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
         {statuses.length === 0 && !showAddForm && (
           <div
-            className={`text-center py-6 transition-colors ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}
+            className={`text-center py-6 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}
           >
             <Text className="text-xs font-medium">{t('noStatusesFound')}</Text>
             <br />
@@ -495,11 +518,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               type="link"
               size="small"
               onClick={() => onSetActiveAddCategory(category.id)}
-              className={`text-xs mt-1 font-medium ${
-                isDarkMode
-                  ? 'text-blue-400 hover:text-blue-300'
-                  : 'text-blue-600 hover:text-blue-700'
-              }`}
+              className={`text-xs mt-1 font-medium ${isDarkMode
+                ? 'text-blue-400 hover:text-blue-300'
+                : 'text-blue-600 hover:text-blue-700'
+                }`}
             >
               {t('addStatus')}
             </Button>
@@ -935,6 +957,34 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
     [localStatuses, finalProjectId, dispatch, t]
   );
 
+  const handleColorChange = useCallback(
+    async (id: string, colorCode: string) => {
+      if (!finalProjectId) return;
+      try {
+        // 1. Optimistic update in ManageStatusModal local state
+        setLocalStatuses(prev =>
+          prev.map(s => (s.id === id ? { ...s, color_code: colorCode } : s))
+        );
+
+        // 2. Save to backend
+        await statusApiService.updateStatusColor(id, colorCode, finalProjectId);
+
+        // 3. Immediately patch the board column color in Redux — no refetch needed
+      dispatch(updateGroupColor({ groupId: id, colorCode }));
+
+        // 4. Refresh everything so next load is also consistent
+        dispatch(fetchStatuses(finalProjectId));
+        dispatch(fetchEnhancedKanbanGroups(finalProjectId));
+      } catch (error) {
+        console.error('Error updating status color:', error);
+        dispatch(fetchStatuses(finalProjectId));
+      }
+    },
+    [finalProjectId, dispatch]
+  );
+
+
+
   const handleClose = useCallback(() => {
     setActiveAddCategoryId(null);
     onClose();
@@ -967,11 +1017,10 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
         >
           <Button
             onClick={handleClose}
-            className={`font-medium ${
-              isDarkMode
-                ? 'text-gray-300 hover:text-gray-200 border-gray-600'
-                : 'text-gray-600 hover:text-gray-800 border-gray-300'
-            }`}
+            className={`font-medium ${isDarkMode
+              ? 'text-gray-300 hover:text-gray-200 border-gray-600'
+              : 'text-gray-600 hover:text-gray-800 border-gray-300'
+              }`}
           >
             {t('close')}
           </Button>
@@ -982,11 +1031,10 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
       <div className="space-y-4">
         {/* Info Banner */}
         <div
-          className={`p-3 rounded border transition-all duration-200 ${
-            isDarkMode
-              ? 'bg-gray-800 border-gray-700 text-gray-300'
-              : 'bg-blue-50 border-blue-200 text-blue-700'
-          }`}
+          className={`p-3 rounded border transition-all duration-200 ${isDarkMode
+            ? 'bg-gray-800 border-gray-700 text-gray-300'
+            : 'bg-blue-50 border-blue-200 text-blue-700'
+            }`}
         >
           <Text className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-blue-700'}`}>
             💡 Drag statuses to reorder within categories or drag between categories to change their
@@ -1016,6 +1064,7 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
                 onRename={handleRenameStatus}
                 onDelete={handleDeleteStatus}
                 onCategoryChange={handleCategoryChange}
+                onColorChange={handleColorChange}
                 onCreateStatus={handleCreateStatus}
                 isDarkMode={isDarkMode}
                 categories={statusCategories}
@@ -1032,17 +1081,15 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
           <DragOverlay>
             {activeId ? (
               <div
-                className={`py-1.5 px-2 rounded border transition-all duration-200 shadow-lg ${
-                  isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-                }`}
+                className={`py-1.5 px-2 rounded border transition-all duration-200 shadow-lg ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
+                  }`}
               >
                 <div className="flex items-center gap-2">
                   <HolderOutlined className="text-sm text-gray-400" />
                   <div className="flex-shrink-0 w-2.5 h-2.5 rounded border bg-gray-400" />
                   <Text
-                    className={`text-xs font-medium ${
-                      isDarkMode ? 'text-gray-200' : 'text-gray-800'
-                    }`}
+                    className={`text-xs font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-800'
+                      }`}
                   >
                     {localStatuses.find(s => s.id === activeId)?.name || 'Status'}
                   </Text>
@@ -1054,9 +1101,8 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
 
         {statusCategories.length === 0 && (
           <div
-            className={`text-center py-8 transition-colors ${
-              isDarkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}
+            className={`text-center py-8 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}
           >
             <Text className="text-sm font-medium">{t('noStatusesFound')}</Text>
           </div>

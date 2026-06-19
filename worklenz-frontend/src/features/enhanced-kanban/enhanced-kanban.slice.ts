@@ -632,6 +632,18 @@ const enhancedKanbanSlice = createSlice({
       state.groupCache = {};
     },
 
+    updateGroupColor: (
+      state,
+      action: PayloadAction<{ groupId: string; colorCode: string }>
+    ) => {
+      const { groupId, colorCode } = action.payload;
+      const group = state.taskGroups.find(g => g.id === groupId);
+      if (group) {
+        group.color_code = colorCode;
+        group.color_code_dark = colorCode;
+      }
+    },
+
     setSearch: (state, action: PayloadAction<string | null>) => {
       state.search = action.payload;
     },
@@ -1473,6 +1485,7 @@ export const {
   toggleTaskExpansion,
   setEditableSection,
   deleteSection,
+  updateGroupColor
 } = enhancedKanbanSlice.actions;
 
 export const selectKanbanLoadedProjectId = (state: { enhancedKanbanReducer: EnhancedKanbanState }) =>
