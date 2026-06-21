@@ -209,12 +209,12 @@ export class AppSumoMigrationService {
         };
       }
 
-      // Begin transaction
-      await db.query('BEGIN');
+      const client = await db.pool.connect();
 
       try {
+        await client.query('BEGIN');
         // Record the migration
-        const migrationResult = await db.query(`
+        const migrationResult = await client.query(`
           INSERT INTO appsumo_migrations (
             organization_id,
             old_plan_type,
@@ -237,7 +237,7 @@ export class AppSumoMigrationService {
         const migrationId = migrationResult.rows[0].id;
 
         // Update organization subscription
-        await db.query(`
+        await client.query(`
           UPDATE organizations
           SET 
             subscription_type = $1,
@@ -254,7 +254,7 @@ export class AppSumoMigrationService {
           organizationId
         ]);
 
-        await db.query('COMMIT');
+        await client.query('COMMIT');
 
         return {
           success: true,
@@ -272,8 +272,10 @@ export class AppSumoMigrationService {
         };
 
       } catch (innerError) {
-        await db.query('ROLLBACK');
+        await client.query('ROLLBACK').catch(() => void 0);
         throw innerError;
+      } finally {
+        client.release();
       }
 
     } catch (error) {

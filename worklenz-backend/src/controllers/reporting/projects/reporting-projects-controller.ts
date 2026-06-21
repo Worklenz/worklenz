@@ -10,6 +10,8 @@ import { getColor, int, formatDuration, formatLogText } from "../../../shared/ut
 import { SqlHelper } from "../../../shared/sql-helpers";
 import db from "../../../config/db";
 
+const GROUPED_REPORT_STATEMENT_TIMEOUT_MS = 25_000;
+
 export default class ReportingProjectsController extends ReportingProjectsBase {
 
   @HandleExceptions()
@@ -422,10 +424,15 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       paramOffset
     );
 
-    // Build optimized query with group-level task aggregations and pagination
-    // OPTIMIZATION: Replace function calls with direct category_id comparisons
+    // Filter visible projects before aggregating tasks. Aggregating the complete
+    // tasks table here can saturate the pool for organizations with little data.
     const q = `
-      WITH project_tasks AS (
+      WITH filtered_projects AS MATERIALIZED (
+        SELECT p.id
+        FROM projects p
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+      ),
+      project_tasks AS (
         SELECT
           t.project_id,
           COUNT(t.id) AS total_tasks,
@@ -433,18 +440,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
           COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 1} THEN 1 END) AS doing_tasks,
           COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 2} THEN 1 END) AS todo_tasks
         FROM tasks t
+        INNER JOIN filtered_projects fp ON fp.id = t.project_id
         INNER JOIN task_statuses ts ON t.status_id = ts.id
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
       ),
       total_projects AS (
-        SELECT COUNT(DISTINCT p.id) AS total_project_count
-        FROM projects p
-        LEFT JOIN project_categories pc ON p.category_id = pc.id
-        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
-        ${healthJoin}
-        ${groupJoin}
-        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+        SELECT COUNT(*) AS total_project_count
+        FROM filtered_projects
       ),
       all_groups AS (
         SELECT
@@ -482,13 +485,13 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
               )
             ) ORDER BY p.name
           )), '[]'::JSON) AS projects
-        FROM projects p
+        FROM filtered_projects fp
+        INNER JOIN projects p ON p.id = fp.id
         LEFT JOIN project_categories pc ON p.category_id = pc.id
         LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
         ${healthJoin}
         LEFT JOIN project_tasks pt ON p.id = pt.project_id
         ${groupJoin}
-        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
         GROUP BY ${groupByFields}
       ),
       total_count AS (
@@ -507,7 +510,23 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     // Build final params: teamId ($1), searchParams ($2+), filter params, category IDs, then LIMIT and OFFSET
     const finalParams = [teamId, ...filterParams, ...paginationParams];
-    const result = await db.query(q, finalParams);
+    const result = await (async () => {
+      const client = await db.pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT set_config('statement_timeout', $1, true);", [
+          `${GROUPED_REPORT_STATEMENT_TIMEOUT_MS}ms`,
+        ]);
+        const queryResult = await client.query(q, finalParams);
+        await client.query("COMMIT");
+        return queryResult;
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => void 0);
+        throw error;
+      } finally {
+        client.release();
+      }
+    })();
 
     const groups = result.rows.map(row => ({
       group_id: row.group_id,
