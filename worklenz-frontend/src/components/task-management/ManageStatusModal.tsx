@@ -107,17 +107,20 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   const [editName, setEditName] = useState(status.name || '');
   const [isHovered, setIsHovered] = useState(false);
   const [color, setColor] = useState(status.color_code || '#a9a9a9');
-
+  const [pickerOpen, setPickerOpen] = useState(false);
   const inputRef = useRef<any>(null);
 
+  const colorRef = useRef(color);
+  colorRef.current = color;
   // Keep color in sync if status prop updates
   useEffect(() => {
     setColor(status.color_code || '#a9a9a9');
   }, [status.color_code]);
 
   const handleColorChangeComplete = useCallback(() => {
-    onColorChange(id, color);
-  }, [color, id, onColorChange]);
+    setPickerOpen(false);
+    onColorChange(id, colorRef.current);
+  }, [id, onColorChange]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -192,6 +195,9 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
         <div className="flex-shrink-0 flex items-center gap-1">
           <ColorPicker
             value={color}
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+
             onChange={value => setColor(value.toHexString())}
             size="small"
             disabledAlpha
@@ -970,10 +976,12 @@ const ManageStatusModal: React.FC<ManageStatusModalProps> = ({ open, onClose, pr
         await statusApiService.updateStatusColor(id, colorCode, finalProjectId);
 
         // 3. Immediately patch the board column color in Redux — no refetch needed
-      dispatch(updateGroupColor({ groupId: id, colorCode }));
+        dispatch(updateGroupColor({ groupId: id, colorCode }));
 
         // 4. Refresh everything so next load is also consistent
         dispatch(fetchStatuses(finalProjectId));
+        dispatch(fetchTasksV3(finalProjectId));
+
         dispatch(fetchEnhancedKanbanGroups(finalProjectId));
       } catch (error) {
         console.error('Error updating status color:', error);
