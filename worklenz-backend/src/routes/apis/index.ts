@@ -62,6 +62,7 @@ import customColumnsApiRouter from "./custom-columns-api-router";
 import userActivityLogsApiRouter from "./user-activity-logs-api-router";
 import supportApiRouter from "./support-api-router";
 import accountApiRouter from "./account-api-router";
+import casesApiRouter from "./cases-api-router";
 
 const api = express.Router();
 
@@ -124,6 +125,7 @@ api.use("/task-recurring", taskRecurringApiRouter);
 api.use("/custom-columns", customColumnsApiRouter);
 api.use("/support", supportApiRouter);
 api.use("/account", accountApiRouter);
+api.use("/cases", casesApiRouter);
 
 api.use("/logs", userActivityLogsApiRouter);
 export default api;
