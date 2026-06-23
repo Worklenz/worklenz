@@ -3,6 +3,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IRPTTeam } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { allTasksReportsApiService } from '@/api/reporting/all-tasks-reports.api.service';
+import { toArray } from '@/utils/to-array';
 
 // Types
 export type AllTasksGroupBy =
@@ -156,7 +157,7 @@ const getSelectedTeamIds = (state: AllTasksReportsState): string[] => {
 
 export const fetchAllTasksTeams = createAsyncThunk('allTasksReports/fetchTeams', async () => {
   const res = await reportingApiService.getOverviewTeams();
-  return res.body;
+  return res.body ?? [];
 });
 
 export const fetchAllTasks = createAsyncThunk(
@@ -445,7 +446,7 @@ const allTasksReportsSlice = createSlice({
         state.teamsLoaded = false;
       })
       .addCase(fetchAllTasksTeams.fulfilled, (state, action) => {
-        state.teams = action.payload.map(team => ({
+        state.teams = toArray(action.payload).map(team => ({
           ...team,
           selected: true,
         }));

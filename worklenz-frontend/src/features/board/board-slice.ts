@@ -9,6 +9,7 @@ import {
 } from '@/types/tasks/taskList.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
+import { toArray } from '@/utils/to-array';
 import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
 import { IProjectTask, ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
 import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
@@ -250,7 +251,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
       };
 
       const response = await tasksApiService.getTaskList(config);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Sub Tasks', error);
       if (error instanceof Error) {
@@ -850,15 +851,16 @@ const boardSlice = createSlice({
         }
       })
       .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
-        if (action.payload.length > 0) {
-          const taskId = action.payload[0].parent_task_id;
+        const subTasks = toArray(action.payload);
+        if (subTasks.length > 0) {
+          const taskId = subTasks[0].parent_task_id;
           if (taskId) {
             const result = findTaskInAllGroups(state.taskGroups, taskId);
             if (result) {
-              result.task.sub_tasks = action.payload;
+              result.task.sub_tasks = subTasks;
               result.task.show_sub_tasks = true;
               result.task.sub_tasks_loading = false;
-              result.task.sub_tasks_count = action.payload.length;
+              result.task.sub_tasks_count = subTasks.length;
             }
           }
         } else {

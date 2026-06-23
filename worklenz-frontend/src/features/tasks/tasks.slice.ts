@@ -24,6 +24,7 @@ import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.serv
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { toArray } from '@/utils/to-array';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -283,7 +284,7 @@ export const fetchTaskAssignees = createAsyncThunk(
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await tasksApiService.fetchTaskAssignees(projectId);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Task Assignees', error);
       if (error instanceof Error) {
@@ -299,7 +300,7 @@ export const fetchLabelsByProject = createAsyncThunk(
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await labelsApiService.getPriorityByProject(projectId);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Labels By Project', error);
       if (error instanceof Error) {
@@ -1154,7 +1155,7 @@ const taskSlice = createSlice({
         const existingSelections = new Map(
           state.taskAssignees.map(assignee => [assignee.id, assignee.selected])
         );
-        state.taskAssignees = action.payload.map(assignee => ({
+        state.taskAssignees = toArray(action.payload).map(assignee => ({
           ...assignee,
           selected: existingSelections.get(assignee.id) ?? false,
         }));
@@ -1201,7 +1202,7 @@ const taskSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchLabelsByProject.fulfilled, (state, action: PayloadAction<ITaskLabel[]>) => {
-        const newLabels = action.payload.map(label => ({ ...label, selected: false }));
+        const newLabels = toArray(action.payload).map(label => ({ ...label, selected: false }));
         state.labels = newLabels;
         state.loadingLabels = false;
       })
