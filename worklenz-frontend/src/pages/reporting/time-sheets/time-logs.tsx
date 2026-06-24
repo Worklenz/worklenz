@@ -45,6 +45,7 @@ const TimeLogsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [search, setSearch] = useState<string>('');
+  const [pageSize, setPageSize] = useState(20);
   const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean }>(
     { billable: true, nonBillable: true }
   );
@@ -310,7 +311,10 @@ const TimeLogsPage: React.FC = () => {
           loading={loading}
           dataSource={filteredLogs}
           columns={columns}
-          pagination={{ pageSize: 20 }}
+          pagination={{ pageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['20', '50', '100'],
+                        onShowSizeChange: (_current, size) => setPageSize(size), }}
         />
       </Card>
     </Flex>
