@@ -28,10 +28,6 @@ import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/co
 import ProjectUpdateCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-update-cell/project-update-cell';
 import {
   resetProjectReports,
-  setField,
-  setIndex,
-  setOrder,
-  setPageSize,
   toggleProjectReportsDrawer,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
@@ -73,24 +69,22 @@ const ReportingOverviewProjectsTable = ({
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [field, setField] = useState<string>('name');
 
-  // ✅ Update local projectList directly when socket response arrives
-  // This component uses local state not Redux, so we patch the list in place
   const handleHealthChangeResponse = useCallback(
     (data: { id: string; health_id: string; color_code: string; name: string }) => {
       setProjectList(prev =>
         prev.map(project =>
           project.id === data.id
             ? {
-              ...project,
-              project_health: data.health_id,
-              health_name: data.name,
-              health_color: data.color_code,
-            }
+                ...project,
+                project_health: data.health_id,
+                health_name: data.name,
+                health_color: data.color_code,
+              }
             : project
         )
       );
     },
-    [setProjectList]
+    []
   );
 
   useEffect(() => {
@@ -134,7 +128,6 @@ const ReportingOverviewProjectsTable = ({
               project={record.name}
               projectColor={record.color_code}
             />
-
             <Button
               className="hidden group-hover:flex"
               type="text"
@@ -282,11 +275,16 @@ const ReportingOverviewProjectsTable = ({
     [t, order]
   );
 
-  const handleTableChange = (pagination: PaginationProps, filters: any, sorter: any) => {
+  // FIX 1: Merge both setPagination calls into one, using functional update
+  // to avoid the second call overwriting the first with a stale spread.
+  const handleTableChange = (paginationConfig: PaginationProps, filters: any, sorter: any) => {
     if (sorter.order) setOrder(sorter.order);
     if (sorter.field) setField(sorter.field);
-    setPagination({ ...pagination, current: pagination.current });
-    setPagination({ ...pagination, pageSize: pagination.pageSize });
+    setPagination(prev => ({
+      ...prev,
+      current: paginationConfig.current ?? prev.current,
+      pageSize: paginationConfig.pageSize ?? prev.pageSize,
+    }));
   };
 
   useEffect(() => {
@@ -329,7 +327,9 @@ const ReportingOverviewProjectsTable = ({
     [themeMode]
   );
 
-  const fetchOverviewProjects = async () => {
+  // FIX 2: Wrap in useCallback so the effect dependency is stable and correct.
+  // All values read inside are listed as deps, so the closure is never stale.
+  const fetchOverviewProjects = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = {
@@ -345,18 +345,22 @@ const ReportingOverviewProjectsTable = ({
       const response = await reportingApiService.getOverviewProjects(params);
       if (response.done) {
         setProjectList(response.body.projects || []);
-        setPagination({ ...pagination, total: response.body.total });
+        // FIX 3: Use functional update so total doesn't clobber current/pageSize.
+        setPagination(prev => ({ ...prev, total: response.body.total }));
       }
     } catch (error) {
       logger.error('fetchOverviewProjects', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [teamsId, pagination.current, pagination.pageSize, searchQuery, order, field, includeArchivedProjects]);
 
+  // FIX 4: fetchOverviewProjects is now the single dependency.
+  // It changes whenever page, pageSize, search, sort, or archived changes —
+  // so the API is always called with the correct values.
   useEffect(() => {
     fetchOverviewProjects();
-  }, [searchQuery, order, field]);
+  }, [fetchOverviewProjects]);
 
   return (
     <ConfigProvider {...tableConfig}>
@@ -365,9 +369,10 @@ const ReportingOverviewProjectsTable = ({
         dataSource={projectList}
         pagination={{
           showSizeChanger: true,
-          defaultPageSize: 10,
+          defaultPageSize: DEFAULT_PAGE_SIZE,
           total: pagination.total,
           current: pagination.current,
+          pageSize: pagination.pageSize,
           pageSizeOptions: PAGE_SIZE_OPTIONS,
         }}
         scroll={{ x: 1500 }}
