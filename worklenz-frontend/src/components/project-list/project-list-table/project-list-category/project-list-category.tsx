@@ -35,13 +35,27 @@ export const CategoryCell: React.FC<{
           backgroundColor: bgColor,
           border: 'none',
           cursor: 'pointer',
+          maxWidth: 150,          // ← cap the tag width
+          display: 'inline-flex',
+          alignItems: 'center',
+          overflow: 'hidden',
         }}
         onClick={e => {
           e.stopPropagation();
           filterByCategory(record.category_id);
         }}
       >
-        <span style={{ fontSize: 12, color: textColor }}>{record.category_name}</span>
+        <span
+          style={{
+            fontSize: 12,
+            color: textColor,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {record.category_name}
+        </span>
       </Tag>
     </Tooltip>
   );
