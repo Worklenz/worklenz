@@ -28,10 +28,6 @@ import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/co
 import ProjectUpdateCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-update-cell/project-update-cell';
 import {
   resetProjectReports,
-  setField,
-  setIndex,
-  setOrder,
-  setPageSize,
   toggleProjectReportsDrawer,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
@@ -81,11 +77,11 @@ const ReportingOverviewProjectsTable = ({
         prev.map(project =>
           project.id === data.id
             ? {
-              ...project,
-              project_health: data.health_id,
-              health_name: data.name,
-              health_color: data.color_code,
-            }
+                ...project,
+                project_health: data.health_id,
+                health_name: data.name,
+                health_color: data.color_code,
+              }
             : project
         )
       );
@@ -282,11 +278,17 @@ const ReportingOverviewProjectsTable = ({
     [t, order]
   );
 
-  const handleTableChange = (pagination: PaginationProps, filters: any, sorter: any) => {
+  // ✅ FIX 1: Renamed parameter from `pagination` to `newPagination` to avoid
+  // shadowing the state variable, and merged all updates into a single
+  // setPagination call so pageSize and current are never lost.
+  const handleTableChange = (newPagination: PaginationProps, filters: any, sorter: any) => {
     if (sorter.order) setOrder(sorter.order);
     if (sorter.field) setField(sorter.field);
-    setPagination({ ...pagination, current: pagination.current });
-    setPagination({ ...pagination, pageSize: pagination.pageSize });
+    setPagination(prev => ({
+      ...prev,
+      current: newPagination.current,
+      pageSize: newPagination.pageSize,
+    }));
   };
 
   useEffect(() => {
@@ -345,7 +347,7 @@ const ReportingOverviewProjectsTable = ({
       const response = await reportingApiService.getOverviewProjects(params);
       if (response.done) {
         setProjectList(response.body.projects || []);
-        setPagination({ ...pagination, total: response.body.total });
+        setPagination(prev => ({ ...prev, total: response.body.total }));
       }
     } catch (error) {
       logger.error('fetchOverviewProjects', error);
@@ -354,18 +356,22 @@ const ReportingOverviewProjectsTable = ({
     }
   };
 
+  // ✅ FIX 2: Added pagination.current and pagination.pageSize as dependencies
+  // so any change to page number or page size triggers a fresh API fetch.
   useEffect(() => {
     fetchOverviewProjects();
-  }, [searchQuery, order, field]);
+  }, [searchQuery, order, field, pagination.current, pagination.pageSize]);
 
   return (
     <ConfigProvider {...tableConfig}>
       <Table
         columns={columns}
         dataSource={projectList}
+        // ✅ FIX 3: Replaced `defaultPageSize` (uncontrolled, ignored after mount)
+        // with `pageSize` (controlled) so the table always reflects state.
         pagination={{
           showSizeChanger: true,
-          defaultPageSize: 10,
+          pageSize: pagination.pageSize,
           total: pagination.total,
           current: pagination.current,
           pageSizeOptions: PAGE_SIZE_OPTIONS,
