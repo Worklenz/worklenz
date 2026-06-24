@@ -69,7 +69,7 @@ export const ProjectSetupBanner = ({ projectId }: ProjectSetupBannerProps) => {
       message={t('title', { defaultValue: 'Your project is ready!' })}
       description={t('description', {
         defaultValue:
-          'Add status, dates, a manager, tags and more to help your team stay aligned.',
+          'Add status, dates, a manager and more to help your team stay aligned.',
       })}
       action={
         <Button
