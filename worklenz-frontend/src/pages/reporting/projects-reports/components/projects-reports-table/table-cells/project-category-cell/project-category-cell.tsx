@@ -15,19 +15,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import './project-category-cell.css';
-import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { addCategory } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { themeWiseColor } from '@utils/themeWiseColor';
-import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
+import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { setSelectedProjectCategory } from '@/features/reporting/projectReports/project-reports-slice';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
 import logger from '@/utils/errorLogger';
 
-// Update the props interface to include projectId
 interface ProjectCategoryCellProps {
   id: string;
   name: string;
@@ -46,23 +43,18 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     color_code,
   });
 
-  // get categories list from the categories reducer
-  const { projectCategories, loading: projectCategoriesLoading } = useAppSelector(
-    state => state.projectCategoriesReducer
-  );
+  const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
 
-  // filter categories based on search query
   const filteredCategoriesData = useMemo(() => {
     return projectCategories.filter(category =>
       category.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [projectCategories, searchQuery]);
 
-  // category selection options
   const categoryOptions = filteredCategoriesData.map(category => ({
     key: category.id as string,
     label: (
@@ -72,14 +64,10 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     ),
   }));
 
-  // handle category select
   const onClick: MenuProps['onClick'] = e => {
     const newCategory = filteredCategoriesData.find(category => category.id === e.key);
     if (newCategory && connected && socket) {
-      // Update local state immediately
       setSelectedCategory(newCategory);
-
-      // Emit socket event
       socket.emit(
         SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
         JSON.stringify({
@@ -89,11 +77,8 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       );
     }
     setDropdownOpen(false);
-
   };
 
-
-  //   function to handle add a new category
   const handleCreateCategory = async (name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
@@ -109,13 +94,8 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
         color_code: '#1E90FF',
       });
       if (res.done) {
-        // Add to dropdown list
         dispatch(addCategory(res.body));
-
-        // Update the cell label immediately
         setSelectedCategory(res.body);
-
-        // Assign the new category to this project
         if (connected && socket) {
           socket.emit(
             SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
@@ -125,8 +105,6 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
             })
           );
         }
-
-        // Close the dropdown
         setDropdownOpen(false);
       }
     } catch (error) {
@@ -134,10 +112,8 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     } finally {
       setSearchQuery('');
     }
-
   };
 
-  // dropdown items
   const projectCategoryCellItems: MenuProps['items'] = [
     {
       key: '1',
@@ -146,9 +122,7 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
           <Flex vertical gap={4}>
             <div
               onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.stopPropagation(); // ← prevents Dropdown/Menu from intercepting Enter
-                }
+                if (e.key === 'Enter') e.stopPropagation();
               }}
             >
               <Input
@@ -161,7 +135,6 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
                     category => category.name?.toLowerCase() === searchQuery.toLowerCase()
                   );
                   if (isCategory === -1 && e.key === 'Enter') {
-                    // handle category creation logic
                     handleCreateCategory(searchQuery);
                   }
                 }}
@@ -173,31 +146,21 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
               </Typography.Text>
             )}
           </Flex>
-
           <Menu className="project-category-menu" items={categoryOptions} onClick={onClick} />
         </Card>
       ),
     },
   ];
 
-  // Update the socket response handler
   const handleCategoryChangeResponse = (data: any) => {
     try {
       const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
       if (parsedData && parsedData.project_id === projectId) {
-        // Update local state
         const socketCategory = parsedData.category;
         const fullCategory =
           projectCategories.find(c => c.id === socketCategory?.id) || socketCategory;
-
         setSelectedCategory(fullCategory);
-
-        dispatch(
-          updateProjectCategory({
-            projectId: parsedData.project_id,
-            category: fullCategory,
-          })
-        );
+        dispatch(updateProjectCategory({ projectId: parsedData.project_id, category: fullCategory }));
       }
     } catch (error) {
       console.error('Error handling category change response:', error);
@@ -206,21 +169,25 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 
   const handleCategoryDropdownOpen = (open: boolean) => {
     if (open) {
-      setTimeout(() => {
-        categoryInputRef.current?.focus();
-      }, 0);
+      setTimeout(() => categoryInputRef.current?.focus(), 0);
     }
   };
 
   useEffect(() => {
     if (connected && socket) {
       socket.on(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
-
       return () => {
         socket.off(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
       };
     }
   }, [connected, socket, projectCategories]);
+
+  // Compute pill colors
+  const bgColor = selectedCategory.id
+    ? themeWiseColor(`${selectedCategory.color_code}33`, `${selectedCategory.color_code}55`, themeMode)
+    : colors.transparent;
+  const textColor = themeWiseColor(colors.darkGray, colors.white, themeMode);
+  const borderStyle = selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`;
 
   return (
     <Dropdown
@@ -229,44 +196,29 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       placement="bottomRight"
       trigger={['click']}
       open={dropdownOpen}
-      onOpenChange={(open) => {
+      onOpenChange={open => {
         setDropdownOpen(open);
         handleCategoryDropdownOpen(open);
       }}
     >
-      <Flex
-        gap={6}
-        align="center"
+      {/* CSS classes do the truncation — inline styles only handle dynamic colors */}
+      <div
+        className="category-pill-wrapper"
         style={{
-          width: 'fit-content',
-          borderRadius: 24,
-          paddingInline: 8,
-          textTransform: 'capitalize',
-          fontSize: 13,
-          height: 22,
-          backgroundColor: selectedCategory.id
-            ? themeWiseColor(
-              `${selectedCategory.color_code}33`,   // light: 20% opacity (existing)
-              `${selectedCategory.color_code}55`,   // dark: 33% opacity (more visible)
-              themeMode
-            )
-            : colors.transparent,
-          color: selectedCategory.id
-            ? themeWiseColor(colors.darkGray, colors.white, themeMode)
-            : themeWiseColor(colors.darkGray, colors.white, themeMode),
-          border: selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`,
-          cursor: 'pointer',
+          backgroundColor: bgColor,
+          color: textColor,
+          border: borderStyle,
         }}
       >
-        {selectedCategory.id ? selectedCategory.name : t('setCategoryText')}
-
-        <DownOutlined />
-      </Flex>
-    </Dropdown >
+        <span className="category-pill-text">
+          {selectedCategory.id ? selectedCategory.name : t('setCategoryText')}
+        </span>
+        <DownOutlined className="category-pill-icon" />
+      </div>
+    </Dropdown>
   );
 };
 
-// Action creator for updating project category
 const updateProjectCategory = (payload: { projectId: string; category: IProjectCategory }) => ({
   type: 'projects/updateCategory',
   payload,
