@@ -120,6 +120,9 @@ const membersReportsSlice = createSlice({
     setSelectedStatType: (state, action) => {
       state.selectedStatType = action.payload;
     },
+    clearSelectedStatType: (state) => {
+      state.selectedStatType = null;
+    },
   },
   extraReducers: builder => {
     builder
@@ -154,5 +157,6 @@ export const {
   setDateRange,
   setPagination,
   setSelectedStatType,
+  clearSelectedStatType,
 } = membersReportsSlice.actions;
 export default membersReportsSlice.reducer;

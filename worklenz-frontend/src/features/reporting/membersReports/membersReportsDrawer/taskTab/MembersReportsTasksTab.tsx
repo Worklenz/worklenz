@@ -21,7 +21,7 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
   const currentSession = useAuthService().getCurrentSession();
 
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
-  const { archived } = useAppSelector(state => state.membersReportsReducer);
+  const { archived, selectedStatType } = useAppSelector(state => state.membersReportsReducer);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [tasksList, setTasksList] = useState<any[]>([]);
@@ -31,8 +31,38 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const filteredTasks = useMemo(() => {
-    return tasksList.filter(task => task.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [tasksList, searchQuery]);
+    let filtered = tasksList.filter(task => task.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    // Apply stat type filter if one is selected
+    if (selectedStatType) {
+      filtered = filtered.filter((task: any) => {
+        switch (selectedStatType) {
+          case 'completed':
+            // Match tasks with "Done" status
+            return task.status_name === 'Done';
+          case 'ongoing':
+            // Match tasks with "Doing" status
+            return task.status_name === 'Doing';
+          case 'overdue':
+            // Match overdue tasks - check if due_date is in the past and status is not Done
+            const dueDate = task.due_date ? new Date(task.due_date) : null;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return dueDate && dueDate < today && task.status_name !== 'Done';
+          case 'assigned':
+            // Assigned tasks are all tasks for the member
+            return true;
+          case 'total_tasks':
+            // Total tasks are all tasks for the member
+            return true;
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  }, [tasksList, searchQuery, selectedStatType]);
 
   const fetchProjects = async () => {
     if (!currentSession?.team_id) return;

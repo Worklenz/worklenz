@@ -28,7 +28,7 @@ const MembersOverviewTasksStatsDrawer = ({ memberId }: MembersOverviewTasksStats
   const isDrawerOpen = useAppSelector(
     state => state.membersReportsReducer.isMembersOverviewTasksStatsDrawerOpen
   );
-  const { membersList, selectedStatType } = useAppSelector(state => state.membersReportsReducer);
+  const { membersList, selectedStatType, archived } = useAppSelector(state => state.membersReportsReducer);
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
 
   // find the selected member based on memberId
@@ -53,7 +53,7 @@ const MembersOverviewTasksStatsDrawer = ({ memberId }: MembersOverviewTasksStats
           duration: duration,
           date_range: dateRange,
           only_single_member: true,
-          archived: false,
+          archived: archived,
         };
         const response = await reportingApiService.getTasksByMember(
           memberId,
@@ -66,23 +66,9 @@ const MembersOverviewTasksStatsDrawer = ({ memberId }: MembersOverviewTasksStats
         if (response.done) {
           const allTasks = response.body;
           
-          // Filter tasks based on selected stat type
-          let filteredTasks = allTasks;
-          const statTypeMap: { [key: string]: (task: any) => boolean } = {
-            total_tasks: () => true, // all tasks
-            assigned: (task: any) => !task.status_category?.is_done,
-            completed: (task: any) => task.status_category?.is_done,
-            ongoing: (task: any) => task.status_category?.is_doing,
-            overdue: (task: any) => task.overdue_days && task.overdue_days > 0,
-          };
-
-          if (statTypeMap[selectedStatType]) {
-            filteredTasks = allTasks.filter(statTypeMap[selectedStatType]);
-          }
-
-          // Group by status for display
+          // Group by status for display - NO FILTERING, just group all tasks
           const groupedByStatus: { [key: string]: any[] } = {};
-          filteredTasks.forEach((task: any) => {
+          allTasks.forEach((task: any) => {
             const statusName = task.status_name || 'Unknown';
             if (!groupedByStatus[statusName]) {
               groupedByStatus[statusName] = [];
@@ -90,7 +76,6 @@ const MembersOverviewTasksStatsDrawer = ({ memberId }: MembersOverviewTasksStats
             groupedByStatus[statusName].push(task);
           });
 
-          // Convert to array format expected by table component
           const formattedData = Object.entries(groupedByStatus).map(([statusName, tasks]) => ({
             name: statusName,
             color_code: tasks[0]?.status_color || '#999',
@@ -107,7 +92,7 @@ const MembersOverviewTasksStatsDrawer = ({ memberId }: MembersOverviewTasksStats
     };
 
     fetchTasks();
-  }, [isDrawerOpen, memberId, selectedStatType, duration, dateRange]);
+  }, [isDrawerOpen, memberId, selectedStatType, duration, dateRange, archived]);
 
   return (
     <Drawer

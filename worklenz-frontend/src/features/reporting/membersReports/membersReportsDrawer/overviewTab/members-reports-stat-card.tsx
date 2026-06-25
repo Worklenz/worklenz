@@ -31,9 +31,10 @@ const MembersReportsStatCard = ({ statsModel, loading }: StatCardProps) => {
   // function to handle members overview tasks stat drawer open
   const handleMembersOverviewTasksStatsDrawerToggle = (statType?: 'total_tasks' | 'assigned' | 'completed' | 'ongoing' | 'overdue') => {
     if (statType) {
+      // Store the selected stat type and navigate to Tasks tab
       dispatch(setSelectedStatType(statType));
+      dispatch(setMemberReportingDrawerActiveTab('tasks'));
     }
-    dispatch(toggleMembersOverviewTasksStatsDrawer());
   };
 
   // function to handle members overview projects stat drawer open
