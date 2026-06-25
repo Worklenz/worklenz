@@ -44,11 +44,8 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
             // Match tasks with "Doing" status
             return task.status_name === 'Doing';
           case 'overdue':
-            // Match overdue tasks - check if due_date is in the past and status is not Done
-            const dueDate = task.due_date ? new Date(task.due_date) : null;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            return dueDate && dueDate < today && task.status_name !== 'Done';
+            // Match overdue tasks - check if days_overdue is greater than 0
+            return task.days_overdue && task.days_overdue > 0;
           case 'assigned':
             // Assigned tasks are all tasks for the member
             return true;
@@ -92,7 +89,7 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
       const response = await reportingApiService.getTasksByMember(
         memberId,
         selectedProjectId,
-        false,
+        true,  // onlySingleMember = true to apply duration filters
         null,
         additionalBody
       );

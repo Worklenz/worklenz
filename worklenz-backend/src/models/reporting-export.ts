@@ -140,7 +140,7 @@ export class ReportingExportModel extends ReportingOverviewBase {
                   LEFT JOIN task_priorities tp ON t.priority_id = tp.id
                   LEFT JOIN task_statuses ts ON t.status_id = ts.id
                   LEFT JOIN sys_task_status_categories sc ON ts.category_id = sc.id
-          WHERE ta.team_member_id = $1 ${projectFilter} ${archivedClause}
+          WHERE ta.team_member_id = $1 ${projectFilter} ${activityLogDurationFilterClause} ${archivedClause}
           ORDER BY t.end_date DESC;`;
 
     const params = projectId ? [teamMemberId, projectId] : [teamMemberId];
