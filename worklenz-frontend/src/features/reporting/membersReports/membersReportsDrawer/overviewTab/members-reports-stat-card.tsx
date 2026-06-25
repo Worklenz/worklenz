@@ -11,6 +11,7 @@ import {
   setMemberReportingDrawerActiveTab,
   toggleMembersOverviewTasksStatsDrawer,
   toggleMembersOverviewProjectsStatsDrawer,
+  setSelectedStatType,
 } from '../../membersReportsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IRPTOverviewMemberStats } from '@/types/reporting/reporting.types';
@@ -28,7 +29,10 @@ const MembersReportsStatCard = ({ statsModel, loading }: StatCardProps) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   // function to handle members overview tasks stat drawer open
-  const handleMembersOverviewTasksStatsDrawerToggle = () => {
+  const handleMembersOverviewTasksStatsDrawerToggle = (statType?: 'total_tasks' | 'assigned' | 'completed' | 'ongoing' | 'overdue') => {
+    if (statType) {
+      dispatch(setSelectedStatType(statType));
+    }
     dispatch(toggleMembersOverviewTasksStatsDrawer());
   };
 
@@ -61,31 +65,31 @@ const MembersReportsStatCard = ({ statsModel, loading }: StatCardProps) => {
       name: 'totalTasks',
       icon: <ExclamationCircleOutlined style={{ fontSize: 24, color: '#70eded' }} />,
       value: statsModel?.total_tasks.toString() || '0',
-      onClick: handleMembersOverviewTasksStatsDrawerToggle,
+      onClick: () => handleMembersOverviewTasksStatsDrawerToggle('total_tasks'),
     },
     {
       name: 'assignedTasks',
       icon: <ExclamationCircleOutlined style={{ fontSize: 24, color: '#7590c9' }} />,
       value: statsModel?.assigned.toString() || '0',
-      onClick: handleMembersOverviewTasksStatsDrawerToggle,
+      onClick: () => handleMembersOverviewTasksStatsDrawerToggle('assigned'),
     },
     {
       name: 'completedTasks',
       icon: <ExclamationCircleOutlined style={{ fontSize: 24, color: '#75c997' }} />,
       value: statsModel?.completed.toString() || '0',
-      onClick: handleMembersOverviewTasksStatsDrawerToggle,
+      onClick: () => handleMembersOverviewTasksStatsDrawerToggle('completed'),
     },
     {
       name: 'ongoingTasks',
       icon: <ClockCircleOutlined style={{ fontSize: 24, color: '#7cb5ec' }} />,
       value: statsModel?.ongoing.toString() || '0',
-      onClick: handleMembersOverviewTasksStatsDrawerToggle,
+      onClick: () => handleMembersOverviewTasksStatsDrawerToggle('ongoing'),
     },
     {
       name: 'overdueTasks',
       icon: <ClockCircleOutlined style={{ fontSize: 24, color: '#eb6363' }} />,
       value: statsModel?.overdue.toString() || '0',
-      onClick: handleMembersOverviewTasksStatsDrawerToggle,
+      onClick: () => handleMembersOverviewTasksStatsDrawerToggle('overdue'),
     },
     {
       name: 'loggedHours',
