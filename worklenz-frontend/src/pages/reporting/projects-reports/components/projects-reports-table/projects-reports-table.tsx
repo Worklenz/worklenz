@@ -74,9 +74,6 @@ const ProjectsReportsTable = () => {
 
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
 
-  // ✅ Single socket listener at table level instead of one per row
-  // Having a listener in every ProjectHealthCell means N rows = N listeners
-  // all firing simultaneously, causing re-render cascade that locks the dropdown
   const handleHealthChangeResponse = useCallback(
     (data: { id: string; health_id: string; color_code: string; name: string }) => {
       dispatch(setProjectHealth(data));
@@ -220,6 +217,8 @@ const ProjectsReportsTable = () => {
         title: <CustomTableTitle title={t('categoryColumn')} />,
         dataIndex: 'category_name',
         sorter: true,
+        // ← Add className on the <td> so our CSS can target it
+        onCell: () => ({ className: 'category-cell' }),
         render: (_, record: IRPTProject) => (
           <ProjectCategoryCell
             projectId={record.id}
@@ -345,7 +344,9 @@ const ProjectsReportsTable = () => {
 
   return (
     <ConfigProvider {...tableConfig}>
+      {/* ← className enables our CSS to scope to this table */}
       <Table
+        className="projects-reports-table"
         columns={visibleColumns}
         dataSource={projectList}
         pagination={paginationConfig}

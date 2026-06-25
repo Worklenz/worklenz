@@ -3,7 +3,7 @@
   max-width: 200px !important;
   overflow: hidden !important;
 }
-
+ 
 .category-pill-wrapper {
   display: inline-flex;
   align-items: center;
@@ -18,7 +18,7 @@
   cursor: pointer;
   flex-shrink: 0;
 }
-
+ 
 .category-pill-text {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -26,7 +26,7 @@
   flex: 1;
   min-width: 0;
 }
-
+ 
 .category-pill-icon {
   flex-shrink: 0;
   font-size: 10px;
