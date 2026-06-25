@@ -8,6 +8,7 @@ export enum Language {
   ALB = 'alb',
   DE = 'de',
   ZH = 'zh_cn',
+  ZH_TW = 'zh-TW',
 }
 
 export type ILanguageType = `${Language}`;
