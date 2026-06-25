@@ -1,0 +1,10 @@
+{
+  "categoryColumn": "類別",
+  "deleteConfirmationTitle": "您確定嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "associatedTaskColumn": "關聯專案",
+  "searchPlaceholder": "按名稱搜尋",
+  "emptyText": "在更新或建立專案時可以建立類別。",
+  "colorChangeTooltip": "點選更改顏色"
+}

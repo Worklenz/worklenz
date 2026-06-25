@@ -1,0 +1,16 @@
+{
+  "title": "團隊",
+  "team": "團隊",
+  "teams": "團隊",
+  "name": "名稱",
+  "created": "建立時間",
+  "ownsBy": "所有者",
+  "edit": "編輯",
+  "editTeam": "編輯團隊",
+  "pinTooltip": "點選將此項固定到主選單",
+  "editTeamName": "編輯團隊名稱",
+  "updateName": "更新名稱",
+  "namePlaceholder": "名稱",
+  "nameRequired": "請輸入名稱",
+  "updateFailed": "團隊名稱更改失敗！"
+} 

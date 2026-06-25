@@ -1,0 +1,11 @@
+{
+    "importTaskTemplate": "匯入任務模板",
+    "templateName": "模板名稱",
+    "templateDescription": "模板描述",
+    "selectedTasks": "已選任務",
+    "tasks": "任務",
+    "templates": "模板",
+    "remove": "移除",
+    "cancel": "取消",
+    "import": "匯入"
+}

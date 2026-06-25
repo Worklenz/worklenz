@@ -1,0 +1,17 @@
+{
+  "nameColumn": "名稱",
+  "jobTitleColumn": "職位",
+  "emailColumn": "電子郵件",
+  "tasksColumn": "任務",
+  "taskProgressColumn": "任務進度",
+  "accessColumn": "訪問許可權",
+  "fileIconAlt": "檔案圖示",
+  "deleteConfirmationTitle": "您確定嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "refreshButtonTooltip": "重新整理成員",
+  "deleteButtonTooltip": "從專案中移除",
+  "memberCount": "成員",
+  "membersCountPlural": "成員",
+  "emptyText": "專案中沒有附件。"
+}

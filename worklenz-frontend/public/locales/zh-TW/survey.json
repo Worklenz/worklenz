@@ -1,0 +1,14 @@
+{
+  "modalTitle": "幫助我們提升您的體驗",
+  "skip": "暫時跳過",
+  "previous": "上一步",
+  "next": "下一步",
+  "completeSurvey": "完成調查",
+  "submitting": "正在提交您的回答...",
+  "submitSuccessTitle": "謝謝！",
+  "submitSuccessSubtitle": "您的反饋幫助我們改進 Worklenz。",
+  "submitSuccessMessage": "感謝您完成調查！",
+  "submitErrorMessage": "提交調查失敗。請重試。",
+  "submitErrorLog": "提交調查失敗",
+  "fetchErrorLog": "獲取調查失敗"
+} 

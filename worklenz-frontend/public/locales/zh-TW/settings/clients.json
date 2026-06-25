@@ -1,0 +1,22 @@
+{
+  "nameColumn": "名稱",
+  "projectColumn": "專案",
+  "noProjectsAvailable": "沒有可用的專案",
+  "deleteConfirmationTitle": "您確定嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "searchPlaceholder": "按名稱搜尋",
+  "createClient": "建立客戶",
+  "pinTooltip": "點選將其固定到主選單",
+  "createClientDrawerTitle": "建立客戶",
+  "updateClientDrawerTitle": "更新客戶",
+  "nameLabel": "名稱",
+  "namePlaceholder": "名稱",
+  "nameRequiredError": "請輸入名稱",
+  "createButton": "建立",
+  "updateButton": "更新",
+  "createClientSuccessMessage": "客戶建立成功！",
+  "createClientErrorMessage": "客戶建立失敗！",
+  "updateClientSuccessMessage": "客戶更新成功！",
+  "updateClientErrorMessage": "客戶更新失敗！"
+}
