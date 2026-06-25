@@ -275,9 +275,10 @@ const ReportingOverviewProjectsTable = ({
     [t, order]
   );
 
-  // FIX 1: Merge both setPagination calls into one, using functional update
-  // to avoid the second call overwriting the first with a stale spread.
-  const handleTableChange = (paginationConfig: PaginationProps, filters: any, sorter: any) => {
+  // ✅ FIX 1: Renamed parameter from `pagination` to `newPagination` to avoid
+  // shadowing the state variable, and merged all updates into a single
+  // setPagination call so pageSize and current are never lost.
+  const handleTableChange = (newPagination: PaginationProps, filters: any, sorter: any) => {
     if (sorter.order) setOrder(sorter.order);
     if (sorter.field) setField(sorter.field);
     setPagination(prev => ({
@@ -345,7 +346,6 @@ const ReportingOverviewProjectsTable = ({
       const response = await reportingApiService.getOverviewProjects(params);
       if (response.done) {
         setProjectList(response.body.projects || []);
-        // FIX 3: Use functional update so total doesn't clobber current/pageSize.
         setPagination(prev => ({ ...prev, total: response.body.total }));
       }
     } catch (error) {
@@ -367,9 +367,11 @@ const ReportingOverviewProjectsTable = ({
       <Table
         columns={columns}
         dataSource={projectList}
+        // ✅ FIX 3: Replaced `defaultPageSize` (uncontrolled, ignored after mount)
+        // with `pageSize` (controlled) so the table always reflects state.
         pagination={{
           showSizeChanger: true,
-          defaultPageSize: DEFAULT_PAGE_SIZE,
+          pageSize: pagination.pageSize,
           total: pagination.total,
           current: pagination.current,
           pageSize: pagination.pageSize,

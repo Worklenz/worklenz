@@ -1,7 +1,7 @@
 import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleMembersReportsDrawer } from '../membersReportsSlice';
+import { toggleMembersReportsDrawer, clearSelectedStatType } from '../membersReportsSlice';
 import { DownOutlined } from '@/shared/antd-imports';
 import MembersReportsDrawerTabs from './members-reports-drawer-tabs';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,7 @@ const MembersReportsDrawer = ({ memberId }: MembersReportsDrawerProps) => {
 
   const handleClose = () => {
     dispatch(toggleMembersReportsDrawer());
+    dispatch(clearSelectedStatType());
   };
 
   const exportTimeLogs = () => {

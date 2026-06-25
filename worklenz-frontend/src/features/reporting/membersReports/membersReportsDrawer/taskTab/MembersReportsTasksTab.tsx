@@ -21,7 +21,7 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
   const currentSession = useAuthService().getCurrentSession();
 
   const { duration, dateRange } = useAppSelector(state => state.reportingReducer);
-  const { archived } = useAppSelector(state => state.membersReportsReducer);
+  const { archived, selectedStatType } = useAppSelector(state => state.membersReportsReducer);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [tasksList, setTasksList] = useState<any[]>([]);
@@ -31,8 +31,35 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const filteredTasks = useMemo(() => {
-    return tasksList.filter(task => task.name.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [tasksList, searchQuery]);
+    let filtered = tasksList.filter(task => task.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    // Apply stat type filter if one is selected
+    if (selectedStatType) {
+      filtered = filtered.filter((task: any) => {
+        switch (selectedStatType) {
+          case 'completed':
+            // Match tasks with "Done" status
+            return task.status_name === 'Done';
+          case 'ongoing':
+            // Match tasks with "Doing" status
+            return task.status_name === 'Doing';
+          case 'overdue':
+            // Match overdue tasks - check if days_overdue is greater than 0
+            return task.days_overdue && task.days_overdue > 0;
+          case 'assigned':
+            // Assigned tasks are all tasks for the member
+            return true;
+          case 'total_tasks':
+            // Total tasks are all tasks for the member
+            return true;
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  }, [tasksList, searchQuery, selectedStatType]);
 
   const fetchProjects = async () => {
     if (!currentSession?.team_id) return;
@@ -62,7 +89,7 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
       const response = await reportingApiService.getTasksByMember(
         memberId,
         selectedProjectId,
-        false,
+        true,  // onlySingleMember = true to apply duration filters
         null,
         additionalBody
       );
