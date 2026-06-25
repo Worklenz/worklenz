@@ -10,7 +10,9 @@ export function setSession(user: ILocalSession): void {
 
 export function getUserSession(): ILocalSession | null {
   try {
-    return JSON.parse(atob(<string>storage.getItem(WORKLENZ_SESSION_ID)));
+    // decodeURIComponent(escape(...)) reverses the btoa(unescape(encodeURIComponent(...)))
+    // used in setSession, so multibyte UTF-8 (e.g. Chinese names) is not corrupted.
+    return JSON.parse(decodeURIComponent(escape(atob(<string>storage.getItem(WORKLENZ_SESSION_ID)))));
   } catch (e) {
     return null;
   }
