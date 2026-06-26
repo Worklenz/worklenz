@@ -1,0 +1,16 @@
+{
+  "duplicateTask": "Duplicar Tarefa",
+  "duplicateTaskDescription": "Selecione os itens que deseja copiar para a nova tarefa:",
+  "duplicateOptions": {
+    "subtasks": "Subtarefas",
+    "attachments": "Anexos",
+    "dates": "Datas",
+    "dependencies": "Dependências",
+    "assignees": "Responsáveis",
+    "labels": "Etiquetas",
+    "customFields": "Valores de Campos Personalizados",
+    "subscribers": "Inscritos"
+  },
+  "duplicate": "Duplicar",
+  "cancel": "Cancelar"
+}

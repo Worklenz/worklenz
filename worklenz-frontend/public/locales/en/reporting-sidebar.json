@@ -3,6 +3,9 @@
   "projects": "Projects",
   "members": "Members",
   "timeReports": "Time Reports",
+  "timesheet": "Timesheet",
   "estimateVsActual": "Estimate Vs Actual",
+  "logs": "Time Logs",
+  "allTasks": "Tasks",
   "currentOrganizationTooltip": "Current organization"
 }

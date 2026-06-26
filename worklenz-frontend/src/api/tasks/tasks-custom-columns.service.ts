@@ -11,7 +11,7 @@ export const tasksCustomColumnsService = {
   updateTaskCustomColumnValue: async (
     taskId: string,
     columnKey: string,
-    value: string | number | boolean,
+    value: string | number | boolean | string[] | null,
     projectId: string
   ): Promise<IServerResponse<any>> => {
     const response = await apiClient.put(`/api/v1/tasks/${taskId}/custom-column`, {

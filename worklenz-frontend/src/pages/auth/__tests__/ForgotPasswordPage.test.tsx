@@ -94,9 +94,7 @@ const renderWithProviders = (component: React.ReactElement) => {
   return render(
     <Provider store={store}>
       <BrowserRouter>
-        <I18nextProvider i18n={i18n}>
-          {component}
-        </I18nextProvider>
+        <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
       </BrowserRouter>
     </Provider>
   );
@@ -114,7 +112,7 @@ describe('ForgotPasswordPage', () => {
 
   it('renders forgot password form correctly', () => {
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     expect(screen.getByText('Enter your email to reset your password')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reset Password' })).toBeInTheDocument();
@@ -125,10 +123,10 @@ describe('ForgotPasswordPage', () => {
   it('validates required email field', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Please input your email!')).toBeInTheDocument();
     });
@@ -137,13 +135,13 @@ describe('ForgotPasswordPage', () => {
   it('validates email format', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Enter your email');
     await user.type(emailInput, 'invalid-email');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Please input your email!')).toBeInTheDocument();
     });
@@ -156,13 +154,13 @@ describe('ForgotPasswordPage', () => {
     });
 
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Enter your email');
     await user.type(emailInput, 'test@example.com');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(resetPassword).toHaveBeenCalledWith('test@example.com');
     });
@@ -175,16 +173,18 @@ describe('ForgotPasswordPage', () => {
     });
 
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Enter your email');
     await user.type(emailInput, 'test@example.com');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Password Reset Email Sent')).toBeInTheDocument();
-      expect(screen.getByText('Please check your email for instructions to reset your password.')).toBeInTheDocument();
+      expect(
+        screen.getByText('Please check your email for instructions to reset your password.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -195,13 +195,13 @@ describe('ForgotPasswordPage', () => {
     });
 
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Enter your email');
     await user.type(emailInput, 'test@example.com');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
     });
@@ -214,13 +214,13 @@ describe('ForgotPasswordPage', () => {
     });
 
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Enter your email');
     await user.type(emailInput, 'test@example.com');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       // Should not show success message
       expect(screen.queryByText('Password Reset Email Sent')).not.toBeInTheDocument();
@@ -232,10 +232,10 @@ describe('ForgotPasswordPage', () => {
   it('navigates to login page when return button is clicked', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const returnButton = screen.getByRole('button', { name: 'Return to Login' });
     await user.click(returnButton);
-    
+
     expect(returnButton.closest('a')).toHaveAttribute('href', '/auth/login');
   });
 
@@ -246,7 +246,7 @@ describe('ForgotPasswordPage', () => {
     });
 
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     // Component should render normally even with team parameter
     expect(screen.getByText('Enter your email to reset your password')).toBeInTheDocument();
   });
@@ -273,13 +273,13 @@ describe('ForgotPasswordPage', () => {
     });
 
     renderWithProviders(<ForgotPasswordPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Enter your email');
     await user.type(emailInput, '   '); // Only whitespace
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     // Should not call resetPassword with empty string
     expect(resetPassword).not.toHaveBeenCalled();
   });

@@ -1,0 +1,329 @@
+/* Custom Mentions Wrapper */
+.custom-mentions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Contenteditable div styling */
+.custom-mentions-editable {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5715;
+  transition: border-color 0.3s;
+  position: relative;
+  cursor: text;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.custom-mentions-editable:focus {
+  border-color: #40a9ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+.custom-mentions-editable.theme-dark:focus {
+  border-color: #177ddc !important;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+/* Placeholder styling */
+.custom-mentions-editable:empty:before {
+  content: attr(data-placeholder);
+  color: #bfbfbf;
+  pointer-events: none;
+  position: absolute;
+}
+
+.custom-mentions-editable:empty:focus:before {
+  color: #8c8c8c;
+}
+
+.custom-mentions-editable.theme-dark:empty:before {
+  color: #595959;
+}
+
+.custom-mentions-editable.theme-dark:empty:focus:before {
+  color: #8c8c8c;
+}
+
+/* ─── Mention highlight ──────────────────────────────────────────────────── */
+
+.mention-highlight-light {
+  background-color: #e1f3ff !important;
+  color: #1890ff !important;
+  border: 1px solid #c2e4f9 !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  margin: 0 1px !important;
+  font-weight: 500 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  line-height: 1.5715 !important;
+  vertical-align: baseline !important;
+}
+
+.mention-highlight-dark {
+  background-color: #1e3a5f !important;
+  color: #40a9ff !important;
+  border: 1px solid #2a4a6d !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  margin: 0 1px !important;
+  font-weight: 500 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  line-height: 1.5715 !important;
+  vertical-align: baseline !important;
+}
+
+/* ─── URL highlight (while typing in the input box) ─────────────────────── */
+/*
+ * These spans are injected by createHighlightedHTML() when a plain-text URL
+ * is detected. They are contenteditable="false" and pointer-events: none so
+ * the cursor always lands outside them — identical behaviour to mentions.
+ *
+ * Visual intent: underlined teal/link colour so users instantly recognise the
+ * text as a URL, without being as visually heavy as a mention chip.
+ */
+
+.url-highlight-light {
+  color: #1677ff !important; /* Ant Design blue-6 */
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: #91caff !important;
+  border-radius: 2px !important;
+  padding: 0 1px !important;
+  margin: 0 !important;
+  font-weight: 400 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+  word-break: break-all !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  line-height: 1.5715 !important;
+  vertical-align: baseline !important;
+}
+
+.url-highlight-dark {
+  color: #4096ff !important; /* Ant Design blue-5 — readable on dark bg */
+  text-decoration: underline !important;
+  text-underline-offset: 2px !important;
+  text-decoration-thickness: 1px !important;
+  text-decoration-color: #2a4a6d !important;
+  border-radius: 2px !important;
+  padding: 0 1px !important;
+  margin: 0 !important;
+  font-weight: 400 !important;
+  display: inline !important;
+  white-space: nowrap !important;
+  word-break: break-all !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  pointer-events: none !important;
+  cursor: default !important;
+  line-height: 1.5715 !important;
+  vertical-align: baseline !important;
+}
+
+/* Ensure adjacent highlights have proper spacing */
+.mention-highlight-light + .mention-highlight-light,
+.mention-highlight-dark + .mention-highlight-dark,
+.mention-highlight-light + .mention-highlight-dark,
+.mention-highlight-dark + .mention-highlight-light {
+  margin-left: 2px !important;
+}
+
+.url-highlight-light + .url-highlight-light,
+.url-highlight-dark + .url-highlight-dark {
+  margin-left: 2px !important;
+}
+
+/* ─── Dropdown ───────────────────────────────────────────────────────────── */
+
+.mentions-dropdown {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  border: 1px solid;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: slideIn 0.2s ease-out;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  z-index: 1050;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.mentions-dropdown.theme-light {
+  background-color: #fff;
+  border-color: #d9d9d9;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.mentions-dropdown.theme-dark {
+  background-color: #1f1f1f;
+  border-color: #434343;
+  color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.mentions-option {
+  transition: background-color 0.2s;
+  cursor: pointer;
+  padding: 8px 12px;
+  user-select: none;
+}
+
+.mentions-option:hover {
+  background-color: #f5f5f5;
+}
+
+.mentions-dropdown.theme-dark .mentions-option:hover {
+  background-color: #2a2a2a;
+}
+
+.mentions-option.selected {
+  background-color: #f5f5f5;
+  font-weight: 500;
+}
+
+.mentions-dropdown.theme-dark .mentions-option.selected {
+  background-color: #2a2a2a;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+
+.custom-mentions-editable::-webkit-scrollbar,
+.mentions-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-mentions-editable::-webkit-scrollbar-track,
+.mentions-dropdown::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.custom-mentions-editable::-webkit-scrollbar-thumb,
+.mentions-dropdown::-webkit-scrollbar-thumb {
+  background: #bfbfbf;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.custom-mentions-editable.theme-dark::-webkit-scrollbar-track,
+.mentions-dropdown.theme-dark::-webkit-scrollbar-track {
+  background: #1f1f1f;
+}
+
+.custom-mentions-editable.theme-dark::-webkit-scrollbar-thumb,
+.mentions-dropdown.theme-dark::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+
+.custom-mentions-editable::-webkit-scrollbar-thumb:hover,
+.mentions-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #8c8c8c;
+}
+
+.custom-mentions-editable.theme-dark::-webkit-scrollbar-thumb:hover,
+.mentions-dropdown.theme-dark::-webkit-scrollbar-thumb:hover {
+  background: #595959;
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes expandAnimation {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Layout helpers ─────────────────────────────────────────────────────── */
+
+.custom-mentions-editable br {
+  display: block;
+  margin: 0;
+  line-height: inherit;
+  content: "";
+}
+
+.custom-mentions-editable > * {
+  display: inline;
+}
+
+.mention-highlight-light *,
+.mention-highlight-dark *,
+.url-highlight-light *,
+.url-highlight-dark * {
+  pointer-events: none;
+}
+
+.custom-mentions-editable {
+  caret-color: auto;
+}
+
+.custom-mentions-editable[contenteditable="true"] {
+  -webkit-user-modify: read-write-plaintext-only;
+  -moz-user-modify: read-write-plaintext-only;
+}
+
+.mention-highlight-light::after,
+.mention-highlight-dark::after {
+  content: "\00a0";
+  font-size: 0;
+  display: inline-block;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+
+.custom-mentions-editable > .mention-highlight-light:last-child::after,
+.custom-mentions-editable > .mention-highlight-dark:last-child::after {
+  content: "";
+}
+
+.custom-mentions-editable * {
+  margin: 0;
+  padding: 0;
+}

@@ -10,12 +10,22 @@ export const useAuthStatus = () => {
   const status = useMemo(() => {
     try {
       if (!authService || typeof authService.isAuthenticated !== 'function') {
-        return { isAuthenticated: false, isLicenseExpired: false, isAdmin: false, isSetupComplete: false };
+        return {
+          isAuthenticated: false,
+          isLicenseExpired: false,
+          isAdmin: false,
+          isSetupComplete: false,
+        };
       }
 
       const isAuthenticated = authService.isAuthenticated();
       if (!isAuthenticated) {
-        return { isAuthenticated: false, isLicenseExpired: false, isAdmin: false, isSetupComplete: false };
+        return {
+          isAuthenticated: false,
+          isLicenseExpired: false,
+          isAdmin: false,
+          isSetupComplete: false,
+        };
       }
 
       const currentSession = authService.getCurrentSession();
@@ -31,9 +41,9 @@ export const useAuthStatus = () => {
         const expirableTypes = [
           ISUBSCRIPTION_TYPE.TRIAL,
           ISUBSCRIPTION_TYPE.PADDLE,
-          ISUBSCRIPTION_TYPE.CUSTOM
+          ISUBSCRIPTION_TYPE.CUSTOM,
         ];
-        
+
         if (
           expirableTypes.includes(currentSession.subscription_type as ISUBSCRIPTION_TYPE) &&
           (currentSession.valid_till_date || currentSession.trial_expire_date)
@@ -44,7 +54,7 @@ export const useAuthStatus = () => {
           const expiryDate = new Date(expireDateStr);
           const diffTime = today.getTime() - expiryDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+
           // License is considered fully expired after 7 days grace period
           // This will trigger the LicenseExpiredModal
           return diffDays > 7;
@@ -56,7 +66,12 @@ export const useAuthStatus = () => {
       return { isAuthenticated, isLicenseExpired: isLicenseExpired(), isAdmin, isSetupComplete };
     } catch (error) {
       console.error('Error in useAuthStatus:', error);
-      return { isAuthenticated: false, isLicenseExpired: false, isAdmin: false, isSetupComplete: false };
+      return {
+        isAuthenticated: false,
+        isLicenseExpired: false,
+        isAdmin: false,
+        isSetupComplete: false,
+      };
     }
   }, [authService]);
 

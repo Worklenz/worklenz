@@ -14,12 +14,12 @@ dayjs.extend(localizedFormat);
 // Map application languages to dayjs locales
 const getLocaleFromLanguage = (language: string): string => {
   const localeMap: Record<string, string> = {
-    'en': 'en',
-    'de': 'de',
-    'es': 'es',
-    'pt': 'pt',
-    'alb': 'en', // Albanian not supported by dayjs, fallback to English
-    'zh': 'zh-cn'
+    en: 'en',
+    de: 'de',
+    es: 'es',
+    pt: 'pt',
+    alb: 'en', // Albanian not supported by dayjs, fallback to English
+    zh: 'zh-cn',
   };
   return localeMap[language] || 'en';
 };

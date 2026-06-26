@@ -3,6 +3,8 @@
   "login-failed": "Login failed. Please check your credentials and try again.",
   "signup-success": "Signup successful! Welcome aboard.",
   "signup-failed": "Signup failed. Please ensure all required fields are filled and try again.",
+  "update-banner-message": "A new version is available.",
+  "update-banner-description": "Refresh when you're ready to get the latest improvements.",
   "reconnecting": "Disconnected from server.",
   "connection-lost": "Failed to connect to server. Please check your internet connection.",
   "connection-restored": "Connected to server successfully"

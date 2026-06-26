@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import {
   DatePicker,
@@ -34,6 +35,12 @@ import Avatars from '@/components/avatars/avatars';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { UniqueIdentifier } from '@dnd-kit/core';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { getUserSession } from '@/utils/session-helper';
+import { safeTextDisplay } from '@/utils/html-entities';
+import { ALPHA_CHANNEL } from '@/shared/constants';
+import { colors } from '@/styles/colors';
 
 interface taskProps {
   task: IProjectTask;
@@ -48,6 +55,19 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
+  const { t } = useTranslation('kanban-board');
+
+  // Initialize dueDate from task.end_date
+  // Parse ISO date string (YYYY-MM-DD) to avoid timezone issues
+  useEffect(() => {
+    if (task.end_date) {
+      // Parse as local date to avoid timezone shifting (e.g., "2024-02-10" stays as Feb 10)
+      setDueDate(dayjs(task.end_date, 'YYYY-MM-DD').startOf('day'));
+    } else {
+      setDueDate(null);
+    }
+  }, [task.end_date]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id as UniqueIdentifier,
@@ -58,9 +78,23 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
   });
 
   const handleDateChange = (date: Dayjs | null) => {
+    // Update local state immediately for responsive UI
     setDueDate(date);
+
+    // Emit socket event to persist the change to backend
+    if (socket && task.id) {
+      socket.emit(
+        SocketEvents.TASK_END_DATE_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          end_date: date?.format('YYYY-MM-DD'),
+          parent_task: task.parent_task_id || null,
+          time_zone:
+            getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        })
+      );
+    }
   };
-  const { t } = useTranslation('kanban-board');
 
   const formatDate = (date: Dayjs | null) => {
     if (!date) return '';
@@ -121,8 +155,6 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
     },
   ];
 
-  // const progress = (task.subTasks?.length || 0 + 1 )/ (task.subTasks?.length || 0 + 1)
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -156,8 +188,19 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
               {task.labels?.length ? (
                 <>
                   {task.labels.slice(0, 2).map((label, index) => (
-                    <Tag key={index} style={{ marginRight: '4px' }} color={label.color_code}>
-                      <span style={{ color: themeMode === 'dark' ? '#383838' : '' }}>
+                    <Tag
+                      key={index}
+                      style={{ marginRight: '4px' }}
+                      // FIX: Use ALPHA_CHANNEL (transparent bg) consistent with CustomColorLabel
+                      color={label.color_code + ALPHA_CHANNEL}
+                    >
+                      {/* FIX: Mirror CustomColorLabel text color logic for light/dark consistency */}
+                      <span
+                        style={{
+                          color:
+                            themeMode === 'dark' ? 'rgba(255, 255, 255, 0.85)' : colors.darkGray,
+                        }}
+                      >
                         {label.name}
                       </span>
                     </Tag>
@@ -207,11 +250,12 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                 }}
               />
             )}
-            <Typography.Text style={{ fontWeight: 500 }}>{task.name}</Typography.Text>
+            <Typography.Text style={{ fontWeight: 500 }}>
+              {safeTextDisplay(task.name)}
+            </Typography.Text>
           </div>
 
           {/* Subtask Section */}
-
           <div>
             <div
               style={{
@@ -277,6 +321,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                     }}
+                    value={dueDate}
                     onChange={handleDateChange}
                     variant="borderless"
                     size="small"

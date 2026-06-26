@@ -10,5 +10,6 @@
   "submitSuccessMessage": "Thank you for completing the survey!",
   "submitErrorMessage": "Failed to submit survey. Please try again.",
   "submitErrorLog": "Failed to submit survey",
-  "fetchErrorLog": "Failed to fetch survey"
-} 
+  "fetchErrorLog": "Failed to fetch survey",
+  "dontShowAgain": "Don't show this survey again"
+}

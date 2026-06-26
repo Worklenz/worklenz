@@ -1,5 +1,6 @@
 {
   "rename": "Renombrar",
+  "renameStatus": "Renombrar Estado",
   "delete": "Eliminar",
   "addTask": "Agregar tarea",
   "addSectionButton": "Agregar sección",
@@ -41,7 +42,14 @@
   "noSubtasks": "Sin subtareas",
   "showSubtasks": "Mostrar subtareas",
   "hideSubtasks": "Ocultar subtareas",
-  
+
+  "exampleTasks": {
+    "prefix": "ej.",
+    "task1": "Definir el alcance del proyecto",
+    "task2": "Revisar con las partes interesadas",
+    "task3": "Programar el inicio"
+  },
+
   "errorLoadingTasks": "Error al cargar tareas",
   "noTasksFound": "No se encontraron tareas",
   "loadingFilters": "Cargando filtros...",

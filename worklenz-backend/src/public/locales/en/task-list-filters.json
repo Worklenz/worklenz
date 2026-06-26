@@ -58,7 +58,7 @@
   "create": "Create",
 
   "searchTasks": "Search tasks...",
-  "searchPlaceholder": "Search...",
+  "searchPlaceholder": "Search",
   "fieldsText": "Fields",
   "loadingFilters": "Loading filters...",
   "noOptionsFound": "No options found",

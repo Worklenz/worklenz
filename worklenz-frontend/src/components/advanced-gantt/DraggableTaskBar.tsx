@@ -47,7 +47,7 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
   const taskPosition = useMemo(() => {
     const startDays = getDaysBetween(timelineStart, task.startDate);
     const duration = getDaysBetween(task.startDate, task.endDate);
-    
+
     return {
       x: startDays * dayWidth,
       width: Math.max(dayWidth * 0.5, duration * dayWidth),
@@ -69,108 +69,137 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
   }, [task.color, task.status, themeMode]);
 
   // Mouse event handlers
-  const handleMouseDown = useCallback((e: React.MouseEvent, dragType: DragState['dragType']) => {
-    if (readOnly || !enableDragDrop) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent, dragType: DragState['dragType']) => {
+      if (readOnly || !enableDragDrop) return;
 
-    const rect = taskBarRef.current?.getBoundingClientRect();
-    if (!rect) return;
+      e.preventDefault();
+      e.stopPropagation();
 
-    setDragState({
-      isDragging: true,
-      dragType,
-      taskId: task.id,
-      initialPosition: { x: e.clientX, y: e.clientY },
-      currentPosition: { x: e.clientX, y: e.clientY },
-      initialDates: { start: task.startDate, end: task.endDate },
-      initialProgress: task.progress,
-      snapToGrid: true,
-    });
+      const rect = taskBarRef.current?.getBoundingClientRect();
+      if (!rect) return;
 
-    // Add global mouse event listeners
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      handleMouseMove_Internal(moveEvent, dragType);
-    };
+      setDragState({
+        isDragging: true,
+        dragType,
+        taskId: task.id,
+        initialPosition: { x: e.clientX, y: e.clientY },
+        currentPosition: { x: e.clientX, y: e.clientY },
+        initialDates: { start: task.startDate, end: task.endDate },
+        initialProgress: task.progress,
+        snapToGrid: true,
+      });
 
-    const handleMouseUp = () => {
-      handleMouseUp_Internal();
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
+      // Add global mouse event listeners
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        handleMouseMove_Internal(moveEvent, dragType);
+      };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [readOnly, enableDragDrop, task]);
+      const handleMouseUp = () => {
+        handleMouseUp_Internal();
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
 
-  const handleMouseMove_Internal = useCallback((e: MouseEvent, dragType: DragState['dragType']) => {
-    if (!dragState) return;
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [readOnly, enableDragDrop, task]
+  );
 
-    const deltaX = e.clientX - dragState.initialPosition.x;
-    const deltaDays = Math.round(deltaX / dayWidth);
+  const handleMouseMove_Internal = useCallback(
+    (e: MouseEvent, dragType: DragState['dragType']) => {
+      if (!dragState) return;
 
-    let newStartDate = task.startDate;
-    let newEndDate = task.endDate;
+      const deltaX = e.clientX - dragState.initialPosition.x;
+      const deltaDays = Math.round(deltaX / dayWidth);
 
-    switch (dragType) {
-      case 'move':
-        newStartDate = addDays(dragState.initialDates.start, deltaDays);
-        newEndDate = addDays(dragState.initialDates.end, deltaDays);
-        break;
-      
-      case 'resize-start':
-        newStartDate = addDays(dragState.initialDates.start, deltaDays);
-        // Ensure minimum duration
-        if (newStartDate >= newEndDate) {
-          newStartDate = addDays(newEndDate, -1);
-        }
-        break;
-      
-      case 'resize-end':
-        newEndDate = addDays(dragState.initialDates.end, deltaDays);
-        // Ensure minimum duration
-        if (newEndDate <= newStartDate) {
-          newEndDate = addDays(newStartDate, 1);
-        }
-        break;
-      
-      case 'progress':
-        if (enableProgressEdit) {
-          const progressDelta = deltaX / taskPosition.width;
-          const newProgress = Math.max(0, Math.min(100, (dragState.initialProgress || 0) + progressDelta * 100));
-          onProgressChange?.(task.id, newProgress);
-        }
-        return;
-    }
+      let newStartDate = task.startDate;
+      let newEndDate = task.endDate;
 
-    // Update drag state
-    setDragState(prev => prev ? {
-      ...prev,
-      currentPosition: { x: e.clientX, y: e.clientY },
-    } : null);
+      switch (dragType) {
+        case 'move':
+          newStartDate = addDays(dragState.initialDates.start, deltaDays);
+          newEndDate = addDays(dragState.initialDates.end, deltaDays);
+          break;
 
-    // Call appropriate handler
-    if (dragType === 'move') {
-      onTaskMove?.(task.id, { start: newStartDate, end: newEndDate });
-    } else if (dragType.startsWith('resize')) {
-      onTaskResize?.(task.id, { start: newStartDate, end: newEndDate });
-    }
-  }, [dragState, dayWidth, task, taskPosition.width, enableProgressEdit, onTaskMove, onTaskResize, onProgressChange, addDays]);
+        case 'resize-start':
+          newStartDate = addDays(dragState.initialDates.start, deltaDays);
+          // Ensure minimum duration
+          if (newStartDate >= newEndDate) {
+            newStartDate = addDays(newEndDate, -1);
+          }
+          break;
+
+        case 'resize-end':
+          newEndDate = addDays(dragState.initialDates.end, deltaDays);
+          // Ensure minimum duration
+          if (newEndDate <= newStartDate) {
+            newEndDate = addDays(newStartDate, 1);
+          }
+          break;
+
+        case 'progress':
+          if (enableProgressEdit) {
+            const progressDelta = deltaX / taskPosition.width;
+            const newProgress = Math.max(
+              0,
+              Math.min(100, (dragState.initialProgress || 0) + progressDelta * 100)
+            );
+            onProgressChange?.(task.id, newProgress);
+          }
+          return;
+      }
+
+      // Update drag state
+      setDragState(prev =>
+        prev
+          ? {
+              ...prev,
+              currentPosition: { x: e.clientX, y: e.clientY },
+            }
+          : null
+      );
+
+      // Call appropriate handler
+      if (dragType === 'move') {
+        onTaskMove?.(task.id, { start: newStartDate, end: newEndDate });
+      } else if (dragType.startsWith('resize')) {
+        onTaskResize?.(task.id, { start: newStartDate, end: newEndDate });
+      }
+    },
+    [
+      dragState,
+      dayWidth,
+      task,
+      taskPosition.width,
+      enableProgressEdit,
+      onTaskMove,
+      onTaskResize,
+      onProgressChange,
+      addDays,
+    ]
+  );
 
   const handleMouseUp_Internal = useCallback(() => {
     setDragState(null);
   }, []);
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onTaskClick?.(task);
-  }, [task, onTaskClick]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onTaskClick?.(task);
+    },
+    [task, onTaskClick]
+  );
 
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onTaskDoubleClick?.(task);
-  }, [task, onTaskDoubleClick]);
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onTaskDoubleClick?.(task);
+    },
+    [task, onTaskDoubleClick]
+  );
 
   // Render task bar with handles
   const renderTaskBar = () => {
@@ -199,7 +228,7 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
         onDoubleClick={handleDoubleClick}
         onMouseEnter={() => setHoverState('task')}
         onMouseLeave={() => setHoverState(null)}
-        onMouseDown={(e) => handleMouseDown(e, 'move')}
+        onMouseDown={e => handleMouseDown(e, 'move')}
       >
         {/* Progress bar */}
         <div
@@ -214,13 +243,10 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
 
         {/* Task content */}
         <div className="task-content relative z-10 h-full flex items-center px-2">
-          <span
-            className="task-name text-xs font-medium truncate"
-            style={{ color: colors.text }}
-          >
+          <span className="task-name text-xs font-medium truncate" style={{ color: colors.text }}>
             {task.name}
           </span>
-          
+
           {/* Duration display for smaller tasks */}
           {taskPosition.width < 100 && (
             <span
@@ -238,14 +264,14 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
             {/* Left resize handle */}
             <div
               className="resize-handle-left absolute left-0 top-0 w-1 h-full cursor-ew-resize bg-white bg-opacity-50 hover:bg-opacity-80"
-              onMouseDown={(e) => handleMouseDown(e, 'resize-start')}
+              onMouseDown={e => handleMouseDown(e, 'resize-start')}
               onMouseEnter={() => setHoverState('resize-start')}
             />
-            
+
             {/* Right resize handle */}
             <div
               className="resize-handle-right absolute right-0 top-0 w-1 h-full cursor-ew-resize bg-white bg-opacity-50 hover:bg-opacity-80"
-              onMouseDown={(e) => handleMouseDown(e, 'resize-end')}
+              onMouseDown={e => handleMouseDown(e, 'resize-end')}
               onMouseEnter={() => setHoverState('resize-end')}
             />
           </>
@@ -256,7 +282,7 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
           <div
             className="progress-handle absolute top-0 h-full w-1 cursor-ew-resize bg-blue-500 opacity-75"
             style={{ left: `${task.progress}%` }}
-            onMouseDown={(e) => handleMouseDown(e, 'progress')}
+            onMouseDown={e => handleMouseDown(e, 'progress')}
             onMouseEnter={() => setHoverState('progress')}
           />
         )}
@@ -278,11 +304,16 @@ const DraggableTaskBar: React.FC<DraggableTaskBarProps> = ({
 // Helper functions
 function getDefaultTaskColor(status: GanttTask['status']): string {
   switch (status) {
-    case 'completed': return '#52c41a';
-    case 'in-progress': return '#1890ff';
-    case 'overdue': return '#ff4d4f';
-    case 'on-hold': return '#faad14';
-    default: return '#d9d9d9';
+    case 'completed':
+      return '#52c41a';
+    case 'in-progress':
+      return '#1890ff';
+    case 'overdue':
+      return '#ff4d4f';
+    case 'on-hold':
+      return '#faad14';
+    default:
+      return '#d9d9d9';
   }
 }
 

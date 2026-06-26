@@ -1,19 +1,683 @@
-.mentions-light .mentions {
-  background-color: #e9e2e2;
+/* Mentions styling */
+.mentions {
   font-weight: 500;
   border-radius: 4px;
-  padding: 2px 4px;
+  padding: 1px 4px;
+  margin: 0 1px;
 }
 
-.mentions-dark .mentions {
-  background-color: #2c2c2c;
-  font-weight: 500;
+.theme-light .mentions {
+  background: #f0f2f5;
+  color: #1890ff;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .mentions {
+  background: #2a3a4a;
+  color: #40a9ff;
+  border: 1px solid #2a4a6d;
+}
+
+/* ========== MENTION INPUT HIGHLIGHTING STYLES ========== */
+
+/* Mention dropdown menu item styling */
+.ant-mentions-dropdown-menu-item {
+  padding: 8px 12px;
+  transition: background-color 0.2s;
+}
+
+.ant-mentions-dropdown-menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item:hover {
+  background-color: #2a2a2a;
+}
+
+/* Selected item in dropdown */
+.ant-mentions-dropdown-menu-item-selected {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item-selected {
+  background-color: #1e3a5f;
+}
+
+/* Active/focused item */
+.ant-mentions-dropdown-menu-item-active {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .ant-mentions-dropdown-menu-item-active {
+  background-color: #1e3a5f;
+}
+
+/* The measure div is what shows the highlighted text overlay */
+.ant-mentions-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: hidden;
+  color: transparent;
+  z-index: 1;
+}
+
+/* Highlighted mention text in the measure overlay - Light theme */
+.theme-light .ant-mentions-measure mark,
+.theme-light .ant-mentions .ant-mentions-measure mark {
+  color: #1890ff !important;
+  background-color: #e6f4ff !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border: 1px solid #91caff !important;
+  margin: 0 2px !important;
+}
+
+/* Highlighted mention text in the measure overlay - Dark theme */
+.theme-dark .ant-mentions-measure mark,
+.theme-dark .ant-mentions .ant-mentions-measure mark {
+  color: #40a9ff !important;
+  background-color: #1e3a5f !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border: 1px solid #2a4a6d !important;
+  margin: 0 2px !important;
+}
+
+/* Make sure the textarea is positioned correctly */
+.ant-mentions > textarea {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+}
+
+/* Style for @ symbol prefix in mentions */
+.theme-light .ant-mentions-prefix {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.theme-dark .ant-mentions-prefix {
+  color: #40a9ff;
+  font-weight: 600;
+}
+
+/* Mention input focus state */
+.theme-light .ant-mentions:focus-within {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+.theme-dark .ant-mentions:focus-within {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(64, 169, 255, 0.1);
+}
+
+/* Ensure mentions container has correct positioning */
+.ant-mentions {
+  position: relative;
+}
+
+/* ========== END MENTION INPUT HIGHLIGHTING ========== */
+
+/* ========== CUSTOM MENTIONS INPUT STYLES ========== */
+
+/* Custom mentions wrapper */
+.custom-mentions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* Custom mentions editable div */
+.custom-mentions-editable {
+  position: relative;
+  z-index: 1;
+}
+
+/* Placeholder styling */
+.custom-mentions-editable:empty:before {
+  content: attr(data-placeholder);
+  color: #bfbfbf;
+  pointer-events: none;
+  position: absolute;
+}
+
+.theme-dark .custom-mentions-editable:empty:before {
+  color: #595959;
+}
+
+/* Mention highlights in the contenteditable - Light theme */
+.mention-highlight-light {
+  background-color: #e6f4ff;
+  color: #1890ff;
+  padding: 2px 6px;
   border-radius: 4px;
-  padding: 2px 4px;
+  font-weight: 500;
+  border: 1px solid #91caff;
+  margin: 0 2px;
+  display: inline-block;
 }
 
-.tooltip-comment .mentions {
-  background-color: transparent;
+/* Mention highlights in the contenteditable - Dark theme */
+.mention-highlight-dark {
+  background-color: #1e3a5f;
+  color: #40a9ff;
+  padding: 2px 6px;
+  border-radius: 4px;
   font-weight: 500;
+  border: 1px solid #2a4a6d;
+  margin: 0 2px;
+  display: inline-block;
+}
+
+/* Mentions dropdown - FIXED FOR BUG - APPEARS ABOVE INPUT */
+.mentions-dropdown {
+  position: absolute !important;
+  bottom: 100% !important;
+  top: auto !important;
+  margin-bottom: 4px !important;
+  z-index: 9999 !important;
+  box-shadow:
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Mentions option - FIXED FOR BUG */
+.mentions-option {
+  display: flex !important;
+  align-items: center;
+  min-height: 40px;
+}
+
+.theme-light .mentions-option:hover,
+.theme-light .mentions-option.selected {
+  background-color: #f5f5f5 !important;
+}
+
+.theme-dark .mentions-option:hover,
+.theme-dark .mentions-option.selected {
+  background-color: #2a2a2a !important;
+}
+
+/* ========== END CUSTOM MENTIONS INPUT STYLES ========== */
+
+/* Conversation-like styles */
+.project-view-updates {
   padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Base comment styles */
+.theme-light .ant-comment,
+.theme-dark .ant-comment {
+  position: relative;
+  margin-bottom: 8px;
+  padding: 0;
+  box-shadow: none;
+  border: none;
+  background-color: transparent;
+}
+
+/* Comment content bubble styles */
+.theme-light .ant-comment-content-detail,
+.theme-dark .ant-comment-content-detail {
+  position: relative;
+  border-radius: 10px;
+  padding: 6px 10px;
+  margin-top: 1px;
+  max-width: 85%;
+  width: fit-content;
+}
+
+.theme-light .ant-comment-content-detail {
+  background-color: #f0f2f5;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .ant-comment-content-detail {
+  background-color: #2a2a2a;
+  border: 1px solid #333;
+}
+
+/* Current user comment styles */
+.current-user-comment {
+  flex-direction: row-reverse;
+}
+
+.current-user-comment .ant-comment-inner {
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.current-user-comment .ant-comment-content {
+  margin-right: 8px;
+  margin-left: 0;
+  max-width: calc(100% - 40px);
+  /* Adjust for avatar */
+}
+
+.current-user-comment .ant-comment-content-author {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 6px;
+  padding-left: 0;
+}
+
+.current-user-comment .ant-comment-content-detail {
+  margin-left: auto;
+}
+
+.theme-light .current-user-comment .ant-comment-content-detail {
+  background-color: #e1f3ff;
+  border-color: #c2e4f9;
+}
+
+.theme-dark .current-user-comment .ant-comment-content-detail {
+  background-color: #1e3a5f;
+  border-color: #2a4a6d;
+}
+
+/* Mentions in current user comments */
+.theme-light .current-user-comment .mentions {
+  background: #d1e9ff;
+  border-color: #b3d8ff;
+}
+
+.theme-dark .current-user-comment .mentions {
+  background: #2a4a6d;
+  border-color: #3a5a7d;
+}
+
+.current-user-comment .ant-comment-actions {
+  margin-left: auto;
+  padding-right: 10px;
+  padding-left: 0;
+  text-align: right;
+}
+
+/* Comment author and timestamp */
+.ant-comment-content-author {
+  margin-bottom: 0;
+  padding-left: 6px;
+}
+
+/* Reduce the space between author and content */
+.ant-comment-inner {
+  padding: 6px 0;
+}
+
+/* Comment actions */
+.ant-comment-actions {
+  margin-top: 1px;
+  padding-left: 10px;
+}
+
+/* Comment content */
+.comment-content-light {
+  color: #333;
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-content-dark {
+  color: #d1d0d3;
+  margin-bottom: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Comment actions styling */
+.theme-light .ant-comment-actions > li > span {
+  color: #707070;
+  transition: color 0.3s;
+  font-size: 11px;
+}
+
+.theme-dark .ant-comment-actions > li > span {
+  color: #d1d0d3;
+  transition: color 0.3s;
+  font-size: 11px;
+}
+
+.theme-light .ant-comment-actions > li > span:hover {
+  color: #1890ff;
+}
+
+.theme-dark .ant-comment-actions > li > span:hover {
+  color: #1890ff;
+}
+
+/* Time separator */
+.comment-time-separator {
+  text-align: center;
+  margin: 8px 0;
+  position: relative;
+}
+
+.comment-time-separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: #e6e6e6;
+  z-index: 0;
+}
+
+.theme-dark .comment-time-separator::before {
+  background-color: #333;
+}
+
+.comment-time-separator span {
+  position: relative;
+  padding: 0 10px;
+  font-size: 11px;
+  z-index: 1;
+}
+
+.theme-light .comment-time-separator span {
+  background-color: #fff;
+  color: #707070;
+}
+
+.theme-dark .comment-time-separator span {
+  background-color: #1e1e1e;
+  /* Match main layout bg if possible, or assume card bg */
+  color: #d1d0d3;
+}
+
+/* Adjust avatar size for more compact look */
+.ant-comment-avatar img {
+  width: 24px;
+  height: 24px;
+}
+
+/* Scrollable area */
+.updates-list-container {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  min-height: 0;
+  max-height: 100%;
+  /* Important for flex children to scroll properly */
+}
+
+.updates-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.updates-list-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+/* Input area - sticky at bottom - FIXED FOR BUG */
+.updates-input-container {
+  padding: 10px 16px;
+  border-top: 1px solid transparent;
+  /* controlled by theme */
+  flex: 0 0 auto;
+  /* Prevent input from shrinking or growing */
+  position: relative;
+  z-index: 10;
+  overflow: visible !important;
+}
+
+/* Action buttons hover */
+.ant-comment .ant-comment-actions > li {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.ant-comment:hover .ant-comment-actions > li {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Always show emoji picker */
+.ant-comment .ant-comment-actions > li:last-child {
+  visibility: visible;
+  opacity: 1;
+}
+
+.current-user-comment .ant-comment-actions > li {
+  float: right;
+}
+
+/* Reaction bubbles */
+.reaction {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+}
+
+.theme-light .reaction {
+  background-color: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  color: #595959;
+}
+
+.theme-dark .reaction {
+  background-color: #262626;
+  border: 1px solid #434343;
+  color: #d1d0d3;
+}
+
+.theme-light .reaction.reacted {
+  background-color: #e6f4ff;
+  border-color: #91caff;
+  color: #0958d9;
+}
+
+.theme-dark .reaction.reacted {
+  background-color: #1e3a5f;
+  border-color: #2a4a6d;
+  color: #69b1ff;
+}
+
+.reaction:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.theme-light .reaction:hover {
+  border-color: #91caff;
+}
+
+.theme-dark .reaction:hover {
+  border-color: #2a4a6d;
+}
+
+/* Edit indicator */
+.edit-indicator {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-left: 8px;
+  font-style: italic;
+}
+
+/* Grouped comments - reduce spacing for sequential messages from same user */
+.grouped-comment {
+  margin-top: -4px !important;
+  margin-bottom: 4px !important;
+}
+
+.grouped-comment .ant-comment-inner {
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.grouped-comment .ant-comment-content-author {
+  display: none;
+}
+
+.grouped-comment .ant-comment-avatar {
+  visibility: hidden;
+}
+
+/* Constrain width for better readability */
+.updates-list-container > div {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Tighter spacing between all messages */
+.theme-light .ant-comment,
+.theme-dark .ant-comment {
+  margin-bottom: 4px;
+  /* margin-top: 40px; */
+}
+
+.ant-comment-inner {
+  padding: 4px 0;
+}
+
+/* Comment wrapper for hover actions */
+.comment-wrapper {
+  position: relative;
+}
+
+/* Hover bar - appears above message */
+.comment-hover-bar {
+  position: absolute;
+  top: -64px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s 0.3s,
+    visibility 0.2s 0.3s;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.theme-light .comment-hover-bar {
+  background-color: #ffffff;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .comment-hover-bar {
+  background-color: #2a2a2a;
+  border: 1px solid #3a3a3a;
+}
+
+.ant-comment:hover .comment-hover-bar {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.5s;
+}
+
+/* Quick reactions container */
+.quick-reactions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.quick-emoji {
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quick-emoji:hover {
+  transform: scale(1.2);
+}
+
+.theme-light .quick-emoji:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .quick-emoji:hover {
+  background-color: #3a3a3a;
+}
+
+.more-emoji-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.theme-light .more-emoji-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .more-emoji-btn:hover {
+  background-color: #3a3a3a;
+}
+
+/* Divider between reactions and actions */
+.hover-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+}
+
+.theme-light .hover-divider {
+  background-color: #e6e6e6;
+}
+
+.theme-dark .hover-divider {
+  background-color: #3a3a3a;
+}
+
+/* Action buttons */
+.hover-action-btn {
+  padding: 4px 8px !important;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.theme-light .hover-action-btn:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.theme-dark .hover-action-btn:hover {
+  background-color: #3a3a3a !important;
+}
+
+/* For current user comments, position bar on the right */
+.current-user-comment .comment-hover-bar {
+  right: 10px;
+  left: auto;
+}
+
+/* Hide default actions */
+.ant-comment-actions {
+  display: none !important;
 }

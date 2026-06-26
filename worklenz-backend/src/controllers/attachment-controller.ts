@@ -16,6 +16,7 @@ import {
 } from "../shared/storage";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import path from "path";
 
 export default class AttachmentController extends WorklenzControllerBase {
 
@@ -46,6 +47,9 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!data?.id || !s3Url)
       return res.status(200).send(new ServerResponse(false, null, "Attachment upload failed"));
 
+    // Bump task updated_at so "Updated X ago" reflects the new attachment
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
+
     data.size = humanFileSize(data.size);
 
     return res.status(200).send(new ServerResponse(true, data));
@@ -60,13 +64,42 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (!s3Url)
       return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
 
-    const q = "UPDATE users SET avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING avatar_url;";
+    const q = "UPDATE users SET avatar_url = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING avatar_url, updated_at;";
     const result = await db.query(q, [req.user?.id, `${s3Url}?v=${smallId(4)}`]);
     const [data] = result.rows;
     if (!data)
       return res.status(200).send(new ServerResponse(false, null, "Avatar upload failed"));
 
-    return res.status(200).send(new ServerResponse(true, { url: data.avatar_url }, "Avatar updated."));
+    return res.status(200).send(new ServerResponse(true, { url: data.avatar_url, updated_at: data.updated_at }, "Avatar updated."));
+  }
+
+  @HandleExceptions()
+  public static async deleteAvatarAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const currentAvatarQuery = "SELECT avatar_url FROM users WHERE id = $1;";
+    const currentAvatarResult = await db.query(currentAvatarQuery, [req.user?.id]);
+    const currentAvatarUrl = currentAvatarResult.rows[0]?.avatar_url as string | null;
+
+    const q =
+      "UPDATE users SET avatar_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING updated_at;";
+    const result = await db.query(q, [req.user?.id]);
+    const [data] = result.rows;
+
+    if (!data)
+      return res.status(200).send(new ServerResponse(false, null, "Avatar removal failed."));
+
+    if (currentAvatarUrl) {
+      const sanitizedUrl = currentAvatarUrl.split("?")[0];
+      const fileExtension = path.extname(sanitizedUrl).replace(".", "");
+
+      if (fileExtension) {
+        const key = getAvatarKey(req.user?.id as string, fileExtension);
+        void deleteObject(key);
+      }
+    }
+
+    return res
+      .status(200)
+      .send(new ServerResponse(true, { url: null, updated_at: data.updated_at }, "Avatar removed."));
   }
 
   @HandleExceptions()
@@ -130,13 +163,15 @@ export default class AttachmentController extends WorklenzControllerBase {
     const q = `DELETE
                FROM task_attachments
                WHERE id = $1
-               RETURNING team_id, project_id, id, type;`;
+               RETURNING team_id, project_id, id, type, task_id;`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
 
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
       void deleteObject(key);
+      // Bump task updated_at so "Updated X ago" reflects the removed attachment
+      if (data.task_id) await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [data.task_id]);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -153,7 +188,7 @@ export default class AttachmentController extends WorklenzControllerBase {
     if (data) {
       const key = getKey(data.team_id, data.project_id, data.id, data.type);
       const url = await createPresignedUrlWithClient(key, req.query.file as string);
-      return res.status(200).send(new ServerResponse(true, url));
+      return res.status(200).send(new ServerResponse(true, { url, expires_in: 3600 }));
     }
 
     return res.status(200).send(new ServerResponse(true, null));

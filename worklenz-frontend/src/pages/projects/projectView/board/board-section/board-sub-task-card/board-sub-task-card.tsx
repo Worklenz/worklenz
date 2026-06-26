@@ -1,6 +1,14 @@
 import { useCallback, useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
-import { Col, Flex, Typography, List, Dropdown, MenuProps, Popconfirm } from '@/shared/antd-imports';
+import {
+  Col,
+  Flex,
+  Typography,
+  List,
+  Dropdown,
+  MenuProps,
+  Popconfirm,
+} from '@/shared/antd-imports';
 import {
   UserAddOutlined,
   DeleteOutlined,
@@ -38,7 +46,7 @@ const BoardSubTaskCard = ({ subtask, sectionId }: IBoardSubTaskCardProps) => {
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
   const [subtaskDueDate, setSubtaskDueDate] = useState<Dayjs | null>(
-    subtask?.end_date ? dayjs(subtask?.end_date) : null
+    subtask?.end_date ? dayjs(subtask?.end_date, 'YYYY-MM-DD') : null
   );
 
   const handleCardClick = (e: React.MouseEvent, id: string) => {

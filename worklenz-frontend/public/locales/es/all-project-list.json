@@ -3,9 +3,9 @@
   "client": "Cliente",
   "category": "Categoría",
   "status": "Estado",
+  "priority": "Prioridad",
   "tasksProgress": "Progreso de Tareas",
   "updated_at": "Última Actualización",
-  "members": "Miembros",
   "setting": "Configuración",
   "projects": "Proyectos",
   "refreshProjects": "Actualizar proyectos",
@@ -27,8 +27,12 @@
   "listView": "Vista de Lista",
   "groupView": "Vista de Grupo",
   "groupBy": {
+    "priority": "Prioridad",
     "category": "Categoría",
-    "client": "Cliente"
+    "client": "Cliente",
+    "priorities": "prioridades",
+    "categories": "categorías",
+    "clients": "clientes"
   },
   "noPermission": "No tienes permiso para realizar esta acción"
 }

@@ -7,8 +7,8 @@
   "emailLabel": "Email",
   "emailRequiredError": "Email-i është i detyrueshëm",
   "saveChanges": "Ruaj Ndryshimet",
-  "profileJoinedText": "U bashkua një muaj më parë",
-  "profileLastUpdatedText": "Përditësuar një muaj më parë",
+  "profileJoinedText": "U bashkua më {{date}}",
+  "profileLastUpdatedText": "Përditësuar më {{date}}",
   "avatarTooltip": "Klikoni për të ngarkuar një avatar",
   "title": "Cilësimet e Profilit"
 }

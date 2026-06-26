@@ -52,9 +52,9 @@ const ChangePassword: React.FC = () => {
     placeholder,
     iconRender: (visible: boolean) =>
       visible ? (
-        <EyeInvisibleOutlined style={{ color: '#000000d9' }} />
+        <EyeInvisibleOutlined style={{ color: 'var(--ant-color-text-secondary)' }} />
       ) : (
-        <EyeOutlined style={{ color: '#000000d9' }} />
+        <EyeOutlined style={{ color: 'var(--ant-color-text-secondary)' }} />
       ),
   });
 
@@ -80,7 +80,12 @@ const ChangePassword: React.FC = () => {
           <Form.Item
             name="newPassword"
             label={t('newPassword')}
-            rules={[{ validator: validatePassword }]}
+            rules={[
+              {
+                required: true,
+                message: t('newPasswordRequired'),
+              },
+            ]}
           >
             <Input.Password {...getPasswordInputProps(t('newPasswordPlaceholder'))} />
           </Form.Item>

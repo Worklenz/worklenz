@@ -35,12 +35,15 @@ import logger from '@/utils/errorLogger';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_project_board_column_setting_click } from '@/shared/worklenz-analytics-events';
 
+// ✅ FIX: Max character limit for phase names
+const PHASE_NAME_MAX_LENGTH = 50;
+
 interface TaskGroupHeaderProps {
   group: {
     id: string;
     name: string;
     count: number;
-    color?: string; // Color for the group indicator
+    color?: string;
     todo_progress?: number;
     doing_progress?: number;
     done_progress?: number;
@@ -68,16 +71,20 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const { isOwnerOrAdmin } = useAuthService();
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
-
   const [isRenaming, setIsRenaming] = useState(false);
   const [isChangingCategory, setIsChangingCategory] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [editingName, setEditingName] = useState(group.name);
 
-  const headerBackgroundColor = group.color || '#F0F0F0'; // Default light gray if no color
+  // ✅ FIX: Trim to 50 chars on init if phase (handles existing long DB values)
+  const [editingName, setEditingName] = useState(
+    currentGrouping === 'phase'
+      ? (group.name || '').slice(0, PHASE_NAME_MAX_LENGTH)
+      : group.name
+  );
+
+  const headerBackgroundColor = group.color || '#F0F0F0';
   const headerTextColor = getContrastColor(headerBackgroundColor);
 
-  // Get tasks in this group
   const currentGroup = useMemo(() => {
     return groups.find(g => g.id === group.id);
   }, [groups, group.id]);
@@ -86,7 +93,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     return currentGroup?.taskIds || [];
   }, [currentGroup]);
 
-  // Calculate group progress values dynamically
   const groupProgressValues = useMemo(() => {
     if (!currentGroup || !allTasks.length) {
       return { todoProgress: 0, doingProgress: 0, doneProgress: 0 };
@@ -100,9 +106,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
       return { todoProgress: 0, doingProgress: 0, doneProgress: 0 };
     }
 
-    // If we're grouping by status, show progress based on task completion
     if (currentGrouping === 'status') {
-      // For status grouping, calculate based on task progress values
       const progressStats = tasksInCurrentGroup.reduce(
         (acc, task) => {
           const progress = task.progress || 0;
@@ -127,15 +131,11 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         doneProgress: totalTasks > 0 ? Math.round((progressStats.done / totalTasks) * 100) || 0 : 0,
       };
     } else {
-      // For priority/phase grouping, show progress based on status distribution
-      // Use a simplified approach based on status names and common patterns
       const statusCounts = tasksInCurrentGroup.reduce(
         (acc, task) => {
-          // Find the status by ID first
           const statusInfo = statusList.find(s => s.id === task.status);
           const statusName = statusInfo?.name?.toLowerCase() || task.status?.toLowerCase() || '';
 
-          // Categorize based on common status name patterns
           if (
             statusName.includes('todo') ||
             statusName.includes('to do') ||
@@ -161,7 +161,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           ) {
             acc.done += 1;
           } else {
-            // Default unknown statuses to "doing" (in progress)
             acc.doing += 1;
           }
           return acc;
@@ -180,7 +179,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     }
   }, [currentGroup, allTasks, statusList, currentGrouping]);
 
-  // Calculate selection state for this group
   const { isAllSelected, isPartiallySelected } = useMemo(() => {
     if (tasksInGroup.length === 0) {
       return { isAllSelected: false, isPartiallySelected: false };
@@ -194,29 +192,19 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     return { isAllSelected: allSelected, isPartiallySelected: partiallySelected };
   }, [tasksInGroup, selectedTaskIds]);
 
-  // Handle select all checkbox change
   const handleSelectAllChange = useCallback(
     (e: any) => {
       e.stopPropagation();
-
       if (isAllSelected) {
-        // Deselect all tasks in this group
-        tasksInGroup.forEach(taskId => {
-          dispatch(deselectTask(taskId));
-        });
+        tasksInGroup.forEach(taskId => dispatch(deselectTask(taskId)));
       } else {
-        // Select all tasks in this group
-        tasksInGroup.forEach(taskId => {
-          dispatch(selectTask(taskId));
-        });
+        tasksInGroup.forEach(taskId => dispatch(selectTask(taskId)));
       }
     },
     [dispatch, isAllSelected, tasksInGroup]
   );
 
-  // Handle inline name editing
   const handleNameSave = useCallback(async () => {
-    // If no changes or already renaming, just exit editing mode
     if (!editingName.trim() || editingName.trim() === group.name || isRenaming) {
       setIsEditingName(false);
       setEditingName(group.name);
@@ -226,18 +214,31 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     setIsRenaming(true);
     try {
       if (currentGrouping === 'status') {
-        // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
+        const currentStatus = statusList.find(s => s.id === statusId);
+
+        if (!currentStatus || !currentStatus.category_id) {
+          logger.error('Cannot rename status: missing category_id', {
+            statusId,
+            projectId,
+            hasStatus: !!currentStatus,
+            hasCategoryId: !!currentStatus?.category_id,
+          });
+          setIsEditingName(false);
+          setEditingName(group.name);
+          return;
+        }
+
         const body: ITaskStatusUpdateModel = {
           name: editingName.trim(),
           project_id: projectId,
+          category_id: currentStatus.category_id,
         };
 
         await statusApiService.updateNameOfStatus(statusId, body, projectId);
         trackMixpanelEvent(evt_project_board_column_setting_click, { Rename: 'Status' });
         dispatch(fetchStatuses(projectId));
       } else if (currentGrouping === 'phase') {
-        // Extract phase ID from group ID (format: "phase-{phaseId}")
         const phaseId = group.id.replace('phase-', '');
         const body = { id: phaseId, name: editingName.trim() };
 
@@ -246,7 +247,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         dispatch(fetchPhasesByProjectId(projectId));
       }
 
-      // Refresh task list to get updated group names
       dispatch(fetchTasksV3(projectId));
     } catch (error) {
       logger.error('Error renaming group:', error);
@@ -264,16 +264,26 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     dispatch,
     trackMixpanelEvent,
     isRenaming,
+    statusList,
   ]);
+
+  const isUnmappedPhaseForClick =
+    currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
 
   const handleNameClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!isOwnerOrAdmin) return;
+      if (isUnmappedPhaseForClick) return;
       setIsEditingName(true);
-      setEditingName(group.name);
+      // ✅ FIX: Trim to 50 chars when starting to edit
+      setEditingName(
+        currentGrouping === 'phase'
+          ? (group.name || '').slice(0, PHASE_NAME_MAX_LENGTH)
+          : group.name
+      );
     },
-    [group.name, isOwnerOrAdmin]
+    [group.name, isOwnerOrAdmin, isUnmappedPhaseForClick, currentGrouping]
   );
 
   const handleNameKeyDown = useCallback(
@@ -293,28 +303,26 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     handleNameSave();
   }, [handleNameSave]);
 
-  // Handle dropdown menu actions
   const handleRenameGroup = useCallback(() => {
     setDropdownVisible(false);
     setIsEditingName(true);
-    setEditingName(group.name);
-  }, [group.name]);
+    // ✅ FIX: Trim to 50 chars when starting to edit from dropdown
+    setEditingName(
+      currentGrouping === 'phase'
+        ? (group.name || '').slice(0, PHASE_NAME_MAX_LENGTH)
+        : group.name
+    );
+  }, [group.name, currentGrouping]);
 
-  // Handle category change
   const handleCategoryChange = useCallback(
-    async (categoryId: string, e?: React.MouseEvent) => {
-      e?.stopPropagation();
+    async (categoryId: string) => {
       if (isChangingCategory) return;
-
       setIsChangingCategory(true);
+      setDropdownVisible(false);
       try {
-        // Extract status ID from group ID (format: "status-{statusId}")
         const statusId = group.id.replace('status-', '');
-
         await statusApiService.updateStatusCategory(statusId, categoryId, projectId);
         trackMixpanelEvent(evt_project_board_column_setting_click, { 'Change category': 'Status' });
-
-        // Refresh status list and tasks
         dispatch(fetchStatuses(projectId));
         dispatch(fetchTasksV3(projectId));
       } catch (error) {
@@ -326,9 +334,13 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     [group.id, projectId, dispatch, trackMixpanelEvent, isChangingCategory]
   );
 
-  // Create dropdown menu items
+  const isUnmappedPhase = useMemo(() => {
+    return currentGrouping === 'phase' && (group.id === 'Unmapped' || group.name === 'Unmapped');
+  }, [currentGrouping, group.id, group.name]);
+
   const menuItems = useMemo(() => {
     if (!isOwnerOrAdmin) return [];
+    if (isUnmappedPhase) return [];
 
     const items = [
       {
@@ -347,7 +359,6 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
       },
     ];
 
-    // Only show "Change Category" when grouped by status
     if (currentGrouping === 'status') {
       const categorySubMenuItems = statusCategories.map(category => ({
         key: `category-${category.id}`,
@@ -357,9 +368,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
             <span>{category.name}</span>
           </div>
         ),
-        onClick: (e: any) => {
-          e?.domEvent?.stopPropagation();
-          handleCategoryChange(category.id || '', e?.domEvent);
+        onClick: (info: any) => {
+          info?.domEvent?.stopPropagation();
+          handleCategoryChange(category.id || '');
         },
       }));
 
@@ -368,6 +379,9 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         icon: <ArrowPathIcon className="h-4 w-4" />,
         label: t('changeCategory'),
         children: categorySubMenuItems,
+        onTitleClick: (info: any) => {
+          info?.domEvent?.stopPropagation();
+        },
       } as any);
     }
 
@@ -377,29 +391,29 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     handleRenameGroup,
     handleCategoryChange,
     isOwnerOrAdmin,
+    isUnmappedPhase,
     statusCategories,
     t,
   ]);
 
   return (
-    <div className="relative flex items-center">
+    <div className="relative flex items-center" style={{ width: '100%', minWidth: 'max-content' }}>
       <div
         className="inline-flex w-max items-center px-1 cursor-pointer hover:opacity-80 transition-opacity duration-200 ease-in-out border-t border-b border-gray-200 dark:border-gray-700 rounded-t-md pr-2"
         style={{
           backgroundColor: headerBackgroundColor,
           color: headerTextColor,
           position: 'sticky',
-          top: 0,
-          zIndex: 25, // Higher than task rows but lower than column headers (z-30)
+          left: 0,
+          zIndex: 25,
           height: '36px',
           minHeight: '36px',
           maxHeight: '36px',
         }}
         onClick={onToggle}
       >
-        {/* Drag Handle Space - ultra minimal width */}
+        {/* Chevron button */}
         <div style={{ width: '20px' }} className="flex items-center justify-center">
-          {/* Chevron button */}
           <button
             className="p-0 rounded-sm hover:shadow-lg hover:scale-105 transition-all duration-300 ease-out"
             style={{ backgroundColor: 'transparent', color: headerTextColor }}
@@ -420,44 +434,66 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           </button>
         </div>
 
-        {/* Select All Checkbox Space - ultra minimal width */}
+        {/* Select All Checkbox */}
         <div style={{ width: '28px' }} className="flex items-center justify-center">
           <Checkbox
             checked={isAllSelected}
             indeterminate={isPartiallySelected}
             onChange={handleSelectAllChange}
             onClick={e => e.stopPropagation()}
-            style={{
-              color: headerTextColor,
-            }}
+            style={{ color: headerTextColor }}
           />
         </div>
 
-        {/* Group indicator and name - no gap at all */}
+        {/* Group name and count */}
         <div className="flex items-center flex-1 ml-1">
-          {/* Group name and count */}
           <div className="flex items-center">
             {isEditingName ? (
-              <Input
-                value={editingName}
-                onChange={e => setEditingName(e.target.value)}
-                onKeyDown={handleNameKeyDown}
-                onBlur={handleNameBlur}
-                autoFocus
-                size="small"
-                className="text-sm font-semibold"
-                style={{
-                  width: 'auto',
-                  minWidth: '100px',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  color: headerTextColor,
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                }}
-                onClick={e => e.stopPropagation()}
-              />
+              // ✅ FIX: Input with suffix counter inside, adapts to phase background color
+              <div onClick={e => e.stopPropagation()}>
+                <Input
+                  value={editingName}
+                  onChange={e => {
+                    const value = e.target.value;
+                    // ✅ FIX: Only enforce limit for phase grouping
+                    if (currentGrouping === 'phase' && value.length > PHASE_NAME_MAX_LENGTH) return;
+                    setEditingName(value);
+                  }}
+                  onKeyDown={handleNameKeyDown}
+                  onBlur={handleNameBlur}
+                  autoFocus
+                  size="small"
+                  className="text-sm font-semibold"
+                  maxLength={currentGrouping === 'phase' ? PHASE_NAME_MAX_LENGTH : undefined}
+                  style={{
+                    width: 'auto',
+                    minWidth: '150px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: headerTextColor,
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                  }}
+                  suffix={
+                    currentGrouping === 'phase' ? (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          // ✅ FIX: Adapts color based on phase background for visibility
+                          color:
+                            editingName.length >= PHASE_NAME_MAX_LENGTH
+                              ? '#ff4d4f'
+                              : headerTextColor,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {editingName.length}/{PHASE_NAME_MAX_LENGTH}
+                      </span>
+                    ) : undefined
+                  }
+                />
+              </div>
             ) : (
               <span
-                className="text-sm font-semibold pr-2 cursor-pointer hover:underline"
+                className={`text-sm font-semibold pr-2 ${isUnmappedPhase ? '' : 'cursor-pointer hover:underline'}`}
                 style={{ color: headerTextColor }}
                 onClick={handleNameClick}
               >
@@ -470,7 +506,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           </div>
         </div>
 
-        {/* Three-dot menu - only show for status and phase grouping */}
+        {/* Three-dot menu */}
         {menuItems.length > 0 && (currentGrouping === 'status' || currentGrouping === 'phase') && (
           <div className="flex items-center ml-2">
             <Dropdown
@@ -496,15 +532,19 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
         )}
       </div>
 
-      {/* Progress Bar - sticky to the right edge during horizontal scroll */}
+      {/* Progress Bar */}
       {(currentGrouping === 'priority' || currentGrouping === 'phase') &&
-        !(groupProgressValues.todoProgress === 0 && groupProgressValues.doingProgress === 0 && groupProgressValues.doneProgress === 0) && (
+        !(
+          groupProgressValues.todoProgress === 0 &&
+          groupProgressValues.doingProgress === 0 &&
+          groupProgressValues.doneProgress === 0
+        ) && (
           <div
             className="flex items-center bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm px-3 py-1.5 ml-auto"
             style={{
               position: 'sticky',
               right: '16px',
-              zIndex: 35, // Higher than header
+              zIndex: 35,
               minWidth: '160px',
               height: '30px',
             }}

@@ -5,10 +5,13 @@
   "files": "Files",
   "members": "Members",
   "updates": "Updates",
+  "roadmap": "Roadmap",
+  "workload": "Workload",
   "projectView": "Project View",
   "loading": "Loading project...",
   "error": "Error loading project",
   "pinnedTab": "Pinned as default tab",
   "pinTab": "Pin as default tab",
-  "unpinTab": "Unpin default tab"
-} 
+  "unpinTab": "Unpin default tab",
+  "finance": "Finance"
+}

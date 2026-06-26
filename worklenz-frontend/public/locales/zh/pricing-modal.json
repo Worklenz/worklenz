@@ -1,0 +1,209 @@
+{
+  "title": "为您的团队选择最佳方案",
+  "subtitle": "选择完美的方案来提升团队生产力",
+  "billingCycle": {
+    "label": "计费周期",
+    "monthly": "月付",
+    "yearly": "年付",
+    "savePercent": "节省30%"
+  },
+  "pricingModel": {
+    "label": "定价模式",
+    "perUser": "按用户",
+    "basePlan": "基础方案",
+    "default": "默认",
+    "explanation": {
+      "perUser": "只为活跃用户付费。非常适合小团队（1-5用户），定价灵活且随团队规模增长。",
+      "basePlan": "固定基础价格加包含用户数，超出用户按每用户收费。适合大团队（6+用户），计费可预测。"
+    }
+  },
+  "teamSize": {
+    "label": "团队规模",
+    "help": "选择您当前或预期的团队规模",
+    "user": "用户",
+    "users": "用户",
+    "helpDescription": "输入您团队的用户数量（1-500）"
+  },
+  "plans": {
+    "free": {
+      "name": "免费",
+      "description": "开始使用的完美选择",
+      "features": ["3个项目", "基础任务管理", "团队协作", "手动管理", "社区支持"],
+      "forever": "永久免费"
+    },
+    "proSmall": {
+      "name": "专业版（小型）",
+      "description": "小团队的理想选择",
+      "features": ["无限项目", "高级任务管理", "甘特图", "时间跟踪", "自定义字段", "邮件支持"]
+    },
+    "businessSmall": {
+      "name": "商业版（小型）",
+      "description": "适合成长中的团队",
+      "features": [
+        "专业版（小型）的所有功能",
+        "高级报告",
+        "自定义工作流",
+        "API访问",
+        "优先支持",
+        "高级集成"
+      ]
+    },
+    "proLarge": {
+      "name": "专业版（大型）",
+      "description": "适合较大团队",
+      "features": [
+        "专业版（小型）的所有功能",
+        "高级团队管理",
+        "资源分配",
+        "项目组合管理",
+        "优先支持"
+      ]
+    },
+    "businessLarge": {
+      "name": "商业版（大型）",
+      "description": "适合企业团队",
+      "features": [
+        "商业版（小型）的所有功能",
+        "高级分析",
+        "自定义品牌",
+        "SSO集成",
+        "专属支持",
+        "SLA保证"
+      ]
+    },
+    "enterprise": {
+      "name": "企业版",
+      "description": "适合大型组织",
+      "features": [
+        "商业版（大型）的所有功能",
+        "无限用户",
+        "高级安全",
+        "自定义集成",
+        "专属客户经理",
+        "本地部署"
+      ]
+    }
+  },
+  "badges": {
+    "mostPopular": "最受欢迎",
+    "recommended": "推荐",
+    "bestValue": "最超值",
+    "currentPlan": "当前方案"
+  },
+  "pricing": {
+    "perMonth": "/月",
+    "perUser": "每用户",
+    "forUsers": "{{count}}{{unit}}",
+    "basePrice": "{{price}}基础 + {{additionalCost}}额外用户",
+    "upToUsers": "最多{{count}}用户",
+    "usersRange": "1-{{count}}用户",
+    "savePerYear": "每年节省${{amount}}",
+    "originalPrice": "原价",
+    "discountPercent": "-{{percent}}%"
+  },
+  "buttons": {
+    "currentPlan": "当前方案",
+    "getStartedFree": "免费开始",
+    "contactSales": "联系销售",
+    "choosePlan": "选择方案",
+    "viewDetails": "查看详情",
+    "chooseThisPlan": "选择此方案",
+    "switchToMobile": "切换到移动视图",
+    "toggleTheme": "切换主题",
+    "switchToLight": "切换到亮色主题",
+    "switchToDark": "切换到暗色主题",
+    "closeModal": "关闭定价模态框",
+    "loadingPlans": "加载方案中...",
+    "selectPlan": "选择一个方案",
+    "switchToFree": "切换到免费方案",
+    "planSummary": "{{planName}} 方案 - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
+  },
+  "userTypes": {
+    "trial": {
+      "title": "试用用户：",
+      "message": "还剩{{days}}天。立即升级以保留您的数据和功能！"
+    },
+    "appsumo": {
+      "title": "AppSumo特惠：",
+      "message": "商业版+方案50%折扣！",
+      "countdown": "仅剩{{days}}天享受此独家优惠。",
+      "standardPricing": "标准定价可用"
+    },
+    "free": {
+      "title": "当前方案：",
+      "message": "免费。准备解锁更多功能？"
+    },
+    "custom": {
+      "title": "从自定义方案迁移：",
+      "message": "迁移到我们新的标准方案时保留您的现有定价。"
+    }
+  },
+  "recommendations": {
+    "switchModel": "通过切换到{{model}}为{{count}}用户每月节省${{amount}}",
+    "perUserPricing": "按用户定价",
+    "basePlanPricing": "基础方案定价",
+    "switch": "切换"
+  },
+  "planDetails": {
+    "title": "方案详情",
+    "features": "功能",
+    "limits": "限制",
+    "projects": "项目",
+    "users": "用户",
+    "storage": "存储",
+    "unlimited": "无限"
+  },
+  "tips": {
+    "switchAnytime": "💡 提示：您可以随时在计费设置中切换定价模式"
+  },
+  "errors": {
+    "loadingData": "加载定价数据错误",
+    "loadingPlansRetry": "加载定价方案失败。请刷新页面。",
+    "calculating": "正在计算价格...",
+    "selectedPlan": "已选择方案：{{plan}}"
+  },
+  "accessibility": {
+    "availablePlans": "可用方案",
+    "teamSizeHelp": "团队规模帮助",
+    "pricingUpdates": "定价更新"
+  },
+  "checkout": {
+    "title": "确认您的订阅",
+    "subtitle": "继续之前请查看您的方案详情",
+    "summary": "订阅摘要",
+    "plan": "方案",
+    "teamSize": "团队规模",
+    "discount": "折扣",
+    "total": "总计",
+    "secureCheckout": "安全结账",
+    "secureDescription": "您的付款将通过Paddle安全处理。您可以随时取消或更改方案。",
+    "appsumoSpecial": "AppSumo特惠价格",
+    "appsumoDescription": "您将在前12个月享受50%折扣。这是限时优惠！",
+    "proceedToPayment": "继续付款",
+    "cancel": "取消",
+    "processing": {
+      "title": "正在处理您的订阅",
+      "subtitle": "请稍候，我们正在设置您的订阅...",
+      "doNotClose": "请勿关闭此窗口",
+      "doNotCloseDescription": "您的付款正在处理中。关闭此窗口可能会中断流程。"
+    },
+    "success": {
+      "title": "订阅创建成功！",
+      "subtitle": "您的订阅已激活。您将很快收到确认邮件。",
+      "withId": "您的订阅ID是{{id}}。您将很快收到确认邮件。",
+      "goToDashboard": "转到仪表板",
+      "viewBilling": "查看计费"
+    },
+    "error": {
+      "title": "订阅失败",
+      "subtitle": "订阅过程中出现了问题。",
+      "tryAgain": "重试"
+    },
+    "steps": {
+      "confirm": "确认",
+      "payment": "付款",
+      "complete": "完成"
+    }
+  }
+}

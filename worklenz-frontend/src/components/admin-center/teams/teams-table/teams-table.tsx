@@ -6,10 +6,19 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { IOrganizationTeam } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
 import { SettingOutlined, DeleteOutlined } from '@/shared/antd-imports';
-import { Badge, Button, Card, Popconfirm, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Button,
+  Card,
+  Popconfirm,
+  Table,
+  TableProps,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useState } from 'react';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 
 interface TeamsTableProps {
   teams: IOrganizationTeam[];
@@ -27,7 +36,7 @@ const TeamsTable: React.FC<TeamsTableProps> = ({
   reloadTeams,
 }) => {
   const dispatch = useAppDispatch();
-  const isTablet = useMediaQuery({ query: '(min-width: 1000px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width: 1000px)' });
   const [deleting, setDeleting] = useState(false);
   const [isSettingDrawerOpen, setIsSettingDrawerOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>('');
@@ -138,6 +147,7 @@ const TeamsTable: React.FC<TeamsTableProps> = ({
         teamId={selectedTeam}
         isSettingDrawerOpen={isSettingDrawerOpen}
         setIsSettingDrawerOpen={setIsSettingDrawerOpen}
+        reloadTeams={reloadTeams} // Pass the reloadTeams prop here
       />
     </>
   );

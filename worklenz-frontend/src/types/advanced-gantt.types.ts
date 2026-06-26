@@ -188,16 +188,16 @@ export interface AdvancedGanttProps {
   // Data
   tasks: GanttTask[];
   columns?: ColumnConfig[];
-  
+
   // Configuration
   timelineConfig?: Partial<TimelineConfig>;
   virtualScrollConfig?: Partial<VirtualScrollConfig>;
   zoomLevels?: ZoomLevel[];
-  
+
   // Initial State
   initialViewState?: Partial<GanttViewState>;
   initialSelection?: string[];
-  
+
   // Event Handlers
   onTaskUpdate?: (taskId: string, updates: Partial<GanttTask>) => void;
   onTaskCreate?: (task: Omit<GanttTask, 'id'>) => void;
@@ -209,13 +209,13 @@ export interface AdvancedGanttProps {
   onColumnResize?: ColumnResizeHandler;
   onDependencyCreate?: (fromTaskId: string, toTaskId: string) => void;
   onDependencyDelete?: (fromTaskId: string, toTaskId: string) => void;
-  
+
   // UI Customization
   className?: string;
   style?: React.CSSProperties;
   theme?: 'light' | 'dark' | 'auto';
   locale?: string;
-  
+
   // Feature Flags
   enableDragDrop?: boolean;
   enableResize?: boolean;
@@ -225,7 +225,7 @@ export interface AdvancedGanttProps {
   enableTooltips?: boolean;
   enableExport?: boolean;
   enablePrint?: boolean;
-  
+
   // Performance Options
   enableVirtualScrolling?: boolean;
   enableDebouncing?: boolean;
@@ -258,7 +258,14 @@ export interface ExportOptions {
 // Filter and Search
 export interface FilterConfig {
   field: string;
-  operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between';
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith'
+    | 'greaterThan'
+    | 'lessThan'
+    | 'between';
   value: any;
   logic?: 'and' | 'or';
 }

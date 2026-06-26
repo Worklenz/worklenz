@@ -55,8 +55,11 @@ export default class TasksControllerBase extends WorklenzControllerBase {
     else {
       // Only calculate progress based on time if time-based progress is enabled for the project
       if (task.project_use_time_progress && task.total_minutes_spent && task.total_minutes) {
+        // total_minutes_spent is in seconds, total_minutes is in minutes
+        // Convert total_minutes to seconds for comparison
+        const totalSeconds = task.total_minutes * 60;
         // Cap the progress at 100% to prevent showing more than 100% progress
-        task.progress = Math.min(~~(task.total_minutes_spent / task.total_minutes * 100), 100);
+        task.progress = Math.min(~~(task.total_minutes_spent / totalSeconds * 100), 100);
       } else {
         // Default to 0% progress when time-based calculation is not enabled
         task.progress = 0;
@@ -72,7 +75,9 @@ export default class TasksControllerBase extends WorklenzControllerBase {
 
     task.overdue = task.total_minutes < task.total_minutes_spent;
 
-    task.time_spent = { hours: ~~(task.total_minutes_spent / 60), minutes: task.total_minutes_spent % 60 };
+    // total_minutes_spent is in seconds, convert to hours and minutes
+    const totalMinutesSpent = Math.floor((task.total_minutes_spent || 0) / 60);
+    task.time_spent = { hours: ~~(totalMinutesSpent / 60), minutes: totalMinutesSpent % 60 };
 
     task.comments_count = Number(task.comments_count) ? +task.comments_count : 0;
     task.attachments_count = Number(task.attachments_count) ? +task.attachments_count : 0;

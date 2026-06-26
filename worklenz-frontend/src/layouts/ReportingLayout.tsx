@@ -1,33 +1,22 @@
-import { Col, ConfigProvider, Layout } from '@/shared/antd-imports';
+import { Col, ConfigProvider, Layout, theme } from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import Navbar from '@/features/navbar/navbar';
 import { useAppSelector } from '../hooks/useAppSelector';
-import { colors } from '../styles/colors';
-import { themeWiseColor } from '../utils/themeWiseColor';
+import { useAppDispatch } from '../hooks/useAppDispatch';
 import ReportingSider from '../pages/reporting/sidebar/reporting-sider';
-import { Outlet, useNavigate } from 'react-router-dom';
-import ReportingCollapsedButton from '../pages/reporting/sidebar/reporting-collapsed-button';
-import { useAuthService } from '@/hooks/useAuth';
+import { Outlet } from 'react-router-dom';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setCurrentOrganization } from '@/features/reporting/reporting.slice';
+import { fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
+import UpgradePlansModal from '@/worklenz-ee/components/UpgradePlansModal';
 import logger from '@/utils/errorLogger';
 
 const ReportingLayout = () => {
   const dispatch = useAppDispatch();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const { token } = theme.useToken();
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { getCurrentSession } = useAuthService();
-  const currentSession = getCurrentSession();
-  const navigate = useNavigate();
-
-  
-
-  // function to handle collapse
-  const handleCollapsedToggler = () => {
-    setIsCollapsed(prev => !prev);
-  };
 
   const fetchCurrentOrganization = async () => {
     try {
@@ -42,24 +31,13 @@ const ReportingLayout = () => {
 
   useEffect(() => {
     fetchCurrentOrganization();
-  }, []);
+    // Fetch organization details for upgrade modal
+    dispatch(fetchOrganizationDetails());
+  }, [dispatch]);
 
   return (
-    <ConfigProvider
-      wave={{ disabled: true }}
-      theme={{
-        components: {
-          Layout: {
-            siderBg: themeMode === 'dark' ? colors.darkGray : colors.white,
-          },
-        },
-      }}
-    >
-      <Layout
-        style={{
-          minHeight: '100vh',
-        }}
-      >
+    <ConfigProvider wave={{ disabled: true }}>
+      <Layout style={{ minHeight: '100vh' }}>
         <Layout.Header
           className={`shadow-md ${themeMode === 'dark' ? 'shadow-[#5f5f5f1f]' : 'shadow-[#18181811]'}`}
           style={{
@@ -74,42 +52,45 @@ const ReportingLayout = () => {
           <Navbar />
         </Layout.Header>
 
-        <Layout.Sider
-          collapsed={isCollapsed}
-          collapsedWidth={24}
-          width={160}
-          style={{
-            position: 'relative',
-          }}
-        >
-          <div
+        <Layout style={{ marginTop: 64 }}>
+          <Layout.Sider
+            trigger={null}
+            collapsible
+            collapsed={isCollapsed}
+            collapsedWidth={80}
+            width={240}
             style={{
+              borderRight: `1px solid ${token.colorBorderSecondary}`,
+              background: token.colorBgContainer,
               position: 'fixed',
-              zIndex: 120,
-              height: '100vh',
-              borderInlineEnd: `1px solid ${themeWiseColor('#f0f0f0', '#303030', themeMode)}`,
+              height: 'calc(100vh - 64px)',
+              left: 0,
+              top: 64,
+              zIndex: 100,
+              overflow: 'auto',
             }}
           >
-            {/* sidebar collapsed button */}
-            <ReportingCollapsedButton
-              isCollapsed={isCollapsed}
-              handleCollapseToggler={handleCollapsedToggler}
+            <ReportingSider
+              collapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed(prev => !prev)}
             />
+          </Layout.Sider>
 
-            {!isCollapsed && (
-              <div style={{ width: 160 }}>
-                <ReportingSider />
-              </div>
-            )}
-          </div>
-        </Layout.Sider>
-
-        <Layout.Content style={{ marginBlock: 96 }}>
-          <Col style={{ paddingInline: 32 }}>
-            <Outlet />
-          </Col>
-        </Layout.Content>
+          <Layout
+            style={{
+              marginLeft: isCollapsed ? 80 : 240,
+              transition: 'margin-left 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
+            }}
+          >
+            <Layout.Content style={{ padding: 32, minHeight: 'calc(100vh - 64px)' }}>
+              <Outlet />
+            </Layout.Content>
+          </Layout>
+        </Layout>
       </Layout>
+
+      {/* Global Upgrade Modal */}
+      <UpgradePlansModal />
     </ConfigProvider>
   );
 };

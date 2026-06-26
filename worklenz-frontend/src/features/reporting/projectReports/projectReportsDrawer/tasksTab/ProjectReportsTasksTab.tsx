@@ -1,5 +1,5 @@
-import { Flex } from '@/shared/antd-imports';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Flex, Spin } from '@/shared/antd-imports';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import CustomSearchbar from '@components/CustomSearchbar';
 import GroupByFilter from './group-by-filter';
 import ProjectReportsTasksTable from './ProjectReportsTaskTable';
@@ -82,7 +82,13 @@ const ProjectReportsTasksTab = ({ projectId = null }: ProjectReportsTasksTabProp
         ))}
       </Flex>
 
-      {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
+      {createPortal(
+        <Suspense fallback={<Spin size="small" />}>
+          <TaskDrawer />
+        </Suspense>,
+        document.body,
+        'task-drawer'
+      )}
     </Flex>
   );
 };

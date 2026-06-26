@@ -1,0 +1,26 @@
+.switch-team-dropdown .ant-dropdown-menu {
+  padding: 0 !important;
+  border-radius: 12px;
+  max-height: 255px;
+  overflow: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.switch-team-dropdown .ant-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.switch-team-dropdown .ant-dropdown-menu::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.switch-team-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+  transition: background-color 0.2s ease;
+}
+
+.switch-team-card .ant-card-body {
+  padding: 0 !important;
+}

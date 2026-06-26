@@ -1,0 +1,10 @@
+{
+  "pageTitle": "Mobile App",
+  "pageDescription": "Download the Worklenz app on iOS or Android. Scan the QR code with your phone or tap the store badge.",
+  "modalTitle": "Download Worklenz on mobile",
+  "appStoreBadgeAlt": "Download on the App Store",
+  "googlePlayBadgeAlt": "Get it on Google Play",
+  "bannerText": "Worklenz is on iOS and Android.",
+  "bannerCta": "View QR codes",
+  "bannerDismiss": "Dismiss mobile app banner"
+}

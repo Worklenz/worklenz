@@ -105,7 +105,9 @@ const BoardSectionCardContainer = ({
         items={datasource?.map((section: any) => section.id)}
         strategy={horizontalListSortingStrategy}
       >
-        {datasource?.map((data: any) => <BoardSectionCard key={data.id} taskGroup={data} />)}
+        {datasource?.map((data: any) => (
+          <BoardSectionCard key={data.id} taskGroup={data} />
+        ))}
       </SortableContext>
 
       {group !== 'priority' && (isOwnerorAdmin || isProjectManager) && <BoardCreateSectionCard />}

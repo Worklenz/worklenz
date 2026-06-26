@@ -36,32 +36,36 @@ const TimelineMarkers: React.FC<TimelineMarkersProps> = ({
   const timelineDates = useMemo(() => {
     const dates: Date[] = [];
     const totalDays = getDaysBetween(startDate, endDate);
-    
+
     for (let i = 0; i <= totalDays; i++) {
       const date = new Date(startDate);
       date.setDate(date.getDate() + i);
       dates.push(date);
     }
-    
+
     return dates;
   }, [startDate, endDate, getDaysBetween]);
 
   // Theme-aware colors
-  const colors = useMemo(() => ({
-    weekend: themeWiseColor('rgba(0, 0, 0, 0.05)', 'rgba(255, 255, 255, 0.05)', themeMode),
-    nonWorkingDay: themeWiseColor('rgba(0, 0, 0, 0.03)', 'rgba(255, 255, 255, 0.03)', themeMode),
-    holiday: themeWiseColor('rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.15)', themeMode),
-    today: themeWiseColor('rgba(24, 144, 255, 0.15)', 'rgba(64, 169, 255, 0.2)', themeMode),
-    todayLine: themeWiseColor('#1890ff', '#40a9ff', themeMode),
-    holidayBorder: themeWiseColor('#ff6b6b', '#ff8787', themeMode),
-  }), [themeMode]);
+  const colors = useMemo(
+    () => ({
+      weekend: themeWiseColor('rgba(0, 0, 0, 0.05)', 'rgba(255, 255, 255, 0.05)', themeMode),
+      nonWorkingDay: themeWiseColor('rgba(0, 0, 0, 0.03)', 'rgba(255, 255, 255, 0.03)', themeMode),
+      holiday: themeWiseColor('rgba(255, 107, 107, 0.1)', 'rgba(255, 107, 107, 0.15)', themeMode),
+      today: themeWiseColor('rgba(24, 144, 255, 0.15)', 'rgba(64, 169, 255, 0.2)', themeMode),
+      todayLine: themeWiseColor('#1890ff', '#40a9ff', themeMode),
+      holidayBorder: themeWiseColor('#ff6b6b', '#ff8787', themeMode),
+    }),
+    [themeMode]
+  );
 
   // Check if a date is a holiday
   const isHoliday = (date: Date): Holiday | undefined => {
     return holidays.find(holiday => {
       if (holiday.recurring) {
-        return holiday.date.getMonth() === date.getMonth() && 
-               holiday.date.getDate() === date.getDate();
+        return (
+          holiday.date.getMonth() === date.getMonth() && holiday.date.getDate() === date.getDate()
+        );
       }
       return holiday.date.toDateString() === date.toDateString();
     });
@@ -259,28 +263,113 @@ const TimelineMarkers: React.FC<TimelineMarkersProps> = ({
 // Holiday presets for common countries
 export const holidayPresets = {
   US: [
-    { date: new Date(2024, 0, 1), name: "New Year's Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 0, 15), name: "Martin Luther King Jr. Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 1, 19), name: "Presidents' Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 4, 27), name: "Memorial Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 5, 19), name: "Juneteenth", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 6, 4), name: "Independence Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 8, 2), name: "Labor Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 9, 14), name: "Columbus Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 10, 11), name: "Veterans Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 10, 28), name: "Thanksgiving", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 11, 25), name: "Christmas Day", type: 'national' as const, recurring: true },
+    {
+      date: new Date(2024, 0, 1),
+      name: "New Year's Day",
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 0, 15),
+      name: 'Martin Luther King Jr. Day',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 1, 19),
+      name: "Presidents' Day",
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 4, 27),
+      name: 'Memorial Day',
+      type: 'national' as const,
+      recurring: true,
+    },
+    { date: new Date(2024, 5, 19), name: 'Juneteenth', type: 'national' as const, recurring: true },
+    {
+      date: new Date(2024, 6, 4),
+      name: 'Independence Day',
+      type: 'national' as const,
+      recurring: true,
+    },
+    { date: new Date(2024, 8, 2), name: 'Labor Day', type: 'national' as const, recurring: true },
+    {
+      date: new Date(2024, 9, 14),
+      name: 'Columbus Day',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 10, 11),
+      name: 'Veterans Day',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 10, 28),
+      name: 'Thanksgiving',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 11, 25),
+      name: 'Christmas Day',
+      type: 'national' as const,
+      recurring: true,
+    },
   ],
-  
+
   UK: [
-    { date: new Date(2024, 0, 1), name: "New Year's Day", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 2, 29), name: "Good Friday", type: 'religious' as const, recurring: false },
-    { date: new Date(2024, 3, 1), name: "Easter Monday", type: 'religious' as const, recurring: false },
-    { date: new Date(2024, 4, 6), name: "Early May Bank Holiday", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 4, 27), name: "Spring Bank Holiday", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 7, 26), name: "Summer Bank Holiday", type: 'national' as const, recurring: true },
-    { date: new Date(2024, 11, 25), name: "Christmas Day", type: 'religious' as const, recurring: true },
-    { date: new Date(2024, 11, 26), name: "Boxing Day", type: 'national' as const, recurring: true },
+    {
+      date: new Date(2024, 0, 1),
+      name: "New Year's Day",
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 2, 29),
+      name: 'Good Friday',
+      type: 'religious' as const,
+      recurring: false,
+    },
+    {
+      date: new Date(2024, 3, 1),
+      name: 'Easter Monday',
+      type: 'religious' as const,
+      recurring: false,
+    },
+    {
+      date: new Date(2024, 4, 6),
+      name: 'Early May Bank Holiday',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 4, 27),
+      name: 'Spring Bank Holiday',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 7, 26),
+      name: 'Summer Bank Holiday',
+      type: 'national' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 11, 25),
+      name: 'Christmas Day',
+      type: 'religious' as const,
+      recurring: true,
+    },
+    {
+      date: new Date(2024, 11, 26),
+      name: 'Boxing Day',
+      type: 'national' as const,
+      recurring: true,
+    },
   ],
 };
 

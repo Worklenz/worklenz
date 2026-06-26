@@ -1,4 +1,4 @@
-import { Button, Drawer, Form, Input, notification, Typography } from '@/shared/antd-imports';
+import { Alert, Button, Drawer, Form, Input, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -10,17 +10,27 @@ import {
 } from '@features/admin-center/admin-center.slice';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
-import { authApiService } from '@/api/auth/auth.api.service';
 import { setUser } from '@/features/user/userSlice';
-import { setSession } from '@/utils/session-helper';
+import { verifyAuthentication } from '@/features/auth/authSlice';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
+
+const APPSUMO_BUSINESS_UNLOCK_CODE_COUNT = 5;
+
 const RedeemCodeDrawer: React.FC = () => {
   const [form] = Form.useForm();
   const { t } = useTranslation('admin-center/current-bill');
-  const { isRedeemCodeDrawerOpen } = useAppSelector(state => state.adminCenterReducer);
+  const { isRedeemCodeDrawerOpen, billingInfo } = useAppSelector(state => state.adminCenterReducer);
   const dispatch = useAppDispatch();
 
   const [redeemCode, setRedeemCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const redeemedCodesCount = billingInfo?.redeemed_codes_count ?? 0;
+  const isBusinessPlanActivated = billingInfo?.plan_name === 'Business Plan';
+  const shouldShowAppSumoBusinessUnlock =
+    billingInfo?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL &&
+    redeemedCodesCount < APPSUMO_BUSINESS_UNLOCK_CODE_COUNT &&
+    !isBusinessPlanActivated;
 
   const handleFormSubmit = async (values: any) => {
     if (!values.redeemCode) return;
@@ -30,9 +40,8 @@ const RedeemCodeDrawer: React.FC = () => {
       const res = await adminCenterApiService.redeemCode(values.redeemCode);
       if (res.done) {
         form.resetFields();
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
+        const authorizeResponse = await dispatch(verifyAuthentication()).unwrap();
+        if (authorizeResponse?.authenticated) {
           dispatch(setUser(authorizeResponse.user));
         }
         dispatch(toggleRedeemCodeDrawer());
@@ -60,6 +69,22 @@ const RedeemCodeDrawer: React.FC = () => {
           form.resetFields();
         }}
       >
+        {shouldShowAppSumoBusinessUnlock && (
+          <Alert
+            type="success"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message={t('appsumoBusinessUnlockTitle', {
+              defaultValue: 'Unlock Business Plan with 5 AppSumo codes',
+            })}
+            description={t('appsumoBusinessUnlockDescription', {
+              count: redeemedCodesCount,
+              required: APPSUMO_BUSINESS_UNLOCK_CODE_COUNT,
+              defaultValue:
+                'Redeem {{required}} AppSumo codes to automatically unlock Business Plan features. You have redeemed {{count}} of {{required}} codes.',
+            })}
+          />
+        )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
           <Form.Item
             name="redeemCode"

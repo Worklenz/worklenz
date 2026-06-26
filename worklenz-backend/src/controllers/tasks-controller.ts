@@ -7,29 +7,177 @@ import db from "../config/db";
 
 import { ServerResponse } from "../models/server-response";
 import { S3_URL, TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
-import { getDates, getMinMaxOfTaskDates, getMonthRange, getWeekRange } from "../shared/tasks-controller-utils";
-import { getColor, getRandomColorCode, humanFileSize, log_error, toMinutes } from "../shared/utils";
+import {
+  getDates,
+  getMinMaxOfTaskDates,
+  getMonthRange,
+  getWeekRange,
+} from "../shared/tasks-controller-utils";
+import {
+  getColor,
+  getRandomColorCode,
+  humanFileSize,
+  log_error,
+  toMinutes,
+} from "../shared/utils";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { getTaskCompleteInfo } from "../socket.io/commands/on-quick-task";
-import { getAssignees, getTeamMembers } from "../socket.io/commands/on-quick-assign-or-remove";
+import {
+  getAssignees,
+  getTeamMembers,
+} from "../socket.io/commands/on-quick-assign-or-remove";
 import TasksControllerV2 from "./tasks-controller-v2";
 import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase from "./tasks-controller-base";
 import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
-import { IActivityLog } from "../services/activity-logs/interfaces";
+import {
+  IActivityLog,
+  IActivityLogAttributeTypes,
+  IActivityLogChangeType,
+} from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
+import business from "../business";
 
 export default class TasksController extends TasksControllerBase {
-  private static notifyProjectUpdates(socketId: string, projectId: string) {
-    IO.getSocketById(socketId)
+  private static async getTaskDrawerCustomColumns(projectId: string | null) {
+    if (!projectId) return [];
+
+    const q = `
+      WITH column_data AS (
+        SELECT 
+          cc.id,
+          cc.key,
+          cc.name,
+          cc.field_type,
+          cc.width,
+          cc.is_visible,
+          cc.created_at,
+          cf.field_title,
+          cf.number_type,
+          cf.decimals,
+          cf.label,
+          cf.label_position,
+          cf.preview_value,
+          cf.expression,
+          cf.first_numeric_column_key,
+          cf.second_numeric_column_key,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'selection_id', so.selection_id,
+                'selection_name', so.selection_name,
+                'selection_color', so.selection_color
+              )
+              ORDER BY so.selection_order
+            )
+            FROM cc_selection_options so
+            WHERE so.column_id = cc.id
+          ) as selections_list,
+          (
+            SELECT json_agg(
+              json_build_object(
+                'label_id', lo.label_id,
+                'label_name', lo.label_name,
+                'label_color', lo.label_color
+              )
+              ORDER BY lo.label_order
+            )
+            FROM cc_label_options lo
+            WHERE lo.column_id = cc.id
+          ) as labels_list
+        FROM cc_custom_columns cc
+        LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+        WHERE cc.project_id = $1
+      )
+      SELECT COALESCE(
+        json_agg(
+          json_build_object(
+            'key', cd.key,
+            'id', cd.id,
+            'name', cd.name,
+            'width', cd.width,
+            'pinned', cd.is_visible,
+            'custom_column', true,
+            'custom_column_obj', json_build_object(
+              'fieldType', cd.field_type,
+              'fieldTitle', cd.field_title,
+              'numberType', cd.number_type,
+              'decimals', cd.decimals,
+              'label', cd.label,
+              'labelPosition', cd.label_position,
+              'previewValue', cd.preview_value,
+              'expression', cd.expression,
+              'firstNumericColumnKey', cd.first_numeric_column_key,
+              'secondNumericColumnKey', cd.second_numeric_column_key,
+              'selectionsList', COALESCE(cd.selections_list, '[]'::json),
+              'labelsList', COALESCE(cd.labels_list, '[]'::json)
+            )
+          )
+          ORDER BY cd.created_at
+        ),
+        '[]'::json
+      ) AS columns
+      FROM column_data cd;
+    `;
+
+    const result = await db.query(q, [projectId]);
+    return result.rows[0]?.columns || [];
+  }
+
+  private static async getTaskDrawerCustomColumnValues(
+    taskId: string | null,
+    projectId: string | null,
+  ) {
+    if (!taskId || !projectId) return {};
+
+    const q = `
+      SELECT COALESCE(
+        jsonb_object_agg(custom_cols.key, custom_cols.value),
+        '{}'::jsonb
+      ) AS custom_column_values
+      FROM (
+        SELECT
+          cc.key,
+          CASE
+            WHEN ccv.text_value IS NOT NULL THEN to_jsonb(ccv.text_value)
+            WHEN ccv.number_value IS NOT NULL THEN to_jsonb(ccv.number_value)
+            WHEN ccv.boolean_value IS NOT NULL THEN to_jsonb(ccv.boolean_value)
+            WHEN ccv.date_value IS NOT NULL THEN to_jsonb(ccv.date_value)
+            WHEN ccv.json_value IS NOT NULL THEN ccv.json_value
+            ELSE NULL::jsonb
+          END AS value
+        FROM cc_column_values ccv
+        JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+        WHERE ccv.task_id = $1
+          AND cc.project_id = $2
+      ) AS custom_cols
+      WHERE custom_cols.value IS NOT NULL;
+    `;
+
+    const result = await db.query(q, [taskId, projectId]);
+    return result.rows[0]?.custom_column_values || {};
+  }
+
+  private static notifyProjectUpdates(socketId: string, projectId: string, notifySender = true) {
+    // Emit to the sender's socket directly
+    const socket = IO.getSocketById(socketId);
+    if (notifySender) {
+      socket?.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+    }
+    // Also broadcast to others in the project room
+    socket
       ?.to(projectId)
       .emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
   }
 
-  public static async uploadAttachment(attachments: any, teamId: string, userId: string) {
+  public static async uploadAttachment(
+    attachments: any,
+    teamId: string,
+    userId: string,
+  ) {
     try {
       const promises = attachments.map(async (attachment: any) => {
         const { file, file_name, project_id, size } = attachment;
@@ -49,11 +197,14 @@ export default class TasksController extends TasksControllerBase {
           userId,
           size,
           type,
-          `${S3_URL}/${getRootDir()}`
+          `${S3_URL}/${getRootDir()}`,
         ]);
 
         const [data] = result.rows;
-        await uploadBase64(file, getKey(teamId, project_id, data.id, data.type));
+        await uploadBase64(
+          file,
+          getKey(teamId, project_id, data.id, data.type),
+        );
         return data.id;
       });
 
@@ -65,12 +216,50 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async create(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const userId = req.user?.id as string;
     const teamId = req.user?.team_id as string;
 
+    // Check restrict_task_creation (Business Plan feature)
+    const projectId = req.body.project_id;
+    if (userId && projectId) {
+      const restrictResult = await db.query(
+        "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+        [userId, projectId]
+      );
+      if (restrictResult.rows[0]?.restricted === true) {
+        return res.status(403).send(
+          new ServerResponse(false, null, "Task creation is restricted. Please contact admin for access.")
+        );
+      }
+    }
+
+    // Check if user is trying to set billable and if they're restricted
+    if (req.body.billable === true) {
+      const isRestricted = await business.featureGate.isRestrictedFromProFeatures(teamId);
+
+      if (isRestricted) {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              null,
+              "Billable feature is not available for Pro Plan and AppSumo users. Please upgrade to Business plan to access this feature.",
+            ),
+          );
+      }
+    }
+
     if (req.body.attachments_raw) {
-      req.body.attachments = await this.uploadAttachment(req.body.attachments_raw, teamId, userId);
+      req.body.attachments = await this.uploadAttachment(
+        req.body.attachments_raw,
+        teamId,
+        userId,
+      );
     }
 
     const q = `SELECT create_task($1) AS task;`;
@@ -83,7 +272,7 @@ export default class TasksController extends TasksControllerBase {
         userId,
         data.task.id,
         member.user_id,
-        member.team_id
+        member.team_id,
       );
     }
 
@@ -91,7 +280,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getGanttTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getGanttTasks(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_gantt_tasks($1) AS gantt_tasks;`;
     const result = await db.query(q, [req.user?.id ?? null]);
     const [data] = result.rows;
@@ -116,7 +308,7 @@ export default class TasksController extends TasksControllerBase {
         userId,
         task.id,
         member.user_id,
-        member.team_id
+        member.team_id,
       );
     }
 
@@ -126,12 +318,16 @@ export default class TasksController extends TasksControllerBase {
         userId,
         task.id,
         member.user_id,
-        member.team_id
+        member.team_id,
       );
     }
   }
 
-  public static async notifyStatusChange(userId: string, taskId: string, statusId: string) {
+  public static async notifyStatusChange(
+    userId: string,
+    taskId: string,
+    statusId: string,
+  ) {
     try {
       const q2 = "SELECT handle_on_task_status_change($1, $2, $3) AS res;";
       const results1 = await db.query(q2, [userId, taskId, statusId]);
@@ -147,7 +343,7 @@ export default class TasksController extends TasksControllerBase {
           socketId: member.socket_id,
           message: changeResponse.message,
           taskId,
-          projectId: changeResponse.project_id
+          projectId: changeResponse.project_id,
         });
       }
     } catch (error) {
@@ -156,7 +352,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async update(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const userId = req.user?.id as string;
 
     await this.notifyStatusChange(userId, req.body.id, req.body.status_id);
@@ -174,7 +373,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async updateDuration(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async updateDuration(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const { start, end } = req.body;
 
@@ -187,26 +389,46 @@ export default class TasksController extends TasksControllerBase {
     `;
     const result = await db.query(q, [start, end, id]);
     const [data] = result.rows;
-    if (data?.id)
-      return res.status(200).send(new ServerResponse(true, {}));
-    return res.status(200).send(new ServerResponse(false, {}, "Task update failed!"));
+    if (data?.id) return res.status(200).send(new ServerResponse(true, {}));
+    return res
+      .status(200)
+      .send(new ServerResponse(false, {}, "Task update failed!"));
   }
 
   @HandleExceptions()
-  public static async updateStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async updateStatus(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { status_id, task_id } = req.params;
     const { project_id, from_index, to_index } = req.body;
 
+    const canContinue = await TasksControllerV2.checkForCompletedDependencies(task_id, status_id);
+    if (!canContinue) {
+      return res.status(200).send(new ServerResponse(false, { completed_deps: false }, "Task has incomplete dependencies and cannot be marked as done."));
+    }
+
     const q = `SELECT update_task_status($1, $2, $3, $4, $5) AS status;`;
-    const result = await db.query(q, [task_id, project_id, status_id, from_index, to_index]);
+    const result = await db.query(q, [
+      task_id,
+      project_id,
+      status_id,
+      from_index,
+      to_index,
+    ]);
     const [data] = result.rows;
     if (data?.status) return res.status(200).send(new ServerResponse(true, {}));
 
-    return res.status(200).send(new ServerResponse(false, {}, "Task update failed!"));
+    return res
+      .status(200)
+      .send(new ServerResponse(false, {}, "Task update failed!"));
   }
 
   @HandleExceptions()
-  public static async getTasksByProject(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getTasksByProject(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
     const q = `SELECT get_project_gantt_tasks($1) AS gantt_tasks;`;
     const result = await db.query(q, [id]);
@@ -215,7 +437,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getTasksBetweenRange(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getTasksBetweenRange(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { project_id, start_date, end_date } = req.query;
     const q = `
       SELECT pm.id,
@@ -245,26 +470,39 @@ export default class TasksController extends TasksControllerBase {
     const result = await db.query(q, [project_id]);
     const obj: any = {};
 
-    const minMaxDates: { min_date: string, max_date: string } = await getMinMaxOfTaskDates(project_id as string);
+    const minMaxDates: { min_date: string; max_date: string } =
+      await getMinMaxOfTaskDates(project_id as string);
 
-    const dates = await getDates(minMaxDates.min_date || start_date as string, minMaxDates.max_date || end_date as string);
+    const dates = await getDates(
+      minMaxDates.min_date || (start_date as string),
+      minMaxDates.max_date || (end_date as string),
+    );
     const months = await getWeekRange(dates);
 
     for (const element of result.rows) {
       obj[element.id] = element.tasks;
       for (const task of element.tasks) {
-        const min: number = dates.findIndex((date) => moment(task.start_date).isSame(date.date, "days"));
-        const max: number = dates.findIndex((date) => moment(task.end_date).isSame(date.date, "days"));
+        const min: number = dates.findIndex((date) =>
+          moment(task.start_date).isSame(date.date, "days"),
+        );
+        const max: number = dates.findIndex((date) =>
+          moment(task.end_date).isSame(date.date, "days"),
+        );
         task.min = min + 1;
         task.max = max > 0 ? max + 2 : max;
       }
     }
 
-    return res.status(200).send(new ServerResponse(true, { tasks: [obj], dates, months }));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, { tasks: [obj], dates, months }));
   }
 
   @HandleExceptions()
-  public static async getGanttTasksByProject(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getGanttTasksByProject(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `
       SELECT id,
              name,
@@ -290,8 +528,8 @@ export default class TasksController extends TasksControllerBase {
     const result = await db.query(q, [req.query.project_id]);
 
     const minMaxDates: {
-      min_date: string,
-      max_date: string
+      min_date: string;
+      max_date: string;
     } = await getMinMaxOfTaskDates(req.query.project_id as string);
 
     if (!minMaxDates.max_date && !minMaxDates.min_date) {
@@ -304,19 +542,30 @@ export default class TasksController extends TasksControllerBase {
     const months = await getMonthRange(dates);
 
     for (const task of result.rows) {
-      const min: number = dates.findIndex((date) => moment(task.start_date).isSame(date.date, "days"));
-      const max: number = dates.findIndex((date) => moment(task.end_date).isSame(date.date, "days"));
+      const min: number = dates.findIndex((date) =>
+        moment(task.start_date).isSame(date.date, "days"),
+      );
+      const max: number = dates.findIndex((date) =>
+        moment(task.end_date).isSame(date.date, "days"),
+      );
       task.show_sub_tasks = false;
       task.sub_tasks = [];
       task.min = min + 1;
       task.max = max > 0 ? max + 2 : max;
     }
 
-    return res.status(200).send(new ServerResponse(true, { tasks: result.rows, dates, weeks, months }));
+    return res
+      .status(200)
+      .send(
+        new ServerResponse(true, { tasks: result.rows, dates, weeks, months }),
+      );
   }
 
   @HandleExceptions()
-  public static async getProjectTasksByTeam(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getProjectTasksByTeam(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_resource_gantt_tasks($1) AS gantt_tasks;`;
     const result = await db.query(q, [req.user?.id ?? null]);
     const [data] = result.rows;
@@ -324,7 +573,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getSelectedTasksByProject(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getSelectedTasksByProject(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_selected_tasks($1) AS tasks`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
@@ -332,7 +584,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getUnselectedTasksByProject(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getUnselectedTasksByProject(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_unselected_tasks($1) AS tasks`;
     const result = await db.query(q, [req.params.id]);
     const [data] = result.rows;
@@ -341,8 +596,10 @@ export default class TasksController extends TasksControllerBase {
 
   /** Should migrate getProjectTasksByStatus to this */
   @HandleExceptions()
-  public static async getProjectTasksByStatusV2(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-
+  public static async getProjectTasksByStatusV2(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     // Get all statuses
     const q1 = `
       SELECT task_statuses.id, task_statuses.name, stsc.color_code
@@ -366,7 +623,7 @@ export default class TasksController extends TasksControllerBase {
       for (const task of data.tasks) {
         task.name_color = getColor(task.name);
         task.names = this.createTagList(task.assignees);
-        task.names.map((a: any) => a.color_code = getColor(a.name));
+        task.names.map((a: any) => (a.color_code = getColor(a.name)));
       }
       dataset.push(data);
     }
@@ -375,7 +632,10 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
-  public static async getProjectTasksByStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getProjectTasksByStatus(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_tasks_by_status($1,$2) AS tasks`;
     const result = await db.query(q, [req.params.id, req.query.status]);
     const [data] = result.rows;
@@ -385,25 +645,72 @@ export default class TasksController extends TasksControllerBase {
       task.names = this.createTagList(task.assignees);
       task.all_labels = task.labels;
       task.labels = this.createTagList(task.labels, 3);
-      task.names.map((a: any) => a.color_code = getColor(a.name));
+      task.names.map((a: any) => (a.color_code = getColor(a.name)));
     }
 
     return res.status(200).send(new ServerResponse(true, data?.tasks));
   }
 
   @HandleExceptions()
-  public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async deleteById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const taskId = req.params.id;
+    const userId = req.user?.id as string;
+
+    // First, get task details before deletion to log the activity
+    const taskDetailsQuery = `
+      SELECT t.id, t.project_id, p.team_id, t.name
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      WHERE t.id = $1;
+    `;
+    const taskDetailsResult = await db.query(taskDetailsQuery, [taskId]);
+
+    if (taskDetailsResult.rows.length === 0) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Task not found"));
+    }
+
+    const taskDetails = taskDetailsResult.rows[0];
+
+    // Log the task deletion activity
+    const activityLog: IActivityLog = {
+      task_id: undefined,
+      team_id: taskDetails.team_id,
+      project_id: taskDetails.project_id,
+      attribute_type: IActivityLogAttributeTypes.NAME,
+      user_id: userId,
+      log_type: IActivityLogChangeType.DELETE,
+      old_value: taskDetails.name,
+      new_value: null,
+    };
+
+    // Now delete the task
     const q = `DELETE
                FROM tasks
                WHERE id = $1;`;
-    const result = await db.query(q, [req.params.id]);
+    const result = await db.query(q, [taskId]);
+
+    await insertToActivityLogs(activityLog);
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
-  public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT get_task_form_view_model($1, $2, $3, $4) AS view_model;`;
-    const result = await db.query(q, [req.user?.id ?? null, req.user?.team_id ?? null, req.query.task_id ?? null, (req.query.project_id as string) || null]);
+    const result = await db.query(q, [
+      req.user?.id ?? null,
+      req.user?.team_id ?? null,
+      req.query.task_id ?? null,
+      (req.query.project_id as string) || null,
+    ]);
     const [data] = result.rows;
 
     const default_model = {
@@ -412,6 +719,7 @@ export default class TasksController extends TasksControllerBase {
       projects: [],
       statuses: [],
       team_members: [],
+      custom_columns: [],
     };
 
     const task = data.view_model.task || null;
@@ -440,12 +748,27 @@ export default class TasksController extends TasksControllerBase {
       task.status_color = task.status_color + TASK_STATUS_COLOR_ALPHA;
     }
 
-    for (const member of (data.view_model?.team_members || [])) {
+    const projectId =
+      ((req.query.project_id as string) || task?.project_id || null);
+    const [customColumns, customColumnValues] = await Promise.all([
+      TasksController.getTaskDrawerCustomColumns(projectId),
+      TasksController.getTaskDrawerCustomColumnValues(task?.id || null, projectId),
+    ]);
+
+    data.view_model.custom_columns = customColumns;
+
+    if (task) {
+      task.custom_column_values = customColumnValues;
+    }
+
+    for (const member of data.view_model?.team_members || []) {
       member.color_code = getColor(member.name);
     }
 
     const t = await getTaskCompleteInfo(task);
-    const info = await TasksControllerV2.getTaskCompleteRatio(t.parent_task_id || t.id);
+    const info = await TasksControllerV2.getTaskCompleteRatio(
+      t.parent_task_id || t.id,
+    );
 
     if (info) {
       t.complete_ratio = info.ratio;
@@ -453,24 +776,39 @@ export default class TasksController extends TasksControllerBase {
       t.total_tasks_count = info.total_tasks;
     }
 
+    // Ensure task drawer always receives the latest custom column values
+    // even if helper transformations overwrite task properties.
+    t.custom_column_values = customColumnValues;
+
     data.view_model.task = t;
 
-    return res.status(200).send(new ServerResponse(true, data.view_model || default_model));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data.view_model || default_model));
   }
 
   @HandleExceptions()
-  public static async createQuickTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async createQuickTask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT create_quick_task($1) AS task_id;`;
     req.body.reporter_id = req.user?.id ?? null;
     req.body.team_id = req.user?.team_id ?? null;
-    req.body.total_minutes = toMinutes(req.body.total_hours, req.body.total_minutes);
+    req.body.total_minutes = toMinutes(
+      req.body.total_hours,
+      req.body.total_minutes,
+    );
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
-  public static async createHomeTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async createHomeTask(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT create_home_task($1);`;
     let endDate = req.body.end_date;
     switch (endDate) {
@@ -497,67 +835,152 @@ export default class TasksController extends TasksControllerBase {
     req.body.team_id = req.user?.team_id ?? null;
     const result = await db.query(q, [JSON.stringify(req.body)]);
     const [data] = result.rows;
-    return res.status(200).send(new ServerResponse(true, data.create_home_task.task));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data.create_home_task.task));
   }
 
   @HandleExceptions()
-  public static async bulkChangeStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async bulkChangeStatus(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT bulk_change_tasks_status($1, $2) AS task;`;
     const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
     const [data] = result.rows;
 
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
 
-    return res.status(200).send(new ServerResponse(true, { failed_tasks: data.task }));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, { failed_tasks: data.task }));
   }
 
   @HandleExceptions()
-  public static async bulkChangePriority(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async bulkChangePriority(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT bulk_change_tasks_priority($1, $2) AS task;`;
     const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
     const [data] = result.rows;
 
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
 
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
-  public static async bulkChangePhase(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async bulkChangePhase(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT bulk_change_tasks_phase($1, $2) AS task;`;
     const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
     const [data] = result.rows;
 
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
 
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
-  public static async bulkDelete(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const deletedTasks = req.body.tasks.map((t: any) => t.id);
+  public static async bulkChangeStartDate(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT bulk_change_tasks_start_date($1, $2) AS result;`;
+    const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
+    const [data] = result.rows;
 
-    const result: any = { deleted_tasks: deletedTasks };
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
 
-    const q = `SELECT bulk_delete_tasks($1) AS task;`;
-    await db.query(q, [JSON.stringify(req.body)]);
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
-    return res.status(200).send(new ServerResponse(true, result));
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data?.result || { updated_count: 0 }));
   }
 
   @HandleExceptions()
-  public static async bulkArchive(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async bulkDelete(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id as string;
+    const taskIds = req.body.tasks.map((t: any) => t.id);
+
+    // Step 1: fetch task details BEFORE deleting (task row won't exist after delete)
+    const detailsQ = `
+      SELECT t.id, t.name, t.project_id, p.team_id
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      WHERE t.id = ANY($1::uuid[]);
+    `;
+    const detailsResult = await db.query(detailsQ, [taskIds]);
+    const taskDetailsList = detailsResult.rows;
+
+    // Step 2: delete the tasks via Postgres function
+    const bodyWithUser = {
+      ...req.body,
+      user_id: userId,
+    };
+    const q = `SELECT bulk_delete_tasks($1) AS task;`;
+    await db.query(q, [JSON.stringify(bodyWithUser)]);
+
+    // Step 3: write one activity log per task AFTER delete
+    // task_id: undefined (NULL) so FK cascade cannot wipe these rows
+    for (const task of taskDetailsList) {
+      await insertToActivityLogs({
+        task_id: undefined,
+        team_id: task.team_id,
+        project_id: task.project_id,
+        attribute_type: IActivityLogAttributeTypes.NAME,
+        user_id: userId,
+        log_type: IActivityLogChangeType.DELETE,
+        old_value: task.name,
+        new_value: null,
+      });
+    }
+
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
+    return res.status(200).send(new ServerResponse(true, { deleted_tasks: taskIds }));
+  }
+
+  @HandleExceptions()
+  public static async bulkArchive(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `SELECT bulk_archive_tasks($1) AS task;`;
     req.body.type = req.query.type;
     await db.query(q, [JSON.stringify(req.body)]);
     const tasks = req.body.tasks.map((t: any) => t.id);
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
     return res.status(200).send(new ServerResponse(true, tasks));
   }
 
   @HandleExceptions()
-  public static async bulkAssignMe(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-
+  public static async bulkAssignMe(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     req.body.team_id = req.user?.team_id;
     req.body.user_id = req.user?.id;
 
@@ -580,18 +1003,23 @@ export default class TasksController extends TasksControllerBase {
       log_type: "assign",
       old_value: null,
       new_value: req.user?.id,
-      next_string: req.user?.name
+      next_string: req.user?.name,
     };
 
     insertToActivityLogs(activityLog);
 
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions()
-  public static async bulkAssignLabel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-
+  public static async bulkAssignLabel(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     if (req.body.text) {
       const q0 = `SELECT bulk_assign_or_create_label($1) AS label;`;
 
@@ -604,40 +1032,69 @@ export default class TasksController extends TasksControllerBase {
       await db.query(q, [JSON.stringify(req.body), req.user?.id as string]);
     }
 
-    TasksController.notifyProjectUpdates(req.user?.socket_id as string, req.query.project as string);
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
     return res.status(200).send(new ServerResponse(true, null));
   }
 
   @HandleExceptions()
-  public static async bulkAssignMembers(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async bulkAssignMembers(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const { tasks, members, project_id } = req.body;
     try {
       for (const task of tasks) {
         for (const member of members) {
-          await TasksController.createTaskBulkAssignees(member.id, project_id, task.id, req.user?.id as string);
+          await TasksController.createTaskBulkAssignees(
+            member.id,
+            project_id,
+            task.id,
+            req.user?.id as string,
+          );
         }
       }
-      TasksController.notifyProjectUpdates(req.user?.socket_id as string, project_id as string);
+      TasksController.notifyProjectUpdates(
+        req.user?.socket_id as string,
+        project_id as string,
+      );
       return res.status(200).send(new ServerResponse(true, null));
     } catch (error) {
-      return res.status(500).send(new ServerResponse(false, "An error occurred"));
+      return res
+        .status(500)
+        .send(new ServerResponse(false, "An error occurred"));
     }
   }
 
-  public static async createTaskAssignee(memberId: string, projectId: string, taskId: string, userId: string) {
+  public static async createTaskAssignee(
+    memberId: string,
+    projectId: string,
+    taskId: string,
+    userId: string,
+  ) {
     const q = `SELECT create_task_assignee($1,$2,$3,$4)`;
     const result = await db.query(q, [memberId, projectId, taskId, userId]);
     return result.rows;
   }
 
-  public static async createTaskBulkAssignees(memberId: string, projectId: string, taskId: string, userId: string) {
+  public static async createTaskBulkAssignees(
+    memberId: string,
+    projectId: string,
+    taskId: string,
+    userId: string,
+  ) {
     const q = `SELECT create_bulk_task_assignees($1,$2,$3,$4)`;
     const result = await db.query(q, [memberId, projectId, taskId, userId]);
     return result.rows;
   }
 
   @HandleExceptions()
-  public static async getProjectTaskAssignees(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async getProjectTaskAssignees(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
     const q = `
       SELECT project_members.team_member_id AS id,
              tmiv.name,
@@ -655,5 +1112,24 @@ export default class TasksController extends TasksControllerBase {
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async bulkChangeDueDate(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT bulk_change_tasks_due_date($1, $2) AS result;`;
+    const result = await db.query(q, [JSON.stringify(req.body), req.user?.id]);
+    const [data] = result.rows;
+
+    TasksController.notifyProjectUpdates(
+      req.user?.socket_id as string,
+      req.query.project as string,
+    );
+
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data?.result || { updated_count: 0 }));
   }
 }

@@ -74,18 +74,21 @@ const ProjectReportsDrawer = ({ selectedProject }: ProjectReportsDrawerProps) =>
     }
   }, [selectedProject, currentSession?.team_name]);
 
-  const handleExportClick = useCallback((key: string) => {
-    switch (key) {
-      case '1':
-        handleExportMembers();
-        break;
-      case '2':
-        handleExportTasks();
-        break;
-      default:
-        break;
-    }
-  }, [handleExportMembers, handleExportTasks]);
+  const handleExportClick = useCallback(
+    (key: string) => {
+      switch (key) {
+        case '1':
+          handleExportMembers();
+          break;
+        case '2':
+          handleExportTasks();
+          break;
+        default:
+          break;
+      }
+    },
+    [handleExportMembers, handleExportTasks]
+  );
 
   return (
     <Drawer
@@ -111,12 +114,7 @@ const ProjectReportsDrawer = ({ selectedProject }: ProjectReportsDrawerProps) =>
               onClick: ({ key }) => handleExportClick(key),
             }}
           >
-            <Button 
-              type="primary" 
-              loading={exporting}
-              icon={<DownOutlined />} 
-              iconPosition="end"
-            >
+            <Button type="primary" loading={exporting} icon={<DownOutlined />} iconPosition="end">
               {t('exportButton')}
             </Button>
           </Dropdown>

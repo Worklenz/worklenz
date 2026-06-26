@@ -10,7 +10,7 @@
   "passwordLabel": "Password",
   "passwordGuideline": "Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.",
   "passwordPlaceholder": "Enter your password",
-  "passwordRequired": "Please enter your Password!",
+  "passwordRequired": "Please enter your password!",
   "passwordMinCharacterRequired": "Password must be at least 8 characters!",
   "passwordMaxCharacterRequired": "Password must be at most 32 characters!",
   "passwordPatternRequired": "Password does not meet the requirements!",
@@ -22,10 +22,18 @@
   "bySigningUpText": "By signing up, you agree to our",
   "andText": "and",
   "signupButton": "Sign up",
-  "signInWithGoogleButton": "Sign in with Google",
+  "signInWithGoogleButton": "Sign up with Google",
+  "signUpWithAppleButton": "Sign up with Apple",
   "alreadyHaveAccountText": "Already have an account?",
   "loginButton": "Login",
   "orText": "OR",
   "reCAPTCHAVerificationError": "reCAPTCHA Verification Error",
-  "reCAPTCHAVerificationErrorMessage": "We were unable to verify your reCAPTCHA. Please try again."
+  "reCAPTCHAVerificationErrorMessage": "We were unable to verify your reCAPTCHA. Please try again.",
+  "passwordChecklist": {
+    "minLength": "At least 8 characters",
+    "uppercase": "One uppercase letter",
+    "lowercase": "One lowercase letter",
+    "number": "One number",
+    "special": "One special character"
+  }
 }

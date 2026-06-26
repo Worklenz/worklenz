@@ -4,6 +4,7 @@ import db from "../../config/db";
 import moment from "moment";
 import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, formatLogText, getColor, int } from "../../shared/utils";
+import { isTeamLead } from "../../shared/team-permissions";
 
 export default abstract class ReportingControllerBase extends WorklenzControllerBase {
   protected static getPercentage(n: number, total: number) {
@@ -12,6 +13,71 @@ export default abstract class ReportingControllerBase extends WorklenzController
 
   protected static getCurrentTeamId(req: IWorkLenzRequest): string | null {
     return req.user?.team_id ?? null;
+  }
+
+  /**
+   * Get projects assigned to Team Lead
+   */
+  public static async getTeamLeadProjects(userId: string, teamId: string): Promise<string[]> {
+    if (!userId || !teamId) return [];
+    const q = `
+      SELECT DISTINCT pm.project_id 
+      FROM project_members pm
+      JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE tm.user_id = $1::UUID AND tm.team_id = $2::UUID
+    `;
+    const result = await db.query(q, [userId, teamId]);
+    return result.rows.map(r => r.project_id);
+  }
+
+  /**
+   * Check if user has access to specific project (for Team Leads)
+   */
+  public static async canAccessProject(userId: string, teamId: string, projectId: string): Promise<boolean> {
+    if (!userId || !teamId || !projectId) return false;
+
+    const q = `
+      SELECT EXISTS(
+        SELECT 1 FROM project_members pm
+        JOIN team_members tm ON pm.team_member_id = tm.id
+        WHERE tm.user_id = $1::UUID 
+          AND tm.team_id = $2::UUID 
+          AND pm.project_id = $3::UUID
+      ) AS has_access
+    `;
+    const result = await db.query(q, [userId, teamId, projectId]);
+    return result.rows[0]?.has_access || false;
+  }
+
+  /**
+   * Build project filter clause for Team Leads
+   */
+  public static async buildProjectFilterForTeamLead(req: IWorkLenzRequest): Promise<string> {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    if (!userId || !teamId) return "";
+
+    // Check if user is Team Lead
+    const isUserTeamLead = await isTeamLead(userId, teamId);
+    const isOwner = req.user?.owner;
+    const isAdmin = req.user?.is_admin && !isUserTeamLead; // Admin but not Team Lead
+
+    // Owners and Admins see all projects
+    if (isOwner || isAdmin) {
+      return "";
+    }
+
+    // Team Leads see only assigned projects
+    if (isUserTeamLead) {
+      const assignedProjects = await this.getTeamLeadProjects(userId, teamId);
+      if (assignedProjects.length === 0) {
+        return "AND FALSE"; // No projects assigned, block access
+      }
+      return `AND p.id = ANY(ARRAY[${assignedProjects.map(id => `'${id}'::UUID`).join(',')}])`;
+    }
+
+    return "";
   }
 
   protected static async getTotalTasksCount(projectId: string | null) {
@@ -25,10 +91,15 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return data.count || 0;
   }
 
-  protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string) {
-    return archived
-      ? ""
-      : `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = '${user_id}') `;
+  protected static async getArchivedProjectsClause(archived = false, user_id: string, column_name: string, paramOffset = 1): Promise<{ clause: string; params: any[] }> {
+    // Use parameterized query for user_id
+    if (archived) {
+      return { clause: "", params: [] };
+    }
+    return {
+      clause: `AND ${column_name} NOT IN (SELECT project_id FROM archived_projects WHERE project_id = ${column_name} AND user_id = $${paramOffset}) `,
+      params: [user_id]
+    };
   }
 
   protected static async getAllTasks(projectId: string | null) {
@@ -84,29 +155,251 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return result.rows;
   }
 
-  protected static getDateRangeClause(key: string, dateRange: string[]) {
-    if (dateRange.length === 2) {
-      const start = moment(dateRange[0]).format("YYYY-MM-DD");
-      const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      let query = `AND task_work_log.created_at::DATE >= '${start}'::DATE AND task_work_log.created_at < '${end}'::DATE + INTERVAL '1 day'`;
+  protected static async getTasksPaginated(
+    projectId: string | null,
+    page: number = 1,
+    pageSize: number = 15,
+    search: string = "",
+    statusFilter: string = "all",
+    priorityFilter: string = "all",
+    assigneeFilter: string = "all",
+    sortField: string = "created_at",
+    sortOrder: string = "desc"
+  ) {
+    const offset = (page - 1) * pageSize;
 
-      if (start === end) {
-        query = `AND task_work_log.created_at::DATE = '${start}'::DATE`;
-      }
+    let whereClause = "WHERE project_id = $1";
+    const params: any[] = [projectId];
+    let paramIndex = 2;
 
-      return query;
+    if (search) {
+      whereClause += ` AND LOWER(name) LIKE LOWER($${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
     }
 
-    if (key === DATE_RANGES.YESTERDAY)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE";
-    if (key === DATE_RANGES.LAST_WEEK)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
-    if (key === DATE_RANGES.LAST_MONTH)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
-    if (key === DATE_RANGES.LAST_QUARTER)
-      return "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'";
+    if (statusFilter && statusFilter !== "all") {
+      if (statusFilter === "todo") {
+        whereClause += ` AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_todo = true))`;
+      } else if (statusFilter === "doing") {
+        whereClause += ` AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_doing = true))`;
+      } else if (statusFilter === "done") {
+        whereClause += ` AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))`;
+      }
+    }
 
-    return "";
+    if (priorityFilter && priorityFilter !== "all") {
+      whereClause += ` AND priority_id = (SELECT id FROM task_priorities WHERE LOWER(name) = LOWER($${paramIndex}))`;
+      params.push(priorityFilter);
+      paramIndex++;
+    }
+
+    if (assigneeFilter && assigneeFilter !== "all") {
+      whereClause += ` AND id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $${paramIndex}::UUID)`;
+      params.push(assigneeFilter);
+      paramIndex++;
+    }
+
+    // Validate sort field
+    const allowedSortFields: { [key: string]: string } = {
+      'name': 't.name',
+      'end_date': 't.end_date',
+      'created_at': 't.created_at',
+      'priority': '(SELECT value FROM task_priorities WHERE id = t.priority_id)',
+      'status': '(SELECT name FROM task_statuses WHERE id = t.status_id)'
+    };
+    const sortColumn = allowedSortFields[sortField] || 't.created_at';
+    const sortDirection = sortOrder?.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    const nullsOrder = sortDirection === 'ASC' ? 'NULLS FIRST' : 'NULLS LAST';
+
+    const countQuery = `SELECT COUNT(*) as total FROM tasks ${whereClause}`;
+    const countResult = await db.query(countQuery, params);
+    const total = int(countResult.rows[0]?.total || 0);
+
+    const q = `
+      SELECT  t.id,
+              t.name,
+              t.parent_task_id,
+              t.parent_task_id IS NOT NULL AS is_sub_task,
+              t.status_id AS status,
+              (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
+              (SELECT color_code
+              FROM sys_task_status_categories
+              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+              (SELECT JSON_BUILD_OBJECT(
+                'is_todo', stc.is_todo,
+                'is_doing', stc.is_doing,
+                'is_done', stc.is_done
+              ) FROM sys_task_status_categories stc WHERE stc.id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_category,
+              t.priority_id AS priority,
+              (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
+              (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
+              (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,
+              t.start_date,
+              t.end_date,
+              CASE WHEN t.end_date IS NOT NULL AND t.end_date < CURRENT_DATE 
+                   AND t.status_id NOT IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))
+                   THEN true ELSE false END AS is_overdue,
+              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
+              (SELECT name FROM project_phases WHERE id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_name,
+              t.completed_at,
+              t.total_minutes,
+              (SELECT SUM(time_spent) FROM task_work_log WHERE task_id = t.id) AS total_seconds_spent,
+              (SELECT COUNT(*) FROM tasks st WHERE st.parent_task_id = t.id) AS sub_tasks_count,
+              (SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+                'id', ta.team_member_id,
+                'team_member_id', ta.team_member_id,
+                'name', (SELECT name FROM team_member_info_view WHERE team_member_id = ta.team_member_id),
+                'avatar_url', (SELECT avatar_url FROM team_member_info_view WHERE team_member_id = ta.team_member_id)
+              )), '[]'::JSON) FROM tasks_assignees ta WHERE ta.task_id = t.id) AS assignees,
+              (SELECT ROUND(
+                CASE 
+                  WHEN (SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id) > 0 
+                  THEN (SELECT COUNT(*)::FLOAT FROM tasks WHERE parent_task_id = t.id AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))) / NULLIF((SELECT COUNT(*) FROM tasks WHERE parent_task_id = t.id), 0) * 100
+                  ELSE CASE WHEN t.status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true)) THEN 100 ELSE 0 END
+                END
+              )) AS complete_ratio
+      FROM tasks t
+      ${whereClause.replace("project_id", "t.project_id").replace("status_id", "t.status_id").replace("priority_id", "t.priority_id").replace("LOWER(name) LIKE", "LOWER(t.name) LIKE")}
+      ORDER BY ${sortColumn} ${sortDirection} ${nullsOrder}
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1};
+    `;
+    params.push(pageSize, offset);
+
+    const result = await db.query(q, params);
+
+    for (const item of result.rows) {
+      const endDate = moment(item.end_date);
+      const completedDate = moment(item.completed_at);
+      const overdueDays = completedDate.diff(endDate, "days");
+
+      if (overdueDays > 0) {
+        item.overdue_days = overdueDays.toString();
+      } else {
+        item.overdue_days = "0";
+      }
+
+      item.total_minutes_spent = Math.ceil((item.total_seconds_spent || 0) / 60);
+      item.total_time_string = formatDuration(moment.duration(item.total_minutes || 0, "minutes"));
+      item.time_spent_string = formatDuration(moment.duration(item.total_minutes_spent || 0, "minutes"));
+
+      if (~~(item.total_minutes_spent) > ~~(item.total_minutes)) {
+        const overlogged_time = ~~(item.total_minutes_spent) - ~~(item.total_minutes);
+        item.overlogged_time_string = formatDuration(moment.duration(overlogged_time, "minutes"));
+      } else {
+        item.overlogged_time_string = `0h 0m`;
+      }
+    }
+
+    return {
+      data: result.rows,
+      total,
+      page,
+      pageSize
+    };
+  }
+
+  protected static async getTasksStats(projectId: string | null) {
+    const q = `
+      SELECT 
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))) AS completed,
+        COUNT(*) FILTER (WHERE status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_doing = true))) AS in_progress,
+        COUNT(*) FILTER (WHERE end_date IS NOT NULL AND end_date < CURRENT_DATE 
+          AND status_id NOT IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done = true))) AS overdue
+      FROM tasks
+      WHERE project_id = $1;
+    `;
+    const result = await db.query(q, [projectId]);
+    return {
+      total: int(result.rows[0]?.total || 0),
+      completed: int(result.rows[0]?.completed || 0),
+      inProgress: int(result.rows[0]?.in_progress || 0),
+      overdue: int(result.rows[0]?.overdue || 0)
+    };
+  }
+
+  protected static async getProjectMembersForFilter(projectId: string | null) {
+    const q = `
+      SELECT DISTINCT
+        tm.id AS team_member_id,
+        (SELECT name FROM team_member_info_view WHERE team_member_id = tm.id) AS name,
+        (SELECT avatar_url FROM team_member_info_view WHERE team_member_id = tm.id) AS avatar_url
+      FROM project_members pm
+      INNER JOIN team_members tm ON pm.team_member_id = tm.id
+      WHERE pm.project_id = $1
+      ORDER BY name;
+    `;
+    const result = await db.query(q, [projectId]);
+    return result.rows;
+  }
+
+  protected static getDateRangeClause(key: string, dateRange: string[], paramOffset = 1): { clause: string; params: any[] } {
+    // Custom date range takes PRIORITY - check this FIRST
+    // This ensures that when a user selects a custom date range, it overrides any predefined range key
+    if (dateRange && dateRange.length === 2) {
+      // Use parameterized queries for custom date ranges
+      // CRITICAL: Parse dates without timezone conversion to preserve the user's intended date
+      // The dates come from the client in their local timezone (e.g., "2024-04-30")
+      // We need to compare against the DATE part of the timestamp, not convert timezones
+      
+      // Parse the date strings - handle both ISO strings and Date.toString() format
+      let start: string;
+      let end: string;
+      
+      try {
+        // Extract just the date part (YYYY-MM-DD) without time or timezone
+        if (dateRange[0].includes("GMT") || dateRange[0].includes("(")) {
+          // JavaScript Date toString() format - parse WITHOUT timezone conversion
+          // Example: "Mon Apr 27 2026 00:00:00 GMT+0530 (India Standard Time)"
+          // Use moment.parseZone() to parse without converting to local timezone
+          start = moment.parseZone(dateRange[0]).format("YYYY-MM-DD");
+          end = moment.parseZone(dateRange[1]).format("YYYY-MM-DD");
+        } else if (dateRange[0].includes("T")) {
+          // ISO format with time - extract just the date part
+          start = dateRange[0].split("T")[0];
+          end = dateRange[1].split("T")[0];
+        } else {
+          // Already in YYYY-MM-DD format
+          start = dateRange[0];
+          end = dateRange[1];
+        }
+      } catch (error) {
+        console.error("Error parsing date range:", error, { dateRange });
+        // Fallback to parseZone
+        start = moment.parseZone(dateRange[0]).format("YYYY-MM-DD");
+        end = moment.parseZone(dateRange[1]).format("YYYY-MM-DD");
+      }
+
+      let query: string;
+      const params: any[] = [];
+
+      if (start === end) {
+        // Single day: compare the DATE part of the timestamp
+        query = `AND task_work_log.created_at::DATE = $${paramOffset}::DATE`;
+        params.push(start);
+      } else {
+        // Date range: inclusive comparison on DATE part
+        // Using ::DATE cast ensures we compare dates without time/timezone issues
+        query = `AND task_work_log.created_at::DATE >= $${paramOffset}::DATE AND task_work_log.created_at::DATE <= $${paramOffset + 1}::DATE`;
+        params.push(start, end);
+      }
+
+      return { clause: query, params };
+    }
+
+    // Predefined ranges - only use if no custom date range is provided
+    // These use server's current date, which is appropriate for predefined ranges
+    if (key === DATE_RANGES.YESTERDAY)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 day')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE", params: [] };
+    if (key === DATE_RANGES.LAST_WEEK)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 week')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    if (key === DATE_RANGES.LAST_MONTH)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '1 month')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+    if (key === DATE_RANGES.LAST_QUARTER)
+      return { clause: "AND task_work_log.created_at >= (CURRENT_DATE - INTERVAL '3 months')::DATE AND task_work_log.created_at < CURRENT_DATE::DATE + INTERVAL '1 day'", params: [] };
+
+    return { clause: "", params: [] };
   }
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }): string {
@@ -126,9 +419,14 @@ export default abstract class ReportingControllerBase extends WorklenzController
     return "";
   }
 
+  // protected static formatEndDate(endDate: string) {
+  //   const end = moment(endDate).format("YYYY-MM-DD");
+  //   const fEndDate = moment(end);
+  //   return fEndDate;
+  // }
   protected static formatEndDate(endDate: string) {
-    const end = moment(endDate).format("YYYY-MM-DD");
-    const fEndDate = moment(end);
+    const end = moment.utc(endDate).format("YYYY-MM-DD");
+    const fEndDate = moment.utc(end);
     return fEndDate;
   }
 
@@ -166,67 +464,6 @@ export default abstract class ReportingControllerBase extends WorklenzController
   }
 
 
-  /**
-   * Build project filter clause for Team Leads
-   * Team Leads can only see projects they are assigned to as project managers
-   */
-  public static async buildProjectFilterForTeamLead(req: IWorkLenzRequest): Promise<string> {
-    // Check if user is a Team Lead (not Admin or Owner)
-    const userId = req.user?.id;
-    const teamId = req.user?.team_id;
-
-    if (!userId || !teamId) return "";
-
-    // Check user's role
-    const roleQuery = `
-      SELECT r.key 
-      FROM roles r
-      JOIN team_members tm ON tm.role_id = r.id
-      WHERE tm.user_id = $1 AND tm.team_id = $2
-    `;
-    const roleResult = await db.query(roleQuery, [userId, teamId]);
-
-    if (roleResult.rows.length === 0) return "";
-
-    const roleKey = roleResult.rows[0].key;
-
-    // Only apply filter for Team Leads
-    if (roleKey === 'TEAM_LEAD') {
-      // Team Leads can only see projects they manage
-      return `AND p.id IN (
-        SELECT pm.project_id 
-        FROM project_members pm 
-        WHERE pm.team_member_id IN (
-          SELECT id FROM team_members WHERE user_id = '${userId}'
-        ) 
-        AND pm.project_access_level_id = (
-          SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
-        )
-      )`;
-    }
-
-    // Admins and Owners can see all projects
-    return "";
-  }
-
-  /**
-   * Get project IDs that a Team Lead is assigned to
-   */
-  public static async getTeamLeadProjects(userId: string, teamId: string): Promise<string[]> {
-    const q = `
-      SELECT DISTINCT pm.project_id 
-      FROM project_members pm
-      JOIN team_members tm ON pm.team_member_id = tm.id
-      WHERE tm.user_id = $1 
-        AND tm.team_id = $2
-        AND pm.project_access_level_id = (
-          SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
-        )
-    `;
-    const result = await db.query(q, [userId, teamId]);
-    return result.rows.map(row => row.project_id);
-  }
-
   public static async getProjectsByTeam(
     teamId: string,
     size: string | number | null,
@@ -240,7 +477,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
     archivedClause = "",
     teamFilterClause: string,
     projectManagersClause: string,
-    filterParams: any[] = []) {
+    queryParams: any[] = []) {
 
     const q = `SELECT COUNT(*) AS total,
              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
@@ -270,8 +507,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            ps.color_code AS status_color,
                            ps.icon AS status_icon,
 
-                           start_date,
-                           end_date,
+                           TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+                           TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
 
                            (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
                            FROM (SELECT team_member_id AS id,
@@ -309,7 +546,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                          COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
                                          COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
                                   FROM tasks ta
-                                  WHERE project_id = p.id) rec) AS tasks_stat,
+                                  WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
 
                            (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                             FROM (SELECT pu.content AS content,
@@ -377,9 +614,10 @@ export default abstract class ReportingControllerBase extends WorklenzController
                LEFT JOIN project_categories pc ON pc.id = p.category_id
                LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
       WHERE ${teamFilterClause} ${searchQuery} ${healthClause} ${statusClause} ${categoryClause} ${projectManagersClause} ${archivedClause};`;
-    // Combine all parameters: teamId, size, offset, then filter params
-    const queryParams = [teamId, size, offset, ...filterParams];
-    const result = await db.query(q, queryParams);
+
+    // Build final params: teamId ($1), size ($2), offset ($3), then filter params ($4+)
+    const finalParams = [teamId, size, offset, ...queryParams];
+    const result = await db.query(q, finalParams);
     const [data] = result.rows;
 
     for (const project of data.projects) {
@@ -417,8 +655,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                        (SELECT name FROM clients WHERE id = p.client_id) AS client,
                        (SELECT name FROM teams WHERE id = p.team_id) AS team_name,
                        ps.name AS status_name,
-                       start_date,
-                       end_date,
+                   TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
                        (SELECT COALESCE(SUM(total_minutes), 0)
                         FROM tasks
                         WHERE project_id = p.id) AS estimated_time,
@@ -433,7 +671,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                      COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
                                      COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
                               FROM tasks ta
-                              WHERE project_id = p.id) rec) AS tasks_stat,
+                              WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                         FROM (SELECT pu.content AS content,
                                      (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
@@ -557,8 +795,8 @@ export default abstract class ReportingControllerBase extends WorklenzController
                        (SELECT name FROM clients WHERE id = p.client_id) AS client,
                        (SELECT name FROM teams WHERE id = p.team_id) AS team_name,
                        ps.name AS status_name,
-                       start_date,
-                       end_date,
+                    TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
+TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
                        (SELECT COALESCE(SUM(total_minutes), 0)
                         FROM tasks
                         WHERE project_id = p.id) AS estimated_time,
@@ -573,7 +811,7 @@ export default abstract class ReportingControllerBase extends WorklenzController
                                      COUNT(CASE WHEN is_doing(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS doing,
                                      COUNT(CASE WHEN is_todo(ta.status_id, ta.project_id) IS TRUE THEN 1 END) AS todo
                               FROM tasks ta
-                              WHERE project_id = p.id) rec) AS tasks_stat,
+                              WHERE project_id = p.id AND ta.archived IS FALSE) rec) AS tasks_stat,
                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                         FROM (SELECT pu.content AS content,
                                      (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)

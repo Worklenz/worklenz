@@ -1,11 +1,11 @@
 {
-    "importTaskTemplate": "导入任务模板",
-    "templateName": "模板名称",
-    "templateDescription": "模板描述",
-    "selectedTasks": "已选任务",
-    "tasks": "任务",
-    "templates": "模板",
-    "remove": "移除",
-    "cancel": "取消",
-    "import": "导入"
+  "importTaskTemplate": "导入任务模板",
+  "templateName": "模板名称",
+  "templateDescription": "模板描述",
+  "selectedTasks": "已选任务",
+  "tasks": "任务",
+  "templates": "模板",
+  "remove": "移除",
+  "cancel": "取消",
+  "import": "导入"
 }

@@ -86,7 +86,9 @@
   "aboutYouStepName": "Rreth teje",
   "yourNeedsStepName": "Nevojat e tua",
   "discoveryStepName": "Zbulimi",
-  "stepProgress": "Hapi {step} nga 3: {title}",
+
+  "stepProgress": "Hapi {{step}} nga 3: {{title}}",
+
   "projectStepHeader": "Le të krijojmë projektin tënd të parë",
   "projectStepSubheader": "Fillo nga e para ose përdor një shabllon për të filluar më shpejt",
   "startFromScratch": "Fillo nga e para",

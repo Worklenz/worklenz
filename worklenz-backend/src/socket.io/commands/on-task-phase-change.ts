@@ -21,6 +21,9 @@ export async function on_task_phase_change(_io: Server, socket: Socket, body?: a
     const [d] = result.rows;
     const changeResponse = d.res;
 
+    // Bump task updated_at so "Updated X ago" reflects the phase change
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [body.task_id]);
+
     changeResponse.color_code = changeResponse.color_code
       ? changeResponse.color_code : getColor(changeResponse.name) + TASK_STATUS_COLOR_ALPHA;
 

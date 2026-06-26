@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Input, Button, Typography, Card } from '@/shared/antd-imports';
-import { PlusOutlined, DeleteOutlined, CloseCircleOutlined, CheckCircleOutlined } from '@/shared/antd-imports';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  CloseCircleOutlined,
+  CheckCircleOutlined,
+} from '@/shared/antd-imports';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { RootState } from '@/app/store';
@@ -16,11 +21,12 @@ interface Props {
   token?: any;
 }
 
-
 export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token }) => {
   const { t } = useTranslation('account-setup');
   const dispatch = useDispatch();
-  const { tasks, projectName, surveyData } = useSelector((state: RootState) => state.accountSetupReducer);
+  const { tasks, projectName, surveyData } = useSelector(
+    (state: RootState) => state.accountSetupReducer
+  );
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
@@ -38,7 +44,9 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
 
   const updateTask = (id: number, value: string) => {
     const sanitizedValue = sanitizeInput(value);
-    dispatch(setTasks(tasks.map(task => (task.id === id ? { ...task, value: sanitizedValue } : task))));
+    dispatch(
+      setTasks(tasks.map(task => (task.id === id ? { ...task, value: sanitizedValue } : task)))
+    );
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -67,7 +75,6 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
     setTimeout(() => inputRefs.current[0]?.focus(), 200);
   }, []);
 
-
   return (
     <div className="w-full tasks-step">
       {/* Header */}
@@ -80,26 +87,33 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
         </Paragraph>
       </div>
 
-
       {/* Tasks List */}
       <div className="mb-6">
         <div className="space-y-4">
           {tasks.map((task, index) => (
-            <Card 
+            <Card
               key={task.id}
               className={`task-item-card transition-all duration-200 ${
                 focusedIndex === index ? 'border-2' : ''
               }`}
-              style={{ 
+              style={{
                 borderColor: focusedIndex === index ? token?.colorPrimary : token?.colorBorder,
-                backgroundColor: token?.colorBgContainer 
+                backgroundColor: token?.colorBgContainer,
               }}
             >
               <div className="flex items-center space-x-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium" style={{ backgroundColor: task.value.trim() ? token?.colorSuccess : token?.colorBorderSecondary, color: task.value.trim() ? '#fff' : token?.colorTextSecondary }}>
+                <div
+                  className="flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: task.value.trim()
+                      ? token?.colorSuccess
+                      : token?.colorBorderSecondary,
+                    color: task.value.trim() ? '#fff' : token?.colorTextSecondary,
+                  }}
+                >
                   {task.value.trim() ? <CheckCircleOutlined /> : index + 1}
                 </div>
-                
+
                 <div className="flex-1">
                   <Input
                     placeholder={t('taskPlaceholder', { index: index + 1 })}
@@ -108,23 +122,40 @@ export const TasksStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token 
                     onKeyPress={e => handleKeyPress(e, index)}
                     onFocus={() => setFocusedIndex(index)}
                     onBlur={() => setFocusedIndex(null)}
-                    ref={(el) => { inputRefs.current[index] = el as any; }}
+                    ref={el => {
+                      inputRefs.current[index] = el as any;
+                    }}
                     className="text-base border-0 shadow-none task-input"
                     style={{ backgroundColor: 'transparent', color: token?.colorText }}
                   />
                 </div>
 
-                {tasks.length > 1 && <Button type="text" icon={<CloseCircleOutlined />} onClick={() => removeTask(task.id)} className="text-gray-400 hover:text-red-500" style={{ color: token?.colorTextTertiary }} />}
+                {tasks.length > 1 && (
+                  <Button
+                    type="text"
+                    icon={<CloseCircleOutlined />}
+                    onClick={() => removeTask(task.id)}
+                    className="text-gray-400 hover:text-red-500"
+                    style={{ color: token?.colorTextTertiary }}
+                  />
+                )}
               </div>
             </Card>
           ))}
         </div>
 
         {tasks.length < 5 && (
-          <Button type="dashed" icon={<PlusOutlined />} onClick={addTask} className="w-full mt-4 h-12 text-base" style={{ borderColor: token?.colorBorder, color: token?.colorTextSecondary }}>{t('addAnotherTask', { current: tasks.length, max: 5 })}</Button>
+          <Button
+            type="dashed"
+            icon={<PlusOutlined />}
+            onClick={addTask}
+            className="w-full mt-4 h-12 text-base"
+            style={{ borderColor: token?.colorBorder, color: token?.colorTextSecondary }}
+          >
+            {t('addAnotherTask', { current: tasks.length, max: 5 })}
+          </Button>
         )}
       </div>
-
     </div>
   );
 };

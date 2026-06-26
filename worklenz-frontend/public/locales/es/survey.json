@@ -10,5 +10,6 @@
   "submitSuccessMessage": "¡Gracias por completar la encuesta!",
   "submitErrorMessage": "No se pudo enviar la encuesta. Por favor, inténtalo de nuevo.",
   "submitErrorLog": "Error al enviar la encuesta",
-  "fetchErrorLog": "Error al obtener la encuesta"
-} 
+  "fetchErrorLog": "Error al obtener la encuesta",
+  "dontShowAgain": "No mostrar esta encuesta de nuevo"
+}

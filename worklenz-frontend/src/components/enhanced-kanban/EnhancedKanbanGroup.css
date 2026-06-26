@@ -12,6 +12,17 @@
   flex-direction: column;
 }
 
+/* Collapsed state - compact width */
+.enhanced-kanban-group.collapsed {
+  width: auto;
+  min-width: auto;
+  max-width: none;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
 .enhanced-kanban-group.drag-over {
   border-color: var(--ant-color-primary);
   box-shadow: 0 0 0 2px var(--ant-color-primary-border);
@@ -43,6 +54,39 @@
   border-radius: 6px;
   padding: 8px 12px;
   margin: -8px -8px 4px -8px;
+}
+
+/* Collapsed header - compact and standalone */
+.enhanced-kanban-group.collapsed .enhanced-kanban-group-header {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: none;
+  border-radius: 6px;
+  cursor: grab; /* Show grab cursor for dragging */
+  width: fit-content;
+  min-width: 150px;
+}
+
+/* Collapsed header when dragging */
+.enhanced-kanban-group.collapsed .enhanced-kanban-group-header:active {
+  cursor: grabbing;
+}
+
+/* Visual feedback when dragging collapsed group */
+.enhanced-kanban-group.collapsed.group-dragging {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+.enhanced-kanban-group.collapsed.group-dragging .enhanced-kanban-group-header {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Collapsed header text - smaller and compact */
+.enhanced-kanban-group.collapsed .enhanced-kanban-group-header .text-sm {
+  font-size: 13px;
+  min-width: auto;
+  white-space: nowrap;
 }
 
 .enhanced-kanban-group-header:active {

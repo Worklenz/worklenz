@@ -1,0 +1,68 @@
+name: Azure Static Web Apps CI/CD
+
+on:
+  push:
+    branches:
+      - feature/ncinga
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - feature/ncinga
+
+jobs:
+  build_and_deploy_job:
+    permissions:
+      contents: read
+      pull-requests: write
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy Job
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+          lfs: false
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_SOCKET_URL: ${{ vars.VITE_SOCKET_URL }}
+          VITE_CLIENT_PORTAL_URL: ${{ vars.VITE_CLIENT_PORTAL_URL }}
+          VITE_APP_ENV: ${{ vars.VITE_APP_ENV }}
+          VITE_APP_TITLE: ${{ vars.VITE_APP_TITLE }}
+          VITE_MIXPANEL_TOKEN: ${{ vars.VITE_MIXPANEL_TOKEN }}
+          VITE_ENABLE_RECAPTCHA: ${{ vars.VITE_ENABLE_RECAPTCHA }}
+          VITE_RECAPTCHA_SITE_KEY: ${{ vars.VITE_RECAPTCHA_SITE_KEY }}
+          VITE_WORKLENZ_SESSION_ID: ${{ vars.VITE_WORKLENZ_SESSION_ID }}
+          VITE_ENABLE_GOOGLE_LOGIN: ${{ vars.VITE_ENABLE_GOOGLE_LOGIN }}
+          VITE_ENABLE_APPLE_LOGIN: ${{ vars.VITE_ENABLE_APPLE_LOGIN }}
+          VITE_ENABLE_SURVEY_MODAL: ${{ vars.VITE_ENABLE_SURVEY_MODAL }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+          VITE_APP_VERSION: ${{ vars.VITE_APP_VERSION }}
+          VITE_ENABLE_SENTRY_DEV: ${{ vars.VITE_ENABLE_SENTRY_DEV }}
+          VITE_SENTRY_ORG: ${{ vars.VITE_SENTRY_ORG }}
+          VITE_SENTRY_PROJECT: ${{ vars.VITE_SENTRY_PROJECT }}
+          VITE_SENTRY_AUTH_TOKEN: ${{ secrets.VITE_SENTRY_AUTH_TOKEN }}
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_VICTORIOUS_HILL_0EEA4F810 }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
+          action: "upload"
+          ###### Repository/Build Configurations - These values can be configured to match your app requirements. ######
+          # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
+          app_location: "/worklenz-frontend" # App source code path
+          api_location: "" # Api source code path - optional
+          output_location: "build" # Built app content directory - optional
+          ###### End of Repository/Build Configurations ######
+
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Job
+    steps:
+      - name: Close Pull Request
+        id: closepullrequest
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_VICTORIOUS_HILL_0EEA4F810 }}
+          action: "close"

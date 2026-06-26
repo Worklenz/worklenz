@@ -6,10 +6,10 @@ import { GanttTask } from '../../types/advanced-gantt.types';
 
 const ProjectGanttView: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
-  
+
   // Get tasks from your Redux store (adjust based on your actual state structure)
   const tasks = useAppSelector(state => state.tasksReducer?.tasks || []);
-  
+
   // Transform your tasks to GanttTask format
   const ganttTasks = useMemo((): GanttTask[] => {
     return tasks.map(task => ({
@@ -21,11 +21,13 @@ const ProjectGanttView: React.FC = () => {
       type: 'task',
       status: task.status || 'not-started',
       priority: task.priority || 'medium',
-      assignee: task.assignee ? {
-        id: task.assignee.id,
-        name: task.assignee.name,
-        avatar: task.assignee.avatar,
-      } : undefined,
+      assignee: task.assignee
+        ? {
+            id: task.assignee.id,
+            name: task.assignee.name,
+            avatar: task.assignee.avatar,
+          }
+        : undefined,
       parent: task.parent_task_id,
       level: task.level || 0,
       // Map other fields as needed

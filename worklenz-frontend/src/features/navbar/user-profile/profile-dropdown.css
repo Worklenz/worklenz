@@ -1,5 +1,4 @@
 .profile-dropdown .ant-dropdown-menu {
-  padding: 0 !important;
   margin-top: 2px !important;
 }
 
@@ -12,13 +11,23 @@
 }
 
 .profile-card .ant-card-body {
-  padding: 4px 0;
+  padding: 8px 0;
 }
 
 .profile-card .ant-card-body a {
-  display: block;
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
   margin: 0;
-  padding: 10px 15px;
+  padding: 8px 12px;
+}
+
+.profile-card .ant-card-body div {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
 }
 
 .profile-card .ant-card-body a:hover {
@@ -27,7 +36,19 @@
   box-sizing: border-box;
 }
 
+.profile-card .ant-card-body div:hover {
+  color: #1890ff !important;
+  background-color: #f8f7f9 !important;
+  box-sizing: border-box;
+}
+
 .profile-card.dark .ant-card-body a:hover {
+  color: #1890ff !important;
+  background-color: #424242 !important;
+  box-sizing: border-box;
+}
+
+.profile-card.dark .ant-card-body div:hover {
   color: #1890ff !important;
   background-color: #424242 !important;
   box-sizing: border-box;

@@ -24,6 +24,9 @@
   "paymentMethod": "Método de Pago",
   "status": "Estado",
   "ltdUsers": "Puedes agregar hasta {{ltd_users}} usuarios.",
+  "appsumoBusinessUnlockTitle": "Desbloquea el plan Business con 5 códigos de AppSumo",
+  "appsumoBusinessUnlockDescription": "Canjea {{required}} códigos de AppSumo para desbloquear automáticamente las funciones del plan Business. Has canjeado {{count}} de {{required}} códigos.",
+  "redeemAnotherCode": "Canjear otro código",
 
   "drawerTitle": "Canjear Código",
   "label": "Canjear Código",
@@ -34,6 +37,7 @@
   "seatLabel": "Número de asientos",
   "freePlan": "Plan Gratuito",
   "startup": "Startup",
+  "pro": "Pro",
   "business": "Negocio",
   "tag": "Más Popular",
   "enterprise": "Empresa",
@@ -110,5 +114,32 @@
   "currentSeatsText": "Actualmente tiene {{seats}} asientos disponibles.",
   "selectSeatsText": "Seleccione el número de asientos adicionales a comprar.",
   "purchase": "Comprar",
-  "contactSales": "Contactar ventas"
+  "contactSales": "Contactar ventas",
+
+  "pricingModel": "Modelo de Precios",
+  "flatRate": "Tarifa Plana",
+  "perUser": "Por Usuario",
+  "monthlyCost": "Costo Mensual",
+  "pricingModelSwitched": "Modelo de precios actualizado exitosamente",
+  "errorSwitchingPricingModel": "Error al cambiar el modelo de precios",
+  "switchTo": "Cambiar a",
+  "pricing": "precios",
+  "managementUrl": "URL de gestión",
+  "updateCardDetails": "Actualizar datos de la tarjeta",
+
+  "upgradeToUnlockFeatures": "Actualizar para desbloquear funciones premium",
+  "currentPlanLimits": "El plan actual incluye:",
+  "planFeatures": "Características del Plan",
+  "teamSizeLimit": "Límite de tamaño del equipo",
+  "storageLimit": "Límite de almacenamiento",
+  "projectLimit": "Límite de proyectos",
+
+  "billingCyclePreference": "Ciclo de Facturación",
+  "annualSavings": "Ahorre con facturación anual",
+  "monthlyBilling": "Mensual",
+  "yearlyBilling": "Anual",
+
+  "planComparison": "Comparar Planes",
+  "currentUsage": "Uso Actual",
+  "planRecommendation": "Recomendado para el tamaño de su equipo"
 }

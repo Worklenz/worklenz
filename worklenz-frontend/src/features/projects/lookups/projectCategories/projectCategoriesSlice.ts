@@ -47,7 +47,12 @@ export const updateProjectCategory = createAsyncThunk(
   'projectCategories/update',
   async (category: IProjectCategoryViewModel, { rejectWithValue }) => {
     try {
-      const response = await categoriesApiService.updateCategory(category);
+      // Map color_code to color as expected by the API service
+      const response = await categoriesApiService.updateCategory({
+        id: category.id!,
+        name: category.name!,
+        color: category.color_code || '',
+      });
       return response.body;
     } catch (error) {
       logger.error('Update Project Category', error);

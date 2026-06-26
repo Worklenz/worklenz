@@ -1,0 +1,16 @@
+{
+  "duplicateTask": "Duplicar tarea",
+  "duplicateTaskDescription": "Selecciona los elementos que deseas copiar a la nueva tarea:",
+  "duplicateOptions": {
+    "subtasks": "Subtareas",
+    "attachments": "Adjuntos",
+    "dates": "Fechas",
+    "dependencies": "Dependencias",
+    "assignees": "Asignados",
+    "labels": "Etiquetas",
+    "customFields": "Valores de campos personalizados",
+    "subscribers": "Suscriptores"
+  },
+  "duplicate": "Duplicar",
+  "cancel": "Cancelar"
+}

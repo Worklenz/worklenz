@@ -1,4 +1,9 @@
-import { CheckCircleOutlined, SyncOutlined, DownOutlined, RightOutlined } from '@/shared/antd-imports';
+import {
+  CheckCircleOutlined,
+  SyncOutlined,
+  DownOutlined,
+  RightOutlined,
+} from '@/shared/antd-imports';
 import { useRef, useState } from 'react';
 import Form from 'antd/es/form';
 import Input, { InputRef } from 'antd/es/input';
@@ -48,7 +53,7 @@ const TodoList = () => {
     };
 
     const res = await createPersonalTask(newTodo);
-    if (res.data) {
+    if (res.data?.done) {
       refetch();
     }
 
@@ -59,7 +64,7 @@ const TodoList = () => {
   const handleCompleteTodo = async (id: string | undefined) => {
     if (!id) return;
     const res = await markPersonalTaskAsDone(id);
-    if (res.data) {
+    if (res.data?.done) {
       refetch();
     }
   };
@@ -99,7 +104,7 @@ const TodoList = () => {
   ];
 
   return (
-    <Card style={{ width: '100%' }} bodyStyle={{ padding: 0 }}>
+    <Card style={{ width: '100%' }} styles={{ body: { padding: 0 } }}>
       <style>{`
         .todo-collapse .ant-collapse-header {
           display: flex !important;
@@ -117,28 +122,33 @@ const TodoList = () => {
         ghost
         size="small"
         className="todo-collapse"
-        expandIcon={({ isActive }) => 
-          isActive ? <DownOutlined /> : <RightOutlined />
-        }
-        onChange={(keys) => {
+        expandIcon={({ isActive }) => (isActive ? <DownOutlined /> : <RightOutlined />)}
+        onChange={keys => {
           setIsCollapsed(keys.length === 0);
         }}
         items={[
           {
             key: '1',
             label: (
-              <Flex style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <Flex
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%',
+                }}
+              >
                 <Typography.Title level={5} style={{ margin: 0 }}>
                   {t('home:todoList.title')} ({data?.body.length})
                 </Typography.Title>
                 <Tooltip title={t('home:todoList.refreshTasks')}>
-                  <Button 
-                    shape="circle" 
-                    icon={<SyncOutlined spin={isFetching} />} 
-                    onClick={(e) => {
+                  <Button
+                    shape="circle"
+                    icon={<SyncOutlined spin={isFetching} />}
+                    onClick={e => {
                       e.stopPropagation();
                       refetch();
-                    }} 
+                    }}
                   />
                 </Tooltip>
               </Flex>

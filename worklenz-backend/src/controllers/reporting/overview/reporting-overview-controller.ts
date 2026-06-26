@@ -18,21 +18,96 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = this.getCurrentTeamId(req);
     const includeArchived = req.query.archived === "true";
 
+    // Build archived filter using 'p' alias (matches filtered_projects CTE)
     const archivedClause = includeArchived
       ? ""
-      : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND user_id = '${req.user?.id}') `;
+      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}')`;
 
-    const teams = await this.getTeamsCounts(teamId, archivedClause);
-    const projects = await this.getProjectsCounts(teamId, archivedClause);
-    const members = await this.getMemberCounts(teamId);
+    // Compute once — avoids two separate isTeamLead() DB lookups
+    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
 
-    projects.count = teams.projects;
-    members.count = teams.members;
+    // Single consolidated query replaces 3 sequential round-trips.
+    // Key optimisations:
+    //  • org_teams CTE evaluated once; replaces per-row in_organization() calls
+    //  • filtered_projects CTE reused for all project counters
+    //  • done_category / completed_project_status CTEs replace repeated subqueries
+    //  • members_with_overdue inlines is_overdue() logic; eliminates per-row
+    //    function calls over tasks_assignees
+    const q = `
+      WITH
+      org_teams AS (
+          SELECT t.id
+          FROM   teams t
+          WHERE  t.user_id = (SELECT user_id FROM teams WHERE id = $1)
+      ),
+      filtered_projects AS (
+          SELECT p.id, p.end_date, p.status_id
+          FROM   projects p
+          WHERE  p.team_id IN (SELECT id FROM org_teams)
+            ${archivedClause}
+            ${projectFilterClause}
+      ),
+      done_category AS (
+          SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE LIMIT 1
+      ),
+      completed_project_status AS (
+          SELECT id FROM sys_project_statuses WHERE name = 'Completed' LIMIT 1
+      )
+      SELECT JSON_BUILD_OBJECT(
+          'team_count',           (SELECT COUNT(*) FROM org_teams),
+          'project_count',        (SELECT COUNT(*) FROM filtered_projects),
+          'member_count',         (SELECT COUNT(DISTINCT tmv.email)
+                                   FROM   team_member_info_view tmv
+                                   WHERE  tmv.team_id IN (SELECT id FROM org_teams)),
+          'active_projects',      (SELECT COUNT(*) FROM filtered_projects
+                                   WHERE  end_date > CURRENT_TIMESTAMP OR end_date IS NULL),
+          'overdue_projects',     (SELECT COUNT(*) FROM filtered_projects
+                                   WHERE  end_date < CURRENT_TIMESTAMP
+                                     AND  status_id NOT IN (SELECT id FROM completed_project_status)),
+          'unassigned_members',   (SELECT COUNT(DISTINCT tm.id)
+                                   FROM   team_members tm
+                                   WHERE  tm.team_id IN (SELECT id FROM org_teams)
+                                     AND  NOT EXISTS (
+                                              SELECT 1 FROM tasks_assignees ta
+                                              WHERE  ta.team_member_id = tm.id
+                                          )),
+          'members_with_overdue', (SELECT COUNT(DISTINCT ta.team_member_id)
+                                   FROM   tasks_assignees ta
+                                   JOIN   team_members tm ON tm.id = ta.team_member_id
+                                   JOIN   tasks        t  ON t.id  = ta.task_id
+                                   WHERE  tm.team_id IN (SELECT id FROM org_teams)
+                                     AND  t.end_date < CURRENT_TIMESTAMP
+                                     AND  t.status_id NOT IN (
+                                              SELECT ts.id
+                                              FROM   task_statuses ts
+                                              WHERE  ts.project_id  = t.project_id
+                                                AND  ts.category_id = (SELECT id FROM done_category)
+                                          ))
+      ) AS stats;
+    `;
+
+    const result = await db.query(q, [teamId]);
+    const s = result.rows[0]?.stats;
+
+    const projectCount = int(s?.project_count);
+    const memberCount  = int(s?.member_count);
 
     const body = {
-      teams,
-      projects,
-      members
+      teams: {
+        count:    int(s?.team_count),
+        projects: projectCount,
+        members:  memberCount,
+      },
+      projects: {
+        count:   projectCount,
+        active:  int(s?.active_projects),
+        overdue: int(s?.overdue_projects),
+      },
+      members: {
+        count:      memberCount,
+        unassigned: int(s?.unassigned_members),
+        overdue:    int(s?.members_with_overdue),
+      }
     };
 
     return res.status(200).send(new ServerResponse(true, body));
@@ -79,7 +154,8 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
 
   @HandleExceptions()
   public static async getProjects(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { searchQuery, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"]);
+    // teamId is $1, size is $2, offset is $3, so search params start at $4
+    const { searchQuery, searchParams, sortField, sortOrder, size, offset } = this.toPaginationOptions(req.query, ["p.name"], false, 4);
     const archived = req.query.archived === "true";
 
     const teamId = req.query.team as string;
@@ -88,9 +164,11 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
       ? ""
       : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = '${req.user?.id}') `;
 
-    const teamFilterClause = `p.team_id = $1`;
+    // Add project filtering for Team Leads
+    const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+    const teamFilterClause = `p.team_id = $1 ${projectFilterClause}`;
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField as string, sortOrder, "", "", "", archivedClause, teamFilterClause, "");
+    const result = await ReportingControllerBase.getProjectsByTeam(teamId, size, offset, searchQuery, sortField, sortOrder, "", "", "", archivedClause, teamFilterClause, "", searchParams);
 
 
     for (const project of result.projects) {
@@ -144,7 +222,39 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
   public static async getProjectsByTeamOrMember(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.params.team_id?.trim() || null;
     const teamMemberId = (req.query.member as string)?.trim() || null;
-    const teamMemberFilter = teamId === "undefined" ? `AND pm.team_member_id = $1` : teamMemberId ? `AND pm.team_member_id = $2` : "";
+    const includeArchived = req.query.archived === "true";
+    const userId = req.user?.id;
+
+    // Build params array first to determine userId parameter position
+    const params: any[] = [];
+    
+    if (teamId === "undefined") {
+      // When teamId is "undefined", teamMemberId is the first param (if exists)
+      if (teamMemberId) {
+        params.push(teamMemberId);
+      }
+    } else {
+      // When teamId is valid, it's the first param
+      params.push(teamId);
+      if (teamMemberId) {
+        params.push(teamMemberId);
+      }
+    }
+
+    // Add userId for archived clause if needed
+    const userIdParamIndex = params.length + 1;
+    if (!includeArchived && userId) {
+      params.push(userId);
+    }
+
+    // Build archived projects filter clause
+    const archivedClause = includeArchived || !userId
+      ? ""
+      : `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${userIdParamIndex})`;
+
+    const teamMemberFilter = teamId === "undefined" 
+      ? (teamMemberId ? `AND pm.team_member_id = $1` : "") 
+      : (teamMemberId ? `AND pm.team_member_id = $2` : "");
     const teamIdFilter = teamId === "undefined" ? "p.team_id IS NOT NULL" : `p.team_id = $1`;
 
     const q = `
@@ -155,10 +265,9 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
               p.status_id
         FROM projects p
             LEFT JOIN project_members pm ON pm.project_id = p.id
-        WHERE ${teamIdFilter} ${teamMemberFilter}
-        GROUP BY p.id, p.name;`;
-
-    const params = teamId === "undefined" ? [teamMemberId] : teamMemberId ? [teamId, teamMemberId] : [teamId];
+        WHERE ${teamIdFilter} ${teamMemberFilter} ${archivedClause}
+        GROUP BY p.id, p.name, p.color_code, p.team_id, p.status_id
+        ORDER BY p.name;`;
 
     const result = await db.query(q, params);
 
@@ -292,6 +401,25 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
   }
 
   @HandleExceptions()
+  public static async getProjectTasksPaginated(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const projectId = req.params.project_id?.trim() || null;
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 15;
+    const search = (req.query.search as string) || "";
+    const statusFilter = (req.query.status as string) || "all";
+    const priorityFilter = (req.query.priority as string) || "all";
+    const assigneeFilter = (req.query.assignee as string) || "all";
+    const sortField = (req.query.sortField as string) || "created_at";
+    const sortOrder = (req.query.sortOrder as string) || "desc";
+
+    const result = await this.getTasksPaginated(projectId, page, pageSize, search, statusFilter, priorityFilter, assigneeFilter, sortField, sortOrder);
+    const stats = await this.getTasksStats(projectId);
+    const members = await this.getProjectMembersForFilter(projectId);
+
+    return res.status(200).send(new ServerResponse(true, { ...result, stats, members }));
+  }
+
+  @HandleExceptions()
   public static async getTeamMemberOverview(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamMemberId = req.query.teamMemberId as string;
     const archived = req.query.archived === "true";
@@ -365,7 +493,8 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const teamId = req.params.team_id || null;
     const archived = req.query.archived === "true";
 
-    const archivedClause = await this.getArchivedProjectsClause(archived, req.user?.id as string, "projects.id");
+    const archivedClauseResult = await this.getArchivedProjectsClause(archived, req.user?.id as string, "projects.id", 1);
+    const archivedClause = archivedClauseResult.clause;
 
     const byStatus = await this.getProjectsByStatus(teamId, archivedClause);
     const byCategory = await this.getProjectsByCategory(teamId, archivedClause);

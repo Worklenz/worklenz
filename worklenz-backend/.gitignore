@@ -60,3 +60,7 @@ config.json
 build
 .vscode
 *.code-workspace
+
+# Security-sensitive files (Apple Sign-In, etc.)
+*.p8
+keys/*.p8

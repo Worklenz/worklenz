@@ -1,0 +1,58 @@
+{
+  "title": "集成",
+  "tooltip": "管理项目集成",
+  "upgradeRequired": "集成功能需要 Business 计划",
+  "manageAll": "管理所有集成",
+  "comingSoon": "即将推出",
+  "cancel": "取消",
+
+  "slack": {
+    "title": "Slack",
+    "description": "向 Slack 频道发送通知",
+    "notConnected": "请先在设置中连接您的 Slack 工作区",
+    "quickAddTitle": "将 Slack 添加到项目",
+    "currentProject": "项目",
+    "selectChannel": "Slack 频道",
+    "selectChannelPlaceholder": "选择 Slack 频道...",
+    "selectNotifications": "通知类型",
+    "selectNotificationsPlaceholder": "选择通知类型...",
+    "refresh": "刷新",
+    "addButton": "添加集成",
+    "inviteBotTip": "提示：请确保首先邀请 @Worklenz 机器人到您的 Slack 频道！"
+  },
+
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "向 Teams 频道发送通知"
+  },
+
+  "github": {
+    "title": "GitHub",
+    "description": "与 GitHub 问题同步任务"
+  },
+
+  "notificationTypes": {
+    "taskCreated": "任务已创建",
+    "taskAssigned": "任务已分配",
+    "statusChanged": "状态已变更",
+    "taskCompleted": "任务已完成",
+    "commentAdded": "评论已添加",
+    "dueDateChanged": "截止日期已变更"
+  },
+
+  "validation": {
+    "selectChannel": "请选择一个 Slack 频道",
+    "selectNotifications": "请至少选择一种通知类型"
+  },
+
+  "messages": {
+    "integrationAdded": "Slack 集成添加成功！",
+    "channelsRefreshed": "频道刷新成功"
+  },
+
+  "errors": {
+    "loadChannelsFailed": "加载频道失败",
+    "refreshChannelsFailed": "刷新频道失败",
+    "addIntegrationFailed": "添加集成失败"
+  }
+}

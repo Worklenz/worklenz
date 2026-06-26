@@ -58,5 +58,32 @@
     "timeLoggedTaskAriaLabel": "时间记录任务：",
     "errorLoadingRecentTasks": "加载最近任务时出错",
     "errorLoadingTimeLoggedTasks": "加载时间记录任务时出错"
+  },
+  "activityLogs": {
+    "title": "最近活动",
+    "refresh": "刷新活动日志",
+    "noActivities": "没有最近的活动",
+    "deletedProject": "(已删除)",
+    "project": {
+      "created": "{{userName}}创建了项目{{projectName}}",
+      "updated": "{{userName}}更新了项目{{projectName}}",
+      "deleted": "{{userName}}删除了项目{{projectName}}",
+      "archived": "{{userName}}归档了项目{{projectName}}",
+      "unarchived": "{{userName}}取消归档了项目{{projectName}}",
+      "favorited": "{{userName}}收藏了项目{{projectName}}",
+      "unfavorited": "{{userName}}取消收藏了项目{{projectName}}",
+      "statusChanged": "{{userName}}更改了项目{{projectName}}的状态",
+      "managerAssigned": "{{userName}}为项目{{projectName}}分配了项目经理",
+      "managerRemoved": "{{userName}}移除了项目{{projectName}}的项目经理",
+      "memberAdded": "{{userName}}将{{memberName}}添加到项目{{projectName}}",
+      "memberRemoved": "{{userName}}从项目{{projectName}}中移除了{{memberName}}"
+    },
+    "task": {
+      "created": "{{userName}}创建了任务{{taskName}}",
+      "updated": "{{userName}}更新了任务{{taskName}}"
+    },
+    "generic": {
+      "activity": "{{userName}}执行了一项活动"
+    }
   }
 }

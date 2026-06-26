@@ -9,7 +9,7 @@
   "emailRequired": "Please enter your Email!",
   "passwordLabel": "Password",
   "passwordPlaceholder": "Enter your password",
-  "passwordRequired": "Please enter your Password!",
+  "passwordRequired": "Please enter your password!",
   "passwordMinCharacterRequired": "Password must be at least 8 characters!",
   "passwordPatternRequired": "Password does not meet the requirements!",
   "strongPasswordPlaceholder": "Enter a stronger password",
