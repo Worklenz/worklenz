@@ -1,0 +1,45 @@
+/* All Tasks Filters Styles */
+
+.all-tasks-filters {
+  width: 100%;
+}
+
+.all-tasks-filters-left,
+.all-tasks-filters-right {
+  flex-shrink: 0;
+}
+
+/* Compact filter buttons */
+.all-tasks-filters .ant-btn {
+  font-size: 13px;
+  height: 30px;
+  padding: 0 10px;
+}
+
+.all-tasks-filters .ant-select {
+  font-size: 13px;
+}
+
+.all-tasks-filters .ant-select-selector {
+  height: 30px !important;
+  padding: 0 8px !important;
+}
+
+.all-tasks-filters .ant-select-selection-item {
+  line-height: 28px !important;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .all-tasks-filters {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .all-tasks-filters-left,
+  .all-tasks-filters-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

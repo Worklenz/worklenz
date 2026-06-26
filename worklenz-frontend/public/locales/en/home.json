@@ -50,7 +50,7 @@
     "noRecentTasks": "No recent tasks",
     "noTimeLoggedTasks": "No time logged tasks",
     "activityTag": "Activity",
-    "timeLogTag": "Time Log", 
+    "timeLogTag": "Time Log",
     "timerTag": "Timer",
     "activitySingular": "activity",
     "activityPlural": "activities",
@@ -58,5 +58,32 @@
     "timeLoggedTaskAriaLabel": "Time logged task:",
     "errorLoadingRecentTasks": "Error loading recent tasks",
     "errorLoadingTimeLoggedTasks": "Error loading time logged tasks"
+  },
+  "activityLogs": {
+    "title": "Recent Activity",
+    "refresh": "Refresh activity logs",
+    "noActivities": "No recent activities",
+    "deletedProject": "(Deleted)",
+    "project": {
+      "created": "{{userName}} created project {{projectName}}",
+      "updated": "{{userName}} updated project {{projectName}}",
+      "deleted": "{{userName}} deleted project {{projectName}}",
+      "archived": "{{userName}} archived project {{projectName}}",
+      "unarchived": "{{userName}} unarchived project {{projectName}}",
+      "favorited": "{{userName}} favorited project {{projectName}}",
+      "unfavorited": "{{userName}} unfavorited project {{projectName}}",
+      "statusChanged": "{{userName}} changed status of project {{projectName}}",
+      "managerAssigned": "{{userName}} assigned project manager to {{projectName}}",
+      "managerRemoved": "{{userName}} removed project manager from {{projectName}}",
+      "memberAdded": "{{userName}} added {{memberName}} to project {{projectName}}",
+      "memberRemoved": "{{userName}} removed {{memberName}} from project {{projectName}}"
+    },
+    "task": {
+      "created": "{{userName}} created task {{taskName}}",
+      "updated": "{{userName}} updated task {{taskName}}"
+    },
+    "generic": {
+      "activity": "{{userName}} performed an activity"
+    }
   }
 }

@@ -7,8 +7,8 @@
   "emailLabel": "Email",
   "emailRequiredError": "Email is required",
   "saveChanges": "Save Changes",
-  "profileJoinedText": "Joined a month ago",
-  "profileLastUpdatedText": "Last updated a month ago",
+  "profileJoinedText": "Joined {{date}}",
+  "profileLastUpdatedText": "Last updated {{date}}",
   "avatarTooltip": "Click to upload an avatar",
   "title": "Profile Settings"
 }

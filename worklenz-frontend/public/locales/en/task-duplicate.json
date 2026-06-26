@@ -1,0 +1,16 @@
+{
+  "duplicateTask": "Duplicate Task",
+  "duplicateTaskDescription": "Select items to copy to the new task:",
+  "duplicateOptions": {
+    "subtasks": "Subtasks",
+    "attachments": "Attachments",
+    "dates": "Dates",
+    "dependencies": "Dependencies",
+    "assignees": "Assignees",
+    "labels": "Labels",
+    "customFields": "Custom Field Values",
+    "subscribers": "Subscribers"
+  },
+  "duplicate": "Duplicate",
+  "cancel": "Cancel"
+}

@@ -1,41 +1,69 @@
 import { useTranslation } from 'react-i18next';
-import React from 'react';
+import { useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Badge, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  ConfigProvider,
+  Flex,
+  Table,
+  TableColumnsType,
+  Tag,
+  Typography,
+} from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 import { DoubleRightOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
+import { lazy } from 'react';
+import {
+  fetchTask,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { setProjectId } from '@/features/project/project.slice';
 
-const TaskDrawer = React.lazy(() => import('@components/task-drawer/task-drawer'));
+const TaskDrawer = lazy(() => import('@components/task-drawer/task-drawer'));
 
 type ProjectReportsMembersTasksTableProps = {
   tasksData: any[];
+  loading?: boolean;
 };
 
-const ProjectReportsMembersTasksTable = ({ tasksData }: ProjectReportsMembersTasksTableProps) => {
+interface ReportingTaskRecord {
+  id: string;
+  project_id: string;
+}
+
+const ProjectReportsMembersTasksTable = ({
+  tasksData,
+  loading = false,
+}: ProjectReportsMembersTasksTableProps) => {
   // localization
   const { t } = useTranslation('reporting-projects-drawer');
 
   const dispatch = useAppDispatch();
 
   // function to handle task drawer open
-  const handleUpdateTaskDrawer = (id: string) => {
-    dispatch(setShowTaskDrawer(true));
-  };
+  const handleUpdateTaskDrawer = useCallback(
+    (id: string, projectId: string) => {
+      if (!id || !projectId) return;
+
+      dispatch(setSelectedTaskId(id));
+      dispatch(setProjectId(projectId));
+      dispatch(fetchPhasesByProjectId(projectId));
+      dispatch(fetchTask({ taskId: id, projectId }));
+      dispatch(setShowTaskDrawer(true));
+    },
+    [dispatch]
+  );
 
   const columns: TableColumnsType = [
     {
       key: 'task',
       title: <CustomTableTitle title={t('taskColumn')} />,
-      onCell: record => {
-        return {
-          onClick: () => handleUpdateTaskDrawer(record.id),
-        };
-      },
       render: record => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
@@ -85,7 +113,7 @@ const ProjectReportsMembersTasksTable = ({ tasksData }: ProjectReportsMembersTas
       title: <CustomTableTitle title={t('dueDateColumn')} />,
       render: record => (
         <Typography.Text className="text-center group-hover:text-[#1890ff]">
-          {record.end_date ? `${dayjs(record.end_date).format('MMM DD, YYYY')}` : '-'}
+          {record.end_date ? `${dayjs(record.end_date, 'YYYY-MM-DD').format('MMM DD, YYYY')}` : '-'}
         </Typography.Text>
       ),
       width: 120,
@@ -104,39 +132,63 @@ const ProjectReportsMembersTasksTable = ({ tasksData }: ProjectReportsMembersTas
       key: 'estimatedTime',
       title: <CustomTableTitle title={t('estimatedTimeColumn')} />,
       className: 'text-center group-hover:text-[#1890ff]',
-      dataIndex: 'estimated_string',
+      render: record => record.estimated_string || '-',
       width: 130,
     },
     {
       key: 'loggedTime',
       title: <CustomTableTitle title={t('loggedTimeColumn')} />,
       className: 'text-center group-hover:text-[#1890ff]',
-      dataIndex: 'time_spent_string',
+      render: record => record.time_spent_string || '-',
       width: 130,
     },
     {
       key: 'overloggedTime',
       title: <CustomTableTitle title={t('overloggedTimeColumn')} />,
       className: 'text-center group-hover:text-[#1890ff]',
-      dataIndex: 'overlogged_time',
+      render: record => record.overlogged_time || '-',
       width: 150,
     },
   ];
 
+  // Memoize table configuration
+  const tableConfig = useMemo(
+    () => ({
+      theme: {
+        components: {
+          Table: {
+            cellPaddingBlock: 8,
+            cellPaddingInline: 10,
+          },
+        },
+      },
+    }),
+    []
+  );
+
+  // Memoize row props generator
+  const getRowProps = useMemo(
+    () => (record: ReportingTaskRecord) => ({
+      onClick: () => handleUpdateTaskDrawer(record.id, record.project_id),
+      style: { height: 38, cursor: 'pointer' },
+      className: 'group even:bg-[#4e4e4e10]',
+    }),
+    [handleUpdateTaskDrawer]
+  );
+
   return (
     <>
-      <Table
-        columns={columns}
-        dataSource={tasksData}
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        onRow={record => {
-          return {
-            style: { height: 38, cursor: 'pointer' },
-            className: 'group even:bg-[#4e4e4e10]',
-          };
-        }}
-      />
+      <ConfigProvider {...tableConfig}>
+        <Table
+          columns={columns}
+          dataSource={tasksData}
+          loading={loading}
+          pagination={false}
+          scroll={{ x: 'max-content' }}
+          rowKey={record => record.id}
+          onRow={getRowProps}
+        />
+      </ConfigProvider>
       {createPortal(<TaskDrawer />, document.body, 'task-drawer')}
     </>
   );

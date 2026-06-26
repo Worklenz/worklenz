@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useAppSelector } from './useAppSelector';
 import { useAppDispatch } from './useAppDispatch';
 import {
@@ -7,6 +7,7 @@ import {
   setSelectedTaskId,
   setShowTaskDrawer,
 } from '@/features/task-drawer/task-drawer.slice';
+import { setProjectId } from '@/features/project/project.slice';
 
 /**
  * A custom hook that synchronizes the task drawer state with the URL.
@@ -16,9 +17,11 @@ import {
  */
 const useTaskDrawerUrlSync = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const params = useParams();
   const dispatch = useAppDispatch();
   const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const routeProjectId = params.projectId || params.id;
 
   // Use a ref to track whether we're in the process of closing the drawer
   const isClosingDrawer = useRef(false);
@@ -37,6 +40,7 @@ const useTaskDrawerUrlSync = () => {
       // Create a new URLSearchParams object to avoid modifying the current one
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('task');
+      newParams.delete('task_project');
 
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
@@ -55,28 +59,31 @@ const useTaskDrawerUrlSync = () => {
     if (shouldIgnoreUrlChange.current || isClosingDrawer.current) return;
 
     const taskIdFromUrl = searchParams.get('task');
+    const projectIdFromUrl = searchParams.get('task_project');
+    const resolvedProjectId = projectId || projectIdFromUrl || routeProjectId;
 
     // Only process URL changes if:
     // 1. There's a task ID in the URL
     // 2. The drawer is not currently open
-    // 3. We have a project ID
+    // 3. We have a project ID, either from Redux, URL, or route params
     // 4. It's a different task ID than what we last processed
     // 5. The selected task ID is different from URL (to avoid reopening same task)
     if (
       taskIdFromUrl &&
       !showTaskDrawer &&
-      projectId &&
+      resolvedProjectId &&
       taskIdFromUrl !== lastProcessedTaskId.current &&
       taskIdFromUrl !== selectedTaskId
     ) {
       lastProcessedTaskId.current = taskIdFromUrl;
+      dispatch(setProjectId(resolvedProjectId));
       dispatch(setSelectedTaskId(taskIdFromUrl));
       dispatch(setShowTaskDrawer(true));
 
       // Fetch task data
-      dispatch(fetchTask({ taskId: taskIdFromUrl, projectId }));
+      dispatch(fetchTask({ taskId: taskIdFromUrl, projectId: resolvedProjectId }));
     }
-  }, [searchParams, showTaskDrawer, projectId, selectedTaskId, dispatch]);
+  }, [searchParams, showTaskDrawer, projectId, routeProjectId, selectedTaskId, dispatch]);
 
   // Update URL when task drawer state changes
   useEffect(() => {
@@ -84,8 +91,13 @@ const useTaskDrawerUrlSync = () => {
     if (isClosingDrawer.current || shouldIgnoreUrlChange.current) return;
 
     if (showTaskDrawer && selectedTaskId) {
-      // Don't update if it's the same task ID we already processed
-      if (lastProcessedTaskId.current === selectedTaskId) return;
+      const existingProjectId = searchParams.get('task_project');
+      // Don't update if it's the same task/project pair we already processed
+      if (
+        lastProcessedTaskId.current === selectedTaskId &&
+        (!projectId || existingProjectId === projectId)
+      )
+        return;
 
       // Add task ID to URL when drawer is opened
       shouldIgnoreUrlChange.current = true;
@@ -94,6 +106,9 @@ const useTaskDrawerUrlSync = () => {
       // Create a new URLSearchParams object to avoid modifying the current one
       const newParams = new URLSearchParams(searchParams);
       newParams.set('task', selectedTaskId);
+      if (projectId) {
+        newParams.set('task_project', projectId);
+      }
 
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
@@ -103,7 +118,7 @@ const useTaskDrawerUrlSync = () => {
         shouldIgnoreUrlChange.current = false;
       }, 100);
     }
-  }, [showTaskDrawer, selectedTaskId, searchParams, setSearchParams]);
+  }, [showTaskDrawer, selectedTaskId, projectId, searchParams, setSearchParams]);
 
   // Separate effect to handle URL clearing when drawer is closed
   useEffect(() => {

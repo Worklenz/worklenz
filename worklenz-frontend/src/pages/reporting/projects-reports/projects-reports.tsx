@@ -1,15 +1,21 @@
 import { Button, Card, Checkbox, Dropdown, Flex, Space, Typography } from '@/shared/antd-imports';
-import { useMemo, useCallback, memo, useEffect } from 'react';
+import { useMemo, useCallback, memo, useEffect, useLayoutEffect } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_reporting_projects_overview } from '@/shared/worklenz-analytics-events';
-import CustomPageHeader from '@/pages/reporting/page-header/custom-page-header';
+import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import { DownOutlined } from '@/shared/antd-imports';
-import ProjectReportsTable from './projects-reports-table/projects-reports-table';
-import ProjectsReportsFilters from './projects-reports-filters/project-reports-filters';
+import ProjectReportsTable from './components/projects-reports-table/projects-reports-table';
+import ProjectsGroupedView from './components/projects-grouped-view/projects-grouped-view';
+import ProjectsReportsFilters from './components/projects-reports-filters/project-reports-filters';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import { setArchived } from '@/features/reporting/projectReports/project-reports-slice';
+import {
+  setArchived,
+  fetchReportingTeams,
+  resetAllFilters,
+  fetchProjectDataForCurrentView,
+} from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
@@ -22,11 +28,23 @@ const ProjectsReports = () => {
 
   useDocumentTitle('Reporting - Projects');
 
-  const { total, archived } = useAppSelector(state => state.projectReportsReducer);
+  const { total, archived, viewMode } = useAppSelector(state => state.projectReportsReducer);
 
+  // Fetch data after filters are reset
   useEffect(() => {
     trackMixpanelEvent(evt_reporting_projects_overview);
-  }, [trackMixpanelEvent]);
+    dispatch(fetchReportingTeams());
+  }, [trackMixpanelEvent, dispatch]);
+
+  // Initial data fetch when component mounts
+  useEffect(() => {
+    dispatch(fetchProjectDataForCurrentView());
+  }, [dispatch]);
+
+  // Fetch data when archived state changes
+  useEffect(() => {
+    dispatch(fetchProjectDataForCurrentView());
+  }, [archived, dispatch]);
 
   // Memoize the title to prevent recalculation on every render
   const pageTitle = useMemo(() => {
@@ -73,13 +91,19 @@ const ProjectsReports = () => {
   // Memoize the card title to prevent recreation on every render
   const cardTitle = useMemo(() => <ProjectsReportsFilters />, []);
 
+  // Memoize the content based on view mode
+  const cardContent = useMemo(() => {
+    if (viewMode === 'grouped') {
+      return <ProjectsGroupedView />;
+    }
+    return <ProjectReportsTable />;
+  }, [viewMode]);
+
   return (
     <Flex vertical>
       <CustomPageHeader title={pageTitle} children={headerChildren} />
 
-      <Card title={cardTitle}>
-        <ProjectReportsTable />
-      </Card>
+      <Card title={cardTitle}>{cardContent}</Card>
     </Flex>
   );
 };

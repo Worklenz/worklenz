@@ -18,28 +18,50 @@ import {
 
 import './task-drawer.css';
 import TaskDrawerHeader from './task-drawer-header/task-drawer-header';
+import TaskDrawerTitleSection from './task-drawer-title-section/task-drawer-title-section';
 import TaskDrawerActivityLog from './shared/activity-log/task-drawer-activity-log';
 import TaskDrawerInfoTab from './shared/info-tab/task-drawer-info-tab';
 import TaskDrawerTimeLog from './shared/time-log/task-drawer-time-log';
 import TimeLogForm from './shared/time-log/time-log-form';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import useTaskDrawerUrlSync from '@/hooks/useTaskDrawerUrlSync';
+import useTaskDrawerNavigation from '@/hooks/useTaskDrawerNavigation';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
-import { Flex } from '@/shared/antd-imports';
+import { Flex, Tooltip } from '@/shared/antd-imports';
+import { CrownOutlined } from '@ant-design/icons';
+import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
+import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
+import { getTeamMembers } from '@/features/team-members/team-members.slice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { getProject } from '@/features/project/project.slice';
 
 const TaskDrawer = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
+  const { t: tCommon } = useTranslation('common');
   const [activeTab, setActiveTab] = useState<string>('info');
   const [refreshTimeLogTrigger, setRefreshTimeLogTrigger] = useState(0);
-
+  const { canCreateTask } = useTaskCreationPermission();
   const { showTaskDrawer, timeLogEditing } = useAppSelector(state => state.taskDrawerReducer);
   const { taskFormViewModel, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { projectId, project } = useAppSelector(state => state.projectReducer);
+  const priorities = useAppSelector(state => state.priorityReducer.priorities);
+  const labels = useAppSelector(state => state.taskLabelsReducer.labels);
+  const teamMembers = useAppSelector(state => state.teamMembersReducer.teamMembers);
+
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const { isFreeUser: isFree } = useBusinessFeatures();
+  const { promptUpgrade } = useUpgradePrompt();
   const taskNameInputRef = useRef<InputRef>(null);
   const isClosingManually = useRef(false);
+  const hydratedProjectIdRef = useRef<string | null>(null);
 
-  // Use the custom hook to sync the task drawer state with the URL
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
+  useTaskDrawerNavigation();
 
   useEffect(() => {
     if (taskNameInputRef.current?.input?.value === DEFAULT_TASK_NAME) {
@@ -49,28 +71,59 @@ const TaskDrawer = () => {
 
   const dispatch = useAppDispatch();
 
-  const resetTaskState = () => {
-    dispatch(setShowTaskDrawer(false));
-    dispatch(setSelectedTaskId(null));
-    dispatch(setTaskFormViewModel({}));
-    dispatch(setTaskSubscribers([]));
-  };
+  useEffect(() => {
+    if (!showTaskDrawer) return;
+
+    if (!priorities.length) {
+      dispatch(fetchPriorities());
+    }
+
+    if (!labels.length) {
+      dispatch(fetchLabels());
+    }
+
+    if (!teamMembers?.data?.length) {
+      dispatch(
+        getTeamMembers({ index: 0, size: 100, field: null, order: null, search: null, all: true })
+      );
+    }
+
+    if (projectId) {
+      if (hydratedProjectIdRef.current !== projectId) {
+        hydratedProjectIdRef.current = projectId;
+        dispatch(fetchPhasesByProjectId(projectId));
+      }
+
+      if (project?.id !== projectId) {
+        dispatch(getProject(projectId));
+      }
+
+      if (selectedTaskId && taskFormViewModel?.task?.id !== selectedTaskId) {
+        dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
+      }
+    }
+  }, [
+    dispatch,
+    labels.length,
+    priorities.length,
+    project,
+    projectId,
+    selectedTaskId,
+    showTaskDrawer,
+    taskFormViewModel?.task?.id,
+    teamMembers?.data?.length,
+  ]);
 
   const handleBackToParent = () => {
     if (taskFormViewModel?.task?.parent_task_id && projectId) {
-      // Navigate to parent task
       dispatch(setSelectedTaskId(taskFormViewModel.task.parent_task_id));
-      dispatch(fetchTask({ 
-        taskId: taskFormViewModel.task.parent_task_id, 
-        projectId 
-      }));
+      dispatch(fetchTask({ taskId: taskFormViewModel.task.parent_task_id, projectId }));
     }
   };
 
   const handleOnClose = (
     e?: React.MouseEvent<Element, MouseEvent> | React.KeyboardEvent<Element>
   ) => {
-    // Set flag to indicate we're manually closing the drawer
     isClosingManually.current = true;
     setActiveTab('info');
     clearTaskFromUrl();
@@ -79,74 +132,96 @@ const TaskDrawer = () => {
       e?.target && (e.target as HTMLElement).classList.contains('ant-drawer-mask');
 
     if (isClickOutsideDrawer || !taskFormViewModel?.task?.is_sub_task) {
-      resetTaskState();
+      dispatch(setShowTaskDrawer(false));
     } else {
-      // For sub-tasks, navigate to parent instead of closing
       handleBackToParent();
     }
-    // Reset the flag after a short delay
+
     setTimeout(() => {
       isClosingManually.current = false;
     }, 100);
   };
 
+  const handleAfterOpenChange = (open: boolean) => {
+    if (!open) {
+      dispatch(setSelectedTaskId(null));
+      dispatch(setTaskFormViewModel({}));
+      dispatch(setTaskSubscribers([]));
+    }
+  };
+
   const handleTabChange = (key: string) => {
+    if (isFree && (key === 'timeLog' || key === 'activityLog')) {
+      promptUpgrade();
+      return;
+    }
     setActiveTab(key);
   };
 
   const handleCancelTimeLog = () => {
-    dispatch(
-      setTimeLogEditing({
-        isEditing: false,
-        logBeingEdited: null,
-      })
-    );
+    dispatch(setTimeLogEditing({ isEditing: false, logBeingEdited: null }));
   };
 
   const handleAddTimeLog = () => {
-    dispatch(
-      setTimeLogEditing({
-        isEditing: true,
-        logBeingEdited: null,
-      })
-    );
+    dispatch(setTimeLogEditing({ isEditing: true, logBeingEdited: null }));
   };
 
-  // Function to trigger a refresh of the time log list
-  const refreshTimeLogs = () => {
-    setRefreshTimeLogTrigger(prev => prev + 1);
-  };
+  const refreshTimeLogs = () => setRefreshTimeLogTrigger(prev => prev + 1);
 
   const handleTimeLogSubmitSuccess = () => {
-    // Close the form
     handleCancelTimeLog();
-    // Trigger refresh of time logs
     refreshTimeLogs();
   };
+
+  const handlePremiumTabClick = () => promptUpgrade();
 
   const tabItems: TabsProps['items'] = [
     {
       key: 'info',
-      label: t('taskInfoTab.title'),
-      children: <TaskDrawerInfoTab t={t} />,
+      label: t('taskInfoTab.title', { defaultValue: 'Info' }),
+      children: <TaskDrawerInfoTab t={t} canCreateTask={canCreateTask} />,
     },
     {
       key: 'timeLog',
-      label: t('taskTimeLogTab.title'),
+      label: isFree ? (
+        <Tooltip title={tCommon('upgrade-plan', { defaultValue: 'Upgrade Plan' })} placement="top">
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={handlePremiumTabClick}
+          >
+            <span>{t('taskTimeLogTab.title', { defaultValue: 'Time Log' })}</span>
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+      ) : (
+        t('taskTimeLogTab.title', { defaultValue: 'Time Log' })
+      ),
       children: <TaskDrawerTimeLog t={t} refreshTrigger={refreshTimeLogTrigger} />,
+      disabled: isFree,
     },
     {
       key: 'activityLog',
-      label: t('taskActivityLogTab.title'),
+      label: isFree ? (
+        <Tooltip title={tCommon('upgrade-plan', { defaultValue: 'Upgrade Plan' })} placement="top">
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={handlePremiumTabClick}
+          >
+            <span>{t('taskActivityLogTab.title', { defaultValue: 'Activity Log' })}</span>
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+      ) : (
+        t('taskActivityLogTab.title', { defaultValue: 'Activity Log' })
+      ),
       children: <TaskDrawerActivityLog />,
+      disabled: isFree,
     },
   ];
 
-  // Render the appropriate footer based on the active tab
   const renderFooter = () => {
-    if (activeTab === 'info') {
-      return <InfoTabFooter />;
-    } else if (activeTab === 'timeLog') {
+    if (activeTab === 'info') return <InfoTabFooter />;
+    if (activeTab === 'timeLog') {
       if (timeLogEditing.isEditing) {
         return (
           <TimeLogForm
@@ -156,99 +231,65 @@ const TaskDrawer = () => {
             mode={timeLogEditing.logBeingEdited ? 'edit' : 'create'}
           />
         );
-      } else {
-        return (
-          <Flex justify="center" style={{ width: '100%', padding: '16px 0 0' }}>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddTimeLog}
-              style={{ width: '100%' }}
-            >
-              {t('taskTimeLogTab.addTimeLog')}
-            </Button>
-          </Flex>
-        );
       }
+      return (
+        <Flex justify="center" style={{ width: '100%', padding: '16px 0 0' }}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddTimeLog}
+            style={{ width: '100%' }}
+          >
+            {t('taskTimeLogTab.addTimeLog', { defaultValue: 'Add Time Log' })}
+          </Button>
+        </Flex>
+      );
     }
     return null;
   };
 
-  // Create conditional footer styles based on active tab
-  const getFooterStyle = () => {
-    const baseStyle = {
-      padding: '0 24px 16px',
-      width: '100%',
-      height: 'auto',
-      boxSizing: 'border-box' as const,
-    };
-
-    if (activeTab === 'timeLog') {
-      return {
-        ...baseStyle,
-        overflow: 'visible', // Remove scrolling for timeLog tab
-      };
-    }
-
-    return {
-      ...baseStyle,
-      overflow: 'hidden',
-    };
-  };
-
-  // Get conditional body style
-  const getBodyStyle = () => {
-    const baseStyle = {
-      padding: '24px',
-      overflow: 'auto',
-    };
-
-    if (activeTab === 'timeLog' && timeLogEditing.isEditing) {
-      return {
-        ...baseStyle,
-        height: 'calc(100% - 220px)', // More space for the timeLog form
-      };
-    }
-
-    return {
-      ...baseStyle,
-      height: 'calc(100% - 180px)',
-    };
-  };
-
-  // Check if current task is a sub-task
-  const isSubTask = taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
-
-  // Custom close icon based on whether it's a sub-task
-  const getCloseIcon = () => {
-    if (isSubTask) {
-      return <ArrowLeftOutlined />;
-    }
-    return <CloseOutlined />;
-  };
+  const isSubTask =
+    taskFormViewModel?.task?.is_sub_task || !!taskFormViewModel?.task?.parent_task_id;
 
   const drawerProps = {
     open: showTaskDrawer,
     onClose: handleOnClose,
+    maskClosable: false,
+    mask: false,
+    afterOpenChange: handleAfterOpenChange,
     width: 720,
-    style: { justifyContent: 'space-between' },
-    destroyOnClose: true,
-    title: <TaskDrawerHeader inputRef={taskNameInputRef} t={t} />,
+    destroyOnClose: false,
+    title: <TaskDrawerHeader t={t} canCreateTask={canCreateTask} />,
+    closeIcon: isSubTask ? <ArrowLeftOutlined /> : <CloseOutlined />,
     footer: renderFooter(),
-    bodyStyle: getBodyStyle(),
-    footerStyle: getFooterStyle(),
-    closeIcon: getCloseIcon(),
+    styles: {
+      body: {
+        padding: 0,
+        overflow: 'auto',
+        height:
+          activeTab === 'timeLog' && timeLogEditing.isEditing
+            ? 'calc(100% - 220px)'
+            : 'calc(100% - 180px)',
+      },
+      footer: {
+        padding: '0 24px 16px',
+        width: '100%',
+        height: 'auto',
+        boxSizing: 'border-box' as const,
+        overflow: activeTab === 'timeLog' ? 'visible' : 'hidden',
+      },
+    },
   };
 
   return (
     <Drawer {...drawerProps}>
-      <Tabs
-        type="card"
-        items={tabItems}
-        destroyOnHidden
-        onChange={handleTabChange}
-        activeKey={activeTab}
-      />
+      {/* Project name + task name — below the header, above the tabs */}
+      <TaskDrawerTitleSection inputRef={taskNameInputRef} t={t} />
+
+      {/* Tabs */}
+      <div style={{ padding: '0 24px' }}>
+        <Tabs type="card" items={tabItems} onChange={handleTabChange} activeKey={activeTab} />
+      </div>
     </Drawer>
   );
 };

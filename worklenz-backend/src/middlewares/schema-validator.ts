@@ -7,8 +7,15 @@ export default function (schema: Schema) {
     const validator = new Validator();
     const result = validator.validate(req.body, schema);
 
-    if (!result.valid)
-      return res.status(400).send(new ServerResponse(false, null, (result.errors[0]?.schema as any).message || null));
+    if (!result.valid) {
+      const schemaMessage = (result.errors[0]?.schema as any)?.message as string | undefined;
+      const validationMessage = result.errors[0]?.message;
+      const field = result.errors[0]?.property?.replace(/^instance\.?/, "") || "";
+      const fallback = field
+        ? `Invalid value for field "${field}": ${validationMessage}`
+        : validationMessage || "Invalid request body";
+      return res.status(400).send(new ServerResponse(false, null, schemaMessage || fallback));
+    }
 
     return next();
   };

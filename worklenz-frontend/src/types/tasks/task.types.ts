@@ -9,6 +9,45 @@ import { ITaskPhase } from './taskPhase.types';
 import { ITaskPriority } from './taskPriority.types';
 import { ITaskStatus } from './taskStatus.types';
 
+export interface ITaskCustomColumnSelectionOption {
+  selection_id: string;
+  selection_name: string;
+  selection_color: string;
+}
+
+export interface ITaskCustomColumnLabelOption {
+  label_id: string;
+  label_name: string;
+  label_color: string;
+}
+
+export interface ITaskCustomColumnConfig {
+  fieldType?: string;
+  fieldTitle?: string;
+  numberType?: string | null;
+  decimals?: number | null;
+  label?: string | null;
+  labelPosition?: 'left' | 'right' | null;
+  previewValue?: number | null;
+  expression?: string | null;
+  firstNumericColumnKey?: string | null;
+  secondNumericColumnKey?: string | null;
+  selectionsList?: ITaskCustomColumnSelectionOption[];
+  labelsList?: ITaskCustomColumnLabelOption[];
+}
+
+export interface ITaskCustomColumn {
+  id: string;
+  key: string;
+  name: string;
+  width?: number;
+  pinned?: boolean;
+  custom_column?: boolean;
+  custom_column_obj?: ITaskCustomColumnConfig;
+}
+
+export type ITaskCustomColumnValue = string | number | boolean | string[] | null;
+
 export interface ITaskAssignee {
   team_member_id: any;
   id: string;
@@ -24,6 +63,7 @@ export interface ITask {
   priority: string;
   start_date: string;
   end_date: string;
+  due_time: string;
   total_hours: number;
   total_minutes: number;
   billable: boolean;
@@ -67,6 +107,7 @@ export interface ITaskViewModel extends ITask {
   recurring?: boolean;
   task_level?: number;
   schedule_id?: string | null;
+  custom_column_values?: Record<string, ITaskCustomColumnValue>;
 }
 
 export interface ITaskTeamMember extends ITeamMember {
@@ -83,6 +124,7 @@ export interface ITaskFormViewModel {
   statuses?: ITaskStatus[];
   phases?: ITaskPhase[];
   team_members?: ITaskTeamMember[];
+  custom_columns?: ITaskCustomColumn[];
 }
 
 export interface IHomeTaskViewModel extends ITask {

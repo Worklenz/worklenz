@@ -48,10 +48,17 @@ export const ProjectNameCell: React.FC<{
   };
 
   return (
-    <div className="flex items-center">
-      <Badge color="geekblue" className="mr-2" />
-      <span className="cursor-pointer">
-        <span onClick={() => selectProject(record)}>{record.name}</span>
+    <div className="flex items-center min-w-0">
+      {/* FIX: Use record.color_code instead of hardcoded "geekblue" */}
+      <Badge color={record.color_code || '#4096ff'} className="mr-2" />
+      <span className="min-w-0 cursor-pointer">
+        <span
+          className="block truncate"
+          onClick={() => selectProject(record)}
+          title={record.name || ''}
+        >
+          {record.name}
+        </span>
         {(record.start_date || record.end_date) && (
           <Tooltip
             title={formatDateRange({

@@ -1,6 +1,16 @@
 import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Button, Typography, Dropdown, Popconfirm, Tooltip, Space, Badge, Divider } from '@/shared/antd-imports';
+import {
+  Button,
+  Typography,
+  Dropdown,
+  Popconfirm,
+  Tooltip,
+  Space,
+  Badge,
+  Divider,
+  DatePicker,
+} from '@/shared/antd-imports';
 import {
   DeleteOutlined,
   CloseOutlined,
@@ -12,6 +22,7 @@ import {
   FlagOutlined,
   BulbOutlined,
   MoreOutlined,
+  CalendarOutlined,
 } from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/app/store';
@@ -27,6 +38,11 @@ import { InputRef } from 'antd/es/input';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { CrownOutlined } from '@/shared/antd-imports';
+import { Calendar1 } from 'lucide-react';
+import type { Dayjs } from 'dayjs';
 
 const { Text } = Typography;
 
@@ -34,6 +50,7 @@ interface OptimizedBulkActionBarProps {
   selectedTaskIds: string[];
   totalSelected: number;
   projectId: string;
+  canCreateTask?: boolean;
   onClearSelection?: () => void;
   onBulkStatusChange?: (statusId: string) => void;
   onBulkPriorityChange?: (priorityId: string) => void;
@@ -46,6 +63,7 @@ interface OptimizedBulkActionBarProps {
   onBulkDuplicate?: () => void;
   onBulkExport?: () => void;
   onBulkSetDueDate?: (date: string) => void;
+  onBulkSetStartDate?: (date: string) => void; // NEW
 }
 
 // Performance-optimized memoized action button component
@@ -152,6 +170,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     selectedTaskIds,
     totalSelected,
     projectId,
+    canCreateTask = true,
     onClearSelection,
     onBulkStatusChange,
     onBulkPriorityChange,
@@ -164,8 +183,10 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     onBulkDuplicate,
     onBulkExport,
     onBulkSetDueDate,
+    onBulkSetStartDate, // NEW
   }) => {
     const { t } = useTranslation(['tasks/task-table-bulk-actions', 'task-management']);
+    const { t: tCommon } = useTranslation('common');
     const dispatch = useDispatch();
     const isDarkMode = useSelector((state: RootState) => state.themeReducer?.mode === 'dark');
 
@@ -176,6 +197,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     const labelsList = useAppSelector(state => state.taskLabelsReducer.labels);
     const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
     const tasks = useAppSelector(state => state.taskManagement.entities);
+
+    // Add archived selector as requested
+    const archived = useAppSelector(state => state.taskManagement.archived);
 
     // Performance state management
     const [isVisible, setIsVisible] = useState(false);
@@ -191,6 +215,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       duplicate: false,
       export: false,
       dueDate: false,
+      startDate: false, // NEW
     });
 
     // Labels dropdown state
@@ -201,11 +226,20 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     // Assignees dropdown state
     const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
 
+    // Due date dropdown state
+    const [dueDateDropdownOpen, setDueDateDropdownOpen] = useState(false);
+
+    // Start date dropdown state — NEW
+    const [startDateDropdownOpen, setStartDateDropdownOpen] = useState(false);
+
     // Task template state
     const [showDrawer, setShowDrawer] = useState(false);
 
     // Auth service for permissions
-    const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+    const authService = useAuthService();
+    const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+    const { isFreeUser: isFree } = useBusinessFeatures();
+    const { promptUpgrade } = useUpgradePrompt();
 
     // Smooth entrance animation
     useEffect(() => {
@@ -353,44 +387,98 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     }, [tasks, selectedTaskIds]);
 
     // Update Redux state when opening template drawer
-    const handleOpenTemplateDrawer = useCallback(() => {
-      // Convert Task objects to IProjectTask format for template creation
-      const projectTasks: IProjectTask[] = selectedTaskObjects.map((task: any) => ({
-        id: task.id,
-        name: task.title, // Always use title as the name
-        task_key: task.task_key,
-        status: task.status,
-        status_id: task.status,
-        priority: task.priority,
-        phase_id: task.phase,
-        phase_name: task.phase,
-        description: task.description,
-        start_date: task.startDate,
-        end_date: task.dueDate,
-        total_hours: task.timeTracking?.estimated || 0,
-        total_minutes: task.timeTracking?.logged || 0,
-        progress: task.progress,
-        sub_tasks_count: task.sub_tasks_count || 0,
-        assignees:
-          task.assignees?.map((assigneeId: string) => ({
-            id: assigneeId,
-            name: '',
-            email: '',
-            avatar_url: '',
-            team_member_id: assigneeId,
-            project_member_id: assigneeId,
-          })) || [],
-        labels: task.labels || [],
-        manual_progress: false,
-        created_at: task.createdAt,
-        updated_at: task.updatedAt,
-        sort_order: task.order,
-      }));
+    const handleOpenTemplateDrawer = useCallback(async () => {
+      if (isFree) {
+        promptUpgrade();
+        return;
+      }
 
-      // Update the bulkActionReducer with selected tasks
+      // Build a fast lookup set of all selected task IDs
+      const selectedIdSet = new Set<string>(selectedTaskIds);
+
+      // ─── Build the selection-aware hierarchy ────────────────────────────────
+      //
+      // Rules (based on what the user explicitly selected):
+      //   • A selected task whose parent_task_id is NOT in the selection
+      //     → top-level template task
+      //   • A selected task whose parent_task_id IS in the selection
+      //     → subtask of that parent in the template
+      //   • A selected task whose grandparent is in the selection (parent is also selected)
+      //     → grandchild (level-3) of the grandparent in the template
+      //
+      // We do NOT auto-include any unselected subtasks. Only the explicit
+      // selection determines what ends up in the template.
+      // ────────────────────────────────────────────────────────────────────────
+
+      // Map: task id → task object (enriched with empty sub_tasks arrays)
+      type TaskNode = {
+        raw: any;
+        sub_tasks: TaskNode[];
+      };
+
+      const nodeMap = new Map<string, TaskNode>();
+      for (const task of selectedTaskObjects) {
+        nodeMap.set(task.id, { raw: task, sub_tasks: [] });
+      }
+
+      // Attach each selected task to its parent node if the parent is also selected
+      const topLevelNodes: TaskNode[] = [];
+      for (const task of selectedTaskObjects) {
+        const parentId: string | undefined = task.parent_task_id;
+        const parentNode = parentId ? nodeMap.get(parentId) : undefined;
+
+        if (parentNode) {
+          // Parent is also selected → this task is a subtask in the template
+          parentNode.sub_tasks.push(nodeMap.get(task.id)!);
+        } else {
+          // No selected parent → this task is a top-level template task
+          topLevelNodes.push(nodeMap.get(task.id)!);
+        }
+      }
+
+      // Convert the tree nodes into IProjectTask format
+      const toProjectTask = (node: TaskNode): IProjectTask => {
+        const task = node.raw;
+        return {
+          id: task.id,
+          name: task.title || task.name,
+          task_key: task.task_key,
+          status: task.status,
+          status_id: task.status,
+          priority: task.priority,
+          phase_id: task.phase,
+          phase_name: task.phase,
+          description: task.description,
+          start_date: task.startDate,
+          end_date: task.dueDate,
+          total_hours: task.timeTracking?.estimated || 0,
+          total_minutes: task.timeTracking?.logged || 0,
+          progress: task.progress,
+          sub_tasks_count: node.sub_tasks.length,
+          // Recursively convert child nodes (up to 3 levels)
+          sub_tasks: node.sub_tasks.map(childNode => toProjectTask(childNode)),
+          assignees:
+            task.assignees?.map((assigneeId: string) => ({
+              id: assigneeId,
+              name: '',
+              email: '',
+              avatar_url: '',
+              team_member_id: assigneeId,
+              project_member_id: assigneeId,
+            })) || [],
+          labels: task.labels || [],
+          manual_progress: false,
+          created_at: task.createdAt,
+          updated_at: task.updatedAt,
+          sort_order: task.order,
+        };
+      };
+
+      const projectTasks: IProjectTask[] = topLevelNodes.map(node => toProjectTask(node));
+
       dispatch(selectTasks(projectTasks));
       setShowDrawer(true);
-    }, [selectedTaskObjects, dispatch]);
+    }, [selectedTaskObjects, selectedTaskIds, dispatch, isFree]);
 
     // Labels dropdown content
     const labelsDropdownContent = useMemo(
@@ -472,13 +560,17 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
     }, [onBulkAssignToMe, updateLoadingState]);
 
     const handleArchive = useCallback(async () => {
+      if (isFree) {
+        promptUpgrade();
+        return;
+      }
       updateLoadingState('archive', true);
       try {
         await onBulkArchive?.();
       } finally {
         updateLoadingState('archive', false);
       }
-    }, [onBulkArchive, updateLoadingState]);
+    }, [onBulkArchive, updateLoadingState, isFree, dispatch]);
 
     const handleDelete = useCallback(async () => {
       updateLoadingState('delete', true);
@@ -506,6 +598,63 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
         updateLoadingState('export', false);
       }
     }, [onBulkExport, updateLoadingState]);
+
+    // Due date change handler
+    const handleDueDateChange = useCallback(
+      async (date: Dayjs | null) => {
+        updateLoadingState('dueDate', true);
+        try {
+          const dateString = date ? date.format('YYYY-MM-DD') : '';
+          await onBulkSetDueDate?.(dateString);
+          setDueDateDropdownOpen(false);
+        } finally {
+          updateLoadingState('dueDate', false);
+        }
+      },
+      [onBulkSetDueDate, updateLoadingState]
+    );
+
+    const onDueDateDropdownOpenChange = useCallback((open: boolean) => {
+      setDueDateDropdownOpen(open);
+    }, []);
+
+    // Start date change handler — NEW
+    const handleStartDateChange = useCallback(
+      async (date: Dayjs | null) => {
+        updateLoadingState('startDate', true);
+        try {
+          const dateString = date ? date.format('YYYY-MM-DD') : '';
+          await onBulkSetStartDate?.(dateString);
+          setStartDateDropdownOpen(false);
+        } finally {
+          updateLoadingState('startDate', false);
+        }
+      },
+      [onBulkSetStartDate, updateLoadingState]
+    );
+
+    const onStartDateDropdownOpenChange = useCallback((open: boolean) => {
+      setStartDateDropdownOpen(open);
+    }, []);
+
+    // Shared button style helper to avoid repetition
+    const makeButtonStyle = useCallback(
+      (colorOverride?: string): React.CSSProperties => ({
+        background: 'transparent',
+        color: colorOverride ?? (isDarkMode ? '#e5e7eb' : '#374151'),
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '6px',
+        height: '32px',
+        width: '32px',
+        fontSize: '14px',
+        borderRadius: '6px',
+        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      }),
+      [isDarkMode]
+    );
 
     // Memoized styles for better performance
     const containerStyle = useMemo(
@@ -549,7 +698,17 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
       [isDarkMode]
     );
 
-    // Remove translation loading check since we're using simple load-as-you-go approach
+    const datePickerDropdownStyle = useMemo(
+      () => ({
+        padding: '8px',
+        background: isDarkMode ? '#1f2937' : '#ffffff',
+        borderRadius: '8px',
+        boxShadow: isDarkMode
+          ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+          : '0 4px 12px rgba(0, 0, 0, 0.1)',
+      }),
+      [isDarkMode]
+    );
 
     if (!totalSelected || Number(totalSelected) < 1) {
       return null;
@@ -583,35 +742,19 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           }}
         />
 
-        {/* Actions in same order as original component */}
+        {/* Actions */}
         <Space size={2}>
           {/* Change Status */}
           <Tooltip title={t('CHANGE_STATUS')} placement="top">
             <Dropdown
-              menu={{
-                items: statusMenuItems,
-                onClick: handleStatusMenuClick,
-              }}
+              menu={{ items: statusMenuItems, onClick: handleStatusMenuClick }}
               trigger={['click']}
               placement="top"
               arrow
             >
               <Button
                 icon={<RetweetOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.status}
@@ -622,30 +765,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Change Priority */}
           <Tooltip title={t('CHANGE_PRIORITY')} placement="top">
             <Dropdown
-              menu={{
-                items: priorityMenuItems,
-                onClick: handlePriorityMenuClick,
-              }}
+              menu={{ items: priorityMenuItems, onClick: handlePriorityMenuClick }}
               trigger={['click']}
               placement="top"
               arrow
             >
               <Button
                 icon={<FlagOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.priority}
@@ -656,30 +783,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           {/* Change Phase */}
           <Tooltip title={t('CHANGE_PHASE')} placement="top">
             <Dropdown
-              menu={{
-                items: phaseMenuItems,
-                onClick: handlePhaseMenuClick,
-              }}
+              menu={{ items: phaseMenuItems, onClick: handlePhaseMenuClick }}
               trigger={['click']}
               placement="top"
               arrow
             >
               <Button
                 icon={<BulbOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.phase}
@@ -703,20 +814,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             >
               <Button
                 icon={<TagsOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                style={makeButtonStyle()}
                 size="small"
                 type="text"
                 loading={loadingStates.labels}
@@ -734,67 +832,137 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
           />
 
           {/* Change Assignees */}
-          <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
+          {canCreateTask && (
+            <Tooltip title={t('ASSIGN_MEMBERS')} placement="top">
+              <Dropdown
+                dropdownRender={() => assigneesDropdownContent}
+                open={assigneeDropdownOpen}
+                onOpenChange={onAssigneeDropdownOpenChange}
+                trigger={['click']}
+                placement="top"
+                arrow
+              >
+                <Button
+                  icon={<UsergroupAddOutlined />}
+                  style={makeButtonStyle()}
+                  size="small"
+                  type="text"
+                  loading={loadingStates.assignMembers}
+                />
+              </Dropdown>
+            </Tooltip>
+          )}
+
+          {/* Set Start Date — NEW */}
+          <Tooltip
+            title={t('SET_START_DATE', { defaultValue: 'Set Start Date' })}
+            placement="top"
+          >
             <Dropdown
-              dropdownRender={() => assigneesDropdownContent}
-              open={assigneeDropdownOpen}
-              onOpenChange={onAssigneeDropdownOpenChange}
+              open={startDateDropdownOpen}
+              onOpenChange={onStartDateDropdownOpenChange}
               trigger={['click']}
               placement="top"
               arrow
+              dropdownRender={() => (
+                <div style={datePickerDropdownStyle}>
+                  <DatePicker
+                    open
+                    onChange={handleStartDateChange}
+                    style={{ width: '100%' }}
+                    getPopupContainer={trigger => trigger.parentElement || document.body}
+                    allowClear
+                    placeholder={t('SET_START_DATE', { defaultValue: 'Set Start Date' })}
+                  />
+                </div>
+              )}
             >
               <Button
-                icon={<UsergroupAddOutlined />}
-                style={{
-                  background: 'transparent',
-                  color: isDarkMode ? '#e5e7eb' : '#374151',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  height: '32px',
-                  width: '32px',
-                  fontSize: '14px',
-                  borderRadius: '6px',
-                  transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}
+                icon={<CalendarOutlined />}
+                style={makeButtonStyle()}
+                className="bulk-action-start-date-btn"
                 size="small"
                 type="text"
-                loading={loadingStates.assignMembers}
+                loading={loadingStates.startDate}
+              />
+            </Dropdown>
+          </Tooltip>
+
+          {/* Set Due Date */}
+          <Tooltip title={t('SET_DUE_DATE')} placement="top">
+            <Dropdown
+              open={dueDateDropdownOpen}
+              onOpenChange={onDueDateDropdownOpenChange}
+              trigger={['click']}
+              placement="top"
+              arrow
+              dropdownRender={() => (
+                <div style={datePickerDropdownStyle}>
+                  <DatePicker
+                    open
+                    onChange={handleDueDateChange}
+                    style={{ width: '100%' }}
+                    getPopupContainer={trigger => trigger.parentElement || document.body}
+                    allowClear
+                    placeholder={t('SET_DUE_DATE')}
+                  />
+                </div>
+              )}
+            >
+              <Button
+                icon={<Calendar1 size={15} />}
+                style={makeButtonStyle()}
+                className="bulk-action-due-date-btn"
+                size="small"
+                type="text"
+                loading={loadingStates.dueDate}
               />
             </Dropdown>
           </Tooltip>
 
           {/* Archive */}
-          <ActionButton
-            icon={<InboxOutlined />}
-            tooltip={t('ARCHIVE')}
-            onClick={handleArchive}
-            loading={loadingStates.archive}
-            isDarkMode={isDarkMode}
-          />
-
-          {/* Delete */}
-          <Popconfirm
-            title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
-            description={t('DELETE_TASKS_WARNING')}
-            onConfirm={handleDelete}
-            okText={t('DELETE')}
-            cancelText={t('CANCEL')}
-            okType="danger"
+          <Tooltip
+            title={
+              isFree && !archived
+                ? tCommon('upgrade-plan')
+                : archived
+                  ? t('Unarchive')
+                  : t('Archive')
+            }
             placement="top"
           >
-            <ActionButton
-              icon={<DeleteOutlined />}
-              tooltip={t('DELETE')}
-              loading={loadingStates.delete}
-              danger
-              isDarkMode={isDarkMode}
+            <Button
+              icon={<InboxOutlined />}
+              style={makeButtonStyle()}
+              size="small"
+              type="text"
+              loading={loadingStates.archive}
+              onClick={handleArchive}
             />
-          </Popconfirm>
+          </Tooltip>
 
-          {/* More Options (Create Task Template) - Only for owners/admins */}
+          {/* Delete */}
+          {canCreateTask && (
+            <Popconfirm
+              title={t('DELETE_TASKS_CONFIRM', { count: totalSelected })}
+              description={t('DELETE_TASKS_WARNING')}
+              onConfirm={handleDelete}
+              okText={t('DELETE')}
+              cancelText={t('CANCEL')}
+              okType="danger"
+              placement="top"
+            >
+              <ActionButton
+                icon={<DeleteOutlined />}
+                tooltip={t('DELETE')}
+                loading={loadingStates.delete}
+                danger
+                isDarkMode={isDarkMode}
+              />
+            </Popconfirm>
+          )}
+
+          {/* More Options — Only for owners/admins */}
           {isOwnerOrAdmin && (
             <Tooltip title={t('moreOptions')} placement="top">
               <Dropdown
@@ -803,7 +971,14 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
                   items: [
                     {
                       key: '1',
-                      label: t('createTaskTemplate'),
+                      label: (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{t('createTaskTemplate')}</span>
+                          {isFree && (
+                            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+                          )}
+                        </div>
+                      ),
                       onClick: handleOpenTemplateDrawer,
                     },
                   ],
@@ -813,20 +988,7 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
               >
                 <Button
                   icon={<MoreOutlined />}
-                  style={{
-                    background: 'transparent',
-                    color: isDarkMode ? '#e5e7eb' : '#374151',
-                    border: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                    height: '32px',
-                    width: '32px',
-                    fontSize: '14px',
-                    borderRadius: '6px',
-                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
+                  style={makeButtonStyle()}
                   size="small"
                   type="text"
                 />
@@ -858,6 +1020,9 @@ const OptimizedBulkActionBarContent: React.FC<OptimizedBulkActionBarProps> = Rea
             showDrawer={showDrawer}
             selectedTemplateId={null}
             onClose={() => {
+              setShowDrawer(false);
+            }}
+            onSaved={() => {
               setShowDrawer(false);
               onClearSelection?.();
             }}

@@ -1,0 +1,204 @@
+/* Comment Reactions Bar - positioned at bottom-left of comment bubble */
+.comment-reactions-bar {
+  position: absolute;
+  bottom: -12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+
+/* Reaction Badge Styles */
+.reaction-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 11px;
+  line-height: 1;
+  min-height: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.reaction-badge.theme-light {
+  border-color: #d9d9d9;
+  background-color: #ffffff;
+  color: #595959;
+}
+
+.reaction-badge.theme-light:hover {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.reaction-badge.theme-light.user-reacted {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.reaction-badge.theme-dark {
+  border-color: #434343;
+  background-color: #1f1f1f;
+  color: #d9d9d9;
+}
+
+.reaction-badge.theme-dark:hover {
+  border-color: #177ddc;
+  background-color: #111b26;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.reaction-badge.theme-dark.user-reacted {
+  border-color: #177ddc;
+  background-color: #111b26;
+  color: #177ddc;
+}
+
+.reaction-badge-emoji {
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+}
+
+.reaction-badge-count {
+  font-size: 10px;
+  font-weight: 600;
+  user-select: none;
+}
+
+/* Add Reaction Button */
+.add-reaction-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  border-radius: 10px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.add-reaction-button.theme-light {
+  border-color: #d9d9d9;
+  background-color: #ffffff;
+  color: #8c8c8c;
+}
+
+.add-reaction-button.theme-light:hover {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+  color: #1890ff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.add-reaction-button.theme-dark {
+  border-color: #434343;
+  background-color: #1f1f1f;
+  color: #8c8c8c;
+}
+
+.add-reaction-button.theme-dark:hover {
+  border-color: #177ddc;
+  background-color: #111b26;
+  color: #177ddc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Reaction Picker Popover */
+.reaction-picker-popover {
+  z-index: 1050;
+}
+
+.reaction-picker-popover .ant-popover-inner {
+  border-radius: 12px;
+  padding: 1px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.reaction-picker-popover.theme-light .ant-popover-inner {
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+}
+
+.reaction-picker-popover.theme-dark .ant-popover-inner {
+  background-color: #2a2a2a;
+  border: 1px solid #3a3a3a;
+}
+
+/* Reaction Picker Content */
+.reaction-picker-content {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+}
+
+.reaction-picker-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.reaction-picker-button:hover {
+  transform: scale(1.15);
+}
+
+.reaction-picker-content.theme-light .reaction-picker-button:hover {
+  background-color: #f5f5f5;
+}
+
+.reaction-picker-content.theme-dark .reaction-picker-button:hover {
+  background-color: #3a3a3a;
+}
+
+.reaction-picker-emoji {
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+}
+
+/* No Reactions Message */
+.no-reactions-message {
+  padding: 6px 10px;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.reaction-picker-content.theme-light .no-reactions-message span {
+  color: #8c8c8c;
+}
+
+.reaction-picker-content.theme-dark .no-reactions-message span {
+  color: #8c8c8c;
+}
+
+/* Ensure comment bubble has relative positioning for absolute positioning of reactions bar */
+.ant-comment-content-detail {
+  position: relative;
+  padding-bottom: 16px !important; /* Add space for reactions bar */
+}

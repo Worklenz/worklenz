@@ -7,6 +7,7 @@ const homePageApiRouter = express.Router();
 
 homePageApiRouter.post("/personal-task", safeControllerFunction(HomePageController.createPersonalTask));
 homePageApiRouter.get("/tasks", safeControllerFunction(HomePageController.getTasks));
+homePageApiRouter.get("/task-counts", safeControllerFunction(HomePageController.getTaskCountsByMonth));
 homePageApiRouter.get("/personal-tasks", safeControllerFunction(HomePageController.getPersonalTasks));
 homePageApiRouter.get("/projects", safeControllerFunction(HomePageController.getProjects));
 homePageApiRouter.get("/team-projects", safeControllerFunction(HomePageController.getProjectsByTeam));

@@ -1,13 +1,22 @@
-import { Button, Card, Checkbox, Dropdown, Flex, Skeleton, Space, Typography } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  Flex,
+  Skeleton,
+  Space,
+  Typography,
+} from '@/shared/antd-imports';
 import { DownOutlined } from '@/shared/antd-imports';
-import MembersReportsTable from './members-reports-table/members-reports-table';
+import MembersReportsTable from './components/members-reports-table/members-reports-table';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import CustomSearchbar from '@components/CustomSearchbar';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
-import CustomPageHeader from '../page-header/custom-page-header';
+import CustomPageHeader from '@/components/reporting/common/CustomPageHeader';
 import {
   fetchMembersData,
   setArchived,

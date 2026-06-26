@@ -1,3 +1,22 @@
+.upgrade-plans {
+  padding: 2rem 1rem;
+}
+
 .upgrade-plans .ant-card-head-wrapper {
   padding: 16px 0;
+}
+
+.upgrade-plans .ant-card {
+  transition: all 0.2s;
+}
+
+.upgrade-plans .ant-card:hover {
+  transform: translateY(-2px);
+}
+
+.upgrade-plans .ant-tag {
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }

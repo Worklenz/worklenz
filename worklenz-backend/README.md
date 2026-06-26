@@ -1,117 +1,77 @@
 # Worklenz Backend
 
-This is the Express.js/TypeScript backend for the Worklenz project management application.
-
-## Prerequisites
-
-- Node.js >= 20.0.0
-- npm >= 8.11.0
-- PostgreSQL >= 12
+This is the Express.js backend for the Worklenz project management application.
 
 ## Getting Started
 
-### 1. Environment Configuration
+Follow these steps to set up the backend for development:
 
-Create a `.env` file from the template:
+1. **Configure Environment Variables:**
 
-```bash
-cp .env.template .env
-```
+   - Create a copy of the `.env.example` file and name it `.env`.
+   - Update the required fields in `.env` with your specific configuration.
 
-Update the `.env` file with your specific configuration. Key variables include:
+2. **Set up Database:**
+   - Create a new database named `worklenz_db` on your local PostgreSQL server.
+   - Update the database connection details in your `.env` file.
+   - Execute the SQL setup files in the correct order:
+   
+   ```bash
+   # From your PostgreSQL client or command line
+   psql -U your_username -d worklenz_db -f database/sql/0_extensions.sql
+   psql -U your_username -d worklenz_db -f database/sql/1_tables.sql
+   psql -U your_username -d worklenz_db -f database/sql/indexes.sql
+   psql -U your_username -d worklenz_db -f database/sql/4_functions.sql
+   psql -U your_username -d worklenz_db -f database/sql/triggers.sql
+   psql -U your_username -d worklenz_db -f database/sql/3_views.sql
+   psql -U your_username -d worklenz_db -f database/sql/2_dml.sql
+   psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
+   ```
+   
+   Alternatively, you can use the provided shell script:
+   
+   ```bash
+   # Make sure the script is executable
+   chmod +x database/00-init-db.sh
+   # Run the script (may need modifications for local execution)
+   ./database/00-init-db.sh
+   ```
 
-- **Database**: `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_HOST`, `DB_PORT`
-- **Server**: `PORT`, `NODE_ENV`, `SESSION_SECRET`, `COOKIE_SECRET`
-- **Frontend**: `FRONTEND_URL`, `SERVER_CORS`
-- **Storage**: Configure either S3 or Azure Blob Storage
-- **Authentication**: Google OAuth credentials if needed
+3. **Install Dependencies:**
 
-### 2. Database Setup
+   ```bash
+   npm install
+   ```
 
-Create and initialize the database:
+4. **Run the Development Server:**
 
-```bash
-# Create database
-createdb worklenz_db
+   ```bash
+   npm run dev
+   ```
 
-# Run SQL setup files in order
-psql -U postgres -d worklenz_db -f database/sql/0_extensions.sql
-psql -U postgres -d worklenz_db -f database/sql/1_tables.sql
-psql -U postgres -d worklenz_db -f database/sql/indexes.sql
-psql -U postgres -d worklenz_db -f database/sql/4_functions.sql
-psql -U postgres -d worklenz_db -f database/sql/triggers.sql
-psql -U postgres -d worklenz_db -f database/sql/3_views.sql
-psql -U postgres -d worklenz_db -f database/sql/2_dml.sql
-psql -U postgres -d worklenz_db -f database/sql/5_database_user.sql
-```
+   This starts the development server with hot reloading enabled.
 
-Or use the provided script:
+5. **Build for Production:**
 
-```bash
-chmod +x database/00-init-db.sh
-./database/00-init-db.sh
-```
+   ```bash
+   npm run build
+   ```
 
-### 3. Install Dependencies
+   This will compile the TypeScript code into JavaScript for production use.
 
-```bash
-npm install
-```
+6. **Start Production Server:**
 
-## Development
-
-### Quick Start
-
-Run both build watch and server with auto-restart:
-
-```bash
-npm run dev:all
-```
-
-This single command replaces the need to run `npm run dev` and `npm start` separately. It:
-- Builds the TypeScript code in development mode
-- Watches for file changes and rebuilds automatically
-- Runs the server with nodemon for auto-restart on changes
-
-### Alternative Development Commands
-
-```bash
-# Build and watch files only (no server)
-npm run dev
-
-# Build once for development
-npm run build:dev
-
-# Start server only (after building)
-npm start
-```
-
-## NPM Scripts
-
-| Script | Description |
-|--------|-------------|
-| `npm start` | Start the server |
-| `npm run dev` | Build and watch files for development |
-| `npm run dev:all` | Build, watch, and auto-restart server for development (recommended) |
-| `npm run build` | Standard build |
-| `npm run build:dev` | Development build |
-| `npm run build:prod` | Production build with minification and compression |
-| `npm test` | Run Jest tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run clean` | Clean build directory |
-| `npm run compile` | Compile TypeScript |
-| `npm run compile:dev` | Compile TypeScript for development |
-| `npm run watch` | Watch TypeScript and asset files |
-| `npm run watch:ts` | Watch TypeScript files only |
-| `npm run watch:assets` | Watch asset files only |
+   ```bash
+   npm start
+   ```
 
 ## API Documentation
 
-The API follows RESTful design principles with endpoints prefixed with `/api/`.
+The API endpoints are organized into logical controllers and follow RESTful design principles. The main API routes are prefixed with `/api/v1`.
 
 ### Authentication
 
-The API uses JWT tokens for authentication. Protected routes require a valid token in the Authorization header.
+Authentication is handled via JWT tokens. Protected routes require a valid token in the Authorization header.
 
 ### File Storage
 

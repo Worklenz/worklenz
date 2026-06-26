@@ -15,12 +15,12 @@
   "organizationStepTooShort": "Too short",
   "organizationStepNamingTips": "Naming Tips",
   "organizationStepTip1": "Keep it simple and memorable",
-  "organizationStepTip2": "Reflect your industry or values", 
+  "organizationStepTip2": "Reflect your industry or values",
   "organizationStepTip3": "Think about future growth",
   "organizationStepTip4": "Make it unique and brandable",
   "organizationStepSuggestionsTitle": "Name Suggestions",
   "organizationStepCategory1": "Tech Companies",
-  "organizationStepCategory2": "Creative Agencies", 
+  "organizationStepCategory2": "Creative Agencies",
   "organizationStepCategory3": "Consulting",
   "organizationStepCategory4": "Startups",
   "organizationStepSuggestionsNote": "These are just examples to get you started. Choose something that represents your organization.",
@@ -59,7 +59,7 @@
   "skipStepDescription": "Don't have email addresses ready? No problem! You can skip this step and invite team members from your project dashboard later.",
 
   "orgCategoryTech": "Tech Companies",
-  "orgCategoryCreative": "Creative Agencies", 
+  "orgCategoryCreative": "Creative Agencies",
   "orgCategoryConsulting": "Consulting",
   "orgCategoryStartups": "Startups",
   "namingTip1": "Keep it simple and memorable",
@@ -71,19 +71,19 @@
   "aboutYouDescription": "Help us personalize your experience",
   "orgTypeQuestion": "What best describes your organization?",
   "userRoleQuestion": "What's your role?",
-  
+
   "yourNeedsTitle": "What are your main needs?",
   "yourNeedsDescription": "Select all that apply to help us set up your workspace",
   "yourNeedsQuestion": "How will you primarily use Worklenz?",
   "useCaseTaskOrg": "Organize and track tasks",
-  "useCaseTeamCollab": "Work together seamlessly", 
+  "useCaseTeamCollab": "Work together seamlessly",
   "useCaseResourceMgmt": "Manage time and resources",
   "useCaseClientComm": "Stay connected with clients",
   "useCaseTimeTrack": "Monitor project hours",
   "useCaseOther": "Something else",
   "selectedText": "selected",
   "previousToolsQuestion": "What tools have you used before? (Optional)",
-  
+
   "discoveryTitle": "One last thing...",
   "discoveryDescription": "Help us understand how you discovered Worklenz",
   "discoveryQuestion": "How did you hear about us?",
@@ -92,9 +92,10 @@
   "surveyCompleteTitle": "Thank you!",
   "surveyCompleteDescription": "Your feedback helps us improve Worklenz for everyone",
   "aboutYouStepName": "About You",
-  "yourNeedsStepName": "Your Needs", 
+  "yourNeedsStepName": "Your Needs",
   "discoveryStepName": "Discovery",
-  "stepProgress": "Step {step} of 3: {title}",
+
+  "stepProgress": "Step {{step}} of 3: {{title}}",
 
   "projectStepHeader": "Let's create your first project",
   "projectStepSubheader": "Start from scratch or use a template to get going faster",
@@ -112,7 +113,7 @@
 
   "templateSoftwareDev": "Software Development",
   "templateSoftwareDesc": "Agile sprints, bug tracking, releases",
-  "templateMarketing": "Marketing Campaign", 
+  "templateMarketing": "Marketing Campaign",
   "templateMarketingDesc": "Campaign planning, content calendar",
   "templateConstruction": "Construction Project",
   "templateConstructionDesc": "Phases, permits, contractors",
@@ -126,7 +127,7 @@
 
   "surveyStepTitle": "Tell us about yourself",
   "surveyStepLabel": "Help us personalize your Worklenz experience by answering a few questions.",
-  
+
   "organizationType": "What best describes your organization?",
   "organizationTypeFreelancer": "Freelancer",
   "organizationTypeStartup": "Startup",
@@ -134,7 +135,7 @@
   "organizationTypeAgency": "Agency",
   "organizationTypeEnterprise": "Enterprise",
   "organizationTypeOther": "Other",
-  
+
   "userRole": "What is your role?",
   "userRoleFounderCeo": "Founder / CEO",
   "userRoleProjectManager": "Project Manager",
@@ -142,7 +143,7 @@
   "userRoleDesigner": "Designer",
   "userRoleOperations": "Operations",
   "userRoleOther": "Other",
-  
+
   "mainUseCases": "What will you mainly use Worklenz for?",
   "mainUseCasesTaskManagement": "Task management",
   "mainUseCasesTeamCollaboration": "Team collaboration",
@@ -150,10 +151,10 @@
   "mainUseCasesClientCommunication": "Client communication & reporting",
   "mainUseCasesTimeTracking": "Time tracking",
   "mainUseCasesOther": "Other",
-  
+
   "previousTools": "What tool(s) were you using before Worklenz?",
   "previousToolsPlaceholder": "e.g. Trello, Asana, Monday.com",
-  
+
   "howHeardAbout": "How did you hear about Worklenz?",
   "howHeardAboutGoogleSearch": "Google Search",
   "howHeardAboutTwitter": "Twitter",
@@ -161,50 +162,50 @@
   "howHeardAboutFriendColleague": "A friend or colleague",
   "howHeardAboutBlogArticle": "A blog or article",
   "howHeardAboutOther": "Other",
-  
+
   "aboutYouStepTitle": "Tell us about yourself",
   "aboutYouStepDescription": "Help us personalize your experience",
   "yourNeedsStepTitle": "What are your main needs?",
   "yourNeedsStepDescription": "Select all that apply to help us set up your workspace",
   "selected": "selected",
   "previousToolsLabel": "What tools have you used before? (Optional)",
-  
+
   "roleSuggestions": {
     "designer": "UI/UX, Graphics, Creative",
-    "developer": "Frontend, Backend, Full-stack", 
+    "developer": "Frontend, Backend, Full-stack",
     "projectManager": "Planning, Coordination",
     "marketing": "Content, Social Media, Growth",
     "sales": "Business Development, Client Relations",
     "operations": "Admin, HR, Finance"
   },
-  
+
   "languages": {
     "en": "English",
-    "es": "Español", 
+    "es": "Español",
     "pt": "Português",
     "de": "Deutsch",
     "alb": "Shqip",
     "zh": "简体中文"
   },
-  
+
   "orgSuggestions": {
     "tech": ["TechCorp", "DevStudio", "CodeCraft", "PixelForge"],
     "creative": ["Creative Hub", "Design Studio", "Brand Works", "Visual Arts"],
     "consulting": ["Strategy Group", "Business Solutions", "Expert Advisors", "Growth Partners"],
     "startup": ["Innovation Labs", "Future Works", "Venture Co", "Next Gen"]
   },
-  
+
   "projectSuggestions": {
     "freelancer": ["Client Project", "Portfolio Update", "Personal Brand"],
     "startup": ["MVP Development", "Product Launch", "Market Research"],
     "agency": ["Client Campaign", "Brand Strategy", "Website Redesign"],
     "enterprise": ["System Migration", "Process Optimization", "Team Training"]
   },
-  
+
   "useCaseDescriptions": {
     "taskManagement": "Organize and track tasks",
     "teamCollaboration": "Work together seamlessly",
-    "resourcePlanning": "Manage time and resources", 
+    "resourcePlanning": "Manage time and resources",
     "clientCommunication": "Stay connected with clients",
     "timeTracking": "Monitor project hours",
     "other": "Something else"

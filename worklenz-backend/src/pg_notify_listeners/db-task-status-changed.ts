@@ -70,6 +70,7 @@ export default class DbTaskStatusChangeListener {
                LEFT JOIN users u ON u.id = ts.user_id
                LEFT JOIN tasks t ON t.id = ts.task_id
         WHERE ts.task_id = $1
+          AND u.is_deleted IS NOT TRUE
         ORDER BY ts.created_at
         --
       )

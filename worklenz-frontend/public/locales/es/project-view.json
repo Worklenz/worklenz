@@ -5,10 +5,12 @@
   "files": "Archivos",
   "members": "Miembros",
   "updates": "Actualizaciones",
+  "roadmap": "Hoja de Ruta",
   "projectView": "Vista del Proyecto",
   "loading": "Cargando proyecto...",
   "error": "Error al cargar el proyecto",
   "pinnedTab": "Fijado como pestaña predeterminada",
   "pinTab": "Fijar como pestaña predeterminada",
-  "unpinTab": "Desfijar pestaña predeterminada"
-} 
+  "unpinTab": "Desfijar pestaña predeterminada",
+  "finance": "Finance"
+}

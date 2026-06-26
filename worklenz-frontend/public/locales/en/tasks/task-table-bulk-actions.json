@@ -37,5 +37,11 @@
   "TASKS_SELECTED_plural": "{{count}} tasks selected",
   "DELETE_TASKS_CONFIRM": "Delete {{count}} task?",
   "DELETE_TASKS_CONFIRM_plural": "Delete {{count}} tasks?",
-  "DELETE_TASKS_WARNING": "This action cannot be undone."
+  "DELETE_TASKS_WARNING": "This action cannot be undone.",
+  "SET_DUE_DATE": "Set Due Date",
+  "CLEAR_DUE_DATE": "Clear Due Date",
+  "DUE_DATE_UPDATED": "Due date updated successfully",
+  "DUE_DATE_CLEARED": "Due date cleared successfully",
+  "archiveSuccessTitle": "Bulk update complete",
+  "archiveSuccessMessage": "{{parentCount}} tasks and {{subtaskCount}} subtasks {{action}}d."
 }

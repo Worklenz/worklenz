@@ -19,6 +19,7 @@ import {
   IFreePlanSettings,
   IBillingAccountStorage,
 } from '@/types/admin-center/admin-center.types';
+import { IOrganizationHolidaySettings } from '@/types/holiday/holiday.types';
 import { IClient } from '@/types/client.types';
 import { toQueryString } from '@/utils/toQueryString';
 
@@ -277,6 +278,64 @@ export const adminCenterApiService = {
   async switchToFreePlan(teamId: string): Promise<IServerResponse<any>> {
     const response = await apiClient.get<IServerResponse<any>>(
       `${rootUrl}/billing/switch-to-free-plan/${teamId}`
+    );
+    return response.data;
+  },
+
+  async updateOrganizationCalculationMethod(
+    calculationMethod: 'hourly' | 'man_days'
+  ): Promise<IServerResponse<any>> {
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/organization/calculation-method`,
+      {
+        calculation_method: calculationMethod,
+      }
+    );
+    return response.data;
+  },
+
+  async updateOrganizationHolidaySettings(
+    settings: IOrganizationHolidaySettings
+  ): Promise<IServerResponse<any>> {
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/organization/holiday-settings`,
+      settings
+    );
+    return response.data;
+  },
+
+  async getAdminCenterSettings(): Promise<IServerResponse<IOrganization>> {
+    const response = await apiClient.get<IServerResponse<IOrganization>>(`${rootUrl}/settings`);
+    return response.data;
+  },
+
+  async getAppSumoCountdownWidget(): Promise<
+    IServerResponse<{
+      isVisible: boolean;
+      remainingDays: number;
+      remainingHours: number;
+      remainingMinutes: number;
+      urgencyLevel: string;
+      message: string;
+      ctaText: string;
+      ctaUrl: string;
+    }>
+  > {
+    const response = await apiClient.get(`${rootUrl}/appsumo/countdown-widget`);
+    return response.data;
+  },
+
+  async uploadOrganizationLogo(logoData: string): Promise<IServerResponse<{ logo_url: string }>> {
+    const response = await apiClient.post<IServerResponse<{ logo_url: string }>>(
+      `${rootUrl}/organization/logo`,
+      { logoData }
+    );
+    return response.data;
+  },
+
+  async deleteOrganizationLogo(): Promise<IServerResponse<{ logo_url: null }>> {
+    const response = await apiClient.delete<IServerResponse<{ logo_url: null }>>(
+      `${rootUrl}/organization/logo`
     );
     return response.data;
   },

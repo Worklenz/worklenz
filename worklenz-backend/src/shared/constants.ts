@@ -12,17 +12,36 @@ export const SessionsStatus = {
 export const LOG_DESCRIPTIONS = {
   PROJECT_CREATED: "Project created by @user",
   PROJECT_UPDATED: "Project updated by @user",
+  PROJECT_DELETED: "Project deleted by @user",
+  PROJECT_ARCHIVED: "Project archived by @user",
+  PROJECT_UNARCHIVED: "Project unarchived by @user",
+  PROJECT_FAVORITED: "Project favorited by @user",
+  PROJECT_UNFAVORITED: "Project unfavorited by @user",
+  PROJECT_STATUS_CHANGED: "Project status changed by @user",
+  PROJECT_MANAGER_ASSIGNED: "Project manager assigned by @user",
+  PROJECT_MANAGER_REMOVED: "Project manager removed by @user",
   TASK_CREATED: "Task created by @user",
   TASK_UPDATED: "Task updated by @user",
   PROJECT_MEMBER_ADDED: "was added to the project by",
   PROJECT_MEMBER_REMOVED: "was removed from the project by",
 };
 
+// I18n-compatible log keys and parameters
 export const LOG_I18N_KEYS = {
-  PROJECT_MANAGER_ASSIGNED: "project_manager_assigned",
-  PROJECT_FAVORITED: "project_favorited",
-  PROJECT_UNFAVORITED: "project_unfavorited",
-  PROJECT_UNARCHIVED: "project_unarchived",
+  PROJECT_CREATED: "activityLogs.project.created",
+  PROJECT_UPDATED: "activityLogs.project.updated", 
+  PROJECT_DELETED: "activityLogs.project.deleted",
+  PROJECT_ARCHIVED: "activityLogs.project.archived",
+  PROJECT_UNARCHIVED: "activityLogs.project.unarchived",
+  PROJECT_FAVORITED: "activityLogs.project.favorited",
+  PROJECT_UNFAVORITED: "activityLogs.project.unfavorited",
+  PROJECT_STATUS_CHANGED: "activityLogs.project.statusChanged",
+  PROJECT_MANAGER_ASSIGNED: "activityLogs.project.managerAssigned",
+  PROJECT_MANAGER_REMOVED: "activityLogs.project.managerRemoved",
+  TASK_CREATED: "activityLogs.task.created",
+  TASK_UPDATED: "activityLogs.task.updated",
+  PROJECT_MEMBER_ADDED: "activityLogs.project.memberAdded",
+  PROJECT_MEMBER_REMOVED: "activityLogs.project.memberRemoved",
 };
 
 export const WorklenzColorShades = {
@@ -126,12 +145,14 @@ export const PriorityColorCodes: { [x: number]: string } = {
   0: "#2E8B57",
   1: "#DAA520",
   2: "#CD5C5C",
+  3: "#8B1A1A",
 };
 
 export const PriorityColorCodesDark: { [x: number]: string } = {
   0: "#3CB371",
   1: "#B8860B",
   2: "#F08080",
+  3: "#B22222",
 };
 
 export const TASK_STATUS_TODO_COLOR = "#a9a9a9";
@@ -141,6 +162,7 @@ export const TASK_STATUS_DONE_COLOR = "#75c997";
 export const TASK_PRIORITY_LOW_COLOR = "#2E8B57";
 export const TASK_PRIORITY_MEDIUM_COLOR = "#DAA520";
 export const TASK_PRIORITY_HIGH_COLOR = "#CD5C5C";
+export const TASK_PRIORITY_CRITICAL_COLOR = "#8B1A1A";
 
 export const TASK_DUE_COMPLETED_COLOR = "#75c997";
 export const TASK_DUE_UPCOMING_COLOR = "#70a6f3";
@@ -168,14 +190,14 @@ export function getStorageUrl() {
   if (STORAGE_PROVIDER === "azure") {
     if (!AZURE_STORAGE_URL) {
       console.warn("AZURE_STORAGE_URL is not defined, falling back to S3_URL");
-      return S3_URL + "/" + BUCKET;
+      return S3_URL;
     }
 
     // Return just the base Azure Blob Storage URL
     // AZURE_STORAGE_URL should be in the format: https://storageaccountname.blob.core.windows.net
     return `${AZURE_STORAGE_URL}/${AZURE_STORAGE_CONTAINER}`;
   }
-  return S3_URL + "/" + BUCKET;
+  return S3_URL;
 }
 
 export const TASK_STATUS_COLOR_ALPHA = "69";
@@ -200,6 +222,16 @@ export const statusExclude = ["past_due", "paused", "deleted"];
 
 // Trial user team member limit
 export const TRIAL_MEMBER_LIMIT = 10;
+
+// business plan limit
+export const BUSINESS_PLAN_LIMIT = 25;
+
+// Appsu
+export const APPSUMO_PLAN_LIMIT = 50;
+
+// Maximum number of email invitations that can be sent in a single request
+// This prevents abuse by limiting bulk invitation requests
+export const MAX_INVITATIONS_PER_REQUEST = 10;
 
 export const HTML_TAG_REGEXP = /<\/?[^>]+>/gi;
 

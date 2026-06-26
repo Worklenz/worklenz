@@ -4,15 +4,24 @@ import db from "../../config/db";
 import {NotificationsService} from "../../services/notifications/notifications.service";
 import {TASK_STATUS_COLOR_ALPHA} from "../../shared/constants";
 import {SocketEvents} from "../events";
-import {getLoggedInUserIdFromSocket, log, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import {getTaskDetails, logProgressChange, logStatusChange} from "../../services/activity-logs/activity-logs.service";
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
-import logger from "../../utils/logger";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_STATUS_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const userId = getLoggedInUserIdFromSocket(socket);
     const taskData = await getTaskDetails(body.task_id, "status_id");
 
@@ -34,6 +43,8 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
     const results1 = await db.query(q2, [userId, body.task_id, body.status_id]);
     const [d] = results1.rows;
     const changeResponse = d.res;
+
+    log(`Task status change response - completed_at: ${changeResponse.completed_at}, status_category: ${JSON.stringify(changeResponse.status_category)}`, null);
 
     changeResponse.color_code = changeResponse.color_code + TASK_STATUS_COLOR_ALPHA;
 
@@ -90,14 +101,14 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       }
     } else {
       // Task is moving from "done" to "todo" or "doing" - reset manual_progress to FALSE
-      // so progress can be recalculated based on subtasks
+      // and clear progress_value so progress can be recalculated based on subtasks
       await db.query(`
         UPDATE tasks
-        SET manual_progress = FALSE
+        SET manual_progress = FALSE, progress_value = NULL
         WHERE id = $1
       `, [body.task_id]);
 
-      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE`, null);
+      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE and progress_value cleared`, null);
 
       // If this is a subtask, update parent task progress
       if (body.parent_task) {
@@ -145,6 +156,38 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
     });
 
     notifyProjectUpdates(socket, body.task_id);
+
+    // Send external notifications (Slack, Teams)
+    try {
+      const userQuery = `SELECT name FROM users WHERE id = $1`;
+      const userResult = await db.query(userQuery, [userId]);
+      const userName = userResult.rows[0]?.name || "Unknown User";
+
+      const projectQuery = `SELECT project_id FROM tasks WHERE id = $1`;
+      const projectResult = await db.query(projectQuery, [body.task_id]);
+      const projectId = projectResult.rows[0]?.project_id;
+
+      if (projectId) {
+        // Determine notification type based on whether task is completed
+        const notificationType = changeResponse.status_category?.is_done
+          ? "task_completed"
+          : "status_changed";
+
+        await ExternalNotificationsService.sendExternalNotifications(
+          projectId,
+          body.task_id,
+          notificationType,
+          userName,
+          {
+            oldStatusId: taskData.status_id,
+            newStatusId: body.status_id
+          }
+        );
+      }
+    } catch (notifError) {
+      log_error("Error sending external notifications:", notifError);
+      // Don't throw - continue even if notifications fail
+    }
   } catch (error) {
     log_error(error);
   }

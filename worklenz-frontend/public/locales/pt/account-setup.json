@@ -61,7 +61,7 @@
   "skipStepDescription": "Não tem endereços de email prontos? Sem problema! Você pode pular esta etapa e convidar membros da equipe do seu painel de projeto mais tarde.",
 
   "orgCategoryTech": "Empresas de Tecnologia",
-  "orgCategoryCreative": "Agências Criativas", 
+  "orgCategoryCreative": "Agências Criativas",
   "orgCategoryConsulting": "Consultoria",
   "orgCategoryStartups": "Startups",
   "namingTip1": "Mantenha simples e memorável",
@@ -73,12 +73,12 @@
   "aboutYouDescription": "Ajude-nos a personalizar sua experiência",
   "orgTypeQuestion": "O que melhor descreve sua organização?",
   "userRoleQuestion": "Qual é seu papel?",
-  
+
   "yourNeedsTitle": "Quais são suas principais necessidades?",
   "yourNeedsDescription": "Selecione todas que se aplicam para nos ajudar a configurar seu espaço de trabalho",
   "yourNeedsQuestion": "Como você usará principalmente o Worklenz?",
   "useCaseTaskOrg": "Organizar e acompanhar tarefas",
-  "useCaseTeamCollab": "Trabalhar juntos perfeitamente", 
+  "useCaseTeamCollab": "Trabalhar juntos perfeitamente",
   "useCaseResourceMgmt": "Gerenciar tempo e recursos",
   "useCaseClientComm": "Manter-se conectado com clientes",
   "useCaseTimeTrack": "Monitorar horas do projeto",
@@ -86,7 +86,7 @@
   "selectedText": "selecionado",
   "previousToolsQuestion": "Que ferramentas você usou antes? (Opcional)",
   "previousToolsPlaceholder": "ex., Asana, Trello, Jira, Monday.com, etc.",
-  
+
   "discoveryTitle": "Uma última coisa...",
   "discoveryDescription": "Ajude-nos a entender como você descobriu o Worklenz",
   "discoveryQuestion": "Como você soube sobre nós?",
@@ -95,9 +95,9 @@
   "surveyCompleteTitle": "Obrigado!",
   "surveyCompleteDescription": "Seu feedback nos ajuda a melhorar o Worklenz para todos",
   "aboutYouStepName": "Sobre você",
-  "yourNeedsStepName": "Suas necessidades", 
+  "yourNeedsStepName": "Suas necessidades",
   "discoveryStepName": "Descoberta",
-  "stepProgress": "Passo {step} de 3: {title}",
+  "stepProgress": "Passo {{step}} de 3: {{title}}",
 
   "projectStepHeader": "Vamos criar seu primeiro projeto",
   "projectStepSubheader": "Comece do zero ou use um modelo para ir mais rápido",
@@ -115,7 +115,7 @@
 
   "templateSoftwareDev": "Desenvolvimento de Software",
   "templateSoftwareDesc": "Sprints ágeis, rastreamento de bugs, lançamentos",
-  "templateMarketing": "Campanha de Marketing", 
+  "templateMarketing": "Campanha de Marketing",
   "templateMarketingDesc": "Planejamento de campanha, calendário de conteúdo",
   "templateConstruction": "Projeto de Construção",
   "templateConstructionDesc": "Fases, licenças, empreiteiros",
@@ -129,7 +129,7 @@
 
   "surveyStepTitle": "Conte-nos sobre você",
   "surveyStepLabel": "Ajude-nos a personalizar sua experiência no Worklenz respondendo algumas perguntas.",
-  
+
   "organizationType": "O que melhor descreve sua organização?",
   "organizationTypeFreelancer": "Freelancer",
   "organizationTypeStartup": "Startup",
@@ -137,7 +137,7 @@
   "organizationTypeAgency": "Agência",
   "organizationTypeEnterprise": "Empresa",
   "organizationTypeOther": "Outro",
-  
+
   "userRole": "Qual é o seu papel?",
   "userRoleFounderCeo": "Fundador / CEO",
   "userRoleProjectManager": "Gerente de Projeto",
@@ -145,7 +145,7 @@
   "userRoleDesigner": "Designer",
   "userRoleOperations": "Operações",
   "userRoleOther": "Outro",
-  
+
   "mainUseCases": "Para que você usará principalmente o Worklenz?",
   "mainUseCasesTaskManagement": "Gerenciamento de tarefas",
   "mainUseCasesTeamCollaboration": "Colaboração em equipe",
@@ -153,10 +153,10 @@
   "mainUseCasesClientCommunication": "Comunicação com clientes e relatórios",
   "mainUseCasesTimeTracking": "Controle de tempo",
   "mainUseCasesOther": "Outro",
-  
+
   "previousTools": "Que ferramenta(s) você usava antes do Worklenz?",
   "previousToolsPlaceholder": "ex. Trello, Asana, Monday.com",
-  
+
   "howHeardAbout": "Como você soube do Worklenz?",
   "howHeardAboutGoogleSearch": "Busca no Google",
   "howHeardAboutTwitter": "Twitter",
@@ -164,50 +164,50 @@
   "howHeardAboutFriendColleague": "Um amigo ou colega",
   "howHeardAboutBlogArticle": "Um blog ou artigo",
   "howHeardAboutOther": "Outro",
-  
+
   "aboutYouStepTitle": "Conte-nos sobre você",
   "aboutYouStepDescription": "Ajude-nos a personalizar sua experiência",
   "yourNeedsStepTitle": "Quais são suas principais necessidades?",
   "yourNeedsStepDescription": "Selecione todas que se aplicam para nos ajudar a configurar seu espaço de trabalho",
   "selected": "selecionado",
   "previousToolsLabel": "Que ferramentas você usou antes? (Opcional)",
-  
+
   "roleSuggestions": {
     "designer": "UI/UX, Gráficos, Criativo",
-    "developer": "Frontend, Backend, Full-stack", 
+    "developer": "Frontend, Backend, Full-stack",
     "projectManager": "Planejamento, Coordenação",
     "marketing": "Conteúdo, Mídias Sociais, Crescimento",
     "sales": "Desenvolvimento de Negócios, Relacionamento com Clientes",
     "operations": "Administração, RH, Finanças"
   },
-  
+
   "languages": {
     "en": "English",
-    "es": "Español", 
+    "es": "Español",
     "pt": "Português",
     "de": "Deutsch",
     "alb": "Shqip",
     "zh": "简体中文"
   },
-  
+
   "orgSuggestions": {
     "tech": ["TechCorp", "DevStudio", "CodeCraft", "PixelForge"],
     "creative": ["Creative Hub", "Design Studio", "Brand Works", "Visual Arts"],
     "consulting": ["Strategy Group", "Business Solutions", "Expert Advisors", "Growth Partners"],
     "startup": ["Innovation Labs", "Future Works", "Venture Co", "Next Gen"]
   },
-  
+
   "projectSuggestions": {
     "freelancer": ["Projeto Cliente", "Atualização Portfolio", "Marca Pessoal"],
     "startup": ["Desenvolvimento MVP", "Lançamento Produto", "Pesquisa Mercado"],
     "agency": ["Campanha Cliente", "Estratégia Marca", "Redesign Website"],
     "enterprise": ["Migração Sistema", "Otimização Processos", "Treinamento Equipe"]
   },
-  
+
   "useCaseDescriptions": {
     "taskManagement": "Organizar e rastrear tarefas",
     "teamCollaboration": "Trabalhar juntos perfeitamente",
-    "resourcePlanning": "Gerenciar tempo e recursos", 
+    "resourcePlanning": "Gerenciar tempo e recursos",
     "clientCommunication": "Manter-se conectado com clientes",
     "timeTracking": "Monitorar horas do projeto",
     "other": "Algo mais"

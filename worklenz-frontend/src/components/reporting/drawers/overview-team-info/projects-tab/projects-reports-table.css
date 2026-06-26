@@ -1,57 +1,59 @@
-[data-theme="dark"] {
-  --table-cell-bg: #181818;
-  --hover-bg: #000;
-  --base-bg: #181818;
+/* Table wrapper */
+.task-list-table-sticky,
+.ant-table-wrapper {
+  position: relative;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: visible; /* important for sticky to work */
 }
 
-[data-theme="default"] {
-  --table-cell-bg: #4e4e4e10;
-  --hover-bg: #edebf0;
-  --base-bg: #ffffff;
+/* First column */
+.sticky-selector-column {
+  left: 0;
+  z-index: 20;
+  position: sticky;
+  background: var(--base-bg);
 }
 
-/* change the scroll bar in the table  */
-:where(.css-dev-only-do-not-override-ifo476).ant-table-wrapper .ant-table {
-  scrollbar-color: unset;
+/* Second column */
+.sticky-key-column {
+  left: 56px; /* adjust width of first column */
+  z-index: 20;
+  position: sticky;
+  background: var(--base-bg);
+  min-width: 100px;
+  max-width: 100px;
+  width: 100px;
 }
 
-/* Fix sticky column background */
-.ant-table-wrapper .ant-table-cell-fix-left {
-  background-color: var(--base-bg) !important;
-  z-index: 2 !important;
+/* Header cells above all */
+.task-list-table-sticky thead .sticky-selector-column,
+.task-list-table-sticky thead .sticky-key-column,
+.ant-table-thead > tr > th.ant-table-cell-fix-left {
+  z-index: 40 !important;
 }
 
-.ant-table-wrapper .ant-table-row:nth-child(even) .ant-table-cell-fix-left {
-  background-color: var(--table-cell-bg) !important;
+/* Even row background */
+.task-list-table-sticky tr:nth-child(even) .sticky-selector-column,
+.task-list-table-sticky tr:nth-child(even) .sticky-key-column {
+  background: var(--table-cell-bg);
 }
 
-.ant-table-wrapper .ant-table-row:hover .ant-table-cell-fix-left {
-  background-color: var(--hover-bg) !important;
+/* Hover */
+.task-list-table-sticky tr:hover .sticky-selector-column,
+.task-list-table-sticky tr:hover .sticky-key-column {
+  background: var(--hover-bg);
 }
 
-/* Shadow for sticky columns */
-:where(.css-dev-only-do-not-override-aw0rds).ant-table-wrapper
-  .ant-table-ping-left
-  .ant-table-cell-fix-left-first::after {
-  box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.15);
-  right: -1px;
-}
-
-:where(.css-dev-only-do-not-override-aw0rds).ant-table-wrapper
-  .ant-table-ping-right:not(.ant-table-has-fix-right)
-  .ant-table-container::after {
-  box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.15);
-}
-
-/* remove select border  */
-:where(.css-dev-only-do-not-override-tmno9t).ant-select-outlined:not(.ant-select-customize-input)
-  .ant-select-selector {
-  border: none;
-}
-
-.ant-select-focused:where(.css-dev-only-do-not-override-tmno9t).ant-select-outlined:not(
-    .ant-select-disabled
-  ):not(.ant-select-customize-input):not(.ant-pagination-size-changer)
-  .ant-select-selector {
-  box-shadow: none;
+/* Shadow for separation */
+.sticky-selector-column::after,
+.sticky-key-column::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+  pointer-events: none;
 }

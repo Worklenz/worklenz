@@ -3,6 +3,8 @@
   "login-failed": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Anmeldedaten und versuchen Sie es erneut.",
   "signup-success": "Registrierung erfolgreich! Willkommen an Bord.",
   "signup-failed": "Registrierung fehlgeschlagen. Bitte füllen Sie alle erforderlichen Felder aus und versuchen Sie es erneut.",
+  "update-banner-message": "Eine neue Version ist verfügbar.",
+  "update-banner-description": "Laden Sie neu, wenn Sie bereit sind, die neuesten Verbesserungen zu erhalten.",
   "reconnecting": "Vom Server getrennt.",
   "connection-lost": "Verbindung zum Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.",
   "connection-restored": "Erfolgreich mit dem Server verbunden"

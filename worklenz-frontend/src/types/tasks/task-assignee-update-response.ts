@@ -10,4 +10,5 @@ export interface ITaskAssigneesUpdateResponse {
   members: ITeamMemberViewModel[];
   mode: any;
   team_member_id: string;
+  name?: string;
 }

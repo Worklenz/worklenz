@@ -1,0 +1,12 @@
+{
+  "title": "Requests",
+
+  "table": {
+    "header": {
+      "service": "Service",
+      "status": "Status",
+      "time": "Time",
+      "lastChat": "Last Chat"
+    }
+  }
+}

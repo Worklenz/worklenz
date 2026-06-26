@@ -25,10 +25,11 @@ export const projectsApiService = {
     search: string | null,
     filter: number | null = null,
     statuses: string | null = null,
-    categories: string | null = null
+    categories: string | null = null,
+    priorities: string | null = null
   ): Promise<IServerResponse<IProjectsViewModel>> => {
     const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories })}`;
+    const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories, priorities })}`;
     const response = await apiClient.get<IServerResponse<IProjectsViewModel>>(`${url}`);
     return response.data;
   },
@@ -42,10 +43,11 @@ export const projectsApiService = {
     groupBy: string,
     filter: number | null = null,
     statuses: string | null = null,
-    categories: string | null = null
+    categories: string | null = null,
+    priorities: string | null = null
   ): Promise<IServerResponse<IGroupedProjectsViewModel>> => {
     const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories })}`;
+    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories, priorities })}`;
     const response = await apiClient.get<IServerResponse<IGroupedProjectsViewModel>>(`${url}`);
     return response.data;
   },
@@ -131,7 +133,9 @@ export const projectsApiService = {
 
   updateDefaultTab: async (body: {
     project_id: string;
-    default_view: string;
+    default_view?: string;
+    task_list_group_by?: string;
+    board_group_by?: string;
   }): Promise<IServerResponse<any>> => {
     const url = `${rootUrl}/update-pinned-view`;
     const response = await apiClient.put<IServerResponse<IProjectViewModel>>(`${url}`, body);
@@ -141,6 +145,19 @@ export const projectsApiService = {
   getProjectManagers: async (): Promise<IServerResponse<IProjectManager[]>> => {
     const url = `${API_BASE_URL}/project-managers`;
     const response = await apiClient.get<IServerResponse<IProjectManager[]>>(`${url}`);
+    return response.data;
+  },
+
+  getProjectStatuses: async (): Promise<
+    IServerResponse<Array<{ id: string; name: string; color_code?: string; is_default?: boolean }>>
+  > => {
+    const url = `${API_BASE_URL}/project-statuses`;
+    const response =
+      await apiClient.get<
+        IServerResponse<
+          Array<{ id: string; name: string; color_code?: string; is_default?: boolean }>
+        >
+      >(url);
     return response.data;
   },
 };

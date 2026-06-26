@@ -130,7 +130,12 @@ const phaseSlice = createSlice({
   },
   extraReducers: builder => {
     builder.addCase(fetchPhasesByProjectId.fulfilled, (state, action) => {
-      state.phaseList = action.payload.body;
+      state.phaseList = (action.payload.body || []).map((phase: ITaskPhase) => ({
+        ...phase,
+        color_code: phase.color_code?.length === 9
+          ? phase.color_code.slice(0, 7)
+          : phase.color_code,
+      }));
       state.loadingPhases = false;
     });
     builder.addCase(fetchPhasesByProjectId.pending, state => {

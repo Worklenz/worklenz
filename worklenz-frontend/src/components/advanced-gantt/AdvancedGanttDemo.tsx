@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Button, Space, message, Card } from 'antd';
+import { Button, Space, message, Card } from '@/shared/antd-imports';
 import AdvancedGanttChart from './AdvancedGanttChart';
 import { GanttTask, ColumnConfig } from '../../types/advanced-gantt.types';
 import { useAppSelector } from '../../hooks/useAppSelector';
@@ -8,7 +8,7 @@ import { holidayPresets, workingDayPresets } from './TimelineMarkers';
 // Enhanced sample data with more realistic project structure
 const generateSampleTasks = (): GanttTask[] => {
   const baseDate = new Date(2024, 11, 1); // December 1, 2024
-  
+
   return [
     // Project Phase 1: Planning & Design
     {
@@ -324,72 +324,72 @@ const generateSampleTasks = (): GanttTask[] => {
 
 // Enhanced column configuration
 const sampleColumns: ColumnConfig[] = [
-  { 
-    field: 'name', 
-    title: 'Task / Phase Name', 
-    width: 300, 
-    minWidth: 200, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'name',
+    title: 'Task / Phase Name',
+    width: 300,
+    minWidth: 200,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    editor: 'text'
+    editor: 'text',
   },
-  { 
-    field: 'assignee', 
-    title: 'Assignee', 
-    width: 150, 
-    minWidth: 120, 
-    resizable: true, 
-    sortable: true, 
-    fixed: true 
-  },
-  { 
-    field: 'startDate', 
-    title: 'Start Date', 
-    width: 120, 
-    minWidth: 100, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'assignee',
+    title: 'Assignee',
+    width: 150,
+    minWidth: 120,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    editor: 'date'
   },
-  { 
-    field: 'endDate', 
-    title: 'End Date', 
-    width: 120, 
-    minWidth: 100, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'startDate',
+    title: 'Start Date',
+    width: 120,
+    minWidth: 100,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    editor: 'date'
+    editor: 'date',
   },
-  { 
-    field: 'duration', 
-    title: 'Duration', 
-    width: 80, 
-    minWidth: 60, 
-    resizable: true, 
-    sortable: false, 
+  {
+    field: 'endDate',
+    title: 'End Date',
+    width: 120,
+    minWidth: 100,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    align: 'center'
+    editor: 'date',
   },
-  { 
-    field: 'progress', 
-    title: 'Progress', 
-    width: 120, 
-    minWidth: 100, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'duration',
+    title: 'Duration',
+    width: 80,
+    minWidth: 60,
+    resizable: true,
+    sortable: false,
     fixed: true,
-    editor: 'number'
+    align: 'center',
   },
-  { 
-    field: 'status', 
-    title: 'Status', 
-    width: 100, 
-    minWidth: 80, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'progress',
+    title: 'Progress',
+    width: 120,
+    minWidth: 100,
+    resizable: true,
+    sortable: true,
+    fixed: true,
+    editor: 'number',
+  },
+  {
+    field: 'status',
+    title: 'Status',
+    width: 100,
+    minWidth: 80,
+    resizable: true,
+    sortable: true,
     fixed: true,
     editor: 'select',
     editorOptions: [
@@ -398,15 +398,15 @@ const sampleColumns: ColumnConfig[] = [
       { value: 'completed', label: 'Completed' },
       { value: 'on-hold', label: 'On Hold' },
       { value: 'overdue', label: 'Overdue' },
-    ]
+    ],
   },
-  { 
-    field: 'priority', 
-    title: 'Priority', 
-    width: 100, 
-    minWidth: 80, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'priority',
+    title: 'Priority',
+    width: 100,
+    minWidth: 80,
+    resizable: true,
+    sortable: true,
     fixed: true,
     editor: 'select',
     editorOptions: [
@@ -414,7 +414,7 @@ const sampleColumns: ColumnConfig[] = [
       { value: 'medium', label: 'Medium' },
       { value: 'high', label: 'High' },
       { value: 'critical', label: 'Critical' },
-    ]
+    ],
   },
 ];
 
@@ -424,30 +424,26 @@ const AdvancedGanttDemo: React.FC = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const handleTaskUpdate = (taskId: string, updates: Partial<GanttTask>) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId ? { ...task, ...updates } : task
-      )
+    setTasks(prevTasks =>
+      prevTasks.map(task => (task.id === taskId ? { ...task, ...updates } : task))
     );
     message.success(`Task "${tasks.find(t => t.id === taskId)?.name}" updated`);
   };
 
   const handleTaskMove = (taskId: string, newDates: { start: Date; end: Date }) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId 
-          ? { ...task, startDate: newDates.start, endDate: newDates.end }
-          : task
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === taskId ? { ...task, startDate: newDates.start, endDate: newDates.end } : task
       )
     );
-    message.info(`Task moved: ${newDates.start.toLocaleDateString()} - ${newDates.end.toLocaleDateString()}`);
+    message.info(
+      `Task moved: ${newDates.start.toLocaleDateString()} - ${newDates.end.toLocaleDateString()}`
+    );
   };
 
   const handleProgressChange = (taskId: string, progress: number) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId ? { ...task, progress } : task
-      )
+    setTasks(prevTasks =>
+      prevTasks.map(task => (task.id === taskId ? { ...task, progress } : task))
     );
     message.info(`Progress updated: ${Math.round(progress)}%`);
   };
@@ -483,7 +479,7 @@ const AdvancedGanttDemo: React.FC = () => {
       message.warning('No tasks selected');
       return;
     }
-    
+
     setTasks(prev => prev.filter(task => !selectedTasks.includes(task.id)));
     setSelectedTasks([]);
     message.success(`${selectedTasks.length} task(s) deleted`);
@@ -510,21 +506,17 @@ const AdvancedGanttDemo: React.FC = () => {
                 🚀 Advanced Gantt Chart Demo
               </h1>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Professional Gantt chart with draggable tasks, virtual scrolling, holiday markers, 
+                Professional Gantt chart with draggable tasks, virtual scrolling, holiday markers,
                 and performance optimizations for modern project management.
               </p>
             </div>
-            
+
             <div className="flex flex-col items-end space-y-2">
               <Space>
-                <Button 
-                  onClick={addSampleTask}
-                  type="primary"
-                  className="dark:border-gray-600"
-                >
+                <Button onClick={addSampleTask} type="primary" className="dark:border-gray-600">
                   Add Task
                 </Button>
-                <Button 
+                <Button
                   onClick={deleteSelectedTasks}
                   danger
                   disabled={selectedTasks.length === 0}
@@ -532,7 +524,7 @@ const AdvancedGanttDemo: React.FC = () => {
                 >
                   Delete Selected ({selectedTasks.length})
                 </Button>
-                <Button 
+                <Button
                   onClick={resetToSampleData}
                   className="dark:border-gray-600 dark:text-gray-300"
                 >
@@ -545,19 +537,33 @@ const AdvancedGanttDemo: React.FC = () => {
           {/* Project Statistics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-blue-50 dark:bg-blue-900 dark:bg-opacity-20 rounded-lg p-3">
-              <div className="text-blue-600 dark:text-blue-400 text-sm font-medium">Total Tasks</div>
-              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{taskStats.total}</div>
+              <div className="text-blue-600 dark:text-blue-400 text-sm font-medium">
+                Total Tasks
+              </div>
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                {taskStats.total}
+              </div>
             </div>
             <div className="bg-green-50 dark:bg-green-900 dark:bg-opacity-20 rounded-lg p-3">
-              <div className="text-green-600 dark:text-green-400 text-sm font-medium">Completed</div>
-              <div className="text-2xl font-bold text-green-700 dark:text-green-300">{taskStats.completed}</div>
+              <div className="text-green-600 dark:text-green-400 text-sm font-medium">
+                Completed
+              </div>
+              <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                {taskStats.completed}
+              </div>
             </div>
             <div className="bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 rounded-lg p-3">
-              <div className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">In Progress</div>
-              <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{taskStats.inProgress}</div>
+              <div className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">
+                In Progress
+              </div>
+              <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                {taskStats.inProgress}
+              </div>
             </div>
             <div className="bg-purple-50 dark:bg-purple-900 dark:bg-opacity-20 rounded-lg p-3">
-              <div className="text-purple-600 dark:text-purple-400 text-sm font-medium">Avg Progress</div>
+              <div className="text-purple-600 dark:text-purple-400 text-sm font-medium">
+                Avg Progress
+              </div>
               <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
                 {Math.round(taskStats.avgProgress)}%
               </div>
@@ -567,7 +573,10 @@ const AdvancedGanttDemo: React.FC = () => {
       </div>
 
       {/* Gantt Chart */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm" style={{ height: '70vh' }}>
+      <div
+        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
+        style={{ height: '70vh' }}
+      >
         <AdvancedGanttChart
           tasks={tasks}
           columns={sampleColumns}

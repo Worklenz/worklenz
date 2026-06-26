@@ -15,19 +15,54 @@ const LastUpdatedTasks = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
 
   const [data, setData] = useState<IInsightTasks[]>([]);
+  // const [loading, setLoading] = useState(false);
+  // const [pageSize, setPageSize] = useState(20);
+  // const [currentPage, setCurrentPage] = useState(1);
+
+  //change 1
   const [loading, setLoading] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
 
-  const getLastUpdatedTasks = async () => {
+  // const getLastUpdatedTasks = async () => {
+  //   if (!projectId) return;
+  //   setLoading(true);
+  //   try {
+  //     const res = await projectInsightsApiService.getLastUpdatedTasks(
+  //       projectId,
+  //       includeArchivedTasks
+  //     );
+  //     if (res.done) {
+  //       setData(res.body);
+  //     }
+  //   } catch (error) {
+  //     logger.error('getLastUpdatedTasks', error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  //change 2
+  const getLastUpdatedTasks = async (page = 1, limit = 20) => {
     if (!projectId) return;
     setLoading(true);
     try {
+      const offset = (page - 1) * limit;
       const res = await projectInsightsApiService.getLastUpdatedTasks(
         projectId,
-        includeArchivedTasks
+        includeArchivedTasks,
+        limit,
+        offset
       );
       if (res.done) {
-        setData(res.body);
+        const body = res.body as any;
+        const tasks = Array.isArray(body) ? body : body.tasks || [];
+        const total = Array.isArray(body) ? body.length : body.total || 0;
+        setData(tasks);
+        setTotal(total);
       }
     } catch (error) {
       logger.error('getLastUpdatedTasks', error);
@@ -36,21 +71,85 @@ const LastUpdatedTasks = () => {
     }
   };
 
+  // useEffect(() => {
+  //   getLastUpdatedTasks();
+  // }, [projectId, includeArchivedTasks, refreshTimestamp]);
+
+  //change 3
   useEffect(() => {
-    getLastUpdatedTasks();
+    setCurrentPage(1);
+    getLastUpdatedTasks(1, pageSize);
   }, [projectId, includeArchivedTasks, refreshTimestamp]);
 
   // table columns
+  // const columns: TableProps['columns'] = [
+  //   {
+  //     key: 'name',
+  //     title: 'Name',
+  //     render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+  //   },
+  //   {
+  //     key: 'status',
+  //     title: 'Status',
+  //     render: (record: IInsightTasks) => (
+  //       <Flex
+  //         gap={4}
+  //         style={{
+  //           width: 'fit-content',
+  //           borderRadius: 24,
+  //           paddingInline: 6,
+  //           backgroundColor: record.status_color,
+  //           color: colors.darkGray,
+  //           cursor: 'pointer',
+  //         }}
+  //       >
+  //         <Typography.Text
+  //           ellipsis={{ expanded: false }}
+  //           style={{
+  //             color: colors.darkGray,
+  //             fontSize: 13,
+  //           }}
+  //         >
+  //           {record.status}
+  //         </Typography.Text>
+  //       </Flex>
+  //     ),
+  //   },
+  //   {
+  //     key: 'dueDate',
+  //     title: 'Due Date',
+  //     render: (record: IInsightTasks) => (
+  //       <Typography.Text>
+  //         {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
+  //       </Typography.Text>
+  //     ),
+  //   },
+  //   {
+  //     key: 'lastUpdated',
+  //     title: 'Last Updated',
+  //     render: (record: IInsightTasks) => (
+  //       <Tooltip title={record.updated_at ? formatDateTimeWithLocale(record.updated_at) : 'N/A'}>
+  //         <Typography.Text>
+  //           {record.updated_at ? calculateTimeDifference(record.updated_at) : 'N/A'}
+  //         </Typography.Text>
+  //       </Tooltip>
+  //     ),
+  //   },
+  // ];
+
+  //change 4
   const columns: TableProps['columns'] = [
     {
       key: 'name',
       title: 'Name',
-      render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      dataIndex: 'name',
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
       title: 'Status',
-      render: (record: IInsightTasks) => (
+      dataIndex: 'status',
+      render: (_: any, record: IInsightTasks) => (
         <Flex
           gap={4}
           style={{
@@ -69,7 +168,7 @@ const LastUpdatedTasks = () => {
               fontSize: 13,
             }}
           >
-            {record.status}
+            {record.status_name}
           </Typography.Text>
         </Flex>
       ),
@@ -77,7 +176,8 @@ const LastUpdatedTasks = () => {
     {
       key: 'dueDate',
       title: 'Due Date',
-      render: (record: IInsightTasks) => (
+      dataIndex: 'end_date',
+      render: (_: any, record: IInsightTasks) => (
         <Typography.Text>
           {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
         </Typography.Text>
@@ -86,7 +186,8 @@ const LastUpdatedTasks = () => {
     {
       key: 'lastUpdated',
       title: 'Last Updated',
-      render: (record: IInsightTasks) => (
+      dataIndex: 'updated_at',
+      render: (_: any, record: IInsightTasks) => (
         <Tooltip title={record.updated_at ? formatDateTimeWithLocale(record.updated_at) : 'N/A'}>
           <Typography.Text>
             {record.updated_at ? calculateTimeDifference(record.updated_at) : 'N/A'}
@@ -107,10 +208,24 @@ const LastUpdatedTasks = () => {
       dataSource={dataSource}
       columns={columns}
       rowKey={record => record.id}
+      // pagination={{
+      //   showSizeChanger: true,
+      //   defaultPageSize: 20,
+      // }}
+
+      //change 5
       pagination={{
         showSizeChanger: true,
-        defaultPageSize: 20,
-      }}
+        pageSizeOptions: ['10', '20', '50', '100'],
+        current: currentPage,
+        pageSize: pageSize,
+        total: total,
+        onChange: (page, size) => {
+          setCurrentPage(page);
+          setPageSize(size);
+          getLastUpdatedTasks(page, size);
+        },
+      }} //change ends from here
       loading={loading}
       onRow={() => {
         return {

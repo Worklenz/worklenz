@@ -1,0 +1,16 @@
+{
+  "duplicateTask": "Dyfisho Detyrën",
+  "duplicateTaskDescription": "Zgjidhni elementët për të kopjuar në detyrën e re:",
+  "duplicateOptions": {
+    "subtasks": "Nëndetyrat",
+    "attachments": "Bashkëngjitjet",
+    "dates": "Datat",
+    "dependencies": "Varësitë",
+    "assignees": "Përgjegjësit",
+    "labels": "Etiketat",
+    "customFields": "Vlerat e Fushave të Personalizuara",
+    "subscribers": "Abonentët"
+  },
+  "duplicate": "Dyfisho",
+  "cancel": "Anulo"
+}

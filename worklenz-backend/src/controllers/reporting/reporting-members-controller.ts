@@ -11,7 +11,27 @@ import ReportingControllerBaseWithTimezone from "./reporting-controller-base-wit
 import ReportingControllerBase from "./reporting-controller-base";
 import Excel from "exceljs";
 
+interface TimelogFlatExportRow {
+  log_day: string | Date | null;
+  user_name: string | null;
+  project_name: string | null;
+  task_name: string | null;
+  time_spent: number | null;
+  description: string | null;
+}
+
+interface ParsedTimelogExportQueryParams {
+  teamMemberId?: string;
+  duration?: string;
+  dateRange?: string;
+  billable?: string;
+  search?: string;
+}
+
 export default class ReportingMembersController extends ReportingControllerBaseWithTimezone {
+  private static readonly TIME_LOG_EXPORT_SHEET_NAME = "Time Logs";
+  private static readonly TIME_LOG_EXPORT_DATE_FORMAT = "MMM-DD-YYYY";
+  private static readonly TIME_LOG_EXPORT_FILE_PREFIX = "Time-Logs";
 
   protected static getPercentage(n: number, total: number) {
     return +(n ? (n / total) * 100 : 0).toFixed();
@@ -86,43 +106,33 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     req?: any
   ) {
     const pagingClause = (size !== null && offset !== null) ? `LIMIT ${size} OFFSET ${offset}` : "";
+    const archivedClause = includeArchived
+    ? ""
+    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`;
 
     // Use parameterized queries
     // Note: $1 is teamId, searchParams use $2+, so other parameters start after searchParams
     let paramOffset = 2 + searchParams.length;
-
-    // Build archived clause with parameterized userId
-    let archivedClause = "";
-    let archivedParams: string[] = [];
-    if (!includeArchived) {
-      const userIdParamIndex = paramOffset;
-      archivedClause = `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${userIdParamIndex})`;
-      archivedParams = [userId];
-      paramOffset += 1;
-    }
-
-    // Build archived clause for time log subqueries (reuse same parameter)
-    const timeLogArchivedClause = includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = $${archivedParams.length > 0 ? paramOffset - 1 : paramOffset})`;
     const assignClauseResult = this.memberAssignDurationFilter(key, dateRange, paramOffset);
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
     paramOffset += assignParams.length;
-
+    
     const completedDurationResult = this.completedDurationFilter(key, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
     const completedParams = completedDurationResult.params;
     paramOffset += completedParams.length;
-
+    
     const overdueActivityLogsResult = this.getActivityLogsOverdue(key, dateRange, paramOffset);
     const overdueActivityLogsClause = overdueActivityLogsResult.clause;
     const overdueParams = overdueActivityLogsResult.params;
     paramOffset += overdueParams.length;
-
+    
     const activityLogCreationResult = this.getActivityLogsCreationClause(key, dateRange, paramOffset);
     const activityLogCreationFilter = activityLogCreationResult.clause;
     const activityLogParams = activityLogCreationResult.params;
     paramOffset += activityLogParams.length;
-
+    
     const timeLogDateRangeResult = this.getTimeLogDateRangeClause(key, dateRange, paramOffset);
     const timeLogDateRangeClause = timeLogDateRangeResult.clause;
     const timeLogParams = timeLogDateRangeResult.params;
@@ -230,7 +240,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       AND t.billable IS TRUE
                                       AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
                                       ${timeLogDateRangeClause}
-                                      ${timeLogArchivedClause}) AS billable_time,
+                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS billable_time,
 
                               (SELECT COALESCE(SUM(twl.time_spent), 0)
                                   FROM task_work_log twl
@@ -239,7 +249,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                                       AND t.billable IS FALSE
                                       AND t.project_id IN (SELECT id FROM projects WHERE team_id = $1)
                                       ${timeLogDateRangeClause}
-                                      ${timeLogArchivedClause}) AS non_billable_time
+                                      ${includeArchived ? "" : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${userId}')`}) AS non_billable_time
                       FROM team_member_info_view tmiv
                       WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                           ${searchQuery}
@@ -250,8 +260,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                   FROM team_member_info_view tmiv
                   WHERE tmiv.team_id = $1 ${teamsClause} ${memberFilterClause}
                   ${searchQuery}`;
-    // Pass all parameters - searchParams come after teamId, then archivedParams, teamIdsParams, then other filter params
-    const queryParams = [teamId, ...searchParams, ...archivedParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
+    // Pass all parameters - searchParams come after teamId, then teamIdsParams, then other filter params
+    const queryParams = [teamId, ...searchParams, ...teamIdsParams, ...assignParams, ...completedParams, ...overdueParams, ...activityLogParams, ...timeLogParams, ...projectParams];
     const result = await db.query(q, queryParams);
     const [data] = result.rows;
 
@@ -641,14 +651,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // set title
     sheet.getCell("A1").value = `Members from ${teamName}`;
-    sheet.mergeCells("A1:K1");
+    sheet.mergeCells("A1:M1");
     sheet.getCell("A1").alignment = { horizontal: "center" };
     sheet.getCell("A1").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "D9D9D9" } };
     sheet.getCell("A1").font = { size: 16 };
 
     // set export date
     sheet.getCell("A2").value = `Exported on : ${exportDate}`;
-    sheet.mergeCells("A2:K2");
+    sheet.mergeCells("A2:M2");
     sheet.getCell("A2").alignment = { horizontal: "center" };
     sheet.getCell("A2").style.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "F2F2F2" } };
     sheet.getCell("A2").font = { size: 12 };
@@ -703,12 +713,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     // $1 => team_id, $2 => team_member_id, so date params start at $3
-    const durationClause = this.getDateRangeClauseWithTimezone(
+    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
       (duration as string) || DATE_RANGES.LAST_WEEK,
       dateRange,
-      userTimezone
+      userTimezone,
+      3
     );
-    const durationParams: any[] = [];
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
 
     const minMaxDateClauseResult = this.getMinMaxDates(
       (duration as string) || DATE_RANGES.LAST_WEEK,
@@ -831,7 +843,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     );
     const durationClause = durationClauseResult.clause;
     const durationParams = durationClauseResult.params;
-
+    
     const minMaxDateClauseResult = this.getMinMaxDates(
       duration as string || DATE_RANGES.LAST_WEEK,
       dateRange,
@@ -840,7 +852,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     );
     const minMaxDateClause = minMaxDateClauseResult.clause;
     const minMaxParams = minMaxDateClauseResult.params;
-
+    
     const memberName = (req.query.member_name as string)?.trim() || null;
 
     // Combine all parameters for the query
@@ -947,24 +959,15 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   public static async getMemberProjectsData(teamId: string, teamMemberId: string, searchQuery: string, searchParams: string[] = [], archived: boolean, userId: string, req?: any) {
 
-    // Build parameterized queries to prevent SQL injection
-    let paramOffset = searchParams.length + 1;
-    const additionalParams: any[] = [];
-
     const teamClause = teamId
-      ? `team_member_id = $${paramOffset++}`
+      ? `team_member_id = '${teamMemberId as string}'`
       : `team_member_id IN (SELECT team_member_id
             FROM team_member_info_view tmiv
             WHERE LOWER(email) = LOWER((SELECT email
                         FROM team_member_info_view tmiv2
-                        WHERE tmiv2.team_member_id = $${paramOffset++} AND in_organization(p.team_id, tmiv2.team_id))))`;
-    additionalParams.push(teamMemberId);
+                        WHERE tmiv2.team_member_id = '${teamMemberId}' AND in_organization(p.team_id, tmiv2.team_id))))`;
 
-    let archivedClause = "";
-    if (!archived) {
-      archivedClause = ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = $${paramOffset++})`;
-      additionalParams.push(userId);
-    }
+    const archivedClause = archived ? `` : ` AND pm.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = pm.project_id AND user_id = '${userId}')`;
 
     // Add project filtering for Team Leads
     let projectFilterClause = "";
@@ -1012,7 +1015,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                       LEFT JOIN projects p ON p.id = pm.project_id
               WHERE ${teamClause} ${searchQuery} ${archivedClause} ${projectFilterClause}
               ORDER BY name;`;
-    const result = await db.query(q, [...searchParams, ...additionalParams]);
+    const result = await db.query(q, searchParams);
 
     for (const project of result.rows) {
       project.time_logged = formatDuration(moment.duration(project.time_logged, "seconds"));
@@ -1076,7 +1079,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     );
     const durationClause = durationClauseResult.clause;
     const durationParams = durationClauseResult.params;
-
+    
     const minMaxDateClauseResult = this.getMinMaxDates(
       duration || DATE_RANGES.LAST_WEEK,
       date_range,
@@ -1173,12 +1176,9 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     params: any[] = []
   ) {
 
-    // Build archived clause with parameterized userId
-    // Parameters: $1 = team_id, $2 = team_member_id, $3+ = params, then userId
-    const userIdParamIndex = 3 + params.length;
     const archivedClause = includeArchived
-      ? ""
-      : `AND project_id NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = $${userIdParamIndex})`;
+    ? ""
+    : `AND project_id NOT IN (SELECT project_id FROM archived_projects WHERE archived_projects.user_id = '${userId}')`;
 
     const q = `
                 SELECT user_id,
@@ -1204,9 +1204,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
                 AND tmiv.team_member_id = $2
       `;
 
-    const queryParams = includeArchived
-      ? [team_id, team_member_id, ...params]
-      : [team_id, team_member_id, ...params, userId];
+    const queryParams = [team_id, team_member_id, ...params];
     const result = await db.query(q, queryParams);
 
     let logGroups: any[] = [];
@@ -1222,7 +1220,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     return logGroups;
   }
 
-  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived: boolean, userId: string, params: any[]) {
+  private static async memberActivityLogsData(durationClause: string, minMaxDateClause: string, team_id: string, team_member_id: string, includeArchived:boolean, userId: string, params: any[]) {
 
     let archivedClause = "";
     let archivedParams: any[] = [];
@@ -1339,7 +1337,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   protected static buildBillableQuery(selectedStatuses: { billable: boolean; nonBillable: boolean }, tableAlias = "tasks"): string {
     const { billable, nonBillable } = selectedStatuses;
-
+  
     if (billable && nonBillable) {
       // Both are enabled, no need to filter
       return "";
@@ -1349,7 +1347,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     } else if (nonBillable) {
       // Only non-billable is enabled
       return ` AND ${tableAlias}.billable IS FALSE`;
-    }
+    } 
 
     return "";
   }
@@ -1361,12 +1359,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     // Get user timezone for proper date filtering
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
     // $1 => team_id, $2 => team_member_id, so date params start at $3
-    const durationClause = this.getDateRangeClauseWithTimezone(
+    const durationClauseResult = this.getDateRangeClauseWithTimezoneParams(
       duration || DATE_RANGES.LAST_WEEK,
       date_range,
-      userTimezone
+      userTimezone,
+      3
     );
-    const durationParams: any[] = [];
+    const durationClause = durationClauseResult.clause;
+    const durationParams = durationClauseResult.params;
 
     const minMaxDateClauseResult = this.getMinMaxDates(
       duration || DATE_RANGES.LAST_WEEK,
@@ -1406,8 +1406,8 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     }
 
     const archivedClause = includeArchived
-      ? ""
-      : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
+    ? ""
+    : `AND t.project_id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = t.project_id AND archived_projects.user_id = '${req.user?.id}')`;
 
 
     // Use parameterized queries
@@ -1416,19 +1416,19 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const assignClause = assignClauseResult.clause;
     const assignParams = assignClauseResult.params;
     let paramOffset = 2 + assignParams.length;
-
+    
     const completedDurationResult = this.completedDurationFilter(duration as string, dateRange, paramOffset);
     const completedDurationClasue = completedDurationResult.clause;
     const completedParams = completedDurationResult.params;
     paramOffset += completedParams.length;
-
+    
     const overdueClauseResult = this.getActivityLogsOverdue(duration as string, dateRange, paramOffset);
     const overdueClauseByDate = overdueClauseResult.clause;
     const overdueParams = overdueClauseResult.params;
     paramOffset += overdueParams.length;
-
+    
     const taskSelectorClause = this.getTaskSelectorClause();
-
+    
     const durationFilterResult = this.memberTasksDurationFilter(duration as string, dateRange, paramOffset);
     const durationFilter = durationFilterResult.clause;
     const durationParams = durationFilterResult.params;
@@ -1527,11 +1527,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone and date clauses
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-
+    
     // Build params array with timezone first, then date range values
     const params: any[] = [userTimezone];
     let paramIndex = 2;
-
+    
     // Add date range parameters and build duration clause
     let durationClause = '';
     if (date_range && date_range.length === 2) {
@@ -1629,38 +1629,26 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async exportTimelogsFlatCSV(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
-    let { team_member_id, duration, date_range, billable, search } = req.query;
-
-    // Convert query parameters to strings or undefined
-    const teamMemberIdStr = this.convertQueryParam(team_member_id);
-    const durationStr = this.convertQueryParam(duration);
-    const dateRangeStr = this.convertQueryParam(date_range);
-    const billableStr = this.convertQueryParam(billable);
-    const searchStr = this.convertQueryParam(search);
+    const { teamMemberId, duration, dateRange, billable, search } = this.parseTimelogExportQueryParams(req);
 
     // Get data using shared helper method
-    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+    const rows = await this.getTimelogsFlatData(req, teamMemberId, duration, dateRange, billable, search);
 
     // Prepare CSV data
-    const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `Time-Logs-${exportDate}`;
+    const fileName = this.getTimelogExportFileName("csv");
 
     // Build CSV content
     const csvRows: string[] = [];
 
     // Add headers
-    csvRows.push("Date,Member,Project,Task,Description,Duration");
+    csvRows.push("Date,Member,Project,Task,Description,Duration (Minutes)");
 
     // Add data rows
-    for (const row of rows.rows) {
-      const date = row.log_day || "";
-      const member = (row.user_name || "").replace(/"/g, '""'); // Escape quotes
-      const project = (row.project_name || "").replace(/"/g, '""');
-      const task = (row.task_name || "").replace(/"/g, '""');
-      const description = (row.description || "").replace(/"/g, '""');
-      const duration = this.secondsToReadable(row.time_spent || 0);
-
-      csvRows.push(`"${date}","${member}","${project}","${task}","${description}","${duration}"`);
+    for (const row of rows.rows as TimelogFlatExportRow[]) {
+      const csvRecord = this.mapTimelogExportRow(row);
+      csvRows.push(
+        `"${this.escapeCsvValue(csvRecord.date)}","${this.escapeCsvValue(csvRecord.member)}","${this.escapeCsvValue(csvRecord.project)}","${this.escapeCsvValue(csvRecord.task)}","${this.escapeCsvValue(csvRecord.description)}","${csvRecord.durationMinutes}"`
+      );
     }
 
     const csvContent = csvRows.join("\n");
@@ -1680,6 +1668,50 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     const minutes = Math.floor((sec % 3600) / 60);
     if (hours > 0) return `${hours}h ${minutes}m`;
     return `${minutes}m`;
+  }
+
+  private static secondsToMinutes(totalSeconds: number): number {
+    const sec = Math.max(0, Math.floor(totalSeconds || 0));
+    return Math.floor(sec / 60);
+  }
+
+  private static parseTimelogExportQueryParams(req: IWorkLenzRequest): ParsedTimelogExportQueryParams {
+    const { team_member_id, duration, date_range, billable, search } = req.query;
+
+    return {
+      teamMemberId: this.convertQueryParam(team_member_id),
+      duration: this.convertQueryParam(duration),
+      dateRange: this.convertQueryParam(date_range),
+      billable: this.convertQueryParam(billable),
+      search: this.convertQueryParam(search),
+    };
+  }
+
+  private static escapeCsvValue(value: string): string {
+    return value.replace(/"/g, '""');
+  }
+
+  private static getTimelogExportFileName(extension: "csv" | "xlsx"): string {
+    const exportDate = moment().format(this.TIME_LOG_EXPORT_DATE_FORMAT);
+    return `${this.TIME_LOG_EXPORT_FILE_PREFIX}-${exportDate}.${extension}`;
+  }
+
+  private static mapTimelogExportRow(row: TimelogFlatExportRow): {
+    date: string;
+    member: string;
+    project: string;
+    task: string;
+    description: string;
+    durationMinutes: number;
+  } {
+    return {
+      date: row.log_day ? String(row.log_day) : "",
+      member: row.user_name || "",
+      project: row.project_name || "",
+      task: row.task_name || "",
+      description: row.description || "",
+      durationMinutes: this.secondsToMinutes(row.time_spent || 0),
+    };
   }
 
   /**
@@ -1706,11 +1738,11 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
     // Get user timezone
     const userTimezone = await this.getUserTimezone(req.user?.id as string);
-
+    
     // Build params array with timezone first, then date range values
     const params: any[] = [userTimezone];
     let paramIndex = 2;
-
+    
     // Add date range parameters and build duration clause
     let durationClause = '';
     if (dateRange && dateRange.length === 2) {
@@ -1794,21 +1826,14 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   @HandleExceptions()
   public static async exportTimelogsFlatExcel(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<void> {
-    let { team_member_id, duration, date_range, billable, search } = req.query;
-
-    // Convert query parameters to strings or undefined
-    const teamMemberIdStr = this.convertQueryParam(team_member_id);
-    const durationStr = this.convertQueryParam(duration);
-    const dateRangeStr = this.convertQueryParam(date_range);
-    const billableStr = this.convertQueryParam(billable);
-    const searchStr = this.convertQueryParam(search);
+    const { teamMemberId, duration, dateRange, billable, search } = this.parseTimelogExportQueryParams(req);
 
     // Get data using shared helper method
-    const rows = await this.getTimelogsFlatData(req, teamMemberIdStr, durationStr, dateRangeStr, billableStr, searchStr);
+    const rows = await this.getTimelogsFlatData(req, teamMemberId, duration, dateRange, billable, search);
 
     // Create Excel workbook
     const workbook = new Excel.Workbook();
-    const worksheet = workbook.addWorksheet('Time Logs');
+    const worksheet = workbook.addWorksheet(this.TIME_LOG_EXPORT_SHEET_NAME);
 
     // Add headers
     worksheet.columns = [
@@ -1817,7 +1842,7 @@ export default class ReportingMembersController extends ReportingControllerBaseW
       { header: 'Project', key: 'project', width: 25 },
       { header: 'Task', key: 'task', width: 30 },
       { header: 'Description', key: 'description', width: 40 },
-      { header: 'Duration', key: 'duration', width: 15 }
+      { header: 'Duration (Minutes)', key: 'duration', width: 20 }
     ];
 
     // Style the header row
@@ -1829,23 +1854,23 @@ export default class ReportingMembersController extends ReportingControllerBaseW
     };
 
     // Add data rows
-    for (const row of rows.rows) {
+    for (const row of rows.rows as TimelogFlatExportRow[]) {
+      const exportRow = this.mapTimelogExportRow(row);
       worksheet.addRow({
-        date: moment(row.log_day).format('MMM DD, YYYY'),
-        member: row.user_name || '',
-        project: row.project_name || '',
-        task: row.task_name || '',
-        description: row.description || '',
-        duration: this.secondsToReadable(row.time_spent || 0)
+        date: exportRow.date ? moment(exportRow.date).format("MMM DD, YYYY") : "",
+        member: exportRow.member,
+        project: exportRow.project,
+        task: exportRow.task,
+        description: exportRow.description,
+        duration: exportRow.durationMinutes
       });
     }
 
     // Set response headers for Excel
-    const exportDate = moment().format("MMM-DD-YYYY");
-    const fileName = `Time-Logs-${exportDate}.xlsx`;
+    const fileName = this.getTimelogExportFileName("xlsx");
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
 
     // Write Excel file to response
     await workbook.xlsx.write(res);
@@ -1854,24 +1879,24 @@ export default class ReportingMembersController extends ReportingControllerBaseW
 
   private static updateTaskProperties(tasks: any[]) {
     for (const task of tasks) {
-      task.project_color = getColor(task.project_name);
-      task.estimated_string = formatDuration(moment.duration(~~(task.total_minutes), "seconds"));
-      task.time_spent_string = formatDuration(moment.duration(~~(task.time_logged), "seconds"));
-      task.overlogged_time_string = formatDuration(moment.duration(~~(task.overlogged_time), "seconds"));
-      task.overdue_days = task.days_overdue ? task.days_overdue : null;
+        task.project_color = getColor(task.project_name);
+        task.estimated_string = formatDuration(moment.duration(~~(task.total_minutes), "seconds"));
+        task.time_spent_string = formatDuration(moment.duration(~~(task.time_logged), "seconds"));
+        task.overlogged_time_string = formatDuration(moment.duration(~~(task.overlogged_time), "seconds"));
+        task.overdue_days = task.days_overdue ? task.days_overdue : null;
     }
-  }
+}
 
-  @HandleExceptions()
-  public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    const { team_member_id } = req.query;
-    const includeArchived = req.query.archived === "true";
+@HandleExceptions()
+public static async getSingleMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+  const { team_member_id } = req.query;
+  const includeArchived = req.query.archived === "true";
 
-    const archivedClause = includeArchived
-      ? ""
-      : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
+  const archivedClause = includeArchived
+    ? ""
+    : `AND projects.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = projects.id AND archived_projects.user_id = '${req.user?.id}')`;
 
-    const q = `SELECT id,
+  const q = `SELECT id,
                     name,
                     color_code,
                     start_date,
@@ -1922,36 +1947,36 @@ export default class ReportingMembersController extends ReportingControllerBaseW
               FROM projects
               WHERE projects.id IN (SELECT project_id FROM project_members WHERE team_member_id = $1) ${archivedClause};`;
 
-    const result = await db.query(q, [team_member_id]);
-    const data = result.rows;
+  const result = await db.query(q, [team_member_id]);
+  const data = result.rows;
 
-    for (const row of data) {
-      row.estimated_time = int(row.estimated_time);
-      row.actual_time = int(row.actual_time);
-      row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
-      row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
-      row.days_left = this.getDaysLeft(row.end_date);
-      row.is_overdue = this.isOverdue(row.end_date);
-      if (row.days_left && row.is_overdue) {
-        row.days_left = row.days_left.toString().replace(/-/g, "");
-      }
-      row.is_today = this.isToday(row.end_date);
-      if (row.project_manager) {
-        row.project_manager.name = row.project_manager.project_manager_info.name;
-        row.project_manager.avatar_url = row.project_manager.project_manager_info.avatar_url;
-        row.project_manager.color_code = getColor(row.project_manager.name);
-      }
-      row.project_health = row.health_name ? row.health_name : null;
+  for (const row of data) {
+    row.estimated_time = int(row.estimated_time);
+    row.actual_time = int(row.actual_time);
+    row.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(row.estimated_time));
+    row.actual_time_string = this.convertSecondsToHoursAndMinutes(int(row.actual_time));
+    row.days_left = this.getDaysLeft(row.end_date);
+    row.is_overdue = this.isOverdue(row.end_date);
+    if (row.days_left && row.is_overdue) {
+      row.days_left = row.days_left.toString().replace(/-/g, "");
     }
-
-    const body = {
-      team_member_name: data[0].team_member_name,
-      projects: data
-    };
-
-    return res.status(200).send(new ServerResponse(true, body));
-
+    row.is_today = this.isToday(row.end_date);
+    if (row.project_manager) {
+      row.project_manager.name = row.project_manager.project_manager_info.name;
+      row.project_manager.avatar_url = row.project_manager.project_manager_info.avatar_url;
+      row.project_manager.color_code = getColor(row.project_manager.name);
+    }
+    row.project_health = row.health_name ? row.health_name : null;
   }
+
+  const body = {
+    team_member_name: data[0].team_member_name,
+    projects: data
+  };
+
+  return res.status(200).send(new ServerResponse(true, body));
+
+}
 
   @HandleExceptions()
   public static async exportMemberProjects(req: IWorkLenzRequest, res: IWorkLenzResponse) {

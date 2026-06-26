@@ -19,6 +19,62 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import logger from '@/utils/errorLogger';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+
+const ExampleBoardTaskCards = ({
+  isDarkMode,
+  onClick,
+}: {
+  isDarkMode?: boolean;
+  onClick: () => void;
+}) => {
+  const { t } = useTranslation('kanban-board');
+  const [showText, setShowText] = useState(false);
+
+  const exampleNames = [
+    t('exampleTasks.task1', { defaultValue: 'Define project scope' }),
+    t('exampleTasks.task2', { defaultValue: 'Review with stakeholders' }),
+    t('exampleTasks.task3', { defaultValue: 'Schedule kickoff' }),
+  ];
+  const egPrefix = t('exampleTasks.prefix', { defaultValue: 'e.g.' });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowText(true), 350);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+      {exampleNames.map((name, i) => (
+        <div
+          key={i}
+          onClick={onClick}
+          style={{
+            background: isDarkMode ? '#1e1e1e' : '#ffffff',
+            border: `1px solid ${isDarkMode ? '#404040' : '#e1e4e8'}`,
+            borderRadius: 6,
+            padding: '10px 12px',
+            fontSize: 13,
+            cursor: 'text',
+            boxShadow: isDarkMode
+              ? 'none'
+              : '0 1px 4px 0 rgba(60,64,67,0.08), 0 0.5px 1.5px 0 rgba(60,64,67,0.03)',
+          }}
+        >
+          <span
+            style={{
+              color: isDarkMode ? '#888' : '#aaa',
+              opacity: showText ? 1 : 0,
+              transition: 'opacity 0.25s ease-in',
+            }}
+          >
+            {egPrefix} {name}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 interface IBoardSectionCardProps {
   taskGroup: ITaskListGroup;
@@ -31,6 +87,7 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { team_id: teamId, id: reporterId } = useAppSelector(state => state.userReducer);
   const { socket } = useSocket();
+  const { canCreateTask } = useTaskCreationPermission();
 
   const [name, setName] = useState<string>(taskGroup.name);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -158,18 +215,11 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
         ref={scrollContainerRef}
         style={{
           borderRadius: 6,
-          height: taskGroup?.tasks.length <= 0 ? 600 : 'auto',
-          maxHeight: taskGroup?.tasks.length <= 0 ? 600 : 'auto',
+          height: 'auto',
+          maxHeight: 'auto',
           overflowY: 'scroll',
           padding: taskGroup?.tasks.length <= 0 ? 8 : 6,
-          background:
-            taskGroup?.tasks.length <= 0 && !showNewCardTop && !showNewCardBottom
-              ? themeWiseColor(
-                  'linear-gradient( 180deg, #fafafa, rgba(245, 243, 243, 0))',
-                  'linear-gradient( 180deg, #2a2b2d, rgba(42, 43, 45, 0))',
-                  themeMode
-                )
-              : 'transparent',
+          background: 'transparent',
         }}
       >
         <SortableContext
@@ -177,6 +227,13 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
           strategy={verticalListSortingStrategy}
         >
           <Flex vertical gap={16} align="center">
+            {taskGroup.tasks.length === 0 && !showNewCardTop && !showNewCardBottom && (
+              <ExampleBoardTaskCards
+                isDarkMode={themeMode === 'dark'}
+                onClick={handleAddTaskToBottom}
+              />
+            )}
+
             {showNewCardTop && (
               <BoardViewCreateTaskCard
                 position="top"
@@ -209,6 +266,8 @@ const BoardSectionCard = ({ taskGroup }: IBoardSectionCardProps) => {
           }}
           icon={<PlusOutlined />}
           onClick={handleAddTaskToBottom}
+          disabled={!canCreateTask}
+          hidden={!canCreateTask}
         >
           {t('addTask')}
         </Button>

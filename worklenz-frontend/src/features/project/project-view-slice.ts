@@ -7,17 +7,23 @@ interface ProjectViewState {
   lastUpdated?: string;
 }
 
-const LOCAL_STORAGE_KEY = 'project_view_preferences';
+const LOCAL_STORAGE_KEY = 'project_view_preferences_v2';
 
 const loadInitialState = (): ProjectViewState => {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-  return saved
-    ? JSON.parse(saved)
-    : {
-        mode: ProjectViewType.LIST,
-        groupBy: ProjectGroupBy.CATEGORY,
-        lastUpdated: new Date().toISOString(),
-      };
+  if (saved) {
+    const parsed = JSON.parse(saved) as ProjectViewState;
+    return {
+      ...parsed,
+      groupBy: parsed.groupBy || ProjectGroupBy.PRIORITY,
+    };
+  }
+
+  return {
+    mode: ProjectViewType.LIST,
+    groupBy: ProjectGroupBy.PRIORITY,
+    lastUpdated: new Date().toISOString(),
+  };
 };
 
 const initialState: ProjectViewState = loadInitialState();

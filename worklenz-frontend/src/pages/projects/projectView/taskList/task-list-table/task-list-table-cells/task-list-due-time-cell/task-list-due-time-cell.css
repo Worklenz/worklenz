@@ -1,0 +1,55 @@
+/* Due Time Cell Styling - Match DatePickerColumn appearance */
+
+/* Style the TimePicker input to match date columns */
+.due-time-picker .ant-picker-input > input {
+  color: rgb(107 114 128) !important; /* text-gray-500 */
+  font-size: 0.875rem; /* text-sm */
+  text-align: center;
+}
+
+/* Dark mode text color for the value */
+.dark .due-time-picker .ant-picker-input > input {
+  color: rgb(156 163 175) !important; /* dark:text-gray-400 */
+}
+
+/* Placeholder styling */
+.due-time-picker .ant-picker-input > input::placeholder {
+  color: rgb(156 163 175) !important; /* text-gray-400 */
+  font-size: 0.875rem; /* text-sm */
+}
+
+/* Dark mode placeholder */
+.dark .due-time-picker .ant-picker-input > input::placeholder {
+  color: rgb(107 114 128) !important; /* dark:text-gray-500 */
+}
+
+/* Remove default Ant Design borders and backgrounds */
+.due-time-picker.ant-picker {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.due-time-picker.ant-picker:hover,
+.due-time-picker.ant-picker-focused {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Style the clear icon to match */
+.due-time-picker .ant-picker-clear {
+  color: rgb(107 114 128);
+  background: transparent;
+}
+
+.dark .due-time-picker .ant-picker-clear {
+  color: rgb(156 163 175);
+}
+
+.due-time-picker .ant-picker-clear:hover {
+  color: rgb(55 65 81);
+}
+
+.dark .due-time-picker .ant-picker-clear:hover {
+  color: rgb(229 231 235);
+}

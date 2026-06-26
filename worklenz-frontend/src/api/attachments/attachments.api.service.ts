@@ -28,9 +28,12 @@ export const attachmentsApiService = {
     return response.data;
   },
 
-  downloadAttachment: async (id: string, filename: string): Promise<IServerResponse<string>> => {
-    const response = await apiClient.get<IServerResponse<string>>(
-      `${rootUrl}/download?id=${id}&file=${filename}`
+  downloadAttachment: async (
+    id: string,
+    filename: string
+  ): Promise<IServerResponse<{ url: string; expires_in: number }>> => {
+    const response = await apiClient.get<IServerResponse<{ url: string; expires_in: number }>>(
+      `${rootUrl}/download?id=${id}&file=${encodeURIComponent(filename)}`
     );
     return response.data;
   },

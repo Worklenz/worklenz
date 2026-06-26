@@ -1,0 +1,836 @@
+/* Pricing Modal Base Styles */
+.pricing-modal {
+  --primary-color: #1890ff;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --error-color: #ff4d4f;
+  --text-color: #262626;
+  --text-secondary: #8c8c8c;
+  --bg-color: #ffffff;
+  --bg-secondary: #fafafa;
+  --border-color: #f0f0f0;
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.pricing-modal.dark {
+  --text-color: #ffffff;
+  --text-secondary: #bfbfbf;
+  --bg-color: #141414;
+  --bg-secondary: #1f1f1f;
+  --border-color: #303030;
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+
+/* Modal Header */
+.pricing-modal-header {
+  padding: 24px 24px 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.pricing-modal-content {
+  padding: 0 24px 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Plan Card Styles */
+.pricing-plan-card {
+  height: 100%;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid var(--border-color);
+  background: var(--bg-color);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.pricing-plan-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-4px);
+}
+
+.pricing-plan-card.selected {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+}
+
+.pricing-plan-card.selected::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), #40a9ff);
+}
+
+.pricing-plan-card.current {
+  border-color: var(--success-color);
+  background: linear-gradient(135deg, var(--bg-color) 0%, rgba(82, 196, 26, 0.03) 100%);
+}
+
+/* Plan Header */
+.plan-header {
+  padding-bottom: 16px;
+}
+
+.plan-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+/* Plan Pricing */
+.plan-pricing {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.price-display {
+  position: relative;
+}
+
+.original-price {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pricing-breakdown {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+/* Plan Features */
+.plan-features {
+  flex: 1;
+}
+
+.plan-features .ant-list-item {
+  padding: 8px 0 !important;
+  border: none !important;
+}
+
+/* Plan Limits */
+.plan-limits {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Plan Action */
+.plan-action {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+/* Pricing Model Toggle Enhancements */
+.ant-segmented {
+  border-radius: 8px !important;
+  padding: 4px !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.ant-segmented-item {
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-segmented-item-selected {
+  background: var(--primary-color) !important;
+  color: white !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+/* Team Size Input */
+.ant-input-number {
+  border-radius: 8px !important;
+  border: 2px solid var(--border-color) !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-input-number:focus,
+.ant-input-number-focused {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+}
+
+/* Badge Customizations */
+.ant-badge {
+  font-size: 12px;
+}
+
+.ant-badge-count {
+  border-radius: 12px !important;
+  font-weight: 500 !important;
+  padding: 2px 8px !important;
+  height: auto !important;
+  min-width: auto !important;
+  line-height: 1.4 !important;
+}
+
+/* Alert Customizations */
+.ant-alert {
+  border-radius: 8px !important;
+  border: 1px solid !important;
+}
+
+.ant-alert-info {
+  background: linear-gradient(
+    135deg,
+    rgba(24, 144, 255, 0.05) 0%,
+    rgba(24, 144, 255, 0.02) 100%
+  ) !important;
+  border-color: rgba(24, 144, 255, 0.2) !important;
+}
+
+.ant-alert-success {
+  background: linear-gradient(
+    135deg,
+    rgba(82, 196, 26, 0.05) 0%,
+    rgba(82, 196, 26, 0.02) 100%
+  ) !important;
+  border-color: rgba(82, 196, 26, 0.2) !important;
+}
+
+.ant-alert-warning {
+  background: linear-gradient(
+    135deg,
+    rgba(250, 173, 20, 0.05) 0%,
+    rgba(250, 173, 20, 0.02) 100%
+  ) !important;
+  border-color: rgba(250, 173, 20, 0.2) !important;
+}
+
+.ant-alert-error {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 77, 79, 0.05) 0%,
+    rgba(255, 77, 79, 0.02) 100%
+  ) !important;
+  border-color: rgba(255, 77, 79, 0.2) !important;
+}
+
+/* Button Enhancements */
+.ant-btn {
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ant-btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #40a9ff 100%) !important;
+  border: none !important;
+  box-shadow: var(--shadow-light) !important;
+}
+
+.ant-btn-primary:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%) !important;
+  box-shadow: var(--shadow-medium) !important;
+  transform: translateY(-1px) !important;
+}
+
+.ant-btn-default {
+  border: 2px solid var(--border-color) !important;
+  background: var(--bg-color) !important;
+  color: var(--text-color) !important;
+}
+
+.ant-btn-default:hover {
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+  background: rgba(24, 144, 255, 0.05) !important;
+}
+
+/* Card Enhancements */
+.ant-card {
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-light) !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--bg-color) !important;
+}
+
+.ant-card-head {
+  border-bottom: 1px solid var(--border-color) !important;
+  background: var(--bg-secondary) !important;
+}
+
+.ant-card-body {
+  padding: 20px !important;
+}
+
+/* Typography Enhancements */
+.ant-typography h1,
+.ant-typography h2,
+.ant-typography h3,
+.ant-typography h4,
+.ant-typography h5 {
+  color: var(--text-color) !important;
+}
+
+.ant-typography {
+  color: var(--text-color) !important;
+}
+
+/* Tag Enhancements */
+.ant-tag {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  border: none !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .pricing-modal-header {
+    padding: 16px 16px 0;
+    margin-bottom: 16px;
+  }
+
+  .pricing-modal-content {
+    padding: 0 16px 16px;
+  }
+
+  .pricing-plan-card {
+    margin-bottom: 16px;
+  }
+
+  .pricing-plan-card:hover {
+    transform: none;
+  }
+
+  .plan-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .price-display {
+    padding: 12px 0;
+  }
+
+  .ant-col {
+    margin-bottom: 16px;
+  }
+
+  .ant-segmented {
+    width: 100% !important;
+  }
+
+  .ant-input-number {
+    width: 100% !important;
+  }
+
+  /* Single column layout on mobile */
+  .pricing-modal .ant-row {
+    flex-direction: column;
+  }
+
+  .pricing-modal .ant-col-xs-24 {
+    width: 100% !important;
+  }
+
+  /* Hide desktop modal on mobile when drawer is preferred */
+  .pricing-modal.mobile-preferred {
+    display: none !important;
+  }
+
+  /* Enhanced touch targets for mobile */
+  .pricing-plan-card,
+  .mobile-plan-card {
+    min-height: 44px;
+  }
+
+  .pricing-plan-card .ant-btn,
+  .mobile-plan-card .ant-btn {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  /* Improved spacing for touch interaction */
+  .pricing-plan-card .plan-action,
+  .mobile-plan-card .plan-action {
+    padding-top: 20px;
+  }
+}
+
+@media (max-width: 576px) {
+  .pricing-modal-header h2 {
+    font-size: 20px !important;
+  }
+
+  .pricing-modal:not(.mobile-preferred) {
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .pricing-modal:not(.mobile-preferred) .ant-modal-content {
+    height: 100vh !important;
+    border-radius: 0 !important;
+  }
+
+  .pricing-modal:not(.mobile-preferred) .pricing-modal-content {
+    max-height: calc(100vh - 120px);
+  }
+
+  /* Small screen optimizations */
+  .pricing-plan-card .ant-card-body,
+  .mobile-plan-card .ant-card-body {
+    padding: 12px !important;
+  }
+
+  .pricing-plan-card .plan-features,
+  .mobile-plan-card .plan-features {
+    margin: 8px 0;
+  }
+
+  .pricing-plan-card .plan-features .ant-list-item,
+  .mobile-plan-card .plan-features .ant-list-item {
+    padding: 4px 0 !important;
+    font-size: 13px;
+  }
+
+  /* Improve readability on small screens */
+  .price-display .ant-typography-title {
+    font-size: 20px !important;
+  }
+
+  .pricing-breakdown {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+/* Tablet Optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .pricing-modal .ant-col-lg-6 {
+    width: 50% !important;
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  /* Tablet-specific plan card adjustments */
+  .pricing-plan-card {
+    min-height: 450px;
+  }
+
+  .pricing-plan-card .ant-card-body {
+    padding: 18px !important;
+  }
+
+  /* Optimized button sizes for tablet */
+  .pricing-plan-card .ant-btn {
+    height: 40px;
+    font-size: 15px;
+  }
+
+  /* Better spacing for tablet touch targets */
+  .ant-segmented-item {
+    padding: 8px 16px !important;
+  }
+
+  .ant-input-number {
+    height: 42px !important;
+  }
+}
+
+/* Desktop Optimizations */
+@media (min-width: 1025px) {
+  .pricing-plan-card {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pricing-plan-card .ant-card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .plan-features {
+    flex: 1;
+  }
+
+  .plan-action {
+    margin-top: auto;
+  }
+}
+
+/* Loading States */
+.pricing-plan-card .ant-skeleton {
+  padding: 20px;
+}
+
+.pricing-plan-card.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Accessibility Enhancements */
+.pricing-plan-card:focus,
+.mobile-plan-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.pricing-plan-card[aria-selected="true"],
+.mobile-plan-card[aria-selected="true"] {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-strong);
+}
+
+/* Screen Reader Only Content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Focus Management */
+.pricing-modal .ant-modal-content:focus {
+  outline: none;
+}
+
+.pricing-modal [role="button"]:focus,
+.pricing-modal button:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* ARIA Live Regions */
+.pricing-updates[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Keyboard Navigation */
+.pricing-plan-card[tabindex="0"]:focus,
+.mobile-plan-card[tabindex="0"]:focus {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .pricing-modal {
+    --border-color: #000000;
+    --text-secondary: #666666;
+  }
+
+  .pricing-modal.dark {
+    --border-color: #ffffff;
+    --text-secondary: #cccccc;
+  }
+
+  .pricing-plan-card {
+    border-width: 3px !important;
+  }
+
+  .ant-btn {
+    border-width: 2px !important;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .pricing-plan-card,
+  .mobile-plan-card,
+  .ant-btn,
+  .ant-segmented-item {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .pricing-plan-card:hover,
+  .mobile-plan-card:hover {
+    transform: none !important;
+  }
+
+  .ant-btn-primary:hover {
+    transform: none !important;
+  }
+
+  @keyframes slideInUp,
+  @keyframes mobileSlideIn {
+    from,
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Print Styles */
+@media print {
+  .pricing-modal-header button,
+  .plan-action,
+  .mobile-pricing-drawer {
+    display: none !important;
+  }
+
+  .pricing-plan-card,
+  .mobile-plan-card {
+    border: 2px solid #000 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+
+  .pricing-modal-content {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .pricing-modal {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+  }
+
+  .ant-modal-content {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+}
+
+/* Animation Enhancements */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pricing-plan-card {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.pricing-plan-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.pricing-plan-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.pricing-plan-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.pricing-plan-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Modal Animation */
+.pricing-modal .ant-modal-content {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+/* Loading Animation */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pricing-plan-card.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+.pricing-modal-content::-webkit-scrollbar,
+.mobile-pricing-drawer .ant-drawer-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pricing-modal-content::-webkit-scrollbar-track,
+.mobile-pricing-drawer .ant-drawer-body::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.pricing-modal-content::-webkit-scrollbar-thumb,
+.mobile-pricing-drawer .ant-drawer-body::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+.pricing-modal-content::-webkit-scrollbar-thumb:hover,
+.mobile-pricing-drawer .ant-drawer-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color);
+}
+
+/* Firefox Scrollbar */
+.pricing-modal-content,
+.mobile-pricing-drawer .ant-drawer-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) var(--bg-secondary);
+}
+
+/* Mobile Note */
+.mobile-note {
+  text-align: center;
+  padding: 16px 0;
+}
+
+@media (min-width: 769px) {
+  .mobile-note {
+    display: none;
+  }
+}
+
+/* Mobile Pricing Drawer Styles */
+.mobile-pricing-drawer .ant-drawer-body {
+  padding: 16px !important;
+  background: var(--bg-secondary);
+}
+
+.mobile-pricing-drawer .ant-drawer-header {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-color);
+}
+
+.mobile-plan-card {
+  transition: all 0.3s ease;
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+}
+
+.mobile-plan-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-light);
+}
+
+.mobile-plan-card.selected {
+  border-color: var(--primary-color);
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.mobile-plan-card.current {
+  border-color: var(--success-color);
+  background: rgba(82, 196, 26, 0.05);
+}
+
+/* Mobile Segmented Control */
+.mobile-pricing-drawer .ant-segmented {
+  width: 100% !important;
+  background: var(--bg-color) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+/* Mobile Input Number */
+.mobile-pricing-drawer .ant-input-number {
+  border: 2px solid var(--border-color) !important;
+}
+
+.mobile-pricing-drawer .ant-input-number:focus,
+.mobile-pricing-drawer .ant-input-number-focused {
+  border-color: var(--primary-color) !important;
+}
+
+/* Mobile Button Enhancements */
+.mobile-plan-card .ant-btn {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+}
+
+.mobile-plan-card .ant-btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, #40a9ff 100%) !important;
+  border: none !important;
+}
+
+/* Mobile Affix Styles */
+.mobile-pricing-drawer .ant-affix {
+  z-index: 10;
+}
+
+/* Mobile Animation */
+@keyframes mobileSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-plan-card {
+  animation: mobileSlideIn 0.3s ease-out;
+}
+
+/* Mobile Drawer Responsive Adjustments */
+@media (max-width: 576px) {
+  .mobile-pricing-drawer {
+    height: 95% !important;
+  }
+
+  .mobile-pricing-drawer .ant-drawer-body {
+    padding: 12px !important;
+  }
+
+  .mobile-plan-card {
+    margin-bottom: 8px;
+  }
+
+  .mobile-plan-card .ant-card-body {
+    padding: 12px !important;
+  }
+}
+
+/* Dark Mode Mobile Adjustments */
+.mobile-pricing-drawer.dark .mobile-plan-card {
+  background: var(--bg-color);
+  border-color: var(--border-color);
+}
+
+.mobile-pricing-drawer.dark .mobile-plan-card.selected {
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.mobile-pricing-drawer.dark .mobile-plan-card.current {
+  background: rgba(82, 196, 26, 0.1);
+}
