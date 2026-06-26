@@ -69,8 +69,6 @@ const ReportingOverviewProjectsTable = ({
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [field, setField] = useState<string>('name');
 
-  // ✅ Update local projectList directly when socket response arrives
-  // This component uses local state not Redux, so we patch the list in place
   const handleHealthChangeResponse = useCallback(
     (data: { id: string; health_id: string; color_code: string; name: string }) => {
       setProjectList(prev =>
@@ -86,7 +84,7 @@ const ReportingOverviewProjectsTable = ({
         )
       );
     },
-    [setProjectList]
+    []
   );
 
   useEffect(() => {
@@ -130,7 +128,6 @@ const ReportingOverviewProjectsTable = ({
               project={record.name}
               projectColor={record.color_code}
             />
-
             <Button
               className="hidden group-hover:flex"
               type="text"
@@ -286,8 +283,8 @@ const ReportingOverviewProjectsTable = ({
     if (sorter.field) setField(sorter.field);
     setPagination(prev => ({
       ...prev,
-      current: newPagination.current,
-      pageSize: newPagination.pageSize,
+      current: paginationConfig.current ?? prev.current,
+      pageSize: paginationConfig.pageSize ?? prev.pageSize,
     }));
   };
 
@@ -331,7 +328,9 @@ const ReportingOverviewProjectsTable = ({
     [themeMode]
   );
 
-  const fetchOverviewProjects = async () => {
+  // FIX 2: Wrap in useCallback so the effect dependency is stable and correct.
+  // All values read inside are listed as deps, so the closure is never stale.
+  const fetchOverviewProjects = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = {
@@ -354,13 +353,14 @@ const ReportingOverviewProjectsTable = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [teamsId, pagination.current, pagination.pageSize, searchQuery, order, field, includeArchivedProjects]);
 
-  // ✅ FIX 2: Added pagination.current and pagination.pageSize as dependencies
-  // so any change to page number or page size triggers a fresh API fetch.
+  // FIX 4: fetchOverviewProjects is now the single dependency.
+  // It changes whenever page, pageSize, search, sort, or archived changes —
+  // so the API is always called with the correct values.
   useEffect(() => {
     fetchOverviewProjects();
-  }, [searchQuery, order, field, pagination.current, pagination.pageSize]);
+  }, [fetchOverviewProjects]);
 
   return (
     <ConfigProvider {...tableConfig}>
@@ -374,6 +374,7 @@ const ReportingOverviewProjectsTable = ({
           pageSize: pagination.pageSize,
           total: pagination.total,
           current: pagination.current,
+          pageSize: pagination.pageSize,
           pageSizeOptions: PAGE_SIZE_OPTIONS,
         }}
         scroll={{ x: 1500 }}
