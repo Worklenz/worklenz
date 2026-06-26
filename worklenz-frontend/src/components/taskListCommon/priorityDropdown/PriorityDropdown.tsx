@@ -1,6 +1,11 @@
 import { Card, Dropdown, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
 import React, { useState } from 'react';
-import { DoubleLeftOutlined, DownOutlined, MinusOutlined, PauseOutlined } from '@/shared/antd-imports';
+import {
+  DoubleLeftOutlined,
+  DownOutlined,
+  MinusOutlined,
+  PauseOutlined,
+} from '@/shared/antd-imports';
 // custom css file
 import './priorityDropdown.css';
 import { colors } from '../../../styles/colors';

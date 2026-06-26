@@ -7,15 +7,19 @@ import i18next from 'i18next';
 import ThemeWrapper from './features/theme/ThemeWrapper';
 import ModuleErrorBoundary from './components/ModuleErrorBoundary';
 import { UpdateNotificationProvider } from './components/update-notification';
+import CookieConsentBanner from './components/CookieConsentBanner';
 
 // Routes
 import router from './app/routes';
 
 // Hooks & Utils
 import { useAppSelector } from './hooks/useAppSelector';
+import { useSentryIntegration } from './hooks/useSentryIntegration';
 import { initMixpanel } from './utils/mixpanelInit';
 import { initializeCsrfToken } from './api/api-client';
 import CacheCleanup from './utils/cache-cleanup';
+import ChunkErrorHandler from './utils/chunk-error-handler';
+import { consentManager } from './utils/consentManager';
 
 // Types & Constants
 import { Language } from './features/i18n/localesSlice';
@@ -23,7 +27,11 @@ import logger from './utils/errorLogger';
 import { SuspenseFallback } from './components/suspense-fallback/suspense-fallback';
 
 // Performance optimizations
-import { CSSPerformanceMonitor, LayoutStabilizer, CriticalCSSManager } from './utils/css-optimizations';
+import {
+  CSSPerformanceMonitor,
+  LayoutStabilizer,
+  CriticalCSSManager,
+} from './utils/css-optimizations';
 
 // Service Worker
 import { registerSW } from './utils/serviceWorkerRegistration';
@@ -43,6 +51,9 @@ import { registerSW } from './utils/serviceWorkerRegistration';
 const App: React.FC = memo(() => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const language = useAppSelector(state => state.localesReducer.lng);
+
+  // Initialize Sentry integration for user context tracking
+  useSentryIntegration();
 
   // Memoize mixpanel initialization to prevent re-initialization
   const mixpanelToken = useMemo(() => import.meta.env.VITE_MIXPANEL_TOKEN as string, []);
@@ -90,11 +101,14 @@ const App: React.FC = memo(() => {
       try {
         // Initialize CSRF token immediately as it's needed for API calls
         await initializeCsrfToken();
-        
+
+        // Initialize consent manager for cookie consent
+        consentManager.initialize();
+
         // Start CSS performance monitoring
         CSSPerformanceMonitor.monitorLayoutShifts();
         CSSPerformanceMonitor.monitorRenderBlocking();
-        
+
         // Preload critical fonts to prevent layout shifts
         LayoutStabilizer.preloadFonts([
           { family: 'Inter', weight: '400' },
@@ -118,70 +132,35 @@ const App: React.FC = memo(() => {
 
   // Global error handlers for module loading issues
   useEffect(() => {
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const error = event.reason;
-      
-      // Check if this is a module loading error
-      if (
-        error?.message?.includes('Failed to fetch dynamically imported module') ||
-        error?.message?.includes('Loading chunk') ||
-        error?.name === 'ChunkLoadError'
-      ) {
-        console.error('Unhandled module loading error:', error);
-        event.preventDefault(); // Prevent default browser error handling
-        
-        // Clear caches and reload
-        CacheCleanup.clearAllCaches()
-          .then(() => CacheCleanup.forceReload('/auth/login'))
-          .catch(() => window.location.reload());
-      }
-    };
+    // Setup global chunk error handlers
+    ChunkErrorHandler.setupGlobalHandlers();
 
-    const handleError = (event: ErrorEvent) => {
-      const error = event.error;
-      
-      // Check if this is a module loading error
-      if (
-        error?.message?.includes('Failed to fetch dynamically imported module') ||
-        error?.message?.includes('Loading chunk') ||
-        error?.name === 'ChunkLoadError'
-      ) {
-        console.error('Global module loading error:', error);
-        event.preventDefault(); // Prevent default browser error handling
-        
-        // Clear caches and reload
-        CacheCleanup.clearAllCaches()
-          .then(() => CacheCleanup.forceReload('/auth/login'))
-          .catch(() => window.location.reload());
-      }
-    };
-
-    // Add global error handlers
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    window.addEventListener('error', handleError);
+    // Reset retry count on successful mount
+    ChunkErrorHandler.resetRetryCount();
 
     return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-      window.removeEventListener('error', handleError);
+      // Cleanup is handled internally by ChunkErrorHandler
     };
   }, []);
 
   // Register service worker
   useEffect(() => {
     registerSW({
-      onSuccess: (registration) => {
+      onSuccess: registration => {
         console.log('Service Worker registered successfully', registration);
       },
-      onUpdate: (registration) => {
-        console.log('New content is available and will be used when all tabs for this page are closed.');
+      onUpdate: registration => {
+        console.log(
+          'New content is available and will be used when all tabs for this page are closed.'
+        );
         // You could show a toast notification here for user to refresh
       },
       onOfflineReady: () => {
         console.log('This web app has been cached for offline use.');
       },
-      onError: (error) => {
+      onError: error => {
         logger.error('Service Worker registration failed:', error);
-      }
+      },
     });
   }, []);
 
@@ -203,7 +182,7 @@ const App: React.FC = memo(() => {
   return (
     <Suspense fallback={<SuspenseFallback />}>
       <ThemeWrapper>
-        <UpdateNotificationProvider enableAutoCheck={false}>
+        <UpdateNotificationProvider>
           <ModuleErrorBoundary>
             <RouterProvider
               router={router}
@@ -211,6 +190,7 @@ const App: React.FC = memo(() => {
                 v7_startTransition: true,
               }}
             />
+            <CookieConsentBanner />
           </ModuleErrorBoundary>
         </UpdateNotificationProvider>
       </ThemeWrapper>

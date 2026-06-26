@@ -10,8 +10,8 @@
   "phaseColumn": "Phase",
   "statusColumn": "Status",
   "priorityColumn": "Priority",
-  "timeTrackingColumn": "Time Tracking",
-  "timetrackingColumn": "Time Tracking",
+  "timeTrackingColumn": "Time",
+  "timetrackingColumn": "Time",
   "estimationColumn": "Estimation",
   "startDateColumn": "Start Date",
   "startdateColumn": "Start Date",
@@ -24,7 +24,10 @@
   "lastUpdatedColumn": "Last Updated",
   "lastupdatedColumn": "Last Updated",
   "reporterColumn": "Reporter",
+  "moveColumnHandle": "Move column",
   "dueTimeColumn": "Due Time",
+  "activeParentBadge": "Active parent",
+  "activeParentTooltip": "Parent task is not archived",
   "todoSelectorText": "To Do",
   "doingSelectorText": "Doing",
   "doneSelectorText": "Done",
@@ -39,6 +42,7 @@
   "addTaskText": "Add Task",
   "addSubTaskText": "Add Sub Task",
   "addTaskInputPlaceholder": "Type your task and hit enter",
+  "addSubTaskInputPlaceholder": "Type subtask name and press Enter to save",
   "noTasksInGroup": "No tasks in this group",
   "dropTaskHere": "Drop task here",
 
@@ -56,6 +60,7 @@
   "pendingInvitation": "Pending Invitation",
 
   "contextMenu": {
+    "duplicateTask": "Duplicate task",
     "assignToMe": "Assign to me",
     "copyLink": "Copy link to task",
     "linkCopied": "Link copied to clipboard",
@@ -66,7 +71,12 @@
     "convertToSubTask": "Convert to Sub task",
     "convertToTask": "Convert to Task",
     "delete": "Delete",
-    "searchByNameInputPlaceholder": "Search by name"
+    "searchByNameInputPlaceholder": "Search by name",
+    "deleteConfirmTitle": "Delete Task",
+    "deleteConfirmMessage": "Are you sure you want to delete this task? This action cannot be undone.",
+    "deleteSubtaskConfirmMessage": "Are you sure you want to delete this subtask? This action cannot be undone.",
+    "deleteConfirmOk": "Delete",
+    "deleteConfirmCancel": "Cancel"
   },
   "setDueDate": "Set due date",
   "setStartDate": "Set start date",
@@ -74,6 +84,13 @@
   "clearStartDate": "Clear start date",
   "dueDatePlaceholder": "Due Date",
   "startDatePlaceholder": "Start Date",
+
+  "exampleTasks": {
+    "prefix": "e.g.",
+    "task1": "Define project scope and objectives",
+    "task2": "Review and align with stakeholders",
+    "task3": "Schedule kickoff meeting"
+  },
 
   "emptyStates": {
     "noTaskGroups": "No task groups found",
@@ -90,7 +107,28 @@
     "peopleField": "People field",
     "noDate": "No date",
     "unsupportedField": "Unsupported field type",
-    
+    "datePlaceholder": "Set date",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Select option",
+    "noOptionsAvailable": "No options available",
+    "updating": "Updating...",
+    "peopleDropdown": {
+      "searchMembers": "Search members...",
+      "pending": "Pending",
+      "loadingMembers": "Loading members...",
+      "noMembersFound": "No members found",
+      "inviteMember": "Invite member"
+    },
+
+    "limitPopover": {
+      "title": "Custom Field Limit Reached",
+      "body": "You have used all 10 custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.",
+      "appSumoTitle": "Plan Upgrade Required",
+      "appSumoBody": "Adding custom fields beyond your current plan limit requires a Business plan.",
+      "cta": "Upgrade Now"
+    },
+
     "modal": {
       "addFieldTitle": "Add field",
       "editFieldTitle": "Edit field",
@@ -108,12 +146,16 @@
       "updateSuccessMessage": "Custom column updated successfully",
       "deleteSuccessMessage": "Custom column deleted successfully",
       "deleteErrorMessage": "Failed to delete custom column",
+      "deleteErrorMissingId": "Cannot delete column: Missing UUID",
+      "hideFromTaskList": "Hide from task list",
+      "showInTaskList": "Show in task list",
       "createErrorMessage": "Failed to create custom column",
       "updateErrorMessage": "Failed to update custom column"
     },
-    
+
     "fieldTypes": {
       "people": "People",
+      "text": "Text",
       "number": "Number",
       "date": "Date",
       "selection": "Selection",
@@ -142,5 +184,12 @@
     "conflictTitle": "Timer Already Running",
     "conflictMessage": "You have a timer running for \"{{taskName}}\" in project \"{{projectName}}\". Would you like to stop that timer and start a new one for this task?",
     "stopAndStart": "Stop & Start New Timer"
+  },
+
+  "errors": {
+    "taskNotCompleted": "Task is not completed",
+    "completeTaskDependencies": "Please complete the task dependencies before proceeding",
+    "incompleteDependencies": "Incomplete Dependencies!",
+    "someDependenciesNotCompleted": "Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding."
   }
 }

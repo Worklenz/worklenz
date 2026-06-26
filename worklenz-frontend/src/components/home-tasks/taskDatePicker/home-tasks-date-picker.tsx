@@ -6,10 +6,13 @@ import calendar from 'dayjs/plugin/calendar';
 import { SocketEvents } from '@/shared/socket-events';
 import type { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 import { getUserSession } from '@/utils/session-helper';
+import { getDueDateStatus, getDueDateColor, getDueDateAriaLabel } from '@/utils/dueDateColorHelper';
+import './home-tasks-date-picker.css';
 
 // Extend dayjs with the calendar plugin
 dayjs.extend(calendar);
@@ -20,15 +23,18 @@ type HomeTasksDatePickerProps = {
 
 const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
   const { socket, connected } = useSocket();
+  const dispatch = useAppDispatch();
   const { t } = useTranslation('home');
   const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
   const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
     skip: false,
   });
 
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   // Use useMemo to avoid re-renders when record.end_date is the same
   const initialDate = useMemo(
-    () => (record.end_date ? dayjs(record.end_date) : null),
+    () => (record.end_date ? dayjs(record.end_date, 'YYYY-MM-DD') : null),
     [record.end_date]
   );
 
@@ -41,6 +47,8 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
 
   const handleChangeReceived = (value: any) => {
     refetch();
+    // Invalidate task counts cache to refresh calendar badges
+    dispatch(homePageApi.util.invalidateTags(['taskCounts']));
   };
 
   useEffect(() => {
@@ -81,30 +89,56 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
     });
   };
 
-  return (
-    <DatePicker
-      allowClear
-      disabledDate={
-        record.start_date ? current => current.isBefore(dayjs(record.start_date)) : undefined
+  // Get due date status and color
+  const dueDateStatus = useMemo(() => getDueDateStatus(selectedDate), [selectedDate]);
+  const dueDateColor = useMemo(() => getDueDateColor(dueDateStatus), [dueDateStatus]);
+  const ariaLabel = useMemo(() => getDueDateAriaLabel(dueDateStatus), [dueDateStatus]);
+
+  // Apply color directly to input element after render
+  useEffect(() => {
+    const applyColor = () => {
+      if (wrapperRef.current) {
+        const input = wrapperRef.current.querySelector('input');
+        if (input) {
+          if (dueDateColor) {
+            input.style.setProperty('color', dueDateColor, 'important');
+          } else {
+            input.style.removeProperty('color');
+          }
+        }
       }
-      placeholder={t('tasks.dueDatePlaceholder')}
-      value={selectedDate}
-      onChange={value => handleEndDateChanged(value || null, record || null)}
-      format={value => getFormattedDate(value)} // Dynamically format the displayed value
-      style={{
-        color: selectedDate
-          ? selectedDate.isSame(dayjs(), 'day') || selectedDate.isSame(dayjs().add(1, 'day'), 'day')
-            ? '#52c41a'
-            : selectedDate.isAfter(dayjs().add(1, 'day'), 'day')
-              ? undefined
-              : '#ff4d4f'
-          : undefined,
-        width: '125px', // Ensure the input takes full width
-      }}
-      inputReadOnly // Prevent manual input to avoid overflow issues
-      variant={'borderless'} // Make the DatePicker borderless
-      suffixIcon={null}
-    />
+    };
+
+    // Apply immediately
+    applyColor();
+
+    // Also apply after a small delay to ensure DOM is ready
+    const timer = setTimeout(applyColor, 0);
+    return () => clearTimeout(timer);
+  }, [dueDateColor, selectedDate]);
+
+  return (
+    <div ref={wrapperRef} className="due-date-wrapper" style={{ color: dueDateColor }}>
+      <DatePicker
+        className="due-date-picker"
+        allowClear
+        disabledDate={
+          record.start_date ? current => current.isBefore(dayjs(record.start_date)) : undefined
+        }
+        placeholder={t('tasks.dueDatePlaceholder')}
+        value={selectedDate}
+        onChange={value => handleEndDateChanged(value || null, record || null)}
+        format={value => getFormattedDate(value)}
+        style={{
+          width: '100%',
+          color: dueDateColor,
+        }}
+        inputReadOnly
+        variant={'borderless'}
+        suffixIcon={null}
+        aria-label={ariaLabel || undefined}
+      />
+    </div>
   );
 };
 

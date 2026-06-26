@@ -12,6 +12,7 @@ import {IO} from "../shared/io";
 import sessionMiddleware from "../middlewares/session-middleware";
 import {getLoggedInUserIdFromSocket} from "../socket.io/util";
 import {startCronJobs} from "../cron_jobs";
+import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
@@ -42,9 +43,19 @@ const wrap = (middleware: any) => (socket: any, next: any) => middleware(socket.
 io.use(wrap(sessionMiddleware));
 
 io.use((socket, next) => {
+  // Check for regular user authentication
   const userId = getLoggedInUserIdFromSocket(socket);
-  if (userId)
+  if (userId) {
     return next();
+  }
+  
+  // Check for client portal authentication via handshake auth
+  const auth = socket.handshake.auth;
+  if (auth && auth.token && auth.type === 'client') {
+    // Client portal authentication will be handled in on_client_connect
+    return next();
+  }
+  
   return next(new Error("401 unauthorized"));
 });
 
@@ -96,6 +107,7 @@ function onListening() {
     : `port ${addr.port}`;
 
   process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
+  process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();

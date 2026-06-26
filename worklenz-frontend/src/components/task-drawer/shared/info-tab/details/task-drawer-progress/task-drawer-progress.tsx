@@ -19,6 +19,8 @@ import {
   updateEnhancedKanbanTaskProgress,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { updateTask } from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
 
 interface TaskDrawerProgressProps {
   task: ITaskViewModel;
@@ -106,6 +108,20 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
       );
 
       socket?.once(SocketEvents.GET_TASK_PROGRESS.toString(), (data: any) => {
+        // Update task-management slice for task-list-v2
+        const currentTask = store.getState().taskManagement.entities[task.id];
+        if (currentTask) {
+          dispatch(
+            updateTask({
+              ...currentTask,
+              progress: data.complete_ratio,
+              complete_ratio: data.complete_ratio,
+              updatedAt: new Date().toISOString(),
+            })
+          );
+        }
+
+        // Update old tasks slice (for backward compatibility)
         if (tab === 'tasks-list') {
           dispatch(
             updateTaskProgress({
@@ -116,6 +132,8 @@ const TaskDrawerProgress = ({ task, form }: TaskDrawerProgressProps) => {
             })
           );
         }
+
+        // Update enhanced kanban slice
         if (tab === 'board') {
           dispatch(
             updateEnhancedKanbanTaskProgress({

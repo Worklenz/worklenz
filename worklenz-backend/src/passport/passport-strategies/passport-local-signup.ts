@@ -1,13 +1,13 @@
 import bcrypt from "bcrypt";
-import {Strategy as LocalStrategy} from "passport-local";
+import { Strategy as LocalStrategy } from "passport-local";
 
-import {DEFAULT_ERROR_MESSAGE} from "../../shared/constants";
-import {sendWelcomeEmail} from "../../shared/email-templates";
-import {log_error} from "../../shared/utils";
+import { DEFAULT_ERROR_MESSAGE } from "../../shared/constants";
+import { sendWelcomeEmail } from "../../shared/email-templates";
+import { log_error, sanitizePlainText } from "../../shared/utils";
 
 import db from "../../config/db";
-import {Request} from "express";
-import {ERROR_KEY, SUCCESS_KEY} from "./passport-constants";
+import { Request } from "express";
+import { ERROR_KEY, SUCCESS_KEY } from "./passport-constants";
 
 async function isGoogleAccountFound(email: string) {
   const q = `
@@ -56,9 +56,13 @@ async function registerUser(password: string, team_id: string, name: string, tea
 async function handleSignUp(req: Request, email: string, password: string, done: any) {
   (req.session as any).flash = {};
   // team = Invited team_id if req.body.from_invitation is true
-  const {name, team_name, team_member_id, team_id, timezone} = req.body;
+  const { name, team_name, team_member_id, team_id, timezone } = req.body;
 
   if (!team_name) return done(null, null, req.flash(ERROR_KEY, "Team name is required"));
+
+  // Sanitize user name to prevent HTML injection attacks
+  // This ensures malicious HTML/JavaScript cannot be stored in the database or rendered in emails
+  const sanitizedName = sanitizePlainText(name || "");
 
   const googleAccountFound = await isGoogleAccountFound(email);
   if (googleAccountFound)
@@ -69,8 +73,8 @@ async function handleSignUp(req: Request, email: string, password: string, done:
     return done(null, null, req.flash(ERROR_KEY, `Account for email ${email} has been deactivated. Please contact support to reactivate your account.`));
 
   try {
-    const user = await registerUser(password, team_id, name, team_name, email, timezone, team_member_id);
-    sendWelcomeEmail(email, name);
+    const user = await registerUser(password, team_id, sanitizedName, team_name, email, timezone, team_member_id);
+    sendWelcomeEmail(email, sanitizedName);
     return done(null, user, req.flash(SUCCESS_KEY, "Registration successful. Please check your email for verification."));
   } catch (error: any) {
     const message = (error?.message) || "";

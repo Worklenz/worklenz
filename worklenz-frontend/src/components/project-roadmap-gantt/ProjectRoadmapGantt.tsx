@@ -1,8 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Gantt, Task, ViewMode } from 'gantt-task-react';
-import { Button, Space, Badge } from 'antd';
+import { Button, Space, Badge } from '@/shared/antd-imports';
 import { CalendarOutlined, TeamOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { ProjectPhase, ProjectRoadmap, GanttViewOptions, PhaseModalData } from '../../types/project-roadmap.types';
+import {
+  ProjectPhase,
+  ProjectRoadmap,
+  GanttViewOptions,
+  PhaseModalData,
+} from '../../types/project-roadmap.types';
 import PhaseModal from './PhaseModal';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
@@ -25,7 +30,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
   const [selectedPhase, setSelectedPhase] = useState<PhaseModalData | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Month);
-  
+
   // Theme support
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
@@ -81,7 +86,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
 
       // Add phase tasks if enabled
       if (defaultViewOptions.showTasks) {
-        phase.tasks.forEach((task) => {
+        phase.tasks.forEach(task => {
           const ganttTask: Task = {
             id: task.id,
             name: task.name,
@@ -94,7 +99,11 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
             styles: {
               progressColor: ganttColors.taskBar,
               progressSelectedColor: ganttColors.taskBarHover,
-              backgroundColor: themeWiseColor('rgba(59, 130, 246, 0.1)', 'rgba(96, 165, 250, 0.2)', themeMode),
+              backgroundColor: themeWiseColor(
+                'rgba(59, 130, 246, 0.1)',
+                'rgba(96, 165, 250, 0.2)',
+                themeMode
+              ),
             },
           };
           tasks.push(ganttTask);
@@ -103,7 +112,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
 
       // Add milestones if enabled
       if (defaultViewOptions.showMilestones) {
-        phase.milestones.forEach((milestone) => {
+        phase.milestones.forEach(milestone => {
           const milestoneTask: Task = {
             id: milestone.id,
             name: milestone.name,
@@ -113,11 +122,15 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
             type: 'milestone',
             project: phase.id,
             styles: {
-              progressColor: milestone.criticalPath ? ganttColors.criticalPath : ganttColors.progressBar,
-              progressSelectedColor: milestone.criticalPath ? ganttColors.criticalPath : ganttColors.progressBar,
-              backgroundColor: milestone.criticalPath ? 
-                themeWiseColor('rgba(239, 68, 68, 0.1)', 'rgba(248, 113, 113, 0.2)', themeMode) :
-                themeWiseColor('rgba(16, 185, 129, 0.1)', 'rgba(52, 211, 153, 0.2)', themeMode),
+              progressColor: milestone.criticalPath
+                ? ganttColors.criticalPath
+                : ganttColors.progressBar,
+              progressSelectedColor: milestone.criticalPath
+                ? ganttColors.criticalPath
+                : ganttColors.progressBar,
+              backgroundColor: milestone.criticalPath
+                ? themeWiseColor('rgba(239, 68, 68, 0.1)', 'rgba(248, 113, 113, 0.2)', themeMode)
+                : themeWiseColor('rgba(16, 185, 129, 0.1)', 'rgba(52, 211, 153, 0.2)', themeMode),
             },
           };
           tasks.push(milestoneTask);
@@ -150,10 +163,10 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
 
   const handleTaskClick = (task: Task) => {
     // Find the phase this task belongs to
-    const phase = roadmap.phases.find(p => 
-      p.tasks.some(t => t.id === task.id) || p.milestones.some(m => m.id === task.id)
+    const phase = roadmap.phases.find(
+      p => p.tasks.some(t => t.id === task.id) || p.milestones.some(m => m.id === task.id)
     );
-    
+
     if (phase) {
       handlePhaseClick(phase);
     }
@@ -167,9 +180,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
         endDate: task.end,
       });
     } else if (onTaskUpdate) {
-      const parentPhase = roadmap.phases.find(p => 
-        p.tasks.some(t => t.id === task.id)
-      );
+      const parentPhase = roadmap.phases.find(p => p.tasks.some(t => t.id === task.id));
       if (parentPhase) {
         onTaskUpdate(parentPhase.id, task.id, {
           startDate: task.start,
@@ -184,9 +195,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
     if (phase && onPhaseUpdate) {
       onPhaseUpdate(phase.id, { progress: task.progress });
     } else if (onTaskUpdate) {
-      const parentPhase = roadmap.phases.find(p => 
-        p.tasks.some(t => t.id === task.id)
-      );
+      const parentPhase = roadmap.phases.find(p => p.tasks.some(t => t.id === task.id));
       if (parentPhase) {
         onTaskUpdate(parentPhase.id, task.id, { progress: task.progress });
       }
@@ -195,16 +204,25 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return '#52c41a';
-      case 'in-progress': return '#1890ff';
-      case 'on-hold': return '#faad14';
-      default: return '#d9d9d9';
+      case 'completed':
+        return '#52c41a';
+      case 'in-progress':
+        return '#1890ff';
+      case 'on-hold':
+        return '#faad14';
+      default:
+        return '#d9d9d9';
     }
   };
 
-  const columnWidth = viewMode === ViewMode.Year ? 350 : 
-                    viewMode === ViewMode.Month ? 300 : 
-                    viewMode === ViewMode.Week ? 250 : 60;
+  const columnWidth =
+    viewMode === ViewMode.Year
+      ? 350
+      : viewMode === ViewMode.Month
+        ? 300
+        : viewMode === ViewMode.Week
+          ? 250
+          : 60;
 
   return (
     <div className="project-roadmap-gantt w-full">
@@ -217,27 +235,25 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
                 {roadmap.name}
               </h3>
               {roadmap.description && (
-                <p className="text-gray-600 dark:text-gray-400 mb-0">
-                  {roadmap.description}
-                </p>
+                <p className="text-gray-600 dark:text-gray-400 mb-0">{roadmap.description}</p>
               )}
             </div>
             <Space>
-              <Button 
+              <Button
                 type={viewMode === ViewMode.Week ? 'primary' : 'default'}
                 onClick={() => setViewMode(ViewMode.Week)}
                 className="dark:border-gray-600 dark:text-gray-300"
               >
                 Week
               </Button>
-              <Button 
+              <Button
                 type={viewMode === ViewMode.Month ? 'primary' : 'default'}
                 onClick={() => setViewMode(ViewMode.Month)}
                 className="dark:border-gray-600 dark:text-gray-300"
               >
                 Month
               </Button>
-              <Button 
+              <Button
                 type={viewMode === ViewMode.Year ? 'primary' : 'default'}
                 onClick={() => setViewMode(ViewMode.Year)}
                 className="dark:border-gray-600 dark:text-gray-300"
@@ -249,15 +265,15 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
 
           {/* Phase Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {roadmap.phases.map((phase) => (
-              <div 
+            {roadmap.phases.map(phase => (
+              <div
                 key={phase.id}
                 className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200"
                 onClick={() => handlePhaseClick(phase)}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <Badge 
-                    color={getStatusColor(phase.status)} 
+                  <Badge
+                    color={getStatusColor(phase.status)}
                     text={
                       <span className="font-medium text-gray-900 dark:text-gray-100">
                         {phase.name}
@@ -268,7 +284,9 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <CalendarOutlined className="w-4 h-4" />
-                    <span>{phase.startDate.toLocaleDateString()} - {phase.endDate.toLocaleDateString()}</span>
+                    <span>
+                      {phase.startDate.toLocaleDateString()} - {phase.endDate.toLocaleDateString()}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <TeamOutlined className="w-4 h-4" />
@@ -289,14 +307,16 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
         <div className="p-4">
           <div className="w-full overflow-x-auto">
-            <div 
+            <div
               className="gantt-container"
-              style={{ 
-                '--gantt-background': ganttColors.background,
-                '--gantt-grid': ganttColors.grid,
-                '--gantt-text': ganttColors.text.primary,
-                '--gantt-border': ganttColors.border,
-              } as React.CSSProperties}
+              style={
+                {
+                  '--gantt-background': ganttColors.background,
+                  '--gantt-grid': ganttColors.grid,
+                  '--gantt-text': ganttColors.text.primary,
+                  '--gantt-border': ganttColors.border,
+                } as React.CSSProperties
+              }
             >
               <Gantt
                 tasks={ganttTasks}
@@ -308,7 +328,11 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
                 columnWidth={columnWidth}
                 todayColor={ganttColors.today}
                 projectProgressColor={ganttColors.progressBar}
-                projectBackgroundColor={themeWiseColor('rgba(82, 196, 26, 0.1)', 'rgba(52, 211, 153, 0.2)', themeMode)}
+                projectBackgroundColor={themeWiseColor(
+                  'rgba(82, 196, 26, 0.1)',
+                  'rgba(52, 211, 153, 0.2)',
+                  themeMode
+                )}
               />
             </div>
           </div>
@@ -320,7 +344,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
         visible={isModalVisible}
         phase={selectedPhase}
         onClose={() => setIsModalVisible(false)}
-        onUpdate={(updates) => {
+        onUpdate={updates => {
           if (selectedPhase && onPhaseUpdate) {
             onPhaseUpdate(selectedPhase.id, updates);
           }

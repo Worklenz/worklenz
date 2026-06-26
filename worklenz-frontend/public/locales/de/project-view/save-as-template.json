@@ -1,17 +1,30 @@
 {
   "title": "Als Vorlage speichern",
   "templateName": "Vorlagenname",
-  "includes": "Was soll aus dem Projekt in die Vorlage aufgenommen werden?",
+  "templateNamePlaceholder": "Vorlagennamen eingeben",
+  "templateInfo": "Vorlageninformationen",
+  "includes": "Projektelemente",
+  "taskIncludes": "Aufgabenelemente",
+  "cancel": "Abbrechen",
+  "save": "Speichern",
+  "creating": "Vorlage wird erstellt...",
+  "created": "Vorlage erstellt!",
+  "quickSelect": "Schnellauswahl:",
+  "selectAll": "Alle auswählen",
+  "essentialOnly": "Nur Wesentliches",
+  "clearAll": "Alle löschen",
+  "itemsSelected": "Elemente ausgewählt",
+  "readyToSave": "Bereit zum Speichern",
+  "validName": "Gültiger Name",
+  "required": "Erforderlich",
+  "proTips": "Profi-Tipps",
   "includesOptions": {
     "statuses": "Status",
     "phases": "Phasen",
-    "labels": "Labels"
-  },
-  "taskIncludes": "Was soll aus den Aufgaben in die Vorlage aufgenommen werden?",
-  "taskIncludesOptions": {
-    "statuses": "Status",
-    "phases": "Phasen",
     "labels": "Labels",
+    "customColumns": "Benutzerdefinierte Spalten"
+  },
+  "taskIncludesOptions": {
     "name": "Name",
     "priority": "Priorität",
     "status": "Status",
@@ -21,7 +34,40 @@
     "description": "Beschreibung",
     "subTasks": "Unteraufgaben"
   },
-  "cancel": "Abbrechen",
-  "save": "Speichern",
-  "templateNamePlaceholder": "Vorlagennamen eingeben"
+  "descriptions": {
+    "statuses": "Projekt-Status-Workflow-Konfiguration",
+    "phases": "Projektphasen und Meilensteine",
+    "labels": "Benutzerdefinierte Labels für Kategorisierung",
+    "customColumns": "Benutzerdefinierte Felder und Metadaten",
+    "taskName": "Aufgabennamen und Titel",
+    "taskPriority": "Aufgabenprioritätsstufen",
+    "taskStatus": "Aufgabenabschlussstatus",
+    "taskPhase": "Zugehörige Projektphase",
+    "taskLabel": "Aufgaben-Labels und Tags",
+    "timeEstimate": "Zeitschätzungen und Dauer",
+    "description": "Aufgabenbeschreibungen und Details",
+    "subTasks": "Unteraufgaben und Checklisten-Elemente"
+  },
+  "tooltips": {
+    "projectElements": "Wählen Sie aus, welche Projektelemente in Ihre Vorlage aufgenommen werden sollen",
+    "taskElements": "Wählen Sie aus, welche Aufgabenelemente in Ihre Vorlage aufgenommen werden sollen",
+    "required": "Dieses Element ist erforderlich und kann nicht abgewählt werden"
+  },
+  "tips": {
+    "line1": "Vorlagen bewahren Ihre Projektstruktur für schnelle Wiederverwendung",
+    "line2": "Wesentliche Elemente sind immer enthalten und können nicht entfernt werden",
+    "line3": "Sie können die Vorlage beim Erstellen neuer Projekte anpassen",
+    "line4": "Wählen Sie die Elemente aus, die Sie in Ihre Vorlage aufnehmen möchten"
+  },
+  "validation": {
+    "nameRequired": "Bitte geben Sie einen Vorlagennamen ein",
+    "nameMinLength": "Vorlagenname muss mindestens 3 Zeichen lang sein",
+    "nameMaxLength": "Vorlagenname muss weniger als 50 Zeichen haben"
+  },
+  "notifications": {
+    "createSuccess": "Vorlage erstellt",
+    "createSuccessDesc": "Ihre Projektvorlage wurde erfolgreich erstellt und ist einsatzbereit.",
+    "createError": "Vorlagenerstellung fehlgeschlagen",
+    "error": "Fehler"
+  }
 }

@@ -1,13 +1,13 @@
 // Update Notification Component
-// Shows a notification when new build is available and provides update options
+// Shows a passive banner when a new build is available
 
 import React from 'react';
-import { Modal, Button, Space, Typography } from '@/shared/antd-imports';
+import { Alert, Button, Space, Typography, theme } from '@/shared/antd-imports';
 import { ReloadOutlined, CloseOutlined, DownloadOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useServiceWorker } from '../../utils/serviceWorkerRegistration';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 interface UpdateNotificationProps {
   visible: boolean;
@@ -15,12 +15,9 @@ interface UpdateNotificationProps {
   onUpdate: () => void;
 }
 
-const UpdateNotification: React.FC<UpdateNotificationProps> = ({
-  visible,
-  onClose,
-  onUpdate
-}) => {
+const UpdateNotification: React.FC<UpdateNotificationProps> = ({ visible, onClose, onUpdate }) => {
   const { t } = useTranslation('common');
+  const { token } = theme.useToken();
   const [isUpdating, setIsUpdating] = React.useState(false);
   const { hardReload } = useServiceWorker();
 
@@ -45,76 +42,104 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({
     onClose();
   };
 
+  if (!visible) {
+    return null;
+  }
+
   return (
-    <Modal
-      title={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <DownloadOutlined style={{ color: '#1890ff' }} />
-          <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
-            {t('update-available')}
-          </Title>
-        </div>
-      }
-      open={visible}
-      onCancel={handleLater}
-      footer={null}
-      centered
-      closable={false}
-      maskClosable={false}
-      width={460}
-      styles={{
-        body: { padding: '20px 24px' }
+    <div
+      style={{
+        position: 'fixed',
+        top: 'env(safe-area-inset-top, 0px)',
+        left: 0,
+        right: 0,
+        width: '100%',
+        zIndex: 1100,
       }}
     >
-      <div style={{ marginBottom: '20px' }}>
-        <Text style={{ fontSize: '16px', lineHeight: '1.6' }}>
-          {t('update-description')}
-        </Text>
-        <br />
-        <br />
-        <Text style={{ fontSize: '14px', color: '#8c8c8c' }}>
-          {t('update-instruction')}
-        </Text>
-      </div>
-
-      <div style={{ 
-        background: '#f6ffed', 
-        border: '1px solid #b7eb8f', 
-        borderRadius: '6px', 
-        padding: '12px',
-        marginBottom: '20px'
-      }}>
-        <Text style={{ fontSize: '13px', color: '#389e0d' }}>
-          {t('update-whats-new', { 
-            interpolation: { escapeValue: false } 
-          })}
-        </Text>
-      </div>
-
-      <Space 
-        style={{ 
-          width: '100%', 
-          justifyContent: 'flex-end' 
-        }} 
-        size="middle"
+      <div
+        style={{
+          width: '100%',
+          padding: '12px 24px',
+          background: token.colorBgContainer,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+          boxShadow: token.boxShadowSecondary,
+        }}
       >
-        <Button
-          icon={<CloseOutlined />}
-          onClick={handleLater}
-          disabled={isUpdating}
-        >
-          {t('update-later')}
-        </Button>
-        <Button
-          type="primary"
-          icon={<ReloadOutlined />}
-          loading={isUpdating}
-          onClick={handleUpdate}
-        >
-          {isUpdating ? t('updating') : t('update-now')}
-        </Button>
-      </Space>
-    </Modal>
+        <Alert
+          message={
+            <Space
+              size="large"
+              style={{
+                width: '100%',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                rowGap: 12,
+                columnGap: 16,
+                flexWrap: 'wrap',
+              }}
+            >
+              <Space size="middle" wrap align="center">
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: token.colorInfoBg,
+                    color: token.colorInfo,
+                    flexShrink: 0,
+                  }}
+                >
+                  <DownloadOutlined />
+                </div>
+                <Text strong style={{ color: token.colorText }}>
+                  {t('update-banner-message', { defaultValue: 'A new version is available.' })}
+                </Text>
+                <Text style={{ color: token.colorTextSecondary }}>
+                  {t('update-banner-description', {
+                    defaultValue: 'Refresh when you are ready to get the latest improvements.',
+                  })}
+                </Text>
+              </Space>
+              <Space wrap>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  loading={isUpdating}
+                  onClick={handleUpdate}
+                >
+                  {isUpdating
+                    ? t('updating', { defaultValue: 'Updating...' })
+                    : t('update-now', { defaultValue: 'Refresh' })}
+                </Button>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CloseOutlined />}
+                  onClick={handleLater}
+                  disabled={isUpdating}
+                  aria-label={t('update-later', { defaultValue: 'Later' })}
+                  style={{ color: token.colorTextSecondary }}
+                  title={t('update-later', { defaultValue: 'Later' })}
+                />
+              </Space>
+            </Space>
+          }
+          type="info"
+          showIcon={false}
+          closable={false}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            padding: 0,
+          }}
+        />
+      </div>
+    </div>
   );
 };
 

@@ -1,0 +1,105 @@
+{
+  "title": "我的团队报告",
+  "subtitle": "团队成员的时间跟踪和绩效洞察",
+
+  "dateRange": {
+    "label": "日期范围",
+    "showing": "显示",
+    "today": "今天",
+    "yesterday": "昨天",
+    "thisWeek": "本周",
+    "lastWeek": "上周",
+    "last7Days": "最近7天",
+    "thisMonth": "本月",
+    "lastMonth": "上月",
+    "last30Days": "最近30天",
+    "last90Days": "最近90天",
+    "custom": "自定义范围",
+    "apply": "应用"
+  },
+
+  "summary": {
+    "totalMembers": "总成员数",
+    "totalMembersTooltip": "在所选日期范围内记录时间的团队成员总数。",
+    "totalTimeLogged": "总记录时间",
+    "totalTimeLoggedTooltip": "所有团队成员在所选日期范围内记录的总时间。",
+    "activeProjects": "活跃项目",
+    "activeProjectsTooltip": "在所选日期范围内，单个团队成员工作的最大项目数。",
+    "avgCompletionRate": "平均完成率",
+    "hours": "小时"
+  },
+
+  "timeTracking": {
+    "title": "时间跟踪摘要",
+    "chartTitle": "团队时间跟踪图表",
+    "member": "成员",
+    "teamMembers": "团队成员",
+    "totalTime": "总时间",
+    "totalHours": "总小时数",
+    "loggedTime": "记录时间",
+    "logsCount": "记录数量",
+    "activeDays": "活跃天数",
+    "lastActivity": "最后活动",
+    "actions": "操作",
+    "manualLogs": "手动记录",
+    "timerLogs": "计时器记录",
+    "projects": "项目",
+    "viewDetails": "查看详情",
+    "noData": "所选期间未找到时间日志",
+    "totalTimeTooltip": "该成员在所选日期范围内记录的总时间。包括所有项目和任务的所有时间条目。",
+    "logsCountTooltip": "该成员在所选日期范围内创建的单个时间日志条目总数。",
+    "projectsTooltip": "该成员在所选日期范围内记录时间的不同项目数量。",
+    "activeDaysTooltip": "该成员在所选日期范围内记录时间的不同天数。"
+  },
+
+  "performance": {
+    "title": "团队绩效",
+    "member": "成员",
+    "tasks": "任务",
+    "assigned": "已分配",
+    "completed": "已完成",
+    "overdue": "已逾期",
+    "tasksCompleted": "已完成任务",
+    "tasksOverdue": "逾期任务",
+    "completionRate": "完成率",
+    "completionRateTooltip": "已完成任务占总分配任务的百分比。计算为：（已完成任务 ÷ 已分配任务）× 100",
+    "timeLogged": "记录时间",
+    "timeLoggedTooltip": "该成员在所选日期范围内记录的总时间。包括所有项目和任务的所有时间条目。",
+    "activeProjects": "活跃项目",
+    "activeProjectsTooltip": "该成员在所选日期范围内记录时间的不同项目数量。",
+    "projectsInvolved": "参与项目",
+    "noData": "无可用绩效数据"
+  },
+
+  "detailedLogs": {
+    "title": "详细时间日志",
+    "for": "为",
+    "dateTime": "日期和时间",
+    "date": "日期",
+    "project": "项目",
+    "task": "任务",
+    "duration": "持续时间",
+    "description": "描述",
+    "method": "方法",
+    "type": "类型",
+    "manual": "手动",
+    "timer": "计时器",
+    "noLogs": "未找到详细日志",
+    "close": "关闭",
+    "timeLogsRange": "时间日志"
+  },
+
+  "errors": {
+    "failedToLoad": "加载团队报告失败",
+    "tryAgain": "请重试",
+    "noTeamMembers": "未找到团队成员",
+    "loadingError": "加载数据错误"
+  },
+
+  "loading": {
+    "fetchingData": "正在加载团队报告...",
+    "fetchingLogs": "正在加载详细日志..."
+  },
+
+  "export": "导出"
+}

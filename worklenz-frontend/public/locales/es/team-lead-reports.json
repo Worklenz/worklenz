@@ -1,0 +1,105 @@
+{
+  "title": "Informes de Mi Equipo",
+  "subtitle": "Seguimiento del tiempo e información de rendimiento para los miembros de su equipo",
+
+  "dateRange": {
+    "label": "Rango de Fechas",
+    "showing": "Mostrando",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "thisWeek": "Esta Semana",
+    "lastWeek": "Semana Pasada",
+    "last7Days": "Últimos 7 Días",
+    "thisMonth": "Este Mes",
+    "lastMonth": "Mes Pasado",
+    "last30Days": "Últimos 30 Días",
+    "last90Days": "Últimos 90 Días",
+    "custom": "Rango Personalizado",
+    "apply": "Aplicar"
+  },
+
+  "summary": {
+    "totalMembers": "Total de Miembros",
+    "totalMembersTooltip": "Número total de miembros del equipo que han registrado tiempo durante el rango de fechas seleccionado.",
+    "totalTimeLogged": "Tiempo Total Registrado",
+    "totalTimeLoggedTooltip": "Tiempo total registrado por todos los miembros del equipo durante el rango de fechas seleccionado.",
+    "activeProjects": "Proyectos Activos",
+    "activeProjectsTooltip": "Número máximo de proyectos en los que trabajó un solo miembro del equipo durante el rango de fechas seleccionado.",
+    "avgCompletionRate": "Tasa de Finalización Promedio",
+    "hours": "horas"
+  },
+
+  "timeTracking": {
+    "title": "Resumen de Seguimiento de Tiempo",
+    "chartTitle": "Gráfico de Seguimiento de Tiempo del Equipo",
+    "member": "Miembro",
+    "teamMembers": "Miembros del Equipo",
+    "totalTime": "Tiempo Total",
+    "totalHours": "Horas Totales",
+    "loggedTime": "Tiempo Registrado",
+    "logsCount": "Cantidad de Registros",
+    "activeDays": "Días Activos",
+    "lastActivity": "Última Actividad",
+    "actions": "Acciones",
+    "manualLogs": "Registros Manuales",
+    "timerLogs": "Registros de Temporizador",
+    "projects": "Proyectos",
+    "viewDetails": "Ver Detalles",
+    "noData": "No se encontraron registros de tiempo para el período seleccionado",
+    "totalTimeTooltip": "Tiempo total registrado por este miembro durante el rango de fechas seleccionado. Incluye todas las entradas de tiempo en todos los proyectos y tareas.",
+    "logsCountTooltip": "Número total de entradas de registro de tiempo individuales creadas por este miembro durante el rango de fechas seleccionado.",
+    "projectsTooltip": "Número de proyectos distintos en los que este miembro registró tiempo durante el rango de fechas seleccionado.",
+    "activeDaysTooltip": "Número de días distintos en los que este miembro registró tiempo durante el rango de fechas seleccionado."
+  },
+
+  "performance": {
+    "title": "Rendimiento del Equipo",
+    "member": "Miembro",
+    "tasks": "Tareas",
+    "assigned": "asignadas",
+    "completed": "completadas",
+    "overdue": "atrasadas",
+    "tasksCompleted": "Tareas Completadas",
+    "tasksOverdue": "Tareas Atrasadas",
+    "completionRate": "Tasa de Finalización",
+    "completionRateTooltip": "Porcentaje de tareas completadas del total de tareas asignadas. Calculado como: (Tareas Completadas ÷ Tareas Asignadas) × 100",
+    "timeLogged": "Tiempo Registrado",
+    "timeLoggedTooltip": "Tiempo total registrado por este miembro durante el rango de fechas seleccionado. Incluye todas las entradas de tiempo en todos los proyectos y tareas.",
+    "activeProjects": "Proyectos Activos",
+    "activeProjectsTooltip": "Número de proyectos distintos en los que este miembro registró tiempo durante el rango de fechas seleccionado.",
+    "projectsInvolved": "Proyectos Involucrados",
+    "noData": "No hay datos de rendimiento disponibles"
+  },
+
+  "detailedLogs": {
+    "title": "Registros de Tiempo Detallados",
+    "for": "para",
+    "dateTime": "Fecha y Hora",
+    "date": "Fecha",
+    "project": "Proyecto",
+    "task": "Tarea",
+    "duration": "Duración",
+    "description": "Descripción",
+    "method": "Método",
+    "type": "Tipo",
+    "manual": "Manual",
+    "timer": "Temporizador",
+    "noLogs": "No se encontraron registros detallados",
+    "close": "Cerrar",
+    "timeLogsRange": "registros de tiempo"
+  },
+
+  "errors": {
+    "failedToLoad": "Error al cargar los informes del equipo",
+    "tryAgain": "Por favor, inténtelo de nuevo",
+    "noTeamMembers": "No se encontraron miembros del equipo",
+    "loadingError": "Error al cargar los datos"
+  },
+
+  "loading": {
+    "fetchingData": "Cargando informes del equipo...",
+    "fetchingLogs": "Cargando registros detallados..."
+  },
+
+  "export": "Exportar"
+}

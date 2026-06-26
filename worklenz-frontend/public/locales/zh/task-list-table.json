@@ -24,7 +24,10 @@
   "lastUpdatedColumn": "最后更新",
   "lastupdatedColumn": "最后更新",
   "reporterColumn": "报告人",
+  "moveColumnHandle": "移动列",
   "dueTimeColumn": "截止时间",
+  "activeParentBadge": "父任务活跃",
+  "activeParentTooltip": "父任务未归档",
   "todoSelectorText": "待办",
   "doingSelectorText": "进行中",
   "doneSelectorText": "已完成",
@@ -35,6 +38,7 @@
   "labelsSelectorInputTip": "按回车键创建！",
   "addTaskText": "+ 添加任务",
   "addSubTaskText": "+ 添加子任务",
+  "addSubTaskInputPlaceholder": "输入子任务名称并按回车保存",
   "addTaskInputPlaceholder": "输入任务并按回车键",
   "noTasksInGroup": "此组中没有任务",
   "dropTaskHere": "将任务拖到这里",
@@ -49,6 +53,7 @@
   "manageLabelsPath": "设置 → 标签",
   "pendingInvitation": "待处理邀请",
   "contextMenu": {
+    "duplicateTask": "重复任务",
     "assignToMe": "分配给我",
     "copyLink": "复制任务链接",
     "linkCopied": "链接已复制到剪贴板",
@@ -68,6 +73,13 @@
   "dueDatePlaceholder": "截止日期",
   "startDatePlaceholder": "开始日期",
 
+  "exampleTasks": {
+    "prefix": "例如",
+    "task1": "定义项目范围和目标",
+    "task2": "与利益相关者审查和对齐",
+    "task3": "安排启动会议"
+  },
+
   "emptyStates": {
     "noTaskGroups": "未找到任务组",
     "noTaskGroupsDescription": "创建任务或应用筛选器后，任务将显示在此处。",
@@ -83,7 +95,20 @@
     "peopleField": "人员字段",
     "noDate": "无日期",
     "unsupportedField": "不支持的字段类型",
-    
+    "datePlaceholder": "设置日期",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "选择选项",
+    "noOptionsAvailable": "没有可用选项",
+    "updating": "正在更新...",
+    "peopleDropdown": {
+      "searchMembers": "搜索成员...",
+      "pending": "待处理",
+      "loadingMembers": "正在加载成员...",
+      "noMembersFound": "未找到成员",
+      "inviteMember": "邀请成员"
+    },
+
     "modal": {
       "addFieldTitle": "添加字段",
       "editFieldTitle": "编辑字段",
@@ -104,9 +129,10 @@
       "createErrorMessage": "创建自定义列失败",
       "updateErrorMessage": "更新自定义列失败"
     },
-    
+
     "fieldTypes": {
       "people": "人员",
+      "text": "文本",
       "number": "数字",
       "date": "日期",
       "selection": "选择",

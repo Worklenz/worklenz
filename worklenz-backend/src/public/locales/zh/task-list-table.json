@@ -102,6 +102,7 @@
     },
     
     "fieldTypes": {
+      "text": "文本",
       "people": "人员",
       "number": "数字",
       "date": "日期",

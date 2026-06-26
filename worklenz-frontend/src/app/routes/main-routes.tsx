@@ -6,15 +6,47 @@ import adminCenterRoutes from './admin-center-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import ChunkErrorHandler from '@/utils/chunk-error-handler';
+import { isTeamLeadRole } from '@/types/roles/role.types';
 
-// Lazy load page components for better code splitting
-const HomePage = lazy(() => import('@/pages/home/home-page'));
-const ProjectList = lazy(() => import('@/pages/projects/project-list'));
-const Schedule = lazy(() => import('@/pages/schedule/schedule'));
+// Lazy load page components for better code splitting with chunk error handling
+const HomePage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/home/HomePage'), 'HomePage')
+);
+const ProjectList = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/projects/project-list'), 'ProjectList')
+);
+const Schedule = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/schedule/schedule'), 'Schedule')
+);
+const TeamLeadReports = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/team-lead-reports/team-lead-reports'),
+    'TeamLeadReports'
+  )
+);
 
-const ProjectView = lazy(() => import('@/pages/projects/projectView/project-view'));
-const Unauthorized = lazy(() => import('@/pages/unauthorized/unauthorized'));
-const GanttDemoPage = lazy(() => import('@/pages/GanttDemoPage'));
+const ProjectView = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/projects/projectView/project-view'),
+    'ProjectView'
+  )
+);
+const Unauthorized = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/unauthorized/unauthorized'),
+    'Unauthorized'
+  )
+);
+const GanttDemoPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(() => import('@/pages/GanttDemoPage'), 'GanttDemoPage')
+);
+const LicenseExpiredPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/license-expired/LicenseExpired'),
+    'LicenseExpiredPage'
+  )
+);
 
 // Define AdminGuard component with defensive programming
 const AdminGuard = ({ children }: { children: React.ReactNode }) => {
@@ -48,6 +80,38 @@ const AdminGuard = ({ children }: { children: React.ReactNode }) => {
   }
 };
 
+// Define TeamLeadGuard component
+const TeamLeadGuard = ({ children }: { children: React.ReactNode }) => {
+  const authService = useAuthService();
+  const location = useLocation();
+
+  try {
+    if (!authService || typeof authService.isAuthenticated !== 'function') {
+      return <>{children}</>;
+    }
+
+    if (!authService.isAuthenticated()) {
+      return <Navigate to="/auth" state={{ from: location }} replace />;
+    }
+
+    const currentSession = authService.getCurrentSession();
+
+    // Check if user has Team Lead role using role_name field
+    const hasTeamLeadRole = currentSession?.role_name
+      ? isTeamLeadRole(currentSession.role_name)
+      : false;
+
+    if (!hasTeamLeadRole) {
+      return <Navigate to="/worklenz/unauthorized" replace />;
+    }
+
+    return <>{children}</>;
+  } catch (error) {
+    console.error('Error in TeamLeadGuard (main-routes):', error);
+    return <>{children}</>;
+  }
+};
+
 const mainRoutes: RouteObject[] = [
   {
     path: '/worklenz',
@@ -67,6 +131,16 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <ProjectList />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'team-lead-reports',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <TeamLeadGuard>
+              <TeamLeadReports />
+            </TeamLeadGuard>
           </Suspense>
         ),
       },
@@ -101,6 +175,14 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <GanttDemoPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'license-expired',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <LicenseExpiredPage />
           </Suspense>
         ),
       },

@@ -14,15 +14,31 @@ interface TaskViewCommentEditProps {
   onUpdated: (comment: ITaskCommentViewModel) => void;
 }
 
-// Helper function to prepare content for editing by removing HTML tags
+/**
+ * Strips all HTML markup from stored comment content so the textarea shows
+ * plain text ready for re-editing.
+ *
+ * Handles:
+ *  - Mention spans  → @username  (via the explicit replace first)
+ *  - Anchor tags    → raw URL    (the generic tag-stripper catches these,
+ *                                 so https://... is restored automatically)
+ *  - Any other tags the sanitizer or linkifier may have injected
+ */
 const prepareContentForEditing = (content: string): string => {
   if (!content) return '';
 
-  // Replace mention spans with plain @mentions
-  const withoutMentionSpans = content.replace(/<span class="mentions">@(\w+)<\/span>/g, '@$1');
+  // 1. Replace mention spans with plain @mentions so multi-word names are preserved
+  const withoutMentionSpans = content.replace(
+    /<span class="mentions">@([\w]+(?:\s+[\w]+)*)<\/span>/g,
+    '@$1'
+  );
 
-  // Remove any other HTML tags
-  return withoutMentionSpans.replace(/<[^>]*>/g, '');
+  // 2. Replace <a href="...">label</a> with the raw href value so users see
+  //    the original URL they typed, not the display label
+  const withRawUrls = withoutMentionSpans.replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1');
+
+  // 3. Strip any remaining HTML tags
+  return withRawUrls.replace(/<[^>]*>/g, '');
 };
 
 const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProps) => {
@@ -58,9 +74,11 @@ const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProp
         onUpdated(commentData);
 
         // Dispatch event to notify that a comment was updated
-        document.dispatchEvent(new CustomEvent('task-comment-update', { 
-          detail: { taskId: commentData.task_id } 
-        }));
+        document.dispatchEvent(
+          new CustomEvent('task-comment-update', {
+            detail: { taskId: commentData.task_id },
+          })
+        );
       }
     } catch (e) {
       logger.error('Error updating comment', e);

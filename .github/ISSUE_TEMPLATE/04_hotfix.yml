@@ -1,0 +1,21 @@
+name: Hotfix
+description: Urgent fix for a production-blocking issue
+title: "[HOTFIX] "
+labels: ["hotfix"]
+body:
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: Issue Description
+      description: What is broken in production?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: approval
+    attributes:
+      label: Sprint Interruption Approval
+      options:
+        - label: Approved by Founder / CTO
+          required: true

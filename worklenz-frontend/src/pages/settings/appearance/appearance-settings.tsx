@@ -5,15 +5,26 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { toggleTheme } from '@/features/theme/themeSlice';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { MoonOutlined, SunOutlined } from '@/shared/antd-imports';
+import { evt_dark_mode_toggled } from '@/shared/worklenz-analytics-events';
+import { ThemeMode } from '@/types/mixpanel-events.types';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 const AppearanceSettings = () => {
   const { t } = useTranslation('settings/appearance');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   useDocumentTitle(t('title'));
 
   const handleThemeToggle = () => {
+    const newMode: ThemeMode = themeMode === 'dark' ? 'light' : 'dark';
+
+    // Track the theme toggle event
+    trackMixpanelEvent(evt_dark_mode_toggled, {
+      mode: newMode,
+    });
+
     dispatch(toggleTheme());
   };
 

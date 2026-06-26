@@ -1,14 +1,11 @@
-import { useGetProjectsQuery } from '@/api/projects/projects.v1.api.service';
 import { AppDispatch } from '@/app/store';
 import {
   fetchProjectData,
   setProjectId,
+  setProjectData,
   toggleProjectDrawer,
 } from '@/features/project/project-drawer.slice';
-import {
-  toggleArchiveProjectForAll,
-  toggleArchiveProject,
-} from '@/features/projects/projectsSlice';
+import { fetchProjects } from '@/features/projects/projectsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
@@ -21,6 +18,10 @@ import {
   evt_projects_settings_click,
 } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import {
+  useToggleArchiveProjectMutation,
+  useToggleArchiveProjectForAllMutation,
+} from '@/api/projects/projects.v1.api.service';
 
 interface ActionButtonsProps {
   t: (key: string) => string;
@@ -35,33 +36,37 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   dispatch,
   isOwnerOrAdmin,
 }) => {
-  // Add permission hooks
   const isProjectManager = useIsProjectManager();
   const isEditable = isOwnerOrAdmin;
   const { trackMixpanelEvent } = useMixpanelTracking();
 
   const { requestParams } = useAppSelector(state => state.projectsReducer);
-  const { refetch: refetchProjects } = useGetProjectsQuery(requestParams);
+
+  // ✅ RTK Query mutations — correctly wired to the API
+  const [toggleArchive] = useToggleArchiveProjectMutation();
+  const [toggleArchiveForAll] = useToggleArchiveProjectForAllMutation();
 
   const handleSettingsClick = () => {
     if (record.id) {
-      console.log('Opening project drawer for project:', record.id);
       trackMixpanelEvent(evt_projects_settings_click);
-      
-      // Set project ID first
       dispatch(setProjectId(record.id));
-      
-      // Then fetch project data
       dispatch(fetchProjectData(record.id))
         .unwrap()
-        .then((projectData) => {
-          console.log('Project data fetched successfully:', projectData);
-          // Open drawer after data is fetched
+        .then(projectData => {
+          dispatch(
+            setProjectData({
+              ...projectData,
+              priority_id: projectData.priority_id || record.priority_id,
+              priority_name: projectData.priority_name || record.priority_name,
+              priority_color: projectData.priority_color || record.priority_color,
+              priority_color_dark: projectData.priority_color_dark || record.priority_color_dark,
+            })
+          );
           dispatch(toggleProjectDrawer());
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('Failed to fetch project data:', error);
-          // Still open drawer even if fetch fails, so user can see error state
+          dispatch(setProjectData(record));
           dispatch(toggleProjectDrawer());
         });
     }
@@ -72,24 +77,30 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     try {
       if (isOwnerOrAdmin) {
         trackMixpanelEvent(evt_projects_archive_all);
-        await dispatch(toggleArchiveProjectForAll(record.id));
+        // ✅ Use RTK Query mutation instead of thunk
+        await toggleArchiveForAll(record.id).unwrap();
       } else {
         trackMixpanelEvent(evt_projects_archive);
-        await dispatch(toggleArchiveProject(record.id));
+        // ✅ Use RTK Query mutation instead of thunk
+        await toggleArchive(record.id).unwrap();
       }
-      refetchProjects();
+      // ✅ Re-fetch via thunk to update state.projectsReducer.projects
+      // which is what the project list actually reads from
+      dispatch(fetchProjects(requestParams));
     } catch (error) {
-      logger.error('Failed to archive project:', error);
+      logger.error('Failed to archive/unarchive project:', error);
     }
   };
 
   return (
-    <Space onClick={e => e.stopPropagation()}>
+    <Space size={4} onClick={e => e.stopPropagation()}>
       <Tooltip title={t('setting')}>
         <Button
           className="action-button"
+          type="text"
           size="small"
           onClick={handleSettingsClick}
+          style={{ width: 28, minWidth: 28, paddingInline: 0 }}
           icon={<SettingOutlined />}
         />
       </Tooltip>
@@ -106,7 +117,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         >
           <Button
             className="action-button"
+            type="text"
             size="small"
+            style={{ width: 28, minWidth: 28, paddingInline: 0 }}
             icon={<InboxOutlined />}
             disabled={!isEditable}
           />

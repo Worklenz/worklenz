@@ -7,8 +7,13 @@
   "emailLabel": "Email",
   "emailRequiredError": "Email-i është i detyrueshëm",
   "saveChanges": "Ruaj Ndryshimet",
-  "profileJoinedText": "U bashkua një muaj më parë",
-  "profileLastUpdatedText": "Përditësuar një muaj më parë",
+  "save": "Ruaj",
+  "profileJoinedText": "U bashkua më {{date}}",
+  "profileLastUpdatedText": "Përditësuar më {{date}}",
   "avatarTooltip": "Klikoni për të ngarkuar një avatar",
+  "removeAvatar": "Hiq foton",
+  "removeAvatarConfirmTitle": "Të hiqet fotografia e profilit?",
+  "removeAvatarConfirmDescription": "Avatari juaj do të hiqet dhe në vend të tij do të shfaqen inicialet tuaja.",
+  "cancel": "Anulo",
   "title": "Cilësimet e Profilit"
 }

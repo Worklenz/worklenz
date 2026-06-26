@@ -14,16 +14,14 @@ interface UpdateNotificationProviderProps {
 const UpdateNotificationProvider: React.FC<UpdateNotificationProviderProps> = ({
   children,
   checkInterval = 5 * 60 * 1000, // 5 minutes
-  enableAutoCheck = true
+  enableAutoCheck = true,
 }) => {
-  const {
-    showUpdateNotification,
-    setShowUpdateNotification,
-    dismissUpdate
-  } = useUpdateChecker({
+  const enableUpdateNotificationBanner = true;
+
+  const { showUpdateNotification, setShowUpdateNotification, dismissUpdate } = useUpdateChecker({
     checkInterval,
     enableAutoCheck,
-    showNotificationOnUpdate: true
+    showNotificationOnUpdate: enableUpdateNotificationBanner,
   });
 
   const handleClose = () => {
@@ -38,11 +36,13 @@ const UpdateNotificationProvider: React.FC<UpdateNotificationProviderProps> = ({
   return (
     <>
       {children}
-      <UpdateNotification
-        visible={showUpdateNotification}
-        onClose={handleClose}
-        onUpdate={handleUpdate}
-      />
+      {enableUpdateNotificationBanner && (
+        <UpdateNotification
+          visible={showUpdateNotification}
+          onClose={handleClose}
+          onUpdate={handleUpdate}
+        />
+      )}
     </>
   );
 };

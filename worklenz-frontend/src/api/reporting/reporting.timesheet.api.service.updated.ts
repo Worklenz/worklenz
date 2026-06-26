@@ -25,7 +25,7 @@ export const reportingTimesheetApiService = {
     const q = toQueryString({ archived });
     const bodyWithTimezone = {
       ...body,
-      timezone: getUserTimezone()
+      timezone: getUserTimezone(),
     };
     const response = await apiClient.post(`${rootUrl}/allocation/${q}`, bodyWithTimezone);
     return response.data;
@@ -34,9 +34,12 @@ export const reportingTimesheetApiService = {
   getAllocationProjects: async (body = {}) => {
     const bodyWithTimezone = {
       ...body,
-      timezone: getUserTimezone()
+      timezone: getUserTimezone(),
     };
-    const response = await apiClient.post(`${rootUrl}/allocation/allocation-projects`, bodyWithTimezone);
+    const response = await apiClient.post(
+      `${rootUrl}/allocation/allocation-projects`,
+      bodyWithTimezone
+    );
     return response.data;
   },
 
@@ -47,9 +50,12 @@ export const reportingTimesheetApiService = {
     const q = toQueryString({ archived });
     const bodyWithTimezone = {
       ...body,
-      timezone: getUserTimezone()
+      timezone: getUserTimezone(),
     };
-    const response = await apiClient.post(`${rootUrl}/time-reports/projects/${q}`, bodyWithTimezone);
+    const response = await apiClient.post(
+      `${rootUrl}/time-reports/projects/${q}`,
+      bodyWithTimezone
+    );
     return response.data;
   },
 
@@ -60,7 +66,7 @@ export const reportingTimesheetApiService = {
     const q = toQueryString({ archived });
     const bodyWithTimezone = {
       ...body,
-      timezone: getUserTimezone()
+      timezone: getUserTimezone(),
     };
     const response = await apiClient.post(`${rootUrl}/time-reports/members/${q}`, bodyWithTimezone);
     return response.data;
@@ -71,7 +77,7 @@ export const reportingTimesheetApiService = {
   ): Promise<IServerResponse<IProjectLogsBreakdown[]>> => {
     const bodyWithTimezone = {
       ...body,
-      timezone: getUserTimezone()
+      timezone: getUserTimezone(),
     };
     const response = await apiClient.post(`${rootUrl}/project-timelogs`, bodyWithTimezone);
     return response.data;
@@ -84,9 +90,12 @@ export const reportingTimesheetApiService = {
     const q = toQueryString({ archived });
     const bodyWithTimezone = {
       ...body,
-      timezone: getUserTimezone()
+      timezone: getUserTimezone(),
     };
-    const response = await apiClient.post(`${rootUrl}/time-reports/estimated-vs-actual${q}`, bodyWithTimezone);
+    const response = await apiClient.post(
+      `${rootUrl}/time-reports/estimated-vs-actual${q}`,
+      bodyWithTimezone
+    );
     return response.data;
   },
 };

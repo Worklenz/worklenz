@@ -4,6 +4,7 @@ import { IAuthState, IUserLoginRequest } from '@/types/auth/login.types';
 import { IUserSignUpRequest } from '@/types/auth/signup.types';
 import logger from '@/utils/errorLogger';
 import { setSession } from '@/utils/session-helper';
+import { applyLanguageFromUser, ILanguageType, Language, setLanguage } from '@/features/i18n/localesSlice';
 
 // Initial state
 const initialState: IAuthState = {
@@ -24,7 +25,7 @@ const handleAuthError = (error: any, action: string) => {
 // Async thunks
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: IUserLoginRequest, { rejectWithValue }) => {
+  async (credentials: IUserLoginRequest, { rejectWithValue, dispatch }) => {
     try {
       await authApiService.login(credentials);
       const authorizeResponse = await authApiService.verify();
@@ -33,6 +34,12 @@ export const login = createAsyncThunk(
         return rejectWithValue(authorizeResponse.auth_error || 'Authorization failed');
       }
 
+      const userLang = (authorizeResponse.user as any)?.language;
+      if (userLang && Object.values(Language).includes(userLang as Language)) {
+        dispatch(setLanguage(userLang as ILanguageType));
+      }
+
+      setSession(authorizeResponse.user);
       return authorizeResponse;
     } catch (error: any) {
       return rejectWithValue(handleAuthError(error, 'Login'));
@@ -42,7 +49,7 @@ export const login = createAsyncThunk(
 
 export const signUp = createAsyncThunk(
   'auth/signup',
-  async (credentials: IUserSignUpRequest, { rejectWithValue }) => {
+  async (credentials: IUserSignUpRequest, { rejectWithValue, dispatch }) => {
     try {
       await authApiService.signUp(credentials);
       const authorizeResponse = await authApiService.verify();
@@ -53,6 +60,10 @@ export const signUp = createAsyncThunk(
 
       if (authorizeResponse.authenticated) {
         localStorage.setItem('session', JSON.stringify(authorizeResponse.user));
+        const userLang = (authorizeResponse.user as any)?.language;
+        if (userLang && Object.values(Language).includes(userLang as Language)) {
+          dispatch(setLanguage(userLang as ILanguageType));
+        }
       }
 
       return authorizeResponse;
@@ -74,9 +85,17 @@ export const logout = createAsyncThunk('secure/logout', async (_, { rejectWithVa
   }
 });
 
-export const verifyAuthentication = createAsyncThunk('secure/verify', async () => {
-  return await authApiService.verify();
-});
+export const verifyAuthentication = createAsyncThunk(
+  'secure/verify',
+  async (_, { dispatch }) => {
+    const authorizeResponse = await authApiService.verify();
+    const userLang = (authorizeResponse.user as any)?.language;
+    if (userLang && Object.values(Language).includes(userLang as Language)) {
+      dispatch(setLanguage(userLang as ILanguageType));
+    }
+    return authorizeResponse;
+  }
+);
 
 export const resetPassword = createAsyncThunk('auth/resetPassword', async (email: string) => {
   return await authApiService.resetPassword(email);
@@ -116,6 +135,10 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.error = null;
+
+        // Restore the user's saved language preference on login
+        const userLang = (action.payload.user as any)?.language;
+        if (userLang) applyLanguageFromUser(userLang);
       })
       .addCase(login.rejected, (state, action) => {
         setRejected(state, action);
@@ -143,6 +166,10 @@ const authSlice = createSlice({
         state.isAuthenticated = !!action.payload;
         state.user = action.payload.user;
         setSession(action.payload.user);
+
+        // Restore language on every session verification (page refresh / app boot)
+        const userLang = (action.payload.user as any)?.language;
+        if (userLang) applyLanguageFromUser(userLang);
       })
       .addCase(verifyAuthentication.rejected, state => {
         state.isLoading = false;

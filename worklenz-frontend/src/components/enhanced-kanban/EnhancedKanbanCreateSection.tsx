@@ -68,7 +68,8 @@ const EnhancedKanbanCreateSection: React.FC = () => {
         !dropdownRef.current.contains(event.target as Node) &&
         inputRef.current &&
         !inputRef.current.contains(event.target as Node) &&
-        (!categoryDropdownRef.current || !categoryDropdownRef.current.contains(event.target as Node))
+        (!categoryDropdownRef.current ||
+          !categoryDropdownRef.current.contains(event.target as Node))
       ) {
         setIsAdding(false);
         setSectionName('');
@@ -109,7 +110,11 @@ const EnhancedKanbanCreateSection: React.FC = () => {
     setIsAdding(true);
     setSectionName('');
     // Default to first category if available
-    if (statusCategories && statusCategories.length > 0 && typeof statusCategories[0].id === 'string') {
+    if (
+      statusCategories &&
+      statusCategories.length > 0 &&
+      typeof statusCategories[0].id === 'string'
+    ) {
       setSelectedCategoryId(statusCategories[0].id);
     } else {
       setSelectedCategoryId('');
@@ -217,10 +222,15 @@ const EnhancedKanbanCreateSection: React.FC = () => {
                     style={{ minWidth: 80 }}
                     onClick={() => setShowCategoryDropdown(v => !v)}
                   >
-                    <span className={themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'} style={{ fontSize: 13 }}>
+                    <span
+                      className={themeMode === 'dark' ? 'text-gray-800' : 'text-gray-900'}
+                      style={{ fontSize: 13 }}
+                    >
                       {selectedCategory?.name || t('changeCategory')}
                     </span>
-                    <DownOutlined style={{ fontSize: 12, color: themeMode === 'dark' ? '#555' : '#555' }} />
+                    <DownOutlined
+                      style={{ fontSize: 12, color: themeMode === 'dark' ? '#555' : '#555' }}
+                    />
                   </button>
                   {showCategoryDropdown && (
                     <div
@@ -228,23 +238,27 @@ const EnhancedKanbanCreateSection: React.FC = () => {
                       style={{ zIndex: 1000 }}
                     >
                       <div className="py-1">
-                        {statusCategories.filter(cat => typeof cat.id === 'string').map(cat => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                            onClick={() => {
-                              if (typeof cat.id === 'string') setSelectedCategoryId(cat.id);
-                              setShowCategoryDropdown(false);
-                            }}
-                          >
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: cat.color_code }}
-                            ></div>
-                            <span className={selectedCategoryId === cat.id ? 'font-bold' : ''}>{cat.name}</span>
-                          </button>
-                        ))}
+                        {statusCategories
+                          .filter(cat => typeof cat.id === 'string')
+                          .map(cat => (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                              onClick={() => {
+                                if (typeof cat.id === 'string') setSelectedCategoryId(cat.id);
+                                setShowCategoryDropdown(false);
+                              }}
+                            >
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: cat.color_code }}
+                              ></div>
+                              <span className={selectedCategoryId === cat.id ? 'font-bold' : ''}>
+                                {cat.name}
+                              </span>
+                            </button>
+                          ))}
                       </div>
                     </div>
                   )}
@@ -263,7 +277,12 @@ const EnhancedKanbanCreateSection: React.FC = () => {
               <Button
                 type="default"
                 size="small"
-                onClick={() => { setIsAdding(false); setSectionName(''); setSelectedCategoryId(''); setShowCategoryDropdown(false); }}
+                onClick={() => {
+                  setIsAdding(false);
+                  setSectionName('');
+                  setSelectedCategoryId('');
+                  setShowCategoryDropdown(false);
+                }}
               >
                 {t('deleteConfirmationCancel')}
               </Button>

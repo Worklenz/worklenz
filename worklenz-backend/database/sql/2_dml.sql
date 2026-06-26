@@ -4,6 +4,17 @@ BEGIN
     INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('Medium', 1, '#fbc84c', '#FFC227');
     INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('Low', 0, '#75c997', '#46D980');
     INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('High', 2, '#f37070', '#FF4141');
+    INSERT INTO task_priorities (name, value, color_code, color_code_dark) VALUES ('Critical', 3, '#8B1A1A', '#B22222');
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION sys_insert_project_priorities() RETURNS VOID AS
+$$
+BEGIN
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('Medium', 1, '#fbc84c', '#FFC227');
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('Low', 0, '#75c997', '#46D980');
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('High', 2, '#f37070', '#FF4141');
+    INSERT INTO sys_project_priorities (name, value, color_code, color_code_dark) VALUES ('Critical', 3, '#8B1A1A', '#B22222');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -69,14 +80,15 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION sys_insert_license_types() RETURNS VOID AS
 $$
 BEGIN
-    INSERT INTO public.sys_license_types (name, key)
-        VALUES  ('Custom Subscription', 'CUSTOM'),
-                ('Free Trial', 'TRIAL'),
-                ('Paddle Subscription', 'PADDLE'),
-                ('Credit Subscription', 'CREDIT'),
-                ('Free Plan', 'FREE'),
-                ('Life Time Deal', 'LIFE_TIME_DEAL'),
-                ('Self Hosted', 'SELF_HOSTED');
+    INSERT INTO public.sys_license_types (name, key, description)
+        VALUES  ('Custom Subscription', 'CUSTOM', NULL),
+                ('Free Trial', 'TRIAL', NULL),
+                ('Paddle Subscription', 'PADDLE', NULL),
+                ('Credit Subscription', 'CREDIT', NULL),
+                ('Free Plan', 'FREE', NULL),
+                ('Life Time Deal', 'LIFE_TIME_DEAL', NULL),
+                ('Self Hosted', 'SELF_HOSTED', NULL),
+                ('Annual Business Plan', 'ANNUAL_BUSINESS', 'Annual subscription for business plan features with selected user access');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -124,6 +136,7 @@ $$ LANGUAGE plpgsql;
 
 
 SELECT sys_insert_task_priorities();
+SELECT sys_insert_project_priorities();
 SELECT sys_insert_project_access_levels();
 SELECT sys_insert_task_status_categories();
 SELECT sys_insert_project_statuses();
@@ -132,6 +145,7 @@ SELECT sys_insert_license_types();
 -- SELECT sys_insert_project_templates();
 
 DROP FUNCTION sys_insert_task_priorities();
+DROP FUNCTION sys_insert_project_priorities();
 DROP FUNCTION sys_insert_project_access_levels();
 DROP FUNCTION sys_insert_task_status_categories();
 DROP FUNCTION sys_insert_project_statuses();

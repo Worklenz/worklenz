@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Button, Card, Modal, Typography, Space, Alert, Input, message } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Modal,
+  Typography,
+  Space,
+  Alert,
+  Input,
+  message,
+} from '@/shared/antd-imports';
 import { ExclamationCircleOutlined, DeleteOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -45,7 +54,7 @@ const AccountDeletion: React.FC = () => {
       const response = await accountApiService.requestDeletion({
         userId: currentSession.id,
         userEmail: currentSession.email,
-        userName: currentSession.name
+        userName: currentSession.name,
       });
 
       if (response.done) {
@@ -58,16 +67,15 @@ const AccountDeletion: React.FC = () => {
             try {
               // Clear local session
               await authService.signOut();
-              
+
               // Call backend logout
               await authApiService.logout();
-              
+
               // Clear all caches using the utility
               await CacheCleanup.clearAllCaches();
-              
+
               // Force a hard reload to signup page
               CacheCleanup.forceReload('/auth/signup');
-              
             } catch (error) {
               console.error('Logout error after account deletion:', error);
               // Fallback: force reload to signup page
@@ -90,7 +98,7 @@ const AccountDeletion: React.FC = () => {
   return (
     <div className="p-6">
       <Title level={3}>{t('title')}</Title>
-      
+
       <Card className="mt-4">
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
@@ -125,13 +133,7 @@ const AccountDeletion: React.FC = () => {
             </ul>
           </div>
 
-          <Button 
-            danger 
-            type="primary" 
-            icon={<DeleteOutlined />}
-            onClick={showModal}
-            size="large"
-          >
+          <Button danger type="primary" icon={<DeleteOutlined />} onClick={showModal} size="large">
             {t('deleteAccountButton')}
           </Button>
         </Space>
@@ -149,27 +151,23 @@ const AccountDeletion: React.FC = () => {
         onCancel={handleCancel}
         okText={t('confirmDelete')}
         cancelText={t('cancel')}
-        okButtonProps={{ 
-          danger: true, 
+        okButtonProps={{
+          danger: true,
           disabled: confirmText !== 'DELETE',
-          loading: loading 
+          loading: loading,
         }}
         width={600}
       >
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Alert
-            message={t('finalWarning')}
-            type="error"
-            showIcon
-          />
-          
+          <Alert message={t('finalWarning')} type="error" showIcon />
+
           <div>
             <Text strong>{t('confirmationInstructions')}</Text>
             <Paragraph>{t('typeDeleteToConfirm')}</Paragraph>
             <Input
               placeholder="DELETE"
               value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
+              onChange={e => setConfirmText(e.target.value)}
               size="large"
               style={{ marginTop: 8 }}
             />

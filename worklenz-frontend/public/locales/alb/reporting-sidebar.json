@@ -3,6 +3,8 @@
   "projects": "Projektet",
   "members": "Anëtarët",
   "timeReports": "Raportet e Kohës",
+  "timesheet": "Timesheet",
   "estimateVsActual": "Vlerësimi vs Aktual",
+  "logs": "Regjistrat",
   "currentOrganizationTooltip": "Organizata aktuale"
 }

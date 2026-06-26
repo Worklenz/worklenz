@@ -8,6 +8,7 @@ import {
   TASK_DUE_NO_DUE_COLOR,
   TASK_DUE_OVERDUE_COLOR,
   TASK_DUE_UPCOMING_COLOR,
+  TASK_PRIORITY_CRITICAL_COLOR,
   TASK_PRIORITY_HIGH_COLOR,
   TASK_PRIORITY_LOW_COLOR,
   TASK_PRIORITY_MEDIUM_COLOR,
@@ -20,7 +21,14 @@ import PointOptionsObject from "../point-options-object";
 import moment from "moment";
 
 export default class ReportingOverviewBase extends ReportingControllerBase {
-  protected static async getTeamsCounts(teamId: string | null, archivedQuery = "") {
+  protected static async getTeamsCounts(teamId: string | null, archivedQuery = "", req?: any) {
+    // Add project filtering for Team Leads
+    let projectFilterClause = "";
+    if (req) {
+      projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+      // Replace 'p.id' with 'projects.id' for this query context
+      projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
+    }
 
     const q = `
     WITH team_count AS (
@@ -31,7 +39,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     project_count AS (
         SELECT COUNT(*) AS count
         FROM projects
-        WHERE in_organization(team_id, $1) ${archivedQuery}
+        WHERE in_organization(team_id, $1) ${archivedQuery} ${projectFilterClause}
     ),
     team_member_count AS (
         SELECT COUNT(DISTINCT email) AS count
@@ -54,19 +62,27 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     };
   }
 
-  protected static async getProjectsCounts(teamId: string | null, archivedQuery = "") {
+  protected static async getProjectsCounts(teamId: string | null, archivedQuery = "", req?: any) {
+    // Add project filtering for Team Leads
+    let projectFilterClause = "";
+    if (req) {
+      projectFilterClause = await this.buildProjectFilterForTeamLead(req);
+      // Replace 'p.id' with 'projects.id' for this query context
+      projectFilterClause = projectFilterClause.replace('p.id', 'projects.id');
+    }
+
     const q = `
       SELECT JSON_BUILD_OBJECT(
                'active_projects', (SELECT COUNT(*)
                                    FROM projects
                                    WHERE in_organization(team_id, $1) AND (end_date > CURRENT_TIMESTAMP
-                                      OR end_date IS NULL) ${archivedQuery}),
+                                      OR end_date IS NULL) ${archivedQuery} ${projectFilterClause}),
                'overdue_projects', (SELECT COUNT(*)
                                     FROM projects
                                     WHERE in_organization(team_id, $1)
                                       AND end_date < CURRENT_TIMESTAMP
                                       AND status_id NOT IN
-                                          (SELECT id FROM sys_project_statuses WHERE name = 'Completed') ${archivedQuery})
+                                          (SELECT id FROM sys_project_statuses WHERE name = 'Completed') ${archivedQuery} ${projectFilterClause})
                ) AS counts;
     `;
 
@@ -196,7 +212,11 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                'high', (SELECT COUNT(*)
                         FROM tasks
                         WHERE project_id = $1
-                          AND priority_id = (SELECT id FROM task_priorities WHERE value = 2))
+                          AND priority_id = (SELECT id FROM task_priorities WHERE value = 2)),
+               'critical', (SELECT COUNT(*)
+                            FROM tasks
+                            WHERE project_id = $1
+                              AND priority_id = (SELECT id FROM task_priorities WHERE value = 3))
                ) AS counts;
     `;
 
@@ -206,6 +226,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const low = int(data?.counts.low);
     const medium = int(data?.counts.medium);
     const high = int(data?.counts.high);
+    const critical = int(data?.counts.critical);
 
     const chart: Highcharts.PointOptionsObject[] = [];
 
@@ -214,6 +235,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
       low,
       medium,
       high,
+      critical,
       chart
     };
   }
@@ -260,6 +282,7 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
       new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, body.low),
       new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, body.medium),
       new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, body.high),
+      new PointOptionsObject("Critical", TASK_PRIORITY_CRITICAL_COLOR, body.critical),
     ];
   }
 
@@ -657,7 +680,8 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const q = `
       SELECT COUNT(CASE WHEN tp.value = 0 THEN 1 END) AS low,
              COUNT(CASE WHEN tp.value = 1 THEN 1 END) AS medium,
-             COUNT(CASE WHEN tp.value = 2 THEN 1 END) AS high
+             COUNT(CASE WHEN tp.value = 2 THEN 1 END) AS high,
+             COUNT(CASE WHEN tp.value = 3 THEN 1 END) AS critical
       FROM tasks t
              LEFT JOIN task_priorities tp ON t.priority_id = tp.id
              JOIN tasks_assignees ta ON t.id = ta.task_id
@@ -669,18 +693,20 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const result = await db.query(q, [teamMemberId]);
     const [d] = result.rows;
 
-    const total = int(d.low) + int(d.medium) + int(d.high);
+    const total = int(d.low) + int(d.medium) + int(d.high) + int(d.critical);
 
     const chart: Highcharts.PointOptionsObject[] = [
       new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
       new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
       new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
+      new PointOptionsObject("Critical", TASK_PRIORITY_CRITICAL_COLOR, d.critical),
     ];
 
     const data = [
       { label: "Low", color: TASK_PRIORITY_LOW_COLOR, count: d.low },
       { label: "Medium", color: TASK_PRIORITY_MEDIUM_COLOR, count: d.medium },
       { label: "High", color: TASK_PRIORITY_HIGH_COLOR, count: d.high },
+      { label: "Critical", color: TASK_PRIORITY_CRITICAL_COLOR, count: d.critical },
     ];
 
     return { chart, total, data };
@@ -700,7 +726,8 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const q = `
       SELECT COUNT(CASE WHEN tp.value = 0 THEN 1 END) AS low,
              COUNT(CASE WHEN tp.value = 1 THEN 1 END) AS medium,
-             COUNT(CASE WHEN tp.value = 2 THEN 1 END) AS high
+             COUNT(CASE WHEN tp.value = 2 THEN 1 END) AS high,
+             COUNT(CASE WHEN tp.value = 3 THEN 1 END) AS critical
       FROM tasks t
              LEFT JOIN task_priorities tp ON t.priority_id = tp.id
              JOIN tasks_assignees ta ON t.id = ta.task_id
@@ -726,18 +753,20 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
     const result = await db.query(q, [teamMemberId]);
     const [d] = result.rows;
 
-    const total = int(d.low) + int(d.medium) + int(d.high);
+    const total = int(d.low) + int(d.medium) + int(d.high) + int(d.critical);
 
     const chart: Highcharts.PointOptionsObject[] = [
       new PointOptionsObject("Low", TASK_PRIORITY_LOW_COLOR, d.low),
       new PointOptionsObject("Medium", TASK_PRIORITY_MEDIUM_COLOR, d.medium),
       new PointOptionsObject("High", TASK_PRIORITY_HIGH_COLOR, d.high),
+      new PointOptionsObject("Critical", TASK_PRIORITY_CRITICAL_COLOR, d.critical),
     ];
 
     const data = [
       { label: "Low", color: TASK_PRIORITY_LOW_COLOR, count: d.low },
       { label: "Medium", color: TASK_PRIORITY_MEDIUM_COLOR, count: d.medium },
       { label: "High", color: TASK_PRIORITY_HIGH_COLOR, count: d.high },
+      { label: "Critical", color: TASK_PRIORITY_CRITICAL_COLOR, count: d.critical },
     ];
 
     return { chart, total, data };

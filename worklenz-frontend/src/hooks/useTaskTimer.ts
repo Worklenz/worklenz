@@ -17,7 +17,7 @@ export const useTaskTimer = (taskId: string, initialStartTime: number | null) =>
 
   const activeTimers = useAppSelector(state => state.taskReducer.activeTimers);
   const task = useAppSelector(state => selectTaskById(state, taskId));
-  
+
   // Check both the old slice (activeTimers) and new slice (task.timeTracking.activeTimer)
   const reduxStartTime = activeTimers[taskId] || task?.timeTracking?.activeTimer;
   const started = Boolean(reduxStartTime);

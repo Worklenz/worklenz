@@ -16,6 +16,7 @@ export const taskRecurringApiService = {
     schedule_id: string,
     body: any
   ): Promise<IServerResponse<ITaskRecurringSchedule>> => {
-    return apiClient.put(`${rootUrl}/${schedule_id}`, body);
+    const response = await apiClient.put(`${rootUrl}/${schedule_id}`, body);
+    return response.data;
   },
 };

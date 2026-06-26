@@ -7,8 +7,13 @@
   "emailLabel": "Email",
   "emailRequiredError": "Email é obrigatório",
   "saveChanges": "Salvar Alterações",
-  "profileJoinedText": "Entrou há um mês",
-  "profileLastUpdatedText": "Última atualização há um mês",
+  "save": "Salvar",
+  "profileJoinedText": "Entrou em {{date}}",
+  "profileLastUpdatedText": "Última atualização em {{date}}",
   "avatarTooltip": "Clique para carregar um avatar",
+  "removeAvatar": "Remover foto",
+  "removeAvatarConfirmTitle": "Remover foto de perfil?",
+  "removeAvatarConfirmDescription": "Seu avatar será removido e suas iniciais serão exibidas no lugar.",
+  "cancel": "Cancelar",
   "title": "Configurações do Perfil"
 }

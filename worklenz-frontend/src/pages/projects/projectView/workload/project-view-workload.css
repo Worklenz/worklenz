@@ -1,0 +1,41 @@
+/* Workload View Scrollbar Styling */
+.workload-scroll-container {
+  position: relative;
+}
+
+/* Firefox scrollbar */
+.workload-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) scrollbar */
+.workload-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.workload-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workload-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 4px;
+}
+
+.workload-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] .workload-scroll-container {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+[data-theme="dark"] .workload-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .workload-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}

@@ -1,12 +1,12 @@
 import { Flex, Typography } from '@/shared/antd-imports';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from '@/hooks/useDebouncedMediaQuery';
 import AdminCenterSidebar from '@/pages/admin-center/sidebar/sidebar';
 import { useTranslation } from 'react-i18next';
 
 const AdminCenterLayout: React.FC = () => {
-  const isTablet = useMediaQuery({ query: '(min-width:768px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width:768px)' });
   const { t } = useTranslation('admin-center/sidebar');
 
   return (
@@ -14,11 +14,7 @@ const AdminCenterLayout: React.FC = () => {
       <Typography.Title level={4}>{t('adminCenter')}</Typography.Title>
 
       {isTablet ? (
-        <Flex
-          gap={24}
-          align="flex-start"
-          className="w-full mt-6"
-        >
+        <Flex gap={24} align="flex-start" className="w-full mt-6">
           <Flex className="w-full max-w-60">
             <AdminCenterSidebar />
           </Flex>
@@ -27,11 +23,7 @@ const AdminCenterLayout: React.FC = () => {
           </Flex>
         </Flex>
       ) : (
-        <Flex
-          vertical
-          gap={24}
-          className="mt-6"
-        >
+        <Flex vertical gap={24} className="mt-6">
           <AdminCenterSidebar />
           <Outlet />
         </Flex>

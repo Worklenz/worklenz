@@ -7,15 +7,11 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 
 const NotificationButton = () => {
   const dispatch = useAppDispatch();
-  const { notifications, invitations } = useAppSelector(state => state.notificationReducer);
+  const { unreadNotificationsCount } = useAppSelector(state => state.notificationReducer);
   const { t } = useTranslation('navbar');
 
-  const hasNotifications = () => {
-    return notifications.length > 0 || invitations.length > 0;
-  };
-
-  const notificationCount = () => {
-    return notifications.length + invitations.length;
+  const hasUnreadNotifications = () => {
+    return unreadNotificationsCount > 0;
   };
 
   return (
@@ -24,8 +20,8 @@ const NotificationButton = () => {
         style={{ height: '62px', width: '60px' }}
         type="text"
         icon={
-          hasNotifications() ? (
-            <Badge count={notificationCount()}>
+          hasUnreadNotifications() ? (
+            <Badge count={unreadNotificationsCount}>
               <BellOutlined style={{ fontSize: 20 }} />
             </Badge>
           ) : (

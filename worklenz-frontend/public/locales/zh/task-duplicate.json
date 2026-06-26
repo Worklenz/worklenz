@@ -1,0 +1,16 @@
+{
+  "duplicateTask": "复制任务",
+  "duplicateTaskDescription": "选择要复制到新任务中的项目：",
+  "duplicateOptions": {
+    "subtasks": "子任务",
+    "attachments": "附件",
+    "dates": "日期",
+    "dependencies": "依赖关系",
+    "assignees": "负责人",
+    "labels": "标签",
+    "customFields": "自定义字段值",
+    "subscribers": "订阅者"
+  },
+  "duplicate": "复制",
+  "cancel": "取消"
+}

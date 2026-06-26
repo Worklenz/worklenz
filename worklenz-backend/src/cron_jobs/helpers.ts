@@ -16,6 +16,11 @@ export function getBaseUrl() {
   return `https://${process.env.FRONTEND_URL}`;
 }
 
+export function getClientPortalBaseUrl() {
+  if (isLocalServer()) return `http://${process.env.CLIENT_PORTAL_HOSTNAME}`;
+  return `https://${process.env.CLIENT_PORTAL_HOSTNAME}`;
+}
+
 function mapMembers(project: ITaskAssignmentModelProject) {
   for (const task of project.tasks || []) {
     if (task.members)

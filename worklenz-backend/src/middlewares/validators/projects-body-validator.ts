@@ -1,11 +1,12 @@
-import {NextFunction} from "express";
-import {IWorkLenzRequest} from "../../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../../interfaces/worklenz-response";
+import { NextFunction } from "express";
+import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 
-import {ServerResponse} from "../../models/server-response";
+import { ServerResponse } from "../../models/server-response";
+import { sanitizePlainText } from "../../shared/utils";
 
 export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction): IWorkLenzResponse | void {
-  const {name, color_code, status_id} = req.body;
+  const { name, color_code, status_id } = req.body;
   if (!status_id || status_id.trim() === "")
     return res.status(400).send(new ServerResponse(false, null));
   if (!name || name.trim() === "")
@@ -13,12 +14,18 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
   if (!color_code || color_code.trim() === "")
     return res.status(200).send(new ServerResponse(false, null, "Color code is required"));
 
-  req.body.name = req.body.name.trim();
+  // Sanitize project name to prevent HTML injection
+  req.body.name = sanitizePlainText(req.body.name.trim());
+
+  // Ensure name is not empty after sanitization
+  if (!req.body.name || req.body.name.trim().length === 0) {
+    return res.status(400).send(new ServerResponse(false, null, "Project name cannot be empty or contain only HTML tags"));
+  }
 
   if (req.body.name.length > 100)
     return res.status(200).send(new ServerResponse(false, null, "Project name length exceeded!"));
 
-  if (req.body.notes && req.body.notes.length > 200)
+  if (req.body.notes && req.body.notes.length > 500)
     return res.status(200).send(new ServerResponse(false, null, "Project note length exceeded!"));
 
   if (req.body.working_days && !(Number.isInteger(req.body.working_days)))

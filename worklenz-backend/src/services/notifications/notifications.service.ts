@@ -1,11 +1,11 @@
 import db from "../../config/db";
-import {IO} from "../../shared/io";
-import {log_error} from "../../shared/utils";
-import {SocketEvents} from "../../socket.io/events";
-import {ICreateNotificationRequest, IReceiver} from "./interfaces";
+import { IO } from "../../shared/io";
+import { log_error, sanitizePlainText } from "../../shared/utils";
+import { SocketEvents } from "../../socket.io/events";
+import { ICreateNotificationRequest, IReceiver } from "./interfaces";
 import WorklenzNotification from "./notification";
-import {sendInvitationEmail} from "../../shared/email-templates";
-import {IPassportSession} from "../../interfaces/passport-session";
+import { sendInvitationEmail } from "../../shared/email-templates";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 export class NotificationsService {
   public static TYPE_POP = 1;
@@ -23,15 +23,28 @@ export class NotificationsService {
     return this.isAllowPopup(type) && this.isAllowEmail(type);
   }
 
-  public static async createTaskUpdate(type: string, reporterId: string, taskId: string, userId: string, teamId: string) {
+  public static async createTaskUpdate(
+    type: string,
+    reporterId: string,
+    taskId: string,
+    userId: string,
+    teamId: string,
+  ) {
     if (!userId || !taskId) return;
     try {
-      const q = "SELECT notify_task_assignment_update($1, $2, $3, $4, $5) AS receiver;";
-      const result = await db.query(q, [type, reporterId, taskId, userId, teamId]);
+      const q =
+        "SELECT notify_task_assignment_update($1, $2, $3, $4, $5) AS receiver;";
+      const result = await db.query(q, [
+        type,
+        reporterId,
+        taskId,
+        userId,
+        teamId,
+      ]);
       const [data] = result.rows;
       const receiver = data.receiver || {};
 
-      if (receiver?.receiver_socket_id && (reporterId !== userId)) {
+      if (receiver?.receiver_socket_id && reporterId !== userId) {
         NotificationsService.sendNotification(receiver);
       }
     } catch (error) {
@@ -40,8 +53,15 @@ export class NotificationsService {
   }
 
   public static sendNotification(receiver: IReceiver): void {
-    const url = receiver.project_id ? `/worklenz/projects/${receiver.project_id}` : null;
-    const notification = new WorklenzNotification(receiver.team, receiver.team_id, receiver.message, url);
+    const url = receiver.project_id
+      ? `/worklenz/projects/${receiver.project_id}`
+      : null;
+    const notification = new WorklenzNotification(
+      receiver.team,
+      receiver.team_id,
+      receiver.message,
+      url,
+    );
 
     if (receiver.project) {
       notification.setProject(receiver.project);
@@ -52,7 +72,7 @@ export class NotificationsService {
     }
 
     if (receiver.task_id) {
-      notification.setParams({task: receiver.task_id});
+      notification.setParams({ task: receiver.task_id });
       notification.setTaskId(receiver.task_id);
     }
 
@@ -60,19 +80,55 @@ export class NotificationsService {
       notification.setProjectId(receiver.project_id);
     }
 
-    IO.emit(SocketEvents.NOTIFICATIONS_UPDATE, receiver.receiver_socket_id, notification);
+    IO.emit(
+      SocketEvents.NOTIFICATIONS_UPDATE,
+      receiver.receiver_socket_id,
+      notification,
+    );
   }
 
-  public static sendInvitation(userId: string, userName: string, teamName: string, teamId: string, teamMemberId: string) {
-    const message = `<b>${userName}</b> has invited you to work with <b>${teamName}</b>.`;
-    const payload = {message, team: teamName, team_id: teamId};
-    IO.emitByTeamMemberId(teamMemberId, userId || null, SocketEvents.INVITATIONS_UPDATE, payload);
+  public static async sendInvitation(
+    userId: string,
+    userName: string,
+    teamName: string,
+    teamId: string,
+    teamMemberId: string,
+    invitedUserId?: string,
+  ) {
+    // Sanitize user and team names to prevent XSS attacks in invitation notifications
+    const safeName = sanitizePlainText(userName);
+    const safeTeamName = sanitizePlainText(teamName);
+    const message = `<b>${safeName}</b> has invited you to work with <b>${safeTeamName}</b>.`;
+    const payload = { message, team: teamName, team_id: teamId };
+
+    // Create a notification entry in the database if the invited user exists
+    if (invitedUserId) {
+      try {
+        const q = "SELECT create_notification($1, $2, $3, $4, $5) AS res;";
+        await db.query(q, [invitedUserId, teamId, null, null, message]);
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    IO.emitByTeamMemberId(
+      teamMemberId,
+      userId || null,
+      SocketEvents.INVITATIONS_UPDATE,
+      payload,
+    );
   }
 
   public static async createNotification(request: ICreateNotificationRequest) {
     try {
       const q = "SELECT create_notification($1, $2, $3, $4, $5) AS res;";
-      const result = await db.query(q, [request.userId, request.teamId, request.taskId, request.projectId, request.message]);
+      const result = await db.query(q, [
+        request.userId,
+        request.teamId,
+        request.taskId,
+        request.projectId,
+        request.message,
+      ]);
       const [data] = result.rows;
       const response = data.res;
 
@@ -83,14 +139,18 @@ export class NotificationsService {
         project_color: response.project_color,
         project_id: request.projectId as string,
         team: response.team,
-        team_id: request.teamId
+        team_id: request.teamId,
       });
     } catch (error) {
       log_error(error);
     }
   }
 
-  public static sendTeamMembersInvitations(members: any[], user: IPassportSession, projectId?: string) {
+  public static sendTeamMembersInvitations(
+    members: any[],
+    user: IPassportSession,
+    projectId?: string,
+  ) {
     for (const member of members) {
       sendInvitationEmail(
         !member.is_new,
@@ -99,7 +159,7 @@ export class NotificationsService {
         member.email,
         member.team_member_user_id,
         member.name || member.email?.split("@")[0],
-        projectId
+        projectId,
       );
 
       if (member.team_member_id) {
@@ -108,7 +168,8 @@ export class NotificationsService {
           user.name as string,
           user.team_name as string,
           user.team_id as string,
-          member.team_member_id
+          member.team_member_id,
+          member.team_member_user_id, // Pass the invited user's ID
         );
       }
 

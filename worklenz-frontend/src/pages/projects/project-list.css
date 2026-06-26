@@ -18,6 +18,20 @@
   }
 }
 
+/* Allow the scrollbar gutter to render outside the card body content area */
+.project-card.ant-card .ant-card-body {
+  overflow: hidden;
+}
+
+/* Group view scroll container — scrollbar stays inside the card */
+.project-group-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin: -24px;
+  padding: 24px;
+}
+
 /* remove the border after the tabs in project view  */
 :where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top > .ant-tabs-nav::before,
 :where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > .ant-tabs-nav::before,
@@ -105,4 +119,24 @@
   margin-top: 8px;
   width: 100%;
   text-align: center;
+}
+/* Light mode */
+.project-filter-segmented .ant-segmented-item-selected {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 8px -2px #0000000d,
+    0 1px 4px -1px #00000012,
+    0 0 1px #00000014;
+  color: #262626;
+}
+
+/* Dark mode */
+html.dark .project-filter-segmented .ant-segmented-item-selected,
+html[data-theme="dark"] .project-filter-segmented .ant-segmented-item-selected {
+  background-color: #3a3a3a !important;
+  color: #e6e6e6 !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.15),
+    0 1px 4px rgba(0, 0, 0, 0.5) !important;
 }

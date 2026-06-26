@@ -71,4 +71,39 @@ export const profileSettingsApiService = {
     );
     return response.data;
   },
+
+  // Client Portal Settings
+  getClientPortalSettings: async (): Promise<IServerResponse<any>> => {
+    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/client-portal`);
+    return response.data;
+  },
+
+  updateClientPortalSettings: async (body: any): Promise<IServerResponse<any>> => {
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/client-portal`, body);
+    return response.data;
+  },
+
+  uploadClientPortalLogo: async (
+    logoData: string
+  ): Promise<IServerResponse<{ logo_url: string }>> => {
+    const response = await apiClient.post<IServerResponse<{ logo_url: string }>>(
+      `${rootUrl}/client-portal/upload-logo`,
+      { logoData }
+    );
+    return response.data;
+  },
+
+  dismissMobileAppBanner: async (): Promise<IServerResponse<null>> => {
+    const response = await apiClient.put<IServerResponse<null>>(
+      `${rootUrl}/mobile-app-banner-dismissed`
+    );
+    return response.data;
+  },
+
+  getClientPortalBaseUrl: async (): Promise<IServerResponse<{ baseUrl: string }>> => {
+    const response = await apiClient.get<IServerResponse<{ baseUrl: string }>>(
+      `${rootUrl}/client-portal/base-url`
+    );
+    return response.data;
+  },
 };

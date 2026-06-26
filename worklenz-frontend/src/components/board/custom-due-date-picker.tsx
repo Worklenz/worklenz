@@ -20,7 +20,7 @@ const CustomDueDatePicker = ({
   const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null); // Add ref to container
 
-  const dueDayjs = task?.end_date ? dayjs(task.end_date) : null;
+  const dueDayjs = task?.end_date ? dayjs(task.end_date, 'YYYY-MM-DD') : null;
 
   const handleDateChange = (date: Dayjs | null) => {
     onDateChange(date);
@@ -30,7 +30,7 @@ const CustomDueDatePicker = ({
         SocketEvents.TASK_END_DATE_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
-          end_date: date?.format(),
+          end_date: date?.format('YYYY-MM-DD'),
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name

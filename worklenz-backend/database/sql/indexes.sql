@@ -268,3 +268,21 @@ ON task_timers(user_id, task_id);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sys_task_status_categories_covering
 ON sys_task_status_categories(id, color_code, color_code_dark, is_done, is_doing, is_todo);
 
+-- Indexes for task_updates table to prevent deadlocks and improve performance
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_updates_user_project_type_sent
+ON task_updates(user_id, project_id, type, is_sent)
+WHERE is_sent = FALSE;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_updates_sent_status
+ON task_updates(is_sent, type)
+WHERE is_sent = FALSE;
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_updates_cleanup
+ON task_updates(is_sent, created_at)
+WHERE is_sent = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_failed_task_notifications_user_id
+ON failed_task_notifications(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_failed_task_notifications_failed_at
+ON failed_task_notifications(failed_at);

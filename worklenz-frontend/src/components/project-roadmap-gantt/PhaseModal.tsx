@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { 
-  Modal, 
-  Tabs, 
-  Progress, 
-  Tag, 
-  List, 
-  Avatar, 
-  Badge, 
-  Space, 
+import {
+  Modal,
+  Tabs,
+  Progress,
+  Tag,
+  List,
+  Avatar,
+  Badge,
+  Space,
   Button,
   Statistic,
   Row,
@@ -16,20 +16,26 @@ import {
   Input,
   Form,
   DatePicker,
-  Select
-} from 'antd';
-import { 
-  CalendarOutlined, 
-  TeamOutlined, 
-  CheckCircleOutlined, 
+  Select,
+  Typography,
+} from '@/shared/antd-imports';
+import {
+  CalendarOutlined,
+  TeamOutlined,
+  CheckCircleOutlined,
   ClockCircleOutlined,
   FlagOutlined,
   ExclamationCircleOutlined,
   EditOutlined,
   SaveOutlined,
-  CloseOutlined
+  CloseOutlined,
 } from '@ant-design/icons';
-import { PhaseModalData, ProjectPhase, PhaseTask, PhaseMilestone } from '../../types/project-roadmap.types';
+import {
+  PhaseModalData,
+  ProjectPhase,
+  PhaseTask,
+  PhaseMilestone,
+} from '../../types/project-roadmap.types';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
 import dayjs from 'dayjs';
@@ -44,15 +50,10 @@ interface PhaseModalProps {
   onUpdate?: (updates: Partial<ProjectPhase>) => void;
 }
 
-const PhaseModal: React.FC<PhaseModalProps> = ({
-  visible,
-  phase,
-  onClose,
-  onUpdate,
-}) => {
+const PhaseModal: React.FC<PhaseModalProps> = ({ visible, phase, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
-  
+
   // Theme support
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
@@ -80,7 +81,7 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
         endDate: values.endDate.toDate(),
         status: values.status,
       };
-      
+
       onUpdate?.(updates);
       setIsEditing(false);
     } catch (error) {
@@ -95,27 +96,38 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'success';
-      case 'in-progress': return 'processing';
-      case 'on-hold': return 'warning';
-      default: return 'default';
+      case 'completed':
+        return 'success';
+      case 'in-progress':
+        return 'processing';
+      case 'on-hold':
+        return 'warning';
+      default:
+        return 'default';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'red';
-      case 'medium': return 'orange';
-      case 'low': return 'green';
-      default: return 'default';
+      case 'high':
+        return 'red';
+      case 'medium':
+        return 'orange';
+      case 'low':
+        return 'green';
+      default:
+        return 'default';
     }
   };
 
   const getTaskStatusIcon = (status: string) => {
     switch (status) {
-      case 'done': return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-      case 'in-progress': return <ClockCircleOutlined style={{ color: '#1890ff' }} />;
-      default: return <ExclamationCircleOutlined style={{ color: '#d9d9d9' }} />;
+      case 'done':
+        return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+      case 'in-progress':
+        return <ClockCircleOutlined style={{ color: '#1890ff' }} />;
+      default:
+        return <ExclamationCircleOutlined style={{ color: '#d9d9d9' }} />;
     }
   };
 
@@ -138,16 +150,11 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
           <Space>
             {isEditing ? (
               <>
-                <Button 
-                  type="primary" 
-                  icon={<SaveOutlined />} 
-                  onClick={handleSave}
-                  size="small"
-                >
+                <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} size="small">
                   Save
                 </Button>
-                <Button 
-                  icon={<CloseOutlined />} 
+                <Button
+                  icon={<CloseOutlined />}
                   onClick={handleCancel}
                   size="small"
                   className="dark:border-gray-600 dark:text-gray-300"
@@ -156,9 +163,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                 </Button>
               </>
             ) : (
-              <Button 
-                type="text" 
-                icon={<EditOutlined />} 
+              <Button
+                type="text"
+                icon={<EditOutlined />}
                 onClick={handleEdit}
                 size="small"
                 className="dark:text-gray-300 dark:hover:bg-gray-700"
@@ -178,10 +185,13 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
       <Form form={form} layout="vertical">
         <div className="mb-4">
           {isEditing ? (
-            <Form.Item name="description" label={<span className="text-gray-700 dark:text-gray-300">Description</span>}>
-              <TextArea 
-                rows={2} 
-                className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100" 
+            <Form.Item
+              name="description"
+              label={<span className="text-gray-700 dark:text-gray-300">Description</span>}
+            >
+              <TextArea
+                rows={2}
+                className="dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
               />
             </Form.Item>
           ) : (
@@ -193,16 +203,16 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
         <Row gutter={16} className="mb-6">
           <Col span={6}>
             <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-              <Statistic 
+              <Statistic
                 title={<span className="text-gray-600 dark:text-gray-400">Progress</span>}
-                value={phase.progress} 
-                suffix="%" 
+                value={phase.progress}
+                suffix="%"
                 valueStyle={{ color: themeWiseColor('#1890ff', '#40a9ff', themeMode) }}
               />
-              <Progress 
-                percent={phase.progress} 
-                showInfo={false} 
-                size="small" 
+              <Progress
+                percent={phase.progress}
+                showInfo={false}
+                size="small"
                 strokeColor={themeWiseColor('#1890ff', '#40a9ff', themeMode)}
                 trailColor={themeWiseColor('#f0f0f0', '#4b5563', themeMode)}
               />
@@ -210,9 +220,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
           </Col>
           <Col span={6}>
             <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-              <Statistic 
+              <Statistic
                 title={<span className="text-gray-600 dark:text-gray-400">Tasks</span>}
-                value={phase.completedTaskCount} 
+                value={phase.completedTaskCount}
                 suffix={`/ ${phase.taskCount}`}
                 valueStyle={{ color: themeWiseColor('#52c41a', '#34d399', themeMode) }}
               />
@@ -220,9 +230,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
           </Col>
           <Col span={6}>
             <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-              <Statistic 
+              <Statistic
                 title={<span className="text-gray-600 dark:text-gray-400">Milestones</span>}
-                value={phase.completedMilestoneCount} 
+                value={phase.completedMilestoneCount}
                 suffix={`/ ${phase.milestoneCount}`}
                 valueStyle={{ color: themeWiseColor('#722ed1', '#9f7aea', themeMode) }}
               />
@@ -230,9 +240,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
           </Col>
           <Col span={6}>
             <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-              <Statistic 
+              <Statistic
                 title={<span className="text-gray-600 dark:text-gray-400">Team</span>}
-                value={phase.teamMembers.length} 
+                value={phase.teamMembers.length}
                 suffix="members"
                 valueStyle={{ color: themeWiseColor('#fa8c16', '#fbbf24', themeMode) }}
               />
@@ -244,7 +254,10 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
         <Row gutter={16} className="mb-6">
           <Col span={12}>
             {isEditing ? (
-              <Form.Item name="startDate" label={<span className="text-gray-700 dark:text-gray-300">Start Date</span>}>
+              <Form.Item
+                name="startDate"
+                label={<span className="text-gray-700 dark:text-gray-300">Start Date</span>}
+              >
                 <DatePicker className="w-full dark:bg-gray-700 dark:border-gray-600" />
               </Form.Item>
             ) : (
@@ -252,14 +265,19 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-gray-600 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">Start:</span>
-                  <span className="text-gray-600 dark:text-gray-400">{phase.startDate.toLocaleDateString()}</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {phase.startDate.toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             )}
           </Col>
           <Col span={12}>
             {isEditing ? (
-              <Form.Item name="endDate" label={<span className="text-gray-700 dark:text-gray-300">End Date</span>}>
+              <Form.Item
+                name="endDate"
+                label={<span className="text-gray-700 dark:text-gray-300">End Date</span>}
+              >
                 <DatePicker className="w-full dark:bg-gray-700 dark:border-gray-600" />
               </Form.Item>
             ) : (
@@ -267,7 +285,9 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-gray-600 dark:text-gray-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">End:</span>
-                  <span className="text-gray-600 dark:text-gray-400">{phase.endDate.toLocaleDateString()}</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    {phase.endDate.toLocaleDateString()}
+                  </span>
                 </div>
               </div>
             )}
@@ -277,7 +297,10 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
         {isEditing && (
           <Row gutter={16} className="mb-6">
             <Col span={12}>
-              <Form.Item name="status" label={<span className="text-gray-700 dark:text-gray-300">Status</span>}>
+              <Form.Item
+                name="status"
+                label={<span className="text-gray-700 dark:text-gray-300">Status</span>}
+              >
                 <Select className="dark:bg-gray-700 dark:border-gray-600">
                   <Select.Option value="not-started">Not Started</Select.Option>
                   <Select.Option value="in-progress">In Progress</Select.Option>
@@ -289,11 +312,11 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
           </Row>
         )}
 
-        <Tabs 
+        <Tabs
           defaultActiveKey="tasks"
           className="dark:bg-gray-800"
-          tabBarStyle={{ 
-            borderBottom: `1px solid ${themeWiseColor('#f0f0f0', '#4b5563', themeMode)}`
+          tabBarStyle={{
+            borderBottom: `1px solid ${themeWiseColor('#f0f0f0', '#4b5563', themeMode)}`,
           }}
         >
           <TabPane tab={`Tasks (${phase.taskCount})`} key="tasks">
@@ -305,33 +328,30 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                     avatar={getTaskStatusIcon(task.status)}
                     title={
                       <div className="flex justify-between items-center">
-                        <Text strong>{task.name}</Text>
+                        <Typography.Text strong>{task.name}</Typography.Text>
                         <Space>
-                          <Tag color={getPriorityColor(task.priority)}>
-                            {task.priority}
-                          </Tag>
-                          <Progress 
-                            percent={task.progress} 
-                            size="small" 
-                            style={{ width: 100 }}
-                          />
+                          <Tag color={getPriorityColor(task.priority)}>{task.priority}</Tag>
+                          <Progress percent={task.progress} size="small" style={{ width: 100 }} />
                         </Space>
                       </div>
                     }
                     description={
                       <div>
-                        <Text type="secondary">{task.description}</Text>
+                        <Typography.Text type="secondary">{task.description}</Typography.Text>
                         <div className="mt-2 flex justify-between items-center">
                           <Space>
                             <CalendarOutlined />
-                            <Text type="secondary">
-                              {task.startDate.toLocaleDateString()} - {task.endDate.toLocaleDateString()}
-                            </Text>
+                            <Typography.Text type="secondary">
+                              {task.startDate.toLocaleDateString()} -{' '}
+                              {task.endDate.toLocaleDateString()}
+                            </Typography.Text>
                           </Space>
                           {task.assigneeName && (
                             <Space>
                               <TeamOutlined />
-                              <Text type="secondary">{task.assigneeName}</Text>
+                              <Typography.Text type="secondary">
+                                {task.assigneeName}
+                              </Typography.Text>
                             </Space>
                           )}
                         </div>
@@ -353,13 +373,17 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <Text strong>{milestone.name}</Text>
+                      <Typography.Text strong>{milestone.name}</Typography.Text>
                       {milestone.criticalPath && (
-                        <Tag color="red" className="ml-2">Critical Path</Tag>
+                        <Tag color="red" className="ml-2">
+                          Critical Path
+                        </Tag>
                       )}
                       {milestone.description && (
                         <div className="mt-1">
-                          <Text type="secondary">{milestone.description}</Text>
+                          <Typography.Text type="secondary">
+                            {milestone.description}
+                          </Typography.Text>
                         </div>
                       )}
                     </div>
@@ -368,8 +392,8 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                         <CalendarOutlined />
                         <span className="ml-1">{milestone.dueDate.toLocaleDateString()}</span>
                       </div>
-                      <Badge 
-                        status={milestone.isCompleted ? 'success' : 'processing'} 
+                      <Badge
+                        status={milestone.isCompleted ? 'success' : 'processing'}
                         text={milestone.isCompleted ? 'Completed' : 'Pending'}
                       />
                     </div>
@@ -388,9 +412,10 @@ const PhaseModal: React.FC<PhaseModalProps> = ({
                     avatar={<Avatar>{member.charAt(0).toUpperCase()}</Avatar>}
                     title={member}
                     description={
-                      <Text type="secondary">
-                        {phase.tasks.filter(task => task.assigneeName === member).length} tasks assigned
-                      </Text>
+                      <Typography.Text type="secondary">
+                        {phase.tasks.filter(task => task.assigneeName === member).length} tasks
+                        assigned
+                      </Typography.Text>
                     }
                   />
                 </List.Item>

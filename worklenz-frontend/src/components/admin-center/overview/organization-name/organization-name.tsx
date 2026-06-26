@@ -1,8 +1,7 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { EnterOutlined, EditOutlined } from '@/shared/antd-imports';
-import { Card, Button, Tooltip, Typography } from '@/shared/antd-imports';
-import TextArea from 'antd/es/input/TextArea';
+import { Card, Button, Tooltip, Typography, TextArea } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useState, useEffect } from 'react';
 
@@ -58,11 +57,11 @@ const OrganizationName = ({ themeMode, name, t, refetch }: OrganizationNameProps
   };
 
   return (
-    <Card>
-      <Typography.Title level={5} style={{ margin: 0, marginBottom: '0.5rem' }}>
+    <div style={{ width: '100%' }}>
+      <Typography.Title level={5} style={{ margin: 0, marginBottom: 16 }}>
         {t('name')}
       </Typography.Title>
-      <div style={{ paddingTop: '8px' }}>
+      <div style={{ paddingTop: '4px' }}>
         <div style={{ marginBottom: '8px' }}>
           {isEditable ? (
             <div style={{ position: 'relative' }}>
@@ -114,7 +113,7 @@ const OrganizationName = ({ themeMode, name, t, refetch }: OrganizationNameProps
           )}
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
 

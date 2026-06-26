@@ -3,7 +3,7 @@ import {NextFunction} from "express";
 import {IWorkLenzRequest} from "../../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../../interfaces/worklenz-response";
 import {ServerResponse} from "../../models/server-response";
-import {getRandomColorCode, sanitize, toMinutes, toRound} from "../../shared/utils";
+import {getRandomColorCode, sanitize, sanitizePlainText, toMinutes, toRound} from "../../shared/utils";
 
 export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction): IWorkLenzResponse | void {
   const {name, assignees, project_id, labels} = req.body;
@@ -43,6 +43,8 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
 
   if (req.body.name.length > 100)
     return res.status(200).send(new ServerResponse(false, null, "Task name length exceeded!"));
+
+  req.body.name = sanitizePlainText(req.body.name);
 
   return next();
 }

@@ -25,6 +25,9 @@
   "lastupdatedColumn": "Zuletzt aktualisiert",
   "reporterColumn": "Melder",
   "dueTimeColumn": "Fällige Zeit",
+  "moveColumnHandle": "Spalte verschieben",
+  "activeParentBadge": "Aktive übergeordnete Aufgabe",
+  "activeParentTooltip": "Übergeordnete Aufgabe ist nicht archiviert",
   "todoSelectorText": "Zu erledigen",
   "doingSelectorText": "Tun",
   "doneSelectorText": "Erledigt",
@@ -38,6 +41,7 @@
 
   "addTaskText": "Aufgabe hinzufügen",
   "addSubTaskText": "+ Unteraufgabe hinzufügen",
+  "addSubTaskInputPlaceholder": "Namen der Unteraufgabe eingeben und mit Enter speichern",
   "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
   "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
   "dropTaskHere": "Aufgabe hier ablegen",
@@ -56,6 +60,7 @@
   "pendingInvitation": "Einladung ausstehend",
 
   "contextMenu": {
+    "duplicateTask": "Doppelte Aufgabe",
     "assignToMe": "Mir zuweisen",
     "copyLink": "Link zur Aufgabe kopieren",
     "linkCopied": "Link in die Zwischenablage kopiert",
@@ -75,6 +80,13 @@
   "dueDatePlaceholder": "Fälligkeitsdatum",
   "startDatePlaceholder": "Startdatum",
 
+  "exampleTasks": {
+    "prefix": "z.B.",
+    "task1": "Projektumfang und Ziele definieren",
+    "task2": "Mit Stakeholdern abstimmen",
+    "task3": "Kickoff-Meeting planen"
+  },
+
   "emptyStates": {
     "noTaskGroups": "Keine Aufgabengruppen gefunden",
     "noTaskGroupsDescription": "Aufgaben werden hier angezeigt, wenn sie erstellt oder Filter angewendet werden.",
@@ -90,7 +102,20 @@
     "peopleField": "Personenfeld",
     "noDate": "Kein Datum",
     "unsupportedField": "Nicht unterstützter Feldtyp",
-    
+    "datePlaceholder": "Datum festlegen",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Option auswählen",
+    "noOptionsAvailable": "Keine Optionen verfügbar",
+    "updating": "Wird aktualisiert...",
+    "peopleDropdown": {
+      "searchMembers": "Mitglieder suchen...",
+      "pending": "Ausstehend",
+      "loadingMembers": "Mitglieder werden geladen...",
+      "noMembersFound": "Keine Mitglieder gefunden",
+      "inviteMember": "Mitglied einladen"
+    },
+
     "modal": {
       "addFieldTitle": "Feld hinzufügen",
       "editFieldTitle": "Feld bearbeiten",
@@ -111,9 +136,10 @@
       "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
       "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
     },
-    
+
     "fieldTypes": {
       "people": "Personen",
+      "text": "Text",
       "number": "Zahl",
       "date": "Datum",
       "selection": "Auswahl",

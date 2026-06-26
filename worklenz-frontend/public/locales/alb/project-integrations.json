@@ -1,0 +1,58 @@
+{
+  "title": "Integrimet",
+  "tooltip": "Menaxho integrimet e projektit",
+  "upgradeRequired": "Integrimet janë të disponueshme në planin Business",
+  "manageAll": "Menaxho të gjitha integrimet",
+  "comingSoon": "Së shpejti",
+  "cancel": "Anulo",
+
+  "slack": {
+    "title": "Slack",
+    "description": "Dërgo njoftime në kanalet e Slack",
+    "notConnected": "Ju lutemi lidhni hapësirën tuaj të punës së Slack në Cilësimet fillimisht",
+    "quickAddTitle": "Shto Slack në Projekt",
+    "currentProject": "Projekti",
+    "selectChannel": "Kanali i Slack",
+    "selectChannelPlaceholder": "Zgjidh një kanal të Slack...",
+    "selectNotifications": "Llojet e Njoftimeve",
+    "selectNotificationsPlaceholder": "Zgjidh llojet e njoftimeve...",
+    "refresh": "Rifresko",
+    "addButton": "Shto Integrimin",
+    "inviteBotTip": "Këshillë: Sigurohuni që të ftoni bot-in @Worklenz në kanalin tuaj të Slack fillimisht!"
+  },
+
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "Dërgo njoftime në kanalet e Teams"
+  },
+
+  "github": {
+    "title": "GitHub",
+    "description": "Sinkronizo detyrat me çështjet e GitHub"
+  },
+
+  "notificationTypes": {
+    "taskCreated": "Detyra u krijua",
+    "taskAssigned": "Detyra e caktuar",
+    "statusChanged": "Statusi i ndryshuar",
+    "taskCompleted": "Detyra e përfunduar",
+    "commentAdded": "Koment i shtuar",
+    "dueDateChanged": "Afati i ndryshuar"
+  },
+
+  "validation": {
+    "selectChannel": "Ju lutemi zgjidhni një kanal të Slack",
+    "selectNotifications": "Ju lutemi zgjidhni të paktën një lloj njoftimi"
+  },
+
+  "messages": {
+    "integrationAdded": "Integrimi i Slack u shtua me sukses!",
+    "channelsRefreshed": "Kanalet u rifreskuan me sukses"
+  },
+
+  "errors": {
+    "loadChannelsFailed": "Dështoi ngarkimi i kanaleve",
+    "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve",
+    "addIntegrationFailed": "Dështoi shtimi i integrimit"
+  }
+}

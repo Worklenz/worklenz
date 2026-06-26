@@ -15,4 +15,6 @@ export interface IProjectCommentEmailNotification {
   team: string;
   project_name: string;
   comment: string;
+  settings_url: string;
+  project_url: string;
 }

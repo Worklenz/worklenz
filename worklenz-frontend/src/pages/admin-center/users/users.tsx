@@ -1,6 +1,15 @@
 import { SearchOutlined, SyncOutlined } from '@/shared/antd-imports';
-import { PageHeader } from '@ant-design/pro-components';
-import { Button, Card, Flex, Input, Table, TableProps, Tooltip, Typography } from '@/shared/antd-imports';
+import WorklenzPageHeader from '@/components/common/WorklenzPageHeader';
+import {
+  Button,
+  Card,
+  Flex,
+  Input,
+  Table,
+  TableProps,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
 import React, { useEffect, useState } from 'react';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -86,8 +95,8 @@ const Users: React.FC = () => {
 
   return (
     <div style={{ width: '100%' }}>
-      <PageHeader title={<span>{t('title')}</span>} style={{ padding: '16px 0' }} />
-      <PageHeader
+      <WorklenzPageHeader title={<span>{t('title')}</span>} style={{ padding: '16px 0' }} />
+      <WorklenzPageHeader
         style={{
           paddingLeft: 0,
           paddingTop: 0,

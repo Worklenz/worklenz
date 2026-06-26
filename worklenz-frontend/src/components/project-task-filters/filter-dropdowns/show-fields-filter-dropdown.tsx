@@ -8,10 +8,15 @@ import React, { useState } from 'react';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { updateColumnVisibility, updateCustomColumnPinned } from '@/features/tasks/tasks.slice';
+import {
+  updateColumnVisibility,
+  updateCustomColumnPinned,
+  toggleColumnVisibility,
+} from '@/features/tasks/tasks.slice';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useCustomColumnVisibility } from '@/hooks/useCustomColumnVisibility';
 import ColumnConfigurationModal from './column-configuration-modal';
 
 // Configuration interface for column visibility
@@ -23,10 +28,31 @@ interface ColumnConfig {
   category?: string;
 }
 
+const STANDARD_COLUMN_KEYS = new Set([
+  'KEY',
+  'TASK',
+  'DESCRIPTION',
+  'PROGRESS',
+  'STATUS',
+  'ASSIGNEES',
+  'LABELS',
+  'PHASE',
+  'PRIORITY',
+  'TIME_TRACKING',
+  'ESTIMATION',
+  'START_DATE',
+  'DUE_DATE',
+  'DUE_TIME',
+  'COMPLETED_DATE',
+  'CREATED_DATE',
+  'LAST_UPDATED',
+  'REPORTER',
+]);
+
 // Default column configuration - this can be customized per project or globally
 const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'KEY', label: 'Key', showInDropdown: true, order: 1, category: 'basic' },
-  { key: 'TASK', label: 'Task', showInDropdown: false, order: 2, category: 'basic' }, // Always visible, not in dropdown
+  { key: 'TASK', label: 'Task', showInDropdown: false, order: 2, category: 'basic' },
   { key: 'DESCRIPTION', label: 'Description', showInDropdown: true, order: 3, category: 'basic' },
   { key: 'PROGRESS', label: 'Progress', showInDropdown: true, order: 4, category: 'basic' },
   { key: 'STATUS', label: 'Status', showInDropdown: true, order: 5, category: 'basic' },
@@ -36,7 +62,7 @@ const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'PRIORITY', label: 'Priority', showInDropdown: true, order: 9, category: 'basic' },
   {
     key: 'TIME_TRACKING',
-    label: 'Time Tracking',
+    label: 'Time',
     showInDropdown: true,
     order: 10,
     category: 'time',
@@ -69,16 +95,8 @@ const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'REPORTER', label: 'Reporter', showInDropdown: true, order: 18, category: 'basic' },
 ];
 
-// Hook to get column configuration - can be extended to fetch from API or localStorage
+// Hook to get column configuration
 const useColumnConfig = (projectId?: string): ColumnConfig[] => {
-  // In the future, this could fetch from:
-  // 1. Project-specific settings from API
-  // 2. User preferences from localStorage
-  // 3. Global settings from configuration
-  // 4. Team-level settings
-
-  // For now, return default configuration
-  // You can extend this to load from localStorage or API
   const storedConfig = localStorage.getItem(`worklenz.column-config.${projectId}`);
 
   if (storedConfig) {
@@ -110,6 +128,7 @@ const ShowFieldsFilterDropdown = () => {
     useColumnConfig(projectId || undefined)
   );
   const saveColumnConfig = useSaveColumnConfig();
+  const { isHidden, toggleVisibility } = useCustomColumnVisibility(); // ← ADDED
 
   // Update config if projectId changes
   React.useEffect(() => {
@@ -118,25 +137,33 @@ const ShowFieldsFilterDropdown = () => {
 
   // Filter columns based on configuration
   const visibilityChangableColumnList = columnList.filter(column => {
-    // Always exclude selector and TASK columns from dropdown
     if (column.key === 'selector' || column.key === 'TASK') {
       return false;
     }
 
-    // Find configuration for this column
     const config = columnConfig.find(c => c.key === column.key);
 
-    // If no config found, show custom columns by default
     if (!config) {
       return column.custom_column;
     }
 
-    // Return based on configuration
     return config.showInDropdown;
   });
 
+  // Dedupe columns by id/key
+  const uniqueVisibilityColumns = Array.from(
+    visibilityChangableColumnList
+      .reduce((map, column) => {
+        const identity = column.id || column.key || '';
+        if (!identity) return map;
+        map.set(identity, column);
+        return map;
+      }, new Map<string, ITaskListColumn>())
+      .values()
+  );
+
   // Sort columns based on configuration order
-  const sortedColumns = visibilityChangableColumnList.sort((a, b) => {
+  const sortedColumns = uniqueVisibilityColumns.sort((a, b) => {
     const configA = columnConfig.find(c => c.key === a.key);
     const configB = columnConfig.find(c => c.key === b.key);
 
@@ -148,23 +175,49 @@ const ShowFieldsFilterDropdown = () => {
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
+  const isCustomColumn = (column: ITaskListColumn): boolean => {
+    const key = column.key || '';
+    const keyLooksStandard = STANDARD_COLUMN_KEYS.has(key);
+    return !!column.custom_column || !!column.custom_column_obj || !keyLooksStandard;
+  };
+
   const handleColumnVisibilityChange = async (col: ITaskListColumn) => {
     if (!projectId) return;
     const column = { ...col, is_visible: !col.pinned, pinned: !col.pinned };
 
-    if (col.custom_column) {
-      socket?.emit(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), {
-        column_id: col.id,
-        project_id: projectId,
-        is_visible: !col.pinned,
-      });
-      socket?.once(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), (data: any) => {
-        if (col.id) {
-          dispatch(updateCustomColumnPinned({ columnId: col.id, isVisible: !col.pinned }));
-        }
-      });
+    if (isCustomColumn(col)) {
+      // Toggle per-user visibility via our hook (persisted to localStorage per user)
+      const id = col.id || col.key || '';
+      toggleVisibility(id); // ← ADDED
+
+      if (col.key) {
+        dispatch(toggleColumnVisibility(col.key));
+      }
+
+      if (col.id) {
+        dispatch(
+          updateCustomColumnPinned({ columnId: col.id, columnKey: col.key, isVisible: !col.pinned })
+        );
+        socket?.emit(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), {
+          column_id: col.id,
+          project_id: projectId,
+          is_visible: !col.pinned,
+        });
+      } else {
+        dispatch(updateCustomColumnPinned({ columnKey: col.key, isVisible: !col.pinned }));
+      }
     } else {
-      await dispatch(updateColumnVisibility({ projectId, item: column }));
+      if (col.key) {
+        dispatch(toggleColumnVisibility(col.key));
+      }
+
+      try {
+        await dispatch(updateColumnVisibility({ projectId, item: column })).unwrap();
+      } catch (_error) {
+        if (col.key) {
+          dispatch(toggleColumnVisibility(col.key));
+        }
+      }
     }
   };
 
@@ -173,22 +226,52 @@ const ShowFieldsFilterDropdown = () => {
     if (projectId) saveColumnConfig(projectId, newConfig);
   };
 
+  const standardColumns = sortedColumns.filter(col => !isCustomColumn(col));
+  const customColumns = sortedColumns.filter(col => isCustomColumn(col));
+
+  const toColumnMenuItem = (col: ITaskListColumn, index: number) => ({
+    key: `${col.id || col.key || 'col'}-${index}`,
+    type: 'item' as const,
+    label: (
+      <Space>
+        <Checkbox
+          checked={isCustomColumn(col) ? !isHidden(col.id || col.key || '') : col.pinned} // ← MODIFIED
+          onChange={e => handleColumnVisibilityChange(col)}
+        >
+          {col.key === 'PHASE' ? project?.phase_label : ''}
+          {col.key !== 'PHASE' &&
+            (isCustomColumn(col)
+              ? col.name
+              : t(`${col.key?.replace('_', '').toLowerCase() + 'Text'}`, {
+                  defaultValue: col.name || col.key || '',
+                }))}
+        </Checkbox>
+      </Space>
+    ),
+  });
+
   const menuItems = [
-    ...sortedColumns.map(col => ({
-      key: col.key || '',
+    {
+      key: 'standard-fields-header',
       type: 'item' as const,
-      label: (
-        <Space>
-          <Checkbox checked={col.pinned} onChange={e => handleColumnVisibilityChange(col)}>
-            {col.key === 'PHASE' ? project?.phase_label : ''}
-            {col.key !== 'PHASE' &&
-              (col.custom_column
-                ? col.name
-                : t(`${col.key?.replace('_', '').toLowerCase() + 'Text'}`))}
-          </Checkbox>
-        </Space>
-      ),
-    })),
+      disabled: true,
+      label: t('standardFieldsSection', { defaultValue: 'Standard fields' }),
+    },
+    ...standardColumns.map(toColumnMenuItem),
+    ...(customColumns.length
+      ? [
+          {
+            type: 'divider' as const,
+          },
+          {
+            key: 'custom-fields-header',
+            type: 'item' as const,
+            disabled: true,
+            label: t('customFieldsSection', { defaultValue: 'Custom fields' }),
+          },
+          ...customColumns.map(toColumnMenuItem),
+        ]
+      : []),
     {
       type: 'divider' as const,
     },
@@ -205,7 +288,7 @@ const ShowFieldsFilterDropdown = () => {
           }}
           style={{ width: '100%', textAlign: 'left' }}
         >
-          Configure Fields
+          {t('configureFieldsButton', { defaultValue: 'Configure Fields' })}
         </Button>
       ),
     },
@@ -220,7 +303,9 @@ const ShowFieldsFilterDropdown = () => {
         }}
         trigger={['click']}
       >
-        <Button icon={<MoreOutlined />}>{t('showFieldsText')}</Button>
+        <Button icon={<MoreOutlined />}>
+          {t('showFieldsText', { defaultValue: 'Fields' })}
+        </Button>
       </Dropdown>
       <ColumnConfigurationModal
         open={configModalOpen}

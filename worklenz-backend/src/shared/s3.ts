@@ -19,9 +19,7 @@ const s3Client = new S3Client({
   credentials: {
     accessKeyId: S3_ACCESS_KEY_ID || "",
     secretAccessKey: S3_SECRET_ACCESS_KEY || "",
-  },
-  endpoint: S3_URL,
-  forcePathStyle: true,
+  }
 });
 
 export function getRootDir() {
@@ -131,7 +129,7 @@ export async function createPresignedUrlWithClient(key: string, file: string) {
     Bucket: BUCKET,
     Key: key,
     ResponseContentType: `${contentType}`,
-    ResponseContentDisposition: `attachment; filename=${file}`,
+    ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
   });
   return getSignedUrl(s3Client, command, {expiresIn: 3600});
 }

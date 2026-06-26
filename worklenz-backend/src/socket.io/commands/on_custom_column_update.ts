@@ -6,9 +6,33 @@ import { log_error } from "../util";
 interface TaskCustomColumnUpdateData {
   task_id: string;
   column_key: string;
-  value: string | number | boolean;
+  value: string | number | boolean | string[] | null;
   project_id: string;
 }
+
+const normalizePeopleCustomColumnValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
+
+  if (typeof value === "string") {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return [];
+
+    try {
+      const parsedValue = JSON.parse(trimmedValue);
+      if (Array.isArray(parsedValue)) {
+        return parsedValue.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+      }
+    } catch {
+      return [trimmedValue];
+    }
+
+    return [];
+  }
+
+  return [];
+};
 
 export const on_task_custom_column_update = async (_io: Server, socket: Socket, data: string) => {
   try {
@@ -38,6 +62,45 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
     const columnId = column.id;
     const fieldType = column.field_type;
     
+    const normalizedPeopleValue =
+      fieldType === "people" ? normalizePeopleCustomColumnValue(value) : null;
+
+    const isEmptyValue =
+      value === null ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0) ||
+      (fieldType === "people" && normalizedPeopleValue !== null && normalizedPeopleValue.length === 0);
+
+    if (isEmptyValue) {
+      await db.query(
+        `
+          DELETE FROM cc_column_values
+          WHERE task_id = $1 AND column_id = $2
+        `,
+        [task_id, columnId]
+      );
+
+      socket.to(`project:${project_id}`).emit(
+        SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+        JSON.stringify({
+          task_id,
+          column_key,
+          value: null
+        })
+      );
+
+      socket.emit(
+        SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(),
+        JSON.stringify({
+          task_id,
+          column_key,
+          value: null
+        })
+      );
+
+      return;
+    }
+
     // Determine which value field to use based on the field_type
     let textValue = null;
     let numberValue = null;
@@ -46,6 +109,9 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
     let jsonValue = null;
     
     switch (fieldType) {
+      case "text":
+        textValue = String(value);
+        break;
       case "number":
         numberValue = parseFloat(String(value));
         break;
@@ -56,7 +122,7 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
         booleanValue = Boolean(value);
         break;
       case "people":
-        jsonValue = JSON.stringify(Array.isArray(value) ? value : [value]);
+        jsonValue = JSON.stringify(normalizedPeopleValue || []);
         break;
       default:
         textValue = String(value);
@@ -129,7 +195,7 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
       })
     );
 
-    console.log("Task custom column updated successfully", { task_id, column_key });
+    // console.log("Task custom column updated successfully", { task_id, column_key });
   } catch (error) {
     log_error(error);
     console.error("Error updating task custom column", error);

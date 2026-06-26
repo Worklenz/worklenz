@@ -3,8 +3,9 @@
   "home": "Inicio",
   "projects": "Proyectos",
   "schedule": "Calendario",
-  "reporting": "Informes",
+  "my-team-reports": "Informes de Mi Equipo",
   "clients": "Clientes",
+  "client-portal": "Portal de Clientes",
   "teams": "Equipos",
   "labels": "Etiquetas",
   "jobTitles": "Cargos",
@@ -18,8 +19,11 @@
   "profileTooltip": "Ver perfil",
   "adminCenter": "Centro de administración",
   "settings": "Configuración",
+  "getMobileApp": "Obtener app móvil",
   "deleteAccount": "Eliminar Cuenta",
   "logOut": "Cerrar sesión",
+  "lightMode": "Modo Claro",
+  "darkMode": "Modo Oscuro",
   "notificationsDrawer": {
     "read": "Notificaciones leídas",
     "unread": "Notificaciones no leídas",
@@ -28,5 +32,26 @@
     "accept": "Aceptar",
     "acceptAndJoin": "Aceptar y unirse",
     "noNotifications": "Sin notificaciones"
-  }
+  },
+  "timerButton": {
+    "runningTimers": "Temporizadores en Ejecución",
+    "recentTimeLogs": "Registros de Tiempo Recientes",
+    "unnamedTask": "Tarea sin Nombre",
+    "unnamedProject": "Proyecto sin Nombre",
+    "parent": "Padre",
+    "started": "Iniciado",
+    "noTimersOrLogs": "Sin temporizadores o registros",
+    "errorLoadingTimers": "Error al cargar temporizadores",
+    "errorRenderingTimers": "Error al renderizar temporizadores",
+    "timerError": "Error de Temporizador",
+    "timerRunning": "{{count}} temporizador en ejecución",
+    "timerRunning_other": "{{count}} temporizadores en ejecución",
+    "recentLog": "{{count}} registro reciente",
+    "recentLog_other": "{{count}} registros recientes"
+  },
+  "reporting": "Reports",
+  "clientPortalUpgradePopoverTitle": "Portal del Cliente",
+  "clientPortalUpgradePopoverBody": "Comparte el progreso del proyecto con tus clientes mediante un portal con marca. Disponible en el plan Business.",
+  "clientPortalUpgradePopoverCta": "Actualizar ahora",
+  "closePopover": "Cerrar ventana emergente"
 }

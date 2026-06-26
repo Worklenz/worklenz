@@ -1,4 +1,13 @@
-import { Button, Flex, Input, Popconfirm, Progress, Table, Tag, Tooltip } from '@/shared/antd-imports';
+import {
+  Button,
+  Flex,
+  Input,
+  Popconfirm,
+  Progress,
+  Table,
+  Tag,
+  Tooltip,
+} from '@/shared/antd-imports';
 import { useState, useMemo, useEffect } from 'react';
 import { DeleteOutlined, EditOutlined, ExclamationCircleFilled } from '@/shared/antd-imports';
 import { nanoid } from '@reduxjs/toolkit';
@@ -21,6 +30,7 @@ import {
   GROUP_BY_STATUS_VALUE,
   GROUP_BY_PRIORITY_VALUE,
   GROUP_BY_PHASE_VALUE,
+  removeSubTask,
 } from '@/features/tasks/tasks.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import logger from '@/utils/errorLogger';
@@ -31,15 +41,17 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { updateSubtask } from '@/features/board/board-slice';
 import { updateEnhancedKanbanSubtask } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { deleteTask } from '@/features/task-management/task-management.slice';
 
 type SubTaskTableProps = {
   subTasks: ISubTask[];
   loadingSubTasks: boolean;
   refreshSubTasks: () => void;
   t: TFunction;
+  canCreateTask?: boolean;
 };
 
-const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTaskTableProps) => {
+const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t, canCreateTask }: SubTaskTableProps) => {
   const { socket, connected } = useSocket();
   const [isEdit, setIsEdit] = useState(false);
   const [creatingTask, setCreatingTask] = useState(false);
@@ -112,6 +124,22 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
 
     try {
       await tasksApiService.deleteTask(taskId);
+
+      // Update Redux state for all views
+      // 1. Update task list view (tasks.slice)
+      if (selectedTaskId) {
+        dispatch(
+          removeSubTask({
+            subtaskId: taskId,
+            parentTaskId: selectedTaskId,
+          })
+        );
+      }
+
+      // 2. Update task-management slice (for TaskListV2)
+      dispatch(deleteTask({ taskId, parentTaskId: selectedTaskId || undefined }));
+
+      // 3. Update enhanced kanban view
       dispatch(
         updateEnhancedKanbanSubtask({
           sectionId: '',
@@ -119,6 +147,8 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
           mode: 'delete',
         })
       );
+
+      // 4. Update board view
       dispatch(
         updateSubtask({
           sectionId: '',
@@ -126,7 +156,8 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
           mode: 'delete',
         })
       );
-      
+
+      // 5. Refresh subtasks in drawer
       refreshSubTasks();
     } catch (error) {
       logger.error('Error deleting subtask:', error);
@@ -214,7 +245,7 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
       },
       {
         key: 'actionBtns',
-        width: 80,
+        width: canCreateTask ? 80 : 40,
         render: (record: IProjectTask) => (
           <Flex gap={8} align="center" className="action-buttons">
             <Tooltip title={typeof t === 'function' ? t('taskInfoTab.subTasks.edit') : 'Edit'}>
@@ -224,25 +255,27 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
                 onClick={() => record.id && handleEditSubTask(record.id)}
               />
             </Tooltip>
-            <Popconfirm
-              title="Are you sure?"
-              icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-              okText="Yes"
-              cancelText="No"
-              onPopupClick={e => e.stopPropagation()}
-              onConfirm={e => {
-                handleDeleteSubTask(record.id);
-              }}
-            >
-              <Tooltip title="Delete">
-                <Button
-                  shape="default"
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  onClick={e => e.stopPropagation()}
-                />
-              </Tooltip>
-            </Popconfirm>
+            {canCreateTask && (
+              <Popconfirm
+                title="Are you sure?"
+                icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+                okText="Yes"
+                cancelText="No"
+                onPopupClick={e => e.stopPropagation()}
+                onConfirm={e => {
+                  handleDeleteSubTask(record.id);
+                }}
+              >
+                <Tooltip title="Delete">
+                  <Button
+                    shape="default"
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    onClick={e => e.stopPropagation()}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            )}
           </Flex>
         ),
       },
@@ -274,36 +307,38 @@ const SubTaskTable = ({ subTasks, loadingSubTasks, refreshSubTasks, t }: SubTask
           />
         )}
 
-        <div>
-          {isEdit ? (
-            <Input
-              autoFocus
-              value={newTaskName}
-              onChange={e => setNewTaskName(e.target.value)}
-              style={{
-                border: 'none',
-                boxShadow: 'none',
-                height: 38,
-              }}
-              placeholder={
-                typeof t === 'function'
-                  ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder')
-                  : 'Type your task and hit enter'
-              }
-              onBlur={handleInputBlur}
-              onPressEnter={handleOnBlur}
-              size="small"
-              className="subtask-table-input"
-            />
-          ) : (
-            <Input
-              onFocus={() => setIsEdit(true)}
-              value={t('taskInfoTab.subTasks.addSubTask')}
-              className={`border-none ${themeMode === 'dark' ? 'hover:bg-[#343a40]' : 'hover:bg-[#edebf0]'} hover:text-[#1890ff]`}
-              readOnly
-            />
-          )}
-        </div>
+        {canCreateTask && (
+          <div>
+            {isEdit ? (
+              <Input
+                autoFocus
+                value={newTaskName}
+                onChange={e => setNewTaskName(e.target.value)}
+                style={{
+                  border: 'none',
+                  boxShadow: 'none',
+                  height: 38,
+                }}
+                placeholder={
+                  typeof t === 'function'
+                    ? t('taskInfoTab.subTasks.addSubTaskInputPlaceholder')
+                    : 'Type your task and hit enter'
+                }
+                onBlur={handleInputBlur}
+                onPressEnter={handleOnBlur}
+                size="small"
+                className="subtask-table-input"
+              />
+            ) : (
+              <Input
+                onFocus={() => setIsEdit(true)}
+                value={t('taskInfoTab.subTasks.addSubTask')}
+                className={`border-none ${themeMode === 'dark' ? 'hover:bg-[#343a40]' : 'hover:bg-[#edebf0]'} hover:text-[#1890ff]`}
+                readOnly
+              />
+            )}
+          </div>
+        )}
       </Flex>
     </Flex>
   );

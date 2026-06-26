@@ -11,6 +11,7 @@ import {
   IBulkTasksPhaseChangeRequest,
   IBulkTasksPriorityChangeRequest,
   IBulkTasksStatusChangeRequest,
+  IBulkTasksDueDateChangeRequest,
 } from '@/types/tasks/bulk-action-bar.types';
 import { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 
@@ -72,6 +73,20 @@ export const taskListBulkActionsApiService = {
     projectId: string
   ): Promise<IServerResponse<ITask>> => {
     const response = await apiClient.put(`${rootUrl}/label?project=${projectId}`, body);
+    return response.data;
+  },
+  changeDueDate: async (
+    body: IBulkTasksDueDateChangeRequest,
+    projectId: string
+  ): Promise<IServerResponse<{ updated_count: number }>> => {
+    const response = await apiClient.put(`${rootUrl}/due-date?project=${projectId}`, body);
+    return response.data;
+  },
+  changeStartDate: async (
+    body: IBulkTasksDueDateChangeRequest,
+    projectId: string
+  ): Promise<IServerResponse<{ updated_count: number }>> => {
+    const response = await apiClient.put(`${rootUrl}/start-date?project=${projectId}`, body);
     return response.data;
   },
 };

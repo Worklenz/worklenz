@@ -37,5 +37,11 @@
   "TASKS_SELECTED_plural": "{{count}} Aufgaben ausgewählt",
   "DELETE_TASKS_CONFIRM": "{{count}} Aufgabe löschen?",
   "DELETE_TASKS_CONFIRM_plural": "{{count}} Aufgaben löschen?",
-  "DELETE_TASKS_WARNING": "Diese Aktion kann nicht rückgängig gemacht werden."
+  "DELETE_TASKS_WARNING": "Diese Aktion kann nicht rückgängig gemacht werden.",
+  "SET_DUE_DATE": "Fälligkeitsdatum festlegen",
+  "CLEAR_DUE_DATE": "Fälligkeitsdatum löschen",
+  "DUE_DATE_UPDATED": "Fälligkeitsdatum erfolgreich aktualisiert",
+  "DUE_DATE_CLEARED": "Fälligkeitsdatum erfolgreich gelöscht",
+  "archiveSuccessTitle": "Sammelaktualisierung abgeschlossen",
+  "archiveSuccessMessage": "{{parentCount}} Aufgaben und {{subtaskCount}} Unteraufgaben wurden {{action}}."
 }

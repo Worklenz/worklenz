@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Actualizar ahora",
   "taskHeader": {
     "taskNamePlaceholder": "Escribe tu tarea",
     "deleteTask": "Eliminar tarea",
@@ -45,7 +46,10 @@
     },
     "description": {
       "title": "Descripción",
-      "placeholder": "Añade una descripción más detallada..."
+      "placeholder": "Añade una descripción más detallada...",
+       "clickToAdd": "Haz clic para añadir una descripción...",
+  "readMore": "Leer más",
+  "showLess": "Mostrar menos"
     },
     "subTasks": {
       "title": "Subtareas",
@@ -68,12 +72,15 @@
     "attachments": {
       "title": "Adjuntos",
       "chooseOrDropFileToUpload": "Elige o arrastra archivo para subir",
-      "uploading": "Subiendo..."
+      "uploading": "Subiendo...",
+      "maxFileSizeText": "Tamaño máximo de archivo: {{maxSize}}MB",
+      "upgradeLinkText": "¿Necesitas cargas más grandes? Actualiza"
     },
     "comments": {
       "title": "Comentarios",
       "addComment": "+ Añadir nuevo comentario",
       "noComments": "Aún no hay comentarios. ¡Sé el primero en comentar!",
+      "edit": "Editar",
       "delete": "Eliminar",
       "confirmDeleteComment": "¿Estás seguro de que quieres eliminar este comentario?",
       "addCommentPlaceholder": "Añadir un comentario...",
@@ -81,10 +88,15 @@
       "commentButton": "Comentar",
       "attachFiles": "Adjuntar archivos",
       "addMoreFiles": "Añadir más archivos",
-      "selectedFiles": "Archivos seleccionados (Hasta 25MB, Máximo de {count})",
-      "maxFilesError": "Solo puedes subir un máximo de {count} archivos",
+      "selectedFiles": "Archivos seleccionados (Hasta 25MB, Máximo de {{count}} archivos)",
+      "maxFilesError": "Solo puedes subir un máximo de {{count}} archivos",
       "processFilesError": "Error al procesar archivos",
       "addCommentError": "Por favor añade un comentario o adjunta archivos",
+      "fileTooLargeToSend": "Los archivos de más de 25MB en comentarios requieren el plan Business. Quita este archivo o actualiza para continuar.",
+      "historyLockedBoundary": "El historial de comentarios está limitado a los últimos 90 días en este plan",
+      "historyLockedTitle": "Historial de comentarios bloqueado",
+      "historyLockedBody": "Los comentarios de más de 90 días están disponibles en el plan Business.",
+      "viewFullComments": "Ver historial de comentarios",
       "createdBy": "Creado {{time}} por {{user}}",
       "updatedTime": "Actualizado {{time}}"
     },
@@ -97,18 +109,32 @@
     "totalLogged": "Total registrado",
     "exportToExcel": "Exportar a Excel",
     "noTimeLogsFound": "No se encontraron registros de tiempo",
+    "historyLockedBoundary": "El historial de tiempo está limitado a los últimos 90 días en este plan",
+    "historyLockedTitle": "Historial de tiempo bloqueado",
+    "historyLockedBody": "Los registros de tiempo de más de 90 días están disponibles en el plan Business.",
+    "viewFullTimeLog": "Ver historial de tiempo",
     "timeLogForm": {
+      "inputMode": "Modo de entrada",
+      "durationMode": "Duración",
+      "timeRangeMode": "Rango de tiempo",
       "date": "Fecha",
       "startTime": "Hora de inicio",
       "endTime": "Hora de finalización",
+      "hours": "Horas",
+      "minutes": "Minutos",
       "workDescription": "Descripción del trabajo",
       "descriptionPlaceholder": "Añadir una descripción",
       "logTime": "Registrar tiempo",
       "updateTime": "Actualizar tiempo",
       "cancel": "Cancelar",
+      "durationHelper": "Registra el tiempo total con horas y minutos.",
+      "timeRangeHelper": "Registra el tiempo seleccionando hora de inicio y fin.",
       "selectDateError": "Por favor selecciona una fecha",
       "selectStartTimeError": "Por favor selecciona hora de inicio",
       "selectEndTimeError": "Por favor selecciona hora de finalización",
+      "hoursMinError": "Las horas deben ser 0 o más",
+      "minutesRangeError": "Los minutos deben estar entre 0 y 59",
+      "durationGreaterThanZeroError": "La duración debe ser mayor a 0 minutos",
       "endTimeAfterStartError": "La hora de finalización debe ser posterior a la de inicio"
     }
   },
@@ -118,7 +144,11 @@
     "remove": "ELIMINAR",
     "none": "Ninguno",
     "weight": "Peso",
-    "createdTask": "creó la tarea."
+    "createdTask": "creó la tarea.",
+    "historyLockedBoundary": "El historial de actividad está limitado a los últimos 90 días en este plan",
+    "historyLockedTitle": "Historial de actividad bloqueado",
+    "historyLockedBody": "La actividad de tareas de más de 90 días está disponible en el plan Business.",
+    "viewFullActivity": "Ver historial de actividad"
   },
   "taskProgress": {
     "markAsDoneTitle": "¿Marcar tarea como completada?",

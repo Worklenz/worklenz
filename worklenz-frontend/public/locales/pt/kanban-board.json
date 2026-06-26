@@ -1,5 +1,6 @@
 {
   "rename": "Renomear",
+  "renameStatus": "Renomear Status",
   "delete": "Excluir",
   "addTask": "Adicionar Tarefa",
   "addSectionButton": "Adicionar Seção",
@@ -41,7 +42,14 @@
   "noSubtasks": "Sem subtarefas",
   "showSubtasks": "Mostrar subtarefas",
   "hideSubtasks": "Ocultar subtarefas",
-  
+
+  "exampleTasks": {
+    "prefix": "ex.",
+    "task1": "Definir o escopo do projeto",
+    "task2": "Revisar com as partes interessadas",
+    "task3": "Agendar kickoff"
+  },
+
   "errorLoadingTasks": "Erro ao carregar tarefas",
   "noTasksFound": "Nenhuma tarefa encontrada",
   "loadingFilters": "Carregando filtros...",

@@ -1,0 +1,30 @@
+{
+  "task": {
+    "open": "Open",
+    "clickViewPhaseDetails": "Click to view phase details",
+    "clickNavigateTimeline": "Click to navigate to task in timeline",
+    "clickTimelineSetDates": "Click on timeline to set dates for this task",
+    "clickTimelineAddDates": "Click timeline to add dates",
+    "resizeStartDate": "Resize start date",
+    "resizeEndDate": "Resize end date",
+    "dragToMove": "Drag to move task",
+    "addTaskFor": "Add task for {{date}}",
+    "enterTaskName": "Enter task name...",
+    "pressEnterToCreate": "Press Enter to create • Esc to cancel",
+    "phaseTitle": "Phase: {{name}} - {{startDate}} to {{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}} to {{endDate}}",
+    "datesUpdatedSuccessfully": "Task dates updated successfully",
+    "failedToUpdateDates": "Failed to update task dates"
+  },
+  "common": {
+    "noStart": "No start",
+    "noEnd": "No end"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "Phase creation is available for Business plan users only",
+    "taskCreationRestricted": "Task creation is available for Business plan users only",
+    "phaseEditingRestricted": "Phase editing is available for Business plan users only",
+    "taskEditingRestricted": "Task editing is available for Business plan users only",
+    "phaseReorderingRestricted": "Phase reordering is available for Business plan users only"
+  }
+}

@@ -10,5 +10,6 @@
   "submitSuccessMessage": "Obrigado por completar a pesquisa!",
   "submitErrorMessage": "Falha ao enviar a pesquisa. Por favor, tente novamente.",
   "submitErrorLog": "Falha ao enviar a pesquisa",
-  "fetchErrorLog": "Falha ao buscar a pesquisa"
-} 
+  "fetchErrorLog": "Falha ao buscar a pesquisa",
+  "dontShowAgain": "Não mostrar esta pesquisa novamente"
+}

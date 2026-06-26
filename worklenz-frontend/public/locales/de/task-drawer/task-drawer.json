@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Jetzt upgraden",
   "taskHeader": {
     "taskNamePlaceholder": "Geben Sie Ihre Aufgabe ein",
     "deleteTask": "Aufgabe löschen",
@@ -45,7 +46,10 @@
     },
     "description": {
       "title": "Beschreibung",
-      "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu..."
+      "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu...",
+      "clickToAdd": "Klicken um eine Beschreibung hinzuzufügen...",
+      "readMore": "Mehr lesen",
+      "showLess": "Weniger anzeigen"
     },
     "subTasks": {
       "title": "Unteraufgaben",
@@ -68,12 +72,15 @@
     "attachments": {
       "title": "Anhänge",
       "chooseOrDropFileToUpload": "Datei zum Hochladen auswählen oder ablegen",
-      "uploading": "Wird hochgeladen..."
+      "uploading": "Wird hochgeladen...",
+      "maxFileSizeText": "Maximale Dateigröße: {{maxSize}}MB",
+      "upgradeLinkText": "Größere Uploads benötigt? Upgrade"
     },
     "comments": {
       "title": "Kommentare",
       "addComment": "+ Neuen Kommentar hinzufügen",
       "noComments": "Noch keine Kommentare. Seien Sie der Erste, der kommentiert!",
+      "edit": "Bearbeiten",
       "delete": "Löschen",
       "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
       "addCommentPlaceholder": "Kommentar hinzufügen...",
@@ -81,10 +88,15 @@
       "commentButton": "Kommentieren",
       "attachFiles": "Dateien anhängen",
       "addMoreFiles": "Weitere Dateien hinzufügen",
-      "selectedFiles": "Ausgewählte Dateien (Bis zu 25MB, Maximum von {count})",
-      "maxFilesError": "Sie können maximal {count} Dateien hochladen",
+      "selectedFiles": "Ausgewählte Dateien (Bis zu 25MB, Maximum von {{count}} Dateien)",
+      "maxFilesError": "Sie können maximal {{count}} Dateien hochladen",
       "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
+      "fileTooLargeToSend": "Dateien über 25MB in Kommentaren erfordern den Business-Plan. Entfernen Sie diese Datei oder führen Sie ein Upgrade durch.",
+      "historyLockedBoundary": "Kommentare sind in diesem Plan auf die letzten 90 Tage begrenzt",
+      "historyLockedTitle": "Kommentarverlauf gesperrt",
+      "historyLockedBody": "Kommentare älter als 90 Tage sind im Business-Plan verfügbar.",
+      "viewFullComments": "Kommentarverlauf anzeigen",
       "createdBy": "Erstellt {{time}} von {{user}}",
       "updatedTime": "Aktualisiert {{time}}"
     },
@@ -97,18 +109,32 @@
     "totalLogged": "Gesamt protokolliert",
     "exportToExcel": "Nach Excel exportieren",
     "noTimeLogsFound": "Keine Zeitprotokolle gefunden",
+    "historyLockedBoundary": "Zeitprotokolle sind in diesem Plan auf die letzten 90 Tage begrenzt",
+    "historyLockedTitle": "Zeitprotokollverlauf gesperrt",
+    "historyLockedBody": "Zeitprotokolle älter als 90 Tage sind im Business-Plan verfügbar.",
+    "viewFullTimeLog": "Zeitprotokollverlauf anzeigen",
     "timeLogForm": {
+      "inputMode": "Eingabemodus",
+      "durationMode": "Dauer",
+      "timeRangeMode": "Zeitspanne",
       "date": "Datum",
       "startTime": "Startzeit",
       "endTime": "Endzeit",
+      "hours": "Stunden",
+      "minutes": "Minuten",
       "workDescription": "Arbeitsbeschreibung",
       "descriptionPlaceholder": "Beschreibung hinzufügen",
       "logTime": "Zeit protokollieren",
       "updateTime": "Zeit aktualisieren",
       "cancel": "Abbrechen",
+      "durationHelper": "Gesamtzeit mit Stunden und Minuten erfassen.",
+      "timeRangeHelper": "Zeit durch Auswahl von Start- und Endzeit erfassen.",
       "selectDateError": "Bitte wählen Sie ein Datum",
       "selectStartTimeError": "Bitte wählen Sie eine Startzeit",
       "selectEndTimeError": "Bitte wählen Sie eine Endzeit",
+      "hoursMinError": "Stunden müssen 0 oder größer sein",
+      "minutesRangeError": "Minuten müssen zwischen 0 und 59 liegen",
+      "durationGreaterThanZeroError": "Die Dauer muss größer als 0 Minuten sein",
       "endTimeAfterStartError": "Endzeit muss nach der Startzeit liegen"
     }
   },
@@ -118,7 +144,11 @@
     "remove": "ENTFERNEN",
     "none": "Keine",
     "weight": "Gewicht",
-    "createdTask": "hat die Aufgabe erstellt."
+    "createdTask": "hat die Aufgabe erstellt.",
+    "historyLockedBoundary": "Aktivitätsverlauf ist in diesem Plan auf die letzten 90 Tage begrenzt",
+    "historyLockedTitle": "Aktivitätsverlauf gesperrt",
+    "historyLockedBody": "Aufgabenaktivitäten älter als 90 Tage sind im Business-Plan verfügbar.",
+    "viewFullActivity": "Aktivitätsverlauf anzeigen"
   },
   "taskProgress": {
     "markAsDoneTitle": "Aufgabe als erledigt markieren?",

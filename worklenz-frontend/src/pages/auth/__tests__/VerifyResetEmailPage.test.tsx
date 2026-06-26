@@ -87,14 +87,15 @@ const createTestStore = () => {
   });
 };
 
-const renderWithProviders = (component: React.ReactElement, route = '/verify-reset/test-hash/test-user') => {
+const renderWithProviders = (
+  component: React.ReactElement,
+  route = '/verify-reset/test-hash/test-user'
+) => {
   const store = createTestStore();
   return render(
     <Provider store={store}>
       <MemoryRouter initialEntries={[route]}>
-        <I18nextProvider i18n={i18n}>
-          {component}
-        </I18nextProvider>
+        <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
       </MemoryRouter>
     </Provider>
   );
@@ -112,7 +113,7 @@ describe('VerifyResetEmailPage', () => {
 
   it('renders password reset form correctly', () => {
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     expect(screen.getByText('Enter your new password')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Enter new password')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Confirm new password')).toBeInTheDocument();
@@ -122,7 +123,7 @@ describe('VerifyResetEmailPage', () => {
 
   it('shows password checklist immediately', () => {
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     expect(screen.getByText('At least 8 characters')).toBeInTheDocument();
     expect(screen.getByText('One uppercase letter')).toBeInTheDocument();
     expect(screen.getByText('One lowercase letter')).toBeInTheDocument();
@@ -133,10 +134,10 @@ describe('VerifyResetEmailPage', () => {
   it('validates required password fields', async () => {
     const user = userEvent.setup();
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Please input your password!')).toBeInTheDocument();
       expect(screen.getByText('Please confirm your password!')).toBeInTheDocument();
@@ -146,16 +147,16 @@ describe('VerifyResetEmailPage', () => {
   it('validates password confirmation match', async () => {
     const user = userEvent.setup();
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmPasswordInput, 'DifferentPassword123!');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('The two passwords do not match!')).toBeInTheDocument();
     });
@@ -164,10 +165,10 @@ describe('VerifyResetEmailPage', () => {
   it('updates password checklist based on input', async () => {
     const user = userEvent.setup();
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     await user.type(passwordInput, 'Password123!');
-    
+
     // All checklist items should be visible (this component shows them by default)
     expect(screen.getByText('At least 8 characters')).toBeInTheDocument();
     expect(screen.getByText('One uppercase letter')).toBeInTheDocument();
@@ -183,16 +184,16 @@ describe('VerifyResetEmailPage', () => {
     });
 
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmPasswordInput, 'Password123!');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(updatePassword).toHaveBeenCalledWith({
         hash: 'test-hash',
@@ -210,16 +211,16 @@ describe('VerifyResetEmailPage', () => {
     });
 
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmPasswordInput, 'Password123!');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Password Reset Successful')).toBeInTheDocument();
       expect(screen.getByText('Your password has been reset successfully.')).toBeInTheDocument();
@@ -237,16 +238,16 @@ describe('VerifyResetEmailPage', () => {
     });
 
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmPasswordInput, 'Password123!');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
     });
@@ -259,16 +260,16 @@ describe('VerifyResetEmailPage', () => {
     });
 
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.type(passwordInput, 'Password123!');
     await user.type(confirmPasswordInput, 'Password123!');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       // Should not show success message
       expect(screen.queryByText('Password Reset Successful')).not.toBeInTheDocument();
@@ -280,28 +281,28 @@ describe('VerifyResetEmailPage', () => {
   it('navigates to forgot password page when resend button is clicked', async () => {
     const user = userEvent.setup();
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const resendButton = screen.getByRole('button', { name: 'Resend Reset Email' });
     await user.click(resendButton);
-    
+
     expect(resendButton.closest('a')).toHaveAttribute('href', '/auth/forgot-password');
   });
 
   it('prevents pasting in confirm password field', async () => {
     const user = userEvent.setup();
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.click(confirmPasswordInput);
-    
+
     // Try to paste - should be prevented
     const pasteEvent = new ClipboardEvent('paste', {
       clipboardData: new DataTransfer(),
     });
-    
+
     fireEvent(confirmPasswordInput, pasteEvent);
-    
+
     // The preventDefault should be called (we can't easily test this directly,
     // but we can ensure the input behavior remains consistent)
     expect(confirmPasswordInput).toBeInTheDocument();
@@ -314,23 +315,23 @@ describe('VerifyResetEmailPage', () => {
     });
 
     renderWithProviders(<VerifyResetEmailPage />);
-    
+
     const passwordInput = screen.getByPlaceholderText('Enter new password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm new password');
-    
+
     await user.type(passwordInput, '   '); // Only whitespace
     await user.type(confirmPasswordInput, '   '); // Only whitespace
-    
+
     const submitButton = screen.getByRole('button', { name: 'Reset Password' });
     await user.click(submitButton);
-    
+
     // Should not call updatePassword with empty strings
     expect(updatePassword).not.toHaveBeenCalled();
   });
 
   it('extracts hash and user from URL params', () => {
     renderWithProviders(<VerifyResetEmailPage />, '/verify-reset/my-hash/my-user');
-    
+
     // Component should render normally, indicating it received the params
     expect(screen.getByText('Enter your new password')).toBeInTheDocument();
   });
