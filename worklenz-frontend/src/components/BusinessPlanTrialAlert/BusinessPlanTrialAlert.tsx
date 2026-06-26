@@ -84,11 +84,12 @@ export const BusinessPlanTrialAlert = () => {
       return;
     }
 
-    // Don't show for self-hosted or Annual Business license users
+    // Don't show for self-hosted or LKR license users (they have paid plans)
     const subscriptionType = currentSession?.subscription_type;
     if (
       subscriptionType === ISUBSCRIPTION_TYPE.SELF_HOSTED ||
-      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS ||
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_PRO
     ) {
       setVisible(false);
       return;

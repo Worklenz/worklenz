@@ -1073,20 +1073,21 @@ export default class BillingController extends WorklenzControllerBase {
       console.log(`[activateLkrSubscription] Created new subscription=${insertResult.rows[0]?.id} for owner=${ownerId}`);
     }
 
-    // Update the org's license_type_id so deserialize_user returns subscription_type = 'ANNUAL_BUSINESS'
+    // Pro tier → ANNUAL_PRO, Business tier → ANNUAL_BUSINESS
+    const licenseTypeKey = tierName === 'pro' ? 'ANNUAL_PRO' : 'ANNUAL_BUSINESS';
     const orgUpdateResult = await db.query(
       `UPDATE organizations
-       SET license_type_id = (SELECT id FROM sys_license_types WHERE key = 'ANNUAL_BUSINESS'),
+       SET license_type_id = (SELECT id FROM sys_license_types WHERE key = $2),
            subscription_status = 'active'
        WHERE user_id = $1
        RETURNING license_type_id`,
-      [ownerId]
+      [ownerId, licenseTypeKey]
     );
     const updatedLicenseTypeId = orgUpdateResult.rows[0]?.license_type_id;
     if (!updatedLicenseTypeId) {
-      console.error("[activateLkrSubscription] ANNUAL_BUSINESS not found in sys_license_types — run migration 1780000001000");
+      console.error(`[activateLkrSubscription] ${licenseTypeKey} not found in sys_license_types — run migration 20260626000001`);
     }
-    console.log(`[activateLkrSubscription] Org license_type_id=${updatedLicenseTypeId} subscription_status=active for owner=${ownerId}`);
+    console.log(`[activateLkrSubscription] Org license_type_id=${updatedLicenseTypeId} (${licenseTypeKey}) subscription_status=active for owner=${ownerId}`);
   }
 
   @HandleExceptions()

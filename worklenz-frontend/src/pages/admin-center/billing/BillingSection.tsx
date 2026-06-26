@@ -73,7 +73,7 @@ const BillingSection: React.FC = React.memo(() => {
               const billingInfo = await adminCenterApiService.getBillingAccountInfo();
               const subStatus = billingInfo?.body?.status;
               const subType = billingInfo?.body?.subscription_type;
-              if (subType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS && subStatus === 'active') {
+              if ((subType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS || subType === ISUBSCRIPTION_TYPE.ANNUAL_PRO) && subStatus === 'active') {
                 console.log('[DirectPay] Subscription activated by webhook — skipping payWithCard');
                 notification.success({ message: 'Payment successful', description: 'Your plan has been activated.' });
                 dispatch(verifyAuthentication());
