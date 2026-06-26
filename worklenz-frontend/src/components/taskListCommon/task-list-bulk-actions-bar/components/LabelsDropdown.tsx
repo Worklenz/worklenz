@@ -1,4 +1,14 @@
-import { Badge, Button, Card, Checkbox, Empty, Flex, Input, List, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Empty,
+  Flex,
+  Input,
+  List,
+  Typography,
+} from '@/shared/antd-imports';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { InputRef } from 'antd/es/input';

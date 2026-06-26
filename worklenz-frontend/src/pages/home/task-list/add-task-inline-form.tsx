@@ -1,4 +1,13 @@
-import { Alert, DatePicker, Flex, Form, Input, InputRef, Select, Typography } from '@/shared/antd-imports';
+import {
+  Alert,
+  DatePicker,
+  Flex,
+  Form,
+  Input,
+  InputRef,
+  Select,
+  Typography,
+} from '@/shared/antd-imports';
 import { useEffect, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { TFunction } from 'i18next';
@@ -81,7 +90,11 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
         return undefined;
     }
 
-    return targetDate.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+    // Format as YYYY-MM-DD using local date components to avoid timezone issues
+    const year = targetDate.getFullYear();
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const projectOptions = [
@@ -102,7 +115,16 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
       project_id: values.project,
       reporter_id: currentSession?.id,
       team_id: currentSession?.team_id,
-      end_date: endDate || new Date().toISOString().split('T')[0], // Fallback to today if undefined
+      end_date:
+        endDate ||
+        (() => {
+          // Fallback to today if undefined - format using local date components
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        })(),
     };
 
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(newTask));

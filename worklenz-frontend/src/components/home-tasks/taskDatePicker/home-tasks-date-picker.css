@@ -1,0 +1,10 @@
+/* Color-coded due date styles */
+.due-date-wrapper {
+  width: 125px;
+}
+
+/* Target the DatePicker input text with maximum specificity */
+.due-date-wrapper .ant-picker input,
+.due-date-picker input {
+  color: inherit !important;
+}

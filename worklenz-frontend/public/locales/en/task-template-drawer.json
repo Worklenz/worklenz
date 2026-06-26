@@ -8,5 +8,9 @@
   "selectedTasks": "Selected Tasks",
   "removeTask": "Remove",
   "cancelButton": "Cancel",
-  "saveButton": "Save"
+  "saveButton": "Save",
+  "includeSubtasks": "Include subtask hierarchy",
+  "subtasksLabel": "subtask(s)",
+  "subtaskCount": "{{count}} subtask(s)",
+  "subtaskHierarchyInfo": "When checked, subtasks are saved under their parent task. When unchecked, subtasks are saved as separate main tasks."
 }

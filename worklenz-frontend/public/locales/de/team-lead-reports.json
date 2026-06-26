@@ -1,0 +1,105 @@
+{
+  "title": "Meine Team-Berichte",
+  "subtitle": "Zeiterfassung und Leistungseinblicke für Ihre Teammitglieder",
+
+  "dateRange": {
+    "label": "Zeitraum",
+    "showing": "Anzeigen",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "thisWeek": "Diese Woche",
+    "lastWeek": "Letzte Woche",
+    "last7Days": "Letzte 7 Tage",
+    "thisMonth": "Dieser Monat",
+    "lastMonth": "Letzter Monat",
+    "last30Days": "Letzte 30 Tage",
+    "last90Days": "Letzte 90 Tage",
+    "custom": "Benutzerdefinierter Zeitraum",
+    "apply": "Anwenden"
+  },
+
+  "summary": {
+    "totalMembers": "Gesamte Mitglieder",
+    "totalMembersTooltip": "Gesamtanzahl der Teammitglieder, die während des ausgewählten Zeitraums Zeit protokolliert haben.",
+    "totalTimeLogged": "Gesamte protokollierte Zeit",
+    "totalTimeLoggedTooltip": "Gesamtzeit, die von allen Teammitgliedern während des ausgewählten Zeitraums protokolliert wurde.",
+    "activeProjects": "Aktive Projekte",
+    "activeProjectsTooltip": "Maximale Anzahl der Projekte, an denen ein einzelnes Teammitglied während des ausgewählten Zeitraums gearbeitet hat.",
+    "avgCompletionRate": "Durchschnittliche Abschlussrate",
+    "hours": "Stunden"
+  },
+
+  "timeTracking": {
+    "title": "Zeiterfassungszusammenfassung",
+    "chartTitle": "Team-Zeiterfassungsdiagramm",
+    "member": "Mitglied",
+    "teamMembers": "Teammitglieder",
+    "totalTime": "Gesamtzeit",
+    "totalHours": "Gesamtstunden",
+    "loggedTime": "Protokollierte Zeit",
+    "logsCount": "Anzahl der Protokolle",
+    "activeDays": "Aktive Tage",
+    "lastActivity": "Letzte Aktivität",
+    "actions": "Aktionen",
+    "manualLogs": "Manuelle Protokolle",
+    "timerLogs": "Timer-Protokolle",
+    "projects": "Projekte",
+    "viewDetails": "Details anzeigen",
+    "noData": "Keine Zeitprotokolle für den ausgewählten Zeitraum gefunden",
+    "totalTimeTooltip": "Gesamtzeit, die von diesem Mitglied während des ausgewählten Zeitraums protokolliert wurde. Enthält alle Zeiteinträge über alle Projekte und Aufgaben hinweg.",
+    "logsCountTooltip": "Gesamtanzahl der einzelnen Zeitprotokolleinträge, die von diesem Mitglied während des ausgewählten Zeitraums erstellt wurden.",
+    "projectsTooltip": "Anzahl der verschiedenen Projekte, zu denen dieses Mitglied während des ausgewählten Zeitraums Zeit protokolliert hat.",
+    "activeDaysTooltip": "Anzahl der verschiedenen Tage, an denen dieses Mitglied während des ausgewählten Zeitraums Zeit protokolliert hat."
+  },
+
+  "performance": {
+    "title": "Team-Leistung",
+    "member": "Mitglied",
+    "tasks": "Aufgaben",
+    "assigned": "zugewiesen",
+    "completed": "abgeschlossen",
+    "overdue": "überfällig",
+    "tasksCompleted": "Abgeschlossene Aufgaben",
+    "tasksOverdue": "Überfällige Aufgaben",
+    "completionRate": "Abschlussrate",
+    "completionRateTooltip": "Prozentsatz der abgeschlossenen Aufgaben von den insgesamt zugewiesenen Aufgaben. Berechnet als: (Abgeschlossene Aufgaben ÷ Zugewiesene Aufgaben) × 100",
+    "timeLogged": "Protokollierte Zeit",
+    "timeLoggedTooltip": "Gesamtzeit, die von diesem Mitglied während des ausgewählten Zeitraums protokolliert wurde. Enthält alle Zeiteinträge über alle Projekte und Aufgaben hinweg.",
+    "activeProjects": "Aktive Projekte",
+    "activeProjectsTooltip": "Anzahl der verschiedenen Projekte, zu denen dieses Mitglied während des ausgewählten Zeitraums Zeit protokolliert hat.",
+    "projectsInvolved": "Beteiligte Projekte",
+    "noData": "Keine Leistungsdaten verfügbar"
+  },
+
+  "detailedLogs": {
+    "title": "Detaillierte Zeitprotokolle",
+    "for": "für",
+    "dateTime": "Datum & Uhrzeit",
+    "date": "Datum",
+    "project": "Projekt",
+    "task": "Aufgabe",
+    "duration": "Dauer",
+    "description": "Beschreibung",
+    "method": "Methode",
+    "type": "Typ",
+    "manual": "Manuell",
+    "timer": "Timer",
+    "noLogs": "Keine detaillierten Protokolle gefunden",
+    "close": "Schließen",
+    "timeLogsRange": "Zeitprotokolle"
+  },
+
+  "errors": {
+    "failedToLoad": "Fehler beim Laden der Team-Berichte",
+    "tryAgain": "Bitte versuchen Sie es erneut",
+    "noTeamMembers": "Keine Teammitglieder gefunden",
+    "loadingError": "Fehler beim Laden der Daten"
+  },
+
+  "loading": {
+    "fetchingData": "Team-Berichte werden geladen...",
+    "fetchingLogs": "Detaillierte Protokolle werden geladen..."
+  },
+
+  "export": "Exportieren"
+}

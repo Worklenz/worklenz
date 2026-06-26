@@ -24,10 +24,10 @@ class HubSpotManager {
       script.async = true;
       script.defer = true;
       script.src = this.scriptSrc;
-      
+
       // Configure dark mode after script loads
       script.onload = () => this.setupDarkModeSupport();
-      
+
       document.body.appendChild(script);
     };
 
@@ -45,27 +45,27 @@ class HubSpotManager {
   setupDarkModeSupport() {
     const applyTheme = () => {
       const isDark = document.documentElement.classList.contains('dark');
-      
+
       // Remove existing theme styles
       const existingStyle = document.getElementById(this.styleId);
       if (existingStyle) {
         existingStyle.remove();
       }
-      
+
       // Apply dark mode CSS if dark theme is active
       if (isDark) {
         this.injectDarkModeCSS();
       }
     };
-    
+
     // Apply initial theme after delay to ensure widget is loaded
     setTimeout(applyTheme, 1000);
-    
+
     // Watch for theme changes
     const observer = new MutationObserver(applyTheme);
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['class']
+      attributeFilter: ['class'],
     });
   }
 
@@ -109,7 +109,7 @@ class HubSpotManager {
   cleanup() {
     const script = document.getElementById(this.scriptId);
     const style = document.getElementById(this.styleId);
-    
+
     if (script) script.remove();
     if (style) style.remove();
   }
@@ -119,13 +119,13 @@ class HubSpotManager {
 document.addEventListener('DOMContentLoaded', () => {
   const hubspot = new HubSpotManager();
   hubspot.init();
-  
+
   // Make available globally for potential cleanup
   window.HubSpotManager = hubspot;
 });
 
 // Add this style to ensure the chat widget uses the light color scheme
-(function() {
+(function () {
   var style = document.createElement('style');
   style.innerHTML = '#hubspot-messages-iframe-container { color-scheme: light !important; }';
   document.head.appendChild(style);

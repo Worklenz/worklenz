@@ -7,6 +7,16 @@ import {
 } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
 
+// logos
+export const LOGO_LIGHT =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png';
+export const LOGO_DARK =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-dark-mode.png';
+export const XMAS_LOGO_LIGHT =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-xmas-light.webp';
+export const XMAS_LOGO_DARK =
+  'https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-xmas-dark.webp';
+
 export const avatarNamesMap: { [x: string]: string } = {
   A: '#154c9b',
   B: '#3b7ad4',
@@ -141,10 +151,12 @@ export const PriorityColorCodes: { [x: number]: string } = {
   0: '#75c997',
   1: '#fbc84c',
   2: '#f37070',
+  3: '#8B1A1A',
 };
 
 export const API_BASE_URL = '/api/v1';
 export const AUTH_API_BASE_URL = '/secure';
+export const CLIENT_PORTAL_API_BASE_URL = '/api/client-portal';
 
 export const DEFAULT_TASK_NAME = 'Untitled Task';
 
@@ -169,6 +181,7 @@ export const TASK_STATUS_DONE_COLOR = '#75c997';
 export const TASK_PRIORITY_LOW_COLOR = '#75c997';
 export const TASK_PRIORITY_MEDIUM_COLOR = '#fbc84c';
 export const TASK_PRIORITY_HIGH_COLOR = '#f37070';
+export const TASK_PRIORITY_CRITICAL_COLOR = '#8B1A1A';
 
 export const TASK_DUE_COMPLETED_COLOR = '#75c997';
 export const TASK_DUE_UPCOMING_COLOR = '#70a6f3';
@@ -223,6 +236,18 @@ export enum IPaddlePlans {
   FREE = 'FREE',
   ANNUAL = 'ANNUAL',
   MONTHLY = 'MONTHLY',
+  BUSINESS_ANNUAL = 'BUSINESS_ANNUAL',
+  BUSINESS_MONTHLY = 'BUSINESS_MONTHLY',
+  ENTERPRISE_ANNUAL = 'ENTERPRISE_ANNUAL',
+  ENTERPRISE_MONTHLY = 'ENTERPRISE_MONTHLY',
+}
+
+export enum ILocalPlans {
+  FREE = 'FREE',
+  PRO_ANNUAL = 'PRO_ANNUAL',
+  PRO_MONTHLY = 'PRO_MONTHLY',
+  ANNUAL = 'ANNUAL',
+  MONTHLY = 'MONTHLY',
 }
 
 export enum ISUBSCRIPTION_TYPE {
@@ -232,6 +257,8 @@ export enum ISUBSCRIPTION_TYPE {
   CUSTOM = 'CUSTOM',
   FREE = 'FREE',
   CREDIT = 'CREDIT',
+  ANNUAL_BUSINESS = 'ANNUAL_BUSINESS',
+  SELF_HOSTED = 'SELF_HOSTED',
 }
 
 export const IconsMap: { [x: string]: string } = {

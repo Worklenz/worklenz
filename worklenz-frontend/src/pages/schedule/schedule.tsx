@@ -1,20 +1,34 @@
 import { Button, DatePicker, DatePickerProps, Flex, Select, Space } from '@/shared/antd-imports';
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, Suspense, lazy } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_schedule_page_visit } from '@/shared/worklenz-analytics-events';
-import { SettingOutlined } from '@ant-design/icons';
-import { useDispatch } from 'react-redux';
-import { setDate, setType, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
+import { SettingOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  setDate,
+  setType,
+  toggleSettingsDrawer,
+  getWorking,
+} from '@/features/schedule/scheduleSlice';
 import ScheduleSettingsDrawer from '@/features/schedule/ScheduleSettingsDrawer';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ScheduleDrawer from '@/features/schedule/ScheduleDrawer';
-import GranttChart from '@/components/schedule/grant-chart/grantt-chart';
+import GranttChart from '@/components/schedule/grant-chart/GranttChart';
+import { TaskTimelineView } from '@/components/schedule/task-timeline';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { PickerType } from '@/types/schedule/schedule-v2.types';
+import { scheduleApi } from '@/api/schedule/scheduleApi';
+import { createPortal } from 'react-dom';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+
+// Lazy load TaskDrawer
+const TaskDrawer = lazy(() => import('@/components/task-drawer/task-drawer'));
 
 const { Option } = Select;
+
+type ScheduleViewMode = 'project' | 'task';
 
 const PickerWithType = ({
   type,
@@ -30,16 +44,35 @@ const PickerWithType = ({
 
 const Schedule: React.FC = () => {
   const { t } = useTranslation('schedule');
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const granttChartRef = useRef<any>(null);
-  const { date, type } = useAppSelector(state => state.scheduleReducer);
+  const { date, type, error } = useAppSelector(state => state.scheduleReducer);
   const { trackMixpanelEvent } = useMixpanelTracking();
+
+  // Initialize schedule socket handlers for real-time updates
+  useScheduleSocketHandlers();
+
+  // View mode state: 'project' for existing view, 'task' for new task timeline
+  const [viewMode, setViewMode] = useState<ScheduleViewMode>('project');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useDocumentTitle('Schedule');
 
   useEffect(() => {
     trackMixpanelEvent(evt_schedule_page_visit);
   }, [trackMixpanelEvent]);
+
+  // Listen for settings changes and trigger refresh
+  // The error state is cleared when triggerScheduleRefresh is called
+  // We use a ref to track previous error state to detect changes
+  const prevErrorRef = useRef(error);
+  useEffect(() => {
+    // If error changed from something to null, it means triggerScheduleRefresh was called
+    if (prevErrorRef.current !== null && error === null && !isRefreshing) {
+      handleRefresh();
+    }
+    prevErrorRef.current = error;
+  }, [error]);
 
   const handleDateChange = (value: dayjs.Dayjs | null) => {
     if (!value) return;
@@ -55,9 +88,38 @@ const Schedule: React.FC = () => {
 
   const handleToday = () => {
     const today = new Date();
-    setDate(today);
+    dispatch(setDate(today));
     granttChartRef.current?.scrollToToday();
-    console.log('Today:', today);
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+
+    // Invalidate all schedule-related cache to force refetch
+    dispatch(
+      scheduleApi.util.invalidateTags([
+        'DateList',
+        'Members',
+        'MemberProjects',
+        'Capacity',
+        'Workload',
+        'CapacityReport',
+        'Conflicts',
+        'TaskTimeline',
+        'TimeOff',
+      ])
+    );
+
+    // Wait a bit for the refetch to complete
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
+
+  const handleOpenSettings = () => {
+    // Pre-load settings before opening drawer to avoid loading state in drawer
+    dispatch(getWorking());
+    dispatch(toggleSettingsDrawer());
   };
 
   return (
@@ -71,26 +133,68 @@ const Schedule: React.FC = () => {
             paddingBottom: '20px',
           }}
         >
-          <Button onClick={handleToday}>{t('today')}</Button>
+          <Button onClick={handleToday}>{t('today', { defaultValue: 'Today' })}</Button>
           <Space>
             <Select value={type} onChange={value => dispatch(setType(value))}>
-              <Option value="week">{t('week')}</Option>
-              <Option value="month">{t('month')}</Option>
+              <Option value="week">{t('week', { defaultValue: 'Week' })}</Option>
+              <Option value="month">{t('month', { defaultValue: 'Month' })}</Option>
             </Select>
             <PickerWithType date={date as Date} type={type} onChange={handleDateChange} />
           </Space>
+
+          {/* View Mode Toggle */}
+          {/* <Radio.Group 
+            value={viewMode} 
+            onChange={e => setViewMode(e.target.value)}
+            buttonStyle="solid"
+            size="middle"
+          >
+            <Radio.Button value="project">
+              {t('projectView', { defaultValue: 'Project View' })}
+            </Radio.Button>
+            <Radio.Button value="task">
+              {t('taskView', { defaultValue: 'Task View' })}
+            </Radio.Button>
+          </Radio.Group> */}
         </Flex>
-        <Button size="small" shape="circle" onClick={() => dispatch(toggleSettingsDrawer())}>
-          <SettingOutlined />
-        </Button>
+        <Space>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={isRefreshing}
+            shape="circle"
+            title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}
+          />
+          <Button
+            size="small"
+            shape="circle"
+            onClick={handleOpenSettings}
+            title={t('settings', { defaultValue: 'Settings' })}
+          >
+            <SettingOutlined />
+          </Button>
+        </Space>
       </Flex>
 
       <Flex vertical gap={24}>
-        <GranttChart type={type} date={date} ref={granttChartRef} />
+        {viewMode === 'project' ? (
+          <GranttChart type={type} date={date} ref={granttChartRef} />
+        ) : (
+          <TaskTimelineView type={type} date={date as Date} />
+        )}
       </Flex>
 
       <ScheduleSettingsDrawer />
       <ScheduleDrawer />
+
+      {/* Task Drawer for opening individual tasks */}
+      {createPortal(
+        <Suspense fallback={null}>
+          <TaskDrawer />
+        </Suspense>,
+        document.body,
+        'schedule-task-drawer'
+      )}
     </div>
   );
 };

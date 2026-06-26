@@ -45,15 +45,18 @@ const VirtualScrollContainer: React.FC<VirtualScrollContainerProps> = ({
 
   // Throttled scroll handler
   const throttledScrollHandler = useThrottle(
-    useCallback((event: Event) => {
-      const target = event.target as HTMLDivElement;
-      const newScrollTop = target.scrollTop;
-      const newScrollLeft = target.scrollLeft;
-      
-      setScrollTop(newScrollTop);
-      setScrollLeft(newScrollLeft);
-      onScroll?.(newScrollLeft, newScrollTop);
-    }, [onScroll]),
+    useCallback(
+      (event: Event) => {
+        const target = event.target as HTMLDivElement;
+        const newScrollTop = target.scrollTop;
+        const newScrollLeft = target.scrollLeft;
+
+        setScrollTop(newScrollTop);
+        setScrollLeft(newScrollLeft);
+        onScroll?.(newScrollLeft, newScrollTop);
+      },
+      [onScroll]
+    ),
     16 // ~60fps
   );
 
@@ -62,7 +65,7 @@ const VirtualScrollContainer: React.FC<VirtualScrollContainerProps> = ({
     if (!container) return;
 
     container.addEventListener('scroll', throttledScrollHandler, { passive: true });
-    
+
     return () => {
       container.removeEventListener('scroll', throttledScrollHandler);
     };
@@ -144,7 +147,12 @@ interface VirtualGridProps {
   containerHeight: number;
   containerWidth: number;
   overscan?: number;
-  children: (item: any, rowIndex: number, colIndex: number, style: React.CSSProperties) => ReactNode;
+  children: (
+    item: any,
+    rowIndex: number,
+    colIndex: number,
+    style: React.CSSProperties
+  ) => ReactNode;
   onScroll?: (scrollLeft: number, scrollTop: number) => void;
   className?: string;
 }
@@ -168,21 +176,32 @@ export const VirtualGrid: React.FC<VirtualGridProps> = ({
   const colCount = data[0]?.length || 0;
 
   // Calculate column positions for variable width columns
-  const columnWidths = Array.isArray(columnWidth) ? columnWidth : new Array(colCount).fill(columnWidth);
-  const columnPositions = columnWidths.reduce((acc, width, index) => {
-    acc[index] = index === 0 ? 0 : acc[index - 1] + columnWidths[index - 1];
-    return acc;
-  }, {} as Record<number, number>);
+  const columnWidths = Array.isArray(columnWidth)
+    ? columnWidth
+    : new Array(colCount).fill(columnWidth);
+  const columnPositions = columnWidths.reduce(
+    (acc, width, index) => {
+      acc[index] = index === 0 ? 0 : acc[index - 1] + columnWidths[index - 1];
+      return acc;
+    },
+    {} as Record<number, number>
+  );
 
   const totalWidth = columnWidths.reduce((sum, width) => sum + width, 0);
   const totalHeight = rowCount * rowHeight;
 
   // Calculate visible ranges
   const startRowIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
-  const endRowIndex = Math.min(rowCount - 1, Math.ceil((scrollTop + containerHeight) / rowHeight) + overscan);
+  const endRowIndex = Math.min(
+    rowCount - 1,
+    Math.ceil((scrollTop + containerHeight) / rowHeight) + overscan
+  );
 
   const startColIndex = Math.max(0, findColumnIndex(scrollLeft) - overscan);
-  const endColIndex = Math.min(colCount - 1, findColumnIndex(scrollLeft + containerWidth) + overscan);
+  const endColIndex = Math.min(
+    colCount - 1,
+    findColumnIndex(scrollLeft + containerWidth) + overscan
+  );
 
   function findColumnIndex(position: number): number {
     for (let i = 0; i < colCount; i++) {
@@ -194,15 +213,18 @@ export const VirtualGrid: React.FC<VirtualGridProps> = ({
   }
 
   const throttledScrollHandler = useThrottle(
-    useCallback((event: Event) => {
-      const target = event.target as HTMLDivElement;
-      const newScrollTop = target.scrollTop;
-      const newScrollLeft = target.scrollLeft;
-      
-      setScrollTop(newScrollTop);
-      setScrollLeft(newScrollLeft);
-      onScroll?.(newScrollLeft, newScrollTop);
-    }, [onScroll]),
+    useCallback(
+      (event: Event) => {
+        const target = event.target as HTMLDivElement;
+        const newScrollTop = target.scrollTop;
+        const newScrollLeft = target.scrollLeft;
+
+        setScrollTop(newScrollTop);
+        setScrollLeft(newScrollLeft);
+        onScroll?.(newScrollLeft, newScrollTop);
+      },
+      [onScroll]
+    ),
     16
   );
 
@@ -211,7 +233,7 @@ export const VirtualGrid: React.FC<VirtualGridProps> = ({
     if (!container) return;
 
     container.addEventListener('scroll', throttledScrollHandler, { passive: true });
-    
+
     return () => {
       container.removeEventListener('scroll', throttledScrollHandler);
     };
@@ -298,15 +320,21 @@ export const VirtualTimeline: React.FC<VirtualTimelineProps> = ({
   const totalWidth = totalDays * dayWidth;
 
   const startDayIndex = Math.max(0, Math.floor(scrollLeft / dayWidth) - overscan);
-  const endDayIndex = Math.min(totalDays - 1, Math.ceil((scrollLeft + containerWidth) / dayWidth) + overscan);
+  const endDayIndex = Math.min(
+    totalDays - 1,
+    Math.ceil((scrollLeft + containerWidth) / dayWidth) + overscan
+  );
 
   const throttledScrollHandler = useThrottle(
-    useCallback((event: Event) => {
-      const target = event.target as HTMLDivElement;
-      const newScrollLeft = target.scrollLeft;
-      setScrollLeft(newScrollLeft);
-      onScroll?.(newScrollLeft);
-    }, [onScroll]),
+    useCallback(
+      (event: Event) => {
+        const target = event.target as HTMLDivElement;
+        const newScrollLeft = target.scrollLeft;
+        setScrollLeft(newScrollLeft);
+        onScroll?.(newScrollLeft);
+      },
+      [onScroll]
+    ),
     16
   );
 
@@ -315,7 +343,7 @@ export const VirtualTimeline: React.FC<VirtualTimelineProps> = ({
     if (!container) return;
 
     container.addEventListener('scroll', throttledScrollHandler, { passive: true });
-    
+
     return () => {
       container.removeEventListener('scroll', throttledScrollHandler);
     };

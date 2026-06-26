@@ -1,4 +1,4 @@
-import { PlusOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import {
   Button,
   Card,
@@ -10,6 +10,8 @@ import {
   InputRef,
   List,
   Typography,
+  Tooltip,
+  theme,
 } from '@/shared/antd-imports';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TFunction } from 'i18next';
@@ -21,6 +23,8 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import logger from '@/utils/errorLogger';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { SocketEvents } from '@/shared/socket-events';
@@ -39,10 +43,13 @@ interface NotifyMemberSelectorProps {
 }
 
 const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
+  const { token } = theme.useToken();
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
+  const { isFreeUser: isFree } = useBusinessFeatures();
+  const { promptUpgrade } = useUpgradePrompt();
 
   const membersInputRef = useRef<InputRef>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -51,6 +58,17 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { subscribers } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
+  const addNotifyButtonStyles = {
+    width: 28,
+    height: 28,
+    minWidth: 28,
+    marginBottom: 4,
+    borderRadius: token.borderRadiusSM,
+    borderColor: token.colorPrimary,
+    color: token.colorPrimary,
+    background: token.colorPrimaryBg,
+    boxShadow: `0 0 0 1px ${token.colorPrimaryBorder}`,
+  };
 
   const fetchTeamMembers = async () => {
     if (!projectId) return;
@@ -101,14 +119,16 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       socket?.emit(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), body);
       socket?.once(SocketEvents.TASK_SUBSCRIBERS_CHANGE.toString(), (data: InlineMember[]) => {
         dispatch(setTaskSubscribers(data));
-        
+
         // Update Redux state with subscriber status
-        dispatch(updateTaskCounts({
-          taskId: task.id,
-          counts: {
-            has_subscribers: data && data.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: task.id,
+            counts: {
+              has_subscribers: data && data.length > 0,
+            },
+          })
+        );
       });
     } catch (error) {
       logger.error('Error notifying member:', error);
@@ -202,9 +222,48 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
     getSubscribers();
   }, [task?.id]);
 
+  const hasSubscribers = Boolean(subscribers?.length);
+
+  if (isFree) {
+    return (
+      <Flex gap={8}>
+        {hasSubscribers ? <Avatars members={subscribers || []} /> : null}
+        <Tooltip title={t('common:upgrade-plan')} placement="top">
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+            onClick={() => promptUpgrade()}
+          >
+            <Button
+              type="dashed"
+              size="small"
+              aria-label={t('taskInfoTab.notify.addSubscriber', {
+                defaultValue: 'Add notified member',
+              })}
+              disabled
+              style={addNotifyButtonStyles}
+              icon={
+                <PlusOutlined
+                  style={{
+                    fontSize: 13,
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              }
+            />
+            <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+          </div>
+        </Tooltip>
+      </Flex>
+    );
+  }
+
   return (
     <Flex gap={8}>
-      <Avatars members={subscribers || []} />
+      {hasSubscribers ? <Avatars members={subscribers || []} /> : null}
       <Dropdown
         overlayClassName="custom-dropdown"
         trigger={['click']}
@@ -213,14 +272,20 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       >
         <Button
           type="dashed"
-          shape="circle"
           size="small"
+          aria-label={t('taskInfoTab.notify.addSubscriber', {
+            defaultValue: 'Add notified member',
+          })}
+          title={t('taskInfoTab.notify.addSubscriber', {
+            defaultValue: 'Add notified member',
+          })}
+          style={addNotifyButtonStyles}
           icon={
             <PlusOutlined
               style={{
-                fontSize: 12,
-                width: 22,
-                height: 22,
+                fontSize: 13,
+                width: 24,
+                height: 24,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

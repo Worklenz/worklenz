@@ -4,6 +4,8 @@
   "projects": "Projekte",
   "schedule": "Zeitplan",
   "reporting": "Berichterstattung",
+  "my-team-reports": "Meine Team-Berichte",
+  "client-portal": "Kundenportal",
   "clients": "Kunden",
   "teams": "Teams",
   "labels": "Labels",
@@ -18,8 +20,11 @@
   "profileTooltip": "Profil anzeigen",
   "adminCenter": "Admin-Center",
   "settings": "Einstellungen",
+  "getMobileApp": "Mobile App holen",
   "deleteAccount": "Account Löschen",
   "logOut": "Abmelden",
+  "lightMode": "Heller Modus",
+  "darkMode": "Dunkler Modus",
   "notificationsDrawer": {
     "read": "Gelesene Benachrichtigungen",
     "unread": "Ungelesene Benachrichtigungen",
@@ -28,5 +33,25 @@
     "accept": "Annehmen",
     "acceptAndJoin": "Annehmen & Beitreten",
     "noNotifications": "Keine Benachrichtigungen"
-  }
+  },
+  "timerButton": {
+    "runningTimers": "Laufende Timer",
+    "recentTimeLogs": "Letzte Zeitprotokolle",
+    "unnamedTask": "Unbenannte Aufgabe",
+    "unnamedProject": "Unbenanntes Projekt",
+    "parent": "Übergeordnet",
+    "started": "Gestartet",
+    "noTimersOrLogs": "Keine Timer oder Protokolle",
+    "errorLoadingTimers": "Fehler beim Laden der Timer",
+    "errorRenderingTimers": "Fehler beim Rendern der Timer",
+    "timerError": "Timer-Fehler",
+    "timerRunning": "{{count}} Timer läuft",
+    "timerRunning_other": "{{count}} Timer laufen",
+    "recentLog": "{{count}} letztes Protokoll",
+    "recentLog_other": "{{count}} letzte Protokolle"
+  },
+  "clientPortalUpgradePopoverTitle": "Kundenportal",
+  "clientPortalUpgradePopoverBody": "Teilen Sie den Projektfortschritt mit Ihren Kunden über ein gebrandetes Portal. Verfügbar im Business-Plan.",
+  "clientPortalUpgradePopoverCta": "Jetzt upgraden",
+  "closePopover": "Popover schließen"
 }

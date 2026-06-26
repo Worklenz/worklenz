@@ -12,41 +12,51 @@ export const TrialExpirationAlert = () => {
   const authService = useAuthService();
   const [visible, setVisible] = useState(true);
   const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
-  
+
   const currentSession = authService.getCurrentSession();
 
   useEffect(() => {
     // Check if user has already dismissed this alert today
     const dismissedDate = localStorage.getItem('license-alert-dismissed');
-    const today = new Date().toDateString();
-    
-    if (dismissedDate === today) {
+    const todayString = new Date().toDateString();
+
+    if (dismissedDate === todayString) {
       setVisible(false);
       return;
     }
 
-    // Calculate days remaining for expirable subscription types
-    const expirableTypes = [
-      ISUBSCRIPTION_TYPE.TRIAL,
-      ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL,
-      ISUBSCRIPTION_TYPE.PADDLE,
-      ISUBSCRIPTION_TYPE.CUSTOM
-    ];
+    const subscriptionType = currentSession?.subscription_type as ISUBSCRIPTION_TYPE;
+    const expireDateStr = currentSession?.valid_till_date || currentSession?.trial_expire_date;
 
-    if (
-      expirableTypes.includes(currentSession?.subscription_type as ISUBSCRIPTION_TYPE) &&
-      (currentSession.valid_till_date || currentSession.trial_expire_date)
-    ) {
-      const today = new Date();
-      const expireDateStr = currentSession.valid_till_date || currentSession.trial_expire_date;
-      const expiryDate = new Date(expireDateStr);
-      const diffTime = expiryDate.getTime() - today.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+    if (!expireDateStr) {
+      setVisible(false);
+      return;
+    }
+
+    const today = new Date();
+    const expiryDate = new Date(expireDateStr);
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // For TRIAL users: Show warnings 3 days before expiry or during grace period
+    if (subscriptionType === ISUBSCRIPTION_TYPE.TRIAL) {
       // Show alert if:
       // 1. 3 days or less remaining before expiry (diffDays <= 3 && diffDays >= 0)
       // 2. Within 7 days grace period after expiry (diffDays < 0 && diffDays >= -7)
       if ((diffDays <= 3 && diffDays >= 0) || (diffDays < 0 && diffDays >= -7)) {
+        setDaysRemaining(diffDays);
+        setVisible(true);
+      } else {
+        setVisible(false);
+      }
+    }
+    // For paid users (PADDLE, CUSTOM): Show warnings ONLY after expiration date (within grace period)
+    else if (
+      subscriptionType === ISUBSCRIPTION_TYPE.PADDLE ||
+      subscriptionType === ISUBSCRIPTION_TYPE.CUSTOM
+    ) {
+      // Show alert only if past expiration date and within 7 days grace period
+      if (diffDays < 0 && diffDays >= -7) {
         setDaysRemaining(diffDays);
         setVisible(true);
       } else {
@@ -82,9 +92,9 @@ export const TrialExpirationAlert = () => {
     if (daysRemaining !== null && daysRemaining < 0) {
       const daysExpired = Math.abs(daysRemaining);
       const remainingGraceDays = 7 - daysExpired;
-      return t('license-expired-grace-period', { 
-        days: remainingGraceDays, 
-        count: remainingGraceDays 
+      return t('license-expired-grace-period', {
+        days: remainingGraceDays,
+        count: remainingGraceDays,
       });
     }
     if (daysRemaining === 0) {
@@ -94,33 +104,34 @@ export const TrialExpirationAlert = () => {
   };
 
   return (
-    <div style={{ 
-      width: '100%',
-      padding: '8px 48px',
-      background: 'linear-gradient(90deg, rgba(250,173,20,0.1) 0%, rgba(245,34,45,0.1) 100%)',
-      borderBottom: '1px solid rgba(250,173,20,0.3)',
-      backdropFilter: 'blur(10px)'
-    }}>
+    <div
+      style={{
+        width: '100%',
+        padding: '8px 48px',
+        background: 'linear-gradient(90deg, rgba(250,173,20,0.1) 0%, rgba(245,34,45,0.1) 100%)',
+        borderBottom: '1px solid rgba(250,173,20,0.3)',
+        backdropFilter: 'blur(10px)',
+      }}
+    >
       <Alert
         message={
           <Space size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
             <Space>
               <ExclamationCircleOutlined />
               <span style={{ fontWeight: 500 }}>{getMessage()}</span>
-              <span style={{ opacity: 0.8, fontSize: 13 }}>
-                {t('license-expiring-upgrade')}
-              </span>
+              <span style={{ opacity: 0.8, fontSize: 13 }}>{t('license-expiring-upgrade')}</span>
             </Space>
             <Space>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 size="small"
                 onClick={handleUpgrade}
                 style={{
-                  background: daysRemaining === 0 
-                    ? 'linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%)'
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none'
+                  background:
+                    daysRemaining === 0
+                      ? 'linear-gradient(135deg, #f5222d 0%, #ff4d4f 100%)'
+                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  border: 'none',
                 }}
               >
                 {t('license-expired-upgrade')}
@@ -139,10 +150,10 @@ export const TrialExpirationAlert = () => {
         type={getAlertType()}
         showIcon={false}
         closable={false}
-        style={{ 
+        style={{
           border: 'none',
           background: 'transparent',
-          padding: '4px 0'
+          padding: '4px 0',
         }}
       />
     </div>

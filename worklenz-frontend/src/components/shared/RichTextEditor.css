@@ -1,0 +1,49 @@
+/* Rich Text Editor Container */
+.rich-text-editor {
+  border-radius: 6px;
+}
+
+.rich-text-editor .ql-toolbar.ql-snow {
+  border: 1px solid #d9d9d9;
+  border-bottom: 0;
+  border-radius: 6px 6px 0 0;
+  background: #f9fafb;
+}
+
+.rich-text-editor .ql-container.ql-snow {
+  border: 1px solid #d9d9d9;
+  border-radius: 0 0 6px 6px;
+}
+
+.rich-text-editor .ql-editor {
+  min-height: 140px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.rich-text-editor.dark .ql-toolbar.ql-snow {
+  border-color: #3a3a3a;
+  background: #262626;
+}
+
+.rich-text-editor.dark .ql-toolbar.ql-snow .ql-stroke {
+  stroke: #d6d6d6;
+}
+
+.rich-text-editor.dark .ql-toolbar.ql-snow .ql-fill {
+  fill: #d6d6d6;
+}
+
+.rich-text-editor.dark .ql-toolbar.ql-snow .ql-picker {
+  color: #d6d6d6;
+}
+
+.rich-text-editor.dark .ql-container.ql-snow {
+  border-color: #3a3a3a;
+  background: #1f1f1f;
+  color: #f0f0f0;
+}
+
+.rich-text-editor.dark .ql-editor.ql-blank::before {
+  color: #8b8b8b;
+}

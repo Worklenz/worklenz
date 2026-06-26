@@ -67,13 +67,38 @@ export default class LabelsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  const { name, color } = req.body;
+
+  if (!name || !name.trim())
+    return res.status(400).send(new ServerResponse(false, null, "Label name is required"));
+
+  const validColors = [
+    ...Object.keys(WorklenzColorShades),
+    ...Object.values(WorklenzColorShades).flat(),
+  ].map(c => c.toLowerCase());
+
+  if (!color || !validColors.includes(color.toLowerCase()))
+    return res.status(400).send(new ServerResponse(false, null, "Invalid color"));
+
+  const q = `
+    INSERT INTO team_labels (name, color_code, team_id)
+    VALUES ($1, $2, $3)
+    RETURNING id, name, color_code;
+  `;
+  const result = await db.query(q, [name.trim(), color, req.user?.team_id]);
+  return res.status(200).send(new ServerResponse(true, result.rows[0]));
+}
+
+  @HandleExceptions()
   public static async updateColor(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `UPDATE team_labels
                SET color_code = $3
                WHERE id = $1
                  AND team_id = $2;`;
 
-    if (!Object.values(WorklenzColorShades).flat().includes(req.body.color))
+    const validColors = [...Object.keys(WorklenzColorShades), ...Object.values(WorklenzColorShades).flat()].map(c => c.toLowerCase());
+    if (!validColors.includes(req.body.color.toLowerCase()))
       return res.status(400).send(new ServerResponse(false, null));
 
     const result = await db.query(q, [req.params.id, req.user?.team_id, req.body.color]);
@@ -92,8 +117,9 @@ export default class LabelsController extends WorklenzControllerBase {
     }
 
     if (req.body.color) {
-      if (!Object.values(WorklenzColorShades).flat().includes(req.body.color))
-        return res.status(400).send(new ServerResponse(false, null));
+      const validColors = [...Object.keys(WorklenzColorShades), ...Object.values(WorklenzColorShades).flat()].map(c => c.toLowerCase());
+      if (!validColors.includes(req.body.color.toLowerCase()))
+        return res.status(400).send(new ServerResponse(false, {}, "Invalid color"));
       updates.push(`color_code = $${paramIndex++}`);
       values.push(req.body.color);
     }
@@ -113,11 +139,94 @@ export default class LabelsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DELETE
-               FROM team_labels
-               WHERE id = $1
-                 AND team_id = $2;`;
-    const result = await db.query(q, [req.params.id, req.user?.team_id]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
+    const labelId = req.params.id;
+    const teamId = req.user?.team_id;
+    const forceDelete = req.query.force === 'true'; // Allow force delete to bypass usage check
+
+    // Check if label exists and belongs to team
+    const checkQuery = `SELECT id, name FROM team_labels WHERE id = $1 AND team_id = $2;`;
+    const checkResult = await db.query(checkQuery, [labelId, teamId]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Label not found"));
+    }
+
+    const labelName = checkResult.rows[0].name;
+
+    // Check if label is in use by tasks
+    const usageQuery = `
+      SELECT COUNT(*) as count
+      FROM task_labels
+      WHERE label_id = $1;
+    `;
+    const usageResult = await db.query(usageQuery, [labelId]);
+    const usageCount = parseInt(usageResult.rows[0]?.count || "0", 10);
+
+    // Check if label is in use by project template tasks
+    const ptUsageQuery = `
+      SELECT COUNT(*) as count
+      FROM cpt_task_labels
+      WHERE label_id = $1;
+    `;
+    const ptUsageResult = await db.query(ptUsageQuery, [labelId]);
+    const ptUsageCount = parseInt(ptUsageResult.rows[0]?.count || "0", 10);
+
+    const totalUsage = usageCount + ptUsageCount;
+
+    // If label is in use and not force deleting, return usage information
+    if (totalUsage > 0 && !forceDelete) {
+      return res.status(200).send(
+        new ServerResponse(
+          false,
+          {
+            inUse: true,
+            usageCount,
+            ptUsageCount,
+            totalUsage,
+            labelName,
+          },
+          `This label is currently assigned to ${totalUsage} task${totalUsage > 1 ? 's' : ''}. Deleting it will remove the label from all tasks.`
+        )
+      );
+    }
+
+    // Use a transaction to ensure all deletions happen atomically
+    await db.query('BEGIN');
+    
+    try {
+      // Manually delete references from task_labels first
+      if (usageCount > 0) {
+        await db.query('DELETE FROM task_labels WHERE label_id = $1', [labelId]);
+      }
+      
+      // Manually delete references from cpt_task_labels
+      if (ptUsageCount > 0) {
+        await db.query('DELETE FROM cpt_task_labels WHERE label_id = $1', [labelId]);
+      }
+      
+      // Now delete the label itself
+      const deleteQuery = `DELETE FROM team_labels WHERE id = $1 AND team_id = $2;`;
+      const result = await db.query(deleteQuery, [labelId, teamId]);
+      
+      if (result.rowCount === 0) {
+        await db.query('ROLLBACK');
+        return res.status(404).send(new ServerResponse(false, null, "Label not found"));
+      }
+      
+      await db.query('COMMIT');
+      
+      return res.status(200).send(
+        new ServerResponse(
+          true,
+          { deletedCount: totalUsage },
+          totalUsage > 0
+            ? `Label deleted successfully. Removed from ${totalUsage} task${totalUsage > 1 ? 's' : ''}.`
+            : "Label deleted successfully"
+        )
+      );
+    } catch (error) {
+      await db.query('ROLLBACK');
+      throw error;
+    }
   }
 }

@@ -73,7 +73,7 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
   const [isSubTaskShow, setIsSubTaskShow] = useState(false);
   const [showNewSubtaskCard, setShowNewSubtaskCard] = useState(false);
   const [dueDate, setDueDate] = useState<Dayjs | null>(
-    task?.end_date ? dayjs(task?.end_date) : null
+    task?.end_date ? dayjs(task?.end_date, 'YYYY-MM-DD') : null
   );
   const [updatingAssignToMe, setUpdatingAssignToMe] = useState(false);
 
@@ -248,20 +248,37 @@ const BoardViewTaskCard = ({ task, sectionId }: IBoardViewTaskCardProps) => {
     [t, handleAssignToMe, handleArchive, handleDelete, updatingAssignToMe]
   );
 
+  const getContrastColor = useCallback((hexColor: string): string => {
+    const hex = (hexColor || '#000000').replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#FFFFFF';
+  }, []);
+
   const renderLabels = useMemo(() => {
     if (!task?.labels?.length) return null;
 
     return (
       <>
         {task.labels.slice(0, 2).map((label: any) => (
-          <Tag key={label.id} style={{ marginRight: '4px' }} color={label?.color_code}>
-            <span style={{ color: themeMode === 'dark' ? '#383838' : '' }}>{label.name}</span>
+          <Tag
+            key={label.id}
+            style={{
+              marginRight: '4px',
+              backgroundColor: label?.color_code,
+              borderColor: label?.color_code,
+              color: getContrastColor(label?.color_code),
+            }}
+          >
+            {label.name}
           </Tag>
         ))}
         {task.labels.length > 2 && <Tag>+ {task.labels.length - 2}</Tag>}
       </>
     );
-  }, [task.labels, themeMode]);
+  }, [task.labels, getContrastColor]);
 
   return (
     <Flex

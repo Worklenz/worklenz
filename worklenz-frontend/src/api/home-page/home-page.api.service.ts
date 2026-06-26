@@ -5,7 +5,7 @@ import { toQueryString } from '@/utils/toQueryString';
 import { IHomeTasksModel, IHomeTasksConfig } from '@/types/home/home-page.types';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import { IProject } from '@/types/project/project.types';
-import { getCsrfToken, refreshCsrfToken } from '../api-client';
+import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
 const rootUrl = '/home';
@@ -18,7 +18,11 @@ const api = createApi({
       // Get CSRF token, refresh if needed
       let token = getCsrfToken();
       if (!token) {
-        token = await refreshCsrfToken();
+        try {
+          token = await ensureCsrfToken();
+        } catch (error) {
+          console.error('[CSRF] Failed to refresh CSRF token:', error);
+        }
       }
 
       if (token) {
@@ -29,7 +33,7 @@ const api = createApi({
     },
     credentials: 'include',
   }),
-  tagTypes: ['personalTasks', 'projects', 'teamProjects'],
+  tagTypes: ['personalTasks', 'projects', 'teamProjects', 'myTasks', 'taskCounts'],
   endpoints: builder => ({
     getPersonalTasks: builder.query<IServerResponse<IMyTask[]>, void>({
       query: () => `${rootUrl}/personal-tasks`,
@@ -60,12 +64,22 @@ const api = createApi({
         })}`;
         return url;
       },
+      providesTags: ['myTasks'],
     }),
     getProjects: builder.query<IServerResponse<IProject[]>, { view: number }>({
       query: ({ view }) => `${rootUrl}/projects?view=${view}`,
     }),
     getProjectsByTeam: builder.query<IServerResponse<IProject[]>, void>({
       query: () => `${rootUrl}/team-projects`,
+    }),
+    getTaskCountsByMonth: builder.query<
+      IServerResponse<Array<{ date: string; count: number }>>,
+      { month: string; group_by: number; time_zone: string }
+    >({
+      query: ({ month, group_by, time_zone }) =>
+        `${rootUrl}/task-counts${toQueryString({ month, group_by, time_zone })}`,
+      providesTags: ['taskCounts'],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
   }),
 });
@@ -77,6 +91,8 @@ export const {
   useGetProjectsQuery,
   useGetProjectsByTeamQuery,
   useMarkPersonalTaskAsDoneMutation,
+  useGetTaskCountsByMonthQuery,
+  util: { invalidateTags },
 } = api;
 
 export default api;

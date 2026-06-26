@@ -1,6 +1,33 @@
 {
-  "inputPlaceholder": "Adicione um comentário..",
-  "addButton": "Adicionar",
+  "title": "Atualizações do Projeto",
+  "inputPlaceholder": "Digite sua atualização aqui... Use @ para mencionar membros da equipe",
+  "addButton": "Publicar Atualização",
   "cancelButton": "Cancelar",
-  "deleteButton": "Deletar"
+  "deleteButton": "Excluir",
+  "deleteConfirmTitle": "Excluir esta atualização?",
+  "deleteConfirmContent": "Tem certeza de que deseja excluir esta atualização? Esta ação não pode ser desfeita.",
+  "yes": "Sim",
+  "no": "Não",
+  "emptyState": "Sem atualizações ainda. Comece a conversa!",
+  "historyLockedBoundary": "O histórico de chat está limitado aos últimos 90 dias neste plano",
+  "historyLockedTitle": "Histórico de chat bloqueado",
+  "historyLockedBody": "O histórico de chat com mais de 90 dias está disponível no plano Business.",
+  "viewFullHistory": "Ver histórico de chat",
+  "upgradeNow": "Fazer upgrade agora",
+  "reactions": {
+    "like": "Curtir",
+    "love": "Amor",
+    "laugh": "Risada",
+    "surprised": "Surpreso",
+    "sad": "Triste",
+    "celebrate": "Celebrar",
+    "rocket": "Foguete",
+    "eyes": "Olhos",
+    "fire": "Fogo",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Editar",
+    "save": "Salvar"
+  }
 }

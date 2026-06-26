@@ -1,7 +1,6 @@
 import { ITeamInvitationViewModel } from '@/types/notifications/notifications.types';
 import { IWorklenzNotification } from '@/types/notifications/notifications.types';
 import { NotificationsDataModel } from '@/types/notifications/notifications.types';
-import { NotificationType } from '../../types/notification.types';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { notificationsApiService } from '@/api/notifications/notifications.api.service';
@@ -66,17 +65,23 @@ const notificationSlice = createSlice({
     setNotificationType: (state, action) => {
       state.notificationType = action.payload;
     },
+    // Add a reducer to manually update unread count if needed
+    setUnreadCount: (state, action) => {
+      state.unreadNotificationsCount = action.payload;
+    },
   },
   extraReducers: builder => {
     builder.addCase(fetchInvitations.pending, state => {
-      state.loading = true;
+      state.loadingInvitations = true;
     });
     builder.addCase(fetchInvitations.fulfilled, (state, action) => {
-      state.loading = false;
+      state.loadingInvitations = false;
       state.invitations = action.payload;
       state.invitationsCount = action.payload.length;
 
-      state.invitations.map(invitation => {
+      // Reset and rebuild dataset
+      state._dataset = [];
+      action.payload.forEach(invitation => {
         state._dataset.push({
           type: 'invitation',
           data: invitation,
@@ -84,8 +89,9 @@ const notificationSlice = createSlice({
       });
     });
     builder.addCase(fetchInvitations.rejected, state => {
-      state.loading = false;
+      state.loadingInvitations = false;
     });
+
     builder.addCase(fetchNotifications.pending, state => {
       state.loading = true;
     });
@@ -94,15 +100,23 @@ const notificationSlice = createSlice({
       state.notifications = action.payload;
       state.notificationsCount = action.payload.length;
 
-      state.notifications.map(notification => {
+      // Reset and rebuild dataset for notifications
+      // Remove previous notifications from dataset
+      state._dataset = state._dataset.filter(item => item.type === 'invitation');
+
+      action.payload.forEach(notification => {
         state._dataset.push({
           type: 'notification',
           data: notification,
         });
       });
     });
+    builder.addCase(fetchNotifications.rejected, state => {
+      state.loading = false;
+    });
+
     builder.addCase(fetchUnreadCount.pending, state => {
-      state.unreadNotificationsCount = 0;
+      // Keep the previous count while loading
     });
     builder.addCase(fetchUnreadCount.fulfilled, (state, action) => {
       state.unreadNotificationsCount = action.payload;
@@ -113,5 +127,5 @@ const notificationSlice = createSlice({
   },
 });
 
-export const { toggleDrawer, setNotificationType } = notificationSlice.actions;
+export const { toggleDrawer, setNotificationType, setUnreadCount } = notificationSlice.actions;
 export default notificationSlice.reducer;

@@ -396,3 +396,43 @@
 .small {
   font-size: 12px;
 }
+
+/* notification-item.css */
+
+/* Fix for Mark as read button hover in dark mode */
+.worklenz-notification .ant-btn-link {
+  transition: color 0.3s ease;
+}
+
+/* Light mode hover - keep original blue */
+.worklenz-notification .ant-btn-link:hover,
+.worklenz-notification .ant-btn-link:focus {
+  color: #1677ff !important; /* Ant Design default primary color */
+}
+
+/* Dark mode hover - lighter blue for better contrast */
+[data-theme="dark"] .worklenz-notification .ant-btn-link:hover,
+[data-theme="dark"] .worklenz-notification .ant-btn-link:focus,
+.dark-mode .worklenz-notification .ant-btn-link:hover,
+.dark-mode .worklenz-notification .ant-btn-link:focus {
+  color: #69b1ff !important; /* Lighter blue that contrasts well with dark background */
+}
+
+/* Alternative: If you want to use a completely different color for dark mode */
+@media (prefers-color-scheme: dark) {
+  .worklenz-notification .ant-btn-link:hover,
+  .worklenz-notification .ant-btn-link:focus {
+    color: #69b1ff !important;
+  }
+}
+
+/* Ensure the button text is visible in dark mode */
+[data-theme="dark"] .worklenz-notification .ant-btn-link {
+  color: #1677ff; /* Or whatever your primary color is */
+}
+
+/* Optional: Add a subtle background on hover for better visibility */
+[data-theme="dark"] .worklenz-notification .ant-btn-link:hover {
+  background-color: rgba(105, 177, 255, 0.1);
+  text-decoration: underline;
+}

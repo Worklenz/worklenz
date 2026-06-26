@@ -3,15 +3,26 @@ import React from 'react';
 import dayjs from 'dayjs';
 import { DoubleRightOutlined } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import {
+  fetchTask,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { setProjectId } from '@/features/project/project.slice';
 
 type MembersReportsTasksTableProps = {
   tasksData: any[];
   loading: boolean;
 };
+
+interface ReportingTaskRecord {
+  id: string;
+  project_id: string;
+}
 
 const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTableProps) => {
   // localization
@@ -20,8 +31,13 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
   const dispatch = useAppDispatch();
 
   // function to handle task drawer open
-  const handleUpdateTaskDrawer = (id: string) => {
-    dispatch(setSelectedTaskId(id));
+  const handleUpdateTaskDrawer = (task: ReportingTaskRecord) => {
+    if (!task.id || !task.project_id) return;
+
+    dispatch(setProjectId(task.project_id));
+    dispatch(fetchPhasesByProjectId(task.project_id));
+    dispatch(setSelectedTaskId(task.id));
+    dispatch(fetchTask({ taskId: task.id, projectId: task.project_id }));
     dispatch(setShowTaskDrawer(true));
   };
 
@@ -31,7 +47,7 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
       title: <CustomTableTitle title={t('taskColumn')} />,
       onCell: record => {
         return {
-          onClick: () => handleUpdateTaskDrawer(record.id),
+          onClick: () => handleUpdateTaskDrawer(record),
         };
       },
       render: record => (
@@ -41,7 +57,8 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
         </Flex>
       ),
       width: 260,
-      fixed: 'left' as const,
+      className: 'sticky-task-column',
+      fixed: 'left',
     },
     {
       key: 'project',
@@ -83,7 +100,7 @@ const MembersReportsTasksTable = ({ tasksData, loading }: MembersReportsTasksTab
       title: <CustomTableTitle title={t('dueDateColumn')} />,
       render: record => (
         <Typography.Text className="text-center group-hover:text-[#1890ff]">
-          {record.end_date ? `${dayjs(record.end_date).format('MMM DD, YYYY')}` : '-'}
+          {record.end_date ? `${dayjs(record.end_date, 'YYYY-MM-DD').format('MMM DD, YYYY')}` : '-'}
         </Typography.Text>
       ),
       width: 120,

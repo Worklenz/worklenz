@@ -1,5 +1,14 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
-import { Card, Segmented, Skeleton, Empty, Typography, Alert, Button, Tooltip } from '@/shared/antd-imports';
+import React, { useMemo, useCallback, useEffect, useState } from 'react';
+import {
+  Card,
+  Segmented,
+  Skeleton,
+  Empty,
+  Typography,
+  Alert,
+  Button,
+  Tooltip,
+} from '@/shared/antd-imports';
 import { ClockCircleOutlined, UnorderedListOutlined, SyncOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -19,30 +28,33 @@ const UserActivityFeed: React.FC = () => {
   const { t } = useTranslation('home');
   const dispatch = useAppDispatch();
   const { activeTab } = useAppSelector(state => state.userActivityReducer);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
     data: recentTasksData,
     isLoading: loadingRecentTasks,
+    isFetching: isFetchingRecentTasks,
     error: recentTasksError,
     refetch: refetchRecentTasks,
   } = useGetUserRecentTasksQuery(
     { limit: 10 },
-    { 
+    {
       skip: false,
-      refetchOnMountOrArgChange: true
+      refetchOnMountOrArgChange: true,
     }
   );
 
   const {
     data: timeLoggedTasksData,
     isLoading: loadingTimeLoggedTasks,
+    isFetching: isFetchingTimeLoggedTasks,
     error: timeLoggedTasksError,
     refetch: refetchTimeLoggedTasks,
   } = useGetUserTimeLoggedTasksQuery(
     { limit: 10 },
-    { 
+    {
       skip: false,
-      refetchOnMountOrArgChange: true
+      refetchOnMountOrArgChange: true,
     }
   );
 
@@ -72,7 +84,11 @@ const UserActivityFeed: React.FC = () => {
       return timeLoggedTasksData;
     }
     // If it's an object with a data property (common API pattern)
-    if (timeLoggedTasksData && typeof timeLoggedTasksData === 'object' && 'data' in timeLoggedTasksData) {
+    if (
+      timeLoggedTasksData &&
+      typeof timeLoggedTasksData === 'object' &&
+      'data' in timeLoggedTasksData
+    ) {
       const data = (timeLoggedTasksData as any).data;
       return Array.isArray(data) ? data : [];
     }
@@ -90,7 +106,6 @@ const UserActivityFeed: React.FC = () => {
         value: ActivityFeedType.TIME_LOGGED_TASKS,
         label: (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <ClockCircleOutlined style={{ fontSize: 14 }} />
             {t('tasks.timeLoggedSegment')}
           </span>
         ),
@@ -99,7 +114,6 @@ const UserActivityFeed: React.FC = () => {
         value: ActivityFeedType.RECENT_TASKS,
         label: (
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <UnorderedListOutlined style={{ fontSize: 14 }} />
             {t('tasks.recentTasksSegment')}
           </span>
         ),
@@ -124,16 +138,38 @@ const UserActivityFeed: React.FC = () => {
     }
   }, [activeTab, refetchRecentTasks, refetchTimeLoggedTasks]);
 
-  const handleRefresh = useCallback(() => {
-    if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
-      refetchTimeLoggedTasks();
-    } else {
-      refetchRecentTasks();
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
+        await refetchTimeLoggedTasks();
+      } else {
+        await refetchRecentTasks();
+      }
+    } finally {
+      // Keep the spinning animation for at least 500ms for better UX
+      setTimeout(() => {
+        setIsRefreshing(false);
+      }, 500);
     }
   }, [activeTab, refetchRecentTasks, refetchTimeLoggedTasks]);
 
-  const isLoading = activeTab === ActivityFeedType.TIME_LOGGED_TASKS ? loadingTimeLoggedTasks : loadingRecentTasks;
-  const currentCount = activeTab === ActivityFeedType.TIME_LOGGED_TASKS ? timeLoggedTasks.length : recentTasks.length;
+  const isLoading = useMemo(() => {
+    if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
+      return loadingTimeLoggedTasks || isFetchingTimeLoggedTasks || isRefreshing;
+    }
+    return loadingRecentTasks || isFetchingRecentTasks || isRefreshing;
+  }, [
+    activeTab,
+    loadingTimeLoggedTasks,
+    isFetchingTimeLoggedTasks,
+    loadingRecentTasks,
+    isFetchingRecentTasks,
+    isRefreshing,
+  ]);
+
+  const currentCount =
+    activeTab === ActivityFeedType.TIME_LOGGED_TASKS ? timeLoggedTasks.length : recentTasks.length;
 
   const renderContent = () => {
     if (activeTab === ActivityFeedType.TIME_LOGGED_TASKS) {
@@ -171,7 +207,7 @@ const UserActivityFeed: React.FC = () => {
   };
 
   return (
-    <Card 
+    <Card
       title={
         <Typography.Title level={5} style={{ marginBlockEnd: 0 }}>
           {t('tasks.recentActivity')} ({currentCount})
@@ -179,10 +215,11 @@ const UserActivityFeed: React.FC = () => {
       }
       extra={
         <Tooltip title={t('tasks.refresh')}>
-          <Button 
-            shape="circle" 
-            icon={<SyncOutlined spin={isLoading} />} 
+          <Button
+            shape="circle"
+            icon={<SyncOutlined spin={isLoading} />}
             onClick={handleRefresh}
+            disabled={isLoading}
           />
         </Tooltip>
       }
@@ -192,8 +229,7 @@ const UserActivityFeed: React.FC = () => {
         options={segmentOptions}
         value={activeTab}
         onChange={handleTabChange}
-        style={{ marginBottom: 16, width: '100%' }}
-        block
+        style={{ marginBottom: 16 }}
       />
       {renderContent()}
     </Card>

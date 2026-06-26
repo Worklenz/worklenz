@@ -1,4 +1,8 @@
-import { CaretDownFilled, SortAscendingOutlined, SortDescendingOutlined } from '@/shared/antd-imports';
+import {
+  CaretDownFilled,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+} from '@/shared/antd-imports';
 
 import Badge from 'antd/es/badge';
 import Button from 'antd/es/button';
@@ -60,7 +64,7 @@ const SortFilterDropdown = () => {
     { label: t('statusText'), key: 'status', sort_order: SORT_ORDER.ASCEND },
     { label: t('priorityText'), key: 'priority', sort_order: SORT_ORDER.ASCEND },
     { label: t('startDateText'), key: 'start_date', sort_order: SORT_ORDER.ASCEND },
-    { label: t('endDateText'), key: 'end_date', sort_order: SORT_ORDER.ASCEND },
+    { label: t('dueDateText'), key: 'end_date', sort_order: SORT_ORDER.ASCEND },
     { label: t('completedDateText'), key: 'completed_at', sort_order: SORT_ORDER.ASCEND },
     { label: t('createdDateText'), key: 'created_at', sort_order: SORT_ORDER.ASCEND },
     { label: t('lastUpdatedText'), key: 'updated_at', sort_order: SORT_ORDER.ASCEND },

@@ -14,6 +14,19 @@ export interface IRunningTimer {
   project_name: string;
   parent_task_id?: string;
   parent_task_name?: string;
+  total_time_logged?: number; // Total previously logged time in seconds
+}
+
+export interface IRecentTimeLog {
+  task_id: string;
+  task_name: string;
+  project_id: string;
+  project_name: string;
+  project_color?: string;
+  parent_task_id?: string;
+  parent_task_name?: string;
+  created_at: string;
+  time_spent?: number;
 }
 
 export const taskTimeLogsApiService = {
@@ -21,7 +34,7 @@ export const taskTimeLogsApiService = {
     const session = getUserSession();
     const timezone = session?.timezone_name || 'UTC';
     const response = await apiClient.get(`${rootUrl}/task/${id}`, {
-      params: { time_zone_name: timezone }
+      params: { time_zone_name: timezone },
     });
     return response.data;
   },
@@ -43,6 +56,11 @@ export const taskTimeLogsApiService = {
 
   getRunningTimers: async (): Promise<IServerResponse<IRunningTimer[]>> => {
     const response = await apiClient.get(`${rootUrl}/running-timers`);
+    return response.data;
+  },
+
+  getRecentTimeLogs: async (): Promise<IServerResponse<IRecentTimeLog[]>> => {
+    const response = await apiClient.get(`${rootUrl}/recent-logs`);
     return response.data;
   },
 

@@ -1,11 +1,25 @@
-import { Badge, Collapse, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Collapse,
+  Flex,
+  Table,
+  TableColumnsType,
+  Tag,
+  Typography,
+} from '@/shared/antd-imports';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { DoubleRightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
+import {
+  fetchTask,
+  setSelectedTaskId,
+  setShowTaskDrawer,
+} from '@/features/task-drawer/task-drawer.slice';
+import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { setProjectId } from '@/features/project/project.slice';
 
 type MembersOverviewTasksStatsTableProps = {
   tasksData: any[];
@@ -13,6 +27,11 @@ type MembersOverviewTasksStatsTableProps = {
   color: string;
   setSeletedTaskId: (id: string) => void;
 };
+
+interface ReportingTaskRecord {
+  id: string;
+  project_id?: string;
+}
 
 const MembersOverviewTasksStatsTable = ({
   tasksData,
@@ -26,8 +45,14 @@ const MembersOverviewTasksStatsTable = ({
   const dispatch = useAppDispatch();
 
   // function to handle task drawer open
-  const handleUpdateTaskDrawer = (id: string) => {
-    setSeletedTaskId(id);
+  const handleUpdateTaskDrawer = (task: ReportingTaskRecord) => {
+    if (!task.id || !task.project_id) return;
+
+    setSeletedTaskId(task.id);
+    dispatch(setSelectedTaskId(task.id));
+    dispatch(setProjectId(task.project_id));
+    dispatch(fetchPhasesByProjectId(task.project_id));
+    dispatch(fetchTask({ taskId: task.id, projectId: task.project_id }));
     dispatch(setShowTaskDrawer(true));
   };
 
@@ -37,7 +62,7 @@ const MembersOverviewTasksStatsTable = ({
       title: <CustomTableTitle title={t('taskColumn')} />,
       onCell: record => {
         return {
-          onClick: () => handleUpdateTaskDrawer(record.id),
+          onClick: () => handleUpdateTaskDrawer(record),
         };
       },
       render: record => (
@@ -91,7 +116,7 @@ const MembersOverviewTasksStatsTable = ({
       title: <CustomTableTitle title={t('dueDateColumn')} />,
       render: record => (
         <Typography.Text className="text-center group-hover:text-[#1890ff]">
-          {record.due_date ? `${dayjs(record.due_date).format('MMM DD, YYYY')}` : '-'}
+          {record.due_date ? `${dayjs(record.due_date, 'YYYY-MM-DD').format('MMM DD, YYYY')}` : '-'}
         </Typography.Text>
       ),
       width: 120,

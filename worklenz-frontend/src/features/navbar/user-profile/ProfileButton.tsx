@@ -1,10 +1,22 @@
-import { UserOutlined } from '@/shared/antd-imports';
-import { Button, Card, Dropdown, Flex, MenuProps, Tooltip, Typography } from '@/shared/antd-imports';
+import { DashboardOutlined, LogoutOutlined, UserOutlined } from '@/shared/antd-imports';
+import {
+  Button,
+  Card,
+  Dropdown,
+  Flex,
+  MenuProps,
+  Tooltip,
+  Typography,
+} from '@/shared/antd-imports';
+import { MobileOutlined } from '@ant-design/icons';
 
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { memo, useState } from 'react';
+import MobileAppModal from '@/components/mobile-app/MobileAppModal';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { RootState } from '@/app/store';
 
 import { getRole } from '@/utils/session-helper';
@@ -14,7 +26,7 @@ import './profile-button.css';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { useAuthService } from '@/hooks/useAuth';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import { useEffect, useState } from 'react';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 
 interface ProfileButtonProps {
   isOwnerOrAdmin: boolean;
@@ -22,12 +34,14 @@ interface ProfileButtonProps {
 
 const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const { t } = useTranslation('navbar');
-  const authService = useAuthService();
   const currentSession = useAppSelector((state: RootState) => state.userReducer);
   const { isLicenseExpired } = useAuthStatus();
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const role = getRole();
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
+  const [mobileModalOpen, setMobileModalOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const getLinkStyle = () => ({
     color: themeMode === 'dark' ? '#ffffffd9' : '#181818',
@@ -86,15 +100,37 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
           variant="borderless"
           style={{ width: 230 }}
         >
-          {isOwnerOrAdmin && !isLicenseExpired && (
+          {isOwnerOrAdmin && (
             <Link to="/worklenz/admin-center/overview" style={getLinkStyle()}>
               {t('adminCenter')}
+            </Link>
+          )}
+          {isOwnerOrAdmin && (
+            <Link
+              to="/worklenz/admin-center/billing"
+              style={getLinkStyle()}
+              onClick={() => {
+                trackMixpanelEvent('billing_profile_dropdown_click', {
+                  user_type: currentSession?.subscription_type?.toLowerCase(),
+                  is_owner_or_admin: true,
+                });
+              }}
+            >
+              {t('billing', { defaultValue: 'Billing' })}
             </Link>
           )}
           {!isLicenseExpired && (
             <Link to="/worklenz/settings/profile" style={getLinkStyle()}>
               {t('settings')}
             </Link>
+          )}
+          {!isLicenseExpired && (
+            <div
+              onClick={() => { setMobileModalOpen(true); setDropdownOpen(false); }}
+              style={{ ...getLinkStyle(), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+            >
+              {t('getMobileApp')}
+            </div>
           )}
           {isLicenseExpired && (
             <Link to="/worklenz/settings/account-deletion" style={getDangerLinkStyle()}>
@@ -110,32 +146,38 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   ];
 
   return (
-    <Dropdown
-      overlayClassName="profile-dropdown"
-      menu={{ items: profile }}
-      placement="bottomRight"
-      trigger={['click']}
-    >
-      <Tooltip title={t('profileTooltip')}>
-        <Button
-          className="profile-button"
-          style={{ height: '62px', width: '60px' }}
-          type="text"
-          icon={
-            currentSession?.avatar_url ? (
-              <SingleAvatar
-                avatarUrl={currentSession.avatar_url}
-                name={currentSession.name}
-                email={currentSession.email}
-              />
-            ) : (
-              <UserOutlined style={{ fontSize: 20 }} />
-            )
-          }
-        />
-      </Tooltip>
-    </Dropdown>
+    <>
+      <Dropdown
+        overlayClassName="profile-dropdown"
+        menu={{ items: profile }}
+        placement="bottomRight"
+        trigger={['click']}
+        open={dropdownOpen}
+        onOpenChange={setDropdownOpen}
+      >
+        <Tooltip title={t('profileTooltip')}>
+          <Button
+            className="profile-button"
+            style={{ height: '62px', width: '60px' }}
+            type="text"
+            icon={
+              currentSession?.avatar_url ? (
+                <SingleAvatar
+                  avatarUrl={currentSession.avatar_url}
+                  name={currentSession.name}
+                  email={currentSession.email}
+                />
+              ) : (
+                <UserOutlined style={{ fontSize: 20 }} />
+              )
+            }
+          />
+        </Tooltip>
+      </Dropdown>
+
+      <MobileAppModal open={mobileModalOpen} onClose={() => setMobileModalOpen(false)} />
+    </>
   );
 };
 
-export default ProfileButton;
+export default memo(ProfileButton);

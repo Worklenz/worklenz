@@ -13,7 +13,7 @@ import {
   List,
   Space,
   Typography,
-  InputRef
+  InputRef,
 } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';

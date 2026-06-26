@@ -24,7 +24,10 @@
   "lastUpdatedColumn": "Përditësuar Së Fundi",
   "lastupdatedColumn": "Përditësuar Së Fundi",
   "reporterColumn": "Raportuesi",
+  "moveColumnHandle": "Zhvendos kolonën",
   "dueTimeColumn": "Koha e Afatit",
+  "activeParentBadge": "Prind aktiv",
+  "activeParentTooltip": "Detyra prind nuk është e arkivuar",
   "todoSelectorText": "Për të Bërë",
   "doingSelectorText": "Duke bërë",
   "doneSelectorText": "E Përfunduar",
@@ -38,6 +41,7 @@
 
   "addTaskText": "Shto Detyrë",
   "addSubTaskText": "+ Shto Nën-Detyrë",
+  "addSubTaskInputPlaceholder": "Shkruaj emrin e nën-detyrës dhe shtyp Enter për ta ruajtur",
   "noTasksInGroup": "Nuk ka detyra në këtë grup",
   "dropTaskHere": "Lëshoje detyrën këtu",
   "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
@@ -56,6 +60,7 @@
   "pendingInvitation": "Ftesë në Pritje",
 
   "contextMenu": {
+    "duplicateTask": "Detyrë dublikatë",
     "assignToMe": "Cakto mua",
     "copyLink": "Kopjo lidhjen e detyrës",
     "linkCopied": "Lidhja u kopjua në clipboard",
@@ -75,6 +80,13 @@
   "dueDatePlaceholder": "Data e afatit",
   "startDatePlaceholder": "Data e fillimit",
 
+  "exampleTasks": {
+    "prefix": "p.sh.",
+    "task1": "Përcaktoni qëllimin dhe objektivat e projektit",
+    "task2": "Rishikoni dhe harmonizoni me palët e interesuara",
+    "task3": "Planifikoni takimin fillestar"
+  },
+
   "emptyStates": {
     "noTaskGroups": "Nuk u gjetën grupe detyrash",
     "noTaskGroupsDescription": "Detyrat do të shfaqen këtu kur krijohen ose kur aplikohen filtra.",
@@ -90,7 +102,20 @@
     "peopleField": "Fusha e njerëzve",
     "noDate": "Asnjë datë",
     "unsupportedField": "Lloj fushe i pambështetur",
-    
+    "datePlaceholder": "Vendos datën",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Zgjidh opsionin",
+    "noOptionsAvailable": "Nuk ka opsione të disponueshme",
+    "updating": "Po përditësohet...",
+    "peopleDropdown": {
+      "searchMembers": "Kërko anëtarë...",
+      "pending": "Në pritje",
+      "loadingMembers": "Po ngarkohen anëtarët...",
+      "noMembersFound": "Nuk u gjetën anëtarë",
+      "inviteMember": "Fto anëtar"
+    },
+
     "modal": {
       "addFieldTitle": "Shto fushë",
       "editFieldTitle": "Redakto fushën",
@@ -111,9 +136,10 @@
       "createErrorMessage": "Dështoi në krijimin e kolonës së personalizuar",
       "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar"
     },
-    
+
     "fieldTypes": {
       "people": "Njerëz",
+      "text": "Tekst",
       "number": "Numër",
       "date": "Data",
       "selection": "Zgjedhje",

@@ -10,6 +10,11 @@ export interface TaskListField {
   order: number;
 }
 
+export interface TaskListFieldsState {
+  currentProjectId: string | null;
+  fields: TaskListField[];
+}
+
 const DEFAULT_FIELDS: TaskListField[] = [
   { key: 'KEY', label: 'Key', visible: false, order: 1 },
   { key: 'DESCRIPTION', label: 'Description', visible: false, order: 2 },
@@ -19,7 +24,7 @@ const DEFAULT_FIELDS: TaskListField[] = [
   { key: 'LABELS', label: 'Labels', visible: true, order: 6 },
   { key: 'PHASE', label: 'Phase', visible: true, order: 7 },
   { key: 'PRIORITY', label: 'Priority', visible: true, order: 8 },
-  { key: 'TIME_TRACKING', label: 'Time Tracking', visible: true, order: 9 },
+  { key: 'TIME_TRACKING', label: 'Time', visible: true, order: 9 },
   { key: 'ESTIMATION', label: 'Estimation', visible: false, order: 10 },
   { key: 'START_DATE', label: 'Start Date', visible: false, order: 11 },
   { key: 'DUE_DATE', label: 'Due Date', visible: true, order: 12 },
@@ -30,10 +35,14 @@ const DEFAULT_FIELDS: TaskListField[] = [
   { key: 'REPORTER', label: 'Reporter', visible: false, order: 17 },
 ];
 
-const LOCAL_STORAGE_KEY = 'worklenz.taskManagement.fields';
+const getLocalStorageKey = (projectId: string | null) => {
+  if (!projectId) return 'worklenz.taskManagement.fields.default';
+  return `worklenz.taskManagement.fields.${projectId}`;
+};
 
-function loadFields(): TaskListField[] {
-  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+function loadFields(projectId: string | null): TaskListField[] {
+  const storageKey = getLocalStorageKey(projectId);
+  const stored = localStorage.getItem(storageKey);
 
   if (stored) {
     try {
@@ -47,19 +56,25 @@ function loadFields(): TaskListField[] {
   return DEFAULT_FIELDS;
 }
 
-function saveFields(fields: TaskListField[]) {
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fields));
+function saveFields(fields: TaskListField[], projectId: string | null) {
+  const storageKey = getLocalStorageKey(projectId);
+  localStorage.setItem(storageKey, JSON.stringify(fields));
 }
 
 // Async thunk to sync field visibility with database
 export const syncFieldWithDatabase = createAsyncThunk(
   'taskManagementFields/syncFieldWithDatabase',
   async (
-    { projectId, fieldKey, visible, columns }: { 
-      projectId: string; 
-      fieldKey: string; 
-      visible: boolean; 
-      columns: ITaskListColumn[] 
+    {
+      projectId,
+      fieldKey,
+      visible,
+      columns,
+    }: {
+      projectId: string;
+      fieldKey: string;
+      visible: boolean;
+      columns: ITaskListColumn[];
     },
     { dispatch }
   ) => {
@@ -67,13 +82,15 @@ export const syncFieldWithDatabase = createAsyncThunk(
     const backendColumn = columns.find(c => c.key === fieldKey);
     if (backendColumn) {
       // Update the column visibility in the database
-      await dispatch(updateColumnVisibility({
-        projectId,
-        item: {
-          ...backendColumn,
-          pinned: visible
-        }
-      }));
+      await dispatch(
+        updateColumnVisibility({
+          projectId,
+          item: {
+            ...backendColumn,
+            pinned: visible,
+          },
+        })
+      );
     }
     return { fieldKey, visible };
   }
@@ -83,10 +100,14 @@ export const syncFieldWithDatabase = createAsyncThunk(
 export const syncAllFieldsWithDatabase = createAsyncThunk(
   'taskManagementFields/syncAllFieldsWithDatabase',
   async (
-    { projectId, fields, columns }: { 
-      projectId: string; 
-      fields: TaskListField[]; 
-      columns: ITaskListColumn[] 
+    {
+      projectId,
+      fields,
+      columns,
+    }: {
+      projectId: string;
+      fields: TaskListField[];
+      columns: ITaskListColumn[];
     },
     { dispatch }
   ) => {
@@ -100,13 +121,15 @@ export const syncAllFieldsWithDatabase = createAsyncThunk(
     const syncPromises = fieldsToSync.map(field => {
       const backendColumn = columns.find(c => c.key === field.key);
       if (backendColumn) {
-        return dispatch(updateColumnVisibility({
-          projectId,
-          item: {
-            ...backendColumn,
-            pinned: field.visible
-          }
-        }));
+        return dispatch(
+          updateColumnVisibility({
+            projectId,
+            item: {
+              ...backendColumn,
+              pinned: field.visible,
+            },
+          })
+        );
       }
       return Promise.resolve();
     });
@@ -116,73 +139,93 @@ export const syncAllFieldsWithDatabase = createAsyncThunk(
   }
 );
 
-const initialState: TaskListField[] = loadFields();
+const initialState: TaskListFieldsState = {
+  currentProjectId: null,
+  fields: DEFAULT_FIELDS,
+};
 
 const taskListFieldsSlice = createSlice({
   name: 'taskManagementFields',
   initialState,
   reducers: {
+    setProjectContext(state, action: PayloadAction<string | null>) {
+      const projectId = action.payload;
+      if (state.currentProjectId !== projectId) {
+        state.currentProjectId = projectId;
+        state.fields = loadFields(projectId);
+      }
+    },
     toggleField(state, action: PayloadAction<string>) {
-      const field = state.find(f => f.key === action.payload);
+      const field = state.fields.find(f => f.key === action.payload);
       if (field) {
         field.visible = !field.visible;
         // Save to localStorage immediately after toggle
-        saveFields(state);
+        saveFields(state.fields, state.currentProjectId);
       }
     },
     setFields(state, action: PayloadAction<TaskListField[]>) {
-      const newState = action.payload;
+      state.fields = action.payload;
       // Save to localStorage when fields are set
-      saveFields(newState);
-      return newState;
+      saveFields(state.fields, state.currentProjectId);
     },
-    resetFields() {
-      const defaultFields = DEFAULT_FIELDS;
+    resetFields(state) {
+      state.fields = DEFAULT_FIELDS;
       // Save to localStorage when fields are reset
-      saveFields(defaultFields);
-      return defaultFields;
+      saveFields(state.fields, state.currentProjectId);
     },
     // New action to update field visibility from database
-    updateFieldVisibilityFromDatabase(state, action: PayloadAction<{ fieldKey: string; visible: boolean }>) {
+    updateFieldVisibilityFromDatabase(
+      state,
+      action: PayloadAction<{ fieldKey: string; visible: boolean }>
+    ) {
       const { fieldKey, visible } = action.payload;
-      const field = state.find(f => f.key === fieldKey);
+      const field = state.fields.find(f => f.key === fieldKey);
       if (field) {
         field.visible = visible;
         // Save to localStorage
-        saveFields(state);
+        saveFields(state.fields, state.currentProjectId);
       }
     },
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
       .addCase(syncFieldWithDatabase.fulfilled, (state, action) => {
         // Field visibility has been synced with database
         const { fieldKey, visible } = action.payload;
-        const field = state.find(f => f.key === fieldKey);
+        const field = state.fields.find(f => f.key === fieldKey);
         if (field) {
           field.visible = visible;
-          saveFields(state);
+          saveFields(state.fields, state.currentProjectId);
         }
       })
       .addCase(syncAllFieldsWithDatabase.fulfilled, (state, action) => {
         // All fields have been synced with database
         action.payload.forEach(({ fieldKey, visible }) => {
-          const field = state.find(f => f.key === fieldKey);
+          const field = state.fields.find(f => f.key === fieldKey);
           if (field) {
             field.visible = visible;
           }
         });
-        saveFields(state);
+        saveFields(state.fields, state.currentProjectId);
       });
   },
 });
 
-export const { toggleField, setFields, resetFields, updateFieldVisibilityFromDatabase } = taskListFieldsSlice.actions;
+export const {
+  setProjectContext,
+  toggleField,
+  setFields,
+  resetFields,
+  updateFieldVisibilityFromDatabase,
+} = taskListFieldsSlice.actions;
 
 // Utility function to force reset fields (can be called from browser console)
-export const forceResetFields = () => {
-  localStorage.removeItem(LOCAL_STORAGE_KEY);
-  console.log('Cleared localStorage and reset fields to defaults');
+export const forceResetFields = (projectId?: string) => {
+  const storageKey = getLocalStorageKey(projectId || null);
+  localStorage.removeItem(storageKey);
+  console.log(
+    `Cleared localStorage for project ${projectId || 'default'} and reset fields to defaults`
+  );
   return DEFAULT_FIELDS;
 };
 

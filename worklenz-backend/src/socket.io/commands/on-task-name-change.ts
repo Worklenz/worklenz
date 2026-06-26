@@ -3,23 +3,29 @@ import db from "../../config/db";
 import {NotificationsService} from "../../services/notifications/notifications.service";
 import {SocketEvents} from "../events";
 
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logNameChange} from "../../services/activity-logs/activity-logs.service";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import { log_error, sanitizePlainText } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_name_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_NAME_CHANGE', 'task', body.task_id);
+      return;
+    }
+    
     const userId = getLoggedInUserIdFromSocket(socket);
-
-    const name = (body.name || "").trim();
+    const name = sanitizePlainText(body.name || "");
     const task_data = await getTaskDetails(body.task_id, "name");
-
     const q = `SELECT handle_task_name_change($1, $2, $3) AS response;`;
-
     const result = await db.query(q, [body.task_id, name, userId]);
     const [d] = result.rows;
     const response = d.response || {};
-
     for (const member of response.members || []) {
       if (member.user_id === userId) continue;
       NotificationsService.createNotification({
@@ -45,6 +51,25 @@ export async function on_task_name_change(_io: Server, socket: Socket, data?: st
       new_value: response?.name,
       old_value: task_data?.name
     });
+
+    // Send external notifications (Slack, Teams)
+    try {
+      const userQuery = `SELECT name FROM users WHERE id = $1`;
+      const userResult = await db.query(userQuery, [userId]);
+      const userName = userResult.rows[0]?.name || "Unknown User";
+
+      if (response.project_id) {
+        await ExternalNotificationsService.sendExternalNotifications(
+          response.project_id,
+          body.task_id,
+          "task_updated",
+          userName
+        );
+      }
+    } catch (notifError) {
+      log_error("Error sending external notifications:", notifError);
+      // Don't throw - continue even if notifications fail
+    }
 
   } catch (error) {
     log_error(error);

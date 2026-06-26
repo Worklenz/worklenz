@@ -8,7 +8,11 @@ export { default as DraggableTaskBar } from './DraggableTaskBar';
 export { default as TimelineMarkers, holidayPresets, workingDayPresets } from './TimelineMarkers';
 
 // Utility Components
-export { default as VirtualScrollContainer, VirtualGrid, VirtualTimeline } from './VirtualScrollContainer';
+export {
+  default as VirtualScrollContainer,
+  VirtualGrid,
+  VirtualTimeline,
+} from './VirtualScrollContainer';
 
 // Types
 export * from '../../types/advanced-gantt.types';

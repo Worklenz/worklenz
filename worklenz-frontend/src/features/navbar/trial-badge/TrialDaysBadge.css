@@ -1,0 +1,116 @@
+/* Trial Days Badge - Simple & Creative */
+
+/* Main badge container */
+.trial-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+}
+
+.trial-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
+.trial-badge:active {
+  transform: translateY(0);
+}
+
+/* Success state - 4-7 days */
+.trial-badge-success {
+  background: linear-gradient(135deg, #52c41a 0%, #73d13d 100%);
+  color: #ffffff;
+}
+
+/* Warning state - 1-3 days */
+.trial-badge-warning {
+  background: linear-gradient(135deg, #faad14 0%, #ffd666 100%);
+  color: #ffffff;
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+/* Critical state - Last day or grace period */
+.trial-badge-critical {
+  background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+  color: #ffffff;
+  animation: subtle-pulse 1.5s ease-in-out infinite;
+}
+
+/* Icon */
+.trial-badge-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  opacity: 0.95;
+}
+
+/* Text */
+.trial-badge-text {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* Subtle pulse animation */
+@keyframes subtle-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .trial-badge {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .trial-badge:hover {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* Responsive - mobile */
+@media (max-width: 768px) {
+  .trial-badge {
+    padding: 5px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .trial-badge-icon {
+    font-size: 12px;
+  }
+
+  .trial-badge-text {
+    font-size: 12px;
+  }
+}
+
+/* Accessibility - focus state */
+.trial-badge:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .trial-badge {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .trial-badge:hover {
+    transform: none;
+  }
+}

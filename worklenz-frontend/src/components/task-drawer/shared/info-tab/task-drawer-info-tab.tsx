@@ -1,6 +1,12 @@
-import { Button, Collapse, CollapseProps, Flex, Skeleton, Tooltip, Typography } from '@/shared/antd-imports';
+import {
+  Collapse,
+  CollapseProps,
+  Flex,
+  Skeleton,
+  Typography,
+} from '@/shared/antd-imports';
 import React, { useEffect, useState, useRef } from 'react';
-import { ReloadOutlined } from '@/shared/antd-imports';
+import { InboxOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';
 import SubTaskTable from './subtask-table';
 import DependenciesTable from './dependencies-table';
@@ -26,13 +32,32 @@ import TaskComments from './comments/task-comments';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
+import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
+import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
+import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
+  canCreateTask?: boolean;
 }
 
-const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
+const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
+  const FREE_ATTACHMENT_SIZE_LIMIT_MB = 25;
+  const BUSINESS_ATTACHMENT_SIZE_LIMIT_MB = 250;
   const dispatch = useAppDispatch();
+  const currentSession = useAuthService().getCurrentSession();
+  const { hasBusinessAccess } = useBusinessFeatures();
+  const { promptUpgrade } = useUpgradePrompt();
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
+  const attachmentSizeLimitMb = hasBusinessAccess
+    ? BUSINESS_ATTACHMENT_SIZE_LIMIT_MB
+    : FREE_ATTACHMENT_SIZE_LIMIT_MB;
+  const attachmentSizeLimitBytes = attachmentSizeLimitMb * 1024 * 1024;
 
   const { projectId } = useAppSelector(state => state.projectReducer);
   const { taskFormViewModel, loadingTask, selectedTaskId } = useAppSelector(
@@ -53,8 +78,40 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
   const [taskComments, setTaskComments] = useState<ITaskCommentViewModel[]>([]);
   const [loadingTaskComments, setLoadingTaskComments] = useState<boolean>(false);
 
+  // Tab-level drag-and-drop state
+  const [isTabDragOver, setIsTabDragOver] = useState(false);
+  // dragCounter tracks nested dragenter/dragleave events so the overlay
+  // doesn't flicker when the cursor moves over child elements.
+  const dragCounterRef = useRef(0);
+
+  // Controlled collapse keys so we can auto-expand attachments on drop
+  const defaultCollapseKeys = ['details', 'description', 'subTasks', 'dependencies', 'attachments', 'comments'];
+  const [collapseActiveKeys, setCollapseActiveKeys] = useState<string[]>(defaultCollapseKeys);
+
+  // FIX: Track the previous task ID so we only re-fetch when a REAL task is
+  // opened (selectedTaskId is a non-null string), not when the drawer closes
+  // and resets selectedTaskId to null. Without this guard, closing the drawer
+  // triggers the useEffect cleanup (which wipes local state) and then
+  // immediately re-runs fetchTaskData with null — causing a redundant API call
+  // and leaving taskFormViewModel empty when the drawer reopens.
+  const prevTaskIdRef = useRef<string | null>(null);
+
   const handleFilesSelected = async (files: File[]) => {
     if (!taskFormViewModel?.task?.id || !projectId) return;
+
+    const oversizedFiles = files.filter(file => file.size > attachmentSizeLimitBytes);
+    if (oversizedFiles.length > 0) {
+      if (!hasBusinessAccess) {
+        if (isAppSumoUser) {
+          trackAppSumoEvent(AppSumoUpsellEvents.OVERSIZED_FILE_BLOCKED, {
+            feature: 'task_attachments',
+            file_count: oversizedFiles.length,
+          });
+        }
+        promptUpgrade();
+      }
+      return;
+    }
 
     if (!processingUpload) {
       setProcessingUpload(true);
@@ -63,7 +120,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
         const filesToUpload = [...files];
         selectedFilesRef.current = filesToUpload;
 
-        // Upload all files and wait for all promises to complete
         await Promise.all(
           filesToUpload.map(async file => {
             const base64 = await getBase64(file);
@@ -80,10 +136,48 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       } finally {
         setProcessingUpload(false);
         selectedFilesRef.current = [];
-        // Refetch attachments after all uploads are complete
         fetchTaskAttachments();
       }
     }
+  };
+
+  // Tab-level drag handlers
+  const handleTabDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    if (dragCounterRef.current === 1) {
+      setIsTabDragOver(true);
+    }
+  };
+
+  const handleTabDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); // required to allow drop
+  };
+
+  const handleTabDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current === 0) {
+      setIsTabDragOver(false);
+    }
+  };
+
+  const handleTabDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsTabDragOver(false);
+
+    if (loadingTask || processingUpload) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    // Auto-expand the attachments panel if it is currently collapsed
+    setCollapseActiveKeys(prev =>
+      prev.includes('attachments') ? prev : [...prev, 'attachments']
+    );
+
+    handleFilesSelected(files);
   };
 
   const fetchTaskData = () => {
@@ -97,7 +191,10 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     paddingBlock: 0,
   };
 
-  // Define all info items
+  const hasSupportedCustomFields = hasDrawerSupportedCustomFields(
+    taskFormViewModel?.custom_columns || []
+  );
+
   const allInfoItems: CollapseProps['items'] = [
     {
       key: 'details',
@@ -106,6 +203,24 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
+    ...(hasSupportedCustomFields
+      ? [
+          {
+            key: 'customFields',
+            label: <Typography.Text strong>{t('taskInfoTab.customFields.title')}</Typography.Text>,
+            children: (
+              <TaskDrawerCustomFields
+                customColumns={taskFormViewModel?.custom_columns || []}
+                projectId={projectId || null}
+                task={(taskFormViewModel?.task as ITaskViewModel) || null}
+                teamMembers={taskFormViewModel?.team_members || []}
+              />
+            ),
+            style: panelStyle,
+            className: 'custom-task-drawer-info-collapse',
+          },
+        ]
+      : []),
     {
       key: 'description',
       label: <Typography.Text strong>{t('taskInfoTab.description.title')}</Typography.Text>,
@@ -122,23 +237,12 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     {
       key: 'subTasks',
       label: <Typography.Text strong>{t('taskInfoTab.subTasks.title')}</Typography.Text>,
-      extra: (
-        <Tooltip title={t('taskInfoTab.subTasks.refreshSubTasks')} trigger={'hover'}>
-          <Button
-            shape="circle"
-            icon={<ReloadOutlined spin={loadingSubTasks} />}
-            onClick={e => {
-              e.stopPropagation(); // Prevent click from bubbling up
-              fetchSubTasks();
-            }}
-          />
-        </Tooltip>
-      ),
       children: (
         <SubTaskTable
           subTasks={subTasks}
           loadingSubTasks={loadingSubTasks}
           refreshSubTasks={() => fetchSubTasks()}
+          canCreateTask={canCreateTask}
           t={t}
         />
       ),
@@ -150,7 +254,7 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       label: <Typography.Text strong>{t('taskInfoTab.dependencies.title')}</Typography.Text>,
       children: (
         <DependenciesTable
-          task={(taskFormViewModel?.task as ITaskViewModel) || {} as ITaskViewModel}
+          task={(taskFormViewModel?.task as ITaskViewModel) || ({} as ITaskViewModel)}
           t={t}
           taskDependencies={taskDependencies}
           loadingTaskDependencies={loadingTaskDependencies}
@@ -169,10 +273,18 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
             attachments={taskAttachments}
             onDelete={() => fetchTaskAttachments()}
             onUpload={() => fetchTaskAttachments()}
+            onUpgradeRequested={() => {
+              if (isAppSumoUser) {
+                trackAppSumoEvent(AppSumoUpsellEvents.TASK_ATTACHMENT_UPGRADE_CLICKED, { feature: 'task_attachments' });
+              }
+              promptUpgrade();
+            }}
             t={t}
             loadingTask={loadingTask}
             uploading={processingUpload}
             handleFilesSelected={handleFilesSelected}
+            maxFileSizeMb={attachmentSizeLimitMb}
+            showUpgradeLink={!hasBusinessAccess}
           />
         </Flex>
       ),
@@ -188,7 +300,6 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     },
   ];
 
-  // Filter out the 'subTasks' item if this task is more than level 2
   const infoItems =
     (taskFormViewModel?.task?.task_level ?? 0) >= 2
       ? allInfoItems.filter(item => item.key !== 'subTasks')
@@ -216,14 +327,14 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
       if (res.done) {
         setTaskDependencies(res.body);
-        
-        // Update Redux state with the current dependency status
-        dispatch(updateTaskCounts({
-          taskId: selectedTaskId,
-          counts: {
-            has_dependencies: res.body.length > 0
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: selectedTaskId,
+            counts: {
+              has_dependencies: res.body.length > 0,
+            },
+          })
+        );
       }
     } catch (error) {
       logger.error('Error fetching task dependencies:', error);
@@ -239,14 +350,14 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
       const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
       if (res.done) {
         setTaskAttachments(res.body);
-        
-        // Update Redux state with the current attachment count
-        dispatch(updateTaskCounts({
-          taskId: selectedTaskId,
-          counts: {
-            attachments_count: res.body.length
-          }
-        }));
+        dispatch(
+          updateTaskCounts({
+            taskId: selectedTaskId,
+            counts: {
+              attachments_count: res.body.length,
+            },
+          })
+        );
       }
     } catch (error) {
       logger.error('Error fetching task attachments:', error);
@@ -271,6 +382,36 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
   };
 
   useEffect(() => {
+    // FIX: Only fetch and reset data when selectedTaskId changes to a REAL
+    // task ID (non-null). When the drawer closes, resetTaskState() sets
+    // selectedTaskId → null after a 300ms timeout. Without this guard, that
+    // null change re-triggers this effect: the cleanup wipes all local state,
+    // then fetchTaskData() runs with null and dispatches fetchTask(null),
+    // which clears taskFormViewModel in Redux. So when the drawer reopens the
+    // task, every field (phase, priority, labels, assignees, due date,
+    // estimation) shows blank until the API round-trip completes again.
+    if (!selectedTaskId) {
+      // Reset the prevTaskIdRef when drawer closes
+      prevTaskIdRef.current = null;
+      return;
+    }
+
+    // Check if we need to fetch data:
+    // 1. If it's a different task than before, OR
+    // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened), OR
+    // 3. If it's the same task but local state is empty (cleanup ran when drawer closed)
+    const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
+    const isDataMissing = !taskFormViewModel || !taskFormViewModel.task;
+    const isLocalStateMissing =
+      taskAttachments.length === 0 || subTasks.length === 0 || taskDependencies.length === 0;
+
+    if (!isDifferentTask && !isDataMissing && !isLocalStateMissing) {
+      // Same task and data is already loaded, skip fetch
+      return;
+    }
+
+    prevTaskIdRef.current = selectedTaskId;
+
     fetchTaskData();
     fetchSubTasks();
     fetchTaskDependencies();
@@ -278,6 +419,8 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
     fetchTaskComments();
 
     return () => {
+      // Only clear local data when we're actually switching to a different
+      // task, not when selectedTaskId is being reset to null on drawer close.
       setSubTasks([]);
       setTaskDependencies([]);
       setTaskAttachments([]);
@@ -288,20 +431,30 @@ const TaskDrawerInfoTab = ({ t }: TaskDrawerInfoTabProps) => {
 
   return (
     <Skeleton active loading={loadingTask}>
-      <Flex vertical>
-        <Collapse
-          items={infoItems}
-          bordered={false}
-          defaultActiveKey={[
-            'details',
-            'description',
-            'subTasks',
-            'dependencies',
-            'attachments',
-            'comments',
-          ]}
-        />
-      </Flex>
+      <div
+        className="task-drawer-info-tab-drop-zone"
+        onDragEnter={handleTabDragEnter}
+        onDragOver={handleTabDragOver}
+        onDragLeave={handleTabDragLeave}
+        onDrop={handleTabDrop}
+      >
+        {isTabDragOver && (
+          <div className="task-drawer-info-tab-drop-overlay">
+            <div className="task-drawer-info-tab-drop-overlay-content">
+              <InboxOutlined className="task-drawer-info-tab-drop-icon" />
+              <span>{t('taskInfoTab.attachments.dropFilesHere', { defaultValue: 'Drop files here to attach' })}</span>
+            </div>
+          </div>
+        )}
+        <Flex vertical>
+          <Collapse
+            items={infoItems}
+            bordered={false}
+            activeKey={collapseActiveKeys}
+            onChange={keys => setCollapseActiveKeys(keys as string[])}
+          />
+        </Flex>
+      </div>
     </Skeleton>
   );
 };

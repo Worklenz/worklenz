@@ -23,6 +23,7 @@ import { produce } from 'immer';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -169,6 +170,7 @@ export const fetchTaskGroups = createAsyncThunk(
         isSubtasksInclude: false,
         labels: selectedLabels,
         priorities: taskReducer.priorities.join(' '),
+        customColumns: true,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -238,6 +240,7 @@ export const fetchSubTasks = createAsyncThunk(
       labels: selectedLabels,
       priorities: taskReducer.priorities.join(' '),
       parent_task: taskId,
+      customColumns: true,
     };
     try {
       const response = await tasksApiService.getTaskListV3(config);
@@ -259,14 +262,18 @@ export const fetchSubTasks = createAsyncThunk(
 export const fetchTaskListColumns = createAsyncThunk(
   'tasks/fetTaskListColumns',
   async (projectId: string, { dispatch }) => {
-    const [standardColumns, customColumns] = await Promise.all([
+    const [standardColumns, customColumnsAction] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
       dispatch(fetchCustomColumns(projectId)),
     ]);
 
+    // Extract the actual payload from the dispatched action
+    // Use unwrap() or check if payload exists
+    const customColumns = customColumnsAction.payload || [];
+
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload,
+      custom: Array.isArray(customColumns) ? customColumns : [],
     };
   }
 );
@@ -433,6 +440,18 @@ const findTaskInGroups = (
   return null;
 };
 
+const decodeTaskName = (task: IProjectTask): IProjectTask => ({
+  ...task,
+  name: decodeHtmlEntities(task.name),
+  sub_tasks: task.sub_tasks?.map(decodeTaskName),
+});
+
+const decodeTaskGroupNames = (groups: ITaskListGroup[]): ITaskListGroup[] =>
+  groups.map(group => ({
+    ...group,
+    tasks: group.tasks.map(decodeTaskName),
+  }));
+
 export const fetchCustomColumns = createAsyncThunk(
   'tasks/fetchCustomColumns',
   async (projectId: string, { rejectWithValue }) => {
@@ -499,6 +518,7 @@ const taskSlice = createSlice({
       }>
     ) => {
       const { task, groupId, insert = false } = action.payload;
+      const decodedTask = decodeTaskName(task);
       const group = state.taskGroups.find(g => g.id === groupId);
       if (!group || !task.id) return;
 
@@ -515,9 +535,9 @@ const taskSlice = createSlice({
       } else {
         // Handle main task addition
         if (insert) {
-          group.tasks.push(task);
+          group.tasks.push(decodedTask);
         } else {
-          group.tasks.unshift(task);
+          group.tasks.unshift(decodedTask);
         }
       }
     },
@@ -561,13 +581,14 @@ const taskSlice = createSlice({
       action: PayloadAction<{ id: string; parent_task: string; name: string }>
     ) => {
       const { id, name } = action.payload;
+      const decodedName = decodeHtmlEntities(name);
 
       for (const group of state.taskGroups) {
         // Check main tasks
         const task = group.tasks.find(task => task.id === id);
         if (task) {
-          task.name = name;
-          break;
+          task.name = decodedName;
+          return; // Exit early after updating
         }
 
         // Check subtasks
@@ -575,8 +596,8 @@ const taskSlice = createSlice({
           if (task.sub_tasks) {
             const subTask = task.sub_tasks.find(subtask => subtask.id === id);
             if (subTask) {
-              subTask.name = name;
-              break;
+              subTask.name = decodedName;
+              return; // Exit early after updating
             }
           }
         }
@@ -600,6 +621,7 @@ const taskSlice = createSlice({
           if (task.id === taskId) {
             task.complete_ratio = progress;
             task.progress_value = progress;
+            task.progress = progress; // Also update progress field
             task.total_tasks_count = totalTasksCount;
             task.completed_count = completedCount;
             return true;
@@ -629,6 +651,7 @@ const taskSlice = createSlice({
         assignees: ITeamMemberViewModel[];
       }>
     ) => {
+      if (!action.payload) return;
       const { groupId, taskId, assignees } = action.payload;
       const group = state.taskGroups.find(group => group.id === groupId);
       if (!group) return;
@@ -653,6 +676,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskLabel: (state, action: PayloadAction<ILabelsChangeResponse>) => {
+      if (!action.payload) return;
       const label = action.payload;
       for (const group of state.taskGroups) {
         // Find the task or its subtask
@@ -670,11 +694,20 @@ const taskSlice = createSlice({
     },
 
     updateTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
-      const { id, status_id, color_code, color_code_dark, complete_ratio, statusCategory } =
-        action.payload;
+      if (!action.payload) return;
+      const {
+        id,
+        status_id,
+        color_code,
+        color_code_dark,
+        complete_ratio,
+        completed_at,
+        statusCategory,
+      } = action.payload;
 
       // Find the task in any group
       const taskInfo = findTaskInGroups(state.taskGroups, id);
+
       if (!taskInfo || !status_id) return;
 
       const { task, groupId } = taskInfo;
@@ -683,8 +716,11 @@ const taskSlice = createSlice({
       task.status_color = color_code;
       task.status_color_dark = color_code_dark;
       task.complete_ratio = +complete_ratio;
+      task.progress = +complete_ratio; // Also update progress field for consistency
+      task.progress_value = +complete_ratio; // Also update progress_value field
       task.status = status_id;
       task.status_category = statusCategory;
+      task.completed_at = completed_at; // Update completed date
 
       // If grouped by status and not a subtask, move the task to the new status group
       if (state.groupBy === GROUP_BY_STATUS_VALUE && !task.is_sub_task && groupId !== status_id) {
@@ -702,6 +738,7 @@ const taskSlice = createSlice({
         task: IProjectTask;
       }>
     ) => {
+      if (!action.payload) return;
       const { task } = action.payload;
 
       for (const group of state.taskGroups) {
@@ -721,6 +758,7 @@ const taskSlice = createSlice({
         task: IProjectTask;
       }>
     ) => {
+      if (!action.payload) return;
       const { task } = action.payload;
 
       for (const group of state.taskGroups) {
@@ -740,6 +778,7 @@ const taskSlice = createSlice({
         task: IProjectTask;
       }>
     ) => {
+      if (!action.payload) return;
       const { task } = action.payload;
 
       for (const group of state.taskGroups) {
@@ -754,6 +793,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskPhase: (state, action: PayloadAction<ITaskPhaseChangeResponse>) => {
+      if (!action.payload) return;
       const { id: phase_id, task_id, color_code } = action.payload;
 
       if (!task_id || !phase_id) return;
@@ -798,10 +838,12 @@ const taskSlice = createSlice({
     },
 
     toggleColumnVisibility: (state, action: PayloadAction<string>) => {
-      const column = state.columns.find(col => col.key === action.payload);
-      if (column) {
-        column.pinned = !column.pinned;
-      }
+      const targetKey = action.payload;
+      state.columns.forEach(column => {
+        if (column.key === targetKey) {
+          column.pinned = !column.pinned;
+        }
+      });
     },
 
     updateTaskTimeTracking: (
@@ -816,6 +858,7 @@ const taskSlice = createSlice({
     },
 
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { id, priority_id, color_code, color_code_dark } = action.payload;
 
       // Find the task in any group
@@ -851,6 +894,7 @@ const taskSlice = createSlice({
         description: string;
       }>
     ) => {
+      if (!action.payload) return;
       const { id: taskId, description, parent_task } = action.payload;
       for (const group of state.taskGroups) {
         const existingTask =
@@ -946,16 +990,32 @@ const taskSlice = createSlice({
 
     updateSubTasks: (state, action: PayloadAction<IProjectTask>) => {
       const { parent_task_id } = action.payload;
+      const decodedTask = decodeTaskName(action.payload);
       for (const group of state.taskGroups) {
         const parentTask = group.tasks.find(t => t.id === parent_task_id);
         if (parentTask) {
           if (!parentTask.sub_tasks) {
             parentTask.sub_tasks = [];
           }
-          parentTask.sub_tasks.push({ ...action.payload });
+          parentTask.sub_tasks.push(decodedTask);
           // Always update sub_tasks_count based on actual subtasks array length
           parentTask.sub_tasks_count = (parentTask.sub_tasks_count || 0) + 1;
           break;
+        }
+      }
+    },
+
+    removeSubTask: (state, action: PayloadAction<{ subtaskId: string; parentTaskId: string }>) => {
+      const { subtaskId, parentTaskId } = action.payload;
+      for (const group of state.taskGroups) {
+        const parentTask = group.tasks.find(t => t.id === parentTaskId);
+        if (parentTask && parentTask.sub_tasks) {
+          const subtaskIndex = parentTask.sub_tasks.findIndex(st => st.id === subtaskId);
+          if (subtaskIndex !== -1) {
+            parentTask.sub_tasks.splice(subtaskIndex, 1);
+            parentTask.sub_tasks_count = Math.max((parentTask.sub_tasks_count || 0) - 1, 0);
+            break;
+          }
         }
       }
     },
@@ -1006,22 +1066,29 @@ const taskSlice = createSlice({
 
     updateCustomColumnPinned: (
       state,
-      action: PayloadAction<{ columnId: string; isVisible: boolean }>
+      action: PayloadAction<{ columnId?: string; columnKey?: string; isVisible: boolean }>
     ) => {
-      const { columnId, isVisible } = action.payload;
-      const customColumn = state.customColumns.find(col => col.id === columnId);
-      const column = state.columns.find(col => col.id === columnId);
+      const { columnId, columnKey, isVisible } = action.payload;
 
-      if (customColumn) {
-        customColumn.pinned = isVisible;
-      }
+      state.customColumns.forEach(column => {
+        const matchesId = !!columnId && column.id === columnId;
+        const matchesKey = !!columnKey && column.key === columnKey;
+        if (matchesId || matchesKey) {
+          column.pinned = isVisible;
+        }
+      });
 
-      if (column) {
-        column.pinned = isVisible;
-      }
+      state.columns.forEach(column => {
+        const matchesId = !!columnId && column.id === columnId;
+        const matchesKey = !!columnKey && column.key === columnKey;
+        if (matchesId || matchesKey) {
+          column.pinned = isVisible;
+        }
+      });
     },
 
     updateRecurringChange: (state, action: PayloadAction<ITaskRecurringScheduleData>) => {
+      if (!action.payload) return;
       const { id, schedule_type, task_id } = action.payload;
       const taskInfo = findTaskInGroups(state.taskGroups, task_id as string);
       if (!taskInfo) return;
@@ -1039,8 +1106,14 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
-        state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
+        state.taskGroups =
+          action.payload && action.payload.groups
+            ? decodeTaskGroupNames(action.payload.groups)
+            : [];
+        state.allTasks =
+          action.payload && action.payload.allTasks
+            ? action.payload.allTasks.map(decodeTaskName)
+            : [];
         state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
         state.totalTasks =
           action.payload && action.payload.totalTasks ? action.payload.totalTasks : 0;
@@ -1061,7 +1134,7 @@ const taskSlice = createSlice({
             for (const group of state.taskGroups) {
               const task = group.tasks.find(t => t.id === taskId);
               if (task) {
-                task.sub_tasks = subtasks;
+                task.sub_tasks = subtasks.map(decodeTaskName);
                 task.show_sub_tasks = true;
                 break;
               }
@@ -1078,7 +1151,13 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTaskAssignees.fulfilled, (state, action) => {
         state.loadingAssignees = false;
-        state.taskAssignees = action.payload;
+        const existingSelections = new Map(
+          state.taskAssignees.map(assignee => [assignee.id, assignee.selected])
+        );
+        state.taskAssignees = action.payload.map(assignee => ({
+          ...assignee,
+          selected: existingSelections.get(assignee.id) ?? false,
+        }));
       })
       .addCase(fetchTaskAssignees.rejected, (state, action) => {
         state.loadingAssignees = false;
@@ -1099,11 +1178,14 @@ const taskSlice = createSlice({
           index: 1,
           pinned: true,
         });
-        // Process custom columns
-        const customColumns = (action.payload as { custom: any[] }).custom.map((col: any) => ({
-          ...col,
-          isCustom: true,
-        }));
+        // Process custom columns with safety check
+        const customPayload = action.payload.custom;
+        const customColumns = Array.isArray(customPayload)
+          ? customPayload.map((col: any) => ({
+              ...col,
+              isCustom: true,
+            }))
+          : [];
 
         // Merge columns
         state.columns = [...standardColumns, ...customColumns];
@@ -1128,10 +1210,11 @@ const taskSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(updateColumnVisibility.fulfilled, (state, action) => {
-        const column = state.columns.find(col => col.key === action.payload.key);
-        if (column) {
-          column.pinned = action.payload.pinned;
-        }
+        state.columns.forEach(column => {
+          if (column.key === action.payload.key) {
+            column.pinned = action.payload.pinned;
+          }
+        });
       })
       .addCase(updateColumnVisibility.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -1192,6 +1275,7 @@ export const {
   updateCustomColumn,
   deleteCustomColumn,
   updateSubTasks,
+  removeSubTask,
   updateCustomColumnValue,
   updateCustomColumnPinned,
   updateRecurringChange,

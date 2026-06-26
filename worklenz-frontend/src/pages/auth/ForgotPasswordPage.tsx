@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { UserOutlined } from '@/shared/antd-imports';
-import { Form, Card, Input, Flex, Button, Typography, Result } from 'antd/es';
+import { Form, Card, Input, Flex, Button, Typography, Result } from '@/shared/antd-imports';
 
 import PageHeader from '@components/AuthPageHeader';
 
@@ -23,6 +23,7 @@ const ForgotPasswordPage = () => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isOAuthUser, setIsOAuthUser] = useState(false);
   const [urlParams, setUrlParams] = useState({
     teamId: '',
   });
@@ -64,21 +65,38 @@ const ForgotPasswordPage = () => {
       if (values.email.trim() === '') return;
       try {
         setIsLoading(true);
+        setIsOAuthUser(false); // Reset OAuth user state
         // Normalize email to lowercase for case-insensitive comparison
         const normalizedEmail = values.email.toLowerCase().trim();
         const result = await dispatch(resetPassword(normalizedEmail)).unwrap();
         if (result.done) {
           trackMixpanelEvent(evt_reset_password_click);
           setIsSuccess(true);
+        } else if (result.body === 'oauth_user') {
+          setIsOAuthUser(true);
         }
-      } catch (error) {
+      } catch (error: any) {
         logger.error('Failed to reset password', error);
+        // Check if the error response indicates an OAuth user
+        if (error?.response?.data?.body === 'oauth_user') {
+          setIsOAuthUser(true);
+        }
       } finally {
         setIsLoading(false);
       }
     },
-    [dispatch, t]
+    [dispatch, trackMixpanelEvent]
   );
+
+  const handleGoogleSignIn = useCallback(() => {
+    const googleAuthUrl = `/api/auth/google${urlParams.teamId ? `?state=${JSON.stringify({ team: urlParams.teamId })}` : ''}`;
+    window.location.href = googleAuthUrl;
+  }, [urlParams.teamId]);
+
+  const handleTryDifferentEmail = useCallback(() => {
+    setIsOAuthUser(false);
+    form.resetFields();
+  }, [form]);
 
   return (
     <Card
@@ -95,6 +113,32 @@ const ForgotPasswordPage = () => {
     >
       {isSuccess ? (
         <Result status="success" title={t('successTitle')} subTitle={t('successMessage')} />
+      ) : isOAuthUser ? (
+        <Result
+          status="info"
+          title={t('oauthUserTitle')}
+          subTitle={t('oauthUserMessage')}
+          extra={[
+            <Button
+              key="google-signin"
+              type="primary"
+              size="large"
+              onClick={handleGoogleSignIn}
+              style={{ borderRadius: 4 }}
+            >
+              {t('signInWithGoogleButton')}
+            </Button>,
+            <Button
+              key="try-different"
+              type="default"
+              size="large"
+              onClick={handleTryDifferentEmail}
+              style={{ borderRadius: 4 }}
+            >
+              {t('tryDifferentEmailButton')}
+            </Button>,
+          ]}
+        />
       ) : (
         <>
           <PageHeader description={t('headerDescription')} />
@@ -120,7 +164,7 @@ const ForgotPasswordPage = () => {
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder={t('emailPlaceholder', {defaultValue: 'Enter your email'})}
+                placeholder={t('emailPlaceholder', { defaultValue: 'Enter your email' })}
                 size="large"
                 style={{ borderRadius: 4 }}
               />
@@ -136,21 +180,20 @@ const ForgotPasswordPage = () => {
                   loading={isLoading}
                   style={{ borderRadius: 4 }}
                 >
-                  {t('resetPasswordButton', {defaultValue: 'Reset Password'})}
+                  {t('resetPasswordButton', { defaultValue: 'Reset Password' })}
                 </Button>
                 <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
-                <Link to="/auth/login">
-                  <Button
-                    block
-                    type="default"
-                    size="large"
-                    style={{
-                      borderRadius: 4,
-                    }}
-                  >
-                    {t('returnToLoginButton', {defaultValue: 'Return to Login'})}
-                  </Button>
-                </Link>
+                <Button
+                  block
+                  type="default"
+                  size="large"
+                  onClick={() => navigate('/auth/login')}
+                  style={{
+                    borderRadius: 4,
+                  }}
+                >
+                  {t('returnToLoginButton', { defaultValue: 'Return to Login' })}
+                </Button>
               </Flex>
             </Form.Item>
           </Form>

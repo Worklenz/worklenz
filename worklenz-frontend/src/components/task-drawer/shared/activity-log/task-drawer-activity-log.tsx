@@ -1,4 +1,14 @@
-import { Timeline, Typography, Flex, ConfigProvider, Tag, Tooltip, Skeleton } from '@/shared/antd-imports';
+import {
+  Timeline,
+  Typography,
+  Flex,
+  ConfigProvider,
+  Tag,
+  Tooltip,
+  Skeleton,
+  Button,
+  Popover,
+} from '@/shared/antd-imports';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRightOutlined } from '@/shared/antd-imports';
@@ -14,13 +24,26 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import logger from '@/utils/errorLogger';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 const TaskDrawerActivityLog = () => {
+  const dispatch = useAppDispatch();
   const [activityLogs, setActivityLogs] = useState<IActivityLogsResponse>({});
   const [loading, setLoading] = useState<boolean>(false);
+  const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
   const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
   const { t } = useTranslation('task-drawer/task-drawer');
+  const currentSession = useAuthService().getCurrentSession();
+  const { hasBusinessAccess } = useBusinessFeatures();
+  const { promptUpgrade } = useUpgradePrompt();
+  const { trackAppSumoEvent } = useAppSumoTracking();
+  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   useEffect(() => {
     fetchActivityLogs();
@@ -73,7 +96,11 @@ const TaskDrawerActivityLog = () => {
             </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{activity.log_type === 'create' ? t('taskActivityLogTab.add') : t('taskActivityLogTab.remove')}</Tag>
+            <Tag color={'default'}>
+              {activity.log_type === 'create'
+                ? t('taskActivityLogTab.add')
+                : t('taskActivityLogTab.remove')}
+            </Tag>
           </Flex>
         );
 
@@ -156,20 +183,28 @@ const TaskDrawerActivityLog = () => {
       case IActivityLogAttributeTypes.WEIGHT:
         return (
           <Flex gap={4} align="center">
-            <Tag color="purple">{t('taskActivityLogTab.weight')}: {activity.previous || '100'}</Tag>
+            <Tag color="purple">
+              {t('taskActivityLogTab.weight')}: {activity.previous || '100'}
+            </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color="purple">{t('taskActivityLogTab.weight')}: {activity.current || '100'}</Tag>
+            <Tag color="purple">
+              {t('taskActivityLogTab.weight')}: {activity.current || '100'}
+            </Tag>
           </Flex>
         );
 
       default:
         return (
           <Flex gap={4} align="center">
-            <Tag color={'default'}>{truncateText(activity.previous) || t('taskActivityLogTab.none')}</Tag>
+            <Tag color={'default'}>
+              {truncateText(activity.previous) || t('taskActivityLogTab.none')}
+            </Tag>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{truncateText(activity.current) || t('taskActivityLogTab.none')}</Tag>
+            <Tag color={'default'}>
+              {truncateText(activity.current) || t('taskActivityLogTab.none')}
+            </Tag>
           </Flex>
         );
     }
@@ -178,6 +213,16 @@ const TaskDrawerActivityLog = () => {
   useEffect(() => {
     !loading && fetchActivityLogs();
   }, []);
+
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const allLogs = activityLogs.logs || [];
+  const visibleLogs = hasBusinessAccess
+    ? allLogs
+    : allLogs.filter(log => {
+        if (!log.created_at) return true;
+        return new Date(log.created_at).getTime() >= ninetyDaysAgo;
+      });
+  const lockedCount = hasBusinessAccess ? 0 : allLogs.length - visibleLogs.length;
 
   return (
     <ConfigProvider
@@ -189,7 +234,7 @@ const TaskDrawerActivityLog = () => {
     >
       <Skeleton active loading={loading}>
         <Timeline style={{ marginBlockStart: 24 }}>
-          {activityLogs.logs?.map((activity, index) => (
+          {visibleLogs.map((activity, index) => (
             <Timeline.Item key={index}>
               <Flex gap={8} align="center">
                 <SingleAvatar
@@ -239,6 +284,60 @@ const TaskDrawerActivityLog = () => {
             </Flex>
           </Timeline.Item>
         </Timeline>
+        {lockedCount > 0 && (
+          <Flex gap={8} style={{ marginTop: 8, marginBottom: 8 }} align="center" justify="space-between">
+            <Typography.Text type="secondary">
+              {t('taskActivityLogTab.historyLockedBoundary', {
+                defaultValue: 'Activity history is limited to the last 90 days on this plan',
+              })}
+            </Typography.Text>
+            <Popover
+              trigger="click"
+              open={isHistoryPopoverOpen}
+              onOpenChange={open => {
+                setIsHistoryPopoverOpen(open);
+                if (isAppSumoUser) {
+                  trackAppSumoEvent(
+                    open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                    { feature: 'task_activity_history' }
+                  );
+                }
+              }}
+              title={t('taskActivityLogTab.historyLockedTitle', {
+                defaultValue: 'Activity History Locked',
+              })}
+              content={
+                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                  <Typography.Text>
+                    {t('taskActivityLogTab.historyLockedBody', {
+                      defaultValue:
+                        'Task activity beyond 90 days is available on the Business plan.',
+                    })}
+                  </Typography.Text>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setIsHistoryPopoverOpen(false);
+                      if (isAppSumoUser) {
+                        trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'task_activity_history' });
+                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'task_activity_history' });
+                      }
+                      promptUpgrade();
+                    }}
+                  >
+                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                  </Button>
+                </Flex>
+              }
+            >
+              <Button size="small">
+                {t('taskActivityLogTab.viewFullActivity', {
+                  defaultValue: 'View activity history',
+                })}
+              </Button>
+            </Popover>
+          </Flex>
+        )}
       </Skeleton>
     </ConfigProvider>
   );

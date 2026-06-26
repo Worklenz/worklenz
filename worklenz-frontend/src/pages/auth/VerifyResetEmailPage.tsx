@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Form, Card, Input, Flex, Button, Typography, Result } from 'antd/es';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Form, Card, Input, Flex, Button, Typography, Result } from '@/shared/antd-imports';
 import { LockOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
@@ -153,14 +153,22 @@ const VerifyResetEmailPage = () => {
                   {passwordChecklistItems.map(item => {
                     const passed = item.test(passwordValue);
                     let color = passed
-                      ? (themeMode === 'dark' ? '#52c41a' : '#389e0d')
-                      : (themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf');
+                      ? themeMode === 'dark'
+                        ? '#52c41a'
+                        : '#389e0d'
+                      : themeMode === 'dark'
+                        ? '#b0b3b8'
+                        : '#bfbfbf';
                     return (
                       <Flex key={item.key} align="center" gap={8} style={{ color, fontSize: 13 }}>
                         {passed ? (
-                          <CheckCircleTwoTone twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'} />
+                          <CheckCircleTwoTone
+                            twoToneColor={themeMode === 'dark' ? '#52c41a' : '#52c41a'}
+                          />
                         ) : (
-                          <CloseCircleTwoTone twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'} />
+                          <CloseCircleTwoTone
+                            twoToneColor={themeMode === 'dark' ? '#b0b3b8' : '#bfbfbf'}
+                          />
                         )}
                         <span>{item.label}</span>
                       </Flex>
@@ -212,18 +220,17 @@ const VerifyResetEmailPage = () => {
                   {t('resetPasswordButton')}
                 </Button>
                 <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
-                <Link to="/auth/forgot-password">
-                  <Button
-                    block
-                    type="default"
-                    size="large"
-                    style={{
-                      borderRadius: 4,
-                    }}
-                  >
-                    {t('resendResetEmail')}
-                  </Button>
-                </Link>
+                <Button
+                  block
+                  type="default"
+                  size="large"
+                  onClick={() => navigate('/auth/forgot-password')}
+                  style={{
+                    borderRadius: 4,
+                  }}
+                >
+                  {t('resendResetEmail')}
+                </Button>
               </Flex>
             </Form.Item>
           </Form>

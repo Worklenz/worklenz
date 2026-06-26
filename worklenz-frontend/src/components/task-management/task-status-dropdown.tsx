@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -11,6 +12,8 @@ import {
   selectGroups,
   moveTaskBetweenGroups,
 } from '@/features/task-management/task-management.slice';
+import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
+import alertService from '@/services/alerts/alertService';
 
 interface TaskStatusDropdownProps {
   task: Task;
@@ -23,6 +26,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   projectId,
   isDarkMode = false,
 }) => {
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -34,18 +38,62 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   const currentGroupingV3 = useAppSelector(selectCurrentGroupingV3);
   const groups = useAppSelector(selectGroups);
 
+  // Default status colors for common statuses (fallback when backend doesn't provide colors)
+  const defaultStatusColors: Record<string, string> = {
+    todo: '#6b7280', // gray-500
+    'to do': '#6b7280',
+    to_do: '#6b7280',
+    doing: '#3b82f6', // blue-500
+    'in progress': '#3b82f6',
+    in_progress: '#3b82f6',
+    done: '#10b981', // emerald-500
+  };
+
   // Find current status details
   const currentStatus = useMemo(() => {
-    return statusList.find(
-      status =>
-        status.name?.toLowerCase() === task.status?.toLowerCase() || status.id === task.status
-    );
+    const normalize = (val: string) => (val || '').toLowerCase().replace(/\s|_/g, '');
+
+    // 1) Try to match by id or exact/normalized name
+    const byIdOrName = statusList.find(status => {
+      const taskStatus = task.status || '';
+      return (
+        status.id === taskStatus ||
+        status.name?.toLowerCase() === taskStatus.toLowerCase() ||
+        normalize(status.name || '') === normalize(taskStatus)
+      );
+    });
+    if (byIdOrName) return byIdOrName;
+
+    // 2) Fallback: task.status might be a category string: 'todo' | 'doing' | 'done'
+    const normalized = normalize(task.status || '');
+    if (['todo', 'doing', 'done'].includes(normalized)) {
+      // Look for common names like "To Do", "Doing", "Done" via normalization
+      const byNormalizedName = statusList.find(s => normalize(s.name || '') === normalized);
+      if (byNormalizedName) return byNormalizedName;
+    }
+
+    return undefined;
   }, [statusList, task.status]);
 
   // Handle status change
   const handleStatusChange = useCallback(
-    (statusId: string, statusName: string) => {
+    async (statusId: string, statusName: string) => {
       if (!task.id || !statusId || !connected) return;
+
+      // Check dependencies BEFORE making any changes
+      if (task.status !== statusId) {
+        const canContinue = await checkTaskDependencyStatus(task.id, statusId);
+        if (!canContinue) {
+          alertService.error(
+            t('errors.taskNotCompleted', { defaultValue: 'Task is not completed' }),
+            t('errors.completeTaskDependencies', {
+              defaultValue: 'Please complete the task dependencies before proceeding',
+            })
+          );
+          setIsOpen(false);
+          return;
+        }
+      }
 
       // Optimistic update: immediately update the task status in Redux for instant feedback
       const updatedTask = {
@@ -59,10 +107,10 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       if (currentGroupingV3 === 'status' && groups && groups.length > 0) {
         // Find current group containing the task
         const currentGroup = groups.find(group => group.taskIds.includes(task.id));
-        
+
         // Find target group based on the new status ID
         let targetGroup = groups.find(group => group.id === statusId);
-        
+
         // If not found by status ID, try matching with group value
         if (!targetGroup) {
           targetGroup = groups.find(group => group.groupValue === statusId);
@@ -93,7 +141,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
       setIsOpen(false);
     },
-    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups]
+    [task, connected, socket, projectId, dispatch, currentGroupingV3, groups, t]
   );
 
   // Calculate dropdown position and handle outside clicks
@@ -112,11 +160,11 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const dropdownHeight = 200; // Estimated dropdown height
-      
+
       // Check if dropdown would go below viewport
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
-      
+
       setDropdownPosition({
         top: shouldShowAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
         left: rect.left,
@@ -133,10 +181,12 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   // Get status color - enhanced dark mode support
   const getStatusColor = useCallback(
     (status: any) => {
+      const normalizedName = (status?.name || '').toString().trim().toLowerCase();
+      const fallback = defaultStatusColors[normalizedName];
       if (isDarkMode) {
-        return status?.color_code_dark || status?.color_code || '#4b5563';
+        return status?.color_code_dark || status?.color_code || fallback || '#4b5563';
       }
-      return status?.color_code || '#6b7280';
+      return status?.color_code || fallback || '#6b7280';
     },
     [isDarkMode]
   );
@@ -174,9 +224,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
         style={{
           backgroundColor: currentStatus
             ? getStatusColor(currentStatus)
-            : isDarkMode
-              ? '#4b5563'
-              : '#9ca3af',
+            : getStatusColor({ name: typeof task.status === 'string' ? task.status : '' }),
           color: 'white',
         }}
       >

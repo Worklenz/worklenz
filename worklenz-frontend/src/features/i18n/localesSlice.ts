@@ -7,8 +7,7 @@ export enum Language {
   PT = 'pt',
   ALB = 'alb',
   DE = 'de',
-  ZH_CN = 'zh_cn',
-  KO = 'ko',
+  ZH = 'zh_cn',
 }
 
 export type ILanguageType = `${Language}`;
@@ -51,6 +50,19 @@ const getLanguageFromLocalStorage = (): ILanguageType => {
  */
 const saveLanguageInLocalStorage = (lng: ILanguageType): void => {
   localStorage.setItem(STORAGE_KEY, lng);
+};
+
+/**
+ * Applies a language from the authenticated user's profile.
+ * Called after login or session verification to restore the
+ * user's server-saved language preference.
+ * @param userLang Language string coming from the user profile API response
+ */
+export const applyLanguageFromUser = (userLang: string): void => {
+  if (Object.values(Language).includes(userLang as Language)) {
+    localStorage.setItem(STORAGE_KEY, userLang);
+    i18n.changeLanguage(userLang as ILanguageType);
+  }
 };
 
 const initialState: LocalesState = {

@@ -4,4 +4,5 @@ export interface ITaskListPriorityChangeResponse {
   parent_task?: string;
   color_code: string;
   color_code_dark: string;
+  priority_value?: number;
 }

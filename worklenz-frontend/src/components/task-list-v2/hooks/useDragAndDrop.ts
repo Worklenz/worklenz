@@ -40,30 +40,30 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
 
       // Use new bulk update approach - recalculate ALL task orders to prevent duplicates
       const taskUpdates: any[] = [];
-      
+
       // Create a copy of all groups
       const updatedGroups = groups.map(g => ({
         ...g,
-        taskIds: [...g.taskIds]
+        taskIds: [...g.taskIds],
       }));
-      
+
       // Find the group in our copy
       const groupCopy = updatedGroups.find(g => g.id === group.id)!;
-      
+
       // Reorder within the group
       const sourceIndex = groupCopy.taskIds.indexOf(taskId);
       // Remove task from old position
       groupCopy.taskIds.splice(sourceIndex, 1);
       // Insert at new position
       groupCopy.taskIds.splice(insertIndex, 0, taskId);
-      
+
       // Now assign sequential sort orders to ALL tasks across ALL groups
       let currentSortOrder = 0;
       updatedGroups.forEach(grp => {
         grp.taskIds.forEach(id => {
           taskUpdates.push({
             task_id: id,
-            sort_order: currentSortOrder
+            sort_order: currentSortOrder,
           });
           currentSortOrder++;
         });
@@ -105,19 +105,19 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
 
       const activeTask = allTasks.find(task => task.id === active.id);
       const overTask = allTasks.find(task => task.id === over.id);
-      
+
       if (activeTask && overTask) {
         const activeGroup = groups.find(group => group.taskIds.includes(activeTask.id));
         const overGroup = groups.find(group => group.taskIds.includes(overTask.id));
-        
+
         // Only set overId if both tasks are in the same group
         if (activeGroup && overGroup && activeGroup.id === overGroup.id) {
           setOverId(over.id as string);
-          
+
           // Calculate drop position based on task indices
           const activeIndex = activeGroup.taskIds.indexOf(activeTask.id);
           const overIndex = activeGroup.taskIds.indexOf(overTask.id);
-          
+
           if (activeIndex < overIndex) {
             setDropPosition('after');
           } else {
@@ -213,4 +213,4 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
     handleDragOver,
     handleDragEnd,
   };
-}; 
+};

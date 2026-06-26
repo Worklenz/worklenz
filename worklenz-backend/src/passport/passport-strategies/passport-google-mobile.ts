@@ -18,7 +18,7 @@ interface GoogleTokenProfile {
 
 async function handleMobileGoogleAuth(req: Request, done: any) {
   try {
-    const { idToken } = req.body;
+    const { idToken, isSignUp, team_name, timezone } = req.body;
 
     if (!idToken) {
       return done(null, false, { message: "ID token is required" });
@@ -59,45 +59,101 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
       return done(null, false, { message: "Email not verified" });
     }
 
-    // Check for existing local account
-    const localAccountResult = await db.query(
-      "SELECT 1 FROM users WHERE email = $1 AND password IS NOT NULL AND is_deleted IS FALSE;",
-      [profile.email]
-    );
+    const normalizedEmail = profile.email.toLowerCase().trim();
 
-    if (localAccountResult.rowCount) {
-      const message = `No Google account exists for email ${profile.email}.`;
-      return done(null, false, { message });
-    }
-
-    // Check if user exists
+    // Check if user exists (exclude deleted accounts)
     const userResult = await db.query(
-      "SELECT id, google_id, name, email, active_team FROM users WHERE google_id = $1 OR email = $2;",
-      [profile.sub, profile.email]
+      "SELECT id, google_id, name, email, active_team FROM users WHERE (google_id = $1 OR LOWER(email) = $2) AND is_deleted = FALSE;",
+      [profile.sub, normalizedEmail]
     );
 
     if (userResult.rowCount) {
-      // Existing user - login
+      // Existing user - login flow
       const user = userResult.rows[0];
+
+      // If this is a sign-up request but user already exists
+      if (isSignUp) {
+        return done(null, false, {
+          message: `An account with email ${profile.email} already exists. Please sign in instead.`,
+          [ERROR_KEY]: "USER_ALREADY_EXISTS"
+        });
+      }
+
+      // Link Google account if user signed up with email/password but google_id is not set
+      if (!user.google_id && profile.sub) {
+        try {
+          await db.query("UPDATE users SET google_id = $1 WHERE id = $2;", [profile.sub, user.id]);
+          user.google_id = profile.sub;
+        } catch (error) {
+          log_error(error);
+        }
+      }
+
       return done(null, user, { message: "User successfully logged in" });
     }
-    // New user - register
-    const googleUserData = {
-      id: profile.sub,
-      displayName: profile.name,
-      email: profile.email,
-      picture: profile.picture,
-    };
 
-    const registerResult = await db.query(
-      "SELECT register_google_user($1) AS user;",
-      [JSON.stringify(googleUserData)]
-    );
-    const { user } = registerResult.rows[0];
+    // New user flow
+    if (!isSignUp) {
+      // User doesn't exist but trying to sign in
+      return done(null, false, {
+        message: "No account found with this Google account. Please sign up first.",
+        [ERROR_KEY]: "USER_NOT_FOUND"
+      });
+    }
 
-    return done(null, user, {
-      message: "User successfully registered and logged in",
-    });
+    // Sign-up flow - validate team_name
+    if (!team_name || !team_name.trim()) {
+      return done(null, false, {
+        message: "Team name is required for registration",
+        [ERROR_KEY]: "TEAM_NAME_REQUIRED"
+      });
+    } else {
+      // New user - register
+      const googleUserData = {
+        id: profile.sub,
+        displayName: profile.name,
+        email: normalizedEmail,
+        picture: profile.picture,
+        team_name: team_name.trim(),
+        timezone: timezone || "UTC"
+      };
+
+      try {
+        const registerResult = await db.query(
+          "SELECT register_google_user($1) AS user;",
+          [JSON.stringify(googleUserData)]
+        );
+        const { user } = registerResult.rows[0];
+
+        return done(null, user, {
+          message: "User successfully registered and logged in",
+        });
+      } catch (error: any) {
+        log_error(error);
+
+        // Handle specific database errors
+        if (error.message?.includes("EMAIL_EXISTS_ERROR")) {
+          return done(null, false, {
+            message: `An account with email ${profile.email} already exists.`,
+            [ERROR_KEY]: "EMAIL_EXISTS"
+          });
+        }
+
+        if (error.message?.includes("TEAM_NAME_EXISTS_ERROR")) {
+          const [, teamName] = error.message.split(":");
+          return done(null, false, {
+            message: `Team name "${teamName}" already exists. Please choose a different team name.`,
+            [ERROR_KEY]: "TEAM_NAME_EXISTS"
+          });
+        }
+
+        // Generic error
+        return done(null, false, {
+          message: "Registration failed. Please try again.",
+          [ERROR_KEY]: "REGISTRATION_FAILED"
+        });
+      }
+    }
   } catch (error: any) {
     log_error(error);
     if (error.response?.status === 400) {
@@ -107,8 +163,4 @@ async function handleMobileGoogleAuth(req: Request, done: any) {
   }
 }
 
-const googleMobileStrategy = process.env.GOOGLE_CLIENT_ID
-  ? new CustomStrategy(handleMobileGoogleAuth)
-  : null;
-
-export default googleMobileStrategy;
+export default new CustomStrategy(handleMobileGoogleAuth);

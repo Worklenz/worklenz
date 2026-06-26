@@ -24,9 +24,18 @@ const LanguageAndRegionSettings = () => {
   const { t } = useTranslation('settings/language');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { lng } = useAppSelector(state => state.localesReducer);
+  const [form] = Form.useForm();
   const [timezones, setTimezones] = useState<ITimezone[]>([]);
   const [loadingTimezones, setLoadingTimezones] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const currentSession = useAuthService().getCurrentSession();
+
+  useEffect(() => {
+    form.setFieldsValue({
+      language: lng || Language.EN,
+      timezone: currentSession?.timezone,
+    });
+  }, [form, lng, currentSession?.timezone]);
 
   useDocumentTitle('Language & Region');
 
@@ -56,12 +65,8 @@ const LanguageAndRegionSettings = () => {
       label: 'Deutsch',
     },
     {
-      value: Language.ZH_CN,
+      value: Language.ZH,
       label: '简体中文',
-    },
-    {
-      value: Language.KO,
-      label: '한국어',
     },
   ];
 
@@ -75,11 +80,12 @@ const LanguageAndRegionSettings = () => {
         setSession(authorizeResponse.user);
         dispatch(setUser(authorizeResponse.user));
       }
+      setIsDirty(false);
     }
   };
 
   const onFinish = (values: { language?: ILanguageType; timezone?: string }) => {
-    if (values.language && values.timezone) {
+    if (values.language && values.timezone && isDirty) {
       handleLanguageChange(values);
       trackMixpanelEvent(evt_settings_language_changed, { language: values.language });
     }
@@ -99,15 +105,79 @@ const LanguageAndRegionSettings = () => {
     }
   };
 
+  // Create searchable options with plain text labels
   const timeZoneOptions = timezones.map(timezone => ({
     value: timezone.id,
-    label: (
-      <Flex align="center" justify="space-between">
-        <span>{timezone.name}</span>
-        <Typography.Text type="secondary">{timezone.abbrev}</Typography.Text>
-      </Flex>
-    ),
+    label: `${timezone.name} (${timezone.abbrev})`,
+    timezone: timezone,
   }));
+
+  // Custom filter function to prioritize results that start with search term
+  const filterTimezoneOption = (input: string, option: any) => {
+    if (!input) return true;
+
+    const searchTerm = input.toLowerCase();
+    const timezoneName = option.timezone?.name?.toLowerCase() || '';
+    const timezoneAbbrev = option.timezone?.abbrev?.toLowerCase() || '';
+
+    // Check if timezone name or abbreviation contains the search term
+    return timezoneName.includes(searchTerm) || timezoneAbbrev.includes(searchTerm);
+  };
+
+  // Sort function to prioritize results that start with search term
+  const sortTimezoneOptions = (
+    optionA: any,
+    optionB: any,
+    info: { searchValue: string }
+  ): number => {
+    if (!info.searchValue) return 0;
+
+    const searchTerm = info.searchValue.toLowerCase();
+    const nameA = optionA.timezone?.name?.toLowerCase() || '';
+    const nameB = optionB.timezone?.name?.toLowerCase() || '';
+
+    // Split by slash to get parts
+    const partsA = nameA.split('/');
+    const partsB = nameB.split('/');
+
+    // Check if first part starts with search term (highest priority)
+    // e.g., "Australia/Sydney" -> first part is "australia"
+    const aFirstPartStarts = partsA[0]?.startsWith(searchTerm);
+    const bFirstPartStarts = partsB[0]?.startsWith(searchTerm);
+
+    if (aFirstPartStarts && !bFirstPartStarts) return -1;
+    if (!aFirstPartStarts && bFirstPartStarts) return 1;
+
+    // Check if any part starts with search term (medium priority)
+    const aAnyPartStarts = partsA.some((part: string) => part.startsWith(searchTerm));
+    const bAnyPartStarts = partsB.some((part: string) => part.startsWith(searchTerm));
+
+    if (aAnyPartStarts && !bAnyPartStarts) return -1;
+    if (!aAnyPartStarts && bAnyPartStarts) return 1;
+
+    // Prefer shorter paths (less slashes) - "Australia/Sydney" over "posix/Australia/Sydney"
+    const aDepth = partsA.length;
+    const bDepth = partsB.length;
+
+    if (aDepth !== bDepth) return aDepth - bDepth;
+
+    // Finally sort alphabetically
+    return nameA.localeCompare(nameB);
+  };
+
+  // Handle search to reset scroll position
+  const handleTimezoneSearch = (value: string) => {
+    // Small delay to ensure dropdown is rendered before scrolling
+    setTimeout(() => {
+      const dropdown = document.querySelector('.ant-select-dropdown');
+      if (dropdown) {
+        const scrollContainer = dropdown.querySelector('.rc-virtual-list-holder');
+        if (scrollContainer) {
+          scrollContainer.scrollTop = 0;
+        }
+      }
+    }, 0);
+  };
 
   useEffect(() => {
     fetchTimezones();
@@ -117,11 +187,17 @@ const LanguageAndRegionSettings = () => {
     <Card style={{ width: '100%' }}>
       {!loadingTimezones ? (
         <Form
+          form={form}
           layout="vertical"
           style={{ width: '100%', maxWidth: 350 }}
           initialValues={{
             language: lng || Language.EN,
             timezone: currentSession?.timezone,
+          }}
+          onValuesChange={(_, allValues) => {
+            const langChanged = allValues.language !== (lng || Language.EN);
+            const tzChanged = allValues.timezone !== currentSession?.timezone;
+            setIsDirty(langChanged || tzChanged);
           }}
           onFinish={onFinish}
         >
@@ -149,14 +225,22 @@ const LanguageAndRegionSettings = () => {
           >
             <Select
               showSearch
-              optionFilterProp="label"
-              options={timeZoneOptions}
+              filterOption={filterTimezoneOption}
+              filterSort={sortTimezoneOptions}
+              onSearch={handleTimezoneSearch}
               loading={loadingTimezones}
+              options={timeZoneOptions}
+              optionRender={option => (
+                <Flex align="center" justify="space-between">
+                  <span>{option.data.timezone?.name}</span>
+                  <Typography.Text type="secondary">{option.data.timezone?.abbrev}</Typography.Text>
+                </Flex>
+              )}
             />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
-              {t('save_changes')}
+              {isDirty ? t('save_changes') : t('save')}
             </Button>
           </Form.Item>
         </Form>

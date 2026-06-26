@@ -1,3 +1,4 @@
+/* Modal wrapper and z-index management */
 .license-expired-modal-wrap .ant-modal-wrap {
   z-index: 1050 !important;
 }
@@ -6,15 +7,229 @@
   z-index: 1049 !important;
 }
 
-/* Ensure dropdowns in the modal appear above the modal */
+.license-expired-modal-wrap .ant-modal-content {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Main container layout */
+.license-modal-container {
+  display: flex;
+  min-height: 500px;
+  padding: 0;
+}
+
+/* Main content section */
+.license-modal-main-content {
+  flex: 1;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+/* Header section */
+.license-modal-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.license-modal-icon {
+  font-size: 64px;
+  color: #1890ff;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.license-modal-title {
+  margin: 0 0 8px 0 !important;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.license-modal-subtitle {
+  font-size: 16px;
+  margin-bottom: 0 !important;
+}
+
+/* Features card */
+.license-modal-features-card {
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 24px;
+  border-radius: 12px;
+  border: 1px solid #91d5ff;
+  background: linear-gradient(135deg, #e6f7ff 0%, #f0f9ff 100%);
+}
+
+[data-theme="dark"] .license-modal-features-card {
+  background: linear-gradient(135deg, #0f1419 0%, #1a1a1a 100%);
+  border-color: #1890ff;
+}
+
+.license-modal-features-title {
+  font-size: 16px;
+  color: #1890ff;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.license-modal-features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.license-modal-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.license-modal-feature-icon {
+  color: #52c41a;
+  font-size: 14px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.license-modal-feature-text {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Upgrade button */
+.license-modal-upgrade-btn {
+  width: 100%;
+  max-width: 280px;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+}
+
+.license-modal-upgrade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.4);
+}
+
+/* Note section */
+.license-modal-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* Divider */
+.license-modal-divider {
+  height: auto;
+  margin: 0 24px;
+  border-color: #e8e8e8;
+}
+
+[data-theme="dark"] .license-modal-divider {
+  border-color: #434343;
+}
+
+/* Sidebar section */
+.license-modal-sidebar {
+  width: 300px;
+  padding: 32px 24px;
+  background: #fafafa;
+  border-left: 1px solid #e8e8e8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+[data-theme="dark"] .license-modal-sidebar {
+  background: #1a1a1a;
+  border-left-color: #434343;
+}
+
+.license-modal-sidebar-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.license-modal-sidebar-icon {
+  font-size: 32px;
+  color: #1890ff;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.license-modal-sidebar-title {
+  font-size: 16px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+[data-theme="dark"] .license-modal-sidebar-title {
+  color: #fff;
+}
+
+.license-modal-sidebar-subtitle {
+  font-size: 12px;
+  display: block;
+  line-height: 1.4;
+}
+
+/* Teams section */
+.license-modal-teams-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.license-modal-current-team {
+  font-size: 12px;
+  text-align: center;
+  display: block;
+}
+
+.license-modal-team-dropdown {
+  width: 100%;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.license-modal-team-dropdown:hover {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+[data-theme="dark"] .license-modal-team-dropdown {
+  background: #262626;
+  border-color: #434343;
+  color: #fff;
+}
+
+[data-theme="dark"] .license-modal-team-dropdown:hover {
+  border-color: #1890ff;
+}
+
+/* Dropdown styling */
 .switch-team-dropdown {
   z-index: 1060 !important;
 }
 
-/* Theme-aware dropdown styling */
 .switch-team-dropdown .ant-dropdown-menu {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
 }
 
 [data-theme="dark"] .switch-team-dropdown .ant-dropdown-menu {
@@ -30,7 +245,64 @@
   background-color: #303030;
 }
 
-/* Ensure the modal content is properly styled */
-.license-expired-modal-wrap .ant-modal-content {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+/* Responsive design for smaller screens */
+@media (max-width: 1024px) {
+  .license-expired-modal-wrap .ant-modal {
+    width: 95% !important;
+    max-width: 800px;
+  }
+
+  .license-modal-container {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .license-modal-main-content {
+    padding: 24px;
+  }
+
+  .license-modal-sidebar {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid #e8e8e8;
+    padding: 24px;
+  }
+
+  [data-theme="dark"] .license-modal-sidebar {
+    border-top-color: #434343;
+  }
+
+  .license-modal-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .license-modal-main-content {
+    padding: 20px;
+  }
+
+  .license-modal-icon {
+    font-size: 48px;
+  }
+
+  .license-modal-title {
+    font-size: 20px !important;
+  }
+
+  .license-modal-subtitle {
+    font-size: 14px;
+  }
+
+  .license-modal-features-card {
+    max-width: none;
+  }
+
+  .license-modal-sidebar {
+    padding: 20px;
+  }
+
+  .license-modal-sidebar-icon {
+    font-size: 24px;
+  }
 }

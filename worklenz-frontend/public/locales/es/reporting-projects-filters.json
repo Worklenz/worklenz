@@ -31,5 +31,13 @@
   "projectHealthText": "Salud del Proyecto",
   "projectUpdateText": "Actualización del Proyecto",
   "clientText": "Cliente",
-  "teamText": "Equipo"
+  "teamText": "Equipo",
+
+  "tableViewText": "Tabla",
+  "groupedViewText": "Agrupado",
+  "groupByCategoryText": "Categoría",
+  "groupByStatusText": "Estado",
+  "groupByHealthText": "Salud",
+  "groupByTeamText": "Equipo",
+  "groupByManagerText": "Gerente"
 }

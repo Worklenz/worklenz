@@ -3,7 +3,12 @@
 
 import React from 'react';
 import { Badge, Button, Space, Tooltip, message } from '@/shared/antd-imports';
-import { WifiOutlined, DisconnectOutlined, ReloadOutlined, DeleteOutlined } from '@/shared/antd-imports';
+import {
+  WifiOutlined,
+  DisconnectOutlined,
+  ReloadOutlined,
+  DeleteOutlined,
+} from '@/shared/antd-imports';
 import { useServiceWorker } from '../../utils/serviceWorkerRegistration';
 
 interface ServiceWorkerStatusProps {
@@ -11,9 +16,9 @@ interface ServiceWorkerStatusProps {
   showControls?: boolean; // Show cache management controls
 }
 
-const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({ 
-  minimal = false, 
-  showControls = false 
+const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
+  minimal = false,
+  showControls = false,
 }) => {
   const { isOffline, swManager, clearCache, forceUpdate, getVersion } = useServiceWorker();
   const [swVersion, setSwVersion] = React.useState<string>('');
@@ -25,18 +30,20 @@ const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
     if (getVersion) {
       const versionPromise = getVersion();
       if (versionPromise) {
-        versionPromise.then(version => {
-          setSwVersion(version);
-        }).catch(() => {
-          // Ignore errors when getting version
-        });
+        versionPromise
+          .then(version => {
+            setSwVersion(version);
+          })
+          .catch(() => {
+            // Ignore errors when getting version
+          });
       }
     }
   }, [getVersion]);
 
   const handleClearCache = async () => {
     if (!clearCache) return;
-    
+
     setIsClearing(true);
     try {
       const success = await clearCache();
@@ -54,7 +61,7 @@ const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
 
   const handleForceUpdate = async () => {
     if (!forceUpdate) return;
-    
+
     setIsUpdating(true);
     try {
       await forceUpdate();
@@ -69,10 +76,7 @@ const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
   if (minimal) {
     return (
       <Tooltip title={isOffline ? 'You are offline' : 'You are online'}>
-        <Badge 
-          status={isOffline ? 'error' : 'success'} 
-          text={isOffline ? 'Offline' : 'Online'}
-        />
+        <Badge status={isOffline ? 'error' : 'success'} text={isOffline ? 'Offline' : 'Online'} />
       </Tooltip>
     );
   }
@@ -87,23 +91,15 @@ const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
           ) : (
             <WifiOutlined style={{ color: '#52c41a' }} />
           )}
-          <span style={{ fontSize: '14px' }}>
-            {isOffline ? 'Offline Mode' : 'Online'}
-          </span>
-          {swVersion && (
-            <span style={{ fontSize: '12px', color: '#8c8c8c' }}>
-              v{swVersion}
-            </span>
-          )}
+          <span style={{ fontSize: '14px' }}>{isOffline ? 'Offline Mode' : 'Online'}</span>
+          {swVersion && <span style={{ fontSize: '12px', color: '#8c8c8c' }}>v{swVersion}</span>}
         </div>
 
         {/* Information */}
         <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
-          {isOffline ? (
-            'App is running from cache. Changes will sync when online.'
-          ) : (
-            'App is cached for offline use. Ready to work anywhere!'
-          )}
+          {isOffline
+            ? 'App is running from cache. Changes will sync when online.'
+            : 'App is cached for offline use. Ready to work anywhere!'}
         </div>
 
         {/* Controls */}
@@ -119,7 +115,7 @@ const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
                 Clear Cache
               </Button>
             </Tooltip>
-            
+
             <Tooltip title="Check for updates and reload">
               <Button
                 size="small"
@@ -137,4 +133,4 @@ const ServiceWorkerStatus: React.FC<ServiceWorkerStatusProps> = ({
   );
 };
 
-export default ServiceWorkerStatus; 
+export default ServiceWorkerStatus;

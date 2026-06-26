@@ -1,0 +1,51 @@
+/* All Tasks Stats Cards Styles */
+
+.stats-card {
+  border-radius: 8px;
+  transition: box-shadow 0.2s ease;
+}
+
+.stats-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card .ant-statistic-title {
+  color: var(--ant-color-text-secondary);
+  font-size: 13px;
+}
+
+.stats-card .ant-statistic-content-value {
+  color: var(--ant-color-text);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* Completed tasks - green */
+.stats-card--completed .ant-statistic-content-value {
+  color: var(--ant-color-success);
+}
+
+/* In progress tasks - blue */
+.stats-card--in-progress .ant-statistic-content-value {
+  color: var(--ant-color-primary);
+}
+
+/* Overdue tasks - red */
+.stats-card--overdue .ant-statistic-content-value {
+  color: var(--ant-color-error);
+}
+
+/* Unassigned tasks - orange/warning */
+.stats-card--unassigned .ant-statistic-content-value {
+  color: var(--ant-color-warning);
+}
+
+/* Due this week - info blue */
+.stats-card--due-week .ant-statistic-content-value {
+  color: var(--ant-color-info);
+}
+
+/* Dark mode adjustments */
+:root[data-theme="dark"] .stats-card:hover {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+}

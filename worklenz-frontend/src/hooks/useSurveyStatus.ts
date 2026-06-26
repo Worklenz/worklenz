@@ -18,9 +18,9 @@ export const useSurveyStatus = (): UseSurveyStatusResult => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await surveyApiService.checkAccountSetupSurveyStatus();
-      
+
       if (response.done) {
         setHasCompletedSurvey(response.body.is_completed);
       } else {
@@ -44,6 +44,6 @@ export const useSurveyStatus = (): UseSurveyStatusResult => {
     hasCompletedSurvey,
     loading,
     error,
-    refetch: checkSurveyStatus
+    refetch: checkSurveyStatus,
   };
 };

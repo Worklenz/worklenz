@@ -27,6 +27,9 @@ import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { updateTaskAssignees as updateBoardTaskAssignees } from '@/features/board/board-slice';
 import { updateTaskAssignees as updateTasksListTaskAssignees } from '@/features/tasks/tasks.slice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_task_assigned } from '@/shared/worklenz-analytics-events';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 interface TaskDrawerAssigneeSelectorProps {
   task: ITaskViewModel;
 }
@@ -41,9 +44,11 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { t } = useTranslation('task-list-table');
   const { tab } = useTabSearchParam();
+  const { canCreateTask } = useTaskCreationPermission();
 
   const dispatch = useAppDispatch();
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   const filteredMembersData = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -69,18 +74,25 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
     }
   };
 
+  // FIX: Improved handleMemberChange function with proper state checking
   const handleMemberChange = (e: CheckboxChangeEvent | null, memberId: string) => {
     if (!memberId || !projectId || !task?.id || !currentSession?.id) return;
+
     try {
-      const checked =
-        e?.target.checked || !task?.assignees?.some(assignee => assignee === memberId) || false;
+      // Check if member is currently assigned
+      const isCurrentlyAssigned = task?.assignees?.some(assignee => assignee === memberId);
+
+      // Determine the new checked state
+      // If event exists (checkbox clicked), use event's checked state
+      // If no event (list item clicked), toggle the current state
+      const checked = e ? e.target.checked : !isCurrentlyAssigned;
 
       const body = {
         team_member_id: memberId,
         project_id: projectId,
         task_id: task.id,
         reporter_id: currentSession?.id,
-        mode: checked ? 0 : 1,
+        mode: checked ? 0 : 1, // 0 = add assignee, 1 = remove assignee
         parent_task: task.parent_task_id,
       };
 
@@ -88,6 +100,17 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
       socket?.once(
         SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
         (data: ITaskAssigneesUpdateResponse) => {
+          // Track task assignment (only when adding, not removing)
+          if (checked) {
+            trackMixpanelEvent(evt_task_assigned, {
+              task_id: task.id,
+              project_id: projectId,
+              assignee_id: memberId,
+              assigned_by: currentSession?.id,
+              assignment_method: 'task_drawer',
+            });
+          }
+
           dispatch(setTaskAssignee(data));
           if (tab === 'tasks-list') {
             dispatch(updateTasksListTaskAssignees(data));
@@ -106,6 +129,11 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
     if (!memberId) return false;
 
     return task?.assignees?.some(assignee => assignee === memberId);
+  };
+
+  // FIX: Prevent event propagation when clicking checkbox to avoid double-triggering
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   const membersDropdownContent = (
@@ -132,14 +160,20 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
                   border: 'none',
                   cursor: 'pointer',
                 }}
-                onClick={e => handleMemberChange(null, member.id || '')}
+                onClick={e => {
+                  if (!member.pending_invitation) {
+                    handleMemberChange(null, member.id || '');
+                  }
+                }}
               >
-                <Checkbox
-                  id={member.id}
-                  checked={checkMemberSelected(member.id || '')}
-                  onChange={e => handleMemberChange(e, member.id || '')}
-                  disabled={member.pending_invitation}
-                />
+                <div onClick={handleCheckboxClick}>
+                  <Checkbox
+                    id={member.id}
+                    checked={checkMemberSelected(member.id || '')}
+                    onChange={e => handleMemberChange(e, member.id || '')}
+                    disabled={member.pending_invitation}
+                  />
+                </div>
                 <div>
                   <SingleAvatar
                     avatarUrl={member.avatar_url}
@@ -174,11 +208,13 @@ const TaskDrawerAssigneeSelector = ({ task }: TaskDrawerAssigneeSelectorProps) =
       trigger={['click']}
       dropdownRender={() => membersDropdownContent}
       onOpenChange={handleMembersDropdownOpen}
+      disabled={!canCreateTask}
     >
       <Button
         type="dashed"
         shape="circle"
         size="small"
+        style={{ display: canCreateTask ? undefined : 'none' }}
         icon={
           <PlusOutlined
             style={{

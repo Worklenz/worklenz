@@ -10,12 +10,12 @@ export class CacheCleanup {
   static async clearAllCaches(): Promise<void> {
     try {
       console.log('CacheCleanup: Starting cache clearing process...');
-      
+
       // Clear browser caches
       if ('caches' in window) {
         const cacheNames = await caches.keys();
         console.log('CacheCleanup: Found caches:', cacheNames);
-        
+
         await Promise.all(
           cacheNames.map(async cacheName => {
             const deleted = await caches.delete(cacheName);
@@ -33,7 +33,7 @@ export class CacheCleanup {
         const registration = await navigator.serviceWorker.getRegistration();
         if (registration) {
           console.log('CacheCleanup: Found service worker registration');
-          
+
           // Send logout message to service worker to clear its caches and unregister
           if (registration.active) {
             try {
@@ -52,7 +52,7 @@ export class CacheCleanup {
               }
             }
           }
-          
+
           // If service worker is still registered, unregister it
           if (registration.active) {
             console.log('CacheCleanup: Unregistering service worker...');
@@ -69,16 +69,15 @@ export class CacheCleanup {
       // Clear localStorage and sessionStorage
       const localStorageKeys = Object.keys(localStorage);
       const sessionStorageKeys = Object.keys(sessionStorage);
-      
+
       console.log('CacheCleanup: Clearing localStorage keys:', localStorageKeys);
       console.log('CacheCleanup: Clearing sessionStorage keys:', sessionStorageKeys);
-      
+
       localStorage.clear();
       sessionStorage.clear();
       console.log('CacheCleanup: Local storage cleared');
 
       console.log('CacheCleanup: Cache clearing process completed successfully');
-
     } catch (error) {
       console.error('CacheCleanup: Error clearing caches:', error);
       throw error;
@@ -100,8 +99,8 @@ export class CacheCleanup {
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel();
-      
-      messageChannel.port1.onmessage = (event) => {
+
+      messageChannel.port1.onmessage = event => {
         if (event.data.error) {
           reject(event.data.error);
         } else {
@@ -109,10 +108,7 @@ export class CacheCleanup {
         }
       };
 
-      registration.active!.postMessage(
-        { type, payload },
-        [messageChannel.port2]
-      );
+      registration.active!.postMessage({ type, payload }, [messageChannel.port2]);
 
       // Timeout after 5 seconds
       setTimeout(() => {
@@ -136,13 +132,9 @@ export class CacheCleanup {
     if (!('caches' in window)) return;
 
     const cacheNames = await caches.keys();
-    const cachesToDelete = cacheNames.filter(name => 
-      cacheTypes.some(type => name.includes(type))
-    );
+    const cachesToDelete = cacheNames.filter(name => cacheTypes.some(type => name.includes(type)));
 
-    await Promise.all(
-      cachesToDelete.map(cacheName => caches.delete(cacheName))
-    );
+    await Promise.all(cachesToDelete.map(cacheName => caches.delete(cacheName)));
   }
 
   /**
@@ -160,4 +152,4 @@ export class CacheCleanup {
   }
 }
 
-export default CacheCleanup; 
+export default CacheCleanup;

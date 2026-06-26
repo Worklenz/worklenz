@@ -1,0 +1,160 @@
+doctype html
+html
+  head
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title Welcome to #{clientName} on Worklenz
+    style.
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      .header {
+        background: #ffffff;
+        color: #334155;
+        padding: 40px 20px;
+        text-align: center;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .content {
+        padding: 40px 30px;
+        background: white;
+      }
+      .content p {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+      }
+      .content strong {
+        color: #334155;
+      }
+      .button {
+        display: inline-block;
+        background: transparent;
+        color: #334155;
+        padding: 14px 28px;
+        text-decoration: none;
+        border-radius: 6px;
+        border: 2px solid #334155;
+        margin: 24px 0;
+        font-weight: 600;
+        font-size: 16px;
+        transition: background-color 0.3s, border-color 0.3s;
+      }
+      .button:hover {
+        background: #f8fafc;
+        border-color: #1e293b;
+      }
+      .features {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 6px;
+        margin: 24px 0;
+        border: 1px solid #e2e8f0;
+      }
+      .features h3 {
+        margin: 0 0 12px 0;
+        color: #334155;
+        font-size: 18px;
+      }
+      .features ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .features li {
+        margin: 8px 0;
+        color: #666;
+      }
+      .footer {
+        padding: 30px;
+        text-align: center;
+        color: #666;
+        font-size: 14px;
+        background: #f8f9fa;
+        border-top: 1px solid #e8e8e8;
+      }
+      .footer p {
+        margin: 8px 0;
+      }
+      .success-badge {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 24px 0;
+        text-align: center;
+      }
+      .success-badge p {
+        margin: 0;
+        color: #334155;
+        font-weight: 500;
+      }
+      @media (max-width: 600px) {
+        .container {
+          margin: 0;
+          border-radius: 0;
+        }
+        .content {
+          padding: 20px;
+        }
+      }
+  body
+    .container
+      .header
+        h1 Welcome to #{clientName}!
+      
+      .content
+        .success-badge
+          p 🎉 Your account has been successfully created!
+        
+        p Hello #{userName},
+        
+        p
+          | Welcome to 
+          strong #{clientName}
+          if companyName
+            |  (#{companyName})
+          |  on Worklenz!
+        
+        p You now have access to a comprehensive project management platform where you can stay connected with your team and track project progress in real-time.
+        
+        .features
+          h3 What you can do with your client portal:
+          ul
+            li View detailed project progress and milestones
+            li Submit new requests and track their status
+            li Access invoices and billing information
+            li Communicate with your team through integrated chat
+            li Manage your profile and notification preferences
+            li Download project deliverables and reports
+        
+        p Click the button below to access your client portal and start exploring:
+        
+        div(style='text-align: center;')
+          a.button(href=portalLink) Access Your Portal
+        
+        p If you have any questions about using your client portal or need assistance, please don't hesitate to reach out to your project team.
+        
+        p We're excited to have you on board and look forward to working with you!
+      
+      .footer
+        p
+          strong Worklenz
+          |  - Project Management Made Simple
+        p © 2024 Worklenz. All rights reserved.

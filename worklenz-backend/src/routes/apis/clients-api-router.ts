@@ -16,4 +16,6 @@ clientsApiRouter.get("/:id", teamOwnerOrAdminValidator, idParamValidator, safeCo
 clientsApiRouter.put("/:id", teamOwnerOrAdminValidator, clientsBodyValidator, idParamValidator, safeControllerFunction(ClientsController.update));
 clientsApiRouter.delete("/:id", teamOwnerOrAdminValidator, idParamValidator, safeControllerFunction(ClientsController.deleteById));
 
+// Organisation-side Client Portal routes are Business-plan features — mounted by the EE clients-portal router.
+
 export default clientsApiRouter;

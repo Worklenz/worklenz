@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { TFunction } from 'i18next';
 import {
   Button,
@@ -10,38 +10,54 @@ import {
   InputRef,
   Select,
   Typography,
+  Tooltip,
 } from '@/shared/antd-imports';
-import { PlusOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
 import {
-  addCategory,
   createProjectCategory,
+  fetchProjectCategories,
 } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { colors } from '@/styles/colors';
-import { IProjectCategory } from '@/types/project/projectCategory.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { useTranslation } from 'react-i18next';
+import { safeTextDisplay } from '@/utils/html-entities';
 
 interface ProjectCategorySectionProps {
-  categories: IProjectCategory[];
   form: FormInstance;
   t: TFunction;
   disabled: boolean;
 }
 
-const defaultColorCode = '#ee87c5';
-
-const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCategorySectionProps) => {
+const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionProps) => {
   const dispatch = useAppDispatch();
+  const { t: tCommon } = useTranslation('common');
+  const { isFreeUser: isFree } = useBusinessFeatures();
+  const { promptUpgrade } = useUpgradePrompt();
+
+  // Read categories directly from Redux - this will auto-update when categories change
+  const categories = useAppSelector(state => state.projectCategoriesReducer.projectCategories);
 
   const [isAddCategoryInputShow, setIsAddCategoryInputShow] = useState(false);
   const [categoryText, setCategoryText] = useState('');
   const [creating, setCreating] = useState(false);
   const categoryInputRef = useRef<InputRef>(null);
 
+  // Fetch categories on mount if not already loaded
+  useEffect(() => {
+    if (categories.length === 0) {
+      dispatch(fetchProjectCategories());
+    }
+  }, [dispatch, categories.length]);
+
   const categoryOptions = categories.map((category, index) => ({
     key: index,
     value: category.id,
-    label: category.name,
+    label: safeTextDisplay(category.name),
   }));
 
   const handleCategoryInputFocus = () => {
@@ -51,8 +67,25 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
   };
 
   const handleShowAddCategoryInput = () => {
+    if (isFree) {
+      promptUpgrade();
+      return;
+    }
     setIsAddCategoryInputShow(true);
     handleCategoryInputFocus();
+  };
+
+  const handleSelectClick = () => {
+    if (isFree) {
+      promptUpgrade();
+    }
+  };
+
+  // Refresh categories when dropdown opens to get latest updates
+  const handleDropdownVisibleChange = (open: boolean) => {
+    if (open) {
+      dispatch(fetchProjectCategories());
+    }
   };
 
   const handleAddCategoryInputBlur = (category: string) => {
@@ -108,13 +141,29 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
 
   return (
     <>
-      <Form.Item name="category_id" label={t('category')}>
+      <Form.Item
+        name="category_id"
+        label={
+          <Flex align="center" gap={4}>
+            <span>{t('category')}</span>
+            {isFree && (
+              <Tooltip title={tCommon('upgrade-plan')} placement="top">
+                <CrownOutlined
+                  style={{ fontSize: '14px', color: '#faad14', cursor: 'pointer' }}
+                  onClick={handleSelectClick}
+                />
+              </Tooltip>
+            )}
+          </Flex>
+        }
+      >
         {!isAddCategoryInputShow ? (
           <Select
             options={categoryOptions}
             placeholder={t('addCategory')}
             loading={creating}
             allowClear
+            onDropdownVisibleChange={handleDropdownVisibleChange}
             dropdownRender={menu => (
               <>
                 {menu}
@@ -130,6 +179,7 @@ const ProjectCategorySection = ({ categories, form, t, disabled }: ProjectCatego
               </>
             )}
             disabled={disabled}
+            onClick={handleSelectClick}
           />
         ) : (
           <Flex vertical gap={4}>

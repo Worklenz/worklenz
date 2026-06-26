@@ -3,9 +3,9 @@
   "client": "Klienti",
   "category": "Kategoria",
   "status": "Statusi",
+  "priority": "Prioriteti",
   "tasksProgress": "Përparimi i Detyrave",
   "updated_at": "E Përditësuar së Fundi",
-  "members": "Anëtarët",
   "setting": "Cilësimet",
   "projects": "Projektet",
   "refreshProjects": "Rifresko projektet",
@@ -27,8 +27,12 @@
   "listView": "Pamja e Listës",
   "groupView": "Pamja e Grupit",
   "groupBy": {
+    "priority": "Prioriteti",
     "category": "Kategoria",
-    "client": "Klienti"
+    "client": "Klienti",
+    "priorities": "prioritetet",
+    "categories": "kategoritë",
+    "clients": "klientët"
   },
   "noPermission": "Nuk keni leje për të kryer këtë veprim"
 }

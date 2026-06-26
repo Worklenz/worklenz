@@ -19,7 +19,9 @@
   },
   "description": {
     "title": "描述",
-    "placeholder": "添加更详细的描述..."
+    "placeholder": "添加更详细的描述...",
+    "clickToAdd": "点击添加描述...",
+    "loadingEditor": "加载编辑器..."
   },
   "subTasks": {
     "title": "子任务",

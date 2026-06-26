@@ -4,6 +4,9 @@
 import React from 'react';
 import { useServiceWorker } from '../utils/serviceWorkerRegistration';
 
+const LATEST_VERSION_STORAGE_KEY = 'app_latest_version';
+const DISMISSED_UPDATE_VERSION_STORAGE_KEY = 'app_dismissed_update_version';
+
 interface UseUpdateCheckerOptions {
   checkInterval?: number; // Check interval in milliseconds (default: 5 minutes)
   enableAutoCheck?: boolean; // Enable automatic checking (default: true)
@@ -24,43 +27,53 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
   const {
     checkInterval = 5 * 60 * 1000, // 5 minutes
     enableAutoCheck = true,
-    showNotificationOnUpdate = true
+    showNotificationOnUpdate = true,
   } = options;
 
   const { checkForUpdates: serviceWorkerCheckUpdates, swManager } = useServiceWorker();
-  
+
   const [hasUpdate, setHasUpdate] = React.useState(false);
   const [isChecking, setIsChecking] = React.useState(false);
   const [lastChecked, setLastChecked] = React.useState<Date | null>(null);
   const [showUpdateNotification, setShowUpdateNotification] = React.useState(false);
-  const [updateDismissed, setUpdateDismissed] = React.useState(false);
+  const [dismissedVersion, setDismissedVersion] = React.useState<string | null>(() =>
+    localStorage.getItem(DISMISSED_UPDATE_VERSION_STORAGE_KEY)
+  );
+  const isCheckingRef = React.useRef(false);
 
   // Check for updates function
   const checkForUpdates = React.useCallback(async () => {
-    if (!serviceWorkerCheckUpdates || isChecking) return;
+    if (!serviceWorkerCheckUpdates || isCheckingRef.current) return;
 
+    isCheckingRef.current = true;
     setIsChecking(true);
     try {
       const hasUpdates = await serviceWorkerCheckUpdates();
+      const latestVersion = localStorage.getItem(LATEST_VERSION_STORAGE_KEY);
       setHasUpdate(hasUpdates);
       setLastChecked(new Date());
-      
+
       // Show notification if update found and user hasn't dismissed it
-      if (hasUpdates && showNotificationOnUpdate && !updateDismissed) {
+      if (hasUpdates && showNotificationOnUpdate && latestVersion !== dismissedVersion) {
         setShowUpdateNotification(true);
+      } else if (!hasUpdates) {
+        setShowUpdateNotification(false);
       }
-      
-      console.log('Update check completed:', { hasUpdates });
     } catch (error) {
       console.error('Error checking for updates:', error);
     } finally {
+      isCheckingRef.current = false;
       setIsChecking(false);
     }
-  }, [serviceWorkerCheckUpdates, isChecking, showNotificationOnUpdate, updateDismissed]);
+  }, [serviceWorkerCheckUpdates, showNotificationOnUpdate, dismissedVersion]);
 
   // Dismiss update notification
   const dismissUpdate = React.useCallback(() => {
-    setUpdateDismissed(true);
+    const latestVersion = localStorage.getItem(LATEST_VERSION_STORAGE_KEY);
+    if (latestVersion) {
+      localStorage.setItem(DISMISSED_UPDATE_VERSION_STORAGE_KEY, latestVersion);
+    }
+    setDismissedVersion(latestVersion);
     setShowUpdateNotification(false);
   }, []);
 
@@ -108,7 +121,7 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     if (!enableAutoCheck) return;
 
     const handleFocus = () => {
-      if (swManager && !isChecking) {
+      if (swManager) {
         // Check for updates when window regains focus
         setTimeout(() => {
           checkForUpdates();
@@ -120,14 +133,14 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     return () => {
       window.removeEventListener('focus', handleFocus);
     };
-  }, [enableAutoCheck, swManager, isChecking, checkForUpdates]);
+  }, [enableAutoCheck, swManager, checkForUpdates]);
 
-  // Reset dismissed state when new update is found
   React.useEffect(() => {
-    if (hasUpdate && updateDismissed) {
-      setUpdateDismissed(false);
+    if (!hasUpdate && dismissedVersion) {
+      localStorage.removeItem(DISMISSED_UPDATE_VERSION_STORAGE_KEY);
+      setDismissedVersion(null);
     }
-  }, [hasUpdate, updateDismissed]);
+  }, [hasUpdate, dismissedVersion]);
 
   return {
     hasUpdate,
@@ -136,6 +149,6 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     checkForUpdates,
     dismissUpdate,
     showUpdateNotification,
-    setShowUpdateNotification
+    setShowUpdateNotification,
   };
 }

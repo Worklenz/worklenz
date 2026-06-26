@@ -10,5 +10,6 @@
   "submitSuccessMessage": "Danke, dass Sie die Umfrage abgeschlossen haben!",
   "submitErrorMessage": "Umfrage konnte nicht übermittelt werden. Bitte versuchen Sie es erneut.",
   "submitErrorLog": "Umfrageübermittlung fehlgeschlagen",
-  "fetchErrorLog": "Umfrageabruf fehlgeschlagen"
-} 
+  "fetchErrorLog": "Umfrageabruf fehlgeschlagen",
+  "dontShowAgain": "Diese Umfrage nicht mehr anzeigen"
+}

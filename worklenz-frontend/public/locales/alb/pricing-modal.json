@@ -1,0 +1,222 @@
+{
+  "title": "Zgjidhni planin më të mirë për ekipin tuaj",
+  "subtitle": "Zgjidhni planin e përsosur për të rritur produktivitetin e ekipit tuaj",
+  "billingCycle": {
+    "label": "Cikli i Faturimit",
+    "monthly": "Mujor",
+    "yearly": "Vjetor",
+    "savePercent": "Kurseni 30%"
+  },
+  "pricingModel": {
+    "label": "Modeli i Çmimeve",
+    "perUser": "Për Përdorues",
+    "basePlan": "Plani Bazë",
+    "default": "I parazgjedhur",
+    "explanation": {
+      "perUser": "Paguani vetëm për përdoruesit aktivë. I përsosur për ekipe të vogla (1-5 përdorues) me çmime fleksibile që rriten me ekipin tuaj.",
+      "basePlan": "Çmim bazë i fiksuar me përdorues të përfshirë plus kosto shtesë për përdorues. Ideal për ekipe më të mëdha (6+ përdorues) me faturim të parashikueshëm."
+    }
+  },
+  "teamSize": {
+    "label": "Madhësia e Ekipit",
+    "help": "Zgjidhni madhësinë aktuale ose të pritur të ekipit tuaj",
+    "user": "përdorues",
+    "users": "përdorues",
+    "helpDescription": "Shkruani numrin e përdoruesve në ekipin tuaj (1-500)"
+  },
+  "plans": {
+    "free": {
+      "name": "Falas",
+      "description": "I përsosur për të filluar",
+      "features": [
+        "3 projekte",
+        "Menaxhimi bazik i detyrave",
+        "Bashkëpunimi në ekip",
+        "Menaxhimi manual",
+        "Mbështetja e komunitetit"
+      ],
+      "forever": "Për gjithmonë"
+    },
+    "proSmall": {
+      "name": "Pro i Vogël",
+      "description": "Ideal për ekipe të vogla",
+      "features": [
+        "Projekte të pakufizuara",
+        "Menaxhimi i avancuar i detyrave",
+        "Diagramet Gantt",
+        "Ndjekja e kohës",
+        "Fusha të personalizuara",
+        "Mbështetja me email"
+      ]
+    },
+    "businessSmall": {
+      "name": "Biznes i Vogël",
+      "description": "Për ekipe në rritje",
+      "features": [
+        "Gjithçka në Pro të Vogël",
+        "Raporte të avancuara",
+        "Rrjedha pune të personalizuara",
+        "Aksesi në API",
+        "Mbështetja me prioritet",
+        "Integrime të avancuara"
+      ]
+    },
+    "proLarge": {
+      "name": "Pro i Madh",
+      "description": "Për ekipe më të mëdha",
+      "features": [
+        "Gjithçka në Pro të Vogël",
+        "Menaxhimi i avancuar i ekipit",
+        "Alokimi i burimeve",
+        "Menaxhimi i portofolit",
+        "Mbështetja me prioritet"
+      ]
+    },
+    "businessLarge": {
+      "name": "Biznes i Madh",
+      "description": "Për ekipe ndërmarrjesh",
+      "features": [
+        "Gjithçka në Biznes të Vogël",
+        "Analizë të avancuara",
+        "Markë të personalizuar",
+        "Integrimi SSO",
+        "Mbështetja e dedikuar",
+        "Garancia SLA"
+      ]
+    },
+    "enterprise": {
+      "name": "Ndërmarrje",
+      "description": "Për organizata të mëdha",
+      "features": [
+        "Gjithçka në Biznes të Madh",
+        "Përdorues të pakufizuar",
+        "Siguria e avancuar",
+        "Integrime të personalizuara",
+        "Menaxheri i llogarisë së dedikuar",
+        "Vendosja on-premises"
+      ]
+    }
+  },
+  "badges": {
+    "mostPopular": "Më i Popullarizuar",
+    "recommended": "I Rekomanduar",
+    "bestValue": "Vlera më e Mirë",
+    "currentPlan": "Plani Aktual"
+  },
+  "pricing": {
+    "perMonth": "/muaj",
+    "perUser": "për përdorues",
+    "forUsers": "për {{count}} {{unit}}",
+    "basePrice": "{{price}} bazë + {{additionalCost}} përdorues shtesë",
+    "upToUsers": "Deri në {{count}} përdorues",
+    "usersRange": "1-{{count}} përdorues",
+    "savePerYear": "Kurseni ${{amount}}/vit",
+    "originalPrice": "Çmimi origjinal",
+    "discountPercent": "-{{percent}}%"
+  },
+  "buttons": {
+    "currentPlan": "Plani Aktual",
+    "getStartedFree": "Filloni Falas",
+    "contactSales": "Kontaktoni Shitjet",
+    "choosePlan": "Zgjidhni Planin",
+    "viewDetails": "Shikoni Detajet",
+    "chooseThisPlan": "Zgjidhni Këtë Plan",
+    "switchToMobile": "Kaloni në pamjen mobile",
+    "toggleTheme": "Ndryshoni temën",
+    "switchToLight": "Kaloni në temën e ndriçuar",
+    "switchToDark": "Kaloni në temën e errët",
+    "closeModal": "Mbyllni modalin e çmimeve",
+    "loadingPlans": "Duke ngarkuar planet...",
+    "selectPlan": "Zgjidhni një Plan",
+    "switchToFree": "Kaloni në Planin Falas",
+    "planSummary": "Plani {{planName}} - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
+  },
+  "userTypes": {
+    "trial": {
+      "title": "Përdorues Prove:",
+      "message": "{{days}} ditë të mbetura. Përditësoni tani për të mbajtur të dhënat dhe funksionet tuaja!"
+    },
+    "appsumo": {
+      "title": "Speciale AppSumo:",
+      "message": "50% zbritje në planet Business+!",
+      "countdown": "Vetëm {{days}} ditë për të përfituar nga kjo ofertë ekskluzive.",
+      "standardPricing": "Çmime standarde të disponueshme"
+    },
+    "free": {
+      "title": "Plani Aktual:",
+      "message": "Falas. Gati të zhbllokoni më shumë funksione?"
+    },
+    "custom": {
+      "title": "Migroni nga Plani i Personalizuar:",
+      "message": "Mbani çmimet tuaja të trashëguara kur migroni në planet tona të reja standarde."
+    }
+  },
+  "recommendations": {
+    "switchModel": "Kurseni ${{amount}}/muaj duke kaluar në {{model}} për {{count}} përdorues",
+    "perUserPricing": "Çmimet Për Përdorues",
+    "basePlanPricing": "Çmimet e Planit Bazë",
+    "switch": "Kaloni"
+  },
+  "planDetails": {
+    "title": "Detajet e Planit",
+    "features": "Veçoritë",
+    "limits": "Kufijtë",
+    "projects": "Projektet",
+    "users": "Përdoruesit",
+    "storage": "Ruajtja",
+    "unlimited": "E pakufizuar"
+  },
+  "tips": {
+    "switchAnytime": "💡 Këshillë: Mund të ndryshoni midis modeleve të çmimeve në çdo kohë nga cilësimet tuaja të faturimit"
+  },
+  "errors": {
+    "loadingData": "Gabim në ngarkimin e të dhënave të çmimeve",
+    "loadingPlansRetry": "Ngarkimi i planeve të çmimeve dështoi. Ju lutemi rifreskoni faqen.",
+    "calculating": "Duke llogaritur çmimet...",
+    "selectedPlan": "Plani i zgjedhur: {{plan}}"
+  },
+  "accessibility": {
+    "availablePlans": "Planet e Disponueshme",
+    "teamSizeHelp": "Ndihmë për madhësinë e ekipit",
+    "pricingUpdates": "Përditësimet e çmimeve"
+  },
+  "checkout": {
+    "title": "Konfirmoni Abonimin Tuaj",
+    "subtitle": "Rishikoni detajet e planit tuaj para se të vazhdoni",
+    "summary": "Përmbledhja e Abonimit",
+    "plan": "Plani",
+    "teamSize": "Madhësia e Ekipit",
+    "discount": "Zbritja",
+    "total": "Totali",
+    "secureCheckout": "Pagesë e Sigurt",
+    "secureDescription": "Pagesa juaj do të përpunohet në mënyrë të sigurt përmes Paddle. Mund ta anuloni ose ndryshoni planin tuaj në çdo kohë.",
+    "appsumoSpecial": "Çmime Speciale AppSumo",
+    "appsumoDescription": "Ju po merrni 50% zbritje për 12 muajt e parë. Kjo është një ofertë me kohë të kufizuar!",
+    "proceedToPayment": "Vazhdoni me Pagesën",
+    "cancel": "Anulo",
+    "processing": {
+      "title": "Duke Përpunuar Abonimin Tuaj",
+      "subtitle": "Ju lutemi prisni ndërsa ne konfiguroj abonimin tuaj...",
+      "doNotClose": "Mos e mbyllni këtë dritare",
+      "doNotCloseDescription": "Pagesa juaj po përpunohet. Mbyllja e kësaj dritareje mund ta ndërpresë procesin."
+    },
+    "success": {
+      "title": "Abonimi u Krijua me Sukses!",
+      "subtitle": "Abonimi juaj është aktivizuar. Do të merrni një email konfirmimi së shpejti.",
+      "withId": "ID-ja e abonimit tuaj është {{id}}. Do të merrni një email konfirmimi së shpejti.",
+      "goToDashboard": "Shkoni te Paneli",
+      "viewBilling": "Shikoni Faturimin"
+    },
+    "error": {
+      "title": "Abonimi Dështoi",
+      "subtitle": "Diçka shkoi keq gjatë procesit të abonimit.",
+      "tryAgain": "Provoni Përsëri"
+    },
+    "steps": {
+      "confirm": "Konfirmo",
+      "payment": "Pagesa",
+      "complete": "Përfundo"
+    }
+  }
+}

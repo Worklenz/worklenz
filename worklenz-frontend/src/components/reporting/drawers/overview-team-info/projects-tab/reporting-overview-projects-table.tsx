@@ -1,24 +1,31 @@
-import { useEffect, useState, useMemo } from 'react';
-import { Button, ConfigProvider, Flex, PaginationProps, Table, TableColumnsType } from '@/shared/antd-imports';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import {
+  Button,
+  ConfigProvider,
+  Flex,
+  PaginationProps,
+  Table,
+  TableColumnsType,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { ExpandAltOutlined } from '@/shared/antd-imports';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import ProjectCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-cell/project-cell';
-import EstimatedVsActualCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/estimated-vs-actual-cell/estimated-vs-actual-cell';
-import TasksProgressCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/tasks-progress-cell/tasks-progress-cell';
-import LastActivityCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/last-activity-cell/last-activity-cell';
-import ProjectStatusCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-status-cell/project-status-cell';
-import ProjectClientCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-client-cell/project-client-cell';
-import ProjectTeamCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-team-cell/project-team-cell';
-import ProjectManagerCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-manager-cell/project-manager-cell';
-import ProjectDatesCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-dates-cell/project-dates-cell';
-import ProjectHealthCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-health-cell/project-health-cell';
-import ProjectCategoryCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-category-cell/project-category-cell';
-import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-days-left-and-overdue-cell/project-days-left-and-overdue-cell';
-import ProjectUpdateCell from '@/pages/reporting/projects-reports/projects-reports-table/table-cells/project-update-cell/project-update-cell';
+import ProjectCell from '@/components/reporting/table-cells/ProjectCell';
+import EstimatedVsActualCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/estimated-vs-actual-cell/estimated-vs-actual-cell';
+import TasksProgressCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/tasks-progress-cell/tasks-progress-cell';
+import LastActivityCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/last-activity-cell/last-activity-cell';
+import ProjectStatusCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-status-cell/project-status-cell';
+import ProjectClientCell from '@/components/reporting/table-cells/ProjectClientCell';
+import ProjectTeamCell from '@/components/reporting/table-cells/ProjectTeamCell';
+import ProjectManagerCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-manager-cell/project-manager-cell';
+import ProjectDatesCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-dates-cell/project-dates-cell';
+import ProjectHealthCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-health-cell/project-health-cell';
+import ProjectCategoryCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-category-cell/project-category-cell';
+import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-days-left-and-overdue-cell/project-days-left-and-overdue-cell';
+import ProjectUpdateCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-update-cell/project-update-cell';
 import {
   resetProjectReports,
   setField,
@@ -34,8 +41,11 @@ import ProjectReportsDrawer from '@/features/reporting/projectReports/projectRep
 import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import './projects-reports-table.css';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
+import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/projectHealthSlice';
 import logger from '@/utils/errorLogger';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface ReportingOverviewProjectsTableProps {
   searchQuery: string;
@@ -48,6 +58,7 @@ const ReportingOverviewProjectsTable = ({
 }: ReportingOverviewProjectsTableProps) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects');
+  const { socket } = useSocket();
 
   const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
@@ -61,9 +72,40 @@ const ReportingOverviewProjectsTable = ({
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [field, setField] = useState<string>('name');
 
+  // ✅ Update local projectList directly when socket response arrives
+  // This component uses local state not Redux, so we patch the list in place
+  const handleHealthChangeResponse = useCallback(
+    (data: { id: string; health_id: string; color_code: string; name: string }) => {
+      setProjectList(prev =>
+        prev.map(project =>
+          project.id === data.id
+            ? {
+                ...project,
+                project_health: data.health_id,
+                health_name: data.name,
+                health_color: data.color_code,
+              }
+            : project
+        )
+      );
+    },
+    [setProjectList]
+  );
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.on(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    return () => {
+      socket.off(SocketEvents.PROJECT_HEALTH_CHANGE.toString(), handleHealthChangeResponse);
+    };
+  }, [socket, handleHealthChangeResponse]);
+
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const { projectStatuses, loading: projectStatusesLoading } = useAppSelector(
     state => state.projectStatusesReducer
+  );
+  const { projectHealths, loading: projectHealthsLoading } = useAppSelector(
+    state => state.projectHealthReducer
   );
 
   const handleDrawerOpen = (record: IRPTProject) => {
@@ -77,10 +119,10 @@ const ReportingOverviewProjectsTable = ({
         key: 'name',
         dataIndex: 'name',
         title: <CustomTableTitle title={t('projectColumn')} />,
+        fixed: 'left',
         width: 300,
         sorter: true,
         defaultSortOrder: order === 'asc' ? 'ascend' : 'descend',
-        fixed: 'left' as const,
         onCell: record => ({
           onClick: () => handleDrawerOpen(record as IRPTProject),
         }),
@@ -189,6 +231,8 @@ const ReportingOverviewProjectsTable = ({
       {
         key: 'category',
         title: <CustomTableTitle title={t('categoryColumn')} />,
+        dataIndex: 'category_name',
+        sorter: true,
         render: (_, record: IRPTProject) => (
           <ProjectCategoryCell
             projectId={record.id}
@@ -246,6 +290,7 @@ const ReportingOverviewProjectsTable = ({
 
   useEffect(() => {
     if (projectStatuses.length === 0 && !projectStatusesLoading) dispatch(fetchProjectStatuses());
+    if (projectHealths.length === 0 && !projectHealthsLoading) dispatch(fetchProjectHealth());
   }, []);
 
   useEffect(() => {
@@ -317,7 +362,8 @@ const ReportingOverviewProjectsTable = ({
           current: pagination.current,
           pageSizeOptions: PAGE_SIZE_OPTIONS,
         }}
-        scroll={{ x: 'max-content' }}
+        scroll={{ x: 1500 }}
+        style={{ maxWidth: '100%' }}
         loading={isLoading}
         onChange={handleTableChange}
         rowKey={record => record.id}

@@ -91,87 +91,47 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 6. **Run the Development Server:**
 
-   **Option 1: Combined development mode (Recommended)**
-   
    ```bash
-   npm run dev:all
-   ```
-   
-   This single command runs both the build watch process and the server with auto-restart. No need to run `npm run dev` and `npm start` separately.
-
-   **Option 2: Separate commands**
-   
-   ```bash
-   # Terminal 1: Build and watch for changes
    npm run dev
-   
-   # Terminal 2: Start the server
+   ```
+
+   This starts the development server allowing you to work on the project.
+
+7. **Run the Production Server:**
+
+   **a. Build the project:**
+
+   ```bash
+   npm run build
+   ```
+
+   This will compile the TypeScript code into JavaScript for production use.
+
+   **b. Start the production server:**
+
+   ```bash
    npm start
    ```
 
-   The first option (`npm run dev:all`) is recommended as it simplifies the development workflow.
+## Docker Setup (Alternative)
 
-## Docker Setup (Alternative - Recommended for Quick Start)
+For an easier setup, you can use Docker and Docker Compose:
 
-For an easier setup with production-ready features, use the new Docker setup with automated scripts:
+1. Make sure you have Docker and Docker Compose installed on your system.
 
-### Quick Start with Docker
+2. From the root directory, run:
 
-**Option 1: Automated Setup (Easiest)**
+   ```bash
+   docker-compose up -d
+   ```
 
-```bash
-# From the root directory, run the automated setup
-./quick-setup.sh
-```
+3. Access the application:
+   - Frontend: http://localhost:5000 (Docker production build)
+   - Backend API: http://localhost:3000
+   - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
 
-This script will:
-- Create `.env` file with auto-generated security secrets
-- Configure URLs for localhost
-- Set up SSL certificates (self-signed for localhost)
-- Install and start all services (PostgreSQL, Redis, MinIO, nginx)
+4. To stop the services:
 
-**Option 2: Manual Docker Setup**
-
-```bash
-# Copy environment configuration
-cp .env.example .env
-# Edit .env if needed (defaults work for localhost)
-
-# Start services (Express mode - all services bundled)
-docker compose --profile express up -d
-```
-
-### Access the Application
-
-- **Application**: https://localhost (or http://localhost)
-- **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
-
-### Management Commands
-
-```bash
-./manage.sh status    # View service status
-./manage.sh logs      # View logs
-./manage.sh stop      # Stop all services
-./manage.sh start     # Start all services
-./manage.sh backup    # Create database backup
-./manage.sh restart   # Restart all services
-```
-
-### What's Included
-
-The Docker setup now includes:
-- ✅ Nginx reverse proxy with SSL/TLS support
-- ✅ Redis caching for improved performance
-- ✅ Automated database backups
-- ✅ Health checks on all services
-- ✅ Network isolation and security hardening
-- ✅ Production-ready configuration
-
-### For Complete Documentation
-
-See [DOCKER_SETUP.md](DOCKER_SETUP.md) for:
-- Production deployment guide
-- SSL/TLS configuration
-- Backup and restore procedures
-- Advanced configuration options
-- Troubleshooting guide
+   ```bash
+   docker-compose down
+   ```
