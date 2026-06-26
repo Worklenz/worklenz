@@ -1,5 +1,6 @@
 {
   "rename": "Umbenennen",
+  "renameStatus": "Status umbenennen",
   "delete": "Löschen",
   "addTask": "Aufgabe hinzufügen",
   "addSectionButton": "Abschnitt hinzufügen",
@@ -41,7 +42,14 @@
   "noSubtasks": "Keine Unteraufgaben",
   "showSubtasks": "Unteraufgaben anzeigen",
   "hideSubtasks": "Unteraufgaben ausblenden",
-  
+
+  "exampleTasks": {
+    "prefix": "z.B.",
+    "task1": "Projektumfang definieren",
+    "task2": "Mit Stakeholdern abstimmen",
+    "task3": "Kickoff planen"
+  },
+
   "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
   "noTasksFound": "Keine Aufgaben gefunden",
   "loadingFilters": "Filter werden geladen...",

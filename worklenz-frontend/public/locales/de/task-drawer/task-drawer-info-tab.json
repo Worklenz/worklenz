@@ -19,7 +19,9 @@
   },
   "description": {
     "title": "Beschreibung",
-    "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu..."
+    "placeholder": "Fügen Sie eine detailliertere Beschreibung hinzu...",
+    "clickToAdd": "Klicken Sie hier, um eine Beschreibung hinzuzufügen...",
+    "loadingEditor": "Editor wird geladen..."
   },
   "subTasks": {
     "title": "Unteraufgaben",

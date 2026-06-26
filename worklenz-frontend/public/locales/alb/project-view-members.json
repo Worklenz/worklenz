@@ -14,5 +14,13 @@
   "memberCount": "Anëtar",
   "membersCountPlural": "Anëtarë",
   "emptyText": "Nuk ka bashkëngjitje në projekt.",
-  "searchPlaceholder": "Kërko anëtarë"
+  "searchPlaceholder": "Kërko anëtarë",
+  "seatUsageText": "{{used}} vende të përdorura",
+  "seatUsageWithLimitText": "{{used}} nga {{total}} vende të përdorura",
+  "seatLimitPopoverTitle": "U arrit kufiri i vendeve",
+  "seatLimitPopoverBody": "Po përdorni {{used}} nga {{total}} vende në planin tuaj aktual. Përmirësoni për të shtuar më shumë anëtarë në projektet tuaja.",
+  "seatRemainingText": "{{remaining}} vende të mbetura.",
+  "seatLimitPopoverCta": "Përmirëso Tani",
+  "addMoreSeats": "Shto Më Shumë Vende",
+  "closePopover": "Mbyll dritaren"
 }

@@ -26,9 +26,7 @@ module.exports = {
   coverageDirectory: "coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
-  coveragePathIgnorePatterns: [
-    "\\\\node_modules\\\\"
-  ],
+  coveragePathIgnorePatterns: ["\\\\node_modules\\\\"],
 
   // Indicates which provider should be used to instrument code for coverage
   // coverageProvider: "babel",
@@ -66,19 +64,10 @@ module.exports = {
   // maxWorkers: "50%",
 
   // An array of directory names to be searched recursively up from the requiring module's location
-  moduleDirectories: [
-    "node_modules"
-  ],
+  moduleDirectories: ["node_modules"],
 
   // An array of file extensions your modules use
-  // moduleFileExtensions: [
-  //   "js",
-  //   "jsx",
-  //   "ts",
-  //   "tsx",
-  //   "json",
-  //   "node"
-  // ],
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
 
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   // moduleNameMapper: {},
@@ -152,9 +141,7 @@ module.exports = {
   // ],
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
-  testPathIgnorePatterns: [
-    "\\\\node_modules\\\\"
-  ],
+  testPathIgnorePatterns: ["\\\\node_modules\\\\"],
 
   // The regexp pattern or array of patterns that Jest uses to detect test files
   // testRegex: [],
@@ -167,20 +154,23 @@ module.exports = {
 
   // This option sets the URL for the jsdom environment. It is reflected in properties such as location.href
   testEnvironmentOptions: {
-    url: "http://localhost:3000"
+    url: "http://localhost:3000",
   },
 
   // Setting this value to "fake" allows the use of fake timers for functions such as "setTimeout"
   // timers: "real",
 
   // A map from regular expressions to paths to transformers
-  // transform: undefined,
+  transform: {
+    "^.+\\.(ts|tsx)$": [
+      "babel-jest",
+      { presets: ["@babel/preset-env", "@babel/preset-typescript"] },
+    ],
+    "^.+\\.(js|jsx)$": ["babel-jest", { presets: ["@babel/preset-env"] }],
+  },
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  transformIgnorePatterns: [
-    "\\\\node_modules\\\\",
-    "\\.pnp\\.[^\\\\]+$"
-  ],
+  transformIgnorePatterns: ["\\\\node_modules\\\\", "\\.pnp\\.[^\\\\]+$"],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

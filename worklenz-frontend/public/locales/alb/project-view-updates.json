@@ -1,6 +1,33 @@
 {
-  "inputPlaceholder": "Shto një koment..",
-  "addButton": "Shto",
+  "title": "Përditësimet e Projektit",
+  "inputPlaceholder": "Shkruani përditësimin tuaj këtu... Përdorni @ për të përmendur anëtarët e ekipit",
+  "addButton": "Posto Përditësimin",
   "cancelButton": "Anulo",
-  "deleteButton": "Fshi"
+  "deleteButton": "Fshi",
+  "deleteConfirmTitle": "Fshi këtë përditësim?",
+  "deleteConfirmContent": "A jeni i sigurt që dëshironi të fshini këtë përditësim? Ky veprim nuk mund të zhbëhet.",
+  "yes": "Po",
+  "no": "Jo",
+  "emptyState": "Ende nuk ka përditësime. Filloni bisedën!",
+  "historyLockedBoundary": "Historiku i bisedës është i kufizuar në 90 ditët e fundit në këtë plan",
+  "historyLockedTitle": "Historiku i bisedës i bllokuar",
+  "historyLockedBody": "Historiku i bisedës më i vjetër se 90 ditë është i disponueshëm në planin Business.",
+  "viewFullHistory": "Shiko historikun e bisedës",
+  "upgradeNow": "Bëj upgrade tani",
+  "reactions": {
+    "like": "Pëlqej",
+    "love": "Dashuri",
+    "laugh": "Qesh",
+    "surprised": "I Habitur",
+    "sad": "I Trishtuar",
+    "celebrate": "Festoj",
+    "rocket": "Raketë",
+    "eyes": "Sy",
+    "fire": "Zjarr",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Redakto",
+    "save": "Ruaj"
+  }
 }

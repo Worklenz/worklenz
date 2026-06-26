@@ -1,0 +1,30 @@
+{
+  "task": {
+    "open": "打开",
+    "clickViewPhaseDetails": "点击查看阶段详情",
+    "clickNavigateTimeline": "点击导航到时间线中的任务",
+    "clickTimelineSetDates": "点击时间线为此任务设置日期",
+    "clickTimelineAddDates": "点击时间线添加日期",
+    "resizeStartDate": "调整开始日期",
+    "resizeEndDate": "调整结束日期",
+    "dragToMove": "拖拽移动任务",
+    "addTaskFor": "为{{date}}添加任务",
+    "enterTaskName": "输入任务名称...",
+    "pressEnterToCreate": "按回车创建 • 按Esc取消",
+    "phaseTitle": "阶段：{{name}} - {{startDate}}至{{endDate}}",
+    "taskTitle": "{{name}} - {{startDate}}至{{endDate}}",
+    "datesUpdatedSuccessfully": "任务日期更新成功",
+    "failedToUpdateDates": "任务日期更新失败"
+  },
+  "common": {
+    "noStart": "无开始",
+    "noEnd": "无结束"
+  },
+  "businessPlan": {
+    "phaseCreationRestricted": "阶段创建仅限商务计划用户",
+    "taskCreationRestricted": "任务创建仅限商务计划用户",
+    "phaseEditingRestricted": "阶段编辑仅限商务计划用户",
+    "taskEditingRestricted": "任务编辑仅限商务计划用户",
+    "phaseReorderingRestricted": "阶段重新排序仅限商务计划用户"
+  }
+}

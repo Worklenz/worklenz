@@ -27,46 +27,46 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     let statusesClause = "";
     if (req.query.statuses) {
       const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(statusIds, 'status_id', paramOffset);
-      statusesClause = clause.replace('status_id', 'p.status_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusesClause = `AND p.status_id IN (${clause})`;
+      filterParams.push(...statusIds);
+      paramOffset += statusIds.length;
     }
 
     let healthsClause = "";
     if (req.query.healths) {
       const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(healthIds, 'health_id', paramOffset);
-      healthsClause = clause.replace('health_id', 'p.health_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
+      healthsClause = `AND p.health_id IN (${clause})`;
+      filterParams.push(...healthIds);
+      paramOffset += healthIds.length;
     }
 
     let categoriesClause = "";
     if (req.query.categories) {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(categoryIds, 'category_id', paramOffset);
-      categoriesClause = clause.replace('category_id', 'p.category_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+      categoriesClause = `AND p.category_id IN (${clause})`;
+      filterParams.push(...categoryIds);
+      paramOffset += categoryIds.length;
     }
 
     let projectManagersClause = "";
     if (req.query.project_managers) {
       const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildInClause(managerIds, paramOffset);
+      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
       projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
-      filterParams.push(...params);
-      paramOffset += params.length;
+      filterParams.push(...managerIds);
+      paramOffset += managerIds.length;
     }
 
     let teamsClause = "";
     if (req.query.teams) {
       const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(teamIds, 'team_id', paramOffset);
-      teamsClause = clause.replace('team_id', 'p.team_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
+      teamsClause = `AND p.team_id IN (${clause})`;
+      filterParams.push(...teamIds);
+      paramOffset += teamIds.length;
     }
 
     let archivedClause = "";
@@ -80,7 +80,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
     const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
 
-    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField as string, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause, filterParams);
+    const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause, filterParams);
 
     for (const project of result.projects) {
       project.team_color = getColor(project.team_name) + TASK_PRIORITY_COLOR_ALPHA;
@@ -94,6 +94,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       project.actual_time = int(project.actual_time);
       project.estimated_time_string = this.convertMinutesToHoursAndMinutes(int(project.estimated_time));
       project.actual_time_string = this.convertSecondsToHoursAndMinutes(int(project.actual_time));
+
+      if (project.start_date) {
+        project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
+      }
+      if (project.end_date) {
+        project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
+      }
+
       project.tasks_stat = {
         todo: this.getPercentage(int(project.tasks_stat.todo), +project.tasks_stat.total),
         doing: this.getPercentage(int(project.tasks_stat.doing), +project.tasks_stat.total),
@@ -149,7 +157,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     if (key === DATE_RANGES.LAST_QUARTER)
       return { clause: ",(SELECT (CURRENT_DATE - INTERVAL '3 months')::DATE) AS start_date, (SELECT (CURRENT_DATE)::DATE) AS end_date", params: [] };
     if (key === DATE_RANGES.ALL_TIME)
-      return { clause: `,(SELECT (MIN(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $${paramOffset})) AS start_date, (SELECT (MAX(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $${paramOffset})) AS end_date`, params: [] };
+      return { clause: ",(SELECT (MIN(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS start_date, (SELECT (MAX(task_work_log.created_at)::DATE) FROM task_work_log WHERE task_id IN (SELECT id FROM tasks WHERE project_id = $1)) AS end_date", params: [] };
 
     return { clause: "", params: [] };
   }
@@ -272,46 +280,46 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     let statusesClause = "";
     if (req.query.statuses) {
       const statusIds = (req.query.statuses as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(statusIds, 'status_id', paramOffset);
-      statusesClause = clause.replace('status_id', 'p.status_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(statusIds, paramOffset);
+      statusesClause = `AND p.status_id IN (${clause})`;
+      filterParams.push(...statusIds);
+      paramOffset += statusIds.length;
     }
 
     let healthsClause = "";
     if (req.query.healths) {
       const healthIds = (req.query.healths as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(healthIds, 'health_id', paramOffset);
-      healthsClause = clause.replace('health_id', 'p.health_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(healthIds, paramOffset);
+      healthsClause = `AND p.health_id IN (${clause})`;
+      filterParams.push(...healthIds);
+      paramOffset += healthIds.length;
     }
 
     let categoriesClause = "";
     if (req.query.categories) {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(categoryIds, 'category_id', paramOffset);
-      categoriesClause = clause.replace('category_id', 'p.category_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
+      categoriesClause = `AND p.category_id IN (${clause})`;
+      filterParams.push(...categoryIds);
+      paramOffset += categoryIds.length;
     }
 
     let projectManagersClause = "";
     if (req.query.project_managers) {
       const managerIds = (req.query.project_managers as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildInClause(managerIds, paramOffset);
+      const { clause } = SqlHelper.buildInClause(managerIds, paramOffset);
       projectManagersClause = `AND p.id IN(SELECT project_id FROM project_members WHERE team_member_id IN(SELECT id FROM team_members WHERE user_id IN (${clause})) AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'))`;
-      filterParams.push(...params);
-      paramOffset += params.length;
+      filterParams.push(...managerIds);
+      paramOffset += managerIds.length;
     }
 
     let teamsClause = "";
     if (req.query.teams) {
       const teamIds = (req.query.teams as string).split(",").filter(id => id.trim());
-      const { clause, params } = SqlHelper.buildOptionalInClause(teamIds, 'team_id', paramOffset);
-      teamsClause = clause.replace('team_id', 'p.team_id');
-      filterParams.push(...params);
-      paramOffset += params.length;
+      const { clause } = SqlHelper.buildInClause(teamIds, paramOffset);
+      teamsClause = `AND p.team_id IN (${clause})`;
+      filterParams.push(...teamIds);
+      paramOffset += teamIds.length;
     }
 
     let archivedClause = "";
@@ -335,106 +343,170 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     switch (groupBy) {
       case "status":
-        groupField = "COALESCE(p.status_id::text, 'no-status')";
-        groupName = "COALESCE(ps.name, 'No Status')";
+        groupField = "COALESCE(p.status_id::text, 'no_status')";
+        groupName = "COALESCE(ps.name, 'no_status')";
         groupColor = "COALESCE(ps.color_code, '#888')";
         groupByFields = "p.status_id, ps.name, ps.color_code";
-        groupOrderBy = "COALESCE(ps.name, 'No Status')";
+        groupOrderBy = "COALESCE(ps.name, 'no_status')";
         break;
       case "health":
-        groupField = "COALESCE(p.health_id::text, 'not-set')";
-        groupName = "COALESCE(sph.name, 'Not Set')";
+        groupField = "COALESCE(p.health_id::text, 'not_set')";
+        groupName = "COALESCE(sph.name, 'not_set')";
         groupColor = "COALESCE(sph.color_code, '#888')";
-        // Join already exists at line 427: LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
+        groupJoin = "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
         groupByFields = "p.health_id, sph.name, sph.color_code";
-        groupOrderBy = "COALESCE(sph.name, 'Not Set')";
+        groupOrderBy = "COALESCE(sph.name, 'not_set')";
         break;
       case "team":
-        groupField = "COALESCE(p.team_id::text, 'no-team')";
-        groupName = "COALESCE(t.name, 'No Team')";
+        groupField = "COALESCE(p.team_id::text, 'no_team')";
+        groupName = "COALESCE(t.name, 'no_team')";
         groupColor = "COALESCE('#1890ff', '#888')";
         groupJoin = "LEFT JOIN teams t ON p.team_id = t.id";
         groupByFields = "p.team_id, t.name";
-        groupOrderBy = "COALESCE(t.name, 'No Team')";
+        groupOrderBy = "COALESCE(t.name, 'no_team')";
         break;
       case "manager":
-        groupField = "COALESCE((SELECT pm.team_member_id::text FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1), 'no-manager')";
-        groupName = "COALESCE((SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = (SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1)), 'No Manager')";
+        // Use LATERAL join to get manager info for each project
+        groupField = "COALESCE(mgr.manager_id::text, 'no_manager')";
+        groupName = "COALESCE(mgr.manager_name, 'no_manager')";
         groupColor = "'#1890ff'";
-        groupByFields = "(SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1), (SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = (SELECT pm.team_member_id FROM project_members pm WHERE pm.project_id = p.id AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER') LIMIT 1))";
-        groupOrderBy = groupName;
+        groupJoin = `LEFT JOIN LATERAL (
+          SELECT
+            pm.team_member_id as manager_id,
+            tmiv.name as manager_name
+          FROM project_members pm
+          JOIN team_member_info_view tmiv ON tmiv.team_member_id = pm.team_member_id
+          WHERE pm.project_id = p.id
+            AND pm.project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+          LIMIT 1
+        ) mgr ON true`;
+        groupByFields = "mgr.manager_id, mgr.manager_name";
+        groupOrderBy = "COALESCE(mgr.manager_name, 'no_manager')";
         break;
       case "category":
       default:
         groupField = "COALESCE(p.category_id::text, 'uncategorized')";
-        groupName = "COALESCE(pc.name, 'Uncategorized')";
+        groupName = "COALESCE(pc.name, 'uncategorized')";
         groupColor = "COALESCE(pc.color_code, '#888')";
         groupByFields = "p.category_id, pc.name, pc.color_code";
-        groupOrderBy = "COALESCE(pc.name, 'Uncategorized')";
+        groupOrderBy = "COALESCE(pc.name, 'uncategorized')";
     }
 
-    // Build optimized query with group-level task aggregations
+    // Add health join only if not already included in groupJoin (to avoid duplicate table alias)
+    const healthJoin = groupBy === "health" ? "" : "LEFT JOIN sys_project_healths sph ON p.health_id = sph.id";
+
+    // OPTIMIZED: Pre-compute task status categories to avoid repeated function calls
+    // Cache the category IDs to avoid subquery lookups in the main query
+    const statusCategoriesQuery = `
+      SELECT 
+        id,
+        is_done,
+        is_doing,
+        is_todo
+      FROM sys_task_status_categories
+    `;
+    const statusCategoriesResult = await db.query(statusCategoriesQuery);
+    const doneCategory = statusCategoriesResult.rows.find(r => r.is_done)?.id;
+    const doingCategory = statusCategoriesResult.rows.find(r => r.is_doing)?.id;
+    const todoCategory = statusCategoriesResult.rows.find(r => r.is_todo)?.id;
+
+    // Add category IDs to filter params and update paramOffset
+    filterParams.push(doneCategory, doingCategory, todoCategory);
+    const categoryParamStart = paramOffset;
+    paramOffset += 3; // Move offset past the 3 category parameters
+
+    // Build pagination clause using SqlHelper for safe parameter handling
+    const { clause: paginationClause, params: paginationParams } = SqlHelper.buildPaginationClause(
+      size,
+      offset,
+      paramOffset
+    );
+
+    // Build optimized query with group-level task aggregations and pagination
+    // OPTIMIZATION: Replace function calls with direct category_id comparisons
     const q = `
       WITH project_tasks AS (
-        SELECT 
+        SELECT
           t.project_id,
           COUNT(t.id) AS total_tasks,
-          COUNT(CASE WHEN is_completed(t.status_id, t.project_id) IS TRUE THEN 1 END) AS done_tasks,
-          COUNT(CASE WHEN is_doing(t.status_id, t.project_id) IS TRUE THEN 1 END) AS doing_tasks,
-          COUNT(CASE WHEN is_todo(t.status_id, t.project_id) IS TRUE THEN 1 END) AS todo_tasks
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart} THEN 1 END) AS done_tasks,
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 1} THEN 1 END) AS doing_tasks,
+          COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 2} THEN 1 END) AS todo_tasks
         FROM tasks t
+        INNER JOIN task_statuses ts ON t.status_id = ts.id
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
+      ),
+      total_projects AS (
+        SELECT COUNT(DISTINCT p.id) AS total_project_count
+        FROM projects p
+        LEFT JOIN project_categories pc ON p.category_id = pc.id
+        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        ${healthJoin}
+        ${groupJoin}
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+      ),
+      all_groups AS (
+        SELECT
+          ${groupField} AS group_id,
+          ${groupName} AS group_name,
+          ${groupColor} AS group_color,
+          COUNT(DISTINCT p.id) AS project_count,
+          COALESCE(SUM(pt.total_tasks), 0)::INT AS total_tasks,
+          COALESCE(SUM(pt.done_tasks), 0)::INT AS done_tasks,
+          COALESCE(SUM(pt.doing_tasks), 0)::INT AS doing_tasks,
+          COALESCE(SUM(pt.todo_tasks), 0)::INT AS todo_tasks,
+          COALESCE(ARRAY_TO_JSON(ARRAY_AGG(
+            JSON_BUILD_OBJECT(
+              'id', p.id,
+              'name', p.name,
+              'color_code', p.color_code,
+              'category_id', pc.id,
+              'category_name', pc.name,
+              'category_color', pc.color_code,
+              'status_id', ps.id,
+              'status_name', ps.name,
+              'status_color', ps.color_code,
+              'health_id', p.health_id,
+              'health_name', sph.name,
+              'health_color', sph.color_code,
+              'team_id', p.team_id,
+              'team_name', (SELECT name FROM teams WHERE id = p.team_id),
+              'start_date', p.start_date,
+              'end_date', p.end_date,
+              'tasks_stat', JSON_BUILD_OBJECT(
+                'total', COALESCE(pt.total_tasks, 0),
+                'todo', COALESCE(pt.todo_tasks, 0),
+                'doing', COALESCE(pt.doing_tasks, 0),
+                'done', COALESCE(pt.done_tasks, 0)
+              )
+            ) ORDER BY p.name
+          )), '[]'::JSON) AS projects
+        FROM projects p
+        LEFT JOIN project_categories pc ON p.category_id = pc.id
+        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
+        ${healthJoin}
+        LEFT JOIN project_tasks pt ON p.id = pt.project_id
+        ${groupJoin}
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+        GROUP BY ${groupByFields}
+      ),
+      total_count AS (
+        SELECT COUNT(*) as total FROM all_groups
       )
-      SELECT 
-        ${groupField} AS group_id,
-        ${groupName} AS group_name,
-        ${groupColor} AS group_color,
-        COUNT(DISTINCT p.id) AS project_count,
-        COALESCE(SUM(pt.total_tasks), 0)::INT AS total_tasks,
-        COALESCE(SUM(pt.done_tasks), 0)::INT AS done_tasks,
-        COALESCE(SUM(pt.doing_tasks), 0)::INT AS doing_tasks,
-        COALESCE(SUM(pt.todo_tasks), 0)::INT AS todo_tasks,
-        COALESCE(ARRAY_TO_JSON(ARRAY_AGG(
-          JSON_BUILD_OBJECT(
-            'id', p.id,
-            'name', p.name,
-            'color_code', p.color_code,
-            'category_id', pc.id,
-            'category_name', pc.name,
-            'category_color', pc.color_code,
-            'status_id', ps.id,
-            'status_name', ps.name,
-            'status_color', ps.color_code,
-            'health_id', p.health_id,
-            'health_name', sph.name,
-            'health_color', sph.color_code,
-            'team_id', p.team_id,
-            'team_name', (SELECT name FROM teams WHERE id = p.team_id),
-            'start_date', p.start_date,
-            'end_date', p.end_date,
-            'tasks_stat', JSON_BUILD_OBJECT(
-              'total', COALESCE(pt.total_tasks, 0),
-              'todo', COALESCE(pt.todo_tasks, 0),
-              'doing', COALESCE(pt.doing_tasks, 0),
-              'done', COALESCE(pt.done_tasks, 0)
-            )
-          ) ORDER BY p.name
-        )), '[]'::JSON) AS projects
-      FROM projects p
-      LEFT JOIN project_categories pc ON p.category_id = pc.id
-      LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
-      LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
-      LEFT JOIN project_tasks pt ON p.id = pt.project_id
-      ${groupJoin}
-      WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
-      GROUP BY ${groupByFields}
-      ORDER BY ${groupOrderBy}
+      SELECT
+        ag.*,
+        tc.total as total_groups,
+        tp.total_project_count
+      FROM all_groups ag
+      CROSS JOIN total_count tc
+      CROSS JOIN total_projects tp
+      ORDER BY ag.group_name
+      ${paginationClause}
     `;
 
-    // Build final params: teamId ($1), searchParams ($2+), then filter params
-    // Note: getGrouped query doesn't use LIMIT/OFFSET
-    const finalParams = [teamId, ...filterParams];
+    // Build final params: teamId ($1), searchParams ($2+), filter params, category IDs, then LIMIT and OFFSET
+    const finalParams = [teamId, ...filterParams, ...paginationParams];
     const result = await db.query(q, finalParams);
 
     const groups = result.rows.map(row => ({
@@ -446,12 +518,27 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       done_tasks: int(row.done_tasks),
       doing_tasks: int(row.doing_tasks),
       todo_tasks: int(row.todo_tasks),
-      projects: row.projects
+    
+      projects: row.projects.map((project: any) => {
+        // FIX: Format dates consistently like tasks to avoid timezone issues
+        if (project.start_date) {
+          project.start_date = moment.utc(project.start_date).format('YYYY-MM-DD');
+        }
+        if (project.end_date) {
+          project.end_date = moment.utc(project.end_date).format('YYYY-MM-DD');
+        }
+        return project;
+      })
     }));
+
+    // Get total_groups and total_project_count from first row (all rows have the same totals from CROSS JOIN)
+    const totalGroups = result.rows.length > 0 ? int(result.rows[0].total_groups) : 0;
+    const totalProjects = result.rows.length > 0 ? int(result.rows[0].total_project_count) : 0;
 
     return res.status(200).send(new ServerResponse(true, {
       groups,
-      total_groups: groups.length
+      total_groups: totalGroups,
+      total: totalProjects
     }));
   }
 

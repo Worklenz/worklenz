@@ -1,6 +1,33 @@
 {
-  "inputPlaceholder": "Add a comment..",
-  "addButton": "Add",
+  "title": "Project Updates",
+  "inputPlaceholder": "Type your update here... Use @ to mention team members",
+  "addButton": "Post Update",
   "cancelButton": "Cancel",
-  "deleteButton": "Delete"
+  "deleteButton": "Delete",
+  "deleteConfirmTitle": "Delete this update?",
+  "deleteConfirmContent": "Are you sure you want to delete this update? This action cannot be undone.",
+  "yes": "Yes",
+  "no": "No",
+  "emptyState": "No updates yet. Start the conversation!",
+  "historyLockedBoundary": "Chat history is limited to the last 90 days on this plan",
+  "historyLockedTitle": "Chat History Locked",
+  "historyLockedBody": "Chat history beyond 90 days is available on the Business plan.",
+  "viewFullHistory": "View chat history",
+  "upgradeNow": "Upgrade Now",
+  "reactions": {
+    "like": "Like",
+    "love": "Love",
+    "laugh": "Laugh",
+    "surprised": "Surprised",
+    "sad": "Sad",
+    "celebrate": "Celebrate",
+    "rocket": "Rocket",
+    "eyes": "Eyes",
+    "fire": "Fire",
+    "hundred": "100"
+  },
+  "actions": {
+    "edit": "Edit",
+    "save": "Save"
+  }
 }

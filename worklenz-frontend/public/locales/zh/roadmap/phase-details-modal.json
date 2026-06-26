@@ -1,0 +1,36 @@
+{
+  "title": "Phase Details",
+  "overview": {
+    "title": "Overview",
+    "totalTasks": "Total Tasks",
+    "completion": "Completion",
+    "progress": "Progress"
+  },
+  "timeline": {
+    "title": "Timeline",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "status": "Status",
+    "notSet": "Not set",
+    "statusLabels": {
+      "upcoming": "Upcoming",
+      "active": "In Progress",
+      "overdue": "Overdue",
+      "notScheduled": "Not Scheduled"
+    }
+  },
+  "taskBreakdown": {
+    "title": "Task Breakdown",
+    "completed": "Completed",
+    "pending": "Pending",
+    "overdue": "Overdue"
+  },
+  "phaseColor": {
+    "title": "Phase Color",
+    "description": "Phase identifier color"
+  },
+  "tasksInPhase": {
+    "title": "Tasks in this Phase",
+    "noTasks": "No tasks in this phase"
+  }
+}

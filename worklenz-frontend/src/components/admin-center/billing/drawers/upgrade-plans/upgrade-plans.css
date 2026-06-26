@@ -2,6 +2,65 @@
   padding: 24px;
 }
 
+.upgrade-plan-card .ant-card-body {
+  gap: 0;
+}
+
+.upgrade-plan-card__header {
+  margin-bottom: 12px;
+  min-height: 64px;
+}
+
+.upgrade-plan-card__price {
+  min-height: 110px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.upgrade-plan-card__action {
+  margin-top: 12px;
+  margin-bottom: 16px;
+}
+
+.upgrade-plan-card__features {
+  flex: 1;
+}
+
+/* Plan Ribbon Styles */
+.plan-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  transform: translate(8px, -8px);
+  border-radius: 0 8px 0 8px;
+  min-width: 80px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Dark theme ribbon styles */
+[data-theme="dark"] .plan-ribbon {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Responsive ribbon adjustments */
+@media (max-width: 600px) {
+  .plan-ribbon {
+    font-size: 10px;
+    padding: 3px 8px;
+    min-width: 60px;
+    transform: translate(4px, -4px);
+  }
+}
+
 .upgrade-plans-row-responsive {
   width: 100%;
   flex-wrap: wrap;
@@ -20,6 +79,11 @@
 }
 
 @media (max-width: 600px) {
+  .upgrade-plan-card__header,
+  .upgrade-plan-card__price {
+    min-height: auto;
+  }
+
   .upgrade-plans-responsive {
     padding: 8px;
   }
@@ -41,4 +105,4 @@
   .upgrade-plans-responsive .ant-btn {
     margin-top: 12px;
   }
-} 
+}

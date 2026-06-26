@@ -2,6 +2,12 @@
   "searchByNamePlaceholder": "Search by name",
   "searchByCategoryPlaceholder": "Search by category",
 
+  "teams": "Teams",
+  "allTeams": "All Teams",
+  "searchByName": "Search by name",
+  "selectAll": "Select All",
+  "clearAll": "Clear All",
+
   "statusText": "Status",
   "healthText": "Health",
   "categoryText": "Category",
@@ -31,5 +37,13 @@
   "projectHealthText": "Project Health",
   "projectUpdateText": "Project Update",
   "clientText": "Client",
-  "teamText": "Team"
+  "teamText": "Team",
+
+  "tableViewText": "Table",
+  "groupedViewText": "Grouped",
+  "groupByCategoryText": "Category",
+  "groupByStatusText": "Status",
+  "groupByHealthText": "Health",
+  "groupByTeamText": "Team",
+  "groupByManagerText": "Manager"
 }

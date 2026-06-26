@@ -9,7 +9,13 @@
   "pinTooltip": "Klikoni për ta fiksuar në menynë kryesore",
   "colorChangeTooltip": "Klikoni për të ndryshuar ngjyrën",
   "pageTitle": "Menaxho Etiketat",
-  "deleteConfirmTitle": "Jeni i sigurt që dëshironi ta fshini këtë?",
+  "deleteConfirmTitle": "Fshi Etiketën",
   "deleteButton": "Fshi",
-  "cancelButton": "Anulo"
+  "cancelButton": "Anulo",
+  "labelInUseMessage": "Etiketa \"{{labelName}}\" është aktualisht caktuar për {{count}} detyrë{{plural}}.",
+  "labelDeleteWarning": "⚠️ Fshirja e kësaj etikete do ta heqë atë nga të gjitha {{count}} detyrë{{plural}} të caktuara. Ky veprim nuk mund të zhbëhet.",
+  "deleteConfirmMessage": "Jeni i sigurt që dëshironi të fshini etiketën \"{{labelName}}\"? Ky veprim nuk mund të zhbëhet.",
+  "editTooltip": "Redakto",
+  "deleteTooltip": "Fshi",
+  "search": "Kërko"
 }

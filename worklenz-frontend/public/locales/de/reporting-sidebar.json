@@ -3,6 +3,8 @@
   "projects": "Projekte",
   "members": "Mitglieder",
   "timeReports": "Zeitberichte",
+  "timesheet": "Timesheet",
   "estimateVsActual": "Schätzen vs. Tatsächlich",
+  "logs": "Protokolle",
   "currentOrganizationTooltip": "Aktuelle Organisation"
 }

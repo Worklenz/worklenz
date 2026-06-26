@@ -43,6 +43,11 @@ export interface IProjectUpdateCommentViewModel extends IProjectUpdateComment {
   avatar_url?: string;
   color_code?: string;
   mentions: [user_name?: string, user_email?: string];
+  reactions?: any[];
+  edited?: boolean;
+  edit_count?: number;
+  last_edited_at?: string;
+  last_edited_by_name?: string;
 }
 
 export enum IProjectFilter {
@@ -61,7 +66,7 @@ export interface CategoryCellProps {
 }
 
 export interface ActionButtonsProps {
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
   record: IProjectViewModel;
   setProjectId: (id: string) => void;
   dispatch: AppDispatch;
@@ -86,7 +91,7 @@ export interface ProjectListTableProps {
     filters: Record<string, FilterValue | null>,
     sorter: SorterResult<IProjectViewModel> | SorterResult<IProjectViewModel>[]
   ) => void;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
 }
 
@@ -96,6 +101,7 @@ export enum ProjectViewType {
 }
 
 export enum ProjectGroupBy {
+  PRIORITY = 'priority',
   CLIENT = 'client',
   CATEGORY = 'category',
 }
@@ -111,26 +117,26 @@ export interface ProjectViewControlsProps {
   viewState: ProjectViewState;
   onViewChange: (state: ProjectViewState) => void;
   availableGroupByOptions?: ProjectGroupBy[];
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface ProjectGroupCardProps {
   group: GroupedProject;
   navigate: NavigateFunction;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface ProjectGroupListProps {
   groups: GroupedProject[];
   navigate: NavigateFunction;
-  onProjectSelect: (id: string) => void;
+  onProjectSelect: (id: string, defaultView?: string) => void;
   onArchive: (id: string) => void;
   isOwnerOrAdmin: boolean;
   loading: boolean;
-  t: (key: string) => string;
+  t: (key: string, options?: { defaultValue: string }) => string;
 }
 
 export interface GroupedProject {

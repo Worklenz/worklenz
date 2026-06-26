@@ -59,9 +59,7 @@ i18n.init({
 const renderWithProviders = (component: React.ReactElement) => {
   return render(
     <BrowserRouter>
-      <I18nextProvider i18n={i18n}>
-        {component}
-      </I18nextProvider>
+      <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
     </BrowserRouter>
   );
 };
@@ -70,10 +68,10 @@ describe('LoggingOutPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    
+
     // Mock console.error to avoid noise in tests
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     vi.mock('@/hooks/useAuth', () => ({
       useAuthService: () => mockAuthService,
     }));
@@ -86,7 +84,7 @@ describe('LoggingOutPage', () => {
 
   it('renders loading state correctly', () => {
     renderWithProviders(<LoggingOutPage />);
-    
+
     expect(screen.getByText('Logging Out...')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
   });
@@ -188,9 +186,15 @@ describe('LoggingOutPage', () => {
   });
 
   it('shows consistent loading UI throughout logout process', async () => {
-    mockAuthService.signOut.mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
-    (authApiService.logout as any).mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
-    (CacheCleanup.clearAllCaches as any).mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+    mockAuthService.signOut.mockImplementation(
+      () => new Promise(resolve => setTimeout(resolve, 100))
+    );
+    (authApiService.logout as any).mockImplementation(
+      () => new Promise(resolve => setTimeout(resolve, 100))
+    );
+    (CacheCleanup.clearAllCaches as any).mockImplementation(
+      () => new Promise(resolve => setTimeout(resolve, 100))
+    );
 
     renderWithProviders(<LoggingOutPage />);
 
@@ -200,7 +204,7 @@ describe('LoggingOutPage', () => {
 
     // Should continue showing loading state during the process
     vi.advanceTimersByTime(50);
-    
+
     expect(screen.getByText('Logging Out...')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
   });

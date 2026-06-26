@@ -37,5 +37,11 @@
   "TASKS_SELECTED_plural": "{{count}} tarefas selecionadas",
   "DELETE_TASKS_CONFIRM": "Deletar {{count}} tarefa?",
   "DELETE_TASKS_CONFIRM_plural": "Deletar {{count}} tarefas?",
-  "DELETE_TASKS_WARNING": "Esta ação não pode ser desfeita."
+  "DELETE_TASKS_WARNING": "Esta ação não pode ser desfeita.",
+  "SET_DUE_DATE": "Definir Data de Vencimento",
+  "CLEAR_DUE_DATE": "Limpar Data de Vencimento",
+  "DUE_DATE_UPDATED": "Data de vencimento atualizada com sucesso",
+  "DUE_DATE_CLEARED": "Data de vencimento limpa com sucesso",
+  "archiveSuccessTitle": "Atualização em massa concluída",
+  "archiveSuccessMessage": "{{parentCount}} tarefas e {{subtaskCount}} subtarefas foram {{action}}das."
 }

@@ -11,9 +11,7 @@ export const SurveySettingsCard: React.FC = () => {
   const { hasCompletedSurvey, loading } = useSurveyStatus();
 
   if (loading) {
-    return (
-      <Card loading={true} />
-    );
+    return <Card loading={true} />;
   }
 
   return (
@@ -38,11 +36,7 @@ export const SurveySettingsCard: React.FC = () => {
             icon={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
             title="Survey Completed"
             subTitle="Thank you for completing the personalization survey. Your responses help us improve Worklenz."
-            extra={
-              <Button onClick={() => setShowModal(true)}>
-                Update Your Responses
-              </Button>
-            }
+            extra={<Button onClick={() => setShowModal(true)}>Update Your Responses</Button>}
           />
         ) : (
           <>
@@ -62,12 +56,7 @@ export const SurveySettingsCard: React.FC = () => {
         )}
       </Card>
 
-      {showModal && (
-        <SurveyPromptModal 
-          forceShow={true} 
-          onClose={() => setShowModal(false)} 
-        />
-      )}
+      {showModal && <SurveyPromptModal forceShow={true} onClose={() => setShowModal(false)} />}
     </>
   );
 };

@@ -1,0 +1,58 @@
+{
+  "title": "Integrations",
+  "tooltip": "Manage project integrations",
+  "upgradeRequired": "Integrations available on Business plan",
+  "manageAll": "Manage All Integrations",
+  "comingSoon": "Coming Soon",
+  "cancel": "Cancel",
+
+  "slack": {
+    "title": "Slack",
+    "description": "Send notifications to Slack channels",
+    "notConnected": "Please connect your Slack workspace in Settings first",
+    "quickAddTitle": "Add Slack to Project",
+    "currentProject": "Project",
+    "selectChannel": "Slack Channel",
+    "selectChannelPlaceholder": "Select a Slack channel...",
+    "selectNotifications": "Notification Types",
+    "selectNotificationsPlaceholder": "Select notification types...",
+    "refresh": "Refresh",
+    "addButton": "Add Integration",
+    "inviteBotTip": "Tip: Make sure to invite @Worklenz bot to your Slack channel first!"
+  },
+
+  "teams": {
+    "title": "Microsoft Teams",
+    "description": "Send notifications to Teams channels"
+  },
+
+  "github": {
+    "title": "GitHub",
+    "description": "Sync tasks with GitHub issues"
+  },
+
+  "notificationTypes": {
+    "taskCreated": "Task Created",
+    "taskAssigned": "Task Assigned",
+    "statusChanged": "Status Changed",
+    "taskCompleted": "Task Completed",
+    "commentAdded": "Comment Added",
+    "dueDateChanged": "Due Date Changed"
+  },
+
+  "validation": {
+    "selectChannel": "Please select a Slack channel",
+    "selectNotifications": "Please select at least one notification type"
+  },
+
+  "messages": {
+    "integrationAdded": "Slack integration added successfully!",
+    "channelsRefreshed": "Channels refreshed successfully"
+  },
+
+  "errors": {
+    "loadChannelsFailed": "Failed to load channels",
+    "refreshChannelsFailed": "Failed to refresh channels",
+    "addIntegrationFailed": "Failed to add integration"
+  }
+}

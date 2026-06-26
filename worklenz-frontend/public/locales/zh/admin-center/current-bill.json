@@ -24,6 +24,9 @@
   "paymentMethod": "支付方式",
   "status": "状态",
   "ltdUsers": "您最多可以添加{{ltd_users}}名用户。",
+  "appsumoBusinessUnlockTitle": "兑换 5 个 AppSumo 代码解锁 Business 计划",
+  "appsumoBusinessUnlockDescription": "兑换 {{required}} 个 AppSumo 代码即可自动解锁 Business 计划功能。您已兑换 {{count}}/{{required}} 个代码。",
+  "redeemAnotherCode": "再兑换一个代码",
   "totalSeats": "总席位",
   "availableSeats": "可用席位",
   "addMoreSeats": "添加更多席位",
@@ -35,6 +38,7 @@
   "seatLabel": "席位数量",
   "freePlan": "免费计划",
   "startup": "初创",
+  "pro": "专业版",
   "business": "商业",
   "tag": "最受欢迎",
   "enterprise": "企业",
@@ -93,5 +97,7 @@
   "expiredDayAgo": "{{days}}天前",
   "expiredDaysAgo": "{{days}}天前",
   "continueWith": "继续使用{{plan}}",
-  "changeToPlan": "更改为{{plan}}"
+  "changeToPlan": "更改为{{plan}}",
+  "managementUrl": "管理链接",
+  "updateCardDetails": "更新银行卡信息"
 }

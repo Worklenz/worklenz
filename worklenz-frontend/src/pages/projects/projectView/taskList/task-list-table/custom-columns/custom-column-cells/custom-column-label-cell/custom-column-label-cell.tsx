@@ -1,4 +1,13 @@
-import { Badge, Card, Dropdown, Empty, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Card,
+  Dropdown,
+  Empty,
+  Flex,
+  Menu,
+  MenuProps,
+  Typography,
+} from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { DownOutlined } from '@/shared/antd-imports';
 // custom css file

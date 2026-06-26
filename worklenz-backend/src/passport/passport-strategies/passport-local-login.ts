@@ -38,6 +38,39 @@ async function handleLogin(req: Request, email: string, password: string, done: 
     
     if (passwordMatch) {
       delete data.password;
+
+      const { team_id, team_member_id } = req.body;
+
+      if (team_id && team_member_id) {
+        try {
+          const invitationContextQuery = `
+            SELECT 1
+            FROM team_members tm
+            INNER JOIN team_member_info_view tmiv ON tmiv.team_member_id = tm.id
+            WHERE tm.id = $1
+              AND tm.team_id = $2
+              AND LOWER(tmiv.email) = $3
+            LIMIT 1;
+          `;
+          const invitationContextResult = await db.query(invitationContextQuery, [
+            team_member_id,
+            team_id,
+            normalizedEmail,
+          ]);
+
+          if (invitationContextResult.rowCount && invitationContextResult.rowCount > 0) {
+            const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+            await db.query(setActiveTeamQuery, [data.id, team_id]);
+          }
+        } catch (error) {
+          log_error(error, {
+            userId: data.id,
+            teamId: team_id,
+            teamMemberId: team_member_id,
+          });
+        }
+      }
+
       const successMsg = "User successfully logged in";
       req.flash(SUCCESS_KEY, successMsg);
       return done(null, data);

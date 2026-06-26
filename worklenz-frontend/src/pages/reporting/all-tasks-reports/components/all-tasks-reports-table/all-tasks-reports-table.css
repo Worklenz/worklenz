@@ -1,0 +1,65 @@
+/* All Tasks Reports Table Styles */
+
+.all-tasks-table {
+  width: 100%;
+}
+
+.all-tasks-table .ant-table-thead > tr > th {
+  padding: 8px 8px !important;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.all-tasks-table .ant-table-tbody > tr > td {
+  padding: 6px 8px !important;
+}
+
+.all-tasks-table .ant-table-row {
+  transition: background-color 0.15s ease;
+}
+
+.all-tasks-table .ant-table-row:hover > td {
+  background-color: var(--ant-color-primary-bg) !important;
+}
+
+/* Task name cell */
+.task-name-cell {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-name-cell:hover {
+  color: var(--ant-color-primary);
+}
+
+/* Compact tags */
+.all-tasks-table .ant-tag {
+  padding: 0 6px;
+  line-height: 18px;
+}
+
+/* Avatar group spacing */
+.all-tasks-table .ant-avatar-group {
+  display: flex;
+  align-items: center;
+}
+
+.all-tasks-table .ant-avatar {
+  border: 1px solid var(--ant-color-bg-container) !important;
+}
+
+/* Dark mode specific */
+:root[data-theme="dark"] .all-tasks-table .ant-table-row:hover > td {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .all-tasks-table .ant-table-thead > tr > th,
+  .all-tasks-table .ant-table-tbody > tr > td {
+    padding: 4px 6px !important;
+  }
+}

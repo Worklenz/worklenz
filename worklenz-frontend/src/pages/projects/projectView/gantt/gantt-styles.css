@@ -1,0 +1,573 @@
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Gantt task list specific styles */
+.gantt-task-list-container {
+  /* Ensure the task list stays fixed and doesn't interfere with timeline scrolling */
+  position: relative;
+  box-sizing: border-box;
+}
+
+.gantt-timeline-container {
+  /* Ensure timeline scrolling doesn't affect task list positioning */
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar for task list - hide scrollbar */
+.gantt-task-list-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox - hide scrollbar */
+  -ms-overflow-style: none; /* IE and Edge - hide scrollbar */
+}
+
+/* Webkit scrollbar styling - hide scrollbar */
+.gantt-task-list-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Gantt chart scrollbar - show both vertical and horizontal */
+.gantt-chart-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.gantt-chart-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gantt-chart-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 4px;
+}
+
+.gantt-chart-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
+}
+
+/* Firefox - hide horizontal scrollbar */
+.gantt-chart-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 transparent;
+}
+
+/* Dark mode chart scrollbar */
+.dark .gantt-chart-scroll::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+}
+
+.dark .gantt-chart-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}
+
+.dark .gantt-chart-scroll {
+  scrollbar-color: #4a5568 transparent;
+}
+
+/* Ensure consistent row heights and alignment */
+.gantt-task-list-scroll,
+.gantt-chart-scroll {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* Ensure same scrolling behavior */
+  scroll-behavior: auto;
+  /* Prevent sub-pixel rendering issues */
+  transform: translateZ(0);
+  will-change: scroll-position;
+}
+
+/* Ensure all rows have exact same box model */
+.gantt-task-list-scroll > div > div > div,
+.gantt-chart-scroll > div > div > div {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force consistent border rendering */
+.gantt-task-list-scroll .border-b,
+.gantt-chart-scroll .border-b {
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+}
+
+/* Improve visual hierarchy for phase rows */
+.gantt-phase-row {
+  position: relative;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.gantt-phase-row:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.gantt-phase-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: currentColor;
+  opacity: 0.6;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.gantt-phase-row:hover::before {
+  opacity: 0.8;
+}
+
+/* Task row hover states removed to prevent full-row shading */
+
+/* Improved button styles */
+.gantt-add-task-btn {
+  transition: all 0.2s ease;
+  border-radius: 6px;
+}
+
+.gantt-add-task-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Phase expansion transitions */
+.gantt-phase-children {
+  overflow: hidden;
+  transition:
+    max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease-in-out;
+}
+
+.gantt-phase-children.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.gantt-phase-children.expanded {
+  max-height: 2000px; /* Adjust based on expected max children */
+  opacity: 1;
+}
+
+/* Individual task transitions */
+.gantt-task-row,
+.gantt-add-task-inline {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Staggered animation for multiple tasks */
+.gantt-task-stagger-1 {
+  animation-delay: 0.05s;
+}
+.gantt-task-stagger-2 {
+  animation-delay: 0.1s;
+}
+.gantt-task-stagger-3 {
+  animation-delay: 0.15s;
+}
+.gantt-task-stagger-4 {
+  animation-delay: 0.2s;
+}
+.gantt-task-stagger-5 {
+  animation-delay: 0.25s;
+}
+
+/* Expand/collapse icon transitions */
+.gantt-expand-icon {
+  transition: transform 0.2s ease-in-out;
+}
+
+.gantt-expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+/* Task row slide-in animation */
+.gantt-task-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.gantt-task-slide-out {
+  animation: slideOut 0.2s ease-in forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 36px; /* Height of a task row */
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 36px;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+}
+
+/* Add task button specific styles */
+.gantt-add-task-inline {
+  transition: all 0.2s ease-in-out;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Timeline task bar transitions */
+.gantt-chart-scroll .gantt-task-slide-in {
+  animation: slideInTimeline 0.3s ease-out forwards;
+}
+
+@keyframes slideInTimeline {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    max-height: 36px;
+  }
+}
+
+/* Enhanced timeline task bar styling */
+.gantt-chart-scroll .relative {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Ensure timeline task bars have smooth hover transitions */
+.gantt-chart-scroll .hover\\:bg-gray-50:hover {
+  transition: background-color 0.15s ease-in-out;
+}
+
+/* Task bar resize and drag styles */
+.gantt-task-bar {
+  user-select: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
+}
+
+.gantt-task-bar:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.gantt-task-bar.dragging {
+  opacity: 0.8;
+  cursor: move !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+}
+
+.gantt-task-bar.resizing {
+  opacity: 0.8;
+  cursor: ew-resize !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Resize handles - enhanced for better visibility and interaction */
+.gantt-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  background: transparent;
+  cursor: ew-resize !important;
+  opacity: 0.3;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.gantt-resize-handle:hover,
+.group:hover .gantt-resize-handle {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.gantt-resize-handle:active {
+  background: rgba(255, 255, 255, 0.4) !important;
+  cursor: ew-resize !important;
+}
+
+.gantt-resize-handle.left {
+  left: 0;
+  border-left: 2px solid transparent;
+}
+
+.gantt-resize-handle.right {
+  right: 0;
+  border-right: 2px solid transparent;
+}
+
+.gantt-resize-handle:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+.gantt-resize-handle.left:hover {
+  border-left-color: rgba(255, 255, 255, 0.8);
+}
+
+.gantt-resize-handle.right:hover {
+  border-right-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Resize handle indicators */
+.gantt-resize-handle::after {
+  content: "";
+  width: 2px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gantt-resize-handle:hover::after,
+.group:hover .gantt-resize-handle::after {
+  opacity: 1;
+}
+
+/* Task without dates indicator */
+.gantt-task-no-dates {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: crosshair;
+}
+
+.gantt-task-no-dates:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.dark .gantt-task-no-dates:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.gantt-task-no-dates-hint {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #6b7280;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+.dark .gantt-task-no-dates-hint {
+  background: #1f2937;
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+/* Disable text selection during resize/drag */
+body.gantt-resizing,
+body.gantt-dragging {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+body.gantt-resizing *,
+body.gantt-dragging * {
+  cursor: inherit !important;
+}
+
+/* Enhanced Phase Bar Styles */
+.gantt-phase-bar {
+  position: relative;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gantt-phase-bar:hover {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  /* Removed translateY to prevent push-down effect */
+}
+
+/* Phase bar gradient overlay for depth */
+.gantt-phase-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
+  border-radius: 0.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Text shadow for better readability */
+.text-shadow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Phase bar hover animation */
+@keyframes phaseBarPulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(var(--phase-color), 0.5);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(var(--phase-color), 0.3);
+  }
+}
+
+.gantt-phase-bar:hover > div {
+  animation: phaseBarPulse 2s ease-in-out infinite;
+}
+
+/* Phase icon styling removed - no longer used */
+
+/* Progress indicator styling */
+.gantt-phase-progress {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(2px);
+}
+
+/* Distinguish phase bars in dark mode */
+.dark .gantt-phase-bar {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+}
+
+.dark .gantt-phase-bar:hover {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+/* Make phase bars more prominent than task bars */
+.gantt-phase-bar > div {
+  position: relative;
+  z-index: 20;
+  border-width: 2px;
+  border-style: solid;
+}
+
+/* Ensure phase bars appear above task bars */
+.gantt-phase-bar {
+  z-index: 15 !important;
+}
+
+/* Task bars should have lower z-index */
+.gantt-task-bar {
+  z-index: 10;
+}
+
+/* Task Preview Hover Effect */
+.gantt-task-preview-container {
+  position: relative;
+}
+
+.gantt-task-preview-tracker {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+
+.gantt-task-preview-bar {
+  z-index: 8;
+}
+
+/* Dark mode support for preview */
+.dark .gantt-task-preview-bar {
+  background: linear-gradient(135deg, #059669, #047857) !important;
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.5) !important;
+  border-color: rgba(5, 150, 105, 0.7) !important;
+}
+
+.gantt-scroll-container {
+  position: relative;
+}
+
+/* Firefox scrollbar */
+.gantt-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) scrollbar */
+.gantt-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(155, 155, 155, 0.5);
+  border-radius: 4px;
+}
+
+.gantt-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(155, 155, 155, 0.7);
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] .gantt-scroll-container {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+[data-theme="dark"] .gantt-scroll-container::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .gantt-scroll-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}

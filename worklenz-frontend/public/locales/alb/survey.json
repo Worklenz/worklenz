@@ -10,5 +10,6 @@
   "submitSuccessMessage": "Faleminderit që plotësuat anketën!",
   "submitErrorMessage": "Dështoi dërgimi i anketës. Ju lutemi provoni përsëri.",
   "submitErrorLog": "Dështoi dërgimi i anketës",
-  "fetchErrorLog": "Dështoi marrja e anketës"
-} 
+  "fetchErrorLog": "Dështoi marrja e anketës",
+  "dontShowAgain": "Mos e shfaq më këtë anketë"
+}

@@ -1,8 +1,8 @@
 import React, { useReducer, useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { 
-  GanttTask, 
-  ColumnConfig, 
-  TimelineConfig, 
+import {
+  GanttTask,
+  ColumnConfig,
+  TimelineConfig,
   VirtualScrollConfig,
   ZoomLevel,
   GanttState,
@@ -10,72 +10,72 @@ import {
   AdvancedGanttProps,
   SelectionState,
   GanttViewState,
-  DragState
+  DragState,
 } from '../../types/advanced-gantt.types';
 import GanttGrid from './GanttGrid';
 import DraggableTaskBar from './DraggableTaskBar';
 import TimelineMarkers, { holidayPresets, workingDayPresets } from './TimelineMarkers';
 import VirtualScrollContainer, { VirtualTimeline } from './VirtualScrollContainer';
-import { 
-  usePerformanceMonitoring, 
-  useTaskCalculations, 
+import {
+  usePerformanceMonitoring,
+  useTaskCalculations,
   useDateCalculations,
   useDebounce,
-  useThrottle
+  useThrottle,
 } from '../../utils/gantt-performance';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
 
 // Default configurations
 const defaultColumns: ColumnConfig[] = [
-  { 
-    field: 'name', 
-    title: 'Task Name', 
-    width: 250, 
-    minWidth: 150, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'name',
+    title: 'Task Name',
+    width: 250,
+    minWidth: 150,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    editor: 'text'
+    editor: 'text',
   },
-  { 
-    field: 'startDate', 
-    title: 'Start Date', 
-    width: 120, 
-    minWidth: 100, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'startDate',
+    title: 'Start Date',
+    width: 120,
+    minWidth: 100,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    editor: 'date'
+    editor: 'date',
   },
-  { 
-    field: 'endDate', 
-    title: 'End Date', 
-    width: 120, 
-    minWidth: 100, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'endDate',
+    title: 'End Date',
+    width: 120,
+    minWidth: 100,
+    resizable: true,
+    sortable: true,
     fixed: true,
-    editor: 'date'
+    editor: 'date',
   },
-  { 
-    field: 'duration', 
-    title: 'Duration', 
-    width: 80, 
-    minWidth: 60, 
-    resizable: true, 
-    sortable: false, 
-    fixed: true 
-  },
-  { 
-    field: 'progress', 
-    title: 'Progress', 
-    width: 100, 
-    minWidth: 80, 
-    resizable: true, 
-    sortable: true, 
+  {
+    field: 'duration',
+    title: 'Duration',
+    width: 80,
+    minWidth: 60,
+    resizable: true,
+    sortable: false,
     fixed: true,
-    editor: 'number'
+  },
+  {
+    field: 'progress',
+    title: 'Progress',
+    width: 100,
+    minWidth: 80,
+    resizable: true,
+    sortable: true,
+    fixed: true,
+    editor: 'number',
   },
 ];
 
@@ -99,33 +99,33 @@ const defaultVirtualScrollConfig: VirtualScrollConfig = {
 };
 
 const defaultZoomLevels: ZoomLevel[] = [
-  { 
-    name: 'Year', 
-    dayWidth: 2, 
+  {
+    name: 'Year',
+    dayWidth: 2,
     scale: 0.1,
     topTier: { unit: 'year', format: 'yyyy' },
-    bottomTier: { unit: 'month', format: 'MMM' }
+    bottomTier: { unit: 'month', format: 'MMM' },
   },
-  { 
-    name: 'Month', 
-    dayWidth: 8, 
+  {
+    name: 'Month',
+    dayWidth: 8,
     scale: 0.5,
     topTier: { unit: 'month', format: 'MMM yyyy' },
-    bottomTier: { unit: 'week', format: 'w' }
+    bottomTier: { unit: 'week', format: 'w' },
   },
-  { 
-    name: 'Week', 
-    dayWidth: 25, 
+  {
+    name: 'Week',
+    dayWidth: 25,
     scale: 1,
     topTier: { unit: 'week', format: 'MMM dd' },
-    bottomTier: { unit: 'day', format: 'dd' }
+    bottomTier: { unit: 'day', format: 'dd' },
   },
-  { 
-    name: 'Day', 
-    dayWidth: 50, 
+  {
+    name: 'Day',
+    dayWidth: 50,
     scale: 2,
     topTier: { unit: 'day', format: 'MMM dd' },
-    bottomTier: { unit: 'hour', format: 'HH' }
+    bottomTier: { unit: 'hour', format: 'HH' },
   },
 ];
 
@@ -134,35 +134,33 @@ function ganttReducer(state: GanttState, action: GanttAction): GanttState {
   switch (action.type) {
     case 'SET_TASKS':
       return { ...state, tasks: action.payload };
-    
+
     case 'UPDATE_TASK':
       return {
         ...state,
         tasks: state.tasks.map(task =>
-          task.id === action.payload.id
-            ? { ...task, ...action.payload.updates }
-            : task
+          task.id === action.payload.id ? { ...task, ...action.payload.updates } : task
         ),
       };
-    
+
     case 'ADD_TASK':
       return { ...state, tasks: [...state.tasks, action.payload] };
-    
+
     case 'DELETE_TASK':
       return {
         ...state,
         tasks: state.tasks.filter(task => task.id !== action.payload),
       };
-    
+
     case 'SET_SELECTION':
       return {
         ...state,
         selectionState: { ...state.selectionState, selectedTasks: action.payload },
       };
-    
+
     case 'SET_DRAG_STATE':
       return { ...state, dragState: action.payload };
-    
+
     case 'SET_ZOOM_LEVEL':
       const newZoomLevel = Math.max(0, Math.min(state.zoomLevels.length - 1, action.payload));
       return {
@@ -175,45 +173,41 @@ function ganttReducer(state: GanttState, action: GanttAction): GanttState {
           bottomTier: state.zoomLevels[newZoomLevel].bottomTier,
         },
       };
-    
+
     case 'SET_SCROLL_POSITION':
       return {
         ...state,
         viewState: { ...state.viewState, scrollPosition: action.payload },
       };
-    
+
     case 'SET_SPLITTER_POSITION':
       return {
         ...state,
         viewState: { ...state.viewState, splitterPosition: action.payload },
       };
-    
+
     case 'TOGGLE_TASK_EXPANSION':
       return {
         ...state,
         tasks: state.tasks.map(task =>
-          task.id === action.payload
-            ? { ...task, isExpanded: !task.isExpanded }
-            : task
+          task.id === action.payload ? { ...task, isExpanded: !task.isExpanded } : task
         ),
       };
-    
+
     case 'SET_VIEW_STATE':
       return {
         ...state,
         viewState: { ...state.viewState, ...action.payload },
       };
-    
+
     case 'UPDATE_COLUMN_WIDTH':
       return {
         ...state,
         columns: state.columns.map(col =>
-          col.field === action.payload.field
-            ? { ...col, width: action.payload.width }
-            : col
+          col.field === action.payload.field ? { ...col, width: action.payload.width } : col
         ),
       };
-    
+
     default:
       return state;
   }
@@ -315,29 +309,41 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
 
   // Debounced event handlers
   const debouncedTaskUpdate = useDebounce(
-    useCallback((taskId: string, updates: Partial<GanttTask>) => {
-      dispatch({ type: 'UPDATE_TASK', payload: { id: taskId, updates } });
-      onTaskUpdate?.(taskId, updates);
-    }, [onTaskUpdate]),
+    useCallback(
+      (taskId: string, updates: Partial<GanttTask>) => {
+        dispatch({ type: 'UPDATE_TASK', payload: { id: taskId, updates } });
+        onTaskUpdate?.(taskId, updates);
+      },
+      [onTaskUpdate]
+    ),
     enableDebouncing ? debounceDelay : 0
   );
 
   const debouncedTaskMove = useDebounce(
-    useCallback((taskId: string, newDates: { start: Date; end: Date }) => {
-      dispatch({ type: 'UPDATE_TASK', payload: { 
-        id: taskId, 
-        updates: { startDate: newDates.start, endDate: newDates.end } 
-      }});
-      onTaskMove?.(taskId, newDates);
-    }, [onTaskMove]),
+    useCallback(
+      (taskId: string, newDates: { start: Date; end: Date }) => {
+        dispatch({
+          type: 'UPDATE_TASK',
+          payload: {
+            id: taskId,
+            updates: { startDate: newDates.start, endDate: newDates.end },
+          },
+        });
+        onTaskMove?.(taskId, newDates);
+      },
+      [onTaskMove]
+    ),
     enableDebouncing ? debounceDelay : 0
   );
 
   const debouncedProgressChange = useDebounce(
-    useCallback((taskId: string, progress: number) => {
-      dispatch({ type: 'UPDATE_TASK', payload: { id: taskId, updates: { progress } }});
-      onProgressChange?.(taskId, progress);
-    }, [onProgressChange]),
+    useCallback(
+      (taskId: string, progress: number) => {
+        dispatch({ type: 'UPDATE_TASK', payload: { id: taskId, updates: { progress } } });
+        onProgressChange?.(taskId, progress);
+      },
+      [onProgressChange]
+    ),
     enableDebouncing ? debounceDelay : 0
   );
 
@@ -351,13 +357,13 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
 
   // Container size observer
   useEffect(() => {
-    const observer = new ResizeObserver((entries) => {
+    const observer = new ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         setContainerSize({ width, height });
-        dispatch({ 
-          type: 'SET_VIEW_STATE', 
-          payload: { viewportSize: { width, height } } 
+        dispatch({
+          type: 'SET_VIEW_STATE',
+          payload: { viewportSize: { width, height } },
         });
       }
     });
@@ -379,21 +385,28 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
   }, [containerSize.width, gridWidth]);
 
   // Handle zoom changes
-  const handleZoomChange = useCallback((direction: 'in' | 'out') => {
-    const currentZoom = state.viewState.zoomLevel;
-    const newZoom = direction === 'in' 
-      ? Math.min(state.zoomLevels.length - 1, currentZoom + 1)
-      : Math.max(0, currentZoom - 1);
-    
-    dispatch({ type: 'SET_ZOOM_LEVEL', payload: newZoom });
-  }, [state.viewState.zoomLevel, state.zoomLevels.length]);
+  const handleZoomChange = useCallback(
+    (direction: 'in' | 'out') => {
+      const currentZoom = state.viewState.zoomLevel;
+      const newZoom =
+        direction === 'in'
+          ? Math.min(state.zoomLevels.length - 1, currentZoom + 1)
+          : Math.max(0, currentZoom - 1);
+
+      dispatch({ type: 'SET_ZOOM_LEVEL', payload: newZoom });
+    },
+    [state.viewState.zoomLevel, state.zoomLevels.length]
+  );
 
   // Theme-aware colors
-  const colors = useMemo(() => ({
-    background: themeWiseColor('#ffffff', '#1f2937', themeMode),
-    border: themeWiseColor('#e5e7eb', '#4b5563', themeMode),
-    timelineBackground: themeWiseColor('#f8f9fa', '#374151', themeMode),
-  }), [themeMode]);
+  const colors = useMemo(
+    () => ({
+      background: themeWiseColor('#ffffff', '#1f2937', themeMode),
+      border: themeWiseColor('#e5e7eb', '#4b5563', themeMode),
+      timelineBackground: themeWiseColor('#f8f9fa', '#374151', themeMode),
+    }),
+    [themeMode]
+  );
 
   // Render timeline header
   const renderTimelineHeader = () => {
@@ -402,33 +415,47 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
     const totalWidth = totalDays * state.timelineConfig.dayWidth;
 
     return (
-      <div className="timeline-header border-b" style={{ 
-        height: (currentZoom.topTier.height || 30) + (currentZoom.bottomTier.height || 25),
-        backgroundColor: colors.timelineBackground,
-        borderColor: colors.border,
-      }}>
+      <div
+        className="timeline-header border-b"
+        style={{
+          height: (currentZoom.topTier.height || 30) + (currentZoom.bottomTier.height || 25),
+          backgroundColor: colors.timelineBackground,
+          borderColor: colors.border,
+        }}
+      >
         <VirtualTimeline
           startDate={projectBounds.start}
           endDate={projectBounds.end}
           dayWidth={state.timelineConfig.dayWidth}
           containerWidth={timelineWidth}
-          containerHeight={(currentZoom.topTier.height || 30) + (currentZoom.bottomTier.height || 25)}
+          containerHeight={
+            (currentZoom.topTier.height || 30) + (currentZoom.bottomTier.height || 25)
+          }
           onScroll={throttledScrollHandler}
         >
           {(date, index, style) => (
-            <div className="timeline-cell flex flex-col border-r text-xs text-center" style={{
-              ...style,
-              borderColor: colors.border,
-            }}>
-              <div className="top-tier border-b px-1 py-1" style={{
-                height: currentZoom.topTier.height || 30,
+            <div
+              className="timeline-cell flex flex-col border-r text-xs text-center"
+              style={{
+                ...style,
                 borderColor: colors.border,
-              }}>
+              }}
+            >
+              <div
+                className="top-tier border-b px-1 py-1"
+                style={{
+                  height: currentZoom.topTier.height || 30,
+                  borderColor: colors.border,
+                }}
+              >
                 {formatDateForUnit(date, currentZoom.topTier.unit)}
               </div>
-              <div className="bottom-tier px-1 py-1" style={{
-                height: currentZoom.bottomTier.height || 25,
-              }}>
+              <div
+                className="bottom-tier px-1 py-1"
+                style={{
+                  height: currentZoom.bottomTier.height || 25,
+                }}
+              >
                 {formatDateForUnit(date, currentZoom.bottomTier.unit)}
               </div>
             </div>
@@ -440,8 +467,9 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
 
   // Render timeline content
   const renderTimelineContent = () => {
-    const headerHeight = (state.zoomLevels[state.viewState.zoomLevel].topTier.height || 30) + 
-                        (state.zoomLevels[state.viewState.zoomLevel].bottomTier.height || 25);
+    const headerHeight =
+      (state.zoomLevels[state.viewState.zoomLevel].topTier.height || 30) +
+      (state.zoomLevels[state.viewState.zoomLevel].bottomTier.height || 25);
     const contentHeight = containerSize.height - headerHeight;
 
     return (
@@ -492,9 +520,12 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
 
   // Render toolbar
   const renderToolbar = () => (
-    <div className="gantt-toolbar flex items-center justify-between p-2 border-b bg-gray-50 dark:bg-gray-800" style={{
-      borderColor: colors.border,
-    }}>
+    <div
+      className="gantt-toolbar flex items-center justify-between p-2 border-b bg-gray-50 dark:bg-gray-800"
+      style={{
+        borderColor: colors.border,
+      }}
+    >
       <div className="toolbar-left flex items-center space-x-2">
         <button
           onClick={() => handleZoomChange('out')}
@@ -514,7 +545,7 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
           Zoom In
         </button>
       </div>
-      
+
       <div className="toolbar-right flex items-center space-x-2 text-xs text-gray-500">
         <span>Tasks: {state.tasks.length}</span>
         <span>•</span>
@@ -553,13 +584,13 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
             containerHeight={containerSize.height - 50} // Subtract toolbar height
             selection={state.selectionState}
             enableInlineEdit={enableInlineEdit}
-            onTaskClick={(task) => {
+            onTaskClick={task => {
               // Handle task selection
               const newSelection = { ...state.selectionState, selectedTasks: [task.id] };
               dispatch({ type: 'SET_SELECTION', payload: [task.id] });
               onSelectionChange?.(newSelection);
             }}
-            onTaskExpand={(taskId) => {
+            onTaskExpand={taskId => {
               dispatch({ type: 'TOGGLE_TASK_EXPANSION', payload: taskId });
             }}
             onColumnResize={(field, width) => {
@@ -571,10 +602,13 @@ const AdvancedGanttChart: React.FC<AdvancedGanttProps> = ({
         </div>
 
         {/* Timeline */}
-        <div className="gantt-timeline-container border-l" style={{ 
-          width: timelineWidth,
-          borderColor: colors.border,
-        }}>
+        <div
+          className="gantt-timeline-container border-l"
+          style={{
+            width: timelineWidth,
+            borderColor: colors.border,
+          }}
+        >
           {renderTimelineHeader()}
           {renderTimelineContent()}
         </div>
@@ -606,7 +640,7 @@ function getWeekNumber(date: Date): number {
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 export default AdvancedGanttChart;

@@ -20,7 +20,9 @@
   },
   "description": {
     "title": "Descrição",
-    "placeholder": "Adicionar uma descrição mais detalhada..."
+    "placeholder": "Adicionar uma descrição mais detalhada...",
+    "clickToAdd": "Clique para adicionar descrição...",
+    "loadingEditor": "Carregando editor..."
   },
   "subTasks": {
     "title": "Subtarefas",

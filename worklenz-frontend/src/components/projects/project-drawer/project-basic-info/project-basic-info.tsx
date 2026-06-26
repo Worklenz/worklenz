@@ -36,6 +36,7 @@ const ProjectBasicInfo = ({ editMode, project, form, disabled }: ProjectBasicInf
           value={project?.color_code || defaultColorCode}
           onChange={value => form.setFieldValue('color_code', value.toHexString())}
           disabled={disabled}
+          disabledAlpha
         />
       </Form.Item>
     </>

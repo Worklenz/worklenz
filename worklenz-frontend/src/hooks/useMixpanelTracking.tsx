@@ -10,10 +10,10 @@ export const useMixpanelTracking = () => {
   const { token, isProductionEnvironment } = useMemo(() => {
     const host = window.location.host;
     const isProduction = host === 'app.worklenz.com';
-    
+
     return {
       token: isProduction ? import.meta.env.VITE_MIXPANEL_TOKEN : null,
-      isProductionEnvironment: isProduction
+      isProductionEnvironment: isProduction,
     };
   }, []);
 
@@ -22,7 +22,7 @@ export const useMixpanelTracking = () => {
       try {
         initMixpanel(token);
         logger.info('Mixpanel initialized successfully for production');
-        
+
         // Set identity if user is already authenticated on page load/reload
         const currentUser = auth.getCurrentSession();
         if (currentUser?.id) {
@@ -43,33 +43,36 @@ export const useMixpanelTracking = () => {
     }
   }, [token, isProductionEnvironment, auth]);
 
-  const setIdentity = useCallback((user: any) => {
-    if (!isProductionEnvironment) {
-      logger.debug('Mixpanel setIdentity skipped - not in production environment');
-      return;
-    }
-    
-    if (user?.id) {
-      try {
-        mixpanel.identify(user.id);
-        mixpanel.people.set({
-          $user_id: user.id,
-          $name: user.name,
-          $email: user.email,
-          $avatar: user.avatar_url,
-        });
-      } catch (error) {
-        logger.error('Error setting Mixpanel identity:', error);
+  const setIdentity = useCallback(
+    (user: any) => {
+      if (!isProductionEnvironment) {
+        logger.debug('Mixpanel setIdentity skipped - not in production environment');
+        return;
       }
-    }
-  }, [isProductionEnvironment]);
+
+      if (user?.id) {
+        try {
+          mixpanel.identify(user.id);
+          mixpanel.people.set({
+            $user_id: user.id,
+            $name: user.name,
+            $email: user.email,
+            $avatar: user.avatar_url,
+          });
+        } catch (error) {
+          logger.error('Error setting Mixpanel identity:', error);
+        }
+      }
+    },
+    [isProductionEnvironment]
+  );
 
   const reset = useCallback(() => {
     if (!isProductionEnvironment) {
       logger.debug('Mixpanel reset skipped - not in production environment');
       return;
     }
-    
+
     try {
       mixpanel.reset();
     } catch (error) {
@@ -80,7 +83,10 @@ export const useMixpanelTracking = () => {
   const trackMixpanelEvent = useCallback(
     (event: string, properties?: Dict) => {
       if (!isProductionEnvironment) {
-        logger.debug(`Mixpanel tracking skipped - not in production environment. Event: ${event}`, properties);
+        logger.debug(
+          `Mixpanel tracking skipped - not in production environment. Event: ${event}`,
+          properties
+        );
         return;
       }
 

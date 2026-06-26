@@ -1,0 +1,225 @@
+/* Column Resize Styles - Excel-like column resizing */
+
+/* Ensure cursor shows on any element with this class */
+.cursor-col-resize {
+  cursor: col-resize !important;
+}
+
+/* Resize handle base styles */
+.column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize !important;
+  user-select: none;
+  z-index: 10;
+  background-color: transparent;
+  transition: all 0.15s ease;
+}
+
+/* Hover state - show gray indicator */
+.column-resize-handle:hover,
+.column-resize-handle:active {
+  background-color: #9ca3af; /* gray */
+  cursor: col-resize !important;
+}
+
+/* Visual indicator on column header hover */
+th.group:hover .column-resize-handle {
+  opacity: 1;
+  background-color: rgba(156, 163, 175, 0.35); /* gray */
+}
+
+/* Active dragging state */
+.column-resize-handle:active,
+.column-resize-handle.resizing {
+  background-color: #9ca3af; /* gray */
+  width: 4px;
+  box-shadow: 0 0 4px rgba(156, 163, 175, 0.5);
+}
+
+/* At limit state */
+.column-resize-handle.at-limit {
+  background-color: #ff4d4f !important;
+  cursor: not-allowed !important;
+}
+
+/* Prevent text selection during resize */
+body.column-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+/* Dark theme support */
+[data-theme="dark"] .column-resize-handle:hover,
+[data-theme="dark"] .column-resize-handle:active {
+  background-color: #9ca3af; /* gray even in dark */
+}
+
+[data-theme="dark"] th.group:hover .column-resize-handle {
+  background-color: rgba(156, 163, 175, 0.35);
+}
+
+/* Resize handle for sticky columns (task, selector) */
+th.sticky .column-resize-handle {
+  position: absolute;
+  right: 0;
+}
+
+/* Visual feedback - resize line during drag */
+.column-resize-indicator {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  background-color: #1890ff;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  box-shadow: 0 0 4px rgba(24, 144, 255, 0.5);
+}
+
+/* Dark theme support for indicator */
+[data-theme="dark"] .column-resize-indicator {
+  background-color: #40a9ff;
+  box-shadow: 0 0 4px rgba(64, 169, 255, 0.5);
+}
+
+.dark .column-resize-indicator {
+  background-color: #40a9ff;
+  box-shadow: 0 0 4px rgba(64, 169, 255, 0.5);
+}
+
+/* Tooltip for resize hint */
+.column-resize-tooltip {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+[data-theme="dark"] .column-resize-tooltip {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+
+/* Remove width transitions to make resize feel immediate */
+th,
+td {
+  transition: none !important;
+}
+
+/* Double-click to auto-fit indicator */
+.column-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 16px;
+  background-color: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.column-resize-handle:hover::after {
+  opacity: 1;
+}
+
+/* Minimum width indicator when reaching limit */
+th.min-width-reached .column-resize-handle,
+th.max-width-reached .column-resize-handle {
+  background-color: #ff4d4f !important;
+  cursor: not-allowed !important;
+}
+
+/* Accessibility - keyboard focus */
+.column-resize-handle:focus-visible {
+  outline: 2px solid #1890ff;
+  outline-offset: -2px;
+}
+
+/* Column drag handle for reordering */
+.column-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin-left: 4px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.column-drag-handle:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.column-drag-handle:active {
+  cursor: grabbing;
+  transform: translateY(0);
+}
+
+.column-header-cell:hover .column-drag-handle,
+.column-drag-handle:focus-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* TaskListV2: don't reserve layout space for drag handle */
+.tasklist-v2-column-headers .column-drag-handle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+}
+
+.tasklist-v2-column-headers .column-drag-handle:hover {
+  transform: translateY(-50%);
+}
+
+[data-theme="dark"] .column-drag-handle {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .column-drag-handle:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+/* Drop target highlighting */
+.column-drop-target {
+  /* box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.4); */
+  background: rgba(59, 130, 246, 0.06);
+}
+
+[data-theme="dark"] .column-drop-target {
+  /* box-shadow: inset 0 0 0 2px rgba(96, 165, 250, 0.45); */
+  background: rgba(96, 165, 250, 0.08);
+}

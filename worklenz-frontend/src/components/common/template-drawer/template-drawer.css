@@ -28,7 +28,6 @@
 .template-menu {
   height: 100%;
   overflow-y: auto;
-
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
 }
@@ -54,7 +53,6 @@
   overflow-y: auto;
   padding: 1rem 1.5rem !important;
   height: 100%;
-
   scrollbar-width: thin;
   scrollbar-color: #888 transparent;
 }
@@ -90,4 +88,36 @@
 
 .custom-template-list .selected-custom-template:hover {
   background-color: var(--color-paleBlue);
+}
+
+/* Height-filling rules kept global */
+.ant-tabs-tabpane {
+  height: 100%;
+}
+
+.ant-tabs-content {
+  height: 100%;
+}
+
+.template-drawer-content .ant-tabs.ant-tabs-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ✅ content holder fills remaining space and clips overflow
+   so the inner scroll container works correctly */
+.template-drawer-content .ant-tabs-content-holder {
+  overflow: hidden !important;
+  flex: 1;
+}
+
+/* ✅ content area fills full height */
+.template-drawer-content .ant-tabs-content {
+  height: 100% !important;
+}
+
+/* ✅ each tab panel fills full height so inner flex layout works */
+.template-drawer-content .ant-tabs-tabpane {
+  height: 100% !important;
 }

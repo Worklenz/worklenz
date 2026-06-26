@@ -1,0 +1,105 @@
+{
+  "title": "Raportet e Ekipit Tim",
+  "subtitle": "Ndjekja e kohës dhe njohuri mbi performancën për anëtarët e ekipit tuaj",
+
+  "dateRange": {
+    "label": "Periudha Kohore",
+    "showing": "Duke Treguar",
+    "today": "Sot",
+    "yesterday": "Dje",
+    "thisWeek": "Këtë Javë",
+    "lastWeek": "Javën e Kaluar",
+    "last7Days": "7 Ditët e Fundit",
+    "thisMonth": "Këtë Muaj",
+    "lastMonth": "Muajin e Kaluar",
+    "last30Days": "30 Ditët e Fundit",
+    "last90Days": "90 Ditët e Fundit",
+    "custom": "Periudhë Personalizuar",
+    "apply": "Apliko"
+  },
+
+  "summary": {
+    "totalMembers": "Anëtarët Totalë",
+    "totalMembersTooltip": "Numri total i anëtarëve të ekipit që kanë regjistruar kohë gjatë periudhës së zgjedhur.",
+    "totalTimeLogged": "Koha Totale e Regjistruar",
+    "totalTimeLoggedTooltip": "Koha totale e regjistruar nga të gjithë anëtarët e ekipit gjatë periudhës së zgjedhur.",
+    "activeProjects": "Projektet Aktive",
+    "activeProjectsTooltip": "Numri maksimal i projekteve në të cilat ka punuar çdo anëtar i ekipit gjatë periudhës së zgjedhur.",
+    "avgCompletionRate": "Norma Mesatare e Përfundimit",
+    "hours": "orë"
+  },
+
+  "timeTracking": {
+    "title": "Përmbledhja e Ndjekjes së Kohës",
+    "chartTitle": "Grafiku i Ndjekjes së Kohës së Ekipit",
+    "member": "Anëtari",
+    "teamMembers": "Anëtarët e Ekipit",
+    "totalTime": "Koha Totale",
+    "totalHours": "Orët Totale",
+    "loggedTime": "Koha e Regjistruar",
+    "logsCount": "Numri i Regjistrimeve",
+    "activeDays": "Ditët Aktive",
+    "lastActivity": "Aktiviteti i Fundit",
+    "actions": "Veprimet",
+    "manualLogs": "Regjistrimet Manuale",
+    "timerLogs": "Regjistrimet me Kohëmatës",
+    "projects": "Projektet",
+    "viewDetails": "Shiko Detajet",
+    "noData": "Nuk u gjetën regjistrues kohe për periudhën e zgjedhur",
+    "totalTimeTooltip": "Koha totale e regjistruar nga ky anëtar gjatë periudhës së zgjedhur. Përfshin të gjitha hyrjet e kohës në të gjitha projektet dhe detyrat.",
+    "logsCountTooltip": "Numri total i regjistrimeve individuale të kohës të krijuara nga ky anëtar gjatë periudhës së zgjedhur.",
+    "projectsTooltip": "Numri i projekteve të ndryshme në të cilat ky anëtar ka regjistruar kohë gjatë periudhës së zgjedhur.",
+    "activeDaysTooltip": "Numri i ditëve të ndryshme në të cilat ky anëtar ka regjistruar kohë gjatë periudhës së zgjedhur."
+  },
+
+  "performance": {
+    "title": "Performanca e Ekipit",
+    "member": "Anëtari",
+    "tasks": "Detyrat",
+    "assigned": "të caktuara",
+    "completed": "të përfunduara",
+    "overdue": "të vonuara",
+    "tasksCompleted": "Detyrat e Përfunduara",
+    "tasksOverdue": "Detyrat e Vonuara",
+    "completionRate": "Norma e Përfundimit",
+    "completionRateTooltip": "Përqindja e detyrave të përfunduara nga totali i detyrave të caktuara. Llogaritet si: (Detyrat e Përfunduara ÷ Detyrat e Caktuara) × 100",
+    "timeLogged": "Koha e Regjistruar",
+    "timeLoggedTooltip": "Koha totale e regjistruar nga ky anëtar gjatë periudhës së zgjedhur. Përfshin të gjitha hyrjet e kohës në të gjitha projektet dhe detyrat.",
+    "activeProjects": "Projektet Aktive",
+    "activeProjectsTooltip": "Numri i projekteve të ndryshme në të cilat ky anëtar ka regjistruar kohë gjatë periudhës së zgjedhur.",
+    "projectsInvolved": "Projektet e Përfshira",
+    "noData": "Nuk ka të dhëna performancë të disponueshme"
+  },
+
+  "detailedLogs": {
+    "title": "Regjistrimet e Detajuara të Kohës",
+    "for": "për",
+    "dateTime": "Data & Koha",
+    "date": "Data",
+    "project": "Projekti",
+    "task": "Detyrë",
+    "duration": "Kohëzgjatja",
+    "description": "Përshkrimi",
+    "method": "Metoda",
+    "type": "Lloji",
+    "manual": "Manuale",
+    "timer": "Kohëmatës",
+    "noLogs": "Nuk u gjetën regjistrues të detajuara",
+    "close": "Mbyll",
+    "timeLogsRange": "regjistrues kohe"
+  },
+
+  "errors": {
+    "failedToLoad": "Dështoi ngarkimi i raporteve të ekipit",
+    "tryAgain": "Ju lutemi provoni përsëri",
+    "noTeamMembers": "Nuk u gjetën anëtarë të ekipit",
+    "loadingError": "Gabim në ngarkimin e të dhënave"
+  },
+
+  "loading": {
+    "fetchingData": "Duke ngarkuar raportet e ekipit...",
+    "fetchingLogs": "Duke ngarkuar regjistruesit e detajuar..."
+  },
+
+  "export": "Eksporto"
+}

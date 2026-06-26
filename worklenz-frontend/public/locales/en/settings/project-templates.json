@@ -4,5 +4,12 @@
   "deleteToolTip": "Delete",
   "confirmText": "Are you sure?",
   "okText": "Yes",
+  "cancelText": "Cancel",
+  "renameTemplate": "Rename Project Template",
+  "templateName": "Template Name",
+  "nameRequired": "Please enter a template name.",
+  "renameSuccess": "Template renamed successfully!",
+  "renameError": "Failed to rename template.",
+  "okText": "OK",
   "cancelText": "Cancel"
 }

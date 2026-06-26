@@ -1,17 +1,30 @@
 {
   "title": "Ruaj si Shabllon",
   "templateName": "Emri i Shabllonit",
-  "includes": "Çfarë duhet të përfshihet në shabllon nga projekti?",
+  "templateNamePlaceholder": "Shkruani emrin e shabllonit",
+  "templateInfo": "Informacioni i Shabllonit",
+  "includes": "Elementet e Projektit",
+  "taskIncludes": "Elementet e Detyrës",
+  "cancel": "Anulo",
+  "save": "Ruaj",
+  "creating": "Duke krijuar shabllonin...",
+  "created": "Shabllon u Krijua!",
+  "quickSelect": "Zgjedhja e Shpejtë:",
+  "selectAll": "Zgjidh të Gjitha",
+  "essentialOnly": "Vetëm të Nevojshme",
+  "clearAll": "Pastroji të Gjitha",
+  "itemsSelected": "artikuj të zgjedhur",
+  "readyToSave": "Gati për ruajtje",
+  "validName": "Emër i vlefshëm",
+  "required": "I kërkuar",
+  "proTips": "Këshilla Pro",
   "includesOptions": {
     "statuses": "Statuset",
     "phases": "Fazat",
-    "labels": "Etiketat"
-  },
-  "taskIncludes": "Çfarë duhet të përfshihet në shabllon nga detyrat?",
-  "taskIncludesOptions": {
-    "statuses": "Statuset",
-    "phases": "Fazat",
     "labels": "Etiketat",
+    "customColumns": "Kolonat e Personalizuara"
+  },
+  "taskIncludesOptions": {
     "name": "Emri",
     "priority": "Prioriteti",
     "status": "Statusi",
@@ -21,7 +34,40 @@
     "description": "Përshkrimi",
     "subTasks": "Nëndetyrat"
   },
-  "cancel": "Anulo",
-  "save": "Ruaj",
-  "templateNamePlaceholder": "Shkruani emrin e shabllonit"
+  "descriptions": {
+    "statuses": "Konfigurimi i rrjedhës së punës së statusit të projektit",
+    "phases": "Fazat e projektit dhe milestones",
+    "labels": "Etiketa të personalizuara për kategorizim",
+    "customColumns": "Fusha të personalizuara dhe metadata",
+    "taskName": "Emrat dhe titujt e detyrave",
+    "taskPriority": "Nivelet e prioritetit të detyrave",
+    "taskStatus": "Statusi i përfundimit të detyrës",
+    "taskPhase": "Faza e projektit të lidhur",
+    "taskLabel": "Etiketat dhe tags të detyrës",
+    "timeEstimate": "Vlerësimet e kohës dhe kohëzgjatja",
+    "description": "Përshkrimet dhe detajet e detyrës",
+    "subTasks": "Nëndetyrat dhe elementet e listës"
+  },
+  "tooltips": {
+    "projectElements": "Zgjidhni cilat elemente të projektit të përfshini në shabllonin tuaj",
+    "taskElements": "Zgjidhni cilat elemente të detyrës të përfshini në shabllonin tuaj",
+    "required": "Ky element është i kërkuar dhe nuk mund të çzgjidhet"
+  },
+  "tips": {
+    "line1": "Shabllonet ruajnë strukturën e projektit tuaj për ripërdorim të shpejtë",
+    "line2": "Elementet themelore janë përfshirë gjithmonë dhe nuk mund të hiqen",
+    "line3": "Mund ta personalizoni shabllonin kur krijoni projekte të reja",
+    "line4": "Zgjidhni elementet që dëshironi të përfshini në shabllonin tuaj"
+  },
+  "validation": {
+    "nameRequired": "Ju lutemi shkruani një emër shablloni",
+    "nameMinLength": "Emri i shabllonit duhet të jetë të paktën 3 karaktere",
+    "nameMaxLength": "Emri i shabllonit duhet të jetë më pak se 50 karaktere"
+  },
+  "notifications": {
+    "createSuccess": "Shabllon u Krijua",
+    "createSuccessDesc": "Shablloni juaj i projektit u krijua me sukses dhe është gati për përdorim.",
+    "createError": "Dështoi Krijimi i Shabllonit",
+    "error": "Gabim"
+  }
 }

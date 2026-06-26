@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "Bëj upgrade tani",
   "taskHeader": {
     "taskNamePlaceholder": "Shkruani detyrën tuaj",
     "deleteTask": "Fshi detyrën",
@@ -29,6 +30,8 @@
       "show-start-date": "Shfaq datën e fillimit",
       "hours": "Orë",
       "minutes": "Minuta",
+      "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
+      "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
       "progressValue": "Vlera e progresit",
       "progressValueTooltip": "Vendos përqindjen e progresit (0-100%)",
       "progressValueRequired": "Ju lutemi vendosni një vlerë progresi",
@@ -45,7 +48,10 @@
     },
     "description": {
       "title": "Përshkrimi",
-      "placeholder": "Shto një përshkrim më të detajuar..."
+      "placeholder": "Shto një përshkrim më të detajuar...",
+      "clickToAdd": "Klikoni për të shtuar një përshkrim...",
+      "readMore": "Lexo më shumë",
+      "showLess": "Shfaq më pak"
     },
     "subTasks": {
       "title": "Nëndetyrat",
@@ -68,12 +74,15 @@
     "attachments": {
       "title": "Bashkëngjitjet",
       "chooseOrDropFileToUpload": "Zgjidh ose lësho skedarin për ta ngarkuar",
-      "uploading": "Duke ngarkuar..."
+      "uploading": "Duke ngarkuar...",
+      "maxFileSizeText": "Madhësia maksimale e skedarit: {{maxSize}}MB",
+      "upgradeLinkText": "Të duhen ngarkime më të mëdha? Bëj upgrade"
     },
     "comments": {
       "title": "Komentet",
       "addComment": "+ Shto koment të ri",
       "noComments": "Ende pa komente. Bëhu i pari që komentoni!",
+      "edit": "Redakto",
       "delete": "Fshi",
       "confirmDeleteComment": "Jeni i sigurt që dëshironi ta fshini këtë koment?",
       "addCommentPlaceholder": "Shto një koment...",
@@ -81,10 +90,15 @@
       "commentButton": "Komento",
       "attachFiles": "Bashkëngjit skedarë",
       "addMoreFiles": "Shto më shumë skedarë",
-      "selectedFiles": "Skedarët e zgjedhur (Deri në 25MB, Maksimumi {count})",
-      "maxFilesError": "Mund të ngarkoni maksimumi {count} skedarë",
+      "selectedFiles": "Skedarët e zgjedhur (Deri në 25MB, Maksimumi {{count}} skedarë)",
+      "maxFilesError": "Mund të ngarkoni maksimumi {{count}} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "fileTooLargeToSend": "Skedarët mbi 25MB në komente kërkojnë planin Business. Hiqeni këtë skedar ose bëni upgrade për të vazhduar.",
+      "historyLockedBoundary": "Komentet janë të kufizuara në 90 ditët e fundit në këtë plan",
+      "historyLockedTitle": "Historiku i komenteve i bllokuar",
+      "historyLockedBody": "Komentet më të vjetra se 90 ditë janë të disponueshme në planin Business.",
+      "viewFullComments": "Shiko historikun e komenteve",
       "createdBy": "Krijuar {{time}} nga {{user}}",
       "updatedTime": "Përditësuar {{time}}"
     },
@@ -97,18 +111,32 @@
     "totalLogged": "Totali i regjistruar",
     "exportToExcel": "Eksporto në Excel",
     "noTimeLogsFound": "Nuk u gjetën regjistrime kohe",
+    "historyLockedBoundary": "Regjistrat e kohës janë të kufizuar në 90 ditët e fundit në këtë plan",
+    "historyLockedTitle": "Historiku i regjistrit të kohës i bllokuar",
+    "historyLockedBody": "Regjistrat e kohës më të vjetër se 90 ditë janë të disponueshëm në planin Business.",
+    "viewFullTimeLog": "Shiko historikun e regjistrit të kohës",
     "timeLogForm": {
+      "inputMode": "Mënyra e hyrjes",
+      "durationMode": "Kohëzgjatja",
+      "timeRangeMode": "Intervali kohor",
       "date": "Data",
       "startTime": "Ora e fillimit",
       "endTime": "Ora e përfundimit",
+      "hours": "Orë",
+      "minutes": "Minuta",
       "workDescription": "Përshkrimi i punës",
       "descriptionPlaceholder": "Shto një përshkrim",
       "logTime": "Regjistro kohën",
       "updateTime": "Përditëso kohën",
       "cancel": "Anulo",
+      "durationHelper": "Regjistro kohën totale me orë dhe minuta.",
+      "timeRangeHelper": "Regjistro kohën duke zgjedhur orën e fillimit dhe përfundimit.",
       "selectDateError": "Ju lutemi zgjidhni një datë",
       "selectStartTimeError": "Ju lutemi zgjidhni orën e fillimit",
       "selectEndTimeError": "Ju lutemi zgjidhni orën e përfundimit",
+      "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
+      "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
+      "durationGreaterThanZeroError": "Kohëzgjatja duhet të jetë më e madhe se 0 minuta",
       "endTimeAfterStartError": "Ora e përfundimit duhet të jetë pas orës së fillimit"
     }
   },
@@ -118,7 +146,11 @@
     "remove": "HIQE",
     "none": "Asnjë",
     "weight": "Pesha",
-    "createdTask": "krijoi detyrën."
+    "createdTask": "krijoi detyrën.",
+    "historyLockedBoundary": "Aktiviteti është i kufizuar në 90 ditët e fundit në këtë plan",
+    "historyLockedTitle": "Historiku i aktivitetit i bllokuar",
+    "historyLockedBody": "Aktivitetet e detyrës më të vjetra se 90 ditë janë të disponueshme në planin Business.",
+    "viewFullActivity": "Shiko historikun e aktivitetit"
   },
   "taskProgress": {
     "markAsDoneTitle": "Shëno detyrën si të përfunduar?",

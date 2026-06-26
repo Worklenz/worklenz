@@ -1,4 +1,9 @@
-import { ProjectRoadmap, ProjectPhase, PhaseTask, PhaseMilestone } from '../../types/project-roadmap.types';
+import {
+  ProjectRoadmap,
+  ProjectPhase,
+  PhaseTask,
+  PhaseMilestone,
+} from '../../types/project-roadmap.types';
 
 // Sample tasks for Planning Phase
 const planningTasks: PhaseTask[] = [
@@ -38,7 +43,7 @@ const planningTasks: PhaseTask[] = [
     priority: 'medium',
     status: 'in-progress',
     dependencies: ['task-planning-1'],
-  }
+  },
 ];
 
 // Sample milestones for Planning Phase
@@ -58,7 +63,7 @@ const planningMilestones: PhaseMilestone[] = [
     dueDate: new Date(2024, 11, 15),
     isCompleted: false,
     criticalPath: true,
-  }
+  },
 ];
 
 // Sample tasks for Development Phase
@@ -100,7 +105,7 @@ const developmentTasks: PhaseTask[] = [
     assigneeName: 'Frank Miller',
     priority: 'medium',
     status: 'in-progress',
-  }
+  },
 ];
 
 // Sample milestones for Development Phase
@@ -120,7 +125,7 @@ const developmentMilestones: PhaseMilestone[] = [
     dueDate: new Date(2025, 0, 25),
     isCompleted: false,
     criticalPath: true,
-  }
+  },
 ];
 
 // Sample tasks for Testing Phase
@@ -163,7 +168,7 @@ const testingTasks: PhaseTask[] = [
     priority: 'medium',
     status: 'todo',
     dependencies: ['task-test-2'],
-  }
+  },
 ];
 
 // Sample milestones for Testing Phase
@@ -183,7 +188,7 @@ const testingMilestones: PhaseMilestone[] = [
     dueDate: new Date(2025, 2, 5),
     isCompleted: false,
     criticalPath: true,
-  }
+  },
 ];
 
 // Sample tasks for Deployment Phase
@@ -226,7 +231,7 @@ const deploymentTasks: PhaseTask[] = [
     priority: 'medium',
     status: 'todo',
     dependencies: ['task-deploy-2'],
-  }
+  },
 ];
 
 // Sample milestones for Deployment Phase
@@ -246,7 +251,7 @@ const deploymentMilestones: PhaseMilestone[] = [
     dueDate: new Date(2025, 2, 20),
     isCompleted: false,
     criticalPath: false,
-  }
+  },
 ];
 
 // Sample project phases
@@ -298,7 +303,7 @@ const samplePhases: ProjectPhase[] = [
     status: 'not-started',
     tasks: deploymentTasks,
     milestones: deploymentMilestones,
-  }
+  },
 ];
 
 // Sample project roadmap
@@ -306,7 +311,8 @@ export const sampleProjectRoadmap: ProjectRoadmap = {
   id: 'roadmap-sample-project',
   projectId: 'project-web-platform',
   name: 'Web Platform Development Roadmap',
-  description: 'Comprehensive roadmap for developing a new web-based platform with modern technologies and agile methodologies',
+  description:
+    'Comprehensive roadmap for developing a new web-based platform with modern technologies and agile methodologies',
   startDate: new Date(2024, 11, 1),
   endDate: new Date(2025, 2, 20),
   phases: samplePhases,

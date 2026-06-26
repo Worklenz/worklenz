@@ -1,20 +1,7 @@
-import { useEffect, useState } from 'react';
-import {
-  Form,
-  InputNumber,
-  Select,
-  DatePicker,
-  Switch,
-  Typography,
-  Button,
-  ConfigProvider,
-  Flex,
-} from '@/shared/antd-imports';
+import { useEffect, useRef } from 'react';
+import { Form, ConfigProvider, Flex } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { colors } from '@/styles/colors';
 import { ITaskFormViewModel, ITaskViewModel } from '@/types/tasks/task.types';
-import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import { simpleDateFormat } from '@/utils/simpleDateFormat';
 
 import NotifyMemberSelector from './notify-member-selector';
 import TaskDrawerPhaseSelector from './details/task-drawer-phase-selector/task-drawer-phase-selector';
@@ -80,28 +67,42 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
 
+  // Use ref to track the current task ID to prevent unnecessary form resets
+  const previousTaskIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!taskFormViewModel) {
       form.resetFields();
+      previousTaskIdRef.current = null;
       return;
     }
 
     const { task } = taskFormViewModel;
-    form.setFieldsValue({
-      taskId: task?.id,
-      phase: task?.phase_id,
-      assignees: task?.assignees,
-      dueDate: task?.end_date ?? null,
-      hours: task?.total_hours || 0,
-      minutes: task?.total_minutes || 0,
-      priority: task?.priority || 'medium',
-      labels: task?.labels || [],
-      billable: task?.billable || false,
-      notify: [],
-      progress_value: task?.progress_value || null,
-      weight: task?.weight || null,
-    });
-  }, [taskFormViewModel, form]);
+    const currentTaskId = task?.id;
+
+    // Only reset form fields when the task ID changes (different task loaded)
+    // This prevents form resets when individual fields are updated via socket
+    if (currentTaskId && currentTaskId !== previousTaskIdRef.current) {
+      form.setFieldsValue({
+        taskId: task?.id,
+        phase: task?.phase_id,
+        assignees: task?.assignees,
+        dueDate: task?.end_date ?? null,
+        dueTime: task?.due_time || null,
+        hours: task?.total_hours || 0,
+        minutes: task?.total_minutes || 0,
+        priority: task?.priority || 'medium',
+        labels: task?.labels || [],
+        billable: task?.billable || false,
+        notify: [],
+        progress_value: task?.progress_value || null,
+        weight: task?.weight || null,
+      });
+
+      // Update the ref to track the current task
+      previousTaskIdRef.current = currentTaskId;
+    }
+  }, [taskFormViewModel?.task?.id, form]);
 
   const priorityMenuItems = taskFormViewModel?.priorities?.map(priority => ({
     key: priority.id,
@@ -138,6 +139,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
           billable: false,
           progress_value: null,
           weight: null,
+          dueTime: null,
         }}
         onFinish={handleSubmit}
       >
@@ -165,7 +167,9 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
           </Flex>
         </Form.Item>
 
-        <TaskDrawerDueDate task={taskFormViewModel?.task as ITaskViewModel} t={t} form={form} />
+     {taskFormViewModel?.task && (
+  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} />
+)}
 
         <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
 

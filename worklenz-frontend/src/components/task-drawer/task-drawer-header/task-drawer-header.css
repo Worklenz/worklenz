@@ -15,13 +15,12 @@
   font-size: 16px;
   cursor: pointer;
   width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
   min-height: 20px;
   line-height: 1.4;
-  display: flex;
-  align-items: center;
+  display: block;
 }
 
 .task-name-display:hover {
@@ -29,6 +28,232 @@
   border-radius: 4px;
 }
 
-[data-theme='dark'] .task-name-display:hover {
+[data-theme="dark"] .task-name-display:hover {
   background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Task drawer actions dropdown styles */
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger {
+  color: #ff4d4f !important;
+}
+
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover {
+  color: #ff4d4f !important;
+  background-color: #fff2f0 !important;
+}
+
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger .anticon {
+  color: #ff4d4f !important;
+}
+
+.task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover .anticon {
+  color: #ff4d4f !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover {
+  color: #ff7875 !important;
+  background-color: rgba(255, 77, 79, 0.15) !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger .anticon {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown .ant-dropdown-menu-item-danger:hover .anticon {
+  color: #ff7875 !important;
+}
+
+
+.ant-drawer-title {
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  color: inherit !important;
+  line-height: inherit !important;
+  width: 100% !important;
+}
+
+.ant-drawer-header-title {
+  width: 100% !important;
+  overflow: hidden;
+}
+
+/* ── Header wrapper ───────────────────────────────────────────── */
+.task-drawer-header-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+/* Top row: breadcrumb on left, controls on right */
+.task-drawer-header-top-row {
+  width: 100%;
+  min-height: 22px;
+}
+
+.task-drawer-breadcrumb-area {
+  flex: 1;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Breadcrumb: small + muted ────────────────────────────────── */
+.task-hierarchy-breadcrumb .ant-breadcrumb {
+  font-size: 12px !important;
+  line-height: 20px !important;
+}
+
+.task-hierarchy-breadcrumb .ant-breadcrumb-link,
+.task-hierarchy-breadcrumb .ant-breadcrumb-separator {
+  font-size: 12px !important;
+  color: rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .task-hierarchy-breadcrumb .ant-breadcrumb-link,
+[data-theme="dark"] .task-hierarchy-breadcrumb .ant-breadcrumb-separator {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Project name item — never looks like a link */
+.task-hierarchy-breadcrumb .ant-breadcrumb-link span {
+  font-size: 12px !important;
+  color: rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .task-hierarchy-breadcrumb .ant-breadcrumb-link span {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* ── Large task name row ──────────────────────────────────────── */
+.task-drawer-name-row {
+  width: 100%;
+  padding-top: 2px;
+}
+
+/* Large display text */
+.task-name-display--large {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  word-break: break-word;
+  transition: color 0.15s;
+  margin: 0 !important;
+  padding: 2px 0 !important;
+}
+
+.task-name-display--large:hover {
+  opacity: 0.8;
+}
+
+/* Large editable input */
+.task-name-input--large {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.task-name-input--large .ant-input {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  padding: 0 !important;
+}
+
+[data-theme="dark"] .task-drawer-actions-dropdown-trigger .anticon {
+  color: rgba(255,255,255,0.65) !important;
+}
+
+/* Custom popup dropdown menu items */
+.task-drawer-dropdown-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ant-color-text);
+  transition: background 0.2s;
+}
+
+.task-drawer-dropdown-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.task-drawer-dropdown-item--danger {
+  color: #ff4d4f !important;
+}
+
+.task-drawer-dropdown-item--danger .anticon {
+  color: #ff4d4f !important;
+}
+
+.task-drawer-dropdown-item--danger:hover {
+  background: #fff1f0 !important;
+}
+
+[data-theme="dark"] .task-drawer-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .task-drawer-dropdown-item--danger {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .task-drawer-dropdown-item--danger .anticon {
+  color: #ff7875 !important;
+}
+
+[data-theme="dark"] .task-drawer-dropdown-item--danger:hover {
+  background: rgba(255, 77, 79, 0.15) !important;
+}
+
+.task-drawer-dropdown-item--default:hover {
+  background: #e6f4ff !important;
+  color: #1677ff !important;
+}
+
+.task-drawer-dropdown-item--default:hover .anticon {
+  color: #76a8ee !important;
+}
+
+[data-theme="dark"] .task-drawer-dropdown-item--default:hover {
+  background: rgba(22, 119, 255, 0.15) !important;
+  color: #76a8ee !important;
+}
+
+[data-theme="dark"] .task-drawer-dropdown-item--default:hover .anticon {
+  color: #76a8ee !important;
+}
+
+/* Delete confirm button */
+.task-delete-confirm-btn {
+  background: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #fff !important;
+}
+
+.task-delete-confirm-btn:hover,
+.task-delete-confirm-btn:focus {
+  background: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #fff !important;
+}
+
+/* Dark mode */
+[data-theme='dark'] .task-delete-confirm-btn {
+  background: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: #fff !important;
+}
+
+[data-theme='dark'] .task-delete-confirm-btn:hover,
+[data-theme='dark'] .task-delete-confirm-btn:focus {
+  background: #ff7875 !important;
+  border-color: #ff7875 !important;
+  color: #fff !important;
 }

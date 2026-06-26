@@ -1,5 +1,6 @@
 {
   "rename": "重命名",
+  "renameStatus": "重命名状态",
   "delete": "删除",
   "addTask": "添加任务",
   "addSectionButton": "添加部分",
@@ -34,7 +35,13 @@
   "noSubtasks": "无子任务",
   "showSubtasks": "显示子任务",
   "hideSubtasks": "隐藏子任务",
-  
+  "exampleTasks": {
+    "prefix": "例如",
+    "task1": "定义项目范围",
+    "task2": "与利益相关者审查",
+    "task3": "安排启动会议"
+  },
+
   "errorLoadingTasks": "加载任务时出错",
   "noTasksFound": "未找到任务",
   "loadingFilters": "正在加载过滤器...",

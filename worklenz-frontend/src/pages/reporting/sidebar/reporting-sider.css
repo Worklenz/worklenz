@@ -1,0 +1,24 @@
+ .custom-reporting-sider.ant-menu-vertical .ant-menu-item {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding-inline: 0 !important;
+    margin-inline: 0 !important;
+    width: 100% !important;
+  }
+
+  .custom-reporting-sider.ant-menu-vertical .ant-menu-item .ant-menu-item-icon {
+    margin-inline-end: 0 !important;
+  }
+
+  .custom-reporting-sider.ant-menu-vertical .ant-menu-title-content {
+    display: none !important;
+  }
+
+  .custom-reporting-sider.ant-menu-vertical .ant-menu-item-group-title {
+    display: none !important;
+  }
+
+  .custom-reporting-sider.ant-menu-vertical .ant-menu-item-divider {
+    margin-inline: 8px !important;
+  }

@@ -42,7 +42,10 @@ export interface Project {
 
 export interface Member {
   id?: string;
+  team_member_id?: string;
   name?: string;
+  email?: string;
+  avatar_url?: string;
   projects?: Project[];
 }
 
