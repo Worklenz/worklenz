@@ -2,12 +2,14 @@
 
 // Authentication & Login
 export const evt_login_page_visit = 'login_page_visit';
+export const evt_login_page_login = 'login_page_login';
 export const evt_login_with_email_click = 'login_with_email_click';
 export const evt_login_with_google_click = 'login_with_google_click';
 export const evt_login_remember_me_click = 'login_remember_me_click';
 
 // Registration & Signup
 export const evt_signup_page_visit = 'signup_page_visit';
+export const evt_signup_page_signup = 'signup_page_signup';
 export const evt_signup_with_email_click = 'signup_with_email_click';
 export const evt_signup_with_google_click = 'signup_with_google_click';
 export const evt_forgot_password_page_visit = 'forgot_password_page_visit';
@@ -43,16 +45,28 @@ export const evt_project_insights_members_visit = 'project_insights_members_visi
 export const evt_project_insights_tasks_visit = 'project_insights_tasks_visit';
 export const evt_project_files_visit = 'project_files_visit';
 export const evt_project_members_visit = 'project_members_visit';
+export const evt_project_task_duplicate = 'project_task_duplicate';
+export const evt_project_sub_task_duplicate = 'project_sub_task_duplicate';
 
 // Project Actions
 export const evt_project_task_create = 'project_task_create';
 export const evt_project_invite_members_click = 'project_invite_members_click';
 export const evt_project_invite_members = 'project_invite_members';
+export const evt_project_invite_sent = 'project_invite_sent';
 export const evt_project_refresh_click = 'project_refresh_click';
 export const evt_project_settings_click = 'project_settings_click';
 export const evt_project_import_tasks_click = 'project_import_tasks_click';
 export const evt_project_import_tasks = 'project_import_tasks';
 export const evt_project_update = 'project_update';
+
+// File Management
+export const evt_file_uploaded = 'file_uploaded';
+
+// Timer & Time Tracking
+export const evt_timer_started = 'timer_started';
+
+// Client Portal
+export const evt_client_portal_viewed = 'client_portal_viewed';
 
 // Board Interactions
 export const evt_project_board_open_task = 'project_board_open_task';
@@ -66,6 +80,8 @@ export const evt_project_board_create_task_click = 'project_board_create_task_cl
 // Task List Management
 export const evt_project_task_list_visit = 'project_task_list_visit';
 export const evt_project_task_list_show_archived = 'project_task_list_show_archived';
+export const evt_task_completed = 'task_completed';
+export const evt_task_assigned = 'task_assigned';
 export const evt_project_task_list_bulk_change_status = 'project_task_list_bulk_change_status';
 export const evt_project_task_list_bulk_change_priority = 'project_task_list_bulk_change_priority';
 export const evt_project_task_list_bulk_change_phase = 'project_task_list_bulk_change_phase';
@@ -74,6 +90,7 @@ export const evt_project_task_list_bulk_assign_me = 'project_task_list_bulk_assi
 export const evt_project_task_list_bulk_assign_members = 'project_task_list_bulk_assign_members';
 export const evt_project_task_list_bulk_archive = 'project_task_list_bulk_archive';
 export const evt_project_task_list_bulk_delete = 'project_task_list_bulk_delete';
+export const evt_project_task_list_bulk_change_due_date = 'project_task_list_bulk_change_due_date';
 export const evt_project_task_list_context_menu_assign_me =
   'project_task_list_context_menu_assign_me';
 export const evt_project_task_list_context_menu_archive = 'project_task_list_context_menu_archive';
@@ -87,6 +104,7 @@ export const evt_project_task_list_search_task = 'project_task_list_search_task'
 
 // Team & People Management
 export const evt_people_page_visit = 'people_page_visit';
+export const evt_team_invite_sent = 'team_invite_sent';
 export const evt_people_refresh_click = 'people_refresh_click';
 export const evt_people_search = 'people_search';
 export const evt_people_create_click = 'people_create_click';
@@ -136,6 +154,12 @@ export const evt_settings_category_delete = 'settings_category_delete';
 export const evt_settings_task_templates_delete = 'settings_task_templates_delete';
 export const evt_settings_profile_picture_update = 'settings_profile_picture_update';
 
+// Theme & UI
+export const evt_dark_mode_toggled = 'dark_mode_toggled';
+
+// Custom Fields
+export const evt_custom_field_enabled = 'custom_field_enabled';
+
 // Common Actions
 export const evt_common_switch_team = 'common_switch_team';
 export const evt_common_display_notifications = 'common_display_notifications';
@@ -154,6 +178,21 @@ export const evt_billing_view_plans_modal = 'billing_view_plans_modal';
 export const evt_billing_pause_plan = 'billing_pause_plan';
 export const evt_billing_resume_plan = 'billing_resume_plan';
 export const evt_billing_add_more_seats = 'billing_add_more_seats';
+export const evt_business_trial_upgrade_nav_bar = 'business_trial_upgrade_nav_bar';
+export const evt_billing_profile_dropdown_click = 'billing_profile_dropdown_click';
+export const evt_upgrade_plan_click = 'upgrade_plan_click';
+export const evt_current_bill_click = 'current_bill_click';
+export const evt_billing_configuration_click = 'billing_configuration_click';
+export const evt_trial_converted = 'trial_converted';
+
+// Client Portal
+export const evt_client_portal_share = 'client_portal_share';
+
+// Paywall & Restrictions
+export const evt_paywall_hit = 'paywall_hit';
+
+// Signup & Onboarding
+export const evt_signup_completed = 'signup_completed';
 
 // Admin Center
 export const evt_admin_center_teams_visit = 'admin_center_teams_visit';
@@ -165,3 +204,25 @@ export const evt_admin_center_projects_visit = 'admin_center_projects_visit';
 
 // Project Preferences
 export const evt_project_default_view_pinned = 'pin_default_project_view';
+
+// AppSumo upsell funnel events
+export const evt_appsumo_upgrade_prompt_shown = 'appsumo_upgrade_prompt_shown';
+export const evt_appsumo_upgrade_prompt_dismissed = 'appsumo_upgrade_prompt_dismissed';
+export const evt_appsumo_upgrade_now_clicked = 'appsumo_upgrade_now_clicked';
+export const evt_appsumo_upgrade_modal_viewed = 'appsumo_upgrade_modal_viewed';
+export const evt_appsumo_upgrade_modal_dismissed = 'appsumo_upgrade_modal_dismissed';
+export const evt_appsumo_upgrade_plan_selected = 'appsumo_upgrade_plan_selected';
+export const evt_appsumo_upgrade_talk_to_sales_clicked = 'appsumo_upgrade_talk_to_sales_clicked';
+export const evt_appsumo_seat_limit_blocking_modal_shown = 'appsumo_seat_limit_blocking_modal_shown';
+export const evt_appsumo_seat_limit_deactivate_path_chosen = 'appsumo_seat_limit_deactivate_path_chosen';
+export const evt_appsumo_seat_limit_invite_cancelled = 'appsumo_seat_limit_invite_cancelled';
+export const evt_appsumo_seat_limit_add_more_clicked = 'appsumo_seat_limit_add_more_clicked';
+export const evt_appsumo_custom_field_limit_hit = 'appsumo_custom_field_limit_hit';
+export const evt_appsumo_client_portal_gated_click = 'appsumo_client_portal_gated_click';
+export const evt_appsumo_project_finance_gated_click = 'appsumo_project_finance_gated_click';
+export const evt_appsumo_org_logo_change_gated_click = 'appsumo_org_logo_change_gated_click';
+export const evt_appsumo_storage_add_more_clicked = 'appsumo_storage_add_more_clicked';
+export const evt_appsumo_oversized_file_blocked = 'appsumo_oversized_file_blocked';
+export const evt_appsumo_task_attachment_upgrade_link_clicked = 'appsumo_task_attachment_upgrade_link_clicked';
+export const evt_appsumo_comment_attachment_file_replaced = 'appsumo_comment_attachment_file_replaced';
+export const evt_appsumo_locked_history_view_clicked = 'appsumo_locked_history_view_clicked';

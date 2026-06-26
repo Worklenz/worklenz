@@ -23,6 +23,7 @@ export interface ITaskListConfigV2 {
   parent_task?: string;
   group?: string;
   isSubtasksInclude: boolean;
+  customColumns?: boolean;
 }
 
 export interface ITaskListGroup {

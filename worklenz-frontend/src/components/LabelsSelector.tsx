@@ -8,9 +8,9 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { safeTextDisplay } from '@/utils/html-entities';
 import { useAuthService } from '@/hooks/useAuth';
 import { Button, Checkbox, Tag } from '@/components';
-import { sortLabelsBySelection, isLabelSelected } from '@/utils/labelUtils';
 
 interface LabelsSelectorProps {
   task: IProjectTask;
@@ -31,12 +31,20 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const { t } = useTranslation('task-list-table');
 
   const filteredLabels = useMemo(() => {
-    const filtered = (labels as ITaskLabel[])?.filter(label =>
-      label.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+    const filtered =
+      (labels as ITaskLabel[])?.filter(label =>
+        label.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) || [];
 
-    // Sort to show selected labels first using shared utility
-    return sortLabelsBySelection(filtered, task?.labels || []);
+    // Sort labels: selected ones first, then unselected ones
+    return filtered.sort((a, b) => {
+      const aSelected = task?.all_labels?.some(existingLabel => existingLabel.id === a.id) || false;
+      const bSelected = task?.all_labels?.some(existingLabel => existingLabel.id === b.id) || false;
+
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
   }, [labels, searchQuery, task?.labels]);
 
   // Update dropdown position
@@ -46,10 +54,10 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
       const dropdownHeight = 300; // Approximate height of dropdown (max-height + padding)
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      
+
       // Position dropdown above button if there's not enough space below
       const shouldPositionAbove = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
-      
+
       if (shouldPositionAbove) {
         setDropdownPosition({
           top: rect.top + window.scrollY - dropdownHeight - 2,
@@ -111,7 +119,6 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   const handleDropdownToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Labels dropdown toggle clicked, current state:', isOpen);
 
     if (!isOpen) {
       updateDropdownPosition();
@@ -151,8 +158,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
   };
 
   const checkLabelSelected = (labelId: string) => {
-    // Use task.labels (currently selected labels) instead of all_labels
-    return isLabelSelected(labelId, task?.labels);
+    return task?.all_labels?.some(existingLabel => existingLabel.id === labelId) || false;
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -231,7 +237,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                     flex items-center gap-2 px-2 py-1 cursor-pointer transition-colors
                     ${isDarkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}
                   `}
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       handleLabelToggle(label);
                     }}
@@ -253,7 +259,7 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                       <div
                         className={`text-xs font-medium truncate ${isDarkMode ? 'text-gray-100' : 'text-gray-900'}`}
                       >
-                        {label.name}
+                        {safeTextDisplay(label.name)}
                       </div>
                     </div>
                   </div>
@@ -278,7 +284,9 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
                       >
                         {t('createLabelButton', { name: searchQuery.trim() })}
                       </button>
-                      <div className={`mt-2 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <div
+                        className={`mt-2 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}
+                      >
                         {t('labelsSelectorInputTip')}
                       </div>
                     </>
@@ -289,7 +297,9 @@ const LabelsSelector: React.FC<LabelsSelectorProps> = ({ task, isDarkMode = fals
 
             {/* Footer */}
             <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-              <div className={`flex items-center justify-center gap-1 px-2 py-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              <div
+                className={`flex items-center justify-center gap-1 px-2 py-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
+              >
                 <TagOutlined />
                 {t('manageLabelsPath')}
               </div>

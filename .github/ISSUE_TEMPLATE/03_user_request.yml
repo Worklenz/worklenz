@@ -1,0 +1,30 @@
+name: User Request
+description: Feature request or improvement from users
+title: "[REQUEST] "
+labels: ["customer-request"]
+body:
+
+  - type: textarea
+    id: request
+    attributes:
+      label: User Request
+      description: What is the user asking for?
+    validations:
+      required: true
+
+  - type: textarea
+    id: value
+    attributes:
+      label: Why This Matters
+      description: Who is affected and why?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency (Initial Assessment)
+      options:
+        - P0
+        - P1
+        - P2

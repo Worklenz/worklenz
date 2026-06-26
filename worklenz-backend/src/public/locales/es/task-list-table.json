@@ -109,6 +109,7 @@
     },
     
     "fieldTypes": {
+      "text": "Texto",
       "people": "Personas",
       "number": "Número",
       "date": "Fecha",

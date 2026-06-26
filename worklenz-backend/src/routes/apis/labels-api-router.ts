@@ -10,6 +10,7 @@ const labelsApiRouter = express.Router();
 labelsApiRouter.get("/", safeControllerFunction(LabelsController.get));
 labelsApiRouter.get("/tasks/:id", idParamValidator, safeControllerFunction(LabelsController.getByTask));
 labelsApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(LabelsController.getByProject));
+labelsApiRouter.post("/", teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.create));
 labelsApiRouter.put("/tasks/:id", idParamValidator, teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.updateColor));
 labelsApiRouter.put("/team/:id", idParamValidator, teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.updateLabel));
 labelsApiRouter.delete("/team/:id", idParamValidator, teamOwnerOrAdminValidator, safeControllerFunction(LabelsController.deleteById));

@@ -123,7 +123,7 @@ export const tasksApiService = {
   },
 
   searchTask: async (
-    taskId: string,
+    taskId: string | undefined,
     projectId: string,
     searchQuery: string
   ): Promise<IServerResponse<{ label: string; value: string }[]>> => {

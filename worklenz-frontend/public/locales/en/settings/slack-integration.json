@@ -1,0 +1,136 @@
+{
+  "title": "Slack Integration",
+  "connectWorkspace": "Connect Slack Workspace",
+  "addChannelConfig": "Add Channel Configuration",
+  "manageConfigurations": "Manage",
+  "manageTitle": "Manage Slack Configurations",
+  "defaultWorkspaceName": "Slack Workspace",
+  "connectedDescription": "Your team's Slack workspace is connected. Configure which channels receive notifications for each project.",
+  "status": {
+    "connected": "Connected"
+  },
+  "stats": {
+    "total": "Total",
+    "active": "Active",
+    "available": "Available"
+  },
+  "setup": {
+    "title": "Setup Instructions",
+    "step1": {
+      "title": "1. Connect Your Workspace",
+      "description": "Click the 'Connect Slack Workspace' button below to authorize Worklenz to access your Slack workspace."
+    },
+    "step2": {
+      "title": "2. Invite Bot to Channels",
+      "description": "In each Slack channel where you want notifications, type:",
+      "command": "/invite @Worklenz",
+      "note": "You only need to do this once per channel."
+    },
+    "step3": {
+      "title": "3. Configure Notifications",
+      "description": "After connecting, click 'Manage' to configure which projects send notifications to which channels."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "Don't forget to invite the bot!",
+      "description": "Before you can receive notifications in a Slack channel, you must invite the Worklenz bot to that channel.",
+      "step": "In your Slack channel, type: <code>/invite @Worklenz</code>",
+      "note": "This only needs to be done once per channel."
+    },
+    "getStarted": "Get started by adding a channel configuration to receive notifications from your projects."
+  },
+  "disconnect": {
+    "title": "Disconnect Slack?",
+    "content": "This will remove all Slack configurations and stop notifications for your team.",
+    "okText": "Disconnect"
+  },
+  "deleteConfig": {
+    "title": "Delete Configuration?",
+    "content": "Are you sure you want to remove this channel configuration?",
+    "okText": "Delete"
+  },
+  "notConnected": {
+    "title": "Connect Your Slack Workspace",
+    "description": "Integrate Slack with your Worklenz team to receive real-time notifications, create tasks from Slack, and keep your team synchronized across both platforms."
+  },
+  "features": {
+    "notifications": {
+      "title": "Real-time Notifications",
+      "description": "Get notified about task updates, comments, and deadlines"
+    },
+    "createTasks": {
+      "title": "Create Tasks from Slack",
+      "description": "Use slash commands to quickly create tasks without leaving Slack"
+    },
+    "collaboration": {
+      "title": "Team Collaboration",
+      "description": "Keep your entire team in sync across Worklenz and Slack"
+    }
+  },
+  "table": {
+    "project": "Project",
+    "slackChannel": "Slack Channel",
+    "notifications": "Notifications",
+    "active": "Active",
+    "actions": "Actions",
+    "channelConfigs": "Slack Channel Configurations",
+    "toggleStatus": "Toggle status for {{channel}}",
+    "editConfig": "Edit configuration for {{channel}}",
+    "deleteConfig": "Delete configuration for {{channel}}"
+  },
+  "modal": {
+    "configureChannel": "Configure Slack Channel",
+    "editChannel": "Edit Slack Channel",
+    "project": "Project",
+    "selectProject": "Select a project",
+    "slackChannel": "Slack Channel",
+    "selectSlackChannel": "Select a Slack channel",
+    "notificationTypes": "Notification Types",
+    "selectNotificationTypes": "Select notification types",
+    "refreshChannels": "Refresh",
+    "notificationOptions": {
+      "taskCreated": "Task Created",
+      "taskUpdated": "Task Updated",
+      "taskCompleted": "Task Completed",
+      "taskAssigned": "Task Assigned",
+      "commentAdded": "Comment Added",
+      "statusChanged": "Status Changed",
+      "dueDateChanged": "Due Date Changed",
+      "dueDateReminder": "Due Date Reminder",
+      "assigneeChanged": "Assignee Changed",
+      "priorityChanged": "Priority Changed"
+    },
+    "addConfiguration": "Add Configuration",
+    "updateConfiguration": "Update Configuration"
+  },
+  "validation": {
+    "selectProject": "Please select a project",
+    "selectChannel": "Please select a Slack channel",
+    "selectNotifications": "Please select at least one notification type"
+  },
+  "messages": {
+    "connectedSuccess": "Slack workspace connected successfully!",
+    "installationCancelled": "Slack installation cancelled",
+    "disconnectedSuccess": "Slack workspace disconnected successfully",
+    "configAdded": "Channel configuration added successfully",
+    "configUpdated": "Channel configuration updated successfully",
+    "statusUpdated": "Channel status updated successfully",
+    "configRemoved": "Channel configuration removed successfully",
+    "channelsRefreshed": "Channels refreshed successfully"
+  },
+  "errors": {
+    "connectionCheckFailed": "Failed to check Slack connection",
+    "loadConfigsFailed": "Failed to load channel configurations",
+    "loadChannelsFailed": "Failed to load available channels",
+    "loadProjectsFailed": "Failed to load projects",
+    "initiateConnectionFailed": "Failed to initiate Slack connection",
+    "connectionFailed": "Failed to connect Slack workspace",
+    "disconnectFailed": "Failed to disconnect Slack workspace",
+    "addConfigFailed": "Failed to add channel configuration",
+    "updateConfigFailed": "Failed to update channel configuration",
+    "updateStatusFailed": "Failed to update channel status",
+    "removeConfigFailed": "Failed to remove channel configuration",
+    "refreshChannelsFailed": "Failed to refresh channels"
+  }
+}

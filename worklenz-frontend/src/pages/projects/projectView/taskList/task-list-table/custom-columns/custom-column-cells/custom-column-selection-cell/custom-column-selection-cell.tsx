@@ -1,4 +1,13 @@
-import { Badge, Card, Dropdown, Empty, Flex, Menu, MenuProps, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Card,
+  Dropdown,
+  Empty,
+  Flex,
+  Menu,
+  MenuProps,
+  Typography,
+} from '@/shared/antd-imports';
 import React, { useState, useEffect } from 'react';
 import { DownOutlined } from '@/shared/antd-imports';
 // custom css file
@@ -22,22 +31,42 @@ const CustomColumnSelectionCell = ({
   // localization
   const { t } = useTranslation('task-list-table');
 
-  // Debug the selectionsList and value
-  console.log('CustomColumnSelectionCell props:', {
-    selectionsList,
-    value,
-    selectionsCount: selectionsList?.length || 0,
-  });
-
   // Set initial selection based on value prop
   useEffect(() => {
     if (value && Array.isArray(selectionsList) && selectionsList.length > 0) {
       const selectedOption = selectionsList.find(option => option.selection_id === value);
-      console.log('Found selected option:', selectedOption);
       if (selectedOption) {
         setCurrentSelectionOption(selectedOption);
       }
     }
+
+    const normalizedValue = value?.toString().trim() || '';
+    const normalizedLower = normalizedValue.toLowerCase();
+    const list = Array.isArray(selectionsList) ? selectionsList : [];
+
+    const matchedOption =
+      list.find(option => option.selection_id === normalizedValue) ||
+      list.find(option => option.selection_name?.toLowerCase() === normalizedLower) ||
+      null;
+
+    // Dev-only trace to confirm incoming value vs detected option
+    console.debug('CustomColumnSelectionCell match', {
+      value: normalizedValue,
+      matchedSelectionId: matchedOption?.selection_id,
+      selections: list.map(item => item.selection_id),
+    });
+
+    if (matchedOption) {
+      setCurrentSelectionOption(matchedOption);
+      return;
+    }
+
+    // Fallback so imported values still render even if no matching selection exists yet.
+    setCurrentSelectionOption({
+      selection_id: normalizedValue,
+      selection_name: normalizedValue,
+      selection_color: colors.transparent,
+    });
   }, [value, selectionsList]);
 
   // ensure selectionsList is an array and has valid data

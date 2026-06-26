@@ -4,12 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { setSurveyData, setSurveySubStep } from '@/features/account-setup/account-setup.slice';
 import { RootState } from '@/app/store';
-import { 
-  OrganizationType, 
-  UserRole, 
-  UseCase, 
+import {
+  OrganizationType,
+  UserRole,
+  UseCase,
   HowHeardAbout,
-  IAccountSetupSurveyData 
+  IAccountSetupSurveyData,
 } from '@/types/account-setup/survey.types';
 
 const { Title, Paragraph } = Typography;
@@ -34,9 +34,14 @@ interface SurveyPageProps {
 }
 
 // Page 1: About You
-const AboutYouPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, handleSurveyDataChange }) => {
+const AboutYouPage: React.FC<SurveyPageProps> = ({
+  styles,
+  token,
+  surveyData,
+  handleSurveyDataChange,
+}) => {
   const { t } = useTranslation('account-setup');
-  
+
   const organizationTypeOptions: { value: OrganizationType; label: string; icon?: string }[] = [
     { value: 'freelancer', label: t('organizationTypeFreelancer'), icon: '👤' },
     { value: 'startup', label: t('organizationTypeStartup'), icon: '🚀' },
@@ -72,7 +77,7 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, ha
           {t('orgTypeQuestion')}
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-          {organizationTypeOptions.map((option) => {
+          {organizationTypeOptions.map(option => {
             const isSelected = surveyData.organization_type === option.value;
             return (
               <button
@@ -85,11 +90,13 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, ha
                 }}
               >
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                  <div
+                    className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  >
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-base">{option.icon}</span>
-                  <span 
+                  <span
                     className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
                     style={{ color: isSelected ? undefined : token?.colorText }}
                   >
@@ -108,7 +115,7 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, ha
           {t('userRoleQuestion')}
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-          {userRoleOptions.map((option) => {
+          {userRoleOptions.map(option => {
             const isSelected = surveyData.user_role === option.value;
             return (
               <button
@@ -121,11 +128,13 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, ha
                 }}
               >
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                  <div
+                    className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  >
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-base">{option.icon}</span>
-                  <span 
+                  <span
                     className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
                     style={{ color: isSelected ? undefined : token?.colorText }}
                   >
@@ -142,15 +151,41 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, ha
 };
 
 // Page 2: Your Needs
-const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, handleSurveyDataChange, handleUseCaseToggle }) => {
+const YourNeedsPage: React.FC<SurveyPageProps> = ({
+  styles,
+  token,
+  surveyData,
+  handleSurveyDataChange,
+  handleUseCaseToggle,
+}) => {
   const { t } = useTranslation('account-setup');
-  
+
   const useCaseOptions: { value: UseCase; label: string; description: string }[] = [
-    { value: 'task_management', label: t('mainUseCasesTaskManagement'), description: 'Organize and track tasks' },
-    { value: 'team_collaboration', label: t('mainUseCasesTeamCollaboration'), description: 'Work together seamlessly' },
-    { value: 'resource_planning', label: t('mainUseCasesResourcePlanning'), description: 'Manage time and resources' },
-    { value: 'client_communication', label: t('mainUseCasesClientCommunication'), description: 'Stay connected with clients' },
-    { value: 'time_tracking', label: t('mainUseCasesTimeTracking'), description: 'Monitor project hours' },
+    {
+      value: 'task_management',
+      label: t('mainUseCasesTaskManagement'),
+      description: 'Organize and track tasks',
+    },
+    {
+      value: 'team_collaboration',
+      label: t('mainUseCasesTeamCollaboration'),
+      description: 'Work together seamlessly',
+    },
+    {
+      value: 'resource_planning',
+      label: t('mainUseCasesResourcePlanning'),
+      description: 'Manage time and resources',
+    },
+    {
+      value: 'client_communication',
+      label: t('mainUseCasesClientCommunication'),
+      description: 'Stay connected with clients',
+    },
+    {
+      value: 'time_tracking',
+      label: t('mainUseCasesTimeTracking'),
+      description: 'Monitor project hours',
+    },
     { value: 'other', label: t('mainUseCasesOther'), description: 'Something else' },
   ];
 
@@ -160,7 +195,9 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
     } else {
       const currentUseCases = surveyData.main_use_cases || [];
       const isSelected = currentUseCases.includes(value);
-      const newUseCases = isSelected ? currentUseCases.filter(useCase => useCase !== value) : [...currentUseCases, value];
+      const newUseCases = isSelected
+        ? currentUseCases.filter(useCase => useCase !== value)
+        : [...currentUseCases, value];
       handleSurveyDataChange('main_use_cases', newUseCases);
     }
   };
@@ -182,7 +219,7 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
           {t('yourNeedsQuestion')}
         </label>
         <div className="grid grid-cols-1 gap-1">
-          {useCaseOptions.map((option) => {
+          {useCaseOptions.map(option => {
             const isSelected = (surveyData.main_use_cases || []).includes(option.value);
             return (
               <button
@@ -195,16 +232,29 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
                 }}
               >
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                  <div
+                    className={`w-3 h-3 rounded border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  >
                     {isSelected && (
                       <svg width="10" height="10" fill="white" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     )}
                   </div>
                   <div className="flex-1">
-                    <span className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`} style={{ color: isSelected ? undefined : token?.colorText }}>{option.label}</span>
-                    <span className="text-xs ml-2" style={{ color: token?.colorTextSecondary }}>- {option.description}</span>
+                    <span
+                      className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
+                      style={{ color: isSelected ? undefined : token?.colorText }}
+                    >
+                      {option.label}
+                    </span>
+                    <span className="text-xs ml-2" style={{ color: token?.colorTextSecondary }}>
+                      - {option.description}
+                    </span>
                   </div>
                 </div>
               </button>
@@ -226,10 +276,14 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
         <TextArea
           placeholder="e.g., Asana, Trello, Jira, Monday.com, etc."
           value={surveyData.previous_tools || ''}
-          onChange={(e) => handleSurveyDataChange('previous_tools', e.target.value)}
+          onChange={e => handleSurveyDataChange('previous_tools', e.target.value)}
           autoSize={{ minRows: 3, maxRows: 5 }}
           className="text-base"
-          style={{ backgroundColor: token?.colorBgContainer, borderColor: token?.colorBorder, color: token?.colorText }}
+          style={{
+            backgroundColor: token?.colorBgContainer,
+            borderColor: token?.colorBorder,
+            color: token?.colorText,
+          }}
         />
       </Form.Item>
     </div>
@@ -237,9 +291,15 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
 };
 
 // Page 3: Discovery
-const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, handleSurveyDataChange, isModal }) => {
+const DiscoveryPage: React.FC<SurveyPageProps> = ({
+  styles,
+  token,
+  surveyData,
+  handleSurveyDataChange,
+  isModal,
+}) => {
   const { t } = useTranslation('account-setup');
-  
+
   const howHeardAboutOptions: { value: HowHeardAbout; label: string; icon: string }[] = [
     { value: 'google_search', label: t('howHeardAboutGoogleSearch'), icon: '🔍' },
     { value: 'twitter', label: t('howHeardAboutTwitter'), icon: '🐦' },
@@ -266,7 +326,7 @@ const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
           {t('discoveryQuestion')}
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-          {howHeardAboutOptions.map((option) => {
+          {howHeardAboutOptions.map(option => {
             const isSelected = surveyData.how_heard_about === option.value;
             return (
               <button
@@ -279,11 +339,18 @@ const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
                 }}
               >
                 <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}>
+                  <div
+                    className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                  >
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-base">{option.icon}</span>
-                  <span className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`} style={{ color: isSelected ? undefined : token?.colorText }}>{option.label}</span>
+                  <span
+                    className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
+                    style={{ color: isSelected ? undefined : token?.colorText }}
+                  >
+                    {option.label}
+                  </span>
                 </div>
               </button>
             );
@@ -291,7 +358,14 @@ const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
         </div>
       </Form.Item>
 
-      <div className="mt-12 p-1.5 rounded-lg text-center" style={{ backgroundColor: token?.colorSuccessBg, borderColor: token?.colorSuccessBorder, border: '1px solid' }}>
+      <div
+        className="mt-12 p-1.5 rounded-lg text-center"
+        style={{
+          backgroundColor: token?.colorSuccessBg,
+          borderColor: token?.colorSuccessBorder,
+          border: '1px solid',
+        }}
+      >
         <div className="text-4xl mb-3">🎉</div>
         <Title level={4} style={{ color: token?.colorText, marginBottom: 8 }}>
           {isModal ? t('surveyCompleteTitle') : t('allSetTitle')}
@@ -304,10 +378,18 @@ const DiscoveryPage: React.FC<SurveyPageProps> = ({ styles, token, surveyData, h
   );
 };
 
-export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token, isModal = false }) => {
+export const SurveyStep: React.FC<Props> = ({
+  onEnter,
+  styles,
+  isDarkMode,
+  token,
+  isModal = false,
+}) => {
   const { t } = useTranslation('account-setup');
   const dispatch = useDispatch();
-  const { surveyData, surveySubStep } = useSelector((state: RootState) => state.accountSetupReducer);
+  const { surveyData, surveySubStep } = useSelector(
+    (state: RootState) => state.accountSetupReducer
+  );
 
   const handleSurveyDataChange = (field: keyof IAccountSetupSurveyData, value: any) => {
     dispatch(setSurveyData({ [field]: value }));
@@ -316,7 +398,12 @@ export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token
   React.useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
-        const isValid = (surveySubStep === 0 && surveyData.organization_type && surveyData.user_role) || (surveySubStep === 1 && surveyData.main_use_cases && surveyData.main_use_cases.length > 0) || (surveySubStep === 2 && surveyData.how_heard_about);
+        const isValid =
+          (surveySubStep === 0 && surveyData.organization_type && surveyData.user_role) ||
+          (surveySubStep === 1 &&
+            surveyData.main_use_cases &&
+            surveyData.main_use_cases.length > 0) ||
+          (surveySubStep === 2 && surveyData.how_heard_about);
         if (isValid && surveySubStep < 2) {
           dispatch(setSurveySubStep(surveySubStep + 1));
         } else if (isValid && surveySubStep === 2) {
@@ -331,23 +418,54 @@ export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token
   const handleUseCaseToggle = (value: UseCase) => {
     const currentUseCases = surveyData.main_use_cases || [];
     const isSelected = currentUseCases.includes(value);
-    const newUseCases = isSelected ? currentUseCases.filter(useCase => useCase !== value) : [...currentUseCases, value];
+    const newUseCases = isSelected
+      ? currentUseCases.filter(useCase => useCase !== value)
+      : [...currentUseCases, value];
     handleSurveyDataChange('main_use_cases', newUseCases);
   };
 
   const getSubStepTitle = () => {
     switch (surveySubStep) {
-      case 0: return t('aboutYouStepName');
-      case 1: return t('yourNeedsStepName');
-      case 2: return t('discoveryStepName');
-      default: return '';
+      case 0:
+        return t('aboutYouStepName');
+      case 1:
+        return t('yourNeedsStepName');
+      case 2:
+        return t('discoveryStepName');
+      default:
+        return '';
     }
   };
 
   const surveyPages = [
-    <AboutYouPage key="about-you" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} isModal={isModal} />,
-    <YourNeedsPage key="your-needs" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} handleUseCaseToggle={handleUseCaseToggle} isModal={isModal} />,
-    <DiscoveryPage key="discovery" styles={styles} isDarkMode={isDarkMode} token={token} surveyData={surveyData} handleSurveyDataChange={handleSurveyDataChange} isModal={isModal} />
+    <AboutYouPage
+      key="about-you"
+      styles={styles}
+      isDarkMode={isDarkMode}
+      token={token}
+      surveyData={surveyData}
+      handleSurveyDataChange={handleSurveyDataChange}
+      isModal={isModal}
+    />,
+    <YourNeedsPage
+      key="your-needs"
+      styles={styles}
+      isDarkMode={isDarkMode}
+      token={token}
+      surveyData={surveyData}
+      handleSurveyDataChange={handleSurveyDataChange}
+      handleUseCaseToggle={handleUseCaseToggle}
+      isModal={isModal}
+    />,
+    <DiscoveryPage
+      key="discovery"
+      styles={styles}
+      isDarkMode={isDarkMode}
+      token={token}
+      surveyData={surveyData}
+      handleSurveyDataChange={handleSurveyDataChange}
+      isModal={isModal}
+    />,
   ];
 
   React.useEffect(() => {
@@ -359,10 +477,23 @@ export const SurveyStep: React.FC<Props> = ({ onEnter, styles, isDarkMode, token
       {/* Progress Indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium" style={{ color: token?.colorTextSecondary }}>Step {surveySubStep + 1} of 3: {getSubStepTitle()}</span>
-          <span className="text-sm" style={{ color: token?.colorTextSecondary }}>{Math.round(((surveySubStep + 1) / 3) * 100)}%</span>
+          {/* ✅ FIX: replaced hardcoded "Step" and "of" with t() calls */}
+          <span className="text-sm font-medium" style={{ color: token?.colorTextSecondary }}>
+            {t('stepProgress', {
+              step: surveySubStep + 1,
+              title: getSubStepTitle(),
+            })}
+          </span>
+          <span className="text-sm" style={{ color: token?.colorTextSecondary }}>
+            {Math.round(((surveySubStep + 1) / 3) * 100)}%
+          </span>
         </div>
-        <Progress percent={Math.round(((surveySubStep + 1) / 3) * 100)} showInfo={false} strokeColor={token?.colorPrimary} className="mb-0" />
+        <Progress
+          percent={Math.round(((surveySubStep + 1) / 3) * 100)}
+          showInfo={false}
+          strokeColor={token?.colorPrimary}
+          className="mb-0"
+        />
       </div>
 
       {/* Current Page Content */}

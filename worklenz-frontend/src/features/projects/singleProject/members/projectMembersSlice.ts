@@ -9,6 +9,7 @@ interface ProjectMembersState {
   isDrawerOpen: boolean;
   isLoading: boolean;
   isFromAssigner: boolean;
+  membersRefreshCount: number;
   error: string | null;
 }
 
@@ -18,6 +19,7 @@ const initialState: ProjectMembersState = {
   isDrawerOpen: false,
   isLoading: false,
   isFromAssigner: false,
+  membersRefreshCount: 0,
   error: null,
 };
 
@@ -98,6 +100,9 @@ const projectMembersSlice = createSlice({
     setIsFromAssigner: (state, action: PayloadAction<boolean>) => {
       state.isFromAssigner = action.payload;
     },
+    markProjectMembersUpdated: state => {
+      state.membersRefreshCount += 1;
+    },
   },
   extraReducers: builder => {
     builder
@@ -147,7 +152,8 @@ const projectMembersSlice = createSlice({
   },
 });
 
-export const { toggleProjectMemberDrawer, setIsFromAssigner } = projectMembersSlice.actions;
+export const { toggleProjectMemberDrawer, setIsFromAssigner, markProjectMembersUpdated } =
+  projectMembersSlice.actions;
 export {
   getProjectMembers,
   getAllProjectMembers,

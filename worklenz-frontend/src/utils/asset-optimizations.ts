@@ -9,7 +9,7 @@ export const IMAGE_OPTIMIZATION = {
     CONTENT: 85,
     HIGH_QUALITY: 95,
   },
-  
+
   // Size presets for responsive images
   SIZES: {
     THUMBNAIL: { width: 64, height: 64 },
@@ -21,12 +21,13 @@ export const IMAGE_OPTIMIZATION = {
     ICON_LARGE: { width: 32, height: 32 },
     CARD_IMAGE: { width: 300, height: 200 },
   },
-  
+
   // Supported formats in order of preference
   FORMATS: ['webp', 'jpeg', 'png'],
-  
+
   // Browser support detection
-  WEBP_SUPPORT: typeof window !== 'undefined' && 
+  WEBP_SUPPORT:
+    typeof window !== 'undefined' &&
     window.document?.createElement('canvas').toDataURL('image/webp').indexOf('webp') > -1,
 } as const;
 
@@ -39,7 +40,7 @@ export const CACHE_STRATEGIES = {
     AVATARS: 86400, // 1 day
     DYNAMIC_CONTENT: 3600, // 1 hour
   },
-  
+
   // Cache keys
   KEYS: {
     COMPRESSED_IMAGES: 'compressed_images',
@@ -81,7 +82,7 @@ export class ImageOptimizer {
 
     return new Promise((resolve, reject) => {
       const img = new Image();
-      
+
       img.onload = () => {
         try {
           const canvas = this.getCanvas();
@@ -103,9 +104,9 @@ export class ImageOptimizer {
           ctx.drawImage(img, 0, 0, width, height);
 
           // Convert to optimized format
-          const mimeType = format === 'jpeg' ? 'image/jpeg' : 
-                          format === 'webp' ? 'image/webp' : 'image/png';
-          
+          const mimeType =
+            format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
+
           const compressedDataUrl = canvas.toDataURL(mimeType, quality / 100);
           resolve(compressedDataUrl);
         } catch (error) {
@@ -119,7 +120,7 @@ export class ImageOptimizer {
         img.src = file;
       } else {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = e => {
           img.src = e.target?.result as string;
         };
         reader.readAsDataURL(file);
@@ -178,7 +179,7 @@ export class ImageOptimizer {
   ): string {
     const dimensions = IMAGE_OPTIMIZATION.SIZES[size];
     const quality = IMAGE_OPTIMIZATION.QUALITY.AVATAR;
-    
+
     return `${baseUrl}?w=${dimensions.width}&h=${dimensions.height}&q=${quality}${
       IMAGE_OPTIMIZATION.WEBP_SUPPORT ? '&f=webp' : ''
     }`;
@@ -190,7 +191,7 @@ export class ImageOptimizer {
     size: keyof typeof IMAGE_OPTIMIZATION.SIZES = 'ICON_MEDIUM'
   ): string {
     const dimensions = IMAGE_OPTIMIZATION.SIZES[size];
-    
+
     return `${baseUrl}?w=${dimensions.width}&h=${dimensions.height}&q=100${
       IMAGE_OPTIMIZATION.WEBP_SUPPORT ? '&f=webp' : ''
     }`;
@@ -202,7 +203,11 @@ export class AssetCache {
   private static cache = new Map<string, { data: any; timestamp: number; duration: number }>();
 
   // Set item in cache with TTL
-  static set(key: string, data: any, duration: number = CACHE_STRATEGIES.DURATIONS.DYNAMIC_CONTENT): void {
+  static set(
+    key: string,
+    data: any,
+    duration: number = CACHE_STRATEGIES.DURATIONS.DYNAMIC_CONTENT
+  ): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -218,7 +223,7 @@ export class AssetCache {
   // Get item from cache
   static get<T>(key: string): T | null {
     const item = this.cache.get(key);
-    
+
     if (!item) return null;
 
     // Check if expired
@@ -264,8 +269,8 @@ export class LazyLoader {
   private static getObserver(): IntersectionObserver {
     if (!this.observer) {
       this.observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
+        entries => {
+          entries.forEach(entry => {
             if (entry.isIntersecting) {
               const img = entry.target as HTMLImageElement;
               this.loadImage(img);
@@ -316,7 +321,7 @@ export class LazyLoader {
       img.classList.remove('lazy-loading');
       img.classList.add('lazy-loaded');
       this.loadedImages.add(src);
-      
+
       // Cache for future use
       AssetCache.set(`image_${src}`, src, CACHE_STRATEGIES.DURATIONS.IMAGES);
     };
@@ -330,7 +335,7 @@ export class LazyLoader {
   // Preload critical images
   static preloadCriticalImages(urls: string[]): Promise<void[]> {
     return Promise.all(
-      urls.map((url) => {
+      urls.map(url => {
         return new Promise<void>((resolve, reject) => {
           const img = new Image();
           img.onload = () => {
@@ -430,7 +435,7 @@ export class AssetPreloader {
       const link = document.createElement('link');
       link.rel = 'preload';
       link.href = url;
-      
+
       // Determine asset type
       if (url.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
         link.as = 'image';
@@ -561,13 +566,13 @@ export const AssetUtils = {
   generatePlaceholder: (width: number, height: number, color: string = '#e5e7eb'): string => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
-    
+
     canvas.width = width;
     canvas.height = height;
-    
+
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, width, height);
-    
+
     return canvas.toDataURL('image/png');
   },
 
@@ -585,4 +590,4 @@ export const AssetUtils = {
       document.head.appendChild(link);
     });
   },
-}; 
+};

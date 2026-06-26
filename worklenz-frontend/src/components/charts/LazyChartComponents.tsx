@@ -2,38 +2,40 @@ import { lazy, Suspense } from 'react';
 import { Spin } from '@/shared/antd-imports';
 
 // Lazy load Chart.js components
-const LazyBarChart = lazy(() => 
+const LazyBarChart = lazy(() =>
   import('react-chartjs-2').then(module => ({ default: module.Bar }))
 );
 
-const LazyLineChart = lazy(() => 
+const LazyLineChart = lazy(() =>
   import('react-chartjs-2').then(module => ({ default: module.Line }))
 );
 
-const LazyPieChart = lazy(() => 
+const LazyPieChart = lazy(() =>
   import('react-chartjs-2').then(module => ({ default: module.Pie }))
 );
 
-const LazyDoughnutChart = lazy(() => 
+const LazyDoughnutChart = lazy(() =>
   import('react-chartjs-2').then(module => ({ default: module.Doughnut }))
 );
 
 // Lazy load Gantt components
-const LazyGanttChart = lazy(() => 
+const LazyGanttChart = lazy(() =>
   import('gantt-task-react').then(module => ({ default: module.Gantt }))
 );
 
 // Chart loading fallback
 const ChartLoadingFallback = () => (
-  <div style={{ 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    height: '300px',
-    background: '#fafafa',
-    borderRadius: '8px',
-    border: '1px solid #f0f0f0'
-  }}>
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '300px',
+      background: '#fafafa',
+      borderRadius: '8px',
+      border: '1px solid #f0f0f0',
+    }}
+  >
     <Spin size="large" />
   </div>
 );
@@ -75,10 +77,10 @@ export const usePreloadCharts = () => {
     // Preload Chart.js
     import('react-chartjs-2');
     import('chart.js');
-    
+
     // Preload Gantt
     import('gantt-task-react');
   };
 
   return { preloadCharts };
-}; 
+};

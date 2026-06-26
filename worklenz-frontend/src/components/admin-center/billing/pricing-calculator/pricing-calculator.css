@@ -1,0 +1,66 @@
+.pricing-calculator {
+  background: #fafafa;
+  border-radius: 8px;
+}
+
+.pricing-comparison-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plan-comparison-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+}
+
+.plan-comparison-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #d9d9d9;
+}
+
+.pricing-option {
+  text-align: center;
+  padding: 8px;
+}
+
+.pricing-option .ant-statistic-title {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pricing-option .ant-statistic-content {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .pricing-comparison-grid {
+    gap: 12px;
+  }
+
+  .plan-comparison-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .pricing-option {
+    padding: 4px;
+  }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .pricing-calculator {
+  background: #141414;
+}
+
+[data-theme="dark"] .plan-comparison-card {
+  background: #1f1f1f;
+  border-color: #434343;
+}
+
+[data-theme="dark"] .plan-comparison-card:hover {
+  border-color: #717171;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}

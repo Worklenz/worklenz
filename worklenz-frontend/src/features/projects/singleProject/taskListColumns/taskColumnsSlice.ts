@@ -181,14 +181,43 @@ const projectViewTaskListColumnsSlice = createSlice({
       }>
     ) {
       const index = state.columnList.findIndex(column => column.key === action.payload.key);
-      console.log('index', index, action.payload.key);
       if (index !== -1) {
         state.columnList[index] = action.payload.updatedColumn;
       }
     },
+    updateColumnWidth: (state, action: PayloadAction<{ key: string; width: number }>) => {
+      const column = state.columnList.find(col => col.key === action.payload.key);
+      if (column) {
+        column.width = action.payload.width;
+      }
+    },
+    updateMultipleColumnWidths: (state, action: PayloadAction<Record<string, number>>) => {
+      Object.entries(action.payload).forEach(([key, width]) => {
+        const column = state.columnList.find(col => col.key === key);
+        if (column) {
+          column.width = width;
+        }
+      });
+    },
+    resetColumnWidths: state => {
+      // Reset to initial widths
+      state.columnList.forEach(col => {
+        const initialColumn = initialState.columnList.find(initCol => initCol.key === col.key);
+        if (initialColumn) {
+          col.width = initialColumn.width;
+        }
+      });
+    },
   },
 });
 
-export const { toggleColumnVisibility, addCustomColumn, deleteCustomColumn, updateCustomColumn } =
-  projectViewTaskListColumnsSlice.actions;
+export const {
+  toggleColumnVisibility,
+  addCustomColumn,
+  deleteCustomColumn,
+  updateCustomColumn,
+  updateColumnWidth,
+  updateMultipleColumnWidths,
+  resetColumnWidths,
+} = projectViewTaskListColumnsSlice.actions;
 export default projectViewTaskListColumnsSlice.reducer;

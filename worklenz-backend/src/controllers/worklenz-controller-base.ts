@@ -1,11 +1,11 @@
 import { forEach } from "lodash";
-import { DEFAULT_PAGE_SIZE } from "../shared/constants";
-import { toTsQuery } from "../shared/utils";
+import {DEFAULT_PAGE_SIZE} from "../shared/constants";
+import {toTsQuery} from "../shared/utils";
 
 export default abstract class WorklenzControllerBase {
 
   protected static get paginatedDatasetDefaultStruct() {
-    return { total: 0, data: [] };
+    return {total: 0, data: []};
   }
 
   protected static isValidHost(hostname: string) {
@@ -21,51 +21,41 @@ export default abstract class WorklenzControllerBase {
       const remaining = list.slice(max);
       const names = remaining.map(i => i.name);
       data = data.slice(0, max);
-      data.push({ name: `+${remaining.length}`, end: true, names: names as string[] });
+      data.push({name: `+${remaining.length}`, end: true, names: names as string[]});
     }
 
     return data;
   }
 
-  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false, paramOffset?: number) {
+  protected static toPaginationOptions(queryParams: any, searchField: string | string[], isMemberFilter = false, paramOffset = 1) {
     // Pagination
     const size = +(queryParams.size || DEFAULT_PAGE_SIZE);
     const index = +(queryParams.index || 1);
-    const offset = queryParams.search ? 0 : (index - 1) * size;
+    const offset = (index - 1) * size;
     const paging = queryParams.paging || "true";
 
     const search = (queryParams.search as string || "").trim();
 
     let searchQuery = "";
-    const searchParams: any[] = [];
+    let searchParams: string[] = [];
 
-    if (search && paramOffset !== undefined) {
-      // Use parameterized queries when paramOffset is provided
-      const escapedSearch = search.replace(/'/g, "''");
-
+    if (search) {
+      // Use parameterized queries instead of string interpolation
+      const searchPattern = `%${search}%`;
       let s = "";
+      let currentParam = paramOffset;
+      
       if (typeof searchField === "string") {
-        s = ` ${searchField} ILIKE $${paramOffset}`;
-        searchParams.push(`%${escapedSearch}%`);
+        s = ` ${searchField} ILIKE $${currentParam}`;
+        searchParams.push(searchPattern);
       } else if (Array.isArray(searchField)) {
-        s = searchField.map((field, idx) => {
-          searchParams.push(`%${escapedSearch}%`);
-          return ` ${field} ILIKE $${paramOffset + idx}`;
-        }).join(" OR ");
-      }
-
-      if (s) {
-        searchQuery = isMemberFilter ? ` (${s})  AND ` : ` AND (${s}) `;
-      }
-    } else if (search) {
-      // Fallback to inline search for backward compatibility
-      const escapedSearch = search.replace(/'/g, "''");
-
-      let s = "";
-      if (typeof searchField === "string") {
-        s = ` ${searchField} ILIKE '%${escapedSearch}%'`;
-      } else if (Array.isArray(searchField)) {
-        s = searchField.map(field => ` ${field} ILIKE '%${escapedSearch}%'`).join(" OR ");
+        const conditions = searchField.map(field => {
+          const param = `$${currentParam}`;
+          currentParam++;
+          searchParams.push(searchPattern);
+          return ` ${field} ILIKE ${param}`;
+        });
+        s = conditions.join(" OR ");
       }
 
       if (s) {
@@ -73,18 +63,13 @@ export default abstract class WorklenzControllerBase {
       }
     }
 
-    // Sort - validate field and order
-    const field = queryParams.field;
-    let sortField = searchField;
+    // Sort
+    const sortField = /null|undefined/.test(queryParams.field as string) ? searchField : queryParams.field;
+    // Handle both uppercase (ASC/DESC) and lowercase (asc/desc/ascend/descend) order values
+    const orderValue = (queryParams.order as string || "").toLowerCase();
+    const sortOrder = (orderValue === "desc" || orderValue === "descend") ? "desc" : "asc";
 
-    // Only use provided field if it's NOT literally "null" or "undefined" and is a valid string
-    if (field && field !== "null" && field !== "undefined" && typeof field === 'string' && field.trim().length > 0) {
-      sortField = field;
-    }
-
-    const sortOrder = queryParams.order === "descend" ? "desc" : "asc";
-
-    return { searchQuery, searchParams, sortField, sortOrder, size, offset, paging };
+    return {searchQuery, searchParams, sortField, sortOrder, size, offset, paging};
   }
 
 }

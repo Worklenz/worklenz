@@ -14,6 +14,9 @@ interface AttachmentsGridProps {
   loadingTask: boolean;
   uploading: boolean;
   handleFilesSelected: (files: File[]) => void;
+  onUpgradeRequested?: () => void;
+  maxFileSizeMb?: number;
+  showUpgradeLink?: boolean;
 }
 
 const AttachmentsGrid = ({
@@ -25,6 +28,9 @@ const AttachmentsGrid = ({
   loadingTask,
   uploading,
   handleFilesSelected,
+  onUpgradeRequested,
+  maxFileSizeMb,
+  showUpgradeLink,
 }: AttachmentsGridProps) => {
   const handleUpload: UploadProps['beforeUpload'] = file => {
     if (onUpload) {
@@ -50,6 +56,9 @@ const AttachmentsGrid = ({
             loadingTask={loadingTask}
             uploading={uploading}
             onFilesSelected={handleFilesSelected}
+            onUpgradeRequested={onUpgradeRequested}
+            maxFileSizeMb={maxFileSizeMb}
+            showUpgradeLink={showUpgradeLink}
           />
         )}
       </div>

@@ -3,5 +3,6 @@
   "language_required": "El idioma es requerido",
   "time_zone": "Zona horaria",
   "time_zone_required": "La zona horaria es requerida",
-  "save_changes": "Guardar cambios"
+  "save_changes": "Guardar cambios",
+  "save": "Guardar"
 }

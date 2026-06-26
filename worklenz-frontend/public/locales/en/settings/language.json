@@ -3,5 +3,6 @@
   "language_required": "Language is required",
   "time_zone": "Time zone",
   "time_zone_required": "Time zone is required",
-  "save_changes": "Save Changes"
+  "save_changes": "Save Changes",
+  "save": "Save"
 }

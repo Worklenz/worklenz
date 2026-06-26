@@ -1,11 +1,13 @@
 import {startDailyDigestJob} from "./daily-digest-job";
 import {startNotificationsJob} from "./notifications-job";
 import {startProjectDigestJob} from "./project-digest-job";
-import {startRecurringTasksJob} from "./recurring-tasks";
+import business from "../business";
 
 export function startCronJobs() {
   startNotificationsJob();
   startDailyDigestJob();
   startProjectDigestJob();
-  if (process.env.ENABLE_RECURRING_JOBS === "true") startRecurringTasksJob();
+
+  // Business-plan-only background jobs (plan-trial expiration, etc.); CE: no-op
+  business.startBackgroundJobs();
 }

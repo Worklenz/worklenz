@@ -7,5 +7,7 @@
   "templates": "Templates",
   "remove": "Remove",
   "cancel": "Cancel",
-  "import": "Import"
+  "import": "Import",
+  "subtasksLabel": "subtask(s)",
+  "subtaskCountTooltip": "{{count}} subtask(s) will be imported"
 }

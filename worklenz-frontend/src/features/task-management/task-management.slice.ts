@@ -7,7 +7,14 @@ import {
   EntityId,
   createSelector,
 } from '@reduxjs/toolkit';
-import { Task, TaskManagementState, TaskGroup, TaskGrouping, getSortOrderField } from '@/types/task-management.types';
+import {
+  Task,
+  TaskManagementState,
+  TaskGroup,
+  TaskGrouping,
+  getSortOrderField,
+  DuplicateTask,
+} from '@/types/task-management.types';
 import { ITaskListColumn } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
 import {
@@ -15,10 +22,12 @@ import {
   ITaskListConfigV2,
   ITaskListV3Response,
 } from '@/api/tasks/tasks.api.service';
+import duplicateTaskApiService from '@/api/tasks/task-duplicate.api.service';
 import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.service';
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 // Helper function to safely convert time values
 const convertTimeValue = (value: any): number => {
@@ -54,6 +63,7 @@ const initialState: TaskManagementState = {
   entities: {},
   loading: false,
   error: null,
+  loadedProjectId: null,
   groups: [],
   grouping: undefined,
   selectedPriorities: [],
@@ -67,6 +77,8 @@ const initialState: TaskManagementState = {
   // Add sort-related state
   sortField: '',
   sortOrder: 'ASC',
+  isOpenDuplicateTaskModal: false,
+  duplicateTask: {},
 };
 
 // Async thunk to fetch tasks from API
@@ -148,52 +160,59 @@ export const fetchTasks = createAsyncThunk(
 
       // Transform the API response to our Task type
       const tasks: Task[] = response.body.flatMap((group: any) =>
-        group.tasks.map((task: any) => ({
-          id: task.id,
-          task_key: task.task_key || '',
-          title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
-          description: task.description || '',
-          status: statusIdToNameMap[task.status] || 'todo',
-          priority: priorityIdToNameMap[task.priority] || 'medium',
-          phase: task.phase_name || 'Development',
-          progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
-          assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
-          assignee_names: task.assignee_names || task.names || [],
-          labels:
-            task.labels?.map((l: any) => ({
-              id: l.id || l.label_id,
-              name: l.name,
-              color: l.color || '#1890ff',
-              end: l.end,
-              names: l.names,
-            })) || [],
-          dueDate: task.dueDate,
-          startDate: task.startDate,
-          timeTracking: {
-            estimated: convertTimeValue(task.total_time),
-            logged: convertTimeValue(task.time_spent),
-          },
-          customFields: {},
-          createdAt: task.createdAt || task.created_at || new Date().toISOString(),
-          updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
-          created_at: task.createdAt || task.created_at || new Date().toISOString(),
-          updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
-          order: typeof task.sort_order === 'number' ? task.sort_order : 0,
-          // Ensure all Task properties are mapped, even if undefined in API response
-          sub_tasks: task.sub_tasks || [],
-          sub_tasks_count: task.sub_tasks_count || 0,
-          show_sub_tasks: task.show_sub_tasks || false,
-          parent_task_id: task.parent_task_id || undefined,
-          weight: task.weight || 0,
-          color: task.color || undefined,
-          statusColor: task.statusColor || undefined,
-          priorityColor: task.priorityColor || undefined,
-          comments_count: task.comments_count || 0,
-          attachments_count: task.attachments_count || 0,
-          has_dependencies: task.has_dependencies || false,
-          schedule_id: task.schedule_id || null,
-          reporter: task.reporter || undefined,
-        }))
+        group.tasks.map((task: any) => {
+          const taskTitle = decodeHtmlEntities(task.title || task.name).trim();
+
+          return {
+            id: task.id,
+            task_key: task.task_key || '',
+            title: taskTitle || DEFAULT_TASK_NAME,
+            description: task.description || '',
+            status: statusIdToNameMap[task.status] || 'todo',
+            priority: priorityIdToNameMap[task.priority] || 'medium',
+            phase: task.phase_name || 'Development',
+            progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
+            assignees: task.assignees?.map((a: any) => a.team_member_id) || [],
+            assignee_names: task.assignee_names || task.names || [],
+            labels:
+              task.labels?.map((l: any) => ({
+                id: l.id || l.label_id,
+                name: l.name,
+                color: l.color || '#1890ff',
+                end: l.end,
+                names: l.names,
+              })) || [],
+            dueDate: task.dueDate,
+            startDate: task.startDate,
+            completedAt: task.completedAt || task.completed_at || undefined,
+            timeTracking: {
+              estimated: convertTimeValue(task.total_time),
+              logged: convertTimeValue(task.time_spent),
+            },
+            customFields: {},
+            createdAt: task.createdAt || task.created_at || new Date().toISOString(),
+            updatedAt: task.updatedAt || task.updated_at || new Date().toISOString(),
+            created_at: task.createdAt || task.created_at || new Date().toISOString(),
+            updated_at: task.updatedAt || task.updated_at || new Date().toISOString(),
+            completed_at: task.completedAt || task.completed_at || undefined,
+            order: typeof task.sort_order === 'number' ? task.sort_order : 0,
+            // Ensure all Task properties are mapped, even if undefined in API response
+            sub_tasks: task.sub_tasks || [],
+            sub_tasks_count: task.sub_tasks_count || 0,
+            show_sub_tasks: task.show_sub_tasks || false,
+            parent_task_id: task.parent_task_id || undefined,
+            weight: task.weight || 0,
+            color: task.color || undefined,
+            statusColor: task.statusColor || undefined,
+            priorityColor: task.priorityColor || undefined,
+            comments_count: task.comments_count || 0,
+            attachments_count: task.attachments_count || 0,
+            has_dependencies: task.has_dependencies || false,
+            has_subscribers: task.has_subscribers || false,
+            schedule_id: task.schedule_id || null,
+            reporter: task.reporter || undefined,
+          };
+        })
       );
 
       return tasks;
@@ -258,35 +277,53 @@ export const fetchTasksV3 = createAsyncThunk(
 
       const response = await tasksApiService.getTaskListV3(config);
 
-      // Ensure tasks are properly normalized
-      const tasks: Task[] = response.body.allTasks.map((task: any) => {
+      const normalizeTask = (task: any): Task => {
         const now = new Date().toISOString();
-        
-        const transformedTask = {
+        const taskTitle = decodeHtmlEntities(task.title || task.name).trim();
+
+        const transformedTask: Task = {
           id: task.id,
           task_key: task.task_key || task.key || '',
-          title: (task.title && task.title.trim()) ? task.title.trim() : DEFAULT_TASK_NAME,
+          title: taskTitle || DEFAULT_TASK_NAME,
+          name: taskTitle || DEFAULT_TASK_NAME,
           description: task.description || '',
           status: task.status || 'todo',
           priority: task.priority || 'medium',
           phase: task.phase || 'Development',
           progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
+          complete_ratio: task.complete_ratio, // Keep original field
+          progress_value: task.progress_value, // Keep original field
           assignees: task.assignees?.map((a: { team_member_id: string }) => a.team_member_id) || [],
           assignee_names: task.assignee_names || task.names || [],
-          labels: task.labels?.map((l: { id: string; label_id: string; name: string; color: string; end: boolean; names: string[] }) => ({
-            id: l.id || l.label_id,
-            name: l.name,
-            color: l.color || '#1890ff',
-            end: l.end,
-            names: l.names,
-          })) || [],
-          all_labels: task.all_labels?.map((l: { id: string; label_id: string; name: string; color_code: string }) => ({
-            id: l.id || l.label_id,
-            name: l.name,
-            color_code: l.color_code || '#1890ff',
-          })) || [],
+          labels:
+            task.labels?.map(
+              (l: {
+                id: string;
+                label_id: string;
+                name: string;
+                color: string;
+                end: boolean;
+                names: string[];
+              }) => ({
+                id: l.id || l.label_id,
+                name: l.name,
+                color: l.color || '#1890ff',
+                end: l.end,
+                names: l.names,
+              })
+            ) || [],
+          all_labels:
+            task.all_labels?.map(
+              (l: { id: string; label_id: string; name: string; color_code: string }) => ({
+                id: l.id || l.label_id,
+                name: l.name,
+                color_code: l.color_code || '#1890ff',
+              })
+            ) || [],
           dueDate: task.dueDate,
           startDate: task.startDate,
+          due_time: task.due_time || null,
+          completedAt: task.completedAt || task.completed_at || undefined,
           timeTracking: {
             estimated: task.timeTracking?.estimated || 0,
             logged: task.timeTracking?.logged || 0,
@@ -297,11 +334,17 @@ export const fetchTasksV3 = createAsyncThunk(
           updatedAt: task.updatedAt || task.updated_at || now,
           created_at: task.createdAt || task.created_at || now,
           updated_at: task.updatedAt || task.updated_at || now,
+          completed_at: task.completedAt || task.completed_at || undefined,
           order: typeof task.sort_order === 'number' ? task.sort_order : 0,
-          sub_tasks: task.sub_tasks || [],
+          sub_tasks: (task.sub_tasks || []).map((subtask: any) => normalizeTask(subtask)),
           sub_tasks_count: task.sub_tasks_count || 0,
-          show_sub_tasks: task.show_sub_tasks || false,
+          // Auto-expand tasks that have filtered children (descendants matching the filter)
+          show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
+          has_filtered_children: task.has_filtered_children || false,
           parent_task_id: task.parent_task_id || undefined,
+          parent_task_container_id: task.parent_task_container_id || undefined,
+          is_parent_container: !!task.is_parent_container,
+          parent_task_not_archived: !!task.parent_task_not_archived,
           weight: task.weight || 0,
           color: task.color || undefined,
           statusColor: task.statusColor || undefined,
@@ -309,15 +352,25 @@ export const fetchTasksV3 = createAsyncThunk(
           comments_count: task.comments_count || 0,
           attachments_count: task.attachments_count || 0,
           has_dependencies: task.has_dependencies || false,
+          has_subscribers: task.has_subscribers || false,
           schedule_id: task.schedule_id || null,
           reporter: task.reporter || undefined,
         };
-        
+
         return transformedTask;
-      });
+      };
+
+      const tasks: Task[] = response.body.allTasks.map((task: any) => normalizeTask(task));
+
+      const flattenedTasks: Task[] = [];
+      const visitTask = (currentTask: Task) => {
+        flattenedTasks.push(currentTask);
+        (currentTask.sub_tasks || []).forEach(visitTask);
+      };
+      tasks.forEach(visitTask);
 
       return {
-        allTasks: tasks,
+        allTasks: flattenedTasks,
         groups: response.body.groups,
         grouping: response.body.grouping,
         totalTasks: response.body.totalTasks,
@@ -336,27 +389,48 @@ export const fetchTasksV3 = createAsyncThunk(
 export const fetchSubTasks = createAsyncThunk(
   'taskManagement/fetchSubTasks',
   async (
-    { taskId, projectId }: { taskId: string; projectId: string },
+    {
+      taskId,
+      projectId,
+      parentTaskIdForQuery,
+    }: { taskId: string; projectId: string; parentTaskIdForQuery?: string },
     { rejectWithValue, getState }
   ) => {
     try {
       const state = getState() as RootState;
       const currentGrouping = state.grouping.currentGrouping;
 
+      // Get active filters from taskReducer (same as fetchTasksV3)
+      const selectedLabels = state.taskReducer.labels
+        .filter((l: any) => l.selected && l.id)
+        .map((l: any) => l.id)
+        .join(' ');
+
+      const selectedAssignees = state.taskReducer.taskAssignees
+        .filter((m: any) => m.selected && m.id)
+        .map((m: any) => m.id)
+        .join(' ');
+
+      const selectedPriorities = state.taskReducer.priorities.join(' ');
+
+      // Get search value from taskManagement slice
+      const searchValue = state.taskManagement.search || '';
+      const archivedState = state.taskManagement.archived;
+
       const config: ITaskListConfigV2 = {
         id: projectId,
-        archived: false,
+        archived: archivedState,
         group: currentGrouping || '',
         field: '',
         order: '',
-        search: '',
-        statuses: '',
-        members: '',
+        search: searchValue,
+        statuses: '', // Status filter not typically applied to subtasks
+        members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
-        labels: '',
-        priorities: '',
-        parent_task: taskId,
+        labels: selectedLabels,
+        priorities: selectedPriorities,
+        parent_task: parentTaskIdForQuery || taskId,
       };
 
       const response = await tasksApiService.getTaskListV3(config);
@@ -383,6 +457,34 @@ export const refreshTaskProgress = createAsyncThunk(
         return rejectWithValue(error.message);
       }
       return rejectWithValue('Failed to refresh task progress');
+    }
+  }
+);
+
+export const duplicateTask = createAsyncThunk(
+  'taskManagement/duplicateTask',
+  async (
+    {
+      projectId,
+      taskId,
+      duplicateOptions,
+    }: { projectId: string; taskId: string; duplicateOptions: any },
+    { rejectWithValue }
+  ) => {
+    try {
+      // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
+      const response = await duplicateTaskApiService.duplicate({
+        task_id: taskId,
+        project_id: projectId,
+        options: duplicateOptions,
+      });
+      return response;
+    } catch (error) {
+      logger.error('Failed to duplicate task', error);
+      if (error instanceof Error) {
+        return rejectWithValue(error.message);
+      }
+      return rejectWithValue('Failed to duplicate task');
     }
   }
 );
@@ -464,14 +566,18 @@ export const updateTaskWithSubtasks = createAsyncThunk(
 export const fetchTaskListColumns = createAsyncThunk(
   'taskManagement/fetchTaskListColumns',
   async (projectId: string, { dispatch }) => {
-    const [standardColumns, customColumns] = await Promise.all([
+    const [standardColumns, customColumnsAction] = await Promise.all([
       tasksApiService.fetchTaskListColumns(projectId),
       dispatch(fetchCustomColumns(projectId)),
     ]);
 
+    // Extract the actual payload from the dispatched action
+    // Use unwrap() or check if payload exists
+    const customColumns = customColumnsAction.payload || [];
+
     return {
       standard: standardColumns.body,
-      custom: customColumns.payload,
+      custom: Array.isArray(customColumns) ? customColumns : [],
     };
   }
 );
@@ -521,10 +627,13 @@ const taskManagementSlice = createSlice({
     setTasks: (state, action: PayloadAction<Task[]>) => {
       const tasks = action.payload;
       state.ids = tasks.map(task => task.id);
-      state.entities = tasks.reduce((acc, task) => {
-        acc[task.id] = task;
-        return acc;
-      }, {} as Record<string, Task>);
+      state.entities = tasks.reduce(
+        (acc, task) => {
+          acc[task.id] = task;
+          return acc;
+        },
+        {} as Record<string, Task>
+      );
     },
     addTask: (state, action: PayloadAction<Task>) => {
       const task = action.payload;
@@ -533,11 +642,11 @@ const taskManagementSlice = createSlice({
     },
     addTaskToGroup: (state, action: PayloadAction<{ task: Task; groupId: string }>) => {
       const { task, groupId } = action.payload;
-      
+
       state.ids.push(task.id);
       state.entities[task.id] = task;
       let group = state.groups.find(g => g.id === groupId);
-      
+
       // If group doesn't exist and it's "Unmapped", create it dynamically
       if (!group && groupId === 'Unmapped') {
         const unmappedGroup = {
@@ -546,12 +655,12 @@ const taskManagementSlice = createSlice({
           taskIds: [],
           type: 'phase' as const,
           color: '#fbc84c69',
-          groupValue: 'Unmapped'
+          groupValue: 'Unmapped',
         };
         state.groups.push(unmappedGroup);
         group = unmappedGroup;
       }
-      
+
       if (group) {
         group.taskIds.push(task.id);
       }
@@ -561,14 +670,14 @@ const taskManagementSlice = createSlice({
       // Additionally, update the task within its group if necessary (e.g., if status changed)
       const updatedTask = action.payload;
       const oldTask = state.entities[updatedTask.id];
-  
-      if (oldTask && state.grouping?.id === IGroupBy.STATUS && oldTask.status !== updatedTask.status) {
+
+      if (oldTask && state.grouping === IGroupBy.STATUS && oldTask.status !== updatedTask.status) {
         // Remove from old status group
         const oldGroup = state.groups.find(group => group.id === oldTask.status);
         if (oldGroup) {
           oldGroup.taskIds = oldGroup.taskIds.filter(id => id !== updatedTask.id);
         }
-  
+
         // Add to new status group
         const newGroup = state.groups.find(group => group.id === updatedTask.status);
         if (newGroup) {
@@ -576,8 +685,47 @@ const taskManagementSlice = createSlice({
         }
       }
     },
-    deleteTask: (state, action: PayloadAction<string>) => {
-      const taskId = action.payload;
+    deleteTask: (
+      state,
+      action: PayloadAction<string | { taskId: string; parentTaskId?: string }>
+    ) => {
+      // Handle both string and object payload
+      const taskId = typeof action.payload === 'string' ? action.payload : action.payload.taskId;
+      const parentTaskId =
+        typeof action.payload === 'object' ? action.payload.parentTaskId : undefined;
+
+      const task = state.entities[taskId];
+
+      // Determine the parent task ID (from payload or from task entity)
+      const actualParentTaskId = parentTaskId || task?.parent_task_id;
+
+      // If this is a subtask, update the parent task
+      if (actualParentTaskId) {
+        const parent = state.entities[actualParentTaskId];
+        if (parent) {
+          // Remove from parent's sub_tasks array
+          if (parent.sub_tasks) {
+            parent.sub_tasks = parent.sub_tasks.filter(subtask => subtask.id !== taskId);
+          }
+          // Decrement parent's sub_tasks_count
+          parent.sub_tasks_count = Math.max((parent.sub_tasks_count || 0) - 1, 0);
+        }
+      }
+
+      // Fallback: remove from any parent/container that currently holds this task in sub_tasks.
+      // This handles synthetic archived parent containers where parent_task_id may not match entity key.
+      for (const entityId of Object.keys(state.entities)) {
+        const candidateParent = state.entities[entityId];
+        if (!candidateParent?.sub_tasks || candidateParent.sub_tasks.length === 0) continue;
+        const before = candidateParent.sub_tasks.length;
+        candidateParent.sub_tasks = candidateParent.sub_tasks.filter(
+          subtask => subtask.id !== taskId
+        );
+        if (candidateParent.sub_tasks.length !== before) {
+          candidateParent.sub_tasks_count = Math.max(candidateParent.sub_tasks.length, 0);
+        }
+      }
+      // Delete the task from entities
       delete state.entities[taskId];
       state.ids = state.ids.filter(id => id !== taskId);
       state.groups = state.groups.map(group => ({
@@ -633,8 +781,8 @@ const taskManagementSlice = createSlice({
           group.id === targetGroupId
             ? [...group.taskIds, taskId]
             : group.id === sourceGroupId
-            ? group.taskIds.filter(id => id !== taskId)
-            : group.taskIds,
+              ? group.taskIds.filter(id => id !== taskId)
+              : group.taskIds,
       }));
     },
     optimisticTaskMove: (
@@ -652,8 +800,8 @@ const taskManagementSlice = createSlice({
           group.id === targetGroupId
             ? [...group.taskIds, taskId]
             : group.id === sourceGroupId
-            ? group.taskIds.filter(id => id !== taskId)
-            : group.taskIds,
+              ? group.taskIds.filter(id => id !== taskId)
+              : group.taskIds,
       }));
     },
     reorderTasksInGroup: (
@@ -666,15 +814,15 @@ const taskManagementSlice = createSlice({
       }>
     ) => {
       const { sourceTaskId, destinationTaskId, sourceGroupId, destinationGroupId } = action.payload;
-  
+
       // Get a mutable copy of entities for updates
       const newEntities = { ...state.entities };
-  
+
       const sourceTask = newEntities[sourceTaskId];
       const destinationTask = newEntities[destinationTaskId];
-  
+
       if (!sourceTask || !destinationTask) return;
-  
+
       if (sourceGroupId === destinationGroupId) {
         // Reordering within the same group
         const group = state.groups.find(g => g.id === sourceGroupId);
@@ -682,10 +830,10 @@ const taskManagementSlice = createSlice({
           const newTasks = Array.from(group.taskIds);
           const sourceIndex = newTasks.indexOf(sourceTaskId);
           const destinationIndex = newTasks.indexOf(destinationTaskId);
-          
+
           // Remove the task from its current position
           const [removed] = newTasks.splice(sourceIndex, 1);
-          
+
           // Calculate the insertion index
           let insertIndex = destinationIndex;
           if (sourceIndex < destinationIndex) {
@@ -695,12 +843,12 @@ const taskManagementSlice = createSlice({
             // When dragging up, we insert before the destination
             insertIndex = destinationIndex;
           }
-          
+
           newTasks.splice(insertIndex, 0, removed);
           group.taskIds = newTasks;
 
           // Update order for affected tasks using the appropriate sort field
-          const sortField = getSortOrderField(state.grouping?.id);
+          const sortField = getSortOrderField(state.grouping);
           newTasks.forEach((id, index) => {
             if (newEntities[id]) {
               newEntities[id] = { ...newEntities[id], [sortField]: index };
@@ -728,7 +876,7 @@ const taskManagementSlice = createSlice({
           // This will be handled by the socket event handler after backend confirmation.
 
           // Update order for affected tasks in both groups using the appropriate sort field
-          const sortField = getSortOrderField(state.grouping?.id);
+          const sortField = getSortOrderField(state.grouping);
           sourceGroup.taskIds.forEach((id, index) => {
             if (newEntities[id]) newEntities[id] = { ...newEntities[id], [sortField]: index };
           });
@@ -737,7 +885,7 @@ const taskManagementSlice = createSlice({
           });
         }
       }
-  
+
       // Update the state's entities after all modifications
       state.entities = newEntities;
     },
@@ -756,7 +904,13 @@ const taskManagementSlice = createSlice({
     setArchived: (state, action: PayloadAction<boolean>) => {
       state.archived = action.payload;
     },
-    toggleArchived: (state) => {
+    setDuplicateTaskModalStatus: (state, action: PayloadAction<boolean>) => {
+      state.isOpenDuplicateTaskModal = action.payload;
+    },
+    setDuplicateTask: (state, action: PayloadAction<DuplicateTask>) => {
+      state.duplicateTask = action.payload;
+    },
+    toggleArchived: state => {
       state.archived = !state.archived;
     },
     setSortField: (state, action: PayloadAction<string>) => {
@@ -772,6 +926,7 @@ const taskManagementSlice = createSlice({
     resetTaskManagement: state => {
       state.loading = false;
       state.error = null;
+      state.loadedProjectId = null;
       state.groups = [];
       state.grouping = undefined;
       state.selectedPriorities = [];
@@ -788,10 +943,7 @@ const taskManagementSlice = createSlice({
         task.show_sub_tasks = !task.show_sub_tasks;
       }
     },
-    addSubtaskToParent: (
-      state,
-      action: PayloadAction<{ parentId: string; subtask: Task }>
-    ) => {
+    addSubtaskToParent: (state, action: PayloadAction<{ parentId: string; subtask: Task }>) => {
       const { parentId, subtask } = action.payload;
       const parent = state.entities[parentId];
       if (parent) {
@@ -806,9 +958,15 @@ const taskManagementSlice = createSlice({
     },
     createSubtask: (
       state,
-      action: PayloadAction<{ parentTaskId: string; name: string; projectId: string }>
+      action: PayloadAction<{
+        parentTaskId: string;
+        name: string;
+        projectId: string;
+        reporterName?: string; // Add optional reporter name for optimistic update
+      }>
     ) => {
-      const { parentTaskId, name, projectId } = action.payload;
+      const { parentTaskId, name, projectId, reporterName } = action.payload;
+      const decodedName = decodeHtmlEntities(name);
       const parent = state.entities[parentTaskId];
       if (parent) {
         // Create a temporary subtask - the real one will come from the socket
@@ -816,8 +974,8 @@ const taskManagementSlice = createSlice({
         const tempSubtask: Task = {
           id: tempId,
           task_key: '',
-          title: name,
-          name: name,
+          title: decodedName,
+          name: decodedName,
           description: '',
           status: 'todo',
           priority: 'low',
@@ -841,8 +999,9 @@ const taskManagementSlice = createSlice({
           sub_tasks_count: 0,
           show_sub_tasks: false,
           isTemporary: true, // Mark as temporary
+          reporter: reporterName || '', // Include reporter for optimistic update
         };
-        
+
         // Add temporary subtask for immediate UI feedback
         if (!parent.sub_tasks) {
           parent.sub_tasks = [];
@@ -866,14 +1025,17 @@ const taskManagementSlice = createSlice({
         state.ids = state.ids.filter(id => id !== tempId);
       }
     },
-    updateTaskAssignees: (state, action: PayloadAction<{
-      taskId: string;
-      assigneeIds: string[];
-      assigneeNames: InlineMember[];
-    }>) => {
+    updateTaskAssignees: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        assigneeIds: string[];
+        assigneeNames: InlineMember[];
+      }>
+    ) => {
       const { taskId, assigneeIds, assigneeNames } = action.payload;
       const existingTask = state.entities[taskId];
-  
+
       if (existingTask) {
         state.entities[taskId] = {
           ...existingTask,
@@ -884,10 +1046,19 @@ const taskManagementSlice = createSlice({
     },
     // Add column-related reducers
     toggleColumnVisibility: (state, action: PayloadAction<string>) => {
-      const column = state.columns.find(col => col.key === action.payload);
-      if (column) {
-        column.pinned = !column.pinned;
-      }
+      const targetKey = action.payload;
+
+      state.columns.forEach(column => {
+        if (column.key === targetKey) {
+          column.pinned = !column.pinned;
+        }
+      });
+
+      state.customColumns.forEach(column => {
+        if (column.key === targetKey) {
+          column.pinned = !column.pinned;
+        }
+      });
     },
     addCustomColumn: (state, action: PayloadAction<ITaskListColumn>) => {
       state.customColumns.push(action.payload);
@@ -927,23 +1098,26 @@ const taskManagementSlice = createSlice({
         if (field) {
           return {
             ...column,
-            pinned: field.visible
+            pinned: field.visible,
           };
         }
         return column;
       });
     },
     // Add action to update task counts (comments, attachments, etc.)
-    updateTaskCounts: (state, action: PayloadAction<{
-      taskId: string;
-      counts: {
-        comments_count?: number;
-        attachments_count?: number;
-        has_subscribers?: boolean;
-        has_dependencies?: boolean;
-        schedule_id?: string | null; // Add schedule_id for recurring tasks
-      };
-    }>) => {
+    updateTaskCounts: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        counts: {
+          comments_count?: number;
+          attachments_count?: number;
+          has_subscribers?: boolean;
+          has_dependencies?: boolean;
+          schedule_id?: string | null; // Add schedule_id for recurring tasks
+        };
+      }>
+    ) => {
       const { taskId, counts } = action.payload;
       const task = state.entities[taskId];
       if (task) {
@@ -974,8 +1148,9 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
+        state.loadedProjectId = action.meta.arg;
         const { allTasks, groups, grouping } = action.payload;
-        
+
         // Preserve existing timer state from old tasks before replacing
         const oldTasks = state.entities;
         const tasksWithTimers = (allTasks || []).map(task => {
@@ -986,13 +1161,13 @@ const taskManagementSlice = createSlice({
               ...task,
               timeTracking: {
                 ...task.timeTracking,
-                activeTimer: oldTask.timeTracking.activeTimer
-              }
+                activeTimer: oldTask.timeTracking.activeTimer,
+              },
             };
           }
           return task;
         });
-        
+
         tasksAdapter.setAll(state as EntityState<Task, string>, tasksWithTimers); // Ensure allTasks is an array
         state.ids = tasksWithTimers.map(task => task.id); // Also update ids
         state.groups = groups;
@@ -1000,7 +1175,8 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchTasksV3.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error?.message || (action.payload as string) || 'Failed to load tasks (V3)';
+        state.error =
+          action.error?.message || (action.payload as string) || 'Failed to load tasks (V3)';
         state.ids = [];
         state.entities = {};
         state.groups = [];
@@ -1018,41 +1194,54 @@ const taskManagementSlice = createSlice({
         state.loadingSubtasks[parentTaskId] = false;
         if (parentTask && subtasks) {
           // Convert subtasks to the proper format
-          const convertedSubtasks = subtasks.map(subtask => ({
-            id: subtask.id || '',
-            task_key: subtask.task_key || '',
-            title: subtask.name || subtask.title || '',
-            name: subtask.name || subtask.title || '',
-            description: subtask.description || '',
-            status: subtask.status || 'todo',
-            priority: subtask.priority || 'low',
-            phase: subtask.phase_name || subtask.phase || 'Development',
-            progress: subtask.complete_ratio || subtask.progress || 0,
-            assignees: subtask.assignees || [],
-            assignee_names: subtask.assignee_names || subtask.names || [],
-            labels: subtask.labels || [],
-            dueDate: subtask.end_date || subtask.dueDate,
-            due_date: subtask.end_date || subtask.due_date,
-            startDate: subtask.start_date || subtask.startDate,
-            timeTracking: subtask.timeTracking || {
-              estimated: 0,
-              logged: 0,
-            },
-            createdAt: subtask.created_at || subtask.createdAt || new Date().toISOString(),
-            created_at: subtask.created_at || subtask.createdAt || new Date().toISOString(),
-            updatedAt: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
-            updated_at: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
-            order: subtask.sort_order || subtask.order || 0,
-            parent_task_id: parentTaskId,
-            is_sub_task: true,
-            sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
-            show_sub_tasks: false,
-          }));
+          const convertedSubtasks = subtasks.map(subtask => {
+            const subtaskTitle = decodeHtmlEntities(subtask.name || subtask.title).trim();
+
+            return {
+              id: subtask.id || '',
+              task_key: subtask.task_key || '',
+              title: subtaskTitle,
+              name: subtaskTitle,
+              description: subtask.description || '',
+              status: subtask.status || 'todo',
+              priority: subtask.priority || 'low',
+              phase: subtask.phase_name || subtask.phase || 'Development',
+              progress: subtask.complete_ratio || subtask.progress || 0,
+              assignees: subtask.assignees || [],
+              assignee_names: subtask.assignee_names || subtask.names || [],
+              labels: subtask.labels || [],
+              dueDate: subtask.end_date || subtask.dueDate,
+              due_date: subtask.end_date || subtask.due_date,
+              startDate: subtask.start_date || subtask.startDate,
+              timeTracking: subtask.timeTracking || {
+                estimated: 0,
+                logged: 0,
+              },
+              createdAt: subtask.created_at || subtask.createdAt || new Date().toISOString(),
+              created_at: subtask.created_at || subtask.createdAt || new Date().toISOString(),
+              updatedAt: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
+              updated_at: subtask.updated_at || subtask.updatedAt || new Date().toISOString(),
+              order: subtask.sort_order || subtask.order || 0,
+              parent_task_id: parentTaskId,
+              is_sub_task: true,
+              sub_tasks_count: subtask.sub_tasks_count || 0, // Use actual count from backend
+              // Auto-expand subtasks that have filtered children
+              show_sub_tasks: subtask.has_filtered_children || false,
+              has_filtered_children: subtask.has_filtered_children || false,
+              // Add indicator fields for icons
+              comments_count: subtask.comments_count || 0,
+              has_subscribers: subtask.has_subscribers || false,
+              attachments_count: subtask.attachments_count || 0,
+              has_dependencies: subtask.has_dependencies || false,
+              schedule_id: subtask.schedule_id || null,
+              reporter: subtask.reporter || undefined, // Add reporter field mapping
+            };
+          });
 
           // Update parent task with subtasks
           parentTask.sub_tasks = convertedSubtasks;
           parentTask.sub_tasks_count = convertedSubtasks.length;
-          
+
           // Add subtasks to entities so they can be accessed by ID
           convertedSubtasks.forEach(subtask => {
             state.entities[subtask.id] = subtask;
@@ -1066,9 +1255,12 @@ const taskManagementSlice = createSlice({
         // Clear loading state and set error
         const { taskId } = action.meta.arg;
         state.loadingSubtasks[taskId] = false;
-        state.error = action.error.message || action.payload || 'Failed to fetch subtasks. Please try again.';
+        state.error =
+          action.error.message ||
+          (action.payload as string) ||
+          'Failed to fetch subtasks. Please try again.';
       })
-      .addCase(fetchTasks.pending, (state) => {
+      .addCase(fetchTasks.pending, state => {
         state.loading = true;
         state.error = null;
       })
@@ -1102,11 +1294,14 @@ const taskManagementSlice = createSlice({
           index: 1,
           pinned: true,
         });
-        // Process custom columns
-        const customColumns = (action.payload as { custom: any[] }).custom.map((col: any) => ({
-          ...col,
-          isCustom: true,
-        }));
+        // Process custom columns with safety check
+        const customPayload = action.payload.custom;
+        const customColumns = Array.isArray(customPayload)
+          ? customPayload.map((col: any) => ({
+              ...col,
+              isCustom: true,
+            }))
+          : [];
 
         // Merge columns
         state.columns = [...standardColumns, ...customColumns];
@@ -1122,20 +1317,29 @@ const taskManagementSlice = createSlice({
       })
       .addCase(fetchCustomColumns.fulfilled, (state, action) => {
         state.loadingColumns = false;
-        state.customColumns = action.payload;
-        // Add custom columns to the columns array
-        const customColumnsForVisibility = action.payload;
-        state.columns = [...state.columns, ...customColumnsForVisibility];
+        const incomingCustomColumns = Array.isArray(action.payload) ? action.payload : [];
+        state.customColumns = incomingCustomColumns;
+
+        // Replace custom part in state.columns to avoid duplicate merges.
+        const standardColumns = state.columns.filter(col => !col.custom_column);
+        state.columns = [...standardColumns, ...incomingCustomColumns];
       })
       .addCase(fetchCustomColumns.rejected, (state, action) => {
         state.loadingColumns = false;
         state.error = action.error.message || 'Failed to fetch custom columns';
       })
       .addCase(updateColumnVisibility.fulfilled, (state, action) => {
-        const column = state.columns.find(col => col.key === action.payload.key);
-        if (column) {
-          column.pinned = action.payload.pinned;
-        }
+        state.columns.forEach(column => {
+          if (column.key === action.payload.key) {
+            column.pinned = action.payload.pinned;
+          }
+        });
+
+        state.customColumns.forEach(column => {
+          if (column.key === action.payload.key) {
+            column.pinned = action.payload.pinned;
+          }
+        });
       })
       .addCase(updateColumnVisibility.rejected, (state, action) => {
         state.error = action.payload as string;
@@ -1162,6 +1366,8 @@ export const {
   setSelectedPriorities,
   setSearch,
   setArchived,
+  setDuplicateTaskModalStatus,
+  setDuplicateTask,
   toggleArchived,
   setSortField,
   setSortOrder,
@@ -1182,69 +1388,8 @@ export const {
 } = taskManagementSlice.actions;
 
 // Export the selectors
-export const selectAllTasks = (state: RootState) => state.taskManagement.entities;
-
-// Memoized selector to prevent unnecessary re-renders
-export const selectAllTasksArray = createSelector(
-  [selectAllTasks],
-  (entities) => Object.values(entities)
-);
-export const selectTaskById = (state: RootState, taskId: string) => state.taskManagement.entities[taskId];
-export const selectTaskIds = (state: RootState) => state.taskManagement.ids;
-export const selectGroups = (state: RootState) => state.taskManagement.groups;
-export const selectGrouping = (state: RootState) => state.taskManagement.grouping;
-export const selectLoading = (state: RootState) => state.taskManagement.loading;
-export const selectError = (state: RootState) => state.taskManagement.error;
-export const selectSelectedPriorities = (state: RootState) => state.taskManagement.selectedPriorities;
-export const selectSearch = (state: RootState) => state.taskManagement.search;
-export const selectSortField = (state: RootState) => state.taskManagement.sortField;
-export const selectSortOrder = (state: RootState) => state.taskManagement.sortOrder;
-export const selectSort = (state: RootState) => ({ field: state.taskManagement.sortField, order: state.taskManagement.sortOrder });
-export const selectSubtaskLoading = (state: RootState, taskId: string) => state.taskManagement.loadingSubtasks[taskId] || false;
-
-// Memoized selectors to prevent unnecessary re-renders
-export const selectTasksByStatus = createSelector(
-  [selectAllTasksArray, (_state: RootState, status: string) => status],
-  (tasks, status) => tasks.filter(task => task.status === status)
-);
-
-export const selectTasksByPriority = createSelector(
-  [selectAllTasksArray, (_state: RootState, priority: string) => priority],
-  (tasks, priority) => tasks.filter(task => task.priority === priority)
-);
-
-export const selectTasksByPhase = createSelector(
-  [selectAllTasksArray, (_state: RootState, phase: string) => phase],
-  (tasks, phase) => tasks.filter(task => task.phase === phase)
-);
-
-// Add archived selector
-export const selectArchived = (state: RootState) => state.taskManagement.archived;
+// Export the selectors from the new file to avoid circular dependencies
+export * from './task-management.selectors';
 
 // Export the reducer as default
 export default taskManagementSlice.reducer;
-
-// V3 API selectors - no processing needed, data is pre-processed by backend
-export const selectTaskGroupsV3 = (state: RootState) => state.taskManagement.groups;
-export const selectCurrentGroupingV3 = (state: RootState) => state.grouping.currentGrouping;
-
-// Column-related selectors
-export const selectColumns = (state: RootState) => state.taskManagement.columns;
-export const selectCustomColumns = (state: RootState) => state.taskManagement.customColumns;
-export const selectLoadingColumns = (state: RootState) => state.taskManagement.loadingColumns;
-
-// Helper selector to check if columns are in sync with local fields
-export const selectColumnsInSync = (state: RootState) => {
-  const columns = state.taskManagement.columns;
-  const fields = state.taskManagementFields || [];
-  
-  if (columns.length === 0 || fields.length === 0) return true;
-  
-  return !fields.some(field => {
-    const backendColumn = columns.find(c => c.key === field.key);
-    if (backendColumn) {
-      return (backendColumn.pinned ?? false) !== field.visible;
-    }
-    return false;
-  });
-};

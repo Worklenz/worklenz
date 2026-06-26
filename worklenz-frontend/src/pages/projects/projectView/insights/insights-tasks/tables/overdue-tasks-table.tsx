@@ -41,12 +41,14 @@ const OverdueTasksTable = ({
     {
       key: 'name',
       title: 'Name',
-      render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      // render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
       title: 'Status',
-      render: (record: IInsightTasks) => (
+      // render: (record: IInsightTasks) => (
+      render: (_: any, record: IInsightTasks) => (
         <Flex
           gap={4}
           style={{
@@ -73,7 +75,8 @@ const OverdueTasksTable = ({
     {
       key: 'dueDate',
       title: 'End Date',
-      render: (record: IInsightTasks) => (
+      // render: (record: IInsightTasks) => (
+      render: (_: any, record: IInsightTasks) => (
         <Typography.Text>
           {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
         </Typography.Text>
@@ -82,7 +85,8 @@ const OverdueTasksTable = ({
     {
       key: 'daysOverdue',
       title: 'Days overdue',
-      render: (record: IInsightTasks) => <Typography.Text>{record.days_overdue}</Typography.Text>,
+      // render: (record: IInsightTasks) => <Typography.Text>{record.days_overdue}</Typography.Text>,
+      render: (_: any, record: IInsightTasks) => <Typography.Text>{record.days_overdue}</Typography.Text>,
     },
   ];
 
@@ -91,7 +95,8 @@ const OverdueTasksTable = ({
       className="custom-two-colors-row-table"
       dataSource={overdueTaskList}
       columns={columns}
-      rowKey={record => record.taskId}
+      // rowKey={record => record.taskId}
+      rowKey={record => record.id}
       pagination={{
         showSizeChanger: false,
         defaultPageSize: 10,

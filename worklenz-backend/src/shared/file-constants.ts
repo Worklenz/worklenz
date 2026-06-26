@@ -46,11 +46,14 @@ class FileConstants {
     FileConstants.getEmailTemplate(IEmailTemplateType.Welcome);
     FileConstants.getEmailTemplate(IEmailTemplateType.OTPVerification);
     FileConstants.getEmailTemplate(IEmailTemplateType.ResetPassword);
+    FileConstants.getEmailTemplate(IEmailTemplateType.ResetPasswordClientPortal);
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskAssigneeChange);
     FileConstants.getEmailTemplate(IEmailTemplateType.DailyDigest);
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskDone);
     FileConstants.getEmailTemplate(IEmailTemplateType.ProjectDailyDigest);
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskComment);
+    FileConstants.getEmailTemplate(IEmailTemplateType.ProjectComment);
+    FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation);
   }
 
   static getEmailTemplate(type: IEmailTemplateType) {
@@ -69,6 +72,8 @@ class FileConstants {
         return FileConstants.readHtmlEmailTemplate("otp-verfication-code");
       case IEmailTemplateType.ResetPassword:
         return FileConstants.readHtmlEmailTemplate("reset-password");
+      case IEmailTemplateType.ResetPasswordClientPortal:
+        return FileConstants.readHtmlEmailTemplate("reset-password-client-portal");
       case IEmailTemplateType.TaskAssigneeChange:
         return FileConstants.readPugEmailTemplate("task-assignee-change");
       case IEmailTemplateType.DailyDigest:
@@ -79,6 +84,14 @@ class FileConstants {
         return FileConstants.readPugEmailTemplate("project-daily-digest");
       case IEmailTemplateType.TaskComment:
         return FileConstants.readPugEmailTemplate("task-comment");
+      case IEmailTemplateType.ProjectComment:
+        return FileConstants.readPugEmailTemplate("project-comment");
+      case IEmailTemplateType.ClientInvitation:
+        return FileConstants.readHtmlEmailTemplate("client-invitation");
+      case IEmailTemplateType.ClientPortalNewRequest:
+        return FileConstants.readPugEmailTemplate("client-portal-new-request");
+      case IEmailTemplateType.ClientPortalRequestComment:
+        return FileConstants.readPugEmailTemplate("client-portal-request-comment");
       default:
         return null;
     }

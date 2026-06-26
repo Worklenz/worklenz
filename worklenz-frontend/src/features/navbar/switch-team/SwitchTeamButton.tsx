@@ -27,7 +27,7 @@ import CustomAvatar from '@/components/CustomAvatar';
 // Styles
 import { colors } from '@/styles/colors';
 import './switchTeam.css';
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 
 const SwitchTeamButton = () => {
   const dispatch = useAppDispatch();
@@ -66,7 +66,10 @@ const SwitchTeamButton = () => {
     trackMixpanelEvent(evt_common_switch_team);
     await dispatch(setActiveTeam(id));
     await handleVerifyAuth();
-    window.location.reload();
+    // Redirect to home page after switching teams
+    navigate('/worklenz/home');
+    // Force a full reload to ensure the new team session is properly loaded
+    window.location.href = '/worklenz/home';
   };
 
   const renderTeamCard = (team: any, index: number) => (
@@ -139,4 +142,4 @@ const SwitchTeamButton = () => {
   );
 };
 
-export default SwitchTeamButton;
+export default memo(SwitchTeamButton);

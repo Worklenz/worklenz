@@ -1,10 +1,11 @@
-import { useMediaQuery } from 'react-responsive';
+import { useDebouncedMediaQuery } from './useDebouncedMediaQuery';
 
 export const useResponsive = () => {
-  // media queries from react-responsive package
-  const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
-  const isTablet = useMediaQuery({ query: '(min-width: 576px)' });
-  const isDesktop = useMediaQuery({ query: '(min-width: 1024px)' });
+  // Use debounced media queries to prevent rapid re-renders during window resize
+  // This helps prevent errors when components re-render too quickly
+  const isMobile = useDebouncedMediaQuery({ query: '(max-width: 576px)' });
+  const isTablet = useDebouncedMediaQuery({ query: '(min-width: 576px)' });
+  const isDesktop = useDebouncedMediaQuery({ query: '(min-width: 1024px)' });
 
   return { isMobile, isTablet, isDesktop };
 };

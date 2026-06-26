@@ -3,6 +3,7 @@ import { Socket } from "socket.io";
 export interface IActivityLog {
   task_id?: string;
   team_id?: string;
+  project_id?: string;
   attribute_type?: string;
   user_id?: string | null;
   log_type?: string;

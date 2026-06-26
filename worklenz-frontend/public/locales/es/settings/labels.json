@@ -9,7 +9,13 @@
   "pinTooltip": "Haz clic para fijar esto en el menú principal",
   "colorChangeTooltip": "Haz clic para cambiar el color",
   "pageTitle": "Administrar Etiquetas",
-  "deleteConfirmTitle": "¿Estás seguro de que quieres eliminar esto?",
+  "deleteConfirmTitle": "Eliminar Etiqueta",
   "deleteButton": "Eliminar",
-  "cancelButton": "Cancelar"
+  "cancelButton": "Cancelar",
+  "labelInUseMessage": "La etiqueta \"{{labelName}}\" está actualmente asignada a {{count}} tarea{{plural}}.",
+  "labelDeleteWarning": "⚠️ Eliminar esta etiqueta la eliminará de todas las {{count}} tarea{{plural}} asignada{{plural}}. Esta acción no se puede deshacer.",
+  "deleteConfirmMessage": "¿Estás seguro de que quieres eliminar la etiqueta \"{{labelName}}\"? Esta acción no se puede deshacer.",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Eliminar",
+  "search": "Buscar"
 }

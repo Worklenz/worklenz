@@ -19,7 +19,7 @@ class ModuleErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     // Check if this is a module loading error
-    const isModuleError = 
+    const isModuleError =
       error.message.includes('Failed to fetch dynamically imported module') ||
       error.message.includes('Loading chunk') ||
       error.message.includes('Loading CSS chunk') ||
@@ -35,7 +35,7 @@ class ModuleErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Module Error Boundary caught an error:', error, errorInfo);
-    
+
     // If this is a module loading error, clear caches and reload
     if (this.state.hasError) {
       this.handleModuleError();
@@ -45,10 +45,10 @@ class ModuleErrorBoundary extends Component<Props, State> {
   private async handleModuleError() {
     try {
       console.log('Handling module loading error - clearing caches...');
-      
+
       // Clear all caches
       await CacheCleanup.clearAllCaches();
-      
+
       // Force reload to login page
       CacheCleanup.forceReload('/auth/login');
     } catch (cacheError) {
@@ -71,32 +71,26 @@ class ModuleErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '100vh',
-          padding: '20px'
-        }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '100vh',
+            padding: '20px',
+          }}
+        >
           <Result
             status="error"
             title="Module Loading Error"
             subTitle="There was an issue loading the application. This usually happens after updates or during logout."
             extra={[
-              <Button 
-                type="primary" 
-                key="retry" 
-                onClick={this.handleRetry}
-                loading={false}
-              >
+              <Button type="primary" key="retry" onClick={this.handleRetry} loading={false}>
                 Retry
               </Button>,
-              <Button 
-                key="reload" 
-                onClick={() => window.location.reload()}
-              >
+              <Button key="reload" onClick={() => window.location.reload()}>
                 Reload Page
-              </Button>
+              </Button>,
             ]}
           />
         </div>
@@ -107,4 +101,4 @@ class ModuleErrorBoundary extends Component<Props, State> {
   }
 }
 
-export default ModuleErrorBoundary; 
+export default ModuleErrorBoundary;

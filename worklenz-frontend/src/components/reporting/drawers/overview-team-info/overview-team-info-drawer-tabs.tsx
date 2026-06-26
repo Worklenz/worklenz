@@ -30,7 +30,7 @@ const OverviewTeamInfoDrawerTabs = ({ teamsId = null }: OverviewTeamInfoDrawerPr
     },
   ];
 
-  return <Tabs type="card" items={tabItems} destroyInactiveTabPane defaultActiveKey="overview" />;
+  return <Tabs type="card" items={tabItems} destroyOnHidden defaultActiveKey="overview" />;
 };
 
 export default OverviewTeamInfoDrawerTabs;

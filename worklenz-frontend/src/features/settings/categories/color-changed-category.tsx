@@ -9,8 +9,8 @@ const ColorChangedCategory = ({ category }: { category: CategoryType | null }) =
   const { t } = useTranslation('categoriesSettings');
 
   // color options for the categories
-  const colorsOptions = PhaseColorCodes.map(color => ({
-    key: color,
+  const colorsOptions = PhaseColorCodes.map((color, idx) => ({
+    key: `${color}-${idx}`,
     value: color,
     label: (
       <Tag
@@ -22,6 +22,7 @@ const ColorChangedCategory = ({ category }: { category: CategoryType | null }) =
           height: 22,
           width: 'fit-content',
         }}
+        key={`${color}-${idx}`}
       >
         {category?.categoryName}
       </Tag>
@@ -31,7 +32,7 @@ const ColorChangedCategory = ({ category }: { category: CategoryType | null }) =
   return (
     <Tooltip title={t('colorChangeTooltip')}>
       <Select
-        key={category?.categoryId}
+        key={category ? `${category.categoryId}` : undefined}
         options={colorsOptions}
         variant="borderless"
         style={{

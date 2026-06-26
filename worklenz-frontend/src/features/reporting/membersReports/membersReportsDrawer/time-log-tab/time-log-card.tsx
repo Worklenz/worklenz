@@ -9,6 +9,7 @@ import {
 } from '@/features/task-drawer/task-drawer.slice';
 import { ISingleMemberLogs } from '@/types/reporting/reporting.types';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
+import { setProjectId } from '@/features/project/project.slice';
 
 type TimeLogCardProps = {
   data: ISingleMemberLogs;
@@ -23,6 +24,7 @@ const TimeLogCard = ({ data }: TimeLogCardProps) => {
     if (!id || !projectId) return;
 
     dispatch(setSelectedTaskId(id));
+    dispatch(setProjectId(projectId));
     dispatch(fetchPhasesByProjectId(projectId));
     dispatch(fetchTask({ taskId: id, projectId: projectId }));
     dispatch(setShowTaskDrawer(true));

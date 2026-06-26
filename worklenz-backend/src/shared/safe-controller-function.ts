@@ -5,6 +5,6 @@ export default (fn: (_req: Request, _res: Response, next: NextFunction) => Promi
 
 : (req: Request, res: Response, next: NextFunction) => void => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    void fn(req, res, next);
+    void Promise.resolve(fn(req, res, next)).catch(next);
   };
 };

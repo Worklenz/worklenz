@@ -1,0 +1,4753 @@
+openapi: 3.0.3
+info:
+  title: Worklenz API
+  version: 2.2.3
+  description: |
+    Worklenz project management platform API documentation.
+
+    ## Authentication
+    This API uses **session-based authentication** with **CSRF token protection**:
+
+    1. **Session Cookie**: Automatically set after login
+    2. **CSRF Token**: Required for all state-changing operations (POST, PUT, DELETE)
+       - Obtain token from `GET /csrf-token` endpoint
+       - Include in `X-CSRF-Token` header for subsequent requests
+
+    ## Authorization Flow
+    ```
+    1. POST /auth/login → Receive session cookie
+    2. GET /csrf-token → Receive CSRF token
+    3. Use session + CSRF token for protected endpoints
+    ```
+
+    ## Response Format
+    All endpoints return a standardized `ServerResponse<T>` object:
+    ```json
+    {
+      "done": true,
+      "body": { ... },
+      "title": "Optional title",
+      "message": "Optional message"
+    }
+    ```
+
+  contact:
+    name: Worklenz Support
+    url: https://worklenz.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://app.worklenz.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: Authentication and CSRF token management
+  - name: Tasks
+    description: Task management operations
+  - name: Projects
+    description: Project management operations
+  - name: Teams
+    description: Team and team member management
+  - name: Subtasks
+    description: Subtask management
+  - name: Task Comments
+    description: Task comment operations
+  - name: Notifications
+    description: In-app notification operations
+  - name: Settings
+    description: User and preference settings
+  - name: Statuses
+    description: Task status lifecycle management
+  - name: Priorities
+    description: Task priority metadata
+  - name: Overview
+    description: Project overview summaries
+  - name: Team Members
+    description: Team member management and invitation links
+  - name: Project Members
+    description: Project member management and invitation links
+  - name: Reporting
+    description: Reporting and analytics endpoints
+  - name: Admin Center
+    description: Organization and billing administration endpoints
+
+security:
+  - sessionAuth: []
+    csrfToken: []
+
+paths:
+  /csrf-token:
+    get:
+      operationId: getCsrfToken
+      tags:
+        - Authentication
+      summary: Get CSRF token
+      description: |
+        Retrieve a CSRF token for state-changing requests.
+        This endpoint must be called before making POST, PUT, or DELETE requests.
+        The token should be included in the `X-CSRF-Token` header.
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: CSRF token generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: object
+                        properties:
+                          token:
+                            type: string
+                            description: CSRF token to use in X-CSRF-Token header
+                            example: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /tasks:
+    post:
+      operationId: postTasks
+      tags:
+        - Tasks
+      summary: Create a new task
+      description: Create a new task with the specified properties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreateRequest'
+      responses:
+        '200':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /tasks/info:
+    get:
+      operationId: getTasksInfo
+      tags:
+        - Tasks
+      summary: Get task by ID
+      description: Retrieve detailed information about a specific task
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: task_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the task to retrieve
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Task details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Task'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+              example:
+                done: false
+                body: null
+                message: "Task not found"
+
+  /tasks/{id}:
+    put:
+      operationId: putTasksById
+      tags:
+        - Tasks
+      summary: Update task
+      description: Update an existing task's properties
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdateRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Task'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: Task not found
+
+    delete:
+      operationId: deleteTasksById
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Permanently delete a task
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+              example:
+                done: true
+                body: null
+                message: "Task deleted successfully"
+        '404':
+          description: Task not found
+
+  /tasks/project/{id}:
+    get:
+      operationId: getTasksProjectById
+      tags:
+        - Tasks
+      summary: Get tasks by project
+      description: Retrieve all tasks for a specific project
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+
+  /tasks/bulk/status:
+    put:
+      operationId: putTasksBulkStatus
+      tags:
+        - Tasks
+      summary: Bulk update task status
+      description: Update the status of multiple tasks at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tasks
+                - status_id
+              properties:
+                tasks:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Array of task IDs to update
+                  example: ["550e8400-e29b-41d4-a716-446655440000"]
+                status_id:
+                  type: string
+                  format: uuid
+                  description: New status ID to apply
+      responses:
+        '200':
+          description: Task statuses updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /projects:
+    get:
+      operationId: getProjects
+      tags:
+        - Projects
+      summary: List all projects
+      description: Retrieve a list of all accessible projects with optional filtering
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Pagination offset
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Number of projects to return
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search query to filter projects by name
+      responses:
+        '200':
+          description: Projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+
+    post:
+      operationId: postProjects
+      tags:
+        - Projects
+      summary: Create a new project
+      description: Create a new project (requires team owner or admin role)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreateRequest'
+      responses:
+        '200':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Project'
+        '403':
+          description: Insufficient permissions (requires team owner or admin)
+
+  /projects/{id}:
+    get:
+      operationId: getProjectsById
+      tags:
+        - Projects
+      summary: Get project by ID
+      description: Retrieve detailed information about a specific project
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project details retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Project'
+        '404':
+          description: Project not found
+
+    put:
+      operationId: putProjectsById
+      tags:
+        - Projects
+      summary: Update project
+      description: Update an existing project's properties (requires project manager role)
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdateRequest'
+      responses:
+        '200':
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Project'
+        '403':
+          description: Insufficient permissions (requires project manager role)
+
+    delete:
+      operationId: deleteProjectsById
+      tags:
+        - Projects
+      summary: Delete project
+      description: Permanently delete a project (requires team owner or admin role)
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+              example:
+                done: true
+                body: null
+                message: "Project deleted successfully"
+        '403':
+          description: Insufficient permissions
+
+  /teams:
+    get:
+      operationId: getTeams
+      tags:
+        - Teams
+      summary: List all teams
+      description: Retrieve a list of all teams the user belongs to
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Teams retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Team'
+
+    post:
+      operationId: postTeams
+      tags:
+        - Teams
+      summary: Create a new team
+      description: Create a new team
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamCreateRequest'
+      responses:
+        '200':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Team'
+
+  /teams/invites:
+    get:
+      operationId: getTeamsInvites
+      tags:
+        - Teams
+      summary: Get team invitations
+      description: Retrieve all pending team invitations for the current user
+      security:
+        - sessionAuth: []
+      responses:
+        '200':
+          description: Team invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TeamInvitation'
+
+  /sub-tasks/{id}:
+    get:
+      operationId: getSubTasksById
+      tags:
+        - Subtasks
+      summary: Get subtasks for a task
+      description: Retrieve all subtasks associated with a parent task
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Subtasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Subtask'
+
+  /task-comments:
+    post:
+      operationId: postTaskComments
+      tags:
+        - Task Comments
+      summary: Create a comment
+      description: Add a new comment to a task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCommentCreateRequest'
+      responses:
+        '200':
+          description: Comment created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TaskComment'
+
+  /task-comments/{id}:
+    get:
+      operationId: getTaskCommentsById
+      tags:
+        - Task Comments
+      summary: Get task comments
+      description: Retrieve all comments for a specific task
+      security:
+        - sessionAuth: []
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskComment'
+
+    put:
+      operationId: putTaskCommentsById
+      tags:
+        - Task Comments
+      summary: Update comment
+      description: Update an existing task comment
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  maxLength: 4000
+                  description: Updated comment content (HTML allowed)
+      responses:
+        '200':
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TaskComment'
+
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags:
+        - Notifications
+      summary: List notifications
+      description: |
+        Returns up to 100 notifications for the authenticated user.
+        Use `filter=Read` to fetch read items, omit to get unread items.
+      parameters:
+        - name: filter
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Read]
+          description: Filter notifications by read state
+      responses:
+        '200':
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+
+  /notifications/unread-count:
+    get:
+      operationId: getNotificationsUnreadCount
+      tags:
+        - Notifications
+      summary: Get unread notification count
+      description: Returns a combined unread count of notifications and pending invitations.
+      responses:
+        '200':
+          description: Unread count retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: integer
+                        minimum: 0
+                        example: 7
+
+  /notifications/read-all:
+    put:
+      operationId: putNotificationsReadAll
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      description: Marks all unread notifications for the authenticated user as read.
+      responses:
+        '200':
+          description: Notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /notifications/{id}:
+    put:
+      operationId: putNotificationsById
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      description: Marks a single notification as read for the authenticated user.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Notification updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+    delete:
+      operationId: deleteNotificationsById
+      tags:
+        - Notifications
+      summary: Delete notification
+      description: Deletes a single notification for the authenticated user.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Notification deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /settings/notifications:
+    get:
+      operationId: getSettingsNotifications
+      tags:
+        - Settings
+      summary: Get notification settings
+      description: Returns notification delivery preferences for the authenticated user in the active team.
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/NotificationSettings'
+
+    put:
+      operationId: putSettingsNotifications
+      tags:
+        - Settings
+      summary: Update notification settings
+      description: Updates notification delivery preferences for the authenticated user in the active team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettingsUpdateRequest'
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/NotificationSettings'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /statuses:
+    get:
+      operationId: getStatuses
+      tags:
+        - Statuses
+      summary: List task statuses by project
+      description: Returns all task statuses for a project ordered by sort order.
+      parameters:
+        - name: project
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project ID
+      responses:
+        '200':
+          description: Statuses retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskStatus'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    post:
+      operationId: postStatuses
+      tags:
+        - Statuses
+      summary: Create task status
+      description: Creates a task status in a project (project manager required).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskStatusCreateRequest'
+      responses:
+        '200':
+          description: Status created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          description: Insufficient permissions
+
+  /statuses/categories:
+    get:
+      operationId: getStatusesCategories
+      tags:
+        - Statuses
+      summary: List status categories
+      description: Returns system status categories with color and semantic metadata.
+      responses:
+        '200':
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskStatusCategory'
+
+  /statuses/order:
+    put:
+      operationId: putStatusesOrder
+      tags:
+        - Statuses
+      summary: Update status order
+      description: Updates the drag-and-drop order of statuses in a project workflow.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskStatusOrderUpdateRequest'
+      responses:
+        '200':
+          description: Status order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /statuses/{id}:
+    get:
+      operationId: getStatusesById
+      tags:
+        - Statuses
+      summary: Get status by ID
+      description: Returns a specific status record for a project context.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+        - $ref: '#/components/parameters/projectIdRequiredQueryParam'
+      responses:
+        '200':
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TaskStatus'
+
+    put:
+      operationId: putStatusesById
+      tags:
+        - Statuses
+      summary: Update status
+      description: Updates status name/category (project manager required).
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskStatusUpdateRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          description: Insufficient permissions
+
+    delete:
+      operationId: deleteStatusesById
+      tags:
+        - Statuses
+      summary: Delete status
+      description: |
+        Deletes a status and moves tasks to a replacement status.
+        Project manager permission required.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+        - name: project
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Project ID
+        - name: replace
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Replacement status ID
+      responses:
+        '200':
+          description: Status deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /statuses/name/{id}:
+    put:
+      operationId: putStatusesNameById
+      tags:
+        - Statuses
+      summary: Update status name
+      description: Updates only the status display name.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - project_id
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: "In QA"
+                project_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Status name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /statuses/category/{id}:
+    put:
+      operationId: putStatusesCategoryById
+      tags:
+        - Statuses
+      summary: Update status category
+      description: Moves a status to a different system category.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+        - name: current_project_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Current project ID for validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - category_id
+              properties:
+                category_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Status category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /task-priorities:
+    get:
+      operationId: getTaskPriorities
+      tags:
+        - Priorities
+      summary: List task priorities
+      description: Returns all available task priorities with light/dark theme colors.
+      responses:
+        '200':
+          description: Priorities retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskPriority'
+
+  /overview/{id}:
+    get:
+      operationId: getOverviewById
+      tags:
+        - Overview
+      summary: Get project overview
+      description: Returns project metadata with lightweight member and task snapshots.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/OverviewProjectSummary'
+
+  /project-members:
+    post:
+      operationId: postProjectMembers
+      tags:
+        - Project Members
+      summary: Add project member
+      description: Adds an existing team member to a project with an access level.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMemberCreateRequest'
+      responses:
+        '200':
+          description: Project member added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          description: Insufficient permissions
+
+  /project-members/invite:
+    post:
+      operationId: postProjectMembersInvite
+      tags:
+        - Project Members
+      summary: Invite member to project by email
+      description: Creates/invites a user by email and adds them to the project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMemberInviteRequest'
+      responses:
+        '200':
+          description: Invitation processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          description: Insufficient permissions
+
+  /project-members/{id}:
+    get:
+      operationId: getProjectMembersById
+      tags:
+        - Project Members
+      summary: List project members
+      description: Returns all members for a project.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project members retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/ProjectMember'
+
+    delete:
+      operationId: deleteProjectMembersById
+      tags:
+        - Project Members
+      summary: Remove project member
+      description: Removes a project member by project member record ID.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /project-members/invitation-link:
+    post:
+      operationId: postProjectMembersInvitationLink
+      tags:
+        - Project Members
+      summary: Generate project invitation link
+      description: Creates (or reuses) an active invitation link for a project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInvitationLinkGenerateRequest'
+      responses:
+        '200':
+          description: Invitation link generated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/ProjectInvitationLink'
+
+  /project-members/invitation-link/status:
+    get:
+      operationId: getProjectMembersInvitationLinkStatus
+      tags:
+        - Project Members
+      summary: Get project invitation link status
+      description: "Get project invitation link status. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/projectIdRequiredQueryParam'
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /project-members/invitation-link/revoke:
+    put:
+      operationId: putProjectMembersInvitationLinkRevoke
+      tags:
+        - Project Members
+      summary: Revoke project invitation link
+      description: "Revoke project invitation link. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - project_id
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Link revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /project-members/invitation-link/validate/{token}:
+    get:
+      operationId: getProjectMembersInvitationLinkValidateByToken
+      tags:
+        - Project Members
+      summary: Validate project invitation token
+      description: "Validate project invitation token. Includes request parameters, authorization expectations, and response details."
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/tokenPathParam'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /project-members/invitation-link/accept/{token}:
+    post:
+      operationId: postProjectMembersInvitationLinkAcceptByToken
+      tags:
+        - Project Members
+      summary: Accept project invitation
+      description: "Accept project invitation. Includes request parameters, authorization expectations, and response details."
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/tokenPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationAcceptRequest'
+      responses:
+        '200':
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/invitation-link:
+    post:
+      operationId: postTeamMembersInvitationLink
+      tags:
+        - Team Members
+      summary: Generate team invitation link
+      description: Creates (or reuses) an active team invitation link.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamInvitationLinkGenerateRequest'
+      responses:
+        '200':
+          description: Invitation link generated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TeamInvitationLink'
+
+  /team-members/invitation-link/status:
+    get:
+      operationId: getTeamMembersInvitationLinkStatus
+      tags:
+        - Team Members
+      summary: Get team invitation link status
+      description: "Get team invitation link status. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/invitation-link/revoke:
+    put:
+      operationId: putTeamMembersInvitationLinkRevoke
+      tags:
+        - Team Members
+      summary: Revoke team invitation link
+      description: "Revoke team invitation link. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Link revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /team-members/invitation-link/validate/{token}:
+    get:
+      operationId: getTeamMembersInvitationLinkValidateByToken
+      tags:
+        - Team Members
+      summary: Validate team invitation token
+      description: "Validate team invitation token. Includes request parameters, authorization expectations, and response details."
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/tokenPathParam'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/invitation-link/accept/{token}:
+    post:
+      operationId: postTeamMembersInvitationLinkAcceptByToken
+      tags:
+        - Team Members
+      summary: Accept team invitation
+      description: "Accept team invitation. Includes request parameters, authorization expectations, and response details."
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/tokenPathParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationAcceptRequest'
+      responses:
+        '200':
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /settings/setup:
+    post:
+      operationId: postSettingsSetup
+      tags:
+        - Settings
+      summary: Complete initial account setup
+      description: Creates initial team/project/tasks and optional member invitations for first-time setup.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupRequest'
+      responses:
+        '200':
+          description: Setup completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /settings/profile:
+    get:
+      operationId: getSettingsProfile
+      tags:
+        - Settings
+      summary: Get profile settings
+      description: Returns current user's profile basics.
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Profile'
+
+    put:
+      operationId: putSettingsProfile
+      tags:
+        - Settings
+      summary: Update profile settings
+      description: Updates profile display name.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/Profile'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /settings/team-name/{id}:
+    put:
+      operationId: putSettingsTeamNameById
+      tags:
+        - Settings
+      summary: Update team name
+      description: Updates team name and generated key for a team.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamNameUpdateRequest'
+      responses:
+        '200':
+          description: Team name updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /team-members:
+    get:
+      tags:
+        - Team Members
+      operationId: listTeamMembers
+      summary: List team members
+      description: |
+        Returns paginated team members with sorting and search support.
+        Use `all=false` to enable pagination with `limit` and `offset`.
+      parameters:
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/sortParam'
+        - $ref: '#/components/parameters/orderParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+        - $ref: '#/components/parameters/allFlagParam'
+      responses:
+        '200':
+          description: Team members retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/PaginatedTeamMembers'
+
+    post:
+      operationId: postTeamMembers
+      tags:
+        - Team Members
+      summary: Invite team members
+      description: Invites one or more members to the active team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMemberInviteRequest'
+      responses:
+        '200':
+          description: Invitations processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /team-members/{id}:
+    get:
+      operationId: getTeamMembersById
+      tags:
+        - Team Members
+      summary: Get team member by ID
+      description: Returns detailed info for one team member.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Team member retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/TeamMemberDetail'
+
+    put:
+      operationId: putTeamMembersById
+      tags:
+        - Team Members
+      summary: Update team member
+      description: Updates role, admin flag, and profile metadata for a team member.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMemberUpdateRequest'
+      responses:
+        '200':
+          description: Team member updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+    delete:
+      operationId: deleteTeamMembersById
+      tags:
+        - Team Members
+      summary: Remove team member
+      description: Removes member from team and related access context.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Team member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /team-members/list:
+    get:
+      tags:
+        - Team Members
+      operationId: listTeamMemberInsights
+      summary: Team member insights list
+      description: Returns paginated team member insights (task/project counts, time logged, membership metadata).
+      parameters:
+        - name: teamId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated project IDs
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated project status IDs
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/allFlagParam'
+      responses:
+        '200':
+          description: Insights list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/all:
+    get:
+      operationId: getTeamMembersAll
+      tags:
+        - Team Members
+      summary: Get assignee-ready team member list
+      description: "Get assignee-ready team member list. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: Optional project filter
+      responses:
+        '200':
+          description: Team members retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/project/{id}:
+    get:
+      operationId: getTeamMembersProjectById
+      tags:
+        - Team Members
+      summary: List members by project
+      description: "List members by project. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Project members retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/projects/{id}:
+    get:
+      operationId: getTeamMembersProjectsById
+      tags:
+        - Team Members
+      summary: List projects by team member
+      description: "List projects by team member. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated project IDs filter
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated status IDs filter
+        - name: startDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Member projects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/overview/{id}:
+    get:
+      operationId: getTeamMembersOverviewById
+      tags:
+        - Team Members
+      summary: Team member project overview
+      description: "Team member project overview. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Overview retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/overview-chart/{id}:
+    get:
+      operationId: getTeamMembersOverviewChartById
+      tags:
+        - Team Members
+      summary: Team member overview chart counts
+      description: "Team member overview chart counts. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Chart data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/tree-map:
+    get:
+      operationId: getTeamMembersTreeMap
+      tags:
+        - Team Members
+      summary: Team treemap data
+      description: "Team treemap data. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: selected
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [time, tasks]
+        - name: team
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Treemap data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/tree-map-by-member:
+    get:
+      operationId: getTeamMembersTreeMapByMember
+      tags:
+        - Team Members
+      summary: Treemap drilldown by member
+      description: "Treemap drilldown by member. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: selected
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [time, tasks]
+      responses:
+        '200':
+          description: Member treemap data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/tasks-by-members:
+    get:
+      operationId: getTeamMembersTasksByMembers
+      tags:
+        - Team Members
+      summary: Task count by members
+      description: "Task count by members. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Task distribution retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/resend-invitation:
+    put:
+      operationId: putTeamMembersResendInvitation
+      tags:
+        - Team Members
+      summary: Resend team invitation
+      description: "Resend team invitation. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: Team member ID
+      responses:
+        '200':
+          description: Invitation resent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /team-members/deactivate/{id}:
+    get:
+      operationId: getTeamMembersDeactivateById
+      tags:
+        - Team Members
+      summary: Toggle member active status
+      description: Toggles active/deactivated status for a team member.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Current active state hint used by backend flow.
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /team-members/add-member/{id}:
+    put:
+      operationId: putTeamMembersAddMemberById
+      tags:
+        - Team Members
+      summary: Add members to specified team
+      description: Adds/invites members into a provided team ID.
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamMemberInviteRequest'
+      responses:
+        '200':
+          description: Members added/invited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+        '403':
+          $ref: '#/components/responses/CsrfError'
+
+  /team-members/export-all:
+    get:
+      tags:
+        - Team Members
+      operationId: exportAllTeamMembers
+      summary: Export all team members
+      description: Exports team members as XLSX.
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: project
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ExcelFile'
+
+  /team-members/export/{id}:
+    get:
+      tags:
+        - Team Members
+      operationId: exportSingleTeamMember
+      summary: Export single member workbook
+      description: "Export single member workbook. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExcelFile'
+
+  /reporting/info:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingInfo
+      summary: Get reporting organization info
+      description: Returns organization metadata used in reporting headers.
+      responses:
+        '200':
+          description: Reporting info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/statistics:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewStatistics
+      summary: Overview statistics
+      description: "Overview statistics. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ServerResponse'
+                  - type: object
+                    properties:
+                      body:
+                        $ref: '#/components/schemas/ReportingOverviewStatistics'
+
+  /reporting/overview/teams:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewTeams
+      summary: Reporting overview teams
+      description: "Reporting overview teams. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Teams retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/projects:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewProjects
+      summary: Reporting overview projects
+      description: "Reporting overview projects. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: team
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/reportingArchived'
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/limitParam'
+        - $ref: '#/components/parameters/offsetParam'
+      responses:
+        '200':
+          description: Projects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/projects/{team_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewProjectsByTeam
+      summary: Overview projects by team
+      description: "Overview projects by team. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/teamIdPathParam'
+        - $ref: '#/components/parameters/memberQueryParam'
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Projects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/members/{team_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewMembersByTeam
+      summary: Overview members by team
+      description: "Overview members by team. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/teamIdPathParam'
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Members retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/team/info/{team_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewTeamInfo
+      summary: Team overview details
+      description: "Team overview details. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/teamIdPathParam'
+      responses:
+        '200':
+          description: Team overview retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/project/info/{project_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewProjectInfo
+      summary: Project overview details
+      description: "Project overview details. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/projectIdPathParam'
+      responses:
+        '200':
+          description: Project overview retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/project/members/{project_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewProjectMembers
+      summary: Project members in overview
+      description: "Project members in overview. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/projectIdPathParam'
+      responses:
+        '200':
+          description: Project members retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/project/tasks/{project_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewProjectTasks
+      summary: Project tasks summary
+      description: "Project tasks summary. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/projectIdPathParam'
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [status, assignee, priority]
+      responses:
+        '200':
+          description: Project task summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/project/tasks-paginated/{project_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewProjectTasksPaginated
+      summary: Project tasks paginated
+      description: "Project tasks paginated. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/projectIdPathParam'
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeCamelParam'
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/statusFilterParam'
+        - $ref: '#/components/parameters/priorityFilterParam'
+        - $ref: '#/components/parameters/assigneeFilterParam'
+        - $ref: '#/components/parameters/sortFieldParam'
+        - $ref: '#/components/parameters/sortOrderDescParam'
+      responses:
+        '200':
+          description: Paginated tasks retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/member/info:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewMemberInfo
+      summary: Member overview info
+      description: "Member overview info. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/teamMemberIdQueryParam'
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Member overview retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/team-member/info:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewTeamMemberInfo
+      summary: Team member time summary
+      description: "Team member time summary. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/teamMemberIdQueryParam'
+        - $ref: '#/components/parameters/durationParam'
+        - $ref: '#/components/parameters/dateRangeParam'
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Team member info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/overview/member/tasks/{team_member_id}:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingOverviewMemberTasks
+      summary: Member tasks list
+      description: "Member tasks list. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/teamMemberIdPathParam'
+        - $ref: '#/components/parameters/projectQueryUuidParam'
+        - $ref: '#/components/parameters/onlySingleMemberParam'
+        - $ref: '#/components/parameters/durationParam'
+        - $ref: '#/components/parameters/dateRangeParam'
+        - $ref: '#/components/parameters/reportingArchived'
+      responses:
+        '200':
+          description: Member tasks retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/projects:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingProjects
+      summary: Reporting projects
+      description: Returns reporting project cards with rich filter support.
+      parameters:
+        - $ref: '#/components/parameters/reportingSearch'
+        - $ref: '#/components/parameters/reportingStatuses'
+        - $ref: '#/components/parameters/reportingHealths'
+        - $ref: '#/components/parameters/reportingCategories'
+        - $ref: '#/components/parameters/reportingProjectManagers'
+        - $ref: '#/components/parameters/reportingTeams'
+        - $ref: '#/components/parameters/reportingArchived'
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeParam'
+      responses:
+        '200':
+          description: Reporting projects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/projects/grouped:
+    get:
+      tags:
+        - Reporting
+      operationId: getGroupedReportingProjects
+      summary: Grouped reporting projects
+      description: "Grouped reporting projects. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/reportingSearch'
+        - $ref: '#/components/parameters/reportingStatuses'
+        - $ref: '#/components/parameters/reportingHealths'
+        - $ref: '#/components/parameters/reportingCategories'
+        - $ref: '#/components/parameters/reportingProjectManagers'
+        - $ref: '#/components/parameters/reportingTeams'
+        - $ref: '#/components/parameters/reportingArchived'
+        - name: group_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [category, status, health, team, manager]
+            default: category
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeParam'
+      responses:
+        '200':
+          description: Grouped reporting data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/project-timelogs:
+    post:
+      tags:
+        - Reporting
+      operationId: getReportingProjectTimeLogs
+      summary: Project time logs report
+      description: "Project time logs report. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportingProjectTimeLogsRequest'
+      responses:
+        '200':
+          description: Project time logs retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/members:
+    get:
+      tags:
+        - Reporting
+      operationId: getReportingMembers
+      summary: Reporting members
+      description: "Reporting members. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: teams
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated team IDs
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeParam'
+      responses:
+        '200':
+          description: Reporting members retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/all-tasks:
+    post:
+      tags:
+        - Reporting
+      operationId: getReportingAllTasks
+      summary: All tasks report
+      description: Returns filtered, sorted and paginated all-tasks reporting dataset.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportingAllTasksRequest'
+      responses:
+        '200':
+          description: All tasks data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /reporting/all-tasks/export/csv:
+    post:
+      tags:
+        - Reporting
+      operationId: exportReportingAllTasksCsv
+      summary: Export all tasks as CSV
+      description: "Export all tasks as CSV. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportingAllTasksRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/CsvFile'
+
+  /reporting/all-tasks/export/excel:
+    post:
+      tags:
+        - Reporting
+      operationId: exportReportingAllTasksExcel
+      summary: Export all tasks as Excel
+      description: "Export all tasks as Excel. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportingAllTasksRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ExcelFile'
+
+  /admin-center/settings:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterSettings
+      summary: Get admin center settings
+      description: "Get admin center settings. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Settings retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterOrganization
+      summary: Get organization details
+      description: "Get organization details. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Organization details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+    put:
+      tags:
+        - Admin Center
+      operationId: updateAdminCenterOrganization
+      summary: Update organization name
+      description: "Update organization name. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        $ref: '#/components/requestBodies/OrganizationNameUpdateBody'
+      responses:
+        '200':
+          description: Organization updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/admins:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterOrganizationAdmins
+      summary: List organization admins
+      description: "List organization admins. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Admin list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/users:
+    get:
+      tags:
+        - Admin Center
+      operationId: getOrganizationUsersAdmin
+      summary: List organization users
+      description: "List organization users. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeParam'
+      responses:
+        '200':
+          description: Users retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/calculation-method:
+    put:
+      tags:
+        - Admin Center
+      operationId: updateAdminCenterOrganizationCalculationMethod
+      summary: Update organization calculation method
+      description: "Update organization calculation method. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationCalculationMethodRequest'
+      responses:
+        '200':
+          description: Calculation method updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/owner/contact-number:
+    put:
+      tags:
+        - Admin Center
+      operationId: updateAdminCenterOwnerContactNumber
+      summary: Update owner contact number
+      description: "Update owner contact number. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        $ref: '#/components/requestBodies/ContactNumberUpdateBody'
+      responses:
+        '200':
+          description: Contact number updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/logo:
+    post:
+      tags:
+        - Admin Center
+      operationId: uploadAdminCenterOrganizationLogo
+      summary: Upload organization logo
+      description: Business plan required. Accepts base64 data URL image payload.
+      requestBody:
+        $ref: '#/components/requestBodies/OrganizationLogoUploadBody'
+      responses:
+        '200':
+          description: Logo uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+    delete:
+      tags:
+        - Admin Center
+      operationId: deleteAdminCenterOrganizationLogo
+      summary: Delete organization logo
+      description: Business plan required.
+      responses:
+        '200':
+          description: Logo deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/holiday-settings:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterOrganizationHolidaySettings
+      summary: Get holiday settings
+      description: "Get holiday settings. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Holiday settings retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+    put:
+      tags:
+        - Admin Center
+      operationId: updateAdminCenterOrganizationHolidaySettings
+      summary: Update holiday settings
+      description: "Update holiday settings. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HolidaySettingsUpdateRequest'
+      responses:
+        '200':
+          description: Holiday settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/countries-with-states:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterCountriesWithStates
+      summary: List countries with states
+      description: "List countries with states. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Countries retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/teams:
+    get:
+      tags:
+        - Admin Center
+      operationId: getOrganizationTeamsAdmin
+      summary: List organization teams
+      description: "List organization teams. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeParam'
+      responses:
+        '200':
+          description: Teams retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/team/{id}:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterOrganizationTeam
+      summary: Get team details
+      description: "Get team details. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Team details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+    put:
+      tags:
+        - Admin Center
+      operationId: updateAdminCenterOrganizationTeam
+      summary: Update team
+      description: "Update team. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        $ref: '#/components/requestBodies/OrganizationTeamUpdateBody'
+      responses:
+        '200':
+          description: Team updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+    delete:
+      tags:
+        - Admin Center
+      operationId: deleteAdminCenterOrganizationTeam
+      summary: Delete team
+      description: "Delete team. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Team deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/team-member/{id}:
+    put:
+      tags:
+        - Admin Center
+      operationId: removeAdminCenterOrganizationTeamMember
+      summary: Remove member from specific team
+      description: "Remove member from specific team. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      requestBody:
+        $ref: '#/components/requestBodies/OrganizationTeamMemberRemoveBody'
+      responses:
+        '200':
+          description: Team member removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/organization/projects:
+    get:
+      tags:
+        - Admin Center
+      operationId: getOrganizationProjectsAdmin
+      summary: List organization projects
+      description: "List organization projects. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/searchParam'
+        - $ref: '#/components/parameters/pageParam'
+        - $ref: '#/components/parameters/pageSizeParam'
+      responses:
+        '200':
+          description: Projects retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/info:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingInfo
+      summary: Get billing info
+      description: "Get billing info. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Billing info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/account-storage:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingAccountStorage
+      summary: Get account storage usage
+      description: "Get account storage usage. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Account storage retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/storage:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingStorage
+      summary: Get billing storage details
+      description: "Get billing storage details. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Billing storage details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/transactions:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingTransactions
+      summary: Get billing transactions
+      description: "Get billing transactions. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Transactions retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/charges:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingCharges
+      summary: Get billing charges
+      description: "Get billing charges. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Charges retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/modifiers:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingModifiers
+      summary: Get billing modifiers
+      description: "Get billing modifiers. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Modifiers retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/countries:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingCountries
+      summary: Get billing countries
+      description: "Get billing countries. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Countries retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/configuration:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingConfiguration
+      summary: Get billing configuration
+      description: "Get billing configuration. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Configuration retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+    put:
+      tags:
+        - Admin Center
+      operationId: updateAdminCenterBillingConfiguration
+      summary: Update billing configuration
+      description: "Update billing configuration. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillingConfigurationUpdateRequest'
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/upgrade-plan:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingUpgradePlan
+      summary: Generate upgrade plan link
+      description: "Generate upgrade plan link. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: plan
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '#/components/parameters/seatCountQueryParam'
+      responses:
+        '200':
+          description: Upgrade link retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/change-plan:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingChangePlan
+      summary: Change plan
+      description: "Change plan. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - name: plan
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plan changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/cancel-plan:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingCancelPlan
+      summary: Cancel subscription plan
+      description: "Cancel subscription plan. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Plan cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/pause-plan:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingPausePlan
+      summary: Pause subscription
+      description: "Pause subscription. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Subscription paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/resume-plan:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingResumePlan
+      summary: Resume subscription
+      description: "Resume subscription. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Subscription resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/plans:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingPlans
+      summary: List available plans
+      description: "List available plans. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Plans retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/purchase-storage:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingPurchaseStorage
+      summary: Purchase additional storage
+      description: "Purchase additional storage. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Storage purchase link/info retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/switch-to-free-plan/{id}:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingSwitchToFreePlan
+      summary: Switch team to free plan
+      description: "Switch team to free plan. Includes request parameters, authorization expectations, and response details."
+      parameters:
+        - $ref: '#/components/parameters/idParam'
+      responses:
+        '200':
+          description: Free plan switched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/free-plan:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterBillingFreePlan
+      summary: Get free plan limits
+      description: "Get free plan limits. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Free plan limits retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/billing/redeem:
+    post:
+      tags:
+        - Admin Center
+      operationId: postAdminCenterBillingRedeem
+      summary: Redeem billing code
+      description: "Redeem billing code. Includes request parameters, authorization expectations, and response details."
+      requestBody:
+        $ref: '#/components/requestBodies/BillingRedeemBody'
+      responses:
+        '200':
+          description: Code redeemed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+  /admin-center/appsumo/countdown-widget:
+    get:
+      tags:
+        - Admin Center
+      operationId: getAdminCenterAppsumoCountdownWidget
+      summary: Get AppSumo countdown widget data
+      description: "Get AppSumo countdown widget data. Includes request parameters, authorization expectations, and response details."
+      responses:
+        '200':
+          description: Widget data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerResponse'
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+      description: Session cookie set after successful login
+
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: |
+        CSRF token obtained from /csrf-token endpoint.
+        Required for all POST, PUT, DELETE requests.
+
+    clientPortalToken:
+      type: apiKey
+      in: header
+      name: x-client-token
+      description: Client portal authentication token (for client-specific endpoints)
+
+  parameters:
+    idParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Resource UUID
+      example: "550e8400-e29b-41d4-a716-446655440000"
+
+    pageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 1-based page index
+
+    pageSizeParam:
+      name: page_size
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+      description: Page size
+
+    limitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 20
+      description: Limit number of records returned
+
+    offsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Pagination offset
+
+    sortParam:
+      name: sort
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Sort field
+
+    orderParam:
+      name: order
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: asc
+      description: Sort direction
+
+    allFlagParam:
+      name: all
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ["true", "false"]
+      description: Return all records when true
+
+    searchParam:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Search query
+
+    memberQueryParam:
+      name: member
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Team member ID filter
+
+    teamIdPathParam:
+      name: team_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Team ID
+
+    projectIdPathParam:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Project ID
+
+    teamMemberIdPathParam:
+      name: team_member_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Team member ID
+
+    tokenPathParam:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Invitation token
+
+    projectIdRequiredQueryParam:
+      name: project_id
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Project ID
+
+    teamMemberIdQueryParam:
+      name: teamMemberId
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Team member ID
+
+    durationParam:
+      name: duration
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Preset date range key
+
+    dateRangeParam:
+      name: date_range
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Custom date range payload/string
+
+    statusFilterParam:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+        default: all
+      description: Status filter
+
+    priorityFilterParam:
+      name: priority
+      in: query
+      required: false
+      schema:
+        type: string
+        default: all
+      description: Priority filter
+
+    assigneeFilterParam:
+      name: assignee
+      in: query
+      required: false
+      schema:
+        type: string
+        default: all
+      description: Assignee filter
+
+    sortFieldParam:
+      name: sortField
+      in: query
+      required: false
+      schema:
+        type: string
+        default: created_at
+      description: Sort field
+
+    sortOrderDescParam:
+      name: sortOrder
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: Sort direction for reporting tables
+
+    pageSizeCamelParam:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 15
+      description: Camel-case page size used by specific endpoints
+
+    projectQueryUuidParam:
+      name: project
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Project ID filter
+
+    onlySingleMemberParam:
+      name: only_single_member
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ["true", "false"]
+      description: Restrict to tasks directly assigned to member only
+
+    seatCountQueryParam:
+      name: seatCount
+      in: query
+      required: false
+      schema:
+        type: integer
+      description: Requested seat count for plan upgrade
+
+    reportingSearch:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Search query
+
+    reportingStatuses:
+      name: statuses
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Comma-separated status IDs
+
+    reportingHealths:
+      name: healths
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Comma-separated health IDs
+
+    reportingCategories:
+      name: categories
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Comma-separated category IDs
+
+    reportingProjectManagers:
+      name: project_managers
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Comma-separated manager user IDs
+
+    reportingTeams:
+      name: teams
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Comma-separated team IDs
+
+    reportingArchived:
+      name: archived
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: ["true", "false"]
+      description: Include archived projects/tasks
+
+  schemas:
+    ServerResponse:
+      type: object
+      required:
+        - done
+        - body
+      properties:
+        done:
+          type: boolean
+          description: Indicates if the operation was successful
+          example: true
+        body:
+          description: Response data (type varies by endpoint, null if no data)
+          nullable: true
+        title:
+          type: string
+          nullable: true
+          description: Optional response title
+        message:
+          type: string
+          nullable: true
+          description: Optional message (error message or success notification)
+          example: "Operation completed successfully"
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Task UUID
+        name:
+          type: string
+          maxLength: 100
+          description: Task name
+          example: "Implement user authentication"
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+          description: Task description (supports HTML)
+        project_id:
+          type: string
+          format: uuid
+          description: Associated project UUID
+        status_id:
+          type: string
+          format: uuid
+          description: Task status UUID
+        priority_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Task priority UUID
+        assignees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Array of assigned user UUIDs
+        labels:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              color:
+                type: string
+          description: Task labels with colors
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          description: Task start date (YYYY-MM-DD)
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          description: Task due date (YYYY-MM-DD)
+        total_minutes:
+          type: integer
+          description: Estimated time in minutes
+          example: 480
+        billable:
+          type: boolean
+          description: Whether the task is billable
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          description: Task creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    TaskCreateRequest:
+      type: object
+      required:
+        - name
+        - project_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Task name
+          example: "Implement user authentication"
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+          description: Task description (HTML allowed)
+        project_id:
+          type: string
+          format: uuid
+          description: Project UUID this task belongs to
+        status_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Initial status UUID (defaults to project's default status)
+        priority_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Priority UUID
+        assignees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Array of user UUIDs to assign
+          default: []
+        labels:
+          type: array
+          items:
+            type: string
+          description: Array of label names (will be created if they don't exist)
+          default: []
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        total_hours:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Estimated hours
+        total_minutes:
+          type: number
+          minimum: 0
+          maximum: 1000
+          description: Estimated minutes (combined with total_hours)
+        billable:
+          type: boolean
+          default: false
+
+    TaskUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+        status_id:
+          type: string
+          format: uuid
+        priority_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        billable:
+          type: boolean
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+          example: "Website Redesign"
+        key:
+          type: string
+          maxLength: 10
+          description: Project key (e.g., "WEB")
+          example: "WEB"
+        color_code:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Project color in hex format
+          example: "#3498db"
+        status_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        folder_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProjectCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Project name
+          example: "Website Redesign"
+        key:
+          type: string
+          maxLength: 10
+          description: Project key (auto-generated if not provided)
+        color_code:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Project color (random if not provided)
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        folder_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        key:
+          type: string
+          maxLength: 10
+        color_code:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+        status_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+        folder_id:
+          type: string
+          format: uuid
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 100
+          example: "Engineering Team"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TeamCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Team name
+          example: "Engineering Team"
+
+    TeamInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        team_id:
+          type: string
+          format: uuid
+        team_name:
+          type: string
+          example: "Engineering Team"
+        inviter_name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        created_at:
+          type: string
+          format: date-time
+
+    Subtask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        parent_task_id:
+          type: string
+          format: uuid
+          description: UUID of the parent task
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+        done:
+          type: boolean
+          description: Completion status
+          default: false
+        created_at:
+          type: string
+          format: date-time
+
+    TaskComment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 4000
+          description: Comment content (supports HTML)
+        user_id:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          description: Name of the user who created the comment
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    TaskCommentCreateRequest:
+      type: object
+      required:
+        - task_id
+        - content
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          description: Task UUID to comment on
+        content:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: Comment content (HTML allowed)
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+        team:
+          type: string
+          nullable: true
+        project:
+          type: string
+          nullable: true
+        project_id:
+          type: string
+          format: uuid
+          nullable: true
+        task_id:
+          type: string
+          format: uuid
+          nullable: true
+        team_id:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        team_color:
+          type: string
+          nullable: true
+        url:
+          type: string
+          nullable: true
+        params:
+          type: object
+          additionalProperties: true
+
+    NotificationSettings:
+      type: object
+      properties:
+        email_notifications_enabled:
+          type: boolean
+          example: true
+        popup_notifications_enabled:
+          type: boolean
+          example: true
+        show_unread_items_count:
+          type: boolean
+          example: true
+        daily_digest_enabled:
+          type: boolean
+          example: false
+
+    NotificationSettingsUpdateRequest:
+      type: object
+      properties:
+        email_notifications_enabled:
+          type: boolean
+        popup_notifications_enabled:
+          type: boolean
+        show_unread_items_count:
+          type: boolean
+        daily_digest_enabled:
+          type: boolean
+
+    TaskStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        color_code:
+          type: string
+        color_code_dark:
+          type: string
+          nullable: true
+        category_id:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+
+    TaskStatusCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        color_code:
+          type: string
+        color_code_dark:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    TaskStatusCreateRequest:
+      type: object
+      required:
+        - name
+        - project_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "In QA"
+        project_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    TaskStatusUpdateRequest:
+      type: object
+      required:
+        - name
+        - project_id
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        project_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    TaskStatusOrderUpdateRequest:
+      type: object
+      required:
+        - status_order
+      properties:
+        status_order:
+          type: array
+          description: Ordered list of status IDs by desired position
+          items:
+            type: string
+            format: uuid
+          example:
+            - "550e8400-e29b-41d4-a716-446655440000"
+            - "550e8400-e29b-41d4-a716-446655440001"
+
+    TaskPriority:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "High"
+        value:
+          type: integer
+          example: 3
+        color_code:
+          type: string
+          example: "#CD5C5C"
+        color_code_dark:
+          type: string
+          example: "#CD5C5C"
+
+    OverviewProjectSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        color_code:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        client_name:
+          type: string
+          nullable: true
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              job_title:
+                type: string
+                nullable: true
+              task_count:
+                type: integer
+                nullable: true
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              done:
+                type: boolean
+
+    ProjectMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Project member record ID
+        team_member_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+          nullable: true
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        job_title:
+          type: string
+          nullable: true
+        color_code:
+          type: string
+
+    ProjectMemberCreateRequest:
+      type: object
+      required:
+        - team_member_id
+        - project_id
+      properties:
+        team_member_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        access_level:
+          type: string
+          enum: [MEMBER, ADMIN]
+          default: MEMBER
+
+    ProjectMemberInviteRequest:
+      type: object
+      required:
+        - email
+        - project_id
+      properties:
+        email:
+          type: string
+          format: email
+        project_id:
+          type: string
+          format: uuid
+        access_level:
+          type: string
+          enum: [MEMBER, ADMIN]
+          default: MEMBER
+        role_name:
+          type: string
+          default: MEMBER
+        is_admin:
+          type: boolean
+          default: false
+        job_title_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    TeamInvitationLinkGenerateRequest:
+      type: object
+      properties:
+        role_name:
+          type: string
+          default: MEMBER
+        is_admin:
+          type: boolean
+          default: false
+        job_title_id:
+          type: string
+          format: uuid
+          nullable: true
+        max_usage:
+          type: integer
+          minimum: 1
+          nullable: true
+
+    TeamInvitationLink:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        invitation_url:
+          type: string
+          format: uri
+        expires_in_days:
+          type: integer
+          example: 7
+
+    ProjectInvitationLinkGenerateRequest:
+      type: object
+      required:
+        - project_id
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        access_level:
+          type: string
+          enum: [MEMBER, ADMIN]
+          default: MEMBER
+        role_name:
+          type: string
+          default: MEMBER
+        is_admin:
+          type: boolean
+          default: false
+        job_title_id:
+          type: string
+          format: uuid
+          nullable: true
+        max_usage:
+          type: integer
+          minimum: 1
+          nullable: true
+
+    ProjectInvitationLink:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        invitation_url:
+          type: string
+          format: uri
+        project_name:
+          type: string
+        expires_in_days:
+          type: integer
+          example: 7
+
+    InvitationAcceptRequest:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Jane Doe"
+        email:
+          type: string
+          format: email
+          example: "jane.doe@example.com"
+
+    SetupRequest:
+      type: object
+      properties:
+        team_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Acme Team"
+        project_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Initial Delivery"
+        template_id:
+          type: string
+          format: uuid
+          nullable: true
+        tasks:
+          type: array
+          items:
+            type: string
+          description: Task names for initial setup
+          example: ["Kickoff", "Requirements", "Execution"]
+        team_members:
+          type: array
+          items:
+            type: string
+            format: email
+          description: Team member emails to invite
+          example: ["member1@example.com", "member2@example.com"]
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          example: "Jane Doe"
+        email:
+          type: string
+          format: email
+          example: "jane.doe@example.com"
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    ProfileUpdateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Jane Doe"
+
+    TeamNameUpdateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Platform Team"
+
+    TeamMemberInviteRequest:
+      type: object
+      required:
+        - emails
+      properties:
+        emails:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: email
+          example: ["alex@example.com", "sam@example.com"]
+        role_name:
+          type: string
+          default: MEMBER
+          example: MEMBER
+        is_admin:
+          type: boolean
+          default: false
+        job_title_id:
+          type: string
+          format: uuid
+          nullable: true
+        project_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    TeamMemberListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+        job_title:
+          type: string
+          nullable: true
+        role_name:
+          type: string
+          nullable: true
+        projects_count:
+          type: integer
+          nullable: true
+        task_count:
+          type: integer
+          nullable: true
+        is_admin:
+          type: boolean
+          nullable: true
+        is_owner:
+          type: boolean
+          nullable: true
+        is_online:
+          type: boolean
+          nullable: true
+        active:
+          type: boolean
+          nullable: true
+        pending_invitation:
+          type: boolean
+          nullable: true
+        color_code:
+          type: string
+          nullable: true
+
+    PaginatedTeamMembers:
+      type: object
+      properties:
+        total:
+          type: integer
+          example: 42
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMemberListItem'
+
+    TeamMemberDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+          nullable: true
+        avatar_url:
+          type: string
+          nullable: true
+        job_title:
+          type: string
+          nullable: true
+        role_name:
+          type: string
+          nullable: true
+        is_admin:
+          type: boolean
+        pending_invitation:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TeamMemberUpdateRequest:
+      type: object
+      properties:
+        role_name:
+          type: string
+          example: MEMBER
+        is_admin:
+          type: boolean
+        job_title_id:
+          type: string
+          format: uuid
+          nullable: true
+        reports_to_member_id:
+          type: string
+          format: uuid
+          nullable: true
+        access_level:
+          type: string
+          enum: [MEMBER, ADMIN]
+          nullable: true
+
+    ReportingOverviewStatistics:
+      type: object
+      properties:
+        teams:
+          type: object
+          properties:
+            count:
+              type: integer
+            projects:
+              type: integer
+            members:
+              type: integer
+        projects:
+          type: object
+          properties:
+            count:
+              type: integer
+            active:
+              type: integer
+            overdue:
+              type: integer
+        members:
+          type: object
+          properties:
+            count:
+              type: integer
+            unassigned:
+              type: integer
+            overdue:
+              type: integer
+
+    ReportingProjectTimeLogsRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Project ID
+        duration:
+          type: string
+          nullable: true
+          description: Date range preset key (e.g., last_week, last_month)
+        date_range:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: date
+          minItems: 2
+          maxItems: 2
+
+    ReportingAllTasksRequest:
+      type: object
+      required:
+        - index
+        - size
+      properties:
+        index:
+          type: integer
+          minimum: 1
+          example: 1
+        size:
+          type: integer
+          minimum: 1
+          example: 20
+        sortField:
+          type: string
+          example: end_date
+        sortOrder:
+          type: string
+          enum: [asc, desc]
+          default: desc
+        search:
+          type: string
+          nullable: true
+        teams:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uuid
+        projects:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uuid
+        statuses:
+          type: array
+          nullable: true
+          items:
+            type: string
+            description: status groups (todo/doing/done)
+            example: todo
+        priorities:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uuid
+        assignees:
+          type: array
+          nullable: true
+          items:
+            type: string
+        labels:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uuid
+        phases:
+          type: array
+          nullable: true
+          items:
+            type: string
+            format: uuid
+        dateField:
+          type: string
+          nullable: true
+          enum: [due_date, start_date, created_at, completed_at]
+        dateFrom:
+          type: string
+          format: date
+          nullable: true
+        dateTo:
+          type: string
+          format: date
+          nullable: true
+        includeArchived:
+          type: boolean
+          default: false
+        includeSubtasks:
+          type: boolean
+          default: false
+        completionStatus:
+          type: string
+          enum: [all, completed, incomplete, overdue]
+          default: all
+        billable:
+          type: string
+          enum: [all, billable, non-billable]
+          default: all
+        groupBy:
+          type: string
+          nullable: true
+
+    OrganizationCalculationMethodRequest:
+      type: object
+      required:
+        - calculation_method
+      properties:
+        calculation_method:
+          type: string
+          enum: [hourly, man_days]
+        hours_per_day:
+          type: number
+          minimum: 0.1
+          maximum: 24
+          nullable: true
+
+    HolidaySettingsUpdateRequest:
+      type: object
+      properties:
+        country_code:
+          type: string
+          minLength: 2
+          maxLength: 3
+          nullable: true
+        state_code:
+          type: string
+          nullable: true
+        auto_sync_holidays:
+          type: boolean
+          nullable: true
+
+    BillingConfigurationUpdateRequest:
+      type: object
+      properties:
+        billing_name:
+          type: string
+          nullable: true
+        billing_email:
+          type: string
+          format: email
+          nullable: true
+        contact_number:
+          type: string
+          nullable: true
+        billing_address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        state:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+          nullable: true
+
+  requestBodies:
+    OrganizationNameUpdateBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                minLength: 1
+                maxLength: 120
+
+    ContactNumberUpdateBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - contact_number
+            properties:
+              contact_number:
+                type: string
+
+    OrganizationLogoUploadBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - logoData
+            properties:
+              logoData:
+                type: string
+                description: Base64 data URL (png/jpeg/jpg/webp)
+
+    OrganizationTeamUpdateBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+              teamMembers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    user_id:
+                      type: string
+                      format: uuid
+                    role_name:
+                      type: string
+
+    OrganizationTeamMemberRemoveBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - teamId
+            properties:
+              teamId:
+                type: string
+                format: uuid
+
+    BillingRedeemBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - code
+            properties:
+              code:
+                type: string
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServerResponse'
+          example:
+            done: false
+            body: null
+            message: "Authentication required"
+
+    CsrfError:
+      description: CSRF token validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServerResponse'
+          example:
+            done: false
+            body: null
+            message: "CSRF token validation failed"
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ServerResponse'
+          example:
+            done: false
+            body: null
+            message: "Validation error: name is required"
+
+    CsvFile:
+      description: CSV file stream
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+
+    ExcelFile:
+      description: Excel file stream
+      content:
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+          schema:
+            type: string
+            format: binary

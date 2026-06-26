@@ -8,9 +8,11 @@ export default async function (req: IWorkLenzRequest, res: IWorkLenzResponse, ne
 
   const projectId = req.body.project_id;
   const teamMemberId = req.user?.team_member_id;
-  const defaultView = req.body.default_view;
 
-  if (!req.body.project_id || !defaultView || !teamMemberId) {
+  // default_view is optional when only updating group_by preferences
+  const hasViewPreference = req.body.default_view || req.body.task_list_group_by || req.body.board_group_by;
+
+  if (!projectId || !hasViewPreference || !teamMemberId) {
     return res.status(401).send(new ServerResponse(false, null, "Unknown error has occured"));
   }
 

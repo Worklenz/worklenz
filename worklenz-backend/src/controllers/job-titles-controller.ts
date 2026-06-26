@@ -18,7 +18,8 @@ export default class JobTitlesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+    // team_id is $1, size is $2, offset is $3, so search params start at $4
+    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, 4);
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS job_titles
@@ -32,7 +33,7 @@ export default class JobTitlesController extends WorklenzControllerBase {
       FROM job_titles
       WHERE team_id = $1 ${searchQuery}) rec;
     `;
-    const result = await db.query(q, [req.user?.team_id || null, size, offset]);
+    const result = await db.query(q, [req.user?.team_id || null, size, offset, ...searchParams]);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data.job_titles || this.paginatedDatasetDefaultStruct));

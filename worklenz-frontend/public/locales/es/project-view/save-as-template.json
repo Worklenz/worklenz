@@ -1,17 +1,30 @@
 {
   "title": "Guardar como Plantilla",
   "templateName": "Nombre de la Plantilla",
-  "includes": "¿Qué se debe incluir en la plantilla del proyecto?",
+  "templateNamePlaceholder": "Ingresa el nombre de la plantilla",
+  "templateInfo": "Información de la Plantilla",
+  "includes": "Elementos del Proyecto",
+  "taskIncludes": "Elementos de Tareas",
+  "cancel": "Cancelar",
+  "save": "Guardar",
+  "creating": "Creando plantilla...",
+  "created": "¡Plantilla Creada!",
+  "quickSelect": "Selección Rápida:",
+  "selectAll": "Seleccionar Todo",
+  "essentialOnly": "Solo Esencial",
+  "clearAll": "Limpiar Todo",
+  "itemsSelected": "elementos seleccionados",
+  "readyToSave": "Listo para guardar",
+  "validName": "Nombre válido",
+  "required": "Requerido",
+  "proTips": "Consejos Pro",
   "includesOptions": {
     "statuses": "Estados",
     "phases": "Fases",
-    "labels": "Etiquetas"
-  },
-  "taskIncludes": "¿Qué se debe incluir en la plantilla de las tareas?",
-  "taskIncludesOptions": {
-    "statuses": "Estados",
-    "phases": "Fases",
     "labels": "Etiquetas",
+    "customColumns": "Columnas Personalizadas"
+  },
+  "taskIncludesOptions": {
     "name": "Nombre",
     "priority": "Prioridad",
     "status": "Estado",
@@ -19,9 +32,42 @@
     "label": "Etiqueta",
     "timeEstimate": "Estimación de Tiempo",
     "description": "Descripción",
-    "subTasks": "Sub Tasks"
+    "subTasks": "Subtareas"
   },
-  "cancel": "Cancel",
-  "save": "Save",
-  "templateNamePlaceholder": "Enter template name"
+  "descriptions": {
+    "statuses": "Configuración del flujo de trabajo de estados del proyecto",
+    "phases": "Fases del proyecto e hitos",
+    "labels": "Etiquetas personalizadas para categorización",
+    "customColumns": "Campos personalizados y metadatos",
+    "taskName": "Nombres y títulos de tareas",
+    "taskPriority": "Niveles de prioridad de tareas",
+    "taskStatus": "Estado de finalización de tareas",
+    "taskPhase": "Fase del proyecto asociada",
+    "taskLabel": "Etiquetas y tags de tareas",
+    "timeEstimate": "Estimaciones de tiempo y duración",
+    "description": "Descripciones y detalles de tareas",
+    "subTasks": "Subtareas y elementos de lista"
+  },
+  "tooltips": {
+    "projectElements": "Elige qué elementos del proyecto incluir en tu plantilla",
+    "taskElements": "Elige qué elementos de tareas incluir en tu plantilla",
+    "required": "Este elemento es requerido y no se puede deseleccionar"
+  },
+  "tips": {
+    "line1": "Las plantillas preservan la estructura de tu proyecto para reutilización rápida",
+    "line2": "Los elementos esenciales siempre están incluidos y no se pueden eliminar",
+    "line3": "Puedes personalizar la plantilla al crear nuevos proyectos",
+    "line4": "Selecciona los elementos que quieres incluir en tu plantilla"
+  },
+  "validation": {
+    "nameRequired": "Por favor ingresa un nombre de plantilla",
+    "nameMinLength": "El nombre de la plantilla debe tener al menos 3 caracteres",
+    "nameMaxLength": "El nombre de la plantilla debe tener menos de 50 caracteres"
+  },
+  "notifications": {
+    "createSuccess": "Plantilla Creada",
+    "createSuccessDesc": "Tu plantilla de proyecto ha sido creada exitosamente y está lista para usar.",
+    "createError": "Error al Crear Plantilla",
+    "error": "Error"
+  }
 }

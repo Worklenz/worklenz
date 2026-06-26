@@ -3,11 +3,23 @@ CREATE OR REPLACE FUNCTION accept_invitation(_email text, _team_member_id uuid, 
 AS
 $$
 DECLARE
+    _team_id UUID;
 BEGIN
     IF _team_member_id IS NOT NULL
     THEN
+        -- Get the team_id before updating
+        SELECT team_id FROM team_members WHERE id = _team_member_id INTO _team_id;
+        
         UPDATE team_members SET user_id = _user_id WHERE id = _team_member_id;
         DELETE FROM email_invitations WHERE email = _email AND team_member_id = _team_member_id;
+        
+        -- Mark all related team invitation notifications as read
+        UPDATE user_notifications 
+        SET read = TRUE 
+        WHERE user_id = _user_id 
+          AND team_id = _team_id 
+          AND message LIKE '%invited you to work with%'
+          AND read = FALSE;
     END IF;
 
     RETURN JSON_BUILD_OBJECT(
@@ -143,23 +155,26 @@ CREATE OR REPLACE FUNCTION bulk_archive_tasks(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _task   JSON;
-    _output JSON;
+    _archive_value BOOLEAN = ((_body ->> 'type')::TEXT = 'archive');
+    _output        JSON;
 BEGIN
-    FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON)
-        LOOP
-            -- Archive the parent task
-            UPDATE tasks
-            SET archived = ((_body ->> 'type')::TEXT = 'archive')
-            WHERE id = (_task ->> 'id')::UUID
-              AND parent_task_id IS NULL;
-            -- Prevent archiving subtasks
-
-            -- Archive its sub-tasks
-            UPDATE tasks
-            SET archived = ((_body ->> 'type')::TEXT = 'archive')
-            WHERE parent_task_id = (_task ->> 'id')::UUID;
-        END LOOP;
+    WITH RECURSIVE selected_ids AS (
+        SELECT DISTINCT (elem.value ->> 'id')::UUID AS id
+        FROM JSON_ARRAY_ELEMENTS((_body ->> 'tasks')::JSON) AS elem(value)
+    ),
+    selected_and_descendants AS (
+        -- Base set: explicitly selected tasks (supports direct subtask selection)
+        SELECT id
+        FROM selected_ids
+        UNION
+        -- Recursive set: include all descendants at any nesting level
+        SELECT t.id
+        FROM tasks t
+                 INNER JOIN selected_and_descendants sd ON t.parent_task_id = sd.id
+    )
+    UPDATE tasks
+    SET archived = _archive_value
+    WHERE id IN (SELECT id FROM selected_and_descendants);
 
     RETURN _output;
 END;
@@ -515,6 +530,7 @@ BEGIN
     -- insert default roles
     INSERT INTO roles (name, team_id, default_role) VALUES ('Member', _team_id, TRUE);
     INSERT INTO roles (name, team_id, admin_role) VALUES ('Admin', _team_id, TRUE) RETURNING id INTO _admin_role_id;
+    INSERT INTO roles (name, team_id, admin_role) VALUES ('Team Lead', _team_id, TRUE);
     INSERT INTO roles (name, team_id, owner) VALUES ('Owner', _team_id, TRUE) RETURNING id INTO _owner_role_id;
 
     -- insert team member
@@ -559,6 +575,7 @@ BEGIN
     -- insert default roles
     INSERT INTO roles (name, team_id, default_role) VALUES ('Member', _team_id, TRUE);
     INSERT INTO roles (name, team_id, admin_role) VALUES ('Admin', _team_id, TRUE);
+    INSERT INTO roles (name, team_id, admin_role) VALUES ('Team Lead', _team_id, TRUE);
     INSERT INTO roles (name, team_id, owner) VALUES ('Owner', _team_id, TRUE) RETURNING id INTO _role_id;
 
     -- insert team member
@@ -570,6 +587,25 @@ BEGIN
             'name', _trimmed_team_name,
             'team_id', _team_id
         );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION escape_html(_text text) RETURNS text
+    LANGUAGE plpgsql IMMUTABLE
+AS $$
+BEGIN
+    IF _text IS NULL THEN
+        RETURN '';
+    END IF;
+    
+    -- Escape HTML special characters to prevent XSS attacks
+    RETURN REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+        _text,
+        '&', '&amp;'),
+        '<', '&lt;'),
+        '>', '&gt;'),
+        '"', '&quot;'),
+        '''', '&#x27;');
 END;
 $$;
 
@@ -634,15 +670,21 @@ BEGIN
     END IF;
 
     -- insert project
-    INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, start_date,
-                          end_date,
-                          folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day)
+    INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, priority_id, start_date,
+                          end_date, folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
+                          use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator,
+                          restrict_task_creation)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
-            _client_id,
-            _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
+            _client_id, _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
+            COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
             (_body ->> 'start_date')::TIMESTAMPTZ,
             (_body ->> 'end_date')::TIMESTAMPTZ, (_body ->> 'folder_id')::UUID, (_body ->> 'category_id')::UUID,
-            (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER)
+            (_body ->> 'working_days')::INTEGER, (_body ->> 'man_days')::INTEGER, (_body ->> 'hours_per_day')::INTEGER,
+            COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE))
     RETURNING id INTO _project_id;
 
     -- log record
@@ -704,7 +746,6 @@ BEGIN
 
     FOR _mention IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'mentions')::JSON)
         LOOP
-
             INSERT INTO project_comment_mentions (comment_id, mentioned_index, mentioned_by, informed_by)
             VALUES (_comment_id, _mention_index, _created_by, (_mention ->> 'id')::UUID);
 
@@ -713,7 +754,7 @@ BEGIN
                     (_team_id)::UUID,
                     null,
                     (_project_id)::UUID,
-                    CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _project_name, '</b>')
+                    CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_project_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
 
@@ -722,6 +763,17 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
             'id', (_comment_id)::UUID,
             'content', (_content)::TEXT,
+            'user_id', (_created_by)::UUID,
+            'created_by', (_user_name)::TEXT,
+            'avatar_url', (SELECT avatar_url FROM users WHERE id = _created_by),
+            'created_at', (SELECT created_at FROM project_comments WHERE id = _comment_id),
+            'updated_at', (SELECT updated_at FROM project_comments WHERE id = _comment_id),
+            'mentions', (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
+                        FROM (SELECT u.name  AS user_name,
+                                     u.email AS user_email
+                              FROM project_comment_mentions pcm
+                                    LEFT JOIN users u ON pcm.informed_by = u.id
+                              WHERE pcm.comment_id = _comment_id) rec),
             'project_name', (_project_name)::TEXT,
             'team_name', (SELECT name FROM teams WHERE id = (_team_id)::UUID)
         );
@@ -746,12 +798,20 @@ BEGIN
     _team_id = (_body ->> 'team_id')::UUID;
     _project_id = (_body ->> 'project_id')::UUID;
     _user_id = (_body ->> 'user_id')::UUID;
-    _access_level = (_body ->> 'access_level')::TEXT;
+    _access_level = COALESCE(NULLIF(TRIM((_body ->> 'access_level')::TEXT), ''), 'MEMBER');
+
+    -- Map team-lead access level to PROJECT_MANAGER since Team Lead is a role, not a project access level
+    IF UPPER(_access_level) IN ('TEAM-LEAD', 'TEAM_LEAD') THEN
+        _access_level = 'PROJECT_MANAGER';
+    END IF;
 
     SELECT user_id FROM team_members WHERE id = _team_member_id INTO _member_user_id;
 
     INSERT INTO project_members (team_member_id, project_access_level_id, project_id, role_id)
-    VALUES (_team_member_id, (SELECT id FROM project_access_levels WHERE key = _access_level)::UUID,
+    VALUES (_team_member_id, COALESCE(
+            (SELECT id FROM project_access_levels WHERE key = _access_level),
+            (SELECT id FROM project_access_levels WHERE key = 'MEMBER')
+        )::UUID,
             _project_id,
             (SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE))
     RETURNING id INTO _id;
@@ -759,9 +819,9 @@ BEGIN
     IF (_member_user_id != _user_id)
     THEN
         _notification = CONCAT('You have been added to the <b>',
-                               (SELECT name FROM projects WHERE id = _project_id),
+                               escape_html((SELECT name FROM projects WHERE id = _project_id)),
                                '</b> by <b>',
-                               (SELECT name FROM users WHERE id = _user_id), '</b>');
+                               escape_html((SELECT name FROM users WHERE id = _user_id)), '</b>');
         PERFORM create_notification(
                 (SELECT user_id FROM team_members WHERE id = _team_member_id),
                 _team_id,
@@ -854,6 +914,7 @@ DECLARE
     _parent_task UUID;
     _status_id   UUID;
     _priority_id UUID;
+    _next_sort   INTEGER;
 BEGIN
 
     _parent_task = (_body ->> 'parent_task_id')::UUID;
@@ -867,15 +928,28 @@ BEGIN
         );
     _priority_id = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1));
 
-    INSERT INTO cpt_tasks(name, priority_id, template_id, status_id, parent_task_id, sort_order, task_no)
+    -- Calculate next sort order across all sort columns
+    SELECT COALESCE(MAX(GREATEST(
+        COALESCE(sort_order, 0),
+        COALESCE(status_sort_order, 0),
+        COALESCE(priority_sort_order, 0),
+        COALESCE(phase_sort_order, 0)
+    )) + 1, 0)
+    INTO _next_sort
+    FROM cpt_tasks
+    WHERE template_id = (_body ->> 'template_id')::UUID;
+
+    INSERT INTO cpt_tasks(name, priority_id, template_id, status_id, parent_task_id,
+                          sort_order, status_sort_order, priority_sort_order, phase_sort_order,
+                          task_no)
     VALUES (TRIM((_body ->> 'name')::TEXT),
             _priority_id,
             (_body ->> 'template_id')::UUID,
 
                -- This should be came from client side later
             _status_id, _parent_task,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM cpt_tasks WHERE template_id = (_body ->> 'template_id')::UUID),
-                     0), ((SELECT COUNT(*) FROM cpt_tasks WHERE template_id = (_body ->> 'template_id')::UUID) + 1))
+            _next_sort, _next_sort, _next_sort, _next_sort,
+            ((SELECT COUNT(*) FROM cpt_tasks WHERE template_id = (_body ->> 'template_id')::UUID) + 1))
     RETURNING id INTO _task_id;
 
     PERFORM handle_on_pt_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
@@ -889,41 +963,128 @@ CREATE OR REPLACE FUNCTION create_quick_task(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _task_id     UUID;
-    _parent_task UUID;
-    _status_id   UUID;
-    _priority_id UUID;
-    _start_date  TIMESTAMP;
-    _end_date    TIMESTAMP;
+    _task_id                  UUID;
+    _parent_task              UUID;
+    _status_id                UUID;
+    _priority_id              UUID;
+    _start_date               TIMESTAMP;
+    _end_date                 TIMESTAMP;
+    _schedule_id              UUID;
+    _description              TEXT;
+    _next_sort_order          INTEGER;
+    _auto_assign_task_creator BOOLEAN;
+    _reporter_id              UUID;
+    _project_id               UUID;
+    _team_id                  UUID;
+    _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
 BEGIN
-
+    _reporter_id = (_body ->> 'reporter_id')::UUID;
+    _project_id  = (_body ->> 'project_id')::UUID;
     _parent_task = (_body ->> 'parent_task_id')::UUID;
+    _schedule_id = (_body ->> 'schedule_id')::UUID;
+    _description = (_body ->> 'description')::TEXT;
+
     _status_id = COALESCE(
         (_body ->> 'status_id')::UUID,
         (SELECT id
          FROM task_statuses
-         WHERE project_id = (_body ->> 'project_id')::UUID
+         WHERE project_id = _project_id
            AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
          LIMIT 1)
-        );
+    );
     _priority_id = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1));
-    _start_date = (_body ->> 'start_date')::TIMESTAMP;
-    _end_date = (_body ->> 'end_date')::TIMESTAMP;
+    _start_date  = (_body ->> 'start_date')::TIMESTAMP;
+    _end_date    = (_body ->> 'end_date')::TIMESTAMP;
 
-    INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, parent_task_id, sort_order, start_date, end_date)
-    VALUES (TRIM((_body ->> 'name')::TEXT),
-            _priority_id,
-            (_body ->> 'project_id')::UUID,
-            (_body ->> 'reporter_id')::UUID,
+    -- Calculate the next sort order value once and apply it to every sort column.
+    -- Using GREATEST() across all six columns guarantees the new task lands at the
+    -- bottom regardless of which column had the highest current value.
+    SELECT COALESCE(MAX(GREATEST(
+        COALESCE(sort_order, 0),
+        COALESCE(roadmap_sort_order, 0),
+        COALESCE(status_sort_order, 0),
+        COALESCE(priority_sort_order, 0),
+        COALESCE(phase_sort_order, 0),
+        COALESCE(member_sort_order, 0)
+    )) + 1, 0)
+    INTO _next_sort_order
+    FROM tasks
+    WHERE project_id = _project_id;
 
-               -- This should be came from client side later
-            _status_id, _parent_task,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0),
-            (_body ->> 'start_date')::TIMESTAMP,
-            (_body ->> 'end_date')::TIMESTAMP)
+    INSERT INTO tasks (
+        name,
+        priority_id,
+        project_id,
+        reporter_id,
+        status_id,
+        parent_task_id,
+        sort_order,
+        roadmap_sort_order,
+        status_sort_order,
+        priority_sort_order,
+        phase_sort_order,
+        member_sort_order,
+        start_date,
+        end_date,
+        schedule_id,
+        description
+    )
+    VALUES (
+        TRIM((_body ->> 'name')::TEXT),
+        _priority_id,
+        _project_id,
+        _reporter_id,
+        _status_id,
+        _parent_task,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _next_sort_order,
+        _start_date,
+        _end_date,
+        _schedule_id,
+        _description
+    )
     RETURNING id INTO _task_id;
 
     PERFORM handle_on_task_phase_change(_task_id, (_body ->> 'phase_id')::UUID);
+
+    -- Check if auto-assign is enabled for this project
+    SELECT auto_assign_task_creator, team_id
+    INTO _auto_assign_task_creator, _team_id
+    FROM projects
+    WHERE id = _project_id;
+
+    -- If auto-assign is enabled, assign the task creator
+    IF _auto_assign_task_creator IS TRUE THEN
+        -- Get the team_member_id and check if their role is admin or owner
+        SELECT tm.id, (r.admin_role OR r.owner)
+        INTO _team_member_id, _is_admin
+        FROM team_members tm
+        INNER JOIN roles r ON tm.role_id = r.id
+        WHERE tm.user_id = _reporter_id
+          AND tm.team_id = _team_id;
+
+        IF _team_member_id IS NOT NULL THEN
+            -- Check if user is already a project member
+            IF NOT EXISTS (
+                SELECT 1 FROM project_members
+                WHERE project_id = _project_id
+                  AND team_member_id = _team_member_id
+            ) THEN
+                -- Only auto-add and assign if user is admin or owner
+                IF _is_admin IS TRUE THEN
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
+            ELSE
+                -- User is already a project member, assign them to the task
+                PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+            END IF;
+        END IF;
+    END IF;
 
     RETURN get_single_task(_task_id);
 END;
@@ -934,33 +1095,49 @@ CREATE OR REPLACE FUNCTION create_task(_body json) RETURNS json
 AS
 $$
 DECLARE
-    _assignee      TEXT;
-    _attachment_id TEXT;
-    _assignee_id   UUID;
-    _task_id       UUID;
-    _label         JSON;
+    _assignee                 TEXT;
+    _attachment_id            TEXT;
+    _assignee_id              UUID;
+    _task_id                  UUID;
+    _label                    JSON;
+    _auto_assign_task_creator BOOLEAN;
+    _reporter_id              UUID;
+    _project_id               UUID;
+    _team_id                  UUID;
+    _team_member_id           UUID;
+    _is_admin                 BOOLEAN;
+    _already_assigned         BOOLEAN := FALSE;
 BEGIN
+    _reporter_id = (_body ->> 'reporter_id')::UUID;
+    _project_id = (_body ->> 'project_id')::UUID;
+    _team_id = (_body ->> 'team_id')::UUID;
+
     INSERT INTO tasks (name, done, priority_id, project_id, reporter_id, start_date, end_date, total_minutes,
                        description, parent_task_id, status_id, sort_order)
     VALUES (TRIM((_body ->> 'name')::TEXT), (FALSE),
             COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM task_priorities WHERE value = 1)),
-            (_body ->> 'project_id')::UUID,
-            (_body ->> 'reporter_id')::UUID,
+            _project_id,
+            _reporter_id,
             (_body ->> 'start')::TIMESTAMPTZ,
             (_body ->> 'end')::TIMESTAMPTZ,
             (_body ->> 'total_minutes')::NUMERIC,
             (_body ->> 'description')::TEXT,
             (_body ->> 'parent_task_id')::UUID,
             (_body ->> 'status_id')::UUID,
-            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = (_body ->> 'project_id')::UUID), 0))
+            COALESCE((SELECT MAX(sort_order) + 1 FROM tasks WHERE project_id = _project_id), 0))
     RETURNING id INTO _task_id;
 
-    -- insert task assignees
+    -- Insert task assignees from the request.
     FOR _assignee IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'assignees')::JSON)
         LOOP
             _assignee_id = TRIM('"' FROM _assignee)::UUID;
-            PERFORM create_task_assignee(_assignee_id, (_body ->> 'project_id')::UUID, _task_id,
-                                         (_body ->> 'reporter_id')::UUID);
+            PERFORM create_task_assignee(_assignee_id, _project_id, _task_id, _reporter_id);
+
+            IF _assignee_id IN (
+                SELECT id FROM team_members WHERE user_id = _reporter_id
+            ) THEN
+                _already_assigned := TRUE;
+            END IF;
         END LOOP;
 
     FOR _attachment_id IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'attachments')::JSON)
@@ -970,12 +1147,40 @@ BEGIN
 
     FOR _label IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'labels')::JSON)
         LOOP
-            PERFORM assign_or_create_label((_body ->> 'team_id')::UUID, _task_id, (_label ->> 'name')::TEXT,
-                                           (_label ->> 'color')::TEXT);
+            PERFORM assign_or_create_label(_team_id, _task_id, (_label ->> 'name')::TEXT, (_label ->> 'color')::TEXT);
         END LOOP;
 
-    RETURN get_task_form_view_model((_body ->> 'reporter_id')::UUID, (_body ->> 'team_id')::UUID, _task_id,
-                                    (_body ->> 'project_id')::UUID);
+    -- Auto-assign the creator unless they were explicitly assigned already.
+    IF _already_assigned IS FALSE THEN
+        SELECT auto_assign_task_creator INTO _auto_assign_task_creator
+        FROM projects
+        WHERE id = _project_id;
+
+        IF _auto_assign_task_creator IS TRUE THEN
+            SELECT tm.id, (r.admin_role OR r.owner) INTO _team_member_id, _is_admin
+            FROM team_members tm
+            INNER JOIN roles r ON tm.role_id = r.id
+            WHERE tm.user_id = _reporter_id
+              AND tm.team_id = _team_id;
+
+            IF _team_member_id IS NOT NULL THEN
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM project_members
+                    WHERE project_id = _project_id
+                      AND team_member_id = _team_member_id
+                ) THEN
+                    IF _is_admin IS TRUE THEN
+                        PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                    END IF;
+                ELSE
+                    PERFORM create_task_assignee(_team_member_id, _project_id, _task_id, _reporter_id);
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN get_task_form_view_model(_reporter_id, _team_id, _task_id, _project_id);
 END;
 $$;
 
@@ -1012,7 +1217,8 @@ BEGIN
     END IF;
 
     INSERT INTO tasks_assignees (task_id, project_member_id, team_member_id, assigned_by)
-    VALUES (_task_id, _project_member_id, _team_member_id, _reporter_user_id);
+    VALUES (_task_id, _project_member_id, _team_member_id, _reporter_user_id)
+    ON CONFLICT ON CONSTRAINT tasks_assignees_pk DO NOTHING;
 
     RETURN JSON_BUILD_OBJECT(
         'task_id', _task_id,
@@ -1069,7 +1275,7 @@ BEGIN
                 (_body ->> 'team_id')::UUID,
                 _task_id,
                 (SELECT project_id FROM tasks WHERE id = _task_id),
-                CONCAT('<b>', _user_name, '</b> has mentioned you in a comment on <b>', _task_name, '</b>')
+                CONCAT('<b>', escape_html(_user_name), '</b> has mentioned you in a comment on <b>', escape_html(_task_name), '</b>')
                 );
             _mention_index := _mention_index + 1;
         END LOOP;
@@ -1171,9 +1377,13 @@ DECLARE
 BEGIN
     _team_id = (_body ->> 'team_id')::UUID;
 
-    IF ((_body ->> 'is_admin')::BOOLEAN IS TRUE)
+    -- Check if role_name is provided, otherwise fall back to is_admin flag
+    IF is_null_or_empty((_body ->> 'role_name')) IS FALSE
     THEN
-        SELECT id FROM roles WHERE team_id = _team_id AND admin_role IS TRUE INTO _role_id;
+        SELECT id FROM roles WHERE name = (_body ->> 'role_name')::TEXT AND team_id = _team_id INTO _role_id;
+    ELSIF ((_body ->> 'is_admin')::BOOLEAN IS TRUE)
+    THEN
+        SELECT id FROM roles WHERE team_id = _team_id AND admin_role IS TRUE AND name = 'Admin' INTO _role_id;
     ELSE
         SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE INTO _role_id;
     END IF;
@@ -1281,42 +1491,64 @@ $$
 DECLARE
     _result JSON;
 BEGIN
-    -- Optimized version using CTEs for better performance and maintainability
     WITH user_team_data AS (
-        SELECT 
-            u.id,
-            u.name,
-            u.email,
-            u.timezone_id AS timezone,
-            u.avatar_url,
-            u.user_no,
-            u.socket_id,
-            u.created_at AS joined_date,
-            u.updated_at AS last_updated,
-            u.setup_completed AS my_setup_completed,
-            (is_null_or_empty(u.google_id) IS FALSE) AS is_google,
-            COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
-            u.active_team
+        SELECT u.id,
+               u.name,
+               u.email,
+               u.timezone_id AS timezone,
+               u.language,
+               u.avatar_url,
+               u.user_no,
+               u.socket_id,
+               u.created_at AS joined_date,
+               u.updated_at AS last_updated,
+               u.setup_completed AS my_setup_completed,
+               (is_null_or_empty(u.google_id) IS FALSE) AS is_google,
+               COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
+               u.active_team
         FROM users u
         WHERE u.id = _id
     ),
     team_org_data AS (
-        SELECT 
-            utd.*,
-            t.name AS team_name,
-            t.user_id AS owner_id,
-            o.subscription_status,
-            o.license_type_id,
-            o.trial_expire_date
+        SELECT utd.*,
+               t.name AS team_name,
+               t.user_id AS owner_id,
+               o.subscription_status,
+               o.license_type_id,
+               o.trial_expire_date,
+               o.id AS organization_id,
+               o.business_plan_override,
+               o.team_member_limit_override
         FROM user_team_data utd
         INNER JOIN teams t ON t.id = utd.team_id
         LEFT JOIN organizations o ON o.user_id = t.user_id
     ),
-    notification_data AS (
-        SELECT 
-            tod.*,
-            COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
+    plan_trial_data AS (
+        SELECT pt.id AS trial_id,
+               pt.plan_tier_id,
+               pt.trial_end_date AS plan_trial_end_date,
+               pt.is_active,
+               lpt.tier_name AS active_plan_trial,
+               lpt.display_name AS trial_plan_display_name,
+               GREATEST(0, EXTRACT(DAY FROM (pt.trial_end_date - NOW()))::INTEGER) AS trial_days_remaining
         FROM team_org_data tod
+        LEFT JOIN licensing_plan_trials pt
+            ON pt.user_id = tod.owner_id
+            AND pt.organization_id = tod.organization_id
+            AND pt.is_active = TRUE
+            AND pt.trial_end_date > NOW()
+        LEFT JOIN licensing_plan_tiers lpt ON lpt.id = pt.plan_tier_id
+        LIMIT 1
+    ),
+    notification_data AS (
+        SELECT tod.*,
+               ptd.active_plan_trial,
+               ptd.plan_trial_end_date,
+               ptd.trial_days_remaining,
+               ptd.trial_plan_display_name,
+               COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
+        FROM team_org_data tod
+        LEFT JOIN plan_trial_data ptd ON TRUE
         LEFT JOIN notification_settings ns ON (ns.user_id = tod.id AND ns.team_id = tod.team_id)
     ),
     alerts_data AS (
@@ -1324,29 +1556,49 @@ BEGIN
         FROM (SELECT description, type FROM worklenz_alerts WHERE active IS TRUE) alert_rec
     ),
     complete_user_data AS (
-        SELECT 
-            nd.*,
-            tz.name AS timezone_name,
-            slt.key AS subscription_type,
-            tm.id AS team_member_id,
-            ad.alerts,
-            CASE
-                WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
-                WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id) 
-                    THEN (SELECT end_date FROM licensing_custom_subs WHERE user_id = nd.owner_id LIMIT 1)::DATE
-                WHEN EXISTS(SELECT 1 FROM licensing_user_subscriptions WHERE user_id = nd.owner_id AND active IS TRUE)
-                    THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day' 
-                          FROM licensing_user_subscriptions 
-                          WHERE user_id = nd.owner_id AND active IS TRUE 
-                          LIMIT 1)::DATE
-                ELSE NULL
-            END AS valid_till_date,
-            CASE
-                WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
-                ELSE TRUE 
-            END AS setup_completed,
-            is_owner(nd.id, nd.active_team) AS owner,
-            is_admin(nd.id, nd.active_team) AS is_admin
+        SELECT nd.*,
+               tz.name AS timezone_name,
+               (SELECT r.name FROM roles r WHERE r.id = tm.role_id) AS role_name,
+               CASE
+                   WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'BUSINESS_TRIAL'
+                   WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'ENTERPRISE_TRIAL'
+                   WHEN nd.active_plan_trial IS NOT NULL THEN 'PLAN_TRIAL'
+                   ELSE slt.key
+               END AS subscription_type,
+               CASE
+                   WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'business'
+                   WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'enterprise'
+                   ELSE (SELECT name
+                         FROM licensing_pricing_plans lpp
+                         LEFT JOIN licensing_user_subscriptions lus ON lus.subscription_plan_id = lpp.paddle_id
+                         WHERE lus.user_id = nd.owner_id AND lus.active IS TRUE
+                         LIMIT 1)
+               END AS plan_name,
+               tm.id AS team_member_id,
+               ad.alerts,
+               nd.active_plan_trial,
+               nd.plan_trial_end_date,
+               nd.trial_days_remaining,
+               nd.trial_plan_display_name,
+               CASE WHEN nd.active_plan_trial IS NOT NULL THEN TRUE ELSE FALSE END AS is_plan_trial,
+               CASE
+                   WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
+                   WHEN nd.active_plan_trial IS NOT NULL THEN nd.plan_trial_end_date::DATE
+                   WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id)
+                       THEN (SELECT end_date FROM licensing_custom_subs WHERE user_id = nd.owner_id LIMIT 1)::DATE
+                   WHEN EXISTS(SELECT 1 FROM licensing_user_subscriptions WHERE user_id = nd.owner_id AND active IS TRUE)
+                       THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day'
+                             FROM licensing_user_subscriptions
+                             WHERE user_id = nd.owner_id AND active IS TRUE
+                             LIMIT 1)::DATE
+                   ELSE NULL
+               END AS valid_till_date,
+               CASE
+                   WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
+                   ELSE TRUE
+               END AS setup_completed,
+               is_owner(nd.id, nd.active_team) AS owner,
+               is_admin(nd.id, nd.active_team) AS is_admin
         FROM notification_data nd
         CROSS JOIN alerts_data ad
         LEFT JOIN timezones tz ON tz.id = nd.timezone
@@ -1355,17 +1607,18 @@ BEGIN
     )
     SELECT ROW_TO_JSON(complete_user_data.*) INTO _result FROM complete_user_data;
 
-    -- Ensure notification settings exist using INSERT...ON CONFLICT for better concurrency
     INSERT INTO notification_settings (user_id, team_id, email_notifications_enabled, popup_notifications_enabled, show_unread_items_count)
-    SELECT _id, 
-           COALESCE((SELECT active_team FROM users WHERE id = _id), 
-                   (SELECT id FROM teams WHERE user_id = _id LIMIT 1)),
+    SELECT _id,
+           COALESCE((SELECT active_team FROM users WHERE id = _id),
+                    (SELECT id FROM teams WHERE user_id = _id LIMIT 1)),
            TRUE, TRUE, TRUE
     ON CONFLICT (user_id, team_id) DO NOTHING;
 
     RETURN _result;
 END
 $$;
+
+COMMENT ON FUNCTION deserialize_user(uuid) IS 'Returns user session data including plan trial information and manual override flags for feature access control';
 
 CREATE OR REPLACE FUNCTION get_activity_logs_by_task(_task_id uuid) RETURNS json
     LANGUAGE plpgsql
@@ -1512,20 +1765,20 @@ DECLARE
     _is_ltd    BOOLEAN := FALSE;
     _result    JSON;
 BEGIN
-    SELECT EXISTS(SELECT id FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
+    SELECT EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
     SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes WHERE redeemed_by = _user_id) INTO _is_ltd;
 
     SELECT ROW_TO_JSON(rec)
     INTO _result
-    FROM (SELECT (SELECT name FROM users WHERE ud.user_id = users.id),
-                 (SELECT email FROM users WHERE ud.user_id = users.id),
-                 contact_number,
-                 contact_number_secondary,
-                 trial_in_progress,
-                 trial_expire_date,
-                 unit_price::NUMERIC,
-                 cancel_url,
-                 subscription_status AS status,
+    FROM (SELECT (SELECT name FROM users WHERE ud.user_id = users.id) AS name,
+                 (SELECT email FROM users WHERE ud.user_id = users.id) AS email,
+                 ud.contact_number,
+                 ud.contact_number_secondary,
+                 ud.trial_in_progress,
+                 ud.trial_expire_date,
+                 lus.unit_price::NUMERIC,
+                 lus.cancel_url,
+                 ud.subscription_status AS status,
                  lus.cancellation_effective_date,
                  lus.paused_at,
                  lus.paused_from::DATE,
@@ -1533,7 +1786,13 @@ BEGIN
                  _is_custom AS is_custom,
                  _is_ltd AS is_ltd_user,
                  (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = _user_id) AS ltd_users,
+                 (SELECT COUNT(*)
+                  FROM licensing_coupon_codes lcc
+                  WHERE lcc.redeemed_by = _user_id
+                    AND lcc.is_redeemed = TRUE
+                    AND lcc.is_refunded = FALSE) AS redeemed_codes_count,
                  (CASE
+                      WHEN (ud.business_plan_override = TRUE) THEN 'Business Plan'
                       WHEN (_is_custom) THEN 'Custom Plan'
                       WHEN (_is_ltd) THEN 'Life Time Deal'
                       ELSE
@@ -1544,17 +1803,24 @@ BEGIN
                  (SELECT billing_type FROM licensing_pricing_plans WHERE id = lus.plan_id),
                  (CASE
                       WHEN ud.subscription_status = 'trialing' THEN ud.trial_expire_date::DATE
-                      WHEN EXISTS (SELECT 1 FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id) THEN
-                          (SELECT end_date FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)::DATE
-                      WHEN EXISTS (SELECT 1 FROM licensing_user_subscriptions lus WHERE lus.user_id = ud.user_id) THEN
-                          (SELECT next_bill_date::DATE - INTERVAL '1 day'
-                           FROM licensing_user_subscriptions lus
-                           WHERE lus.user_id = ud.user_id)::DATE
+                      WHEN (_is_custom) THEN
+                          (SELECT MAX(end_date)::DATE FROM licensing_custom_subs lcs WHERE lcs.user_id = ud.user_id)
+                      WHEN lus.id IS NOT NULL THEN
+                          (NULLIF(lus.next_bill_date, '')::DATE - INTERVAL '1 day')::DATE
                      END) AS valid_till_date,
-                 is_lkr_billing
-          FROM organizations ud
-                   LEFT JOIN licensing_user_subscriptions lus ON ud.user_id = lus.user_id
-          WHERE ud.user_id = _user_id) rec;
+                 ud.is_lkr_billing
+          FROM (SELECT *
+                FROM organizations
+                WHERE user_id = _user_id
+                ORDER BY created_at DESC NULLS LAST
+                LIMIT 1) ud
+                   LEFT JOIN LATERAL (SELECT *
+                                      FROM licensing_user_subscriptions
+                                      WHERE user_id = ud.user_id
+                                        AND active = TRUE
+                                        AND COALESCE(status, '') <> 'deleted'
+                                      ORDER BY NULLIF(next_bill_date, '')::DATE DESC NULLS LAST
+                                      LIMIT 1) lus ON TRUE) rec;
     RETURN _result;
 END;
 $$;
@@ -1576,6 +1842,7 @@ BEGIN
                     (SELECT get_daily_digest_overdue(u.id)) AS overdue,
                     (SELECT get_daily_digest_recently_completed(u.id)) AS recently_completed
              FROM users u
+             WHERE u.is_deleted IS NOT TRUE
              --
          ) rec;
     RETURN _result;
@@ -2072,12 +2339,14 @@ BEGIN
                               TO_CHAR(CURRENT_DATE + INTERVAL '1 day', 'yyyy-mm-dd')) rec) AS due_tomorrow,
 
                  (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
-                  FROM (SELECT name, email
-                        FROM users
-                        WHERE id = (SELECT user_id
-                                    FROM project_subscribers
-                                    WHERE project_id = projects.id
-                                      AND user_id = users.id)) rec) AS subscribers
+                  FROM (SELECT u.name, u.email
+                        FROM project_subscribers ps
+                                 INNER JOIN users u ON ps.user_id = u.id
+                                 INNER JOIN notification_settings ns ON ns.user_id = u.id
+                        WHERE ps.project_id = projects.id
+                          AND ns.team_id = projects.team_id
+                          AND ns.email_notifications_enabled IS TRUE
+                          AND u.is_deleted IS NOT TRUE) rec) AS subscribers
 
           FROM projects
           WHERE EXISTS(SELECT 1 FROM project_subscribers WHERE project_id = projects.id)
@@ -3448,14 +3717,7 @@ BEGIN
     _total_completed = _parent_task_done + _sub_tasks_done;
 --     _total_tasks = _sub_tasks_count + 1; -- +1 for the parent task
     _total_tasks = _sub_tasks_count; -- +1 for the parent task
-    
-    -- Fix: Handle division by zero when there are no subtasks
-    IF _total_tasks > 0 THEN
-        _ratio = (_total_completed / _total_tasks) * 100;
-    ELSE
-        -- If no subtasks, use parent task completion status
-        _ratio = _parent_task_done * 100;
-    END IF;
+    _ratio = (_total_completed / _total_tasks) * 100;
 
     RETURN JSON_BUILD_OBJECT(
         'ratio', _ratio,
@@ -3477,6 +3739,8 @@ DECLARE
     _team_members JSON;
     _assignees    JSON;
     _phases       JSON;
+    _custom_columns JSON;
+    _custom_column_values JSON;
 BEGIN
 
     -- Select task info
@@ -3487,12 +3751,14 @@ BEGIN
                  description,
                  start_date,
                  end_date,
+                 due_time,
                  done,
                  total_minutes,
                  priority_id,
                  project_id,
                  created_at,
                  updated_at,
+                 completed_at,
                  status_id,
                  parent_task_id,
                  sort_order,
@@ -3571,14 +3837,110 @@ BEGIN
 
     SELECT get_task_assignees(_task_id) INTO _assignees;
 
+    SELECT COALESCE(
+               JSON_AGG(
+                   JSON_BUILD_OBJECT(
+                       'key', rec.key,
+                       'id', rec.id,
+                       'name', rec.name,
+                       'width', rec.width,
+                       'pinned', rec.is_visible,
+                       'custom_column', TRUE,
+                       'custom_column_obj', JSON_BUILD_OBJECT(
+                           'fieldType', rec.field_type,
+                           'fieldTitle', rec.field_title,
+                           'numberType', rec.number_type,
+                           'decimals', rec.decimals,
+                           'label', rec.label,
+                           'labelPosition', rec.label_position,
+                           'previewValue', rec.preview_value,
+                           'expression', rec.expression,
+                           'firstNumericColumnKey', rec.first_numeric_column_key,
+                           'secondNumericColumnKey', rec.second_numeric_column_key,
+                           'selectionsList', COALESCE(rec.selections_list, '[]'::JSON),
+                           'labelsList', COALESCE(rec.labels_list, '[]'::JSON)
+                       )
+                   )
+                   ORDER BY rec.created_at
+               ),
+               '[]'::JSON
+           )
+    INTO _custom_columns
+    FROM (
+             SELECT cc.id,
+                    cc.key,
+                    cc.name,
+                    cc.width,
+                    cc.is_visible,
+                    cc.created_at,
+                    cc.field_type,
+                    cf.field_title,
+                    cf.number_type,
+                    cf.decimals,
+                    cf.label,
+                    cf.label_position,
+                    cf.preview_value,
+                    cf.expression,
+                    cf.first_numeric_column_key,
+                    cf.second_numeric_column_key,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'selection_id', so.selection_id,
+                                            'selection_name', so.selection_name,
+                                            'selection_color', so.selection_color
+                                    )
+                            ORDER BY so.selection_order
+                            )
+                     FROM cc_selection_options so
+                     WHERE so.column_id = cc.id) AS selections_list,
+                    (SELECT JSON_AGG(
+                                    JSON_BUILD_OBJECT(
+                                            'label_id', lo.label_id,
+                                            'label_name', lo.label_name,
+                                            'label_color', lo.label_color
+                                    )
+                            ORDER BY lo.label_order
+                            )
+                     FROM cc_label_options lo
+                     WHERE lo.column_id = cc.id) AS labels_list
+             FROM cc_custom_columns cc
+                      LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
+             WHERE cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec;
+
+    SELECT COALESCE(
+               JSON_OBJECT_AGG(rec.key, rec.value),
+               '{}'::JSON
+           )
+    INTO _custom_column_values
+    FROM (
+             SELECT cc.key,
+                    CASE
+                        WHEN ccv.text_value IS NOT NULL THEN TO_JSON(ccv.text_value)
+                        WHEN ccv.number_value IS NOT NULL THEN TO_JSON(ccv.number_value)
+                        WHEN ccv.boolean_value IS NOT NULL THEN TO_JSON(ccv.boolean_value)
+                        WHEN ccv.date_value IS NOT NULL THEN TO_JSON(ccv.date_value)
+                        WHEN ccv.json_value IS NOT NULL THEN ccv.json_value::JSON
+                        ELSE NULL::JSON
+                        END AS value
+             FROM cc_column_values ccv
+                      INNER JOIN cc_custom_columns cc ON ccv.column_id = cc.id
+             WHERE ccv.task_id = _task_id
+               AND cc.project_id = _project_id
+               AND cc.is_visible IS TRUE
+         ) rec
+    WHERE rec.value IS NOT NULL;
+
     RETURN JSON_BUILD_OBJECT(
-        'task', _task,
+        'task', (_task::JSONB || JSONB_BUILD_OBJECT('custom_column_values', COALESCE(_custom_column_values, '{}'::JSON)::JSONB))::JSON,
         'priorities', _priorities,
         'projects', _projects,
         'statuses', _statuses,
         'team_members', _team_members,
         'assignees', _assignees,
-        'phases', _phases
+        'phases', _phases,
+        'custom_columns', _custom_columns
         );
 END;
 $$;
@@ -3589,6 +3951,7 @@ AS
 $$
 DECLARE
     _result JSON;
+    _max_attempts INTEGER := 3;
 BEGIN
     SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
     INTO _result
@@ -3611,6 +3974,8 @@ BEGIN
                                              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(r))), '[]'::JSON) AS tasks
                                               FROM (SELECT t.id,
                                                            t.name AS name,
+                                                           task_updates.id AS update_id,
+                                                           task_updates.attempts AS attempts,
                                                            (SELECT name FROM users WHERE id = task_updates.reporter_id) AS updater_name,
                                                            (SELECT STRING_AGG(DISTINCT
                                                                               (SELECT name
@@ -3625,6 +3990,7 @@ BEGIN
                                                       AND task_updates.project_id = projects.id
                                                       AND task_updates.type = 'ASSIGN'
                                                       AND is_sent IS FALSE
+                                                      AND task_updates.attempts < _max_attempts
                                                     ORDER BY task_updates.created_at) r)
                                       FROM projects
                                       WHERE team_id = teams.id
@@ -3632,7 +3998,8 @@ BEGIN
                                                    FROM task_updates
                                                    WHERE project_id = projects.id
                                                      AND type = 'ASSIGN'
-                                                     AND is_sent IS FALSE)) r)
+                                                     AND is_sent IS FALSE
+                                                     AND attempts < _max_attempts)) r)
                         FROM teams
                         WHERE EXISTS(SELECT 1 FROM team_members WHERE team_id = teams.id AND user_id = users.id)
                           AND (SELECT email_notifications_enabled
@@ -3640,9 +4007,11 @@ BEGIN
                                WHERE team_id = teams.id
                                  AND user_id = users.id) IS TRUE) r)
           FROM users
-          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)) rec;
+          WHERE EXISTS(SELECT 1 FROM task_updates WHERE user_id = users.id)
+            AND users.is_deleted IS NOT TRUE) rec;
 
-    UPDATE task_updates SET is_sent = TRUE;
+    -- Individual task_updates will be deleted after successful email send
+    -- No batch update needed here
 
     RETURN _result;
 END
@@ -4083,6 +4452,7 @@ $$
 DECLARE
     _updater_name         TEXT;
     _task_name            TEXT;
+    _previous_status_id   UUID;
     _previous_status_name TEXT;
     _new_status_name      TEXT;
     _message              TEXT;
@@ -4090,19 +4460,39 @@ DECLARE
     _status_category      JSON;
     _schedule_id          JSON;
     _task_completed_at    TIMESTAMPTZ;
+    _is_new_status_done   BOOLEAN;
 BEGIN
     SELECT COALESCE(name, '') FROM tasks WHERE id = _task_id INTO _task_name;
 
-    SELECT COALESCE(name, '')
-    FROM task_statuses
-    WHERE id = (SELECT status_id FROM tasks WHERE id = _task_id)
-    INTO _previous_status_name;
+    -- Get previous status ID and name
+    SELECT t.status_id, COALESCE(ts.name, '')
+    FROM tasks t
+    LEFT JOIN task_statuses ts ON t.status_id = ts.id
+    WHERE t.id = _task_id
+    INTO _previous_status_id, _previous_status_name;
 
     SELECT COALESCE(name, '') FROM task_statuses WHERE id = _status_id INTO _new_status_name;
 
-    IF (_previous_status_name != _new_status_name)
+    -- Check if the new status is in a "done" category
+    SELECT EXISTS(
+        SELECT 1 
+        FROM sys_task_status_categories 
+        WHERE id = (SELECT category_id FROM task_statuses WHERE id = _status_id) 
+        AND is_done IS TRUE
+    ) INTO _is_new_status_done;
+
+    -- Update if status ID has changed
+    IF (_previous_status_id IS DISTINCT FROM _status_id)
     THEN
-        UPDATE tasks SET status_id = _status_id WHERE id = _task_id;
+        -- Update status_id and completed_at in a single statement
+        -- Set completed_at based on whether the new status is "done"
+        UPDATE tasks 
+        SET status_id = _status_id,
+            completed_at = CASE 
+                WHEN _is_new_status_done THEN CURRENT_TIMESTAMP 
+                ELSE NULL 
+            END
+        WHERE id = _task_id;
 
         SELECT get_task_complete_info(_task_id, _status_id) INTO _task_info;
 
@@ -4555,7 +4945,10 @@ BEGIN
     FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS(_tasks)
         LOOP
             _max_sort = _max_sort + 1;
-            INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id, sort_order, total_minutes)
+            INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id,
+                               sort_order, roadmap_sort_order,
+                               status_sort_order, priority_sort_order, phase_sort_order, member_sort_order,
+                               total_minutes)
             VALUES (TRIM((_task ->> 'name')::TEXT),
                     (SELECT id FROM task_priorities WHERE value = 1),
                     _project_id,
@@ -4566,7 +4959,10 @@ BEGIN
                      FROM task_statuses
                      WHERE project_id = _project_id::UUID
                        AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
-                     LIMIT 1), _max_sort, (_task ->> 'total_minutes')::NUMERIC) RETURNING id INTO _task_id_new;
+                     LIMIT 1),
+                    _max_sort, _max_sort,
+                    _max_sort, _max_sort, _max_sort, _max_sort,
+                    (_task ->> 'total_minutes')::NUMERIC) RETURNING id INTO _task_id_new;
 
             INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, project_id)
                 VALUES (
@@ -4651,13 +5047,15 @@ BEGIN
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
     VALUES (_project_id, 'Due Date', 'DUE_DATE', 12, TRUE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 13, FALSE);
+    VALUES (_project_id, 'Due Time', 'DUE_TIME', 13, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 14, FALSE);
+    VALUES (_project_id, 'Completed Date', 'COMPLETED_DATE', 14, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 15, FALSE);
+    VALUES (_project_id, 'Created Date', 'CREATED_DATE', 15, FALSE);
     INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
-    VALUES (_project_id, 'Reporter', 'REPORTER', 16, FALSE);
+    VALUES (_project_id, 'Last Updated', 'LAST_UPDATED', 16, FALSE);
+    INSERT INTO project_task_list_cols (project_id, name, key, index, pinned)
+    VALUES (_project_id, 'Reporter', 'REPORTER', 17, FALSE);
 END
 $$;
 
@@ -4929,7 +5327,7 @@ DECLARE
     _google_id       TEXT;
 BEGIN
     _name = (_body ->> 'displayName')::TEXT;
-    _email = (_body ->> 'email')::TEXT;
+    _email = LOWER(TRIM((_body ->> 'email')::TEXT));
     _google_id = (_body ->> 'id');
 
     INSERT INTO users (name, email, google_id, timezone_id)
@@ -4940,7 +5338,7 @@ BEGIN
     --insert organization data
     INSERT INTO organizations (user_id, organization_name, contact_number, contact_number_secondary, trial_in_progress,
                                trial_expire_date, subscription_status, license_type_id)
-    VALUES (_user_id, TRIM((_body ->> 'team_name')::TEXT), NULL, NULL, TRUE, CURRENT_DATE + INTERVAL '9999 days',
+    VALUES (_user_id, COALESCE(TRIM((_body ->> 'team_name')::TEXT), _name), NULL, NULL, TRUE, CURRENT_DATE + INTERVAL '9999 days',
             'active', (SELECT id FROM sys_license_types WHERE key = 'SELF_HOSTED'))
     RETURNING id INTO _organization_id;
 
@@ -4951,6 +5349,7 @@ BEGIN
     -- insert default roles
     INSERT INTO roles (name, team_id, default_role) VALUES ('Member', _team_id, TRUE);
     INSERT INTO roles (name, team_id, admin_role) VALUES ('Admin', _team_id, TRUE);
+    INSERT INTO roles (name, team_id, admin_role) VALUES ('Team Lead', _team_id, TRUE);
     INSERT INTO roles (name, team_id, owner) VALUES ('Owner', _team_id, TRUE) RETURNING id INTO _role_id;
 
     INSERT INTO team_members (user_id, team_id, role_id)
@@ -5006,8 +5405,8 @@ BEGIN
     _trimmed_name = TRIM((_body ->> 'name'));
     _trimmed_team_name = TRIM((_body ->> 'team_name'));
 
-    -- check user exists
-    IF EXISTS(SELECT email FROM users WHERE email = _trimmed_email)
+    -- check user exists (case-insensitive)
+    IF EXISTS(SELECT email FROM users WHERE LOWER(email) = _trimmed_email)
     THEN
         RAISE 'EMAIL_EXISTS_ERROR:%', (_body ->> 'email');
     END IF;
@@ -5039,7 +5438,7 @@ BEGIN
         IF NOT EXISTS(SELECT id
                       FROM email_invitations
                       WHERE team_id = (_body ->> 'invited_team_id')::UUID
-                        AND email = _trimmed_email)
+                        AND LOWER(email) = _trimmed_email)
         THEN
             RAISE 'ERROR_INVALID_JOINING_EMAIL';
         END IF;
@@ -5049,6 +5448,7 @@ BEGIN
     -- insert default roles
     INSERT INTO roles (name, team_id, default_role) VALUES ('Member', _team_id, TRUE);
     INSERT INTO roles (name, team_id, admin_role) VALUES ('Admin', _team_id, TRUE);
+    INSERT INTO roles (name, team_id, admin_role) VALUES ('Team Lead', _team_id, TRUE);
     INSERT INTO roles (name, team_id, owner) VALUES ('Owner', _team_id, TRUE) RETURNING id INTO _role_id;
 
     -- insert team member
@@ -5061,7 +5461,7 @@ BEGIN
         UPDATE team_members SET user_id = (_user_id)::UUID WHERE id = (_body ->> 'team_member_id')::UUID;
         DELETE
         FROM email_invitations
-        WHERE email = _trimmed_email
+        WHERE LOWER(email) = _trimmed_email
           AND team_member_id = (_body ->> 'team_member_id')::UUID;
     END IF;
 
@@ -5173,7 +5573,7 @@ BEGIN
     RETURN JSON_BUILD_OBJECT(
         'id', _removed_user_id,
         'team', _removed_team_name,
-        'socket_id', (SELECT socket_id FROM users WHERE id = _user_id)
+        'socket_id', (SELECT socket_id FROM users WHERE id = _removed_user_id)
         );
 END;
 $$;
@@ -5302,9 +5702,9 @@ BEGIN
          FROM sys_task_status_categories
          WHERE id = (SELECT category_id FROM task_statuses WHERE id = NEW.status_id)) IS TRUE)
     THEN
-        UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        NEW.completed_at = CURRENT_TIMESTAMP;
     ELSE
-        UPDATE tasks SET completed_at = NULL WHERE id = NEW.id;
+        NEW.completed_at = NULL;
     END IF;
 
     RETURN NEW;
@@ -5443,21 +5843,27 @@ BEGIN
 
     -- update the project
     UPDATE projects
-    SET name                   = _project_name,
-        notes                  = (_body ->> 'notes')::TEXT,
-        color_code             = (_body ->> 'color_code')::TEXT,
-        status_id              = (_body ->> 'status_id')::UUID,
-        health_id              = (_body ->> 'health_id')::UUID,
-        key                    = (_body ->> 'key')::TEXT,
-        start_date             = (_body ->> 'start_date')::TIMESTAMPTZ,
-        end_date               = (_body ->> 'end_date')::TIMESTAMPTZ,
-        client_id              = _client_id,
-        folder_id              = (_body ->> 'folder_id')::UUID,
-        category_id            = (_body ->> 'category_id')::UUID,
-        updated_at             = CURRENT_TIMESTAMP,
-        estimated_working_days = (_body ->> 'working_days')::INTEGER,
-        estimated_man_days     = (_body ->> 'man_days')::INTEGER,
-        hours_per_day          = (_body ->> 'hours_per_day')::INTEGER
+    SET name                     = _project_name,
+        notes                    = (_body ->> 'notes')::TEXT,
+        color_code               = (_body ->> 'color_code')::TEXT,
+        status_id                = (_body ->> 'status_id')::UUID,
+        health_id                = (_body ->> 'health_id')::UUID,
+        priority_id              = COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
+        key                      = (_body ->> 'key')::TEXT,
+        start_date               = (_body ->> 'start_date')::TIMESTAMPTZ,
+        end_date                 = (_body ->> 'end_date')::TIMESTAMPTZ,
+        client_id                = _client_id,
+        folder_id                = (_body ->> 'folder_id')::UUID,
+        category_id              = (_body ->> 'category_id')::UUID,
+        updated_at               = CURRENT_TIMESTAMP,
+        estimated_working_days   = (_body ->> 'working_days')::INTEGER,
+        estimated_man_days       = (_body ->> 'man_days')::INTEGER,
+        hours_per_day            = (_body ->> 'hours_per_day')::INTEGER,
+        use_manual_progress      = COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
+        use_weighted_progress    = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
+        use_time_progress        = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
+        auto_assign_task_creator = COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
+        restrict_task_creation   = COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE)
     WHERE id = (_body ->> 'id')::UUID
       AND team_id = _team_id
     RETURNING id INTO _project_id;
@@ -5749,7 +6155,7 @@ BEGIN
 END
 $$;
 
-CREATE OR REPLACE FUNCTION update_team_member(_body json) RETURNS void
+CREATE OR REPLACE FUNCTION update_team_member(_body json) RETURNS TEXT
     LANGUAGE plpgsql
 AS
 $$
@@ -5757,14 +6163,35 @@ DECLARE
     _team_id      UUID;
     _job_title_id UUID;
     _role_id      UUID;
+    _team_member_id UUID;
 BEGIN
     _team_id = (_body ->> 'team_id')::UUID;
+    _team_member_id = (_body ->> 'id')::UUID;
 
-    IF ((_body ->> 'is_admin')::BOOLEAN IS TRUE)
+    -- Check if role_name is provided, otherwise fall back to is_admin flag
+    IF is_null_or_empty((_body ->> 'role_name')) IS FALSE
     THEN
-        SELECT id FROM roles WHERE admin_role IS TRUE INTO _role_id;
+        SELECT id FROM roles WHERE name = (_body ->> 'role_name')::TEXT AND team_id = _team_id INTO _role_id;
+        
+        -- If specified role not found, fall back to default role
+        IF _role_id IS NULL THEN
+            SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE INTO _role_id;
+        END IF;
+    ELSIF ((_body ->> 'is_admin')::BOOLEAN IS TRUE)
+    THEN
+        SELECT id FROM roles WHERE team_id = _team_id AND admin_role IS TRUE AND name = 'Admin' INTO _role_id;
+        
+        -- If Admin role not found, fall back to default role
+        IF _role_id IS NULL THEN
+            SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE INTO _role_id;
+        END IF;
     ELSE
-        SELECT id FROM roles WHERE default_role IS TRUE INTO _role_id;
+        SELECT id FROM roles WHERE team_id = _team_id AND default_role IS TRUE INTO _role_id;
+    END IF;
+    
+    -- Ensure role_id is not null
+    IF _role_id IS NULL THEN
+        RAISE EXCEPTION 'No valid role found for team %', _team_id;
     END IF;
 
     IF is_null_or_empty((_body ->> 'job_title')) IS FALSE
@@ -5778,8 +6205,11 @@ BEGIN
     SET job_title_id = _job_title_id,
         role_id      = _role_id,
         updated_at   = CURRENT_TIMESTAMP
-    WHERE id = (_body ->> 'id')::UUID
+    WHERE id = _team_member_id
       AND team_id = _team_id;
+
+    -- Return the team member ID to confirm update
+    RETURN _team_member_id::TEXT;
 END;
 $$;
 
@@ -6091,6 +6521,22 @@ CREATE OR REPLACE FUNCTION insert_task_dependency(_task_id uuid, _related_task_i
 AS
 $$
 BEGIN
+    -- Prevent self-dependency
+    IF _task_id = _related_task_id THEN
+        RAISE EXCEPTION 'SELF_DEPENDENCY';
+    END IF;
+
+    -- Prevent circular dependency: check if _related_task_id is already blocked by _task_id
+    IF EXISTS (
+        SELECT 1
+        FROM task_dependencies
+        WHERE task_id = _related_task_id
+          AND related_task_id = _task_id
+          AND dependency_type = _dependency_type
+    ) THEN
+        RAISE EXCEPTION 'CIRCULAR_DEPENDENCY';
+    END IF;
+
     -- Attempt to insert into task_dependencies
     INSERT INTO task_dependencies (task_id, related_task_id, dependency_type)
     VALUES (_task_id, _related_task_id, _dependency_type)
@@ -6129,7 +6575,7 @@ BEGIN
         RETURN TRUE;
     END IF;
 
-    -- If the status is "done", check if any dependent tasks are not completed
+    -- If the status is "done", check if any direct dependent tasks are not completed
     SELECT NOT EXISTS (
         SELECT 1
         FROM task_dependencies td
@@ -6145,7 +6591,27 @@ BEGIN
           )
     ) INTO can_continue;
 
-    -- Return whether the update can continue based on the dependent task completion check
+    IF NOT can_continue THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Also check if any subtask of this task has incomplete dependencies
+    SELECT NOT EXISTS (
+        SELECT 1
+        FROM tasks subtask
+        INNER JOIN task_dependencies td ON td.task_id = subtask.id
+        LEFT JOIN tasks dep_task ON dep_task.id = td.related_task_id
+        WHERE subtask.parent_task_id = _task_id
+          AND dep_task.status_id NOT IN (
+              SELECT id
+              FROM task_statuses ts
+              WHERE dep_task.project_id = ts.project_id
+                AND ts.category_id IN (
+                    SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE
+                )
+          )
+    ) INTO can_continue;
+
     RETURN can_continue;
 END;
 $$;
@@ -6211,8 +6677,11 @@ BEGIN
         end_date,
         priority_id,
         project_id,
+        reporter_id,
+        status_id,
         assignees,
-        labels
+        labels,
+        duration_days
     )
     SELECT
         uuid_generate_v4(),
@@ -6223,6 +6692,8 @@ BEGIN
         t.end_date,
         t.priority_id,
         t.project_id,
+        t.reporter_id,
+        t.status_id,
         COALESCE(
             (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('project_member_id', tas.project_member_id, 'team_member_id', tas.team_member_id))
              FROM tasks_assignees tas
@@ -6234,7 +6705,12 @@ BEGIN
              FROM task_labels tla
              WHERE tla.task_id = t.id),
             '[]'::JSONB
-        ) AS labels
+        ) AS labels,
+        CASE 
+            WHEN t.start_date IS NOT NULL AND t.end_date IS NOT NULL 
+            THEN (t.end_date::DATE - t.start_date::DATE)
+            ELSE NULL
+        END AS duration_days
     FROM tasks t
     WHERE t.id = p_task_id
     RETURNING id INTO v_new_id;
@@ -6243,7 +6719,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION transfer_team_ownership(_team_id UUID, _new_owner_id UUID) RETURNS json
+CREATE OR REPLACE FUNCTION transfer_team_ownership(_team_id uuid, _new_owner_id uuid) RETURNS json
     LANGUAGE plpgsql
 AS
 $$
@@ -6253,32 +6729,29 @@ DECLARE
     _admin_role_id UUID;
     _old_org_id UUID;
     _new_org_id UUID;
-    _has_license BOOLEAN;
     _old_owner_role_id UUID;
     _new_owner_role_id UUID;
     _has_active_coupon BOOLEAN;
     _other_teams_count INTEGER;
-    _new_owner_org_id UUID;
-    _license_type_id UUID;
     _has_valid_license BOOLEAN;
+    _old_org_name TEXT;
+    _new_org_name TEXT;
+    _all_teams_in_old_org INTEGER;
+    _all_teams_in_new_org INTEGER;
+    _temp_uuid UUID := 'a27351a4-94d2-4d0a-9062-6ded6633f274'::UUID; -- Temporary user for swap operation
 BEGIN
     -- Get the current owner's ID and organization
-    SELECT t.user_id, t.organization_id 
-    INTO _old_owner_id, _old_org_id 
-    FROM teams t 
+    SELECT t.user_id, t.organization_id
+    INTO _old_owner_id, _old_org_id
+    FROM teams t
     WHERE t.id = _team_id;
-    
+
     IF _old_owner_id IS NULL THEN
         RAISE EXCEPTION 'Team not found';
     END IF;
 
-    -- Get the new owner's organization
-    SELECT organization_id INTO _new_owner_org_id
-    FROM organizations
-    WHERE user_id = _new_owner_id;
-
-    -- Get the old organization
-    SELECT id INTO _old_org_id
+    -- Get the old organization name
+    SELECT organization_name INTO _old_org_name
     FROM organizations
     WHERE id = _old_org_id;
 
@@ -6286,145 +6759,237 @@ BEGIN
         RAISE EXCEPTION 'Organization not found';
     END IF;
 
-    -- Check if new owner has any valid license type
+    -- Get the new owner's organization (MUST exist)
+    SELECT id, organization_name INTO _new_org_id, _new_org_name
+    FROM organizations
+    WHERE user_id = _new_owner_id;
+
+    IF _new_org_id IS NULL THEN
+        RAISE EXCEPTION 'New owner must have an organization. Please create an organization for user % first.', _new_owner_id;
+    END IF;
+
+    -- Check if at least one of them has a valid license (since licenses will be swapped)
     SELECT EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM (
-            -- Check regular subscriptions
+            -- Check regular subscriptions for BOTH users
             SELECT lus.user_id, lus.status, lus.active
             FROM licensing_user_subscriptions lus
-            WHERE lus.user_id = _new_owner_id 
+            WHERE lus.user_id IN (_old_owner_id, _new_owner_id)
             AND lus.active = TRUE
             AND lus.status IN ('active', 'trialing')
-            
+
             UNION ALL
-            
-            -- Check custom subscriptions
-            SELECT lcs.user_id, lcs.subscription_status as status, TRUE as active
+
+            -- Check custom subscriptions for BOTH users
+            SELECT lcs.user_id, 'active' as status, TRUE as active
             FROM licensing_custom_subs lcs
-            WHERE lcs.user_id = _new_owner_id
+            WHERE lcs.user_id IN (_old_owner_id, _new_owner_id)
             AND lcs.end_date > CURRENT_DATE
-            
+
             UNION ALL
-            
-            -- Check trial status in organizations
+
+            -- Check trial status in organizations table for BOTH users
             SELECT o.user_id, o.subscription_status as status, TRUE as active
             FROM organizations o
-            WHERE o.user_id = _new_owner_id
+            WHERE o.user_id IN (_old_owner_id, _new_owner_id)
             AND o.trial_in_progress = TRUE
             AND o.trial_expire_date > CURRENT_DATE
+
+            UNION ALL
+
+            -- Check trial status in users_data table for BOTH users
+            SELECT ud.user_id, ud.subscription_status as status, TRUE as active
+            FROM users_data ud
+            WHERE ud.user_id IN (_old_owner_id, _new_owner_id)
+            AND ud.trial_in_progress = TRUE
+            AND ud.trial_expire_date > CURRENT_DATE
+
+            UNION ALL
+
+            -- Check plan-specific trials for BOTH users
+            SELECT lpt.user_id, 'active' as status, TRUE as active
+            FROM licensing_plan_trials lpt
+            WHERE lpt.user_id IN (_old_owner_id, _new_owner_id)
+            AND lpt.is_active = TRUE
+            AND lpt.trial_end_date > NOW()
+
+            UNION ALL
+
+            -- Check coupon codes for BOTH users
+            SELECT lcc.redeemed_by as user_id, 'active' as status, TRUE as active
+            FROM licensing_coupon_codes lcc
+            WHERE lcc.redeemed_by IN (_old_owner_id, _new_owner_id)
+            AND lcc.is_redeemed = TRUE
+            AND lcc.is_refunded = FALSE
         ) valid_licenses
     ) INTO _has_valid_license;
 
     IF NOT _has_valid_license THEN
-        RAISE EXCEPTION 'New owner does not have a valid license (subscription, custom subscription, or trial)';
+        RAISE EXCEPTION 'At least one user must have a valid license (subscription, custom subscription, trial, or coupon code) to proceed with the transfer';
     END IF;
 
-    -- Check if new owner has any active coupon codes
+    -- Track if new owner has active coupon codes (for informational purposes)
     SELECT EXISTS (
-        SELECT 1 
+        SELECT 1
         FROM licensing_coupon_codes lcc
-        WHERE lcc.redeemed_by = _new_owner_id 
+        WHERE lcc.redeemed_by = _new_owner_id
         AND lcc.is_redeemed = TRUE
         AND lcc.is_refunded = FALSE
     ) INTO _has_active_coupon;
 
-    IF _has_active_coupon THEN
-        RAISE EXCEPTION 'New owner has active coupon codes that need to be handled before transfer';
-    END IF;
+    -- Count all teams in both organizations
+    SELECT COUNT(*) INTO _all_teams_in_old_org
+    FROM teams
+    WHERE organization_id = _old_org_id;
 
-    -- Count other teams in the organization for information purposes
+    SELECT COUNT(*) INTO _all_teams_in_new_org
+    FROM teams
+    WHERE organization_id = _new_org_id;
+
+    -- Count other teams in the old organization (excluding the current one)
     SELECT COUNT(*) INTO _other_teams_count
     FROM teams
     WHERE organization_id = _old_org_id
     AND id != _team_id;
 
-    -- If new owner has their own organization, move the team to their organization
-    IF _new_owner_org_id IS NOT NULL THEN
-        -- Update the team to use the new owner's organization
-        UPDATE teams 
-        SET user_id = _new_owner_id,
-            organization_id = _new_owner_org_id
-        WHERE id = _team_id;
-        
-        -- Create notification about organization change
-        PERFORM create_notification(
-            _old_owner_id,
-            _team_id,
-            NULL,
-            NULL,
-            CONCAT('Team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b> has been moved to a different organization')
-        );
+    -- ============================================================
+    -- SWAP LICENSES: Switch all licenses between the two users
+    -- ============================================================
 
-        PERFORM create_notification(
-            _new_owner_id,
-            _team_id,
-            NULL,
-            NULL,
-            CONCAT('Team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b> has been moved to your organization')
-        );
-    ELSE
-        -- If new owner doesn't have an organization, transfer the old organization to them
-        UPDATE organizations
-        SET user_id = _new_owner_id
-        WHERE id = _old_org_id;
-        
-        -- Update the team to use the same organization
-        UPDATE teams 
-        SET user_id = _new_owner_id,
-            organization_id = _old_org_id
-        WHERE id = _team_id;
+    -- Step 1: Swap user subscriptions
+    UPDATE licensing_user_subscriptions
+    SET user_id = CASE
+        WHEN user_id = _old_owner_id THEN _new_owner_id
+        WHEN user_id = _new_owner_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE user_id IN (_old_owner_id, _new_owner_id);
 
-        -- Notify both users about organization ownership transfer
-        PERFORM create_notification(
-            _old_owner_id,
-            NULL,
-            NULL,
-            NULL,
-            CONCAT('You are no longer the owner of organization <b>', (SELECT organization_name FROM organizations WHERE id = _old_org_id), '</b>')
-        );
+    -- Step 2: Swap custom subscriptions
+    UPDATE licensing_custom_subs
+    SET user_id = CASE
+        WHEN user_id = _old_owner_id THEN _new_owner_id
+        WHEN user_id = _new_owner_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE user_id IN (_old_owner_id, _new_owner_id);
 
-        PERFORM create_notification(
-            _new_owner_id,
-            NULL,
-            NULL,
-            NULL,
-            CONCAT('You are now the owner of organization <b>', (SELECT organization_name FROM organizations WHERE id = _old_org_id), '</b>')
-        );
-    END IF;
-    
-    -- Get the owner and admin role IDs
+    -- Step 3: Swap coupon codes
+    UPDATE licensing_coupon_codes
+    SET redeemed_by = CASE
+        WHEN redeemed_by = _old_owner_id THEN _new_owner_id
+        WHEN redeemed_by = _new_owner_id THEN _old_owner_id
+        ELSE redeemed_by
+    END
+    WHERE redeemed_by IN (_old_owner_id, _new_owner_id);
+
+    -- Step 4: Swap plan trials
+    UPDATE licensing_plan_trials
+    SET user_id = CASE
+        WHEN user_id = _old_owner_id THEN _new_owner_id
+        WHEN user_id = _new_owner_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE user_id IN (_old_owner_id, _new_owner_id);
+
+    -- ============================================================
+    -- SWAP ORGANIZATIONS: Temporarily drop unique constraint for swap
+    -- ============================================================
+
+    -- Drop the unique constraint temporarily
+    ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_user_id_key;
+    ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_pk_2;
+
+    -- Step 5a: Temporarily set old owner's org to temp UUID
+    UPDATE organizations
+    SET user_id = _temp_uuid
+    WHERE id = _old_org_id;
+
+    -- Step 5b: Set new owner's org to old owner
+    UPDATE organizations
+    SET user_id = _old_owner_id
+    WHERE id = _new_org_id;
+
+    -- Step 5c: Set old owner's org (currently temp) to new owner
+    UPDATE organizations
+    SET user_id = _new_owner_id
+    WHERE id = _old_org_id;
+
+    -- Re-add the unique constraint
+    ALTER TABLE organizations ADD CONSTRAINT organizations_user_id_key UNIQUE (user_id);
+
+    -- ============================================================
+    -- SWAP TEAMS: Update all teams in both organizations
+    -- ============================================================
+
+    -- Step 6: Swap ALL teams in both organizations
+    UPDATE teams
+    SET user_id = CASE
+        WHEN organization_id = _old_org_id THEN _new_owner_id
+        WHEN organization_id = _new_org_id THEN _old_owner_id
+        ELSE user_id
+    END
+    WHERE organization_id IN (_old_org_id, _new_org_id);
+
+    -- ============================================================
+    -- UPDATE TEAM ROLES: Update roles for the specific team
+    -- ============================================================
+
+    -- Get the owner and admin role IDs for the specific team
     SELECT id INTO _owner_role_id FROM roles WHERE team_id = _team_id AND owner = TRUE;
     SELECT id INTO _admin_role_id FROM roles WHERE team_id = _team_id AND admin_role = TRUE;
 
-    -- Get current role IDs for both users
-    SELECT role_id INTO _old_owner_role_id 
-    FROM team_members 
+    -- Get current role IDs for both users in the specific team
+    SELECT role_id INTO _old_owner_role_id
+    FROM team_members
     WHERE team_id = _team_id AND user_id = _old_owner_id;
 
-    SELECT role_id INTO _new_owner_role_id 
-    FROM team_members 
+    SELECT role_id INTO _new_owner_role_id
+    FROM team_members
     WHERE team_id = _team_id AND user_id = _new_owner_id;
-    
-    -- Update the old owner's role to admin if they want to stay in the team
+
+    -- Update the old owner's role to admin if they are a member of this team
     IF _old_owner_role_id IS NOT NULL THEN
-        UPDATE team_members 
-        SET role_id = _admin_role_id 
+        UPDATE team_members
+        SET role_id = _admin_role_id
         WHERE team_id = _team_id AND user_id = _old_owner_id;
     END IF;
-    
+
     -- Update the new owner's role to owner
     IF _new_owner_role_id IS NOT NULL THEN
-        UPDATE team_members 
-        SET role_id = _owner_role_id 
+        UPDATE team_members
+        SET role_id = _owner_role_id
         WHERE team_id = _team_id AND user_id = _new_owner_id;
     ELSE
-        -- If new owner is not a team member yet, add them
+        -- If new owner is not a team member yet, add them as owner
         INSERT INTO team_members (user_id, team_id, role_id)
         VALUES (_new_owner_id, _team_id, _owner_role_id);
     END IF;
 
-    -- Create notification for both users about team ownership
+    -- ============================================================
+    -- NOTIFICATIONS: Notify both users about the swap
+    -- ============================================================
+
+    -- Notify old owner about organization swap
+    PERFORM create_notification(
+        _old_owner_id,
+        NULL,
+        NULL,
+        NULL,
+        CONCAT('Your organization <b>', _old_org_name, '</b> has been swapped with <b>', _new_org_name, '</b>. You are now the owner of <b>', _new_org_name, '</b> with all its teams, projects, and licenses.')
+    );
+
+    -- Notify new owner about organization swap
+    PERFORM create_notification(
+        _new_owner_id,
+        NULL,
+        NULL,
+        NULL,
+        CONCAT('Your organization <b>', _new_org_name, '</b> has been swapped with <b>', _old_org_name, '</b>. You are now the owner of <b>', _old_org_name, '</b> with all its teams, projects, and licenses.')
+    );
+
+    -- Notify old owner about specific team ownership change
     PERFORM create_notification(
         _old_owner_id,
         _team_id,
@@ -6433,6 +6998,7 @@ BEGIN
         CONCAT('You are no longer the owner of team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b>')
     );
 
+    -- Notify new owner about specific team ownership change
     PERFORM create_notification(
         _new_owner_id,
         _team_id,
@@ -6440,21 +7006,25 @@ BEGIN
         NULL,
         CONCAT('You are now the owner of team <b>', (SELECT name FROM teams WHERE id = _team_id), '</b>')
     );
-    
+
+    -- Return detailed information about the swap
     RETURN json_build_object(
         'success', TRUE,
         'old_owner_id', _old_owner_id,
         'new_owner_id', _new_owner_id,
         'team_id', _team_id,
-        'old_org_id', _old_org_id,
-        'new_org_id', COALESCE(_new_owner_org_id, _old_org_id),
-        'old_role_id', _old_owner_role_id,
-        'new_role_id', _new_owner_role_id,
+        'old_organization_id', _old_org_id,
+        'old_organization_name', _old_org_name,
+        'new_organization_id', _new_org_id,
+        'new_organization_name', _new_org_name,
+        'old_owner_now_owns_org', _new_org_name,
+        'new_owner_now_owns_org', _old_org_name,
+        'teams_in_old_org', _all_teams_in_old_org,
+        'teams_in_new_org', _all_teams_in_new_org,
+        'organizations_swapped', TRUE,
+        'licenses_swapped', TRUE,
         'has_valid_license', _has_valid_license,
-        'has_active_coupon', _has_active_coupon,
-        'other_teams_count', _other_teams_count,
-        'org_ownership_transferred', _new_owner_org_id IS NULL,
-        'team_moved_to_new_org', _new_owner_org_id IS NOT NULL
+        'has_active_coupon', _has_active_coupon
     );
 END;
 $$;
@@ -6672,4 +7242,39 @@ BEGIN
         END IF;
     END LOOP;
 END;
+$$;
+
+CREATE OR REPLACE FUNCTION replace_task_labels(_task_id uuid, _label_ids uuid[]) RETURNS json
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _result JSON;
+    _label_id UUID;
+BEGIN
+    -- Remove all existing labels for this task
+    DELETE FROM task_labels WHERE task_id = _task_id;
+
+    -- Insert new labels if array is not empty
+    IF _label_ids IS NOT NULL AND array_length(_label_ids, 1) > 0 THEN
+        FOREACH _label_id IN ARRAY _label_ids
+        LOOP
+            INSERT INTO task_labels (task_id, label_id) 
+            VALUES (_task_id, _label_id)
+            ON CONFLICT (task_id, label_id) DO NOTHING;
+        END LOOP;
+    END IF;
+
+    -- Return the updated labels list
+    SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+    INTO _result
+    FROM (SELECT task_labels.label_id AS id,
+                 (SELECT name FROM team_labels WHERE id = task_labels.label_id) AS name,
+                 (SELECT color_code FROM team_labels WHERE id = task_labels.label_id)
+          FROM task_labels
+          WHERE task_id = _task_id
+          ORDER BY name) rec;
+
+    RETURN _result;
+END
 $$;

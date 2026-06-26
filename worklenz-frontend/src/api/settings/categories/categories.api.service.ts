@@ -37,12 +37,14 @@ export const categoriesApiService = {
     return response.data;
   },
 
-  updateCategory: async (
-    category: IProjectCategoryViewModel
-  ): Promise<IServerResponse<IProjectCategoryViewModel>> => {
+  updateCategory: async (category: {
+    id: string;
+    color: string;
+    name: string;
+  }): Promise<IServerResponse<IProjectCategoryViewModel>> => {
     const response = await apiClient.put<IServerResponse<IProjectCategoryViewModel>>(
       `${rootUrl}/${category.id}`,
-      category
+      { color: category.color, name: category.name }
     );
     return response.data;
   },

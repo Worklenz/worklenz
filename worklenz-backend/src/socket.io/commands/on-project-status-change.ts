@@ -3,10 +3,17 @@ import db from "../../config/db";
 import {SocketEvents} from "../events";
 
 import {log_error} from "../util";
+import {verifyProjectAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_project_status_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+    
+    const hasAccess = await verifyProjectAccessSocket(socket, body.project_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'PROJECT_STATUS_CHANGE', 'project', body.project_id);
+      return;
+    }
 
     const q = `UPDATE projects SET status_id = $2 WHERE id = $1;`;
     await db.query(q, [body.project_id, body.status_id]);

@@ -1,11 +1,11 @@
 {
-    "title": "项目成员",
-    "searchLabel": "通过添加名称或电子邮件添加成员",
-    "searchPlaceholder": "输入名称或电子邮件",
-    "inviteAsAMember": "邀请为成员",
-    "inviteNewMemberByEmail": "通过电子邮件邀请新成员",
-    "members": "成员",
-    "copyProjectLink": "复制项目链接",
-    "inviteMember": "邀请成员",
-    "alsoInviteToProject": "也邀请到项目"
+  "title": "项目成员",
+  "searchLabel": "通过添加名称或电子邮件添加成员",
+  "searchPlaceholder": "输入名称或电子邮件",
+  "inviteAsAMember": "邀请为成员",
+  "inviteNewMemberByEmail": "通过电子邮件邀请新成员",
+  "members": "成员",
+  "copyProjectLink": "复制项目链接",
+  "inviteMember": "邀请成员",
+  "alsoInviteToProject": "也邀请到项目"
 }

@@ -78,9 +78,7 @@ const renderWithProviders = (component: React.ReactElement) => {
   return render(
     <Provider store={store}>
       <BrowserRouter>
-        <I18nextProvider i18n={i18n}>
-          {component}
-        </I18nextProvider>
+        <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
       </BrowserRouter>
     </Provider>
   );
@@ -104,7 +102,7 @@ describe('AuthenticatingPage', () => {
 
   it('renders loading state correctly', () => {
     renderWithProviders(<AuthenticatingPage />);
-    
+
     expect(screen.getByText('Authenticating...')).toBeInTheDocument();
     expect(screen.getByText('Getting things ready for you...')).toBeInTheDocument();
     expect(screen.getByRole('generic', { busy: true })).toBeInTheDocument();

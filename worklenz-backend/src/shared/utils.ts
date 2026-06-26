@@ -44,8 +44,9 @@ export function isTestServer() {
 
 /** Returns true if localhost:3000 or localhost:4200 */
 export function isLocalServer() {
+  const allowedUrls = ["localhost:5173", "localhost:5174", "localhost:4200", "localhost:3000", "127.0.0.1:3000", "localhost:5000"];
   const frontendUrl = process.env.FRONTEND_URL;
-  return frontendUrl === "localhost:5173" || frontendUrl === "localhost:4200" || frontendUrl === "localhost:3000" || frontendUrl === "127.0.0.1:3000";
+  return allowedUrls.includes(frontendUrl || "");
 }
 
 /** Returns true of isLocal or isTest server */
@@ -79,6 +80,20 @@ export function isValidateEmail(email: string) {
   const re =
     /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
   return re.test(String(email).toLowerCase());
+}
+
+export function isValidPhoneNumber(phone: string) {
+  if (!phone || phone.trim() === '') return true; // Optional field
+
+  // Use libphonenumber-js for robust international phone validation
+  try {
+    const { parsePhoneNumber } = require('libphonenumber-js');
+    const phoneNumber = parsePhoneNumber(phone.trim());
+    return phoneNumber ? phoneNumber.isValid() : false;
+  } catch (error) {
+    // If parsing fails, the number is invalid
+    return false;
+  }
 }
 
 export function toTsQuery(value: string) {
@@ -146,11 +161,139 @@ export function sanitize(value: string) {
   const escapedString = value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt")
+    .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;");
 
   return sanitizeHtml(escapedString);
+}
+
+/**
+ * Sanitizes plain text fields (like user names) to prevent XSS attacks
+ * Strips all HTML tags while preserving the text content, then escapes special characters
+ * Use this for fields that should never contain HTML markup
+ * 
+ * @param value - The plain text to sanitize
+ * @returns Sanitized plain text with HTML removed and entities escaped
+ */
+export function sanitizePlainText(value: string): string {
+  if (!value) return "";
+
+  // First strip all HTML tags using sanitize-html
+  // This converts "<script>alert(1)</script>Hello" to "alert(1)Hello"
+  // and "><img src=x onerror=alert()>" to ""
+  const stripped = sanitizeHtml(value, {
+    allowedTags: [],        // No HTML tags allowed
+    allowedAttributes: {},  // No attributes allowed
+  });
+
+  // Then escape HTML special characters for extra safety
+  // This prevents any remaining special chars from being interpreted as HTML
+  // Note: We trim after escaping to preserve intentional spaces
+  return stripped
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .trim();
+}
+
+/**
+ * Sanitizes SVG/XML content to prevent XSS attacks via embedded scripts
+ * Removes all script tags, event handlers, and dangerous elements from SVG files
+ * Use this before storing SVG file content to prevent XSS via SVG upload
+ * 
+ * @param svgContent - The SVG/XML content to sanitize
+ * @returns Sanitized SVG content safe for storage and display
+ */
+export function sanitizeSVG(svgContent: string): string {
+  if (!svgContent) return "";
+
+  // Use sanitize-html with strict SVG-safe configuration
+  return sanitizeHtml(svgContent, {
+    // Allow only safe SVG elements
+    allowedTags: [
+      'svg', 'g', 'path', 'circle', 'rect', 'line', 'polyline', 'polygon',
+      'ellipse', 'text', 'tspan', 'defs', 'linearGradient', 'radialGradient',
+      'stop', 'use', 'symbol', 'clipPath', 'mask', 'pattern', 'image',
+      'foreignObject', 'marker', 'animate', 'animateTransform'
+    ],
+    // Allow only safe SVG attributes (no event handlers)
+    allowedAttributes: {
+      'svg': ['xmlns', 'viewBox', 'width', 'height', 'preserveAspectRatio', 'version'],
+      'g': ['id', 'transform', 'fill', 'stroke', 'stroke-width', 'opacity'],
+      'path': ['id', 'd', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'circle': ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'rect': ['x', 'y', 'width', 'height', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'line': ['x1', 'y1', 'x2', 'y2', 'stroke', 'stroke-width', 'transform'],
+      'polyline': ['points', 'fill', 'stroke', 'stroke-width', 'transform'],
+      'polygon': ['points', 'fill', 'stroke', 'stroke-width', 'transform'],
+      'ellipse': ['cx', 'cy', 'rx', 'ry', 'fill', 'stroke', 'stroke-width', 'transform', 'opacity'],
+      'text': ['x', 'y', 'font-size', 'font-family', 'fill', 'text-anchor', 'transform'],
+      'tspan': ['x', 'y', 'dx', 'dy', 'font-size', 'font-family', 'fill'],
+      'linearGradient': ['id', 'x1', 'y1', 'x2', 'y2', 'gradientUnits'],
+      'radialGradient': ['id', 'cx', 'cy', 'r', 'fx', 'fy', 'gradientUnits'],
+      'stop': ['offset', 'stop-color', 'stop-opacity'],
+      'use': ['href', 'xlink:href', 'x', 'y', 'width', 'height'],
+      'image': ['href', 'xlink:href', 'x', 'y', 'width', 'height'],
+      'clipPath': ['id'],
+      'mask': ['id'],
+      'pattern': ['id', 'x', 'y', 'width', 'height', 'patternUnits'],
+      'marker': ['id', 'markerWidth', 'markerHeight', 'refX', 'refY', 'orient'],
+      'animate': ['attributeName', 'from', 'to', 'dur', 'repeatCount'],
+      'animateTransform': ['attributeName', 'type', 'from', 'to', 'dur', 'repeatCount']
+    },
+    // No javascript: or data: URLs
+    allowedSchemes: ['http', 'https'],
+    // Disallow script tags and event handlers
+    allowedScriptHostnames: [],
+    allowedScriptDomains: [],
+    // Explicitly disallow script and other dangerous tags
+    disallowedTagsMode: 'discard',
+    // Remove all event handler attributes
+    allowedIframeHostnames: [],
+    // Parse as XML to preserve SVG structure
+    parser: {
+      lowerCaseTags: false,
+      lowerCaseAttributeNames: false
+    }
+  });
+}
+
+/**
+ * Sanitizes task comment content to prevent XSS attacks and open redirects
+ * Allows safe HTML tags for mentions and basic formatting while blocking dangerous content
+ * External links are completely removed to prevent open redirect attacks
+ * 
+ * @param content - The comment content to sanitize
+ * @returns Sanitized content safe for storage and display
+ */
+export function sanitizeCommentContent(content: string): string {
+  if (!content) return "";
+
+  // Use sanitize-html with strict configuration
+  // This allows mentions (<span class="mentions">) and basic formatting but NO external links
+  return sanitizeHtml(content, {
+    // Only allow safe formatting tags - NO links to prevent open redirect attacks
+    allowedTags: ['b', 'i', 'em', 'strong', 'p', 'br', 'span'],
+    allowedAttributes: {
+      // Only allow class attribute on span for mentions
+      'span': ['class']
+    },
+    // No URL schemes allowed since we're not allowing links
+    allowedSchemes: [],
+    // Remove dangerous protocols and event handlers
+    allowedScriptHostnames: [],
+    allowedScriptDomains: [],
+    // Remove any script tags, event handlers, and dangerous attributes
+    disallowedTagsMode: 'discard',
+    enforceHtmlBoundary: true,
+    // Additional security: remove all attributes except explicitly allowed ones
+    allowedClasses: {
+      'span': ['mentions']
+    }
+  });
 }
 
 export function escape(value: string) {

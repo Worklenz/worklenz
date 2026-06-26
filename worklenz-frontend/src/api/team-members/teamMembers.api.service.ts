@@ -59,6 +59,11 @@ export const teamMembersApiService = {
     return response.data;
   },
 
+  updateMemberName: async (id: string, name: string): Promise<IServerResponse<any>> => {
+    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/${id}/name`, { name });
+    return response.data;
+  },
+
   delete: async (id: string): Promise<IServerResponse<any>> => {
     const response = await apiClient.delete<IServerResponse<any>>(`${rootUrl}/${id}`);
     return response.data;
@@ -96,6 +101,85 @@ export const teamMembersApiService = {
     body: ITeamMemberCreateRequest
   ): Promise<IServerResponse<any>> => {
     const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/add-member/${id}`, body);
+    return response.data;
+  },
+
+  // Team invitation link methods
+  generateInvitationLink: async (body: {
+    job_title_id?: string;
+    role_name?: string;
+    is_admin?: boolean;
+    max_usage?: number | null;
+  }): Promise<
+    IServerResponse<{
+      id: string;
+      token: string;
+      invitation_url: string;
+      expires_at: string;
+      expires_in_days: number;
+      created_at: string;
+    }>
+  > => {
+    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/invitation-link`, body);
+    return response.data;
+  },
+
+  getInvitationLinkStatus: async (): Promise<
+    IServerResponse<{
+      has_active_link: boolean;
+      invitation_url?: string;
+      expires_at?: string;
+      usage_count?: number;
+      max_usage?: number | null;
+      created_at?: string;
+    }>
+  > => {
+    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/invitation-link/status`);
+    return response.data;
+  },
+
+  revokeInvitationLink: async (): Promise<IServerResponse<any>> => {
+    const response = await apiClient.put<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/revoke`,
+      {}
+    );
+    return response.data;
+  },
+
+  validateInvitationLink: async (
+    token: string
+  ): Promise<
+    IServerResponse<{
+      team: {
+        id: string;
+        name: string;
+        owner_name: string;
+      };
+      invitation: {
+        expires_at: string;
+        job_title_id?: string;
+        role_name: string;
+        is_admin: boolean;
+      };
+    }>
+  > => {
+    const response = await apiClient.get<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/validate/${token}`
+    );
+    return response.data;
+  },
+
+  acceptInvitationByLink: async (
+    token: string,
+    body: {
+      name: string;
+      email: string;
+    }
+  ): Promise<IServerResponse<any>> => {
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/invitation-link/accept/${token}`,
+      body
+    );
     return response.data;
   },
 };

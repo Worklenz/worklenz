@@ -7,3 +7,34 @@
 .custom-two-colors-row-table .ant-table-row:hover .dependency-actions {
   opacity: 1;
 }
+
+/* ── Light mode (default) ── */
+.dependency-search-select-dropdown {
+  background-color: #f5f5f5 !important;
+}
+
+.dependency-search-select-dropdown .ant-select-item-empty {
+  background-color: #f5f5f5;
+  color: #717171;
+}
+
+.dependency-search-select-dropdown .ant-empty-description {
+  color: #717171;
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"] .dependency-search-select-dropdown,
+.ant-dark .dependency-search-select-dropdown {
+  background-color: #2a2a2a !important;
+}
+
+[data-theme="dark"] .dependency-search-select-dropdown .ant-select-item-empty,
+.ant-dark .dependency-search-select-dropdown .ant-select-item-empty {
+  background-color: #2a2a2a;
+  color: #cdcbcb;
+}
+
+[data-theme="dark"] .dependency-search-select-dropdown .ant-empty-description,
+.ant-dark .dependency-search-select-dropdown .ant-empty-description {
+  color: #cdcbcb;
+}

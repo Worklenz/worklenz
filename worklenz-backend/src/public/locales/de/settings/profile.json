@@ -7,8 +7,8 @@
   "emailLabel": "E-Mail",
   "emailRequiredError": "E-Mail ist erforderlich",
   "saveChanges": "Änderungen speichern",
-  "profileJoinedText": "Vor einem Monat beigetreten",
-  "profileLastUpdatedText": "Vor einem Monat aktualisiert",
+  "profileJoinedText": "Beigetreten am {{date}}",
+  "profileLastUpdatedText": "Zuletzt aktualisiert am {{date}}",
   "avatarTooltip": "Klicken Sie zum Hochladen eines Avatars",
   "title": "Profil-Einstellungen"
 }

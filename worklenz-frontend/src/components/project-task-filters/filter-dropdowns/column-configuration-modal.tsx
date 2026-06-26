@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Checkbox, Button, Flex, Typography, Space, Divider, message } from '@/shared/antd-imports';
+import {
+  Modal,
+  Checkbox,
+  Button,
+  Flex,
+  Typography,
+  Space,
+  Divider,
+  message,
+} from '@/shared/antd-imports';
 import { SettingOutlined, UpOutlined, DownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 
@@ -67,7 +76,9 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   const handleSave = () => {
     onSave(config);
     setHasChanges(false);
-    message.success('Column configuration saved successfully');
+    message.success(
+      t('columnConfigSaved', { defaultValue: 'Column configuration saved successfully' })
+    );
     onClose();
   };
 
@@ -89,10 +100,17 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
   );
 
   const categoryLabels: Record<string, string> = {
-    basic: 'Basic Information',
-    time: 'Time & Estimation',
-    dates: 'Dates',
-    other: 'Other',
+    basic: t('columnCategoryBasic', { defaultValue: 'Basic Information' }),
+    time: t('columnCategoryTime', { defaultValue: 'Time & Estimation' }),
+    dates: t('columnCategoryDates', { defaultValue: 'Dates' }),
+    other: t('columnCategoryOther', { defaultValue: 'Other' }),
+  };
+
+  const getLocalizedColumnLabel = (column: ColumnConfig) => {
+    if (!column.key) return column.label;
+    return t(`${column.key.replace('_', '').toLowerCase()}Text`, {
+      defaultValue: column.label,
+    });
   };
 
   return (
@@ -100,7 +118,7 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
       title={
         <Flex align="center" gap={8}>
           <SettingOutlined />
-          <span>Configure Show Fields Dropdown</span>
+          <span>{t('configureShowFieldsTitle', { defaultValue: 'Configure Show Fields' })}</span>
         </Flex>
       }
       open={open}
@@ -108,20 +126,22 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
       width={600}
       footer={[
         <Button key="cancel" onClick={onClose}>
-          Cancel
+          {t('cancelText', { defaultValue: 'Cancel' })}
         </Button>,
         <Button key="reset" onClick={handleReset} disabled={!hasChanges}>
-          Reset
+          {t('resetText', { defaultValue: 'Reset' })}
         </Button>,
         <Button key="save" type="primary" onClick={handleSave} disabled={!hasChanges}>
-          Save Configuration
+          {t('saveConfigurationText', { defaultValue: 'Save Configuration' })}
         </Button>,
       ]}
     >
       <div style={{ marginBottom: 16 }}>
         <Typography.Text type="secondary">
-          Configure which columns appear in the "Show Fields" dropdown and their order. Use the
-          up/down arrows to reorder columns.
+          {t('configureShowFieldsDescription', {
+            defaultValue:
+              'Configure which columns appear in the "Show Fields" dropdown and their order. Use the up/down arrows to reorder columns.',
+          })}
         </Typography.Text>
       </div>
 
@@ -150,11 +170,11 @@ const ColumnConfigurationModal: React.FC<ColumnConfigurationModalProps> = ({
                 onChange={() => handleToggleColumn(column.key)}
                 style={{ flex: 1 }}
               >
-                <Typography.Text>{column.label}</Typography.Text>
+                <Typography.Text>{getLocalizedColumnLabel(column)}</Typography.Text>
               </Checkbox>
 
               <Typography.Text type="secondary" style={{ fontSize: '12px', minWidth: '60px' }}>
-                Order: {column.order}
+                {t('orderLabel', { defaultValue: 'Order' })}: {column.order}
               </Typography.Text>
 
               <Space>

@@ -16,9 +16,17 @@ type PinRouteToNavbarButtonProps = {
 const PinRouteToNavbarButton = ({ name, path, adminOnly = false }: PinRouteToNavbarButtonProps) => {
   const navRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
 
+const migratedList = navRoutesList.map(item =>
+    item.path === path && item.name !== name ? { ...item, name } : item
+  );
+  if (JSON.stringify(migratedList) !== JSON.stringify(navRoutesList)) {
+    saveJSONToLocalStorage('navRoutes', migratedList);
+    window.dispatchEvent(new Event('navRoutesUpdated'));
+  }
+
   const [isPinned, setIsPinned] = useState(
     // this function check the current name is available in local storage's navRoutes list if it's available then isPinned state will be true
-    navRoutesList.filter(item => item.name === name).length && true
+    migratedList.filter(item => item.name === name).length > 0
   );
 
   // this function handle pin to the navbar
@@ -35,6 +43,9 @@ const PinRouteToNavbarButton = ({ name, path, adminOnly = false }: PinRouteToNav
 
     setIsPinned(prev => !prev);
     saveJSONToLocalStorage('navRoutes', newNavRoutesList);
+
+    // Notify navbar to re-read localStorage immediately (fixes real-time sidebar update)
+    window.dispatchEvent(new Event('navRoutesUpdated'));
   };
 
   return (

@@ -1,0 +1,103 @@
+name: Publish Open-Core
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Private branch to publish from'
+        required: false
+        default: 'main'
+      dry_run:
+        description: 'Dry run only (no push)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  verify:
+    name: Verify CE build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: worklenz_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || 'main' }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            worklenz-backend/package-lock.json
+            worklenz-frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: worklenz-backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: worklenz-frontend
+
+      - name: Run CE verification (tsc + leak guard)
+        run: ./scripts/verify-ce-build.sh
+
+      - name: Initialize CE database schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d worklenz_test -f worklenz-backend/database/sql/0_extensions.sql || true
+          psql -h localhost -U postgres -d worklenz_test -f worklenz-backend/database/sql/1_tables.sql
+          psql -h localhost -U postgres -d worklenz_test -f worklenz-backend/database/sql/2_dml.sql || true
+          psql -h localhost -U postgres -d worklenz_test -f worklenz-backend/database/sql/3_views.sql || true
+          psql -h localhost -U postgres -d worklenz_test -f worklenz-backend/database/sql/4_functions.sql || true
+
+      - name: Build backend (CE)
+        run: npm run build
+        working-directory: worklenz-backend
+        env:
+          EDITION: ce
+
+      - name: Run smoke test
+        run: ./scripts/verify-ce-build.sh --smoke
+        env:
+          EDITION: ce
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: worklenz_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+
+  publish:
+    name: Publish to public repo
+    needs: verify
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.dry_run }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch || 'main' }}
+          fetch-depth: 0
+
+      - name: Publish open-core
+        env:
+          PUBLIC_REMOTE_URL: ${{ secrets.PUBLIC_REMOTE_URL }}
+          PRIVATE_BRANCH: ${{ inputs.branch || 'main' }}
+        run: ./scripts/publish-core.sh --branch main

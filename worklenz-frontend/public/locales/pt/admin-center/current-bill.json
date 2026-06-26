@@ -24,6 +24,9 @@
   "paymentMethod": "Método de Pagamento",
   "status": "Status",
   "ltdUsers": "Puedes agregar hasta {{ltd_users}} usuarios.",
+  "appsumoBusinessUnlockTitle": "Desbloqueie o plano Business com 5 códigos AppSumo",
+  "appsumoBusinessUnlockDescription": "Resgate {{required}} códigos AppSumo para desbloquear automaticamente os recursos do plano Business. Você resgatou {{count}} de {{required}} códigos.",
+  "redeemAnotherCode": "Resgatar outro código",
 
   "drawerTitle": "Resgatar Código",
   "label": "Resgatar Código",
@@ -34,6 +37,7 @@
   "seatLabel": "Número de assentos",
   "freePlan": "Plano Gratuito",
   "startup": "Startup",
+  "pro": "Pro",
   "business": "Empresarial",
   "tag": "Mais Popular",
   "enterprise": "Enterprise",
@@ -110,5 +114,7 @@
   "currentSeatsText": "Atualmente você tem {{seats}} assentos disponíveis.",
   "selectSeatsText": "Selecione o número de assentos adicionais para comprar.",
   "purchase": "Comprar",
-  "contactSales": "Fale com vendas"
+  "contactSales": "Fale com vendas",
+  "managementUrl": "URL de gerenciamento",
+  "updateCardDetails": "Atualizar dados do cartão"
 }

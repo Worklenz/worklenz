@@ -3,9 +3,9 @@
   "client": "Client",
   "category": "Category",
   "status": "Status",
+  "priority": "Priority",
   "tasksProgress": "Tasks Progress",
   "updated_at": "Last Updated",
-  "members": "Members",
   "setting": "Settings",
   "projects": "Projects",
   "refreshProjects": "Refresh projects",
@@ -27,8 +27,12 @@
   "listView": "List View",
   "groupView": "Group View",
   "groupBy": {
+    "priority": "Priority",
     "category": "Category",
-    "client": "Client"
+    "client": "Client",
+    "priorities": "priorities",
+    "categories": "categories",
+    "clients": "clients"
   },
   "noPermission": "You don't have permission to perform this action"
 }

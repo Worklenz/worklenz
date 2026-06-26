@@ -48,5 +48,12 @@
   "weightedProgressTooltip": "Calcular o progresso com base nos pesos das subtarefas",
   "timeProgress": "Progresso Baseado em Tempo",
   "timeProgressTooltip": "Calcular o progresso com base no tempo estimado",
+  "autoAssignTaskCreator": "Atribuir Tarefas ao Criador",
+  "autoAssignTaskCreatorTooltip": "Atribuir automaticamente novas tarefas ao membro da equipe que as cria",
+  "generalTab": "Geral",
+  "advancedSettingsTab": "Configurações Avançadas",
+  "progressSettingsDescription": "Configure como o progresso da tarefa é calculado para este projeto. Apenas um método pode estar ativo por vez.",
+  "taskSettings": "Configurações de Tarefas",
+  "taskSettingsDescription": "Configure o comportamento padrão para tarefas criadas neste projeto.",
   "enterProjectKey": "Insira a chave do projeto"
 }

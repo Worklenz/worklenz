@@ -6,6 +6,8 @@ import { IBillingConfigurationCountry } from '@/types/admin-center/country.types
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { IBillingConfiguration } from '@/types/admin-center/admin-center.types';
 import logger from '@/utils/errorLogger';
+import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
+import PhoneInput from '@/components/PhoneInput/PhoneInput';
 
 const Configuration: React.FC = React.memo(() => {
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
@@ -92,11 +94,6 @@ const Configuration: React.FC = React.memo(() => {
   const dividerStyle = useMemo(() => ({ margin: '16px 0' }), []);
   const buttonColStyle = useMemo(() => ({ paddingLeft: '12px' }), []);
 
-  const handlePhoneInput = useCallback((e: React.FormEvent<HTMLInputElement>) => {
-    const input = e.target as HTMLInputElement;
-    input.value = input.value.replace(/[^0-9]/g, '');
-  }, []);
-
   return (
     <div>
       <Card title={<span style={titleStyle}>Billing Details</span>} style={cardStyle}>
@@ -137,12 +134,15 @@ const Configuration: React.FC = React.memo(() => {
                 layout="vertical"
                 rules={[
                   {
-                    pattern: /^\d{10}$/,
-                    message: 'Phone number must be exactly 10 digits',
+                    validator: (_, value) => {
+                      if (!value || value.trim() === '') return Promise.resolve();
+                      if (validatePhoneNumber(value)) return Promise.resolve();
+                      return Promise.reject(new Error('Invalid phone number for selected country'));
+                    },
                   },
                 ]}
               >
-                <Input placeholder="Phone Number" maxLength={10} onInput={handlePhoneInput} />
+                <PhoneInput placeholder="Enter phone number" />
               </Form.Item>
             </Col>
           </Row>
