@@ -3,6 +3,22 @@ import { PickerType, ScheduleData } from '@/types/schedule/schedule-v2.types';
 import logger from '@/utils/errorLogger';
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
+interface WorkloadData {
+  id: string;
+  name: string;
+  totalHours: number;
+  allocatedHours: number;
+  availableHours: number;
+  utilizationPercent: number;
+  projectCount: number;
+  status: 'available' | 'normal' | 'fully-allocated' | 'overallocated';
+  conflicts?: Array<{
+    type: 'overallocation' | 'schedule-conflict';
+    message: string;
+    severity: 'low' | 'medium' | 'high';
+  }>;
+}
+
 interface scheduleState {
   isSettingsDrawerOpen: boolean;
   isScheduleDrawerOpen: boolean;
@@ -15,6 +31,13 @@ interface scheduleState {
   type: PickerType;
   date: Date;
   dayCount: number;
+  // Resource Management State
+  workloadData: WorkloadData[];
+  selectedMemberId: string | null;
+  capacityReport: any;
+  resourceConflicts: any[];
+  allocationLoading: boolean;
+  rebalanceLoading: boolean;
 }
 
 const initialState: scheduleState = {
@@ -29,6 +52,13 @@ const initialState: scheduleState = {
   type: 'month',
   date: new Date(),
   dayCount: 0,
+  // Resource Management Initial State
+  workloadData: [],
+  selectedMemberId: null,
+  capacityReport: null,
+  resourceConflicts: [],
+  allocationLoading: false,
+  rebalanceLoading: false,
 };
 
 export const fetchTeamData = createAsyncThunk('schedule/fetchTeamData', async () => {
@@ -110,6 +140,108 @@ export const createSchedule = createAsyncThunk(
   }
 );
 
+// Resource Management Async Thunks
+export const fetchMemberWorkload = createAsyncThunk(
+  'schedule/fetchMemberWorkload',
+  async ({
+    memberId,
+    startDate,
+    endDate,
+  }: {
+    memberId?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const response = await scheduleAPIService.fetchMemberWorkload({ memberId, startDate, endDate });
+    if (!response.done) {
+      throw new Error('Failed to fetch workload data');
+    }
+    return response.body;
+  }
+);
+
+export const updateResourceAllocation = createAsyncThunk(
+  'schedule/updateResourceAllocation',
+  async ({
+    memberId,
+    projectId,
+    allocatedHours,
+    startDate,
+    endDate,
+  }: {
+    memberId: string;
+    projectId: string;
+    allocatedHours: number;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const response = await scheduleAPIService.updateResourceAllocation({
+      memberId,
+      projectId,
+      allocatedHours,
+      startDate,
+      endDate,
+    });
+    if (!response.done) {
+      throw new Error('Failed to update resource allocation');
+    }
+    return response.body;
+  }
+);
+
+export const rebalanceWorkload = createAsyncThunk(
+  'schedule/rebalanceWorkload',
+  async ({
+    memberIds,
+    strategy = 'even',
+    maxUtilization = 100,
+  }: {
+    memberIds?: string[];
+    strategy?: 'even' | 'skills' | 'priority';
+    maxUtilization?: number;
+  }) => {
+    const response = await scheduleAPIService.rebalanceWorkload({
+      memberIds,
+      strategy,
+      maxUtilization,
+    });
+    if (!response.done) {
+      throw new Error('Failed to rebalance workload');
+    }
+    return response.body;
+  }
+);
+
+export const fetchCapacityReport = createAsyncThunk(
+  'schedule/fetchCapacityReport',
+  async ({
+    startDate,
+    endDate,
+    teamId,
+  }: {
+    startDate: string;
+    endDate: string;
+    teamId?: string;
+  }) => {
+    const response = await scheduleAPIService.fetchCapacityReport({ startDate, endDate, teamId });
+    if (!response.done) {
+      throw new Error('Failed to fetch capacity report');
+    }
+    return response.body;
+  }
+);
+
+export const fetchResourceConflicts = createAsyncThunk(
+  'schedule/fetchResourceConflicts',
+  async () => {
+    const response = await scheduleAPIService.fetchResourceConflicts();
+    if (!response.done) {
+      throw new Error('Failed to fetch resource conflicts');
+    }
+    return response.body;
+  }
+);
+
 const scheduleSlice = createSlice({
   name: 'scheduleReducer',
   initialState,
@@ -136,6 +268,34 @@ const scheduleSlice = createSlice({
     },
     setDayCount(state, action) {
       state.dayCount = action.payload;
+    },
+    // Resource Management Reducers
+    setSelectedMember(state, action) {
+      state.selectedMemberId = action.payload;
+    },
+    clearWorkloadData(state) {
+      state.workloadData = [];
+    },
+    updateMemberAllocation(state, action) {
+      const { memberId, projectId, allocatedHours } = action.payload;
+      const member = state.workloadData.find(m => m.id === memberId);
+      if (member) {
+        member.allocatedHours = allocatedHours;
+        member.availableHours = member.totalHours - allocatedHours;
+        member.utilizationPercent = (allocatedHours / member.totalHours) * 100;
+
+        // Update status based on utilization
+        if (member.utilizationPercent > 100) member.status = 'overallocated';
+        else if (member.utilizationPercent === 100) member.status = 'fully-allocated';
+        else if (member.utilizationPercent >= 75) member.status = 'normal';
+        else member.status = 'available';
+      }
+    },
+    triggerScheduleRefresh(state) {
+      // This action is used to signal that a refresh should happen
+      // The actual refresh logic is handled in the component
+      // We just increment a counter to trigger useEffect
+      state.error = null;
     },
   },
   extraReducers: builder => {
@@ -219,6 +379,69 @@ const scheduleSlice = createSlice({
       .addCase(createSchedule.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to send schedule';
+      })
+      // Resource Management Extra Reducers
+      .addCase(fetchMemberWorkload.pending, state => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMemberWorkload.fulfilled, (state, action) => {
+        state.workloadData = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchMemberWorkload.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch workload data';
+      })
+      .addCase(updateResourceAllocation.pending, state => {
+        state.allocationLoading = true;
+        state.error = null;
+      })
+      .addCase(updateResourceAllocation.fulfilled, (state, action) => {
+        state.allocationLoading = false;
+        // Update the local state with the new allocation
+        // This will be handled by the updateMemberAllocation reducer
+      })
+      .addCase(updateResourceAllocation.rejected, (state, action) => {
+        state.allocationLoading = false;
+        state.error = action.error.message || 'Failed to update allocation';
+      })
+      .addCase(rebalanceWorkload.pending, state => {
+        state.rebalanceLoading = true;
+        state.error = null;
+      })
+      .addCase(rebalanceWorkload.fulfilled, (state, action) => {
+        state.rebalanceLoading = false;
+        // Refresh workload data after rebalancing
+        if (action.payload.workloadData) {
+          state.workloadData = action.payload.workloadData;
+        }
+      })
+      .addCase(rebalanceWorkload.rejected, (state, action) => {
+        state.rebalanceLoading = false;
+        state.error = action.error.message || 'Failed to rebalance workload';
+      })
+      .addCase(fetchCapacityReport.pending, state => {
+        state.loading = true;
+      })
+      .addCase(fetchCapacityReport.fulfilled, (state, action) => {
+        state.capacityReport = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchCapacityReport.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch capacity report';
+      })
+      .addCase(fetchResourceConflicts.pending, state => {
+        state.loading = true;
+      })
+      .addCase(fetchResourceConflicts.fulfilled, (state, action) => {
+        state.resourceConflicts = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchResourceConflicts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch resource conflicts';
       });
   },
 });
@@ -231,5 +454,9 @@ export const {
   setDate,
   setType,
   setDayCount,
+  setSelectedMember,
+  clearWorkloadData,
+  updateMemberAllocation,
+  triggerScheduleRefresh,
 } = scheduleSlice.actions;
 export default scheduleSlice.reducer;

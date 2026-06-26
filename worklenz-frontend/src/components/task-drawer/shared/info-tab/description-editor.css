@@ -1,0 +1,278 @@
+.description-editor-shell .description-content a {
+  color: #1890ff;
+  text-decoration: underline;
+}
+
+.description-editor-shell .description-content a:hover {
+  color: #40a9ff;
+}
+
+.description-editor-shell .description-content .mentions {
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: 0 1px;
+  background-color: #f0f2f5;
+  color: #1890ff;
+  border: 1px solid #1890ff;
+}
+
+.description-editor-shell .description-editor-preview {
+  min-height: 120px;
+  padding:12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  cursor: text;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.description-editor-shell .description-editor-preview.is-hovered {
+  background-color: #fafafa;
+}
+
+.description-editor-shell .description-placeholder {
+  color: #999999;
+  font-style: italic;
+}
+
+.description-editor-shell .description-editor-active {
+  position: relative;
+  border-radius: 8px;
+  overflow:visible;
+}
+
+.description-editor-shell .description-editor-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.description-editor-shell .ql-toolbar.ql-snow {
+  border: 1px solid #d9d9d9;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: #f9fafb;
+}
+
+.description-editor-shell .ql-container.ql-snow {
+  border: 1px solid #d9d9d9;
+  border-radius: 0 0 8px 8px;
+  min-height: 200px;
+  max-height:400px;
+  overflow-y:visible;
+  background: #ffffff;
+  color: #141414;
+}
+
+.description-editor-shell .ql-editor {
+  min-height: 160px;
+  max-height: 400px;
+  overflow-y:auto;
+  font-size: 14px;
+  line-height: 1.6;
+  padding:12px;
+}
+
+.description-editor-shell .description-editor-footer {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.description-editor-shell.is-dark .description-content a {
+  color: #4dabf7;
+}
+
+.description-editor-shell.is-dark .description-content a:hover {
+  color: #74c0fc;
+}
+
+.description-editor-shell.is-dark .description-content .mentions {
+  background-color: #1f3344;
+  color: #69b1ff;
+  border-color: #69b1ff;
+}
+
+.description-editor-shell.is-dark .description-editor-preview {
+  border-color: #3a3a3a;
+  background-color: #1f1f1f;
+  color: #f0f0f0;
+}
+
+.description-editor-shell.is-dark .description-editor-preview.is-hovered {
+  background-color: #262626;
+}
+
+.description-editor-shell.is-dark .description-placeholder {
+  color: #8b8b8b;
+}
+
+.description-editor-shell.is-dark .description-editor-loading {
+  background: rgba(30, 30, 30, 0.74);
+  color: #f0f0f0;
+}
+
+.description-editor-shell.is-dark .ql-toolbar.ql-snow {
+  border-color: #3a3a3a;
+  background: #262626;
+}
+
+.description-editor-shell.is-dark .ql-toolbar.ql-snow .ql-stroke {
+  stroke: #d6d6d6;
+}
+
+.description-editor-shell.is-dark .ql-toolbar.ql-snow .ql-fill {
+  fill: #d6d6d6;
+}
+
+.description-editor-shell.is-dark .ql-toolbar.ql-snow .ql-picker {
+  color: #d6d6d6;
+}
+
+.description-editor-shell.is-dark .ql-container.ql-snow {
+  border-color: #3a3a3a;
+  background: #1f1f1f;
+  color: #f0f0f0;
+}
+
+.description-editor-shell.is-dark .ql-editor.ql-blank::before {
+  color: #8b8b8b;
+}
+
+.description-editor-shell.is-dark .description-editor-footer {
+  color: #9f9f9f;
+}
+/* ── List formatting fix for preview mode ── */
+.description-editor-shell .description-content ul,
+.description-editor-shell .description-content ol {
+ list-style: revert !important;
+ padding-left: 1.5em !important;
+margin-top: 0.4em !important;
+ margin-bottom: 0.4em !important;
+}
+
+
+.description-editor-shell .description-content ul {
+ list-style-type: disc !important;
+}
+
+
+.description-editor-shell .description-content ol {
+ list-style-type: decimal !important;
+}
+
+
+.description-editor-shell .description-content li {
+ display: list-item !important;
+ padding-left: 0 !important;
+ margin: 0.15em 0 !important;
+}
+ul.ql-nested-list,
+ol.ql-nested-list {
+ margin-left: 2.5em !important;
+ margin-top: 0 !important;
+ margin-bottom: 0 !important;
+}
+/* ── Fix list indentation inside editor mode ── */
+.description-editor-shell .ql-editor ol,
+.description-editor-shell .ql-editor ul {
+ padding-left: 1.5em !important;
+}
+
+
+.description-editor-shell .ql-editor li {
+ display: list-item !important;
+}
+
+
+/* Quill indent levels inside editor */
+.description-editor-shell .ql-editor .ql-indent-1 {
+ padding-left: 3em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-2 {
+ padding-left: 4.5em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-3 {
+ padding-left: 6em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-4 {
+ padding-left: 7.5em !important;
+}
+
+
+.description-editor-shell .ql-editor .ql-indent-5 {
+ padding-left: 9em !important;
+}
+
+
+.description-editor-shell .ql-editor ol + ul {
+ margin-left: 2.5em !important;
+ margin-top: 0 !important;
+}
+/* ── Fix ol counter continuation in editor mode ── */
+
+
+/* Reset counter on the editor container */
+.description-editor-shell .ql-editor {
+ counter-reset: ol-counter;
+}
+
+
+/* Each ol increments but does NOT reset — so numbering continues */
+.description-editor-shell .ql-editor ol {
+ counter-reset: none !important;
+ list-style: none !important;
+ padding-left: 1.5em !important;
+}
+
+
+/* Each li uses the running counter */
+.description-editor-shell .ql-editor ol li {
+ counter-increment: ol-counter;
+ list-style: none !important;
+}
+
+
+.description-editor-shell .ql-editor ol li::before {
+ content: counter(ol-counter) ". ";
+ font-variant-numeric: tabular-nums;
+}
+
+
+/* Reset counter when a non-list element appears between ol groups */
+.description-editor-shell .ql-editor p,
+.description-editor-shell .ql-editor h2,
+.description-editor-shell .ql-editor h3 {
+ counter-reset: ol-counter;
+}
+
+
+/* ul between ol groups should NOT reset the counter */
+.description-editor-shell .ql-editor ul {
+ counter-reset: none !important;
+}
+
+/* FIX: prevent tooltip from rendering off-screen to the left */
+.description-editor-shell .ql-tooltip {
+  left: 0 !important;
+  transform: none !important;
+  z-index: 100;
+}
+
+.description-editor-shell.is-dark .ql-snow .ql-tooltip input[type='text'] {
+  background-color: #2b2b2b !important;
+  color: #ffffff !important;
+  border: 1px solid #6b6b6b !important;
+}

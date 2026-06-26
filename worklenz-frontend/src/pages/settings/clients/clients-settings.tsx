@@ -71,7 +71,7 @@ const ClientsSettings: React.FC = () => {
 
   useEffect(() => {
     getClients();
-  }, [searchQuery]);
+  }, [searchQuery, pagination]);
 
   const handleClientSelect = (record: IClientViewModel) => {
     setSelectedClient(record);
@@ -137,7 +137,7 @@ const ClientsSettings: React.FC = () => {
                     shape="default"
                     icon={<DeleteOutlined />}
                     size="small"
-                    onClick={() => deleteClientHandler(record.id)}
+                  // ✅ REMOVED onClick handler - Popconfirm will handle the confirmation
                   />
                 </Tooltip>
               </Popconfirm>
@@ -157,7 +157,7 @@ const ClientsSettings: React.FC = () => {
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('searchPlaceholder')}
+              placeholder={t('search', { defaultValue: 'Search' })}
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
             />
@@ -192,6 +192,17 @@ const ClientsSettings: React.FC = () => {
         pagination={{
           showSizeChanger: true,
           defaultPageSize: DEFAULT_PAGE_SIZE,
+          current: pagination.current,
+          pageSize: pagination.pageSize,
+        }}
+        onChange={(paginationInfo, _filters, sorter) => {
+          const sort = Array.isArray(sorter) ? sorter[0] : sorter;
+          setPagination(prev => ({
+            current: paginationInfo.current ?? prev.current,
+            pageSize: paginationInfo.pageSize ?? prev.pageSize,
+            field: (sort?.field as string) ?? prev.field,
+            order: sort?.order === 'ascend' ? 'asc' : sort?.order === 'descend' ? 'desc' : prev.order,
+          }));
         }}
       />
       <ClientDrawer

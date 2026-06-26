@@ -39,7 +39,14 @@ export interface IProjectViewModel extends IProject {
   project_manager?: ITeamMemberViewModel | null;
   project_manager_id?: string | null;
 
+  priority_id?: string | null;
+  priority_name?: string | null;
+  priority_color?: string | null;
+  priority_color_dark?: string | null;
+
   team_member_default_view?: string;
+  task_list_group_by?: 'status' | 'priority' | 'phase';
+  board_group_by?: 'status' | 'priority' | 'phase';
   working_days?: number;
 
   id?: string;
@@ -65,4 +72,9 @@ export interface IProjectViewModel extends IProject {
   use_manual_progress?: boolean;
   use_weighted_progress?: boolean;
   use_time_progress?: boolean;
+  auto_assign_task_creator?: boolean;
+  restrict_task_creation?: boolean;
+  currency?: string;
+  budget?: number;
+  calculation_method?: 'hourly' | 'man_days';
 }

@@ -1,0 +1,105 @@
+{
+  "title": "Reports",
+  "subtitle": "Time tracking and performance insights for your team members",
+
+  "dateRange": {
+    "label": "Date Range",
+    "showing": "Showing",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "lastWeek": "Last Week",
+    "last7Days": "Last 7 Days",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "custom": "Custom Range",
+    "apply": "Apply"
+  },
+
+  "summary": {
+    "totalMembers": "Total Members",
+    "totalMembersTooltip": "Total number of team members who have logged time during the selected date range.",
+    "totalTimeLogged": "Total Time Logged",
+    "totalTimeLoggedTooltip": "Total time logged by all team members during the selected date range.",
+    "activeProjects": "Active Projects",
+    "activeProjectsTooltip": "Maximum number of projects worked on by any single team member during the selected date range.",
+    "avgCompletionRate": "Avg Completion Rate",
+    "hours": "hours"
+  },
+
+  "timeTracking": {
+    "title": "Time Tracking Summary",
+    "chartTitle": "Team Time Tracking Chart",
+    "member": "Member",
+    "teamMembers": "Team Members",
+    "totalTime": "Total Time",
+    "totalHours": "Total Hours",
+    "loggedTime": "Logged Time",
+    "logsCount": "Logs Count",
+    "activeDays": "Active Days",
+    "lastActivity": "Last Activity",
+    "actions": "Actions",
+    "manualLogs": "Manual Logs",
+    "timerLogs": "Timer Logs",
+    "projects": "Projects",
+    "viewDetails": "View Details",
+    "noData": "No time logs found for the selected period",
+    "totalTimeTooltip": "Total time logged by this member during the selected date range. Includes all time entries across all projects and tasks.",
+    "logsCountTooltip": "Total number of individual time log entries created by this member during the selected date range.",
+    "projectsTooltip": "Number of distinct projects this member logged time on during the selected date range.",
+    "activeDaysTooltip": "Number of distinct days this member logged time during the selected date range."
+  },
+
+  "performance": {
+    "title": "Team Performance",
+    "member": "Member",
+    "tasks": "Tasks",
+    "assigned": "assigned",
+    "completed": "completed",
+    "overdue": "overdue",
+    "tasksCompleted": "Tasks Completed",
+    "tasksOverdue": "Tasks Overdue",
+    "completionRate": "Completion Rate",
+    "completionRateTooltip": "Percentage of completed tasks out of total assigned tasks. Calculated as: (Completed Tasks ÷ Assigned Tasks) × 100",
+    "timeLogged": "Time Logged",
+    "timeLoggedTooltip": "Total time logged by this member during the selected date range. Includes all time entries across all projects and tasks.",
+    "activeProjects": "Active Projects",
+    "activeProjectsTooltip": "Number of distinct projects this member logged time on during the selected date range.",
+    "projectsInvolved": "Projects Involved",
+    "noData": "No performance data available"
+  },
+
+  "detailedLogs": {
+    "title": "Detailed Time Logs",
+    "for": "for",
+    "dateTime": "Date & Time",
+    "date": "Date",
+    "project": "Project",
+    "task": "Task",
+    "duration": "Duration",
+    "description": "Description",
+    "method": "Method",
+    "type": "Type",
+    "manual": "Manual",
+    "timer": "Timer",
+    "noLogs": "No detailed logs found",
+    "close": "Close",
+    "timeLogsRange": "time logs"
+  },
+
+  "errors": {
+    "failedToLoad": "Failed to load team reports",
+    "tryAgain": "Please try again",
+    "noTeamMembers": "No team members found",
+    "loadingError": "Error loading data"
+  },
+
+  "loading": {
+    "fetchingData": "Loading team reports...",
+    "fetchingLogs": "Loading detailed logs..."
+  },
+
+  "export": "Export"
+}

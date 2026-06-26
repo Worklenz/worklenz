@@ -1,4 +1,6 @@
 import { ILocalSession } from '@/types/auth/local-session.types';
+import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { ROLE_NAMES } from '@/types/roles/role.types';
 import logger from '@/utils/errorLogger';
 import { deleteSession, getUserSession, hasSession, setSession } from '@/utils/session-helper';
 import { NavigateFunction } from 'react-router-dom';
@@ -14,9 +16,7 @@ class AuthService {
   get role(): string {
     const user = this.getCurrentSession();
     if (!user) return 'Unknown';
-    if (user.owner) return 'Owner';
-    if (user.is_admin) return 'Admin';
-    return 'Member';
+    return getSessionRoleName(user);
   }
 
   // Session management methods
@@ -37,7 +37,8 @@ class AuthService {
   }
 
   public isOwnerOrAdmin(): boolean {
-    return !!(this.getCurrentSession()?.owner || this.getCurrentSession()?.is_admin);
+    const currentRole = getSessionRoleName(this.getCurrentSession());
+    return currentRole === ROLE_NAMES.OWNER || currentRole === ROLE_NAMES.ADMIN;
   }
 
   // Sign out methods

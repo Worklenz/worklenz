@@ -58,5 +58,32 @@
     "timeLoggedTaskAriaLabel": "Aufgabe mit erfasster Zeit:",
     "errorLoadingRecentTasks": "Fehler beim Laden aktueller Aufgaben",
     "errorLoadingTimeLoggedTasks": "Fehler beim Laden der Zeiterfassung"
+  },
+  "activityLogs": {
+    "title": "Letzte Aktivitäten",
+    "refresh": "Aktivitätsprotokolle aktualisieren",
+    "noActivities": "Keine aktuellen Aktivitäten",
+    "deletedProject": "(Gelöscht)",
+    "project": {
+      "created": "{{userName}} hat Projekt {{projectName}} erstellt",
+      "updated": "{{userName}} hat Projekt {{projectName}} aktualisiert",
+      "deleted": "{{userName}} hat Projekt {{projectName}} gelöscht",
+      "archived": "{{userName}} hat Projekt {{projectName}} archiviert",
+      "unarchived": "{{userName}} hat Projekt {{projectName}} dearchiviert",
+      "favorited": "{{userName}} hat Projekt {{projectName}} zu den Favoriten hinzugefügt",
+      "unfavorited": "{{userName}} hat Projekt {{projectName}} aus den Favoriten entfernt",
+      "statusChanged": "{{userName}} hat den Status von Projekt {{projectName}} geändert",
+      "managerAssigned": "{{userName}} hat einen Projektmanager für {{projectName}} zugewiesen",
+      "managerRemoved": "{{userName}} hat den Projektmanager von {{projectName}} entfernt",
+      "memberAdded": "{{userName}} hat {{memberName}} zum Projekt {{projectName}} hinzugefügt",
+      "memberRemoved": "{{userName}} hat {{memberName}} aus dem Projekt {{projectName}} entfernt"
+    },
+    "task": {
+      "created": "{{userName}} hat Aufgabe {{taskName}} erstellt",
+      "updated": "{{userName}} hat Aufgabe {{taskName}} aktualisiert"
+    },
+    "generic": {
+      "activity": "{{userName}} hat eine Aktivität durchgeführt"
+    }
   }
 }

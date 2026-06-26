@@ -63,8 +63,10 @@ export const {
 } = selectionSlice.actions;
 
 // Selectors
-export const selectSelectedTaskIds = (state: RootState) => state.taskManagementSelection.selectedTaskIds;
-export const selectLastSelectedTaskId = (state: RootState) => state.taskManagementSelection.lastSelectedTaskId;
+export const selectSelectedTaskIds = (state: RootState) =>
+  state.taskManagementSelection.selectedTaskIds;
+export const selectLastSelectedTaskId = (state: RootState) =>
+  state.taskManagementSelection.lastSelectedTaskId;
 export const selectIsTaskSelected = (state: RootState, taskId: string) =>
   state.taskManagementSelection.selectedTaskIds.includes(taskId);
 

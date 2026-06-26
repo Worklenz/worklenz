@@ -1,0 +1,776 @@
+.holiday-calendar {
+  width: 100%;
+}
+
+.holiday-calendar .ant-picker-calendar {
+  background: transparent;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.holiday-calendar.dark .ant-picker-calendar {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.holiday-calendar .ant-picker-calendar-header {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, #fafbfc 0%, #f1f3f4 100%);
+  border-bottom: 1px solid #e8eaed;
+  border-radius: 12px 12px 0 0;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-header {
+  background: linear-gradient(135deg, #1f1f1f 0%, #262626 100%);
+  border-bottom-color: #303030;
+}
+
+.holiday-calendar .ant-picker-calendar-date {
+  position: relative;
+  height: 85px;
+  padding: 6px 10px;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date {
+  border-color: #303030;
+  background: #1f1f1f;
+}
+
+/* Calendar cell wrapper */
+.calendar-cell {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+/* Working day styles */
+.calendar-cell.working-day {
+  background: #ffffff;
+  border: 1px solid #d9d9d9;
+  position: relative;
+}
+
+.calendar-cell.working-day::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(82, 196, 26, 0.04);
+  border-radius: inherit;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.holiday-calendar.dark .calendar-cell.working-day {
+  background: #1f1f1f;
+  border: 1px solid #434343;
+}
+
+.holiday-calendar.dark .calendar-cell.working-day::before {
+  background: rgba(82, 196, 26, 0.06);
+}
+
+/* Non-working day styles */
+.calendar-cell.non-working-day {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  opacity: 0.65;
+}
+
+.holiday-calendar.dark .calendar-cell.non-working-day {
+  background: #141414;
+  border: 1px solid #303030;
+  opacity: 0.65;
+}
+
+/* Today styles */
+.calendar-cell.today {
+  border: 2px solid #1890ff;
+  box-shadow:
+    0 0 0 3px rgba(24, 144, 255, 0.15),
+    0 4px 12px rgba(24, 144, 255, 0.1);
+  animation: todayPulse 3s ease-in-out infinite;
+}
+
+.holiday-calendar.dark .calendar-cell.today {
+  border: 2px solid #177ddc;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.3);
+}
+
+/* Other month styles */
+.calendar-cell.other-month {
+  opacity: 0.4;
+}
+
+.holiday-calendar.dark .calendar-cell.other-month {
+  opacity: 0.3;
+}
+
+.holiday-calendar .ant-picker-calendar-date:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+  border-color: #d9d9d9;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .holiday-calendar .ant-picker-calendar-date:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    border-color: inherit;
+  }
+
+  .holiday-cell .ant-tag:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Working day indicator */
+.working-day-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+}
+
+.working-day-badge {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: #52c41a;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(82, 196, 26, 0.3);
+  transition: all 0.3s ease;
+  border: 1px solid #d9f7be;
+}
+
+.holiday-calendar.dark .working-day-badge {
+  background: #52c41a;
+  box-shadow: 0 1px 3px rgba(82, 196, 26, 0.4);
+  border-color: #237804;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes todayPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(24, 144, 255, 0.15),
+      0 4px 12px rgba(24, 144, 255, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(24, 144, 255, 0.25),
+      0 6px 16px rgba(24, 144, 255, 0.15);
+  }
+}
+
+.holiday-calendar .ant-picker-calendar-date-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: 6px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date-value {
+  color: #ffffff;
+}
+
+.holiday-calendar .ant-picker-calendar-date-content {
+  height: calc(100% - 20px);
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.holiday-cell {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  right: 6px;
+  z-index: 1;
+  max-height: 65%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.holiday-cell .ant-tag {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1.3;
+  padding: 2px 6px;
+  border-radius: 6px;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.holiday-cell .ant-tag:hover {
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  z-index: 10;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: unset;
+  max-width: 200px;
+  position: relative;
+}
+
+.holiday-calendar .ant-picker-calendar-date-today {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date-today {
+  border-color: #177ddc;
+  background: #111b26;
+}
+
+.holiday-calendar .ant-picker-calendar-date-selected {
+  border-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date-selected {
+  border-color: #177ddc;
+  background: #111b26;
+}
+
+.holiday-calendar .ant-picker-calendar-date-other {
+  color: #bfbfbf;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date-other {
+  color: #595959;
+}
+
+.holiday-calendar .ant-picker-calendar-date-other .ant-picker-calendar-date-value {
+  color: #bfbfbf;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-date-other .ant-picker-calendar-date-value {
+  color: #595959;
+}
+
+.holiday-calendar .ant-picker-calendar-mini {
+  border: 1px solid #f0f0f0;
+  border-radius: 6px;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-mini {
+  border-color: #303030;
+  background: #1f1f1f;
+}
+
+.holiday-calendar .ant-picker-calendar-mini .ant-picker-calendar-date {
+  border: none;
+  border-radius: 0;
+}
+
+.holiday-calendar .ant-picker-calendar-mini .ant-picker-calendar-date:hover {
+  background: #f5f5f5;
+}
+
+.holiday-calendar.dark .ant-picker-calendar-mini .ant-picker-calendar-date:hover {
+  background: #2a2a2a;
+}
+
+/* Modal styles */
+.holiday-calendar .ant-modal-content {
+  border-radius: 8px;
+}
+
+.holiday-calendar.dark .ant-modal-content {
+  background: #1f1f1f;
+  border: 1px solid #303030;
+}
+
+.holiday-calendar.dark .ant-modal-header {
+  background: #1f1f1f;
+  border-bottom: 1px solid #303030;
+}
+
+.holiday-calendar.dark .ant-modal-title {
+  color: #ffffff;
+}
+
+.holiday-calendar.dark .ant-modal-close {
+  color: #ffffff;
+}
+
+.holiday-calendar.dark .ant-form-item-label > label {
+  color: #ffffff;
+}
+
+.holiday-calendar.dark .ant-input,
+.holiday-calendar.dark .ant-input-textarea {
+  background: #2a2a2a;
+  border-color: #434343;
+  color: #ffffff;
+}
+
+.holiday-calendar.dark .ant-input:focus,
+.holiday-calendar.dark .ant-input-textarea:focus {
+  border-color: #177ddc;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+.holiday-calendar.dark .ant-select-selector {
+  background: #2a2a2a !important;
+  border-color: #434343 !important;
+  color: #ffffff !important;
+}
+
+.holiday-calendar.dark .ant-select-focused .ant-select-selector {
+  border-color: #177ddc !important;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2) !important;
+}
+
+.holiday-calendar.dark .ant-picker {
+  background: #2a2a2a;
+  border-color: #434343;
+}
+
+.holiday-calendar.dark .ant-picker-input > input {
+  color: #ffffff;
+}
+
+.holiday-calendar.dark .ant-picker-focused {
+  border-color: #177ddc;
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
+}
+
+/* Button styles */
+.holiday-calendar .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.holiday-calendar.dark .ant-btn {
+  border-color: #434343;
+}
+
+.holiday-calendar.dark .ant-btn-primary {
+  background: #177ddc;
+  border-color: #177ddc;
+}
+
+.holiday-calendar.dark .ant-btn-primary:hover {
+  background: #1890ff;
+  border-color: #1890ff;
+}
+
+/* Card styles */
+.holiday-calendar .ant-card {
+  border-radius: 8px;
+  box-shadow:
+    0 1px 2px 0 rgba(0, 0, 0, 0.03),
+    0 1px 6px -1px rgba(0, 0, 0, 0.02),
+    0 2px 4px 0 rgba(0, 0, 0, 0.02);
+}
+
+.holiday-calendar.dark .ant-card {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+.holiday-calendar.dark .ant-card-head {
+  border-bottom-color: #303030;
+}
+
+.holiday-calendar.dark .ant-card-head-title {
+  color: #ffffff;
+}
+
+/* Typography styles */
+.holiday-calendar.dark .ant-typography {
+  color: #ffffff;
+}
+
+.holiday-calendar.dark .ant-typography h5 {
+  color: #ffffff;
+}
+
+/* Space styles */
+.holiday-calendar .ant-space {
+  gap: 8px !important;
+}
+
+/* Tag styles */
+.holiday-calendar .ant-tag {
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.3;
+  padding: 2px 6px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Holiday tag specific styles */
+.holiday-tag.official-holiday {
+  background: #e6f7ff !important;
+  border-color: #91d5ff !important;
+  color: #1890ff !important;
+}
+
+.holiday-tag.custom-holiday {
+  background: #f6ffed !important;
+  border-color: #b7eb8f !important;
+  color: #52c41a !important;
+}
+
+.holiday-calendar.dark .holiday-tag.official-holiday {
+  background: #111b26 !important;
+  border-color: #13334c !important;
+  color: #69c0ff !important;
+}
+
+.holiday-calendar.dark .holiday-tag.custom-holiday {
+  background: #162312 !important;
+  border-color: #274916 !important;
+  color: #95de64 !important;
+}
+
+/* Holiday tag icons */
+.custom-holiday-icon {
+  font-size: 8px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.official-holiday-icon {
+  font-size: 8px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+/* Calendar container and legend */
+.calendar-container {
+  position: relative;
+}
+
+.calendar-legend {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.holiday-calendar.dark .calendar-legend {
+  background: #1f1f1f;
+  border-color: #434343;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
+}
+
+.holiday-calendar.dark .legend-item {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Legend item hover effects */
+.legend-item:hover {
+  transform: translateY(-1px);
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .legend-badge {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .legend-tag {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+.legend-item:hover .legend-dot {
+  transform: scale(1.2);
+  transition: transform 0.2s ease;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.legend-dot.working-day-dot {
+  background: #52c41a;
+  box-shadow: 0 0 0 1px rgba(82, 196, 26, 0.2);
+}
+
+.legend-dot.holiday-dot {
+  background: #ff4d4f;
+  box-shadow: 0 0 0 1px rgba(255, 77, 79, 0.2);
+}
+
+.legend-dot.today-dot {
+  background: #1890ff;
+  box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.2);
+  animation: todayPulse 2s ease-in-out infinite;
+}
+
+.holiday-calendar.dark .legend-dot.working-day-dot {
+  background: #52c41a;
+  box-shadow: 0 0 0 1px rgba(82, 196, 26, 0.3);
+}
+
+.holiday-calendar.dark .legend-dot.holiday-dot {
+  background: #ff4d4f;
+  box-shadow: 0 0 0 1px rgba(255, 77, 79, 0.3);
+}
+
+.holiday-calendar.dark .legend-dot.today-dot {
+  background: #1890ff;
+  box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.3);
+  animation: todayPulse 2s ease-in-out infinite;
+}
+
+/* Legend badge and tag styles */
+.legend-badge {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.legend-badge.working-day-badge {
+  background: #52c41a;
+  border: 1px solid #d9f7be;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(82, 196, 26, 0.2);
+}
+
+.holiday-calendar.dark .legend-badge.working-day-badge {
+  background: #52c41a;
+  border: 1px solid #237804;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(82, 196, 26, 0.3);
+}
+
+.legend-tag {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 500;
+  border: 1px solid;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.legend-tag-text {
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.custom-holiday-legend {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #52c41a;
+  box-shadow: 0 1px 2px rgba(82, 196, 26, 0.1);
+}
+
+.official-holiday-legend {
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  color: #1890ff;
+  box-shadow: 0 1px 2px rgba(24, 144, 255, 0.1);
+}
+
+.holiday-calendar.dark .custom-holiday-legend {
+  background: #162312;
+  border: 1px solid #274916;
+  color: #95de64;
+  box-shadow: 0 1px 2px rgba(149, 222, 100, 0.2);
+}
+
+.holiday-calendar.dark .official-holiday-legend {
+  background: #111b26;
+  border: 1px solid #13334c;
+  color: #69c0ff;
+  box-shadow: 0 1px 2px rgba(105, 192, 255, 0.2);
+}
+
+.legend-tag .custom-holiday-icon,
+.legend-tag .official-holiday-icon {
+  font-size: 7px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .holiday-calendar .ant-picker-calendar-date {
+    height: 70px;
+    padding: 4px 6px;
+    border-radius: 8px;
+  }
+
+  .holiday-calendar .ant-picker-calendar-date-value {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .holiday-cell .ant-tag {
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+
+  .calendar-legend {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 12px;
+  }
+
+  .legend-item:hover {
+    transform: none;
+  }
+
+  .legend-item:hover .legend-badge,
+  .legend-item:hover .legend-tag,
+  .legend-item:hover .legend-dot {
+    transform: none;
+  }
+
+  .working-day-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+
+  .legend-item {
+    font-size: 11px;
+  }
+
+  .holiday-calendar .ant-picker-calendar-header {
+    padding: 16px 18px;
+  }
+
+  .holiday-calendar .ant-picker-calendar-date:hover {
+    transform: scale(1.01);
+  }
+}
+
+@media (max-width: 480px) {
+  .holiday-calendar .ant-picker-calendar-date {
+    height: 65px;
+    padding: 3px 4px;
+  }
+
+  .holiday-calendar .ant-picker-calendar-date-value {
+    font-size: 11px;
+  }
+
+  .holiday-cell .ant-tag {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  .working-day-badge {
+    width: 12px;
+    height: 12px;
+    font-size: 7px;
+  }
+
+  .custom-holiday-icon,
+  .official-holiday-icon {
+    font-size: 7px;
+  }
+
+  .calendar-legend {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .legend-item {
+    font-size: 10px;
+  }
+
+  .legend-badge {
+    width: 14px;
+    height: 14px;
+    font-size: 8px;
+  }
+
+  .legend-tag {
+    padding: 1px 4px;
+    font-size: 8px;
+  }
+
+  .legend-tag-text {
+    font-size: 7px;
+  }
+
+  .legend-tag .custom-holiday-icon,
+  .legend-tag .official-holiday-icon {
+    font-size: 6px;
+  }
+}

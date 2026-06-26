@@ -1,0 +1,136 @@
+{
+  "title": "Integrimi i Slack",
+  "connectWorkspace": "Lidh Hapësirën e Punës së Slack",
+  "addChannelConfig": "Shto Konfigurimin e Kanalit",
+  "manageConfigurations": "Menaxho",
+  "manageTitle": "Menaxho Konfigurimet e Slack",
+  "defaultWorkspaceName": "Hapësira e Punës së Slack",
+  "connectedDescription": "Hapësira e punës së Slack e ekipit tuaj është e lidhur. Konfiguro cilat kanale marrin njoftime për çdo projekt.",
+  "status": {
+    "connected": "I Lidhur"
+  },
+  "stats": {
+    "total": "Gjithsej",
+    "active": "Aktiv",
+    "available": "Të disponueshme"
+  },
+  "setup": {
+    "title": "Udhëzimet e Konfigurimit",
+    "step1": {
+      "title": "1. Lidh Hapësirën Tuaj të Punës",
+      "description": "Kliko butonin 'Lidh Hapësirën e Punës së Slack' më poshtë për të autorizuar Worklenz të hyjë në hapësirën tuaj të punës së Slack."
+    },
+    "step2": {
+      "title": "2. Fto Bot-in në Kanale",
+      "description": "Në çdo kanal të Slack ku dëshironi të merrni njoftime, shkruani:",
+      "command": "/invite @Worklenz",
+      "note": "Ju duhet ta bëni këtë vetëm një herë për kanal."
+    },
+    "step3": {
+      "title": "3. Konfiguro Njoftimet",
+      "description": "Pas lidhjes, kliko 'Menaxho' për të konfiguruar cilët projekte dërgojnë njoftime në cilat kanale."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "Mos harroni të ftoni bot-in!",
+      "description": "Para se të mund të merrni njoftime në një kanal të Slack, duhet të ftoni bot-in Worklenz në atë kanal.",
+      "step": "Në kanalin tuaj të Slack, shkruani: <code>/invite @Worklenz</code>",
+      "note": "Kjo duhet të bëhet vetëm një herë për kanal."
+    },
+    "getStarted": "Filloni duke shtuar një konfigurim kanali për të marrë njoftime nga projektet tuaja."
+  },
+  "disconnect": {
+    "title": "Shkëput Slack?",
+    "content": "Kjo do të heqë të gjitha konfigurimet e Slack dhe do të ndalojë njoftimet për ekipin tuaj.",
+    "okText": "Shkëput"
+  },
+  "deleteConfig": {
+    "title": "Fshi Konfigurimin?",
+    "content": "A jeni të sigurt që doni të hiqni këtë konfigurimin e kanalit?",
+    "okText": "Fshi"
+  },
+  "notConnected": {
+    "title": "Lidh Hapësirën Tuaj të Punës së Slack",
+    "description": "Integro Slack me ekipin tuaj të Worklenz për të marrë njoftime në kohë reale, për të krijuar detyra nga Slack, dhe për të mbajtur ekipin tuaj të sinkronizuar në të dyja platformat."
+  },
+  "features": {
+    "notifications": {
+      "title": "Njoftime në Kohë Reale",
+      "description": "Merrni njoftime për përditësimet e detyrave, komentet dhe afatet"
+    },
+    "createTasks": {
+      "title": "Krijo Detyra nga Slack",
+      "description": "Përdorni komandat slash për të krijuar shpejt detyra pa dalë nga Slack"
+    },
+    "collaboration": {
+      "title": "Bashkëpunimi i Ekipit",
+      "description": "Mbani të gjithë ekipin tuaj të sinkronizuar në Worklenz dhe Slack"
+    }
+  },
+  "table": {
+    "project": "Projekti",
+    "slackChannel": "Kanali i Slack",
+    "notifications": "Njoftimet",
+    "active": "Aktiv",
+    "actions": "Veprimet",
+    "channelConfigs": "Konfigurimet e Kanaleve të Slack",
+    "toggleStatus": "Ndrysho statusin për {{channel}}",
+    "editConfig": "Redakto konfigurimin për {{channel}}",
+    "deleteConfig": "Fshi konfigurimin për {{channel}}"
+  },
+  "modal": {
+    "configureChannel": "Konfiguro Kanalin e Slack",
+    "editChannel": "Redakto Kanalin e Slack",
+    "project": "Projekti",
+    "selectProject": "Zgjidh një projekt",
+    "slackChannel": "Kanali i Slack",
+    "selectSlackChannel": "Zgjidh një kanal të Slack",
+    "notificationTypes": "Llojet e Njoftimeve",
+    "selectNotificationTypes": "Zgjidh llojet e njoftimeve",
+    "refreshChannels": "Rifresko",
+    "notificationOptions": {
+      "taskCreated": "Detyra u krijua",
+      "taskUpdated": "Detyra u përditësua",
+      "taskCompleted": "Detyra e përfunduar",
+      "taskAssigned": "Detyra e caktuar",
+      "commentAdded": "Koment i shtuar",
+      "statusChanged": "Statusi i ndryshuar",
+      "dueDateChanged": "Afati i ndryshuar",
+      "dueDateReminder": "Përkujtues për afatin",
+      "assigneeChanged": "Personi i caktuar u ndryshua",
+      "priorityChanged": "Prioriteti i ndryshuar"
+    },
+    "addConfiguration": "Shto Konfigurimin",
+    "updateConfiguration": "Përditëso Konfigurimin"
+  },
+  "validation": {
+    "selectProject": "Ju lutemi zgjidhni një projekt",
+    "selectChannel": "Ju lutemi zgjidhni një kanal të Slack",
+    "selectNotifications": "Ju lutemi zgjidhni të paktën një lloj njoftimi"
+  },
+  "messages": {
+    "connectedSuccess": "Hapësira e punës së Slack u lidh me sukses!",
+    "installationCancelled": "Instalimi i Slack u anulua",
+    "disconnectedSuccess": "Hapësira e punës së Slack u shkëput me sukses",
+    "configAdded": "Konfigurimi i kanalit u shtua me sukses",
+    "configUpdated": "Konfigurimi i kanalit u përditësua me sukses",
+    "statusUpdated": "Statusi i kanalit u përditësua me sukses",
+    "configRemoved": "Konfigurimi i kanalit u hoq me sukses",
+    "channelsRefreshed": "Kanalet u rifreskuan me sukses"
+  },
+  "errors": {
+    "connectionCheckFailed": "Dështoi kontrolli i lidhjes së Slack",
+    "loadConfigsFailed": "Dështoi ngarkimi i konfigurimeve të kanaleve",
+    "loadChannelsFailed": "Dështoi ngarkimi i kanaleve të disponueshme",
+    "loadProjectsFailed": "Dështoi ngarkimi i projekteve",
+    "initiateConnectionFailed": "Dështoi nisja e lidhjes së Slack",
+    "connectionFailed": "Dështoi lidhja e hapësirës së punës së Slack",
+    "disconnectFailed": "Dështoi shkëputja e hapësirës së punës së Slack",
+    "addConfigFailed": "Dështoi shtimi i konfigurimit të kanalit",
+    "updateConfigFailed": "Dështoi përditësimi i konfigurimit të kanalit",
+    "updateStatusFailed": "Dështoi përditësimi i statusit të kanalit",
+    "removeConfigFailed": "Dështoi heqja e konfigurimit të kanalit",
+    "refreshChannelsFailed": "Dështoi rifreskimi i kanaleve"
+  }
+}

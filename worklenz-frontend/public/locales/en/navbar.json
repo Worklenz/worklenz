@@ -3,7 +3,13 @@
   "home": "Home",
   "projects": "Projects",
   "schedule": "Schedule",
-  "reporting": "Reporting",
+  "reporting": "Reports",
+  "my-team-reports": "My Team Reports",
+  "client-portal": "Client Portal",
+  "clientPortalUpgradePopoverTitle": "Client Portal",
+  "clientPortalUpgradePopoverBody": "Share project progress with your clients through a branded portal. Available on the Business plan.",
+  "clientPortalUpgradePopoverCta": "Upgrade Now",
+  "closePopover": "Close popover",
   "clients": "Clients",
   "teams": "Teams",
   "labels": "Labels",
@@ -18,8 +24,11 @@
   "profileTooltip": "View profile",
   "adminCenter": "Admin Center",
   "settings": "Settings",
+  "getMobileApp": "Get mobile app",
   "deleteAccount": "Delete Account",
   "logOut": "Log Out",
+  "lightMode": "Light Mode",
+  "darkMode": "Dark Mode",
   "notificationsDrawer": {
     "read": "Read notifications",
     "unread": "Unread notifications",
@@ -28,5 +37,21 @@
     "accept": "Accept",
     "acceptAndJoin": "Accept & Join",
     "noNotifications": "No notifications"
+  },
+  "timerButton": {
+    "runningTimers": "Running Timers",
+    "recentTimeLogs": "Recent Time Logs",
+    "unnamedTask": "Unnamed Task",
+    "unnamedProject": "Unnamed Project",
+    "parent": "Parent",
+    "started": "Started",
+    "noTimersOrLogs": "No timers or recent logs",
+    "errorLoadingTimers": "Error loading timers",
+    "errorRenderingTimers": "Error rendering timers",
+    "timerError": "Timer Error",
+    "timerRunning": "{{count}} timer running",
+    "timerRunning_other": "{{count}} timers running",
+    "recentLog": "{{count}} recent log",
+    "recentLog_other": "{{count}} recent logs"
   }
 }

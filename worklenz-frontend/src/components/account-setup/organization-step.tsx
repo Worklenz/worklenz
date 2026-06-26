@@ -62,14 +62,14 @@ export const OrganizationStep: React.FC<Props> = ({
 
       {/* Main Form Card */}
       <div className="mb-6">
-        <Card 
+        <Card
           className="border-2 hover:shadow-md transition-all duration-200"
-          style={{ 
+          style={{
             borderColor: token?.colorPrimary,
-            backgroundColor: token?.colorBgContainer 
+            backgroundColor: token?.colorBgContainer,
           }}
         >
-          <Form.Item 
+          <Form.Item
             className="mb-4"
             label={
               <div className="flex items-center space-x-2">
@@ -77,10 +77,7 @@ export const OrganizationStep: React.FC<Props> = ({
                   {t('organizationStepLabel')}
                 </span>
                 <Tooltip title={t('organizationStepTooltip')}>
-                  <span 
-                    className="text-sm cursor-help"
-                    style={{ color: token?.colorTextTertiary }}
-                  >
+                  <span className="text-sm cursor-help" style={{ color: token?.colorTextTertiary }}>
                     ⓘ
                   </span>
                 </Tooltip>
@@ -94,6 +91,7 @@ export const OrganizationStep: React.FC<Props> = ({
               onPressEnter={onPressEnter}
               ref={inputRef}
               className="text-base"
+              maxLength={50}
             />
           </Form.Item>
 
@@ -105,9 +103,13 @@ export const OrganizationStep: React.FC<Props> = ({
             {organizationName.length > 0 && (
               <div className="flex items-center space-x-1">
                 {organizationName.length >= 2 ? (
-                  <span style={{ color: token?.colorSuccess }}>✓ {t('organizationStepGoodLength')}</span>
+                  <span style={{ color: token?.colorSuccess }}>
+                    ✓ {t('organizationStepGoodLength')}
+                  </span>
                 ) : (
-                  <span style={{ color: token?.colorWarning }}>⚠ {t('organizationStepTooShort')}</span>
+                  <span style={{ color: token?.colorWarning }}>
+                    ⚠ {t('organizationStepTooShort')}
+                  </span>
                 )}
               </div>
             )}
@@ -116,12 +118,12 @@ export const OrganizationStep: React.FC<Props> = ({
       </div>
 
       {/* Footer Note */}
-      <div 
+      <div
         className="text-center p-4 rounded-lg"
-        style={{ 
+        style={{
           backgroundColor: token?.colorInfoBg,
           borderColor: token?.colorInfoBorder,
-          border: '1px solid'
+          border: '1px solid',
         }}
       >
         <Text type="secondary" className="text-sm">

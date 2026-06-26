@@ -1,0 +1,99 @@
+.category-modal-color-dot[data-color] {
+  background: var(--category-dot-color, #ccc);
+}
+
+/* Dynamically set background color using data attribute */
+[data-color="#154c9b"] {
+  --category-dot-color: #154c9b;
+}
+[data-color="#3b7ad4"] {
+  --category-dot-color: #3b7ad4;
+}
+[data-color="#70a6f3"] {
+  --category-dot-color: #70a6f3;
+}
+[data-color="#7781ca"] {
+  --category-dot-color: #7781ca;
+}
+[data-color="#9877ca"] {
+  --category-dot-color: #9877ca;
+}
+[data-color="#c178c9"] {
+  --category-dot-color: #c178c9;
+}
+[data-color="#ee87c5"] {
+  --category-dot-color: #ee87c5;
+}
+[data-color="#ca7881"] {
+  --category-dot-color: #ca7881;
+}
+[data-color="#75c9c0"] {
+  --category-dot-color: #75c9c0;
+}
+[data-color="#75c997"] {
+  --category-dot-color: #75c997;
+}
+[data-color="#80ca79"] {
+  --category-dot-color: #80ca79;
+}
+[data-color="#aacb78"] {
+  --category-dot-color: #aacb78;
+}
+[data-color="#cbbc78"] {
+  --category-dot-color: #cbbc78;
+}
+[data-color="#cb9878"] {
+  --category-dot-color: #cb9878;
+}
+[data-color="#bb774c"] {
+  --category-dot-color: #bb774c;
+}
+[data-color="#905b39"] {
+  --category-dot-color: #905b39;
+}
+[data-color="#903737"] {
+  --category-dot-color: #903737;
+}
+[data-color="#bf4949"] {
+  --category-dot-color: #bf4949;
+}
+[data-color="#f37070"] {
+  --category-dot-color: #f37070;
+}
+[data-color="#ff9c3c"] {
+  --category-dot-color: #ff9c3c;
+}
+[data-color="#fbc84c"] {
+  --category-dot-color: #fbc84c;
+}
+[data-color="#cbc8a1"] {
+  --category-dot-color: #cbc8a1;
+}
+[data-color="#a9a9a9"] {
+  --category-dot-color: #a9a9a9;
+}
+[data-color="#767676"] {
+  --category-dot-color: #767676;
+}
+.category-modal-field {
+  margin-bottom: 16px;
+}
+.category-modal-label {
+  display: block;
+  margin-bottom: 4px;
+}
+.category-modal-color-select {
+  width: 120px;
+}
+.category-modal-color-option {
+  display: inline-flex;
+  align-items: center;
+}
+.category-modal-color-dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 8px;
+  border: 1px solid #ccc;
+}

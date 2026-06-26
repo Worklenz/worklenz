@@ -1,0 +1,130 @@
+.project-tasks-modal .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.project-tasks-modal .ant-modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(to right, #fafafa, #ffffff);
+}
+
+.project-tasks-modal .ant-modal-body {
+  padding: 24px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+.project-tasks-modal .ant-modal-close {
+  top: 20px;
+  right: 20px;
+}
+
+/* Stat cards */
+.project-tasks-modal .stat-card {
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.project-tasks-modal .stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.project-tasks-modal .stat-card .ant-statistic-title {
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.project-tasks-modal .stat-card .ant-statistic-content {
+  font-size: 24px;
+}
+
+.project-tasks-modal .stat-card .ant-statistic-content-prefix {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+/* Table styling */
+.project-tasks-modal .ant-table-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #f0f0f0;
+}
+
+.project-tasks-modal .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 12px 16px;
+}
+
+.project-tasks-modal .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+}
+
+.project-tasks-modal .ant-table-tbody > tr {
+  cursor: default;
+  transition: background-color 0.2s ease;
+}
+
+.project-tasks-modal .ant-table-tbody > tr:hover > td {
+  background: #f5f5f5;
+}
+
+/* Filter bar */
+.project-tasks-modal .ant-input-affix-wrapper {
+  border-radius: 6px;
+}
+
+.project-tasks-modal .ant-select .ant-select-selector {
+  border-radius: 6px;
+}
+
+/* Pagination */
+.project-tasks-modal .ant-pagination {
+  margin-top: 16px;
+}
+
+/* Dark theme support */
+.dark .project-tasks-modal .ant-modal-content {
+  background: #1f1f1f;
+}
+
+.dark .project-tasks-modal .ant-modal-header {
+  border-bottom-color: #303030;
+  background: linear-gradient(to right, #1a1a1a, #1f1f1f);
+}
+
+.dark .project-tasks-modal .stat-card {
+  background: #262626;
+  border-color: #303030;
+}
+
+.dark .project-tasks-modal .stat-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark .project-tasks-modal .ant-table-wrapper {
+  border-color: #303030;
+}
+
+.dark .project-tasks-modal .ant-table-thead > tr > th {
+  background: #1a1a1a;
+}
+
+.dark .project-tasks-modal .ant-table-tbody > tr:hover > td {
+  background: #262626;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .project-tasks-modal .stat-card .ant-statistic-content {
+    font-size: 18px;
+  }
+
+  .project-tasks-modal .stat-card .ant-statistic-title {
+    font-size: 11px;
+  }
+}

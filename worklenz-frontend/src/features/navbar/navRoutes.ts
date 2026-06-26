@@ -3,6 +3,9 @@ export type NavRoutesType = {
   path: string;
   adminOnly: boolean;
   freePlanFeature?: boolean;
+  businessPlanRequired?: boolean;
+  selfHostedExcluded?: boolean;
+  teamLeadOnly?: boolean;
 };
 
 export const navRoutes: NavRoutesType[] = [
@@ -18,16 +21,31 @@ export const navRoutes: NavRoutesType[] = [
     adminOnly: false,
     freePlanFeature: true,
   },
-  // {
-  //   name: 'schedule',
-  //   path: '/worklenz/schedule',
-  //   adminOnly: true,
-  //   freePlanFeature: false,
-  // },
+  {
+    name: 'schedule',
+    path: '/worklenz/schedule',
+    adminOnly: true,
+    freePlanFeature: false,
+  },
   {
     name: 'reporting',
     path: '/worklenz/reporting/overview',
     adminOnly: true,
     freePlanFeature: false,
+  },
+  {
+    name: 'Team Reports',
+    path: '/worklenz/team-lead-reports',
+    adminOnly: false,
+    freePlanFeature: true,
+    teamLeadOnly: true,
+  },
+  {
+    name: 'client-portal',
+    path: '/worklenz/client-portal/clients',
+    adminOnly: true,
+    freePlanFeature: false,
+    businessPlanRequired: true,
+    selfHostedExcluded: true,
   },
 ];

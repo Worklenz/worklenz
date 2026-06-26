@@ -25,6 +25,9 @@
   "paymentMethod": "Zahlungsmethode",
   "status": "Status",
   "ltdUsers": "Sie können bis zu {{ltd_users}} Benutzer hinzufügen.",
+  "appsumoBusinessUnlockTitle": "Business-Plan mit 5 AppSumo-Codes freischalten",
+  "appsumoBusinessUnlockDescription": "Lösen Sie {{required}} AppSumo-Codes ein, um Business-Plan-Funktionen automatisch freizuschalten. Sie haben {{count}} von {{required}} Codes eingelöst.",
+  "redeemAnotherCode": "Weiteren Code einlösen",
 
   "totalSeats": "Gesamte Plätze",
   "availableSeats": "Verfügbare Plätze",
@@ -39,6 +42,7 @@
   "seatLabel": "Anzahl der Plätze",
   "freePlan": "Kostenloser Plan",
   "startup": "Startup",
+  "pro": "Pro",
   "business": "Business",
   "tag": "Am beliebtesten",
   "enterprise": "Enterprise",
@@ -110,5 +114,32 @@
   "expiredDaysAgo": "vor {{days}} Tagen",
 
   "continueWith": "Fortfahren mit {{plan}}",
-  "changeToPlan": "Wechseln zu {{plan}}"
+  "changeToPlan": "Wechseln zu {{plan}}",
+
+  "pricingModel": "Preismodell",
+  "flatRate": "Pauschalrate",
+  "perUser": "Pro Benutzer",
+  "monthlyCost": "Monatliche Kosten",
+  "pricingModelSwitched": "Preismodell erfolgreich aktualisiert",
+  "errorSwitchingPricingModel": "Fehler beim Wechseln des Preismodells",
+  "switchTo": "Wechseln zu",
+  "pricing": "Preisgestaltung",
+  "managementUrl": "Verwaltungs-URL",
+  "updateCardDetails": "Kartendaten aktualisieren",
+
+  "upgradeToUnlockFeatures": "Upgrade für Premium-Funktionen",
+  "currentPlanLimits": "Aktueller Plan beinhaltet:",
+  "planFeatures": "Plan-Funktionen",
+  "teamSizeLimit": "Teamgrößenbegrenzung",
+  "storageLimit": "Speicherbegrenzung",
+  "projectLimit": "Projektbegrenzung",
+
+  "billingCyclePreference": "Abrechnungszyklus",
+  "annualSavings": "Sparen Sie mit jährlicher Abrechnung",
+  "monthlyBilling": "Monatlich",
+  "yearlyBilling": "Jährlich",
+
+  "planComparison": "Pläne vergleichen",
+  "currentUsage": "Aktuelle Nutzung",
+  "planRecommendation": "Empfohlen für Ihre Teamgröße"
 }

@@ -9,7 +9,13 @@
   "pinTooltip": "点击将其固定到主菜单",
   "colorChangeTooltip": "点击更改颜色",
   "pageTitle": "管理标签",
-  "deleteConfirmTitle": "您确定要删除这个吗？",
+  "deleteConfirmTitle": "删除标签",
   "deleteButton": "删除",
-  "cancelButton": "取消"
+  "cancelButton": "取消",
+  "labelInUseMessage": "标签 \"{{labelName}}\" 当前已分配给 {{count}} 个任务。",
+  "labelDeleteWarning": "⚠️ 删除此标签将从所有 {{count}} 个已分配的任务中移除它。此操作无法撤销。",
+  "deleteConfirmMessage": "您确定要删除标签 \"{{labelName}}\" 吗？此操作无法撤销。",
+  "editTooltip": "编辑",
+  "deleteTooltip": "删除",
+  "search": "搜索"
 }

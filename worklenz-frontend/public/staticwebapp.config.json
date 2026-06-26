@@ -1,0 +1,34 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": [
+      "/api/*",
+      "/secure/*",
+      "/socket.io/*",
+      "/assets/*",
+      "/*.css",
+      "/*.js",
+      "/*.map",
+      "/*.ico",
+      "/*.png",
+      "/*.jpg",
+      "/*.jpeg",
+      "/*.gif",
+      "/*.svg",
+      "/*.webp",
+      "/*.woff",
+      "/*.woff2",
+      "/*.ttf",
+      "/*.json",
+      "/manifest.json",
+      "/env-config.js",
+      "/sw.js",
+      "/version.json",
+      "/locales/*",
+      "/fonts/*",
+      "/file-types/*",
+      "/scheduler-data/*",
+      "/js/*"
+    ]
+  }
+}

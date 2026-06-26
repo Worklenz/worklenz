@@ -1,5 +1,6 @@
 {
   "rename": "Riemërto",
+  "renameStatus": "Riemërto Statusin",
   "delete": "Fshi",
   "addTask": "Shto Detyrë",
   "addSectionButton": "Shto Seksion",
@@ -41,7 +42,13 @@
   "noSubtasks": "Pa nëndetyra",
   "showSubtasks": "Shfaq nëndetyrat",
   "hideSubtasks": "Fshih nëndetyrat",
-  
+  "exampleTasks": {
+    "prefix": "p.sh.",
+    "task1": "Përcaktoni qëllimin e projektit",
+    "task2": "Rishikoni me palët e interesuara",
+    "task3": "Planifikoni fillimin"
+  },
+
   "errorLoadingTasks": "Gabim gjatë ngarkimit të detyrave",
   "noTasksFound": "Nuk u gjetën detyra",
   "loadingFilters": "Duke ngarkuar filtra...",

@@ -1,299 +1,270 @@
-import React, { useState, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { ComponentType, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import 'react-quill/dist/quill.snow.css';
+import './description-editor.css';
 
-// Lazy load TinyMCE editor to reduce initial bundle size
-const LazyTinyMCEEditor = lazy(() => 
-  import('@tinymce/tinymce-react').then(module => ({ default: module.Editor }))
+const LazyQuillEditor = lazy(() =>
+  import('react-quill').then(module => ({
+    default: module.default as unknown as ComponentType<any>,
+  }))
 );
-
 interface DescriptionEditorProps {
   description: string | null;
   taskId: string;
   parentTaskId: string | null;
 }
 
+const COLLAPSE_MAX_HEIGHT = 120;
+
 const DescriptionEditor = ({ description, taskId, parentTaskId }: DescriptionEditorProps) => {
+  const { t } = useTranslation('task-drawer/task-drawer');
   const { socket } = useSocket();
-  const [isHovered, setIsHovered] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
-  const [content, setContent] = useState<string>(description || '');
-  const [isEditorLoading, setIsEditorLoading] = useState<boolean>(false);
-  const [wordCount, setWordCount] = useState<number>(0);
-  const [isTinyMCELoaded, setIsTinyMCELoaded] = useState<boolean>(false);
-  const editorRef = useRef<any>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const isDarkMode = themeMode === 'dark';
 
-  // CSS styles for description content links
-  const descriptionStyles = `
-    .description-content a {
-      color: ${themeMode === 'dark' ? '#4dabf7' : '#1890ff'} !important;
-      text-decoration: underline !important;
-      cursor: pointer !important;
-    }
-    .description-content a:hover {
-      color: ${themeMode === 'dark' ? '#74c0fc' : '#40a9ff'} !important;
-    }
-  `;
+  const [isHovered, setIsHovered] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [content, setContent] = useState(description || '');
+  const [wordCount, setWordCount] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isLongContent, setIsLongContent] = useState(false);
+  useEffect(() => {
+    setContent(description || '');
+    setIsExpanded(false);
+    setIsLongContent(false);
+  }, [description, taskId]);
 
-  // Load TinyMCE script only when editor is opened
-  const loadTinyMCE = async () => {
-    if (isTinyMCELoaded) return;
+  const modules = useMemo(
+    () => ({
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link'],
+        ['clean'],
+      ],
+      clipboard: {
+        matchVisual: false,
+      },
+    }),
+    []
+  );
+
+  useEffect(() => {
+    if (!content || isEditorOpen) return;
+    const raf = requestAnimationFrame(() => {
+      if (contentRef.current) {
+        setIsLongContent(contentRef.current.scrollHeight > COLLAPSE_MAX_HEIGHT);
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [content, isEditorOpen]);
+
+  const formats = useMemo(
+    () => ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'link'],
+    []
+  );
+
+  const extractWordCount = useCallback((html: string) => {
+    const text = html
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return text ? text.split(' ').length : 0;
+  }, []);
+
+  const processHTML = useCallback((html: string) => {
+   if (!html) return html;
+   const parser = new DOMParser();
+   const doc = parser.parseFromString(html, 'text/html');
+   const children = Array.from(doc.body.children);
+  
+   let olCounter = 0; // track consecutive ol group
+   let lastWasOlGroup = false;
+
+
+   children.forEach((el, index) => {
+     const tag = el.tagName.toLowerCase();
     
-    setIsEditorLoading(true);
-    try {
-      // Load TinyMCE script dynamically
-      await new Promise<void>((resolve, reject) => {
-        if ((window as any).tinymce) {
-          resolve();
-          return;
-        }
-        
-        const script = document.createElement('script');
-        script.src = '/tinymce/tinymce.min.js';
-        script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load TinyMCE'));
-        document.head.appendChild(script);
-      });
-      
-      setIsTinyMCELoaded(true);
-    } catch (error) {
-      console.error('Failed to load TinyMCE:', error);
-      setIsEditorLoading(false);
-    }
-  };
+     if (tag === 'ol') {
+       olCounter++;
+       (el as HTMLElement).setAttribute('start', String(olCounter));
+       lastWasOlGroup = true;
+     } else if (tag === 'ul') {
+       const prev = children[index - 1];
+       if (prev && prev.tagName.toLowerCase() === 'ol') {
+         el.classList.add('ql-nested-list');
+       }
+       // don't reset counter — ul between ol items shouldn't break numbering
+     } else {
+       // any non-list element resets the counter
+       olCounter = 0;
+       lastWasOlGroup = false;
+     }
+   });
+  
+   return doc.body.innerHTML;
+ }, []);
 
-  const handleDescriptionChange = () => {
+
+  const processMentions = useCallback((html: string) => {
+    if (!html || html.includes('class="mentions"')) return html;
+    const mentionRegex = /(^|[^\w.+-])@([\w-]+)/g;
+    return html.replace(mentionRegex, '$1<span class="mentions">@$2</span>');
+  }, []);
+
+  const emitDescriptionChange = useCallback(() => {
     if (!taskId) return;
+    const sanitizedContent = DOMPurify.sanitize(content || '',{ ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'] });
     socket?.emit(
       SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
       JSON.stringify({
         task_id: taskId,
-        description: content || null,
+        description: sanitizedContent || null,
         parent_task: parentTaskId,
       })
     );
-  };
+  }, [content, parentTaskId, socket, taskId]);
+
+  const closeEditorAndPersist = useCallback(() => {
+    if (content !== (description || '')) {
+      emitDescriptionChange();
+    }
+    setIsEditorOpen(false);
+  }, [content, description, emitDescriptionChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const wrapper = wrapperRef.current;
-      const target = event.target as Node;
-
-      const isClickedInsideWrapper = wrapper && wrapper.contains(target);
-      const isClickedInsideEditor = document.querySelector('.tox-tinymce')?.contains(target);
-      const isClickedInsideToolbarPopup = document
-        .querySelector('.tox-menu, .tox-pop, .tox-collection, .tox-dialog, .tox-dialog-wrap, .tox-silver-sink')
-        ?.contains(target);
-
-      if (
-        isEditorOpen &&
-        !isClickedInsideWrapper &&
-        !isClickedInsideEditor &&
-        !isClickedInsideToolbarPopup
-      ) {
-        if (content !== description) {
-          handleDescriptionChange();
-        }
-        setIsEditorOpen(false);
+      if (!isEditorOpen || !wrapperRef.current) return;
+      if (!wrapperRef.current.contains(event.target as Node)) {
+        closeEditorAndPersist();
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isEditorOpen, content, description, taskId, parentTaskId, socket]);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isEditorOpen, closeEditorAndPersist]);
 
-  const handleEditorChange = (content: string) => {
-    const sanitizedContent = DOMPurify.sanitize(content);
+  const handleEditorChange = (nextHtml: string) => {
+    const sanitizedContent = DOMPurify.sanitize(nextHtml,{ ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'style'] });
     setContent(sanitizedContent);
-    if (editorRef.current) {
-      const count = editorRef.current.plugins.wordcount.getCount();
-      setWordCount(count);
-    }
+    setWordCount(extractWordCount(sanitizedContent));
   };
 
-  const handleInit = (evt: any, editor: any) => {
-    editorRef.current = editor;
-    editor.on('focus', () => setIsEditorOpen(true));
-    const initialCount = editor.plugins.wordcount.getCount();
-    setWordCount(initialCount);
-    setIsEditorLoading(false);
-  };
-
-  const handleOpenEditor = async () => {
+  const handleOpenEditor = () => {
     setIsEditorOpen(true);
-    await loadTinyMCE();
+    setWordCount(extractWordCount(content || ''));
   };
 
-  const handleContentClick = (event: React.MouseEvent) => {
-    const target = event.target as HTMLElement;
-    
-    // Check if clicked element is a link
-    if (target.tagName === 'A' || target.closest('a')) {
-      event.preventDefault(); // Prevent default link behavior
-      event.stopPropagation(); // Prevent opening the editor
-      const link = target.tagName === 'A' ? target : target.closest('a');
-      if (link) {
-        const href = (link as HTMLAnchorElement).href;
-        if (href) {
-          // Open link in new tab/window for security
-          window.open(href, '_blank', 'noopener,noreferrer');
-        }
-      }
-      return;
-    }
-    
-    // If not a link, open the editor
-    handleOpenEditor();
+  const handleToggleExpand = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsExpanded(prev => !prev);
   };
 
-  const darkModeStyles =
-    themeMode === 'dark'
-      ? `
-    body { 
-      background-color: #1e1e1e !important;
-      color: #ffffff !important;
-    }
-    body.mce-content-body[data-mce-placeholder]:not([contenteditable="false"]):before {
-      color: #666666 !important;
-    }
-  `
-      : '';
+  const shellClass = `description-editor-shell ${isDarkMode ? 'is-dark' : 'is-light'}`;
 
   return (
-    <div ref={wrapperRef}>
-      {/* Inject CSS styles for links */}
-      <style>{descriptionStyles}</style>
+    <div ref={wrapperRef} className={shellClass}>
       {isEditorOpen ? (
-        <div
-          style={{
-            minHeight: '200px',
-            backgroundColor: themeMode === 'dark' ? '#1e1e1e' : '#ffffff',
-          }}
-        >
-          {isEditorLoading && (
-            <div
-              style={{
-                position: 'absolute',
-                zIndex: 10,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: '100%',
-                height: '200px',
-                backgroundColor:
-                  themeMode === 'dark' ? 'rgba(30, 30, 30, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-                color: themeMode === 'dark' ? '#ffffff' : '#000000',
-              }}
-            >
-              <div>Loading editor...</div>
-            </div>
-          )}
-          {isTinyMCELoaded && (
-            <Suspense fallback={<div>Loading editor...</div>}>
-              <LazyTinyMCEEditor
-                tinymceScriptSrc="/tinymce/tinymce.min.js"
-                value={content}
-                onInit={handleInit}
-                licenseKey="gpl"
-                init={{
-                  height: 200,
-                  menubar: false,
-                  branding: false,
-                  plugins: [
-                    'advlist',
-                    'autolink',
-                    'lists',
-                    'link',
-                    'charmap',
-                    'preview',
-                    'anchor',
-                    'searchreplace',
-                    'visualblocks',
-                    'code',
-                    'fullscreen',
-                    'insertdatetime',
-                    'media',
-                    'table',
-                    'code',
-                    'wordcount',
-                  ],
-                  toolbar:
-                    'blocks |' +
-                    'bold italic underline strikethrough | ' +
-                    'bullist numlist | link |  removeformat | help',
-                  content_style: `
-                    body { 
-                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
-                      font-size: 14px;
-                    }
-                    ${darkModeStyles}
-                  `,
-                  skin: themeMode === 'dark' ? 'oxide-dark' : 'oxide',
-                  content_css: themeMode === 'dark' ? 'dark' : 'default',
-                  skin_url: `/tinymce/skins/ui/${themeMode === 'dark' ? 'oxide-dark' : 'oxide'}`,
-                  content_css_cors: true,
-                  auto_focus: true,
-                  init_instance_callback: editor => {
-                    editor.dom.setStyle(
-                      editor.getBody(),
-                      'backgroundColor',
-                      themeMode === 'dark' ? '#1e1e1e' : '#ffffff'
-                    );
-                  },
-                }}
-                onEditorChange={handleEditorChange}
-              />
-            </Suspense>
-          )}
-        </div>
-      ) : (
-        <div
-          onClick={handleContentClick}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          style={{
-            minHeight: '40px',
-            padding: '8px 12px',
-            border: `1px solid ${themeMode === 'dark' ? '#424242' : '#d9d9d9'}`,
-            borderRadius: '6px',
-            cursor: 'pointer',
-            backgroundColor: isHovered
-              ? themeMode === 'dark'
-                ? '#2a2a2a'
-                : '#fafafa'
-              : themeMode === 'dark'
-              ? '#1e1e1e'
-              : '#ffffff',
-            color: themeMode === 'dark' ? '#ffffff' : '#000000',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          {content ? (
-            <div
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(content),
-              }}
-              className="description-content"
+        <div className="description-editor-active">
+          <Suspense
+            fallback={
+              <div className="description-editor-loading">
+                {t('description.loadingEditor', { defaultValue: 'Loading editor...' })}
+              </div>
+            }
+          >
+            <LazyQuillEditor
+              theme="snow"
+              value={content}
+              onChange={handleEditorChange}
+              modules={modules}
+              formats={formats}
             />
-          ) : (
-            <div
-              style={{
-                color: themeMode === 'dark' ? '#888888' : '#999999',
-                fontStyle: 'italic',
-              }}
-            >
-              Click to add description...
-            </div>
-          )}
+          </Suspense>
+          <div className="description-editor-footer">
+            <span>
+              {t('description.wordCount', { defaultValue: '{{count}} words', count: wordCount })}
+            </span>
+          </div>
         </div>
-      )}
+      ) : <div
+        className={`description-editor-preview ${isHovered ? 'is-hovered' : ''}`}
+        onClick={event => {
+          const target = event.target as HTMLElement;
+          if (target.tagName === 'A' || target.closest('a')) {
+            event.preventDefault();
+            event.stopPropagation();
+            const link = target.tagName === 'A' ? target : target.closest('a');
+            if (link) {
+              const href = (link as HTMLAnchorElement).href;
+              if (href) window.open(href, '_blank', 'noopener,noreferrer');
+            }
+            return;
+          }
+          handleOpenEditor();
+        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {(!content || content === '<p><br></p>') && (
+          <div className="description-placeholder">
+            {t('taskInfoTab.description.clickToAdd')}
+          </div>
+        )}
+
+        {/* Render actual content if exists */}
+        {content && (
+          <>
+            <div
+              ref={contentRef}
+              className="description-content"
+              dangerouslySetInnerHTML={{ __html:  (() => {
+ const result = processHTML(processMentions(content));
+
+ return result;
+})()
+ }}
+              style={
+                isLongContent && !isExpanded
+                  ? {
+                    overflow: 'hidden',
+                    maxHeight: `${COLLAPSE_MAX_HEIGHT}px`,
+                    WebkitMaskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                    maskImage: 'linear-gradient(to bottom, black 50%, transparent 100%)',
+                    pointerEvents: 'none',
+                  }
+                  : undefined
+              }
+            />
+            {isLongContent && (
+              <button
+                onClick={handleToggleExpand}
+                style={{
+                  marginTop: '4px',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  color: isDarkMode ? '#888888' : '#999999',
+                  display: 'block',
+                }}
+              >
+                {isExpanded ? t('taskInfoTab.description.showLess')
+                  : t('taskInfoTab.description.readMore')}
+              </button>
+            )}
+          </>
+        )}
+      </div>}
     </div>
   );
 };

@@ -2,20 +2,25 @@ import { RouteObject } from 'react-router-dom';
 import { Navigate } from 'react-router-dom';
 import { Suspense } from 'react';
 import SettingsLayout from '@/layouts/SettingsLayout';
-import { settingsItems } from '@/lib/settings/settings-constants';
+import { getAccessibleSettings, settingsItems } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 const SettingsGuard = ({
   children,
-  adminRequired,
+  itemKey,
 }: {
   children: React.ReactNode;
-  adminRequired: boolean;
+  itemKey: string;
 }) => {
-  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const authService = useAuthService();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
+  const { hasBusinessAccess } = useBusinessFeatures();
+  const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin, hasBusinessAccess);
+  const hasAccess = accessibleSettings.some(item => item.key === itemKey);
 
-  if (adminRequired && !isOwnerOrAdmin) {
+  if (!hasAccess) {
     return <Navigate to="/worklenz/unauthorized" replace />;
   }
 
@@ -30,7 +35,7 @@ const settingsRoutes: RouteObject[] = [
       path: item.endpoint,
       element: (
         <Suspense fallback={<SuspenseFallback />}>
-          <SettingsGuard adminRequired={!!item.adminOnly}>{item.element}</SettingsGuard>
+          <SettingsGuard itemKey={item.key}>{item.element}</SettingsGuard>
         </Suspense>
       ),
     })),

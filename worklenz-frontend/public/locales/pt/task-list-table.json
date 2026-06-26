@@ -24,7 +24,10 @@
   "lastUpdatedColumn": "Última Atualização",
   "lastupdatedColumn": "Última Atualização",
   "reporterColumn": "Reportador",
+  "moveColumnHandle": "Mover coluna",
   "dueTimeColumn": "Hora de Vencimento",
+  "activeParentBadge": "Pai ativo",
+  "activeParentTooltip": "A tarefa pai não está arquivada",
   "todoSelectorText": "A Fazer",
   "doingSelectorText": "Fazendo",
   "doneSelectorText": "Feito",
@@ -38,6 +41,7 @@
 
   "addTaskText": "Adicionar Tarefa",
   "addSubTaskText": "+ Adicionar Subtarefa",
+  "addSubTaskInputPlaceholder": "Digite o nome da subtarefa e pressione Enter para salvar",
   "noTasksInGroup": "Nenhuma tarefa neste grupo",
   "dropTaskHere": "Soltar tarefa aqui",
   "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
@@ -56,6 +60,7 @@
   "pendingInvitation": "Convite Pendente",
 
   "contextMenu": {
+    "duplicateTask": "Tarefa duplicada",
     "assignToMe": "Atribuir a mim",
     "copyLink": "Copiar link da tarefa",
     "linkCopied": "Link copiado para a área de transferência",
@@ -75,6 +80,13 @@
   "dueDatePlaceholder": "Data de vencimento",
   "startDatePlaceholder": "Data de início",
 
+  "exampleTasks": {
+    "prefix": "ex.",
+    "task1": "Definir o escopo e os objetivos do projeto",
+    "task2": "Revisar e alinhar com as partes interessadas",
+    "task3": "Agendar reunião de kickoff"
+  },
+
   "emptyStates": {
     "noTaskGroups": "Nenhum grupo de tarefas encontrado",
     "noTaskGroupsDescription": "As tarefas aparecerão aqui quando forem criadas ou quando filtros forem aplicados.",
@@ -90,7 +102,20 @@
     "peopleField": "Campo de pessoas",
     "noDate": "Sem data",
     "unsupportedField": "Tipo de campo não suportado",
-    
+    "datePlaceholder": "Definir data",
+    "numberPlaceholder": "0",
+    "percentagePlaceholder": "0%",
+    "selectOption": "Selecionar opção",
+    "noOptionsAvailable": "Nenhuma opção disponível",
+    "updating": "Atualizando...",
+    "peopleDropdown": {
+      "searchMembers": "Pesquisar membros...",
+      "pending": "Pendente",
+      "loadingMembers": "Carregando membros...",
+      "noMembersFound": "Nenhum membro encontrado",
+      "inviteMember": "Convidar membro"
+    },
+
     "modal": {
       "addFieldTitle": "Adicionar campo",
       "editFieldTitle": "Editar campo",
@@ -111,9 +136,10 @@
       "createErrorMessage": "Falha ao criar a coluna personalizada",
       "updateErrorMessage": "Falha ao atualizar a coluna personalizada"
     },
-    
+
     "fieldTypes": {
       "people": "Pessoas",
+      "text": "Texto",
       "number": "Número",
       "date": "Data",
       "selection": "Seleção",

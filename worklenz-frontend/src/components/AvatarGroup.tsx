@@ -55,8 +55,8 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
             isDarkMode={isDarkMode}
             backgroundColor={member.color_code}
             onClick={stopPropagation}
-            className="border-2 border-white"
-            style={isDarkMode ? { borderColor: '#374151' } : {}}
+            className="border-0"
+            style={{}}
           />
         </Tooltip>
       );
@@ -96,9 +96,8 @@ const AvatarGroup: React.FC<AvatarGroupProps> = ({
       {remainingCount > 0 && (
         <Tooltip title={`${remainingCount} more`} isDarkMode={isDarkMode}>
           <div
-            className={`rounded-full flex items-center justify-center text-white font-medium shadow-sm border-2 cursor-pointer ${
-              isDarkMode ? 'bg-gray-600 border-gray-700' : 'bg-gray-400 border-white'
-            }`}
+            className={`rounded-full flex items-center justify-center text-white font-medium shadow-sm border-2 cursor-pointer ${isDarkMode ? 'bg-gray-600 border-gray-700' : 'bg-gray-400 border-white'
+              }`}
             style={getSizeStyle()}
             onClick={stopPropagation}
           >

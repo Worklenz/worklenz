@@ -9,7 +9,13 @@
   "pinTooltip": "Click to pin this into the main menu",
   "colorChangeTooltip": "Click to change color",
   "pageTitle": "Manage Labels",
-  "deleteConfirmTitle": "Are you sure you want to delete this?",
+  "deleteConfirmTitle": "Delete Label",
   "deleteButton": "Delete",
-  "cancelButton": "Cancel"
+  "cancelButton": "Cancel",
+  "labelInUseMessage": "The label \"{{labelName}}\" is currently assigned to {{count}} task{{plural}}.",
+  "labelDeleteWarning": "⚠️ Deleting this label will remove it from all {{count}} assigned task{{plural}}. This action cannot be undone.",
+  "deleteConfirmMessage": "Are you sure you want to delete the label \"{{labelName}}\"? This action cannot be undone.",
+  "editTooltip": "Edit",
+  "deleteTooltip": "Delete",
+  "search": "Search"
 }

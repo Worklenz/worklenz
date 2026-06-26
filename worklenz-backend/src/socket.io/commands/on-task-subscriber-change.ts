@@ -1,8 +1,8 @@
-import {Server, Socket} from "socket.io";
+import { Server, Socket } from "socket.io";
 import db from "../../config/db";
-import {SocketEvents} from "../events";
+import { SocketEvents } from "../events";
 
-import {log_error} from "../util";
+import { log_error } from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 
 interface ITaskSubscribeRequest {
@@ -13,8 +13,10 @@ interface ITaskSubscribeRequest {
 }
 
 export async function on_task_subscriber_change(_io: Server, socket: Socket, data?: ITaskSubscribeRequest) {
+  if (typeof data == "string") {
+    data = JSON.parse(data as string);
+  };
   if (!data) return;
-
   try {
     const isSubscribe = data.mode == 0;
     const q = isSubscribe

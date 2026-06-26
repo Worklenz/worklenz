@@ -61,7 +61,7 @@ export default class TeamsController extends WorklenzControllerBase {
              (SELECT name FROM teams WHERE id = team_id) AS team_name,
              (SELECT name FROM users WHERE id = (SELECT user_id FROM teams WHERE id = team_id)) AS team_owner
       FROM email_invitations
-      WHERE email = (SELECT email FROM users WHERE id = $1);
+      WHERE LOWER(email) = LOWER((SELECT email FROM users WHERE id = $1));
     `;
 
     const result = await db.query(q, [req.user?.id]);
@@ -89,16 +89,5 @@ export default class TeamsController extends WorklenzControllerBase {
     const q = `SELECT activate_team($1, $2)`;
     await db.query(q, [req.body.id, req.user?.id ?? null]);
     return res.status(200).send(new ServerResponse(true, { subdomain: null }));
-  }
-
-  @HandleExceptions({
-    raisedExceptions: {
-      "TEAM_NAME_EXISTS_ERROR": "Team name already taken. Please enter a different name."
-    }
-  })
-  public static async updateNameOnce(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT update_team_name_once($1, $2, $3);`;
-    const result = await db.query(q, [req.user?.id, req.user?.team_id, req.body.name || null]);
-    return res.status(200).send(new ServerResponse(true, result.rows));
   }
 }

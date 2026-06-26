@@ -27,5 +27,13 @@
   "projectHealthText": "项目健康状况",
   "projectUpdateText": "项目更新",
   "clientText": "客户",
-  "teamText": "团队"
+  "teamText": "团队",
+
+  "tableViewText": "表格",
+  "groupedViewText": "分组",
+  "groupByCategoryText": "类别",
+  "groupByStatusText": "状态",
+  "groupByHealthText": "健康状况",
+  "groupByTeamText": "团队",
+  "groupByManagerText": "经理"
 }

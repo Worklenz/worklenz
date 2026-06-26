@@ -37,10 +37,34 @@ export interface ISurveySubmissionRequest {
 }
 
 // Account setup survey specific types
-export type OrganizationType = 'freelancer' | 'startup' | 'small_medium_business' | 'agency' | 'enterprise' | 'other';
-export type UserRole = 'founder_ceo' | 'project_manager' | 'software_developer' | 'designer' | 'operations' | 'other';
-export type UseCase = 'task_management' | 'team_collaboration' | 'resource_planning' | 'client_communication' | 'time_tracking' | 'other';
-export type HowHeardAbout = 'google_search' | 'twitter' | 'linkedin' | 'friend_colleague' | 'blog_article' | 'other';
+export type OrganizationType =
+  | 'freelancer'
+  | 'startup'
+  | 'small_medium_business'
+  | 'agency'
+  | 'enterprise'
+  | 'other';
+export type UserRole =
+  | 'founder_ceo'
+  | 'project_manager'
+  | 'software_developer'
+  | 'designer'
+  | 'operations'
+  | 'other';
+export type UseCase =
+  | 'task_management'
+  | 'team_collaboration'
+  | 'resource_planning'
+  | 'client_communication'
+  | 'time_tracking'
+  | 'other';
+export type HowHeardAbout =
+  | 'google_search'
+  | 'twitter'
+  | 'linkedin'
+  | 'friend_colleague'
+  | 'blog_article'
+  | 'other';
 
 export interface IAccountSetupSurveyData {
   organization_type?: OrganizationType;

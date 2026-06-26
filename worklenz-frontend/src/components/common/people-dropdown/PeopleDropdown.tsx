@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { PlusOutlined, UserAddOutlined } from '@/shared/antd-imports';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
@@ -43,6 +44,7 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
 
   const dispatch = useAppDispatch();
   const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const { t } = useTranslation('task-list-table');
 
   // Load members on demand when dropdown opens
   useEffect(() => {
@@ -64,11 +66,11 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
       const rect = buttonRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const dropdownHeight = 280; // More accurate height: header(40) + max-height(192) + footer(40) + padding
-      
+
       // Check if dropdown would go below viewport
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldShowAbove = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
-      
+
       setDropdownPosition({
         top: shouldShowAbove ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
         left: rect.left,
@@ -216,7 +218,9 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search members..."
+                placeholder={t('customColumns.peopleDropdown.searchMembers', {
+                  defaultValue: 'Search members...',
+                })}
                 className={`
                 w-full px-2 py-1 text-xs rounded border
                 ${
@@ -300,7 +304,13 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
                       >
                         {member.email}
                         {member.pending_invitation && (
-                          <span className="text-red-400 ml-1">(Pending)</span>
+                          <span className="text-red-400 ml-1">
+                            (
+                            {t('customColumns.peopleDropdown.pending', {
+                              defaultValue: 'Pending',
+                            })}
+                            )
+                          </span>
                         )}
                       </div>
                     </div>
@@ -311,7 +321,13 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
                   className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 >
                   <div className="text-xs">
-                    {isLoading ? 'Loading members...' : 'No members found'}
+                    {isLoading
+                      ? t('customColumns.peopleDropdown.loadingMembers', {
+                          defaultValue: 'Loading members...',
+                        })
+                      : t('customColumns.peopleDropdown.noMembersFound', {
+                          defaultValue: 'No members found',
+                        })}
                   </div>
                 </div>
               )}
@@ -328,7 +344,9 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
                 onClick={handleInviteProjectMemberDrawer}
               >
                 <UserAddOutlined />
-                Invite member
+                {t('customColumns.peopleDropdown.inviteMember', {
+                  defaultValue: 'Invite member',
+                })}
               </button>
             </div>
           </div>,
@@ -338,4 +356,4 @@ const PeopleDropdown: React.FC<PeopleDropdownProps> = ({
   );
 };
 
-export default PeopleDropdown; 
+export default PeopleDropdown;

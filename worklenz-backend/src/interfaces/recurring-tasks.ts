@@ -29,10 +29,12 @@ export interface ITaskTemplate {
   schedule_id: string;
   created_at: Date;
   name: string;
+  description: string | null;
   priority_id: string;
   project_id: string;
-  reporter_id: string;
-  status_id: string;
+  reporter_id: string | null;
+  status_id: string | null;
   assignees: ITaskTemplateAssignee[];
-  labels: ITaskTemplateLabel[]
+  labels: ITaskTemplateLabel[];
+  duration_days: number | null;
 }

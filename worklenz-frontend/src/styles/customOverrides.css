@@ -180,3 +180,50 @@ body.dark .overview-stat-card .ant-card-body,
 .ql-snow .ql-stroke {
   stroke: #6c757d !important;
 }
+
+/* Disabled navlink styles for better visibility in both themes */
+.disabled-navlink {
+  opacity: 0.7 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  color: var(--color-lightGray) !important;
+  transition: color 0.2s ease !important;
+}
+
+/* Light theme specific disabled navlink styles */
+.theme-light .disabled-navlink,
+body:not(.dark) .disabled-navlink,
+[data-theme="light"] .disabled-navlink {
+  color: var(--color-lightGray) !important;
+  opacity: 0.9 !important;
+}
+
+/* Dark theme specific disabled navlink styles */
+.theme-dark .disabled-navlink,
+body.dark .disabled-navlink,
+[data-theme="dark"] .disabled-navlink {
+  color: #a0a0a0 !important;
+  opacity: 0.9 !important;
+}
+
+/* Disabled navlink with crown icon styles */
+.disabled-navlink-with-crown {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure disabled menu items in Ant Design Menu component are properly styled */
+.ant-menu-item-disabled {
+  color: var(--color-lightGray) !important;
+  opacity: 0.9 !important;
+  cursor: not-allowed !important;
+}
+
+/* Dark theme Ant Design disabled menu items */
+body.dark .ant-menu-item-disabled,
+[data-theme="dark"] .ant-menu-item-disabled {
+  color: #a0a0a0 !important;
+  opacity: 0.9 !important;
+}

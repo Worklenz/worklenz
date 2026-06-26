@@ -1,0 +1,52 @@
+import { Card, Flex } from '@/shared/antd-imports';
+import TimeReportPageHeader from '@/components/reporting/time-reports/page-header/TimeReportPageHeader';
+import ProjectTimeSheetChart, {
+  ProjectTimeSheetChartRef,
+} from '@/components/reporting/time-reports/sheets/ProjectTimeSheetChart';
+import { useTranslation } from 'react-i18next';
+import { useDocumentTitle } from '@/hooks/useDoumentTItle';
+import TimeReportingRightHeader from './components/time-reporting-right-header/TimeReportingRightHeader';
+import { useRef } from 'react';
+
+const ProjectsTimeReports = () => {
+  const { t } = useTranslation('time-report');
+  const chartRef = useRef<ProjectTimeSheetChartRef>(null);
+
+  useDocumentTitle('Reporting - Allocation');
+
+  const handleExport = (type: string) => {
+    if (type === 'png') {
+      chartRef.current?.exportChart();
+    }
+  };
+
+  return (
+    <Flex vertical>
+      <TimeReportingRightHeader
+        title={t('projectsTimeSheet')}
+        exportType={[{ key: 'png', label: 'PNG' }]}
+        export={handleExport}
+      />
+
+      <Card
+        style={{ borderRadius: '4px' }}
+        title={
+          <div style={{ padding: '16px 0' }}>
+            <TimeReportPageHeader />
+          </div>
+        }
+        styles={{
+          body: {
+            maxHeight: 'calc(100vh - 300px)',
+            overflowY: 'auto',
+            padding: '16px',
+          },
+        }}
+      >
+        <ProjectTimeSheetChart ref={chartRef} />
+      </Card>
+    </Flex>
+  );
+};
+
+export default ProjectsTimeReports;

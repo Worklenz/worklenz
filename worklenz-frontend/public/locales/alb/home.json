@@ -58,5 +58,32 @@
     "timeLoggedTaskAriaLabel": "Detyrë me kohë të regjistruar:",
     "errorLoadingRecentTasks": "Gabim në ngarkimin e detyrave të fundit",
     "errorLoadingTimeLoggedTasks": "Gabim në ngarkimin e detyrave me kohë të regjistruar"
+  },
+  "activityLogs": {
+    "title": "Aktiviteti i Fundit",
+    "refresh": "Rifresko regjistrimet e aktivitetit",
+    "noActivities": "Nuk ka aktivitete të fundit",
+    "deletedProject": "(I fshirë)",
+    "project": {
+      "created": "{{userName}} krijoi projektin {{projectName}}",
+      "updated": "{{userName}} përditësoi projektin {{projectName}}",
+      "deleted": "{{userName}} fshiu projektin {{projectName}}",
+      "archived": "{{userName}} arkivoi projektin {{projectName}}",
+      "unarchived": "{{userName}} nxori nga arkivi projektin {{projectName}}",
+      "favorited": "{{userName}} shënoi si të preferuar projektin {{projectName}}",
+      "unfavorited": "{{userName}} hoqi nga të preferuarit projektin {{projectName}}",
+      "statusChanged": "{{userName}} ndryshoi statusin e projektit {{projectName}}",
+      "managerAssigned": "{{userName}} caktoi një menaxher për projektin {{projectName}}",
+      "managerRemoved": "{{userName}} hoqi menaxherin e projektit {{projectName}}",
+      "memberAdded": "{{userName}} shtoi {{memberName}} në projektin {{projectName}}",
+      "memberRemoved": "{{userName}} hoqi {{memberName}} nga projekti {{projectName}}"
+    },
+    "task": {
+      "created": "{{userName}} krijoi detyrën {{taskName}}",
+      "updated": "{{userName}} përditësoi detyrën {{taskName}}"
+    },
+    "generic": {
+      "activity": "{{userName}} kreu një aktivitet"
+    }
   }
 }

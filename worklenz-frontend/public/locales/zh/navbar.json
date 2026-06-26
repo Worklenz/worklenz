@@ -3,8 +3,10 @@
   "home": "首页",
   "projects": "项目",
   "schedule": "日程",
+  "my-team-reports": "我的团队报告",
   "reporting": "报告",
   "clients": "客户",
+  "client-portal": "客户门户",
   "teams": "团队",
   "labels": "标签",
   "jobTitles": "职位",
@@ -18,8 +20,11 @@
   "profileTooltip": "查看个人资料",
   "adminCenter": "管理中心",
   "settings": "设置",
+  "getMobileApp": "获取移动应用",
   "deleteAccount": "删除账户",
   "logOut": "登出",
+  "lightMode": "浅色模式",
+  "darkMode": "深色模式",
   "notificationsDrawer": {
     "read": "已读通知",
     "unread": "未读通知",
@@ -28,5 +33,25 @@
     "accept": "接受",
     "acceptAndJoin": "接受并加入",
     "noNotifications": "没有通知"
-  }
+  },
+  "timerButton": {
+    "runningTimers": "运行中的计时器",
+    "recentTimeLogs": "最近的时间记录",
+    "unnamedTask": "未命名任务",
+    "unnamedProject": "未命名项目",
+    "parent": "父级",
+    "started": "已开始",
+    "noTimersOrLogs": "没有计时器或记录",
+    "errorLoadingTimers": "加载计时器时出错",
+    "errorRenderingTimers": "渲染计时器时出错",
+    "timerError": "计时器错误",
+    "timerRunning": "{{count}} 个计时器运行中",
+    "timerRunning_other": "{{count}} 个计时器运行中",
+    "recentLog": "{{count}} 条最近记录",
+    "recentLog_other": "{{count}} 条最近记录"
+  },
+  "clientPortalUpgradePopoverTitle": "客户门户",
+  "clientPortalUpgradePopoverBody": "通过品牌化门户与客户共享项目进度。该功能仅在 Business 方案提供。",
+  "clientPortalUpgradePopoverCta": "立即升级",
+  "closePopover": "关闭弹出层"
 }

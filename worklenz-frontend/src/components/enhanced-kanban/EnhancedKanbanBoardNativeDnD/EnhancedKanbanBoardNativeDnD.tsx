@@ -1,154 +1,113 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Card, Empty } from '@/shared/antd-imports';
 import { useSelector, useDispatch } from 'react-redux';
+import { themeWiseColor } from '@/utils/themeWiseColor';
 import { RootState } from '@/app/store';
 import '../EnhancedKanbanBoard.css';
 import '../EnhancedKanbanGroup.css';
 import '../EnhancedKanbanTaskCard.css';
 import ImprovedTaskFilters from '../../task-management/improved-task-filters';
-import Card from 'antd/es/card';
-import Spin from 'antd/es/spin';
-import Empty from 'antd/es/empty';
-import { reorderGroups, reorderEnhancedKanbanGroups, reorderTasks, reorderEnhancedKanbanTasks, fetchEnhancedKanbanLabels, fetchEnhancedKanbanGroups, fetchEnhancedKanbanTaskAssignees, updateEnhancedKanbanTaskPriority } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import KanbanGroup from './KanbanGroup';
-import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
-import { useSocket } from '@/socket/socketContext';
-import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
+import { useSocket } from '@/socket/socketContext';
+import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
 import alertService from '@/services/alerts/alertService';
 import logger from '@/utils/errorLogger';
+import {
+  reorderGroups,
+  reorderEnhancedKanbanGroups,
+  reorderTasks,
+  reorderEnhancedKanbanTasks,
+  fetchEnhancedKanbanLabels,
+  fetchEnhancedKanbanGroups,
+  fetchEnhancedKanbanTaskAssignees,
+  updateEnhancedKanbanTaskPriority,
+  selectKanbanLoadedProjectId,
+} from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
-import { useTaskSocketHandlers } from '@/hooks/useTaskSocketHandlers';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
-import { fetchPhasesByProjectId, updatePhaseListOrder } from '@/features/projects/singleProject/phase/phases.slice';
+import {
+  fetchPhasesByProjectId,
+  updatePhaseListOrder,
+} from '@/features/projects/singleProject/phase/phases.slice';
 import { useTranslation } from 'react-i18next';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
+import { SocketEvents } from '@/shared/socket-events';
+import KanbanGroup from './KanbanGroup';
+import EnhancedKanbanCreateSection from '../EnhancedKanbanCreateSection';
+
+interface DragStateRef {
+  draggedGroupId: string | null;
+  draggedTaskId: string | null;
+  draggedTaskGroupId: string | null;
+  hoveredGroupId: string | null;
+  hoveredTaskIdx: number | null;
+  dragType: 'group' | 'task' | null;
+}
+
+const initialDragState: DragStateRef = {
+  draggedGroupId: null,
+  draggedTaskId: null,
+  draggedTaskGroupId: null,
+  hoveredGroupId: null,
+  hoveredTaskIdx: null,
+  dragType: null,
+};
 
 const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
   const { t } = useTranslation('kanban-board');
   const dispatch = useDispatch();
   const authService = useAuthService();
   const { socket } = useSocket();
-  const project = useAppSelector((state: RootState) => state.projectReducer.project);
   const groupBy = useSelector((state: RootState) => state.enhancedKanbanReducer.groupBy);
   const teamId = authService.getCurrentSession()?.team_id;
-  const {
-    taskGroups,
-    loadingGroups,
-    error,
-  } = useSelector((state: RootState) => state.enhancedKanbanReducer);
-  const { phaseList, loadingPhases } = useAppSelector(state => state.phaseReducer);
-  const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [draggedTaskGroupId, setDraggedTaskGroupId] = useState<string | null>(null);
-  const [hoveredGroupId, setHoveredGroupId] = useState<string | null>(null);
-  const [hoveredTaskIdx, setHoveredTaskIdx] = useState<number | null>(null);
-  const [dragType, setDragType] = useState<'group' | 'task' | null>(null);
-  const { statusCategories, status: existingStatuses } = useAppSelector((state) => state.taskStatusReducer);
+  const { taskGroups, loadingGroups, error } = useSelector(
+    (state: RootState) => state.enhancedKanbanReducer
+  );
+  const loadedProjectId = useAppSelector(selectKanbanLoadedProjectId);
+  const { phaseList } = useAppSelector(state => state.phaseReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { statusCategories } = useAppSelector(state => state.taskStatusReducer);
 
-  // Set up socket event handlers for real-time updates
+  // Use ref for drag state to minimize re-renders
+  const dragStateRef = useRef<DragStateRef>(initialDragState);
+  // State only for hover indicators that need visual updates
+  const [hoverState, setHoverState] = useState<{ groupId: string | null; taskIdx: number | null }>({
+    groupId: null,
+    taskIdx: null,
+  });
+  // RAF throttling
+  const rafRef = useRef<number | null>(null);
+
   useTaskSocketHandlers();
 
   useEffect(() => {
-    if (projectId) {
+    if (projectId && loadedProjectId !== projectId) {
       dispatch(fetchEnhancedKanbanGroups(projectId) as any);
-      // Load filter data for enhanced kanban
       dispatch(fetchEnhancedKanbanTaskAssignees(projectId) as any);
       dispatch(fetchEnhancedKanbanLabels(projectId) as any);
     }
-
     if (!statusCategories.length) {
       dispatch(fetchStatusesCategories() as any);
     }
     if (groupBy === 'phase' && !phaseList.length) {
       dispatch(fetchPhasesByProjectId(projectId) as any);
     }
-  }, [dispatch, projectId]);
-  // Reset drag state if taskGroups changes (e.g., real-time update)
+  }, [dispatch, projectId, loadedProjectId]);
+
+  // Cleanup RAF on unmount
   useEffect(() => {
-    setDraggedGroupId(null);
-    setDraggedTaskId(null);
-    setDraggedTaskGroupId(null);
-    setHoveredGroupId(null);
-    setHoveredTaskIdx(null);
-    setDragType(null);
-  }, [taskGroups]);
-
-  // Group drag handlers
-  const handleGroupDragStart = (e: React.DragEvent, groupId: string) => {
-    setDraggedGroupId(groupId);
-    setDragType('group');
-    e.dataTransfer.effectAllowed = 'move';
-    try {
-      e.dataTransfer.setData('text/plain', groupId);
-    } catch {}
-  };
-  const handleGroupDragOver = (e: React.DragEvent) => {
-    if (dragType !== 'group') return;
-    e.preventDefault();
-  };
-  const handleGroupDrop = async (e: React.DragEvent, targetGroupId: string) => {
-    if (dragType !== 'group') return;
-    e.preventDefault();
-    if (!draggedGroupId || draggedGroupId === targetGroupId) return;
-    // Calculate new order and dispatch
-    const fromIdx = taskGroups.findIndex(g => g.id === draggedGroupId);
-    const toIdx = taskGroups.findIndex(g => g.id === targetGroupId);
-    if (fromIdx === -1 || toIdx === -1) return;
-    const reorderedGroups = [...taskGroups];
-    const [moved] = reorderedGroups.splice(fromIdx, 1);
-    reorderedGroups.splice(toIdx, 0, moved);
-    dispatch(reorderGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }));
-    dispatch(reorderEnhancedKanbanGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }) as any);
-    // API call for group order
-    try {
-      if (groupBy === 'status') {
-        const columnOrder = reorderedGroups.map(group => group.id);
-        const requestBody = { status_order: columnOrder };
-        const response = await statusApiService.updateStatusOrder(requestBody, projectId);
-        if (!response.done) {
-          // Revert the change if API call fails
-          const revertedGroups = [...reorderedGroups];
-          const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
-          revertedGroups.splice(fromIdx, 0, movedBackGroup);
-          dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
-          alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
-        }
-      } else if (groupBy === 'phase') {
-        const newPhaseList = [...phaseList];
-        const [movedItem] = newPhaseList.splice(fromIdx, 1);
-        newPhaseList.splice(toIdx, 0, movedItem);
-        dispatch(updatePhaseListOrder(newPhaseList));
-        const requestBody = {
-          from_index: fromIdx,
-          to_index: toIdx,
-          phases: newPhaseList,
-          project_id: projectId,
-        };
-        const response = await phasesApiService.updatePhaseOrder(projectId, requestBody);
-        if (!response.done) {
-          alertService.error(t('failedToUpdatePhaseOrder'), t('pleaseTryAgain'));
-        }
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
       }
-    } catch (error) {
-      // Revert the change if API call fails
-      const revertedGroups = [...reorderedGroups];
-      const [movedBackGroup] = revertedGroups.splice(toIdx, 1);
-      revertedGroups.splice(fromIdx, 0, movedBackGroup);
-      dispatch(reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups }));
-      alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
-      logger.error('Failed to update column order', error);
-    }
+    };
+  }, []);
 
-    setDraggedGroupId(null);
-    setDragType(null);
-  };
-
-  // Utility to recalculate all task orders for all groups
-  function getAllTaskUpdates(allGroups: ITaskListGroup[], groupBy: string) {
+  const getAllTaskUpdates = useCallback((allGroups: ITaskListGroup[], currentGroupBy: string) => {
     const taskUpdates: Array<{
       task_id: string | undefined;
       sort_order: number;
@@ -165,214 +124,321 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
           status_id?: string;
           priority_id?: string;
           phase_id?: string;
-        } = {
-          task_id: task.id,
-          sort_order: currentSortOrder,
-        };
-        if (groupBy === 'status') update.status_id = group.id;
-        else if (groupBy === 'priority') update.priority_id = group.id;
-        else if (groupBy === 'phase' && group.name !== 'Unmapped') update.phase_id = group.id;
+        } = { task_id: task.id, sort_order: currentSortOrder };
+        if (currentGroupBy === 'status') update.status_id = group.id;
+        else if (currentGroupBy === 'priority') update.priority_id = group.id;
+        else if (currentGroupBy === 'phase' && group.name !== 'Unmapped')
+          update.phase_id = group.id;
         taskUpdates.push(update);
         currentSortOrder++;
       }
     }
     return taskUpdates;
-  }
+  }, []);
 
-  // Task drag handlers
-  const handleTaskDragStart = (e: React.DragEvent, taskId: string, groupId: string) => {
-    setDraggedTaskId(taskId);
-    setDraggedTaskGroupId(groupId);
-    setDragType('task');
+  const handleGroupDragStart = useCallback((e: React.DragEvent, groupId: string) => {
+    dragStateRef.current = { ...dragStateRef.current, draggedGroupId: groupId, dragType: 'group' };
     e.dataTransfer.effectAllowed = 'move';
-    try {
-      e.dataTransfer.setData('text/plain', taskId);
-    } catch {}
-  };
-  const handleTaskDragOver = (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
-    if (dragType !== 'task') return;
+    e.dataTransfer.setData('text/plain', groupId);
+  }, []);
+
+  const handleGroupDragOver = useCallback((e: React.DragEvent) => {
+    if (dragStateRef.current.dragType !== 'group') return;
     e.preventDefault();
-    if (draggedTaskId) {
-      setHoveredGroupId(groupId);
-    }
-    if (taskIdx === null) {
-      setHoveredTaskIdx(0);
-    } else {
-      setHoveredTaskIdx(taskIdx);
+  }, []);
+
+  const handleGroupDrop = useCallback(
+    async (e: React.DragEvent, targetGroupId: string) => {
+      if (dragStateRef.current.dragType !== 'group') return;
+      e.preventDefault();
+
+      const { draggedGroupId } = dragStateRef.current;
+      if (!draggedGroupId || draggedGroupId === targetGroupId) {
+        dragStateRef.current = initialDragState;
+        return;
+      }
+
+      const fromIdx = taskGroups.findIndex(g => g.id === draggedGroupId);
+      const toIdx = taskGroups.findIndex(g => g.id === targetGroupId);
+      if (fromIdx === -1 || toIdx === -1) {
+        dragStateRef.current = initialDragState;
+        return;
+      }
+
+      const reorderedGroups = [...taskGroups];
+      const [moved] = reorderedGroups.splice(fromIdx, 1);
+      reorderedGroups.splice(toIdx, 0, moved);
+
+      dispatch(reorderGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }));
+      dispatch(
+        reorderEnhancedKanbanGroups({ fromIndex: fromIdx, toIndex: toIdx, reorderedGroups }) as any
+      );
+      dragStateRef.current = initialDragState;
+
+      try {
+        if (groupBy === 'status') {
+          const response = await statusApiService.updateStatusOrder(
+            { status_order: reorderedGroups.map(g => g.id) },
+            projectId
+          );
+          if (!response.done) {
+            const revertedGroups = [...reorderedGroups];
+            const [movedBack] = revertedGroups.splice(toIdx, 1);
+            revertedGroups.splice(fromIdx, 0, movedBack);
+            dispatch(
+              reorderGroups({ fromIndex: toIdx, toIndex: fromIdx, reorderedGroups: revertedGroups })
+            );
+            alertService.error(t('failedToUpdateColumnOrder'), t('pleaseTryAgain'));
+          }
+        } else if (groupBy === 'phase') {
+          const newPhaseList = [...phaseList];
+          const [movedItem] = newPhaseList.splice(fromIdx, 1);
+          newPhaseList.splice(toIdx, 0, movedItem);
+          dispatch(updatePhaseListOrder(newPhaseList));
+          await phasesApiService.updatePhaseOrder(projectId, {
+            from_index: fromIdx,
+            to_index: toIdx,
+            phases: newPhaseList,
+            project_id: projectId,
+          });
+        }
+      } catch (err) {
+        logger.error('Failed to update column order', err);
+      }
+    },
+    [taskGroups, groupBy, phaseList, projectId, dispatch, t]
+  );
+
+  const handleTaskDragStart = useCallback((e: React.DragEvent, taskId: string, groupId: string) => {
+    dragStateRef.current = {
+      ...dragStateRef.current,
+      draggedTaskId: taskId,
+      draggedTaskGroupId: groupId,
+      dragType: 'task',
     };
-  };
-  const handleTaskDrop = async (e: React.DragEvent, targetGroupId: string, targetTaskIdx: number | null) => {
-    if (dragType !== 'task') return;
-    e.preventDefault();
-    if (!draggedTaskId || !draggedTaskGroupId || hoveredGroupId === null || hoveredTaskIdx === null) return;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', taskId);
+  }, []);
 
-    // Calculate new order and dispatch
-    const sourceGroup = taskGroups.find(g => g.id === draggedTaskGroupId);
-    const targetGroup = taskGroups.find(g => g.id === targetGroupId);
-    if (!sourceGroup || !targetGroup) return;
+  const handleTaskDragOver = useCallback(
+    (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
+      if (dragStateRef.current.dragType !== 'task') return;
+      e.preventDefault();
 
-    const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
-    if (taskIdx === -1) return;
+      const newIdx = taskIdx ?? 0;
+      dragStateRef.current.hoveredGroupId = groupId;
+      dragStateRef.current.hoveredTaskIdx = newIdx;
 
-    const movedTask = sourceGroup.tasks[taskIdx];
-    let didStatusChange = false;
-    if (groupBy === 'status' && movedTask.id) {
-      if (sourceGroup.id !== targetGroup.id) {
+      // Throttle visual updates with RAF
+      if (rafRef.current === null) {
+        rafRef.current = requestAnimationFrame(() => {
+          setHoverState({ groupId, taskIdx: newIdx });
+          rafRef.current = null;
+        });
+      }
+    },
+    []
+  );
+
+  const handleTaskDrop = useCallback(
+    async (e: React.DragEvent, targetGroupId: string, _targetTaskIdx: number | null) => {
+      if (dragStateRef.current.dragType !== 'task') return;
+      e.preventDefault();
+
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+
+      const { draggedTaskId, draggedTaskGroupId, hoveredGroupId, hoveredTaskIdx } =
+        dragStateRef.current;
+
+      if (
+        !draggedTaskId ||
+        !draggedTaskGroupId ||
+        hoveredGroupId === null ||
+        hoveredTaskIdx === null
+      ) {
+        dragStateRef.current = initialDragState;
+        setHoverState({ groupId: null, taskIdx: null });
+        return;
+      }
+
+      const sourceGroup = taskGroups.find(g => g.id === draggedTaskGroupId);
+      const targetGroup = taskGroups.find(g => g.id === targetGroupId);
+      if (!sourceGroup || !targetGroup) {
+        dragStateRef.current = initialDragState;
+        setHoverState({ groupId: null, taskIdx: null });
+        return;
+      }
+
+      const taskIdx = sourceGroup.tasks.findIndex(t => t.id === draggedTaskId);
+      if (taskIdx === -1) {
+        dragStateRef.current = initialDragState;
+        setHoverState({ groupId: null, taskIdx: null });
+        return;
+      }
+
+      const movedTask = sourceGroup.tasks[taskIdx];
+      let didStatusChange = false;
+
+      if (groupBy === 'status' && movedTask.id && sourceGroup.id !== targetGroup.id) {
         const canContinue = await checkTaskDependencyStatus(movedTask.id, targetGroupId);
         if (!canContinue) {
-          alertService.error(
-            t('taskNotCompleted'),
-            t('completeTaskDependencies')
-          );
+          alertService.error(t('taskNotCompleted'), t('completeTaskDependencies'));
+          dragStateRef.current = initialDragState;
+          setHoverState({ groupId: null, taskIdx: null });
           return;
         }
         didStatusChange = true;
       }
-    }
-    let insertIdx = hoveredTaskIdx;
 
-    // Handle same group reordering
-    let newTaskGroups = [...taskGroups];
-    if (sourceGroup.id === targetGroup.id) {
-      // Create a single updated array for the same group
-      const updatedTasks = [...sourceGroup.tasks];
-      updatedTasks.splice(taskIdx, 1); // Remove from original position
+      let insertIdx = hoveredTaskIdx;
+      let newTaskGroups = [...taskGroups];
 
-      // Adjust insert index if moving forward in the same array
-      if (taskIdx < insertIdx) {
-        insertIdx--;
+      if (sourceGroup.id === targetGroup.id) {
+        const updatedTasks = [...sourceGroup.tasks];
+        updatedTasks.splice(taskIdx, 1);
+        if (taskIdx < insertIdx) insertIdx--;
+        insertIdx = Math.max(0, Math.min(insertIdx, updatedTasks.length));
+        updatedTasks.splice(insertIdx, 0, movedTask);
+
+        dispatch(
+          reorderTasks({
+            activeGroupId: sourceGroup.id,
+            overGroupId: targetGroup.id,
+            fromIndex: taskIdx,
+            toIndex: insertIdx,
+            task: movedTask,
+            updatedSourceTasks: updatedTasks,
+            updatedTargetTasks: updatedTasks,
+          })
+        );
+        dispatch(
+          reorderEnhancedKanbanTasks({
+            activeGroupId: sourceGroup.id,
+            overGroupId: targetGroup.id,
+            fromIndex: taskIdx,
+            toIndex: insertIdx,
+            task: movedTask,
+            updatedSourceTasks: updatedTasks,
+            updatedTargetTasks: updatedTasks,
+          }) as any
+        );
+
+        newTaskGroups = newTaskGroups.map(g =>
+          g.id === sourceGroup.id ? { ...g, tasks: updatedTasks } : g
+        );
+      } else {
+        const updatedSourceTasks = [...sourceGroup.tasks];
+        updatedSourceTasks.splice(taskIdx, 1);
+        const updatedTargetTasks = [...targetGroup.tasks];
+        insertIdx = Math.max(0, Math.min(insertIdx, updatedTargetTasks.length));
+        updatedTargetTasks.splice(insertIdx, 0, movedTask);
+
+        dispatch(
+          reorderTasks({
+            activeGroupId: sourceGroup.id,
+            overGroupId: targetGroup.id,
+            fromIndex: taskIdx,
+            toIndex: insertIdx,
+            task: movedTask,
+            updatedSourceTasks,
+            updatedTargetTasks,
+          })
+        );
+        dispatch(
+          reorderEnhancedKanbanTasks({
+            activeGroupId: sourceGroup.id,
+            overGroupId: targetGroup.id,
+            fromIndex: taskIdx,
+            toIndex: insertIdx,
+            task: movedTask,
+            updatedSourceTasks,
+            updatedTargetTasks,
+          }) as any
+        );
+
+        newTaskGroups = newTaskGroups.map(g => {
+          if (g.id === sourceGroup.id) return { ...g, tasks: updatedSourceTasks };
+          if (g.id === targetGroup.id) return { ...g, tasks: updatedTargetTasks };
+          return g;
+        });
       }
 
-      if (insertIdx < 0) insertIdx = 0;
-      if (insertIdx > updatedTasks.length) insertIdx = updatedTasks.length;
+      dragStateRef.current = initialDragState;
+      setHoverState({ groupId: null, taskIdx: null });
 
-      updatedTasks.splice(insertIdx, 0, movedTask); // Insert at new position
-      dispatch(reorderTasks({
-        activeGroupId: sourceGroup.id,
-        overGroupId: targetGroup.id,
-        fromIndex: taskIdx,
-        toIndex: insertIdx,
-        task: movedTask,
-        updatedSourceTasks: updatedTasks,
-        updatedTargetTasks: updatedTasks,
-      }));
-      dispatch(reorderEnhancedKanbanTasks({
-        activeGroupId: sourceGroup.id,
-        overGroupId: targetGroup.id,
-        fromIndex: taskIdx,
-        toIndex: insertIdx,
-        task: movedTask,
-        updatedSourceTasks: updatedTasks,
-        updatedTargetTasks: updatedTasks,
-      }) as any);
-      // Update newTaskGroups for socket emit
-      newTaskGroups = newTaskGroups.map(g => g.id === sourceGroup.id ? { ...g, tasks: updatedTasks } : g);
-    } else {
-      // Handle cross-group reordering
-      const updatedSourceTasks = [...sourceGroup.tasks];
-      updatedSourceTasks.splice(taskIdx, 1);
+      if (socket && projectId && teamId && movedTask) {
+        const taskUpdates = getAllTaskUpdates(newTaskGroups, groupBy);
+        socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
+          project_id: projectId,
+          group_by: groupBy || 'status',
+          task_updates: taskUpdates,
+          from_group: sourceGroup.id,
+          to_group: targetGroup.id,
+          team_id: teamId,
+          from_index: taskIdx,
+          to_index: insertIdx,
+          to_last_index:
+            insertIdx === (newTaskGroups.find(g => g.id === targetGroup.id)?.tasks.length || 0) - 1,
+          task: {
+            id: movedTask.id,
+            project_id: movedTask.project_id || projectId,
+            status: movedTask.status || '',
+            priority: movedTask.priority || '',
+          },
+        });
 
-      const updatedTargetTasks = [...targetGroup.tasks];
-      if (insertIdx < 0) insertIdx = 0;
-      if (insertIdx > updatedTargetTasks.length) insertIdx = updatedTargetTasks.length;
-      updatedTargetTasks.splice(insertIdx, 0, movedTask);
-
-      dispatch(reorderTasks({
-        activeGroupId: sourceGroup.id,
-        overGroupId: targetGroup.id,
-        fromIndex: taskIdx,
-        toIndex: insertIdx,
-        task: movedTask,
-        updatedSourceTasks,
-        updatedTargetTasks,
-      }));
-      dispatch(reorderEnhancedKanbanTasks({
-        activeGroupId: sourceGroup.id,
-        overGroupId: targetGroup.id,
-        fromIndex: taskIdx,
-        toIndex: insertIdx,
-        task: movedTask,
-        updatedSourceTasks,
-        updatedTargetTasks,
-      }) as any);
-      // Update newTaskGroups for socket emit
-      newTaskGroups = newTaskGroups.map(g => {
-        if (g.id === sourceGroup.id) return { ...g, tasks: updatedSourceTasks };
-        if (g.id === targetGroup.id) return { ...g, tasks: updatedTargetTasks };
-        return g;
-      });
-    }
-
-    // Socket emit for full task order
-    if (socket && projectId && teamId && movedTask) {
-      const taskUpdates = getAllTaskUpdates(newTaskGroups, groupBy);
-      socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), {
-        project_id: projectId,
-        group_by: groupBy || 'status',
-        task_updates: taskUpdates,
-        from_group: sourceGroup.id,
-        to_group: targetGroup.id,
-        team_id: teamId,
-        from_index: taskIdx,
-        to_index: insertIdx,
-        to_last_index: insertIdx === (targetGroup.id === sourceGroup.id ? (newTaskGroups.find(g => g.id === targetGroup.id)?.tasks.length || 0) - 1 : targetGroup.tasks.length),
-        task: {
-          id: movedTask.id,
-          project_id: movedTask.project_id || projectId,
-          status: movedTask.status || '',
-          priority: movedTask.priority || '',
+        if (didStatusChange) {
+          socket.emit(
+            SocketEvents.TASK_STATUS_CHANGE.toString(),
+            JSON.stringify({
+              task_id: movedTask.id,
+              status_id: targetGroupId,
+              parent_task: movedTask.parent_task_id || null,
+              team_id: teamId,
+            })
+          );
         }
-      });
 
-      // Emit progress update if status changed
-      if (didStatusChange) {
-        socket.emit(
-          SocketEvents.TASK_STATUS_CHANGE.toString(),
-          JSON.stringify({
-            task_id: movedTask.id,
-            status_id: targetGroupId,
-            parent_task: movedTask.parent_task_id || null,
-            team_id: teamId,
-          })
-        );
+        if (groupBy === 'priority' && movedTask.id) {
+          socket.emit(
+            SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+            JSON.stringify({
+              task_id: movedTask.id,
+              priority_id: targetGroupId,
+              team_id: teamId,
+            })
+          );
+          socket.once(
+            SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+            (data: ITaskListPriorityChangeResponse) => {
+              dispatch(updateEnhancedKanbanTaskPriority(data));
+            }
+          );
+        }
       }
-      if (groupBy === 'priority' && movedTask.id) {
-        socket?.emit(
-          SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-          JSON.stringify({
-            task_id: movedTask.id,
-            priority_id: targetGroupId,
-            team_id: teamId,
-          })
-        );
-        socket?.once(
-          SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-          (data: ITaskListPriorityChangeResponse) => {
-            dispatch(updateEnhancedKanbanTaskPriority(data));
-          }
-        );
-      }
+    },
+    [taskGroups, groupBy, projectId, teamId, socket, dispatch, t, getAllTaskUpdates]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     }
-
-    setDraggedTaskId(null);
-    setDraggedTaskGroupId(null);
-    setHoveredGroupId(null);
-    setHoveredTaskIdx(null);
-    setDragType(null);
-  };
-
-  const handleDragEnd = () => {
-    setHoveredGroupId(null);
-    setHoveredTaskIdx(null);
-  };
-
-  // Note: Socket event handlers are now managed by useTaskSocketHandlers hook
-  // This includes TASK_NAME_CHANGE, QUICK_TASK, and other real-time updates
+    dragStateRef.current = initialDragState;
+    setHoverState({ groupId: null, taskIdx: null });
+  }, []);
 
   if (error) {
     return (
       <Card>
-        <Empty description={`${t('errorLoadingTasks')}: ${error}`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty
+          description={`${t('errorLoadingTasks')}: ${error}`}
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
       </Card>
     );
   }
@@ -387,10 +453,34 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
       <div className="enhanced-kanban-board">
         {loadingGroups ? (
           <div className="flex flex-row gap-2 h-[600px]">
-            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '60%' }} />
-            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '100%' }} />
-            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '80%' }} />
-            <div className="rounded bg-gray-200 dark:bg-gray-700 animate-pulse w-1/4" style={{ height: '40%' }} />
+            <div
+              className="rounded animate-pulse w-1/6"
+              style={{
+                height: '60%',
+                backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode),
+              }}
+            />
+            <div
+              className="rounded animate-pulse w-1/6"
+              style={{
+                height: '100%',
+                backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode),
+              }}
+            />
+            <div
+              className="rounded animate-pulse w-1/6"
+              style={{
+                height: '80%',
+                backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode),
+              }}
+            />
+            <div
+              className="rounded animate-pulse w-1/6"
+              style={{
+                height: '40%',
+                backgroundColor: themeWiseColor('#e5e7eb', '#1e1e1e', themeMode),
+              }}
+            />
           </div>
         ) : taskGroups.length === 0 ? (
           <Card>
@@ -409,8 +499,8 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
                 onTaskDragOver={handleTaskDragOver}
                 onTaskDrop={handleTaskDrop}
                 onDragEnd={handleDragEnd}
-                hoveredTaskIdx={hoveredGroupId === group.id ? hoveredTaskIdx : null}
-                hoveredGroupId={hoveredGroupId}
+                hoveredTaskIdx={hoverState.groupId === group.id ? hoverState.taskIdx : null}
+                hoveredGroupId={hoverState.groupId}
               />
             ))}
             <EnhancedKanbanCreateSection />
@@ -421,4 +511,4 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   );
 };
 
-export default EnhancedKanbanBoardNativeDnD; 
+export default EnhancedKanbanBoardNativeDnD;

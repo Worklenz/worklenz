@@ -1,31 +1,32 @@
-import { InputRef } from 'antd/es/input';
-import Card from 'antd/es/card';
-import Checkbox from 'antd/es/checkbox';
-import Divider from 'antd/es/divider';
-import Dropdown from 'antd/es/dropdown';
-import Empty from 'antd/es/empty';
-import Flex from 'antd/es/flex';
-import Input from 'antd/es/input';
-import List from 'antd/es/list';
-import Typography from 'antd/es/typography';
-import Button from 'antd/es/button';
-
 import { useMemo, useRef, useState } from 'react';
+import {
+  InputRef,
+  PlusOutlined,
+  UsergroupAddOutlined,
+  Card,
+  Flex,
+  Input,
+  List,
+  Typography,
+  Checkbox,
+  Divider,
+  Button,
+  Empty,
+  Dropdown,
+  CheckboxChangeEvent,
+} from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleProjectMemberDrawer } from '../../../features/projects/singleProject/members/projectMembersSlice';
-import { colors } from '../../../styles/colors';
-import { PlusOutlined, UsergroupAddOutlined } from '@/shared/antd-imports';
+import { toggleProjectMemberDrawer } from '@features/projects/singleProject/members/projectMembersSlice';
+import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
-import { sortByBooleanField, sortBySelection, sortTeamMembers } from '@/utils/sort-team-members';
+import { sortTeamMembers } from '@/utils/sort-team-members';
 import { useAuthService } from '@/hooks/useAuth';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { getTeamMembers } from '@/features/team-members/team-members.slice';
 
 interface BoardAssigneeSelectorProps {
   task: IProjectTask;

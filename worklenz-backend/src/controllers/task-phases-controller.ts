@@ -74,11 +74,31 @@ export default class TaskPhasesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async updateColor(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Sanitize color code to ensure it matches the database constraint
+    let colorCode = req.body.color_code || this.DEFAULT_PHASE_COLOR;
+    
+    // Extract only the hex color part (first 7 characters: #RRGGBB)
+    // This removes any alpha channel or extra characters
+    if (colorCode.startsWith('#')) {
+      colorCode = colorCode.substring(0, 7);
+    }
+    
+    // Validate the color format matches #RRGGBB or #RGB
+    const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+    
+    if (!hexColorRegex.test(colorCode)) {
+      // If invalid, use default color
+      colorCode = this.DEFAULT_PHASE_COLOR;
+    }
+    
+    // Convert to lowercase to ensure consistency
+    colorCode = colorCode.toLowerCase();
+
     const q = `
       UPDATE project_phases SET color_code = $3 WHERE id = $1 AND project_id = $2 RETURNING id, name, color_code;
     `;
 
-    const result = await db.query(q, [req.params.id, req.query.id, req.body.color_code.substring(0, req.body.color_code.length - 2)]);
+    const result = await db.query(q, [req.params.id, req.query.id, colorCode]);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data));

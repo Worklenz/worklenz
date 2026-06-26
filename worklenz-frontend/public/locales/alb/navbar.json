@@ -3,8 +3,9 @@
   "home": "Kryefaqja",
   "projects": "Projektet",
   "schedule": "Orari",
-  "reporting": "Raportimi",
+  "my-team-reports": "Raportet e Ekipit Tim",
   "clients": "Klientët",
+  "client-portal": "Portal Klienti",
   "teams": "Ekipet",
   "labels": "Etiketa",
   "jobTitles": "Tituj Pune",
@@ -18,8 +19,11 @@
   "profileTooltip": "Shiko profilin",
   "adminCenter": "Qendra Administrative",
   "settings": "Cilësimet",
+  "getMobileApp": "Merr aplikacionin mobil",
   "deleteAccount": "Fshij Llogarinë",
   "logOut": "Dil",
+  "lightMode": "Modaliteti i Ndritshëm",
+  "darkMode": "Modaliteti i Errët",
   "notificationsDrawer": {
     "read": "Lexuara e njoftimet ",
     "unread": "Njoftimet e palexuara",
@@ -28,5 +32,26 @@
     "accept": "Prano",
     "acceptAndJoin": "Prano & Bashkohu",
     "noNotifications": "Asnjë njoftim"
-  }
+  },
+  "timerButton": {
+    "runningTimers": "Kohëmatësit në Punë",
+    "recentTimeLogs": "Regjistrat e Kohës së Fundit",
+    "unnamedTask": "Detyrë pa Emër",
+    "unnamedProject": "Projekt pa Emër",
+    "parent": "Prind",
+    "started": "Filluar",
+    "noTimersOrLogs": "Asnjë kohëmatës ose regjistër",
+    "errorLoadingTimers": "Gabim në ngarkimin e kohëmatësve",
+    "errorRenderingTimers": "Gabim në shfaqjen e kohëmatësve",
+    "timerError": "Gabim Kohëmatësi",
+    "timerRunning": "{{count}} kohëmatës në punë",
+    "timerRunning_other": "{{count}} kohëmatës në punë",
+    "recentLog": "{{count}} regjistër i fundit",
+    "recentLog_other": "{{count}} regjistrat e fundit"
+  },
+  "reporting": "Reports",
+  "clientPortalUpgradePopoverTitle": "Portali i Klientit",
+  "clientPortalUpgradePopoverBody": "Ndani progresin e projektit me klientët tuaj përmes një portali të markuar. I disponueshëm në planin Business.",
+  "clientPortalUpgradePopoverCta": "Përmirëso Tani",
+  "closePopover": "Mbyll dritaren"
 }
