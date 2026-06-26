@@ -36,9 +36,9 @@ BEGIN
               WHERE id = (SELECT category_id FROM task_statuses WHERE id = NEW.status_id)
                 AND is_done IS TRUE)
     THEN
-        UPDATE tasks SET completed_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+        NEW.completed_at = CURRENT_TIMESTAMP;
     ELSE
-        UPDATE tasks SET completed_at = NULL WHERE id = NEW.id;
+        NEW.completed_at = NULL;
     END IF;
 
     RETURN NEW;
@@ -46,7 +46,7 @@ END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER tasks_status_id_change
-    AFTER UPDATE OF status_id
+    BEFORE UPDATE OF status_id
     ON tasks
     FOR EACH ROW
     WHEN (OLD.status_id IS DISTINCT FROM new.status_id)
@@ -134,6 +134,32 @@ CREATE TRIGGER projects_tasks_counter_trigger
     FOR EACH ROW
 EXECUTE FUNCTION update_project_tasks_counter_trigger_fn();
 -- Update project tasks counter
+
+-- Set default project priority
+CREATE OR REPLACE FUNCTION set_project_default_priority_trigger_fn() RETURNS TRIGGER AS
+$$
+DECLARE
+BEGIN
+    IF NEW.priority_id IS NULL
+    THEN
+        SELECT id
+        FROM task_priorities
+        WHERE name = 'Medium'
+        LIMIT 1
+        INTO NEW.priority_id;
+    END IF;
+
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS projects_default_priority_trigger ON projects;
+CREATE TRIGGER projects_default_priority_trigger
+    BEFORE INSERT OR UPDATE OF priority_id
+    ON projects
+    FOR EACH ROW
+EXECUTE FUNCTION set_project_default_priority_trigger_fn();
+-- Set default project priority
 
 -- Task status change trigger
 CREATE OR REPLACE FUNCTION tasks_task_subscriber_notify_done_trigger() RETURNS TRIGGER AS

@@ -1,0 +1,136 @@
+{
+  "title": "Integração do Slack",
+  "connectWorkspace": "Conectar Espaço de Trabalho do Slack",
+  "addChannelConfig": "Adicionar Configuração de Canal",
+  "manageConfigurations": "Gerenciar",
+  "manageTitle": "Gerenciar Configurações do Slack",
+  "defaultWorkspaceName": "Espaço de Trabalho do Slack",
+  "connectedDescription": "O espaço de trabalho do Slack da sua equipe está conectado. Configure quais canais recebem notificações para cada projeto.",
+  "status": {
+    "connected": "Conectado"
+  },
+  "stats": {
+    "total": "Total",
+    "active": "Ativo",
+    "available": "Disponível"
+  },
+  "setup": {
+    "title": "Instruções de Configuração",
+    "step1": {
+      "title": "1. Conectar seu Espaço de Trabalho",
+      "description": "Clique no botão 'Conectar Espaço de Trabalho do Slack' abaixo para autorizar o Worklenz a acessar seu espaço de trabalho do Slack."
+    },
+    "step2": {
+      "title": "2. Convidar Bot para os Canais",
+      "description": "Em cada canal do Slack onde você deseja receber notificações, digite:",
+      "command": "/invite @Worklenz",
+      "note": "Você só precisa fazer isso uma vez por canal."
+    },
+    "step3": {
+      "title": "3. Configurar Notificações",
+      "description": "Após conectar, clique em 'Gerenciar' para configurar quais projetos enviam notificações para quais canais."
+    }
+  },
+  "instructions": {
+    "inviteBot": {
+      "title": "Não esqueça de convidar o bot!",
+      "description": "Antes de receber notificações em um canal do Slack, você deve convidar o bot Worklenz para esse canal.",
+      "step": "Em seu canal do Slack, digite: <code>/invite @Worklenz</code>",
+      "note": "Isso só precisa ser feito uma vez por canal."
+    },
+    "getStarted": "Comece adicionando uma configuração de canal para receber notificações de seus projetos."
+  },
+  "disconnect": {
+    "title": "Desconectar Slack?",
+    "content": "Isso removerá todas as configurações do Slack e interromperá as notificações para sua equipe.",
+    "okText": "Desconectar"
+  },
+  "deleteConfig": {
+    "title": "Excluir Configuração?",
+    "content": "Tem certeza de que deseja remover esta configuração de canal?",
+    "okText": "Excluir"
+  },
+  "notConnected": {
+    "title": "Conecte seu Espaço de Trabalho do Slack",
+    "description": "Integre o Slack com sua equipe do Worklenz para receber notificações em tempo real, criar tarefas do Slack e manter sua equipe sincronizada em ambas as plataformas."
+  },
+  "features": {
+    "notifications": {
+      "title": "Notificações em Tempo Real",
+      "description": "Receba notificações sobre atualizações de tarefas, comentários e prazos"
+    },
+    "createTasks": {
+      "title": "Criar Tarefas do Slack",
+      "description": "Use comandos slash para criar rapidamente tarefas sem sair do Slack"
+    },
+    "collaboration": {
+      "title": "Colaboração em Equipe",
+      "description": "Mantenha toda sua equipe sincronizada entre Worklenz e Slack"
+    }
+  },
+  "table": {
+    "project": "Projeto",
+    "slackChannel": "Canal do Slack",
+    "notifications": "Notificações",
+    "active": "Ativo",
+    "actions": "Ações",
+    "channelConfigs": "Configurações de Canais do Slack",
+    "toggleStatus": "Alternar status para {{channel}}",
+    "editConfig": "Editar configuração para {{channel}}",
+    "deleteConfig": "Excluir configuração para {{channel}}"
+  },
+  "modal": {
+    "configureChannel": "Configurar Canal do Slack",
+    "editChannel": "Editar Canal do Slack",
+    "project": "Projeto",
+    "selectProject": "Selecionar um projeto",
+    "slackChannel": "Canal do Slack",
+    "selectSlackChannel": "Selecionar um canal do Slack",
+    "notificationTypes": "Tipos de Notificação",
+    "selectNotificationTypes": "Selecionar tipos de notificação",
+    "refreshChannels": "Atualizar",
+    "notificationOptions": {
+      "taskCreated": "Tarefa criada",
+      "taskUpdated": "Tarefa atualizada",
+      "taskCompleted": "Tarefa concluída",
+      "taskAssigned": "Tarefa atribuída",
+      "commentAdded": "Comentário adicionado",
+      "statusChanged": "Status alterado",
+      "dueDateChanged": "Data de vencimento alterada",
+      "dueDateReminder": "Lembrete de data de vencimento",
+      "assigneeChanged": "Responsável alterado",
+      "priorityChanged": "Prioridade alterada"
+    },
+    "addConfiguration": "Adicionar Configuração",
+    "updateConfiguration": "Atualizar Configuração"
+  },
+  "validation": {
+    "selectProject": "Por favor, selecione um projeto",
+    "selectChannel": "Por favor, selecione um canal do Slack",
+    "selectNotifications": "Por favor, selecione pelo menos um tipo de notificação"
+  },
+  "messages": {
+    "connectedSuccess": "Espaço de trabalho do Slack conectado com sucesso!",
+    "installationCancelled": "Instalação do Slack cancelada",
+    "disconnectedSuccess": "Espaço de trabalho do Slack desconectado com sucesso",
+    "configAdded": "Configuração de canal adicionada com sucesso",
+    "configUpdated": "Configuração de canal atualizada com sucesso",
+    "statusUpdated": "Status do canal atualizado com sucesso",
+    "configRemoved": "Configuração de canal removida com sucesso",
+    "channelsRefreshed": "Canais atualizados com sucesso"
+  },
+  "errors": {
+    "connectionCheckFailed": "Falha ao verificar conexão do Slack",
+    "loadConfigsFailed": "Falha ao carregar configurações de canais",
+    "loadChannelsFailed": "Falha ao carregar canais disponíveis",
+    "loadProjectsFailed": "Falha ao carregar projetos",
+    "initiateConnectionFailed": "Falha ao iniciar conexão do Slack",
+    "connectionFailed": "Falha ao conectar espaço de trabalho do Slack",
+    "disconnectFailed": "Falha ao desconectar espaço de trabalho do Slack",
+    "addConfigFailed": "Falha ao adicionar configuração do canal",
+    "updateConfigFailed": "Falha ao atualizar configuração do canal",
+    "updateStatusFailed": "Falha ao atualizar status do canal",
+    "removeConfigFailed": "Falha ao remover configuração do canal",
+    "refreshChannelsFailed": "Falha ao atualizar canais"
+  }
+}

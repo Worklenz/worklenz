@@ -7,6 +7,7 @@ import { toggleDrawer } from '../../../../../features/navbar/notificationSlice';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { formatDistanceToNow } from 'date-fns';
 import { tagBackground } from '@/utils/colorUtils';
+import DOMPurify from 'dompurify';
 
 interface NotificationTemplateProps {
   item: IWorklenzNotification;
@@ -54,6 +55,17 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
     markNotificationAsRead(item.id);
   };
 
+  // Sanitize notification message to prevent XSS attacks
+  // Allow only safe formatting tags (b, strong, i, em) and no attributes
+  // Additional security options to prevent any XSS vectors
+  const sanitizedMessage = DOMPurify.sanitize(item.message, {
+    ALLOWED_TAGS: ['b', 'strong', 'i', 'em'],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true,
+    ALLOW_DATA_ATTR: false,
+    SAFE_FOR_TEMPLATES: true,
+  });
+
   return (
     <div
       style={{ width: 'auto', border: `2px solid ${item.color}4d` }}
@@ -65,7 +77,7 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
           <Typography.Text type="secondary" className="mb-1">
             <BankOutlined /> {item.team}
           </Typography.Text>
-          <div className="mb-1" dangerouslySetInnerHTML={{ __html: item.message }} />
+          <div className="mb-1" dangerouslySetInnerHTML={{ __html: sanitizedMessage }} />
           {item.project && item.color && (
             <Tag style={{ backgroundColor: tagBackground(item.color) }}>{item.project}</Tag>
           )}

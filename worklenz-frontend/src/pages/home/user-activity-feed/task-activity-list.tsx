@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { Table, Typography, Tooltip, theme } from 'antd';
+import { Table, Typography, Tooltip, theme } from '@/shared/antd-imports';
 import { FileTextOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -9,6 +9,7 @@ import {
   setShowTaskDrawer,
   fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
+import { setProjectId } from '@/features/project/project.slice';
 import { IUserRecentTask } from '@/types/home/user-activity.types';
 
 const { Text } = Typography;
@@ -24,6 +25,9 @@ const TaskActivityList: React.FC<TaskActivityListProps> = React.memo(({ tasks })
 
   const handleTaskClick = useCallback(
     (taskId: string, projectId: string) => {
+      // Ensure projectId is set in the store so components like AssigneeSelector
+      // which depend on projectId (for example to enable assigning members) work
+      dispatch(setProjectId(projectId || ''));
       dispatch(setSelectedTaskId(taskId));
       dispatch(setShowTaskDrawer(true));
       dispatch(fetchTask({ taskId, projectId }));
@@ -35,23 +39,25 @@ const TaskActivityList: React.FC<TaskActivityListProps> = React.memo(({ tasks })
     {
       key: 'task',
       render: (record: IUserRecentTask) => (
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'flex-start', 
-            gap: 12, 
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
             width: '100%',
             cursor: 'pointer',
-            padding: '8px 0'
+            padding: '8px 0',
           }}
           onClick={() => handleTaskClick(record.task_id, record.project_id)}
           aria-label={`${t('tasks.recentTaskAriaLabel')} ${record.task_name}`}
         >
-          <div style={{ 
-            marginTop: 2,
-            color: token.colorPrimary,
-            fontSize: 16
-          }}>
+          <div
+            style={{
+              marginTop: 2,
+              color: token.colorPrimary,
+              fontSize: 16,
+            }}
+          >
             <FileTextOutlined />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -64,7 +70,7 @@ const TaskActivityList: React.FC<TaskActivityListProps> = React.memo(({ tasks })
               <Text type="secondary" style={{ fontSize: 12 }}>
                 {record.project_name}
               </Text>
-              <Tooltip 
+              <Tooltip
                 title={formatDate(record.last_activity_at, 'MMMM Do YYYY, h:mm:ss a')}
                 placement="topRight"
               >

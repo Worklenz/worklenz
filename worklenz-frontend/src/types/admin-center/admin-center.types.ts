@@ -6,6 +6,12 @@ export interface IOrganization {
   email?: string;
   contact_number?: string;
   contact_number_secondary?: string;
+  calculation_method?: 'hourly' | 'man_days';
+  hours_per_day?: number;
+  country_code?: string;
+  state_code?: string;
+  auto_sync_holidays?: boolean;
+  logo_url?: string;
 }
 
 export interface IOrganizationAdmin {
@@ -79,15 +85,22 @@ export interface IBillingAccountInfo {
   unit_price?: number;
   unit_price_per_month?: number;
   usedPercentage?: number;
-  used_percent?: number;
   usedStorage?: number;
   is_custom?: boolean;
   is_ltd_user?: boolean;
   ltd_users?: number;
+  redeemed_codes_count?: number;
+  appsumo_business_eligible?: boolean;
   total_seats?: number;
   total_used?: number;
   is_lkr_billing?: boolean;
   subscription_type?: ISUBSCRIPTION_TYPE;
+  pricing_model?: 'per_user' | 'flat_rate';
+  flat_rate_price?: number;
+  flat_rate_max_users?: number;
+  actual_users?: number;
+  subscription_id?: string;
+  redeemed_codes_count?: number;
 }
 
 export interface IPricingPlans {
@@ -133,6 +146,33 @@ export interface IUpgradeSubscriptionPlanResponse {
   params: IPaddleCheckoutParams;
   sandbox: boolean;
   vendor_id: string;
+  pricing_model?: 'per_user' | 'flat_rate';
+  plan_variant?: any;
+}
+
+export interface IPricingOption {
+  plan_id: string;
+  plan_name: string;
+  variant_type: 'per_user' | 'flat_rate';
+  flat_price?: number;
+  per_user_price?: number;
+  user_range_min: number;
+  user_range_max: number;
+  total_cost: number;
+  is_recommended: boolean;
+}
+
+export interface IPricingComparison {
+  per_user: {
+    total: number;
+    per_seat: number;
+    recommended: boolean;
+  };
+  flat_rate: {
+    total: number;
+    max_users: number;
+    recommended: boolean;
+  };
 }
 
 export interface IBillingConfiguration {

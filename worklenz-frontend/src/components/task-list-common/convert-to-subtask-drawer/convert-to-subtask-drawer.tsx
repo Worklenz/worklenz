@@ -1,4 +1,13 @@
-import { Drawer, Tag, Typography, Flex, Table, Button, Tooltip, Skeleton } from 'antd/es';
+import {
+  Drawer,
+  Tag,
+  Typography,
+  Flex,
+  Table,
+  Button,
+  Tooltip,
+  Skeleton,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';

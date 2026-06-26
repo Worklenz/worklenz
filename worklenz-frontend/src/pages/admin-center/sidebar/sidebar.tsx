@@ -4,15 +4,31 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
 import { useTranslation } from 'react-i18next';
-import { adminCenterItems } from '../admin-center-constants';
+import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
+import { useAuthService } from '@/hooks/useAuth';
+import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const AdminCenterSidebar: React.FC = () => {
   const { t } = useTranslation('admin-center/sidebar');
   const location = useLocation();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const { isBusinessPlan } = useBusinessFeatures();
 
   type MenuItem = Required<MenuProps>['items'][number];
-  const menuItems = adminCenterItems;
+  const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+
+  const menuItems = adminCenterItems.filter(item => {
+    if (item.key === 'settings') {
+      return isBusinessPlan;
+    }
+    if (item.selfHostedExcluded && isSelfHosted) {
+      return false;
+    }
+    return true;
+  });
 
   const items: MenuItem[] = [
     ...menuItems.map(item => ({
@@ -21,7 +37,9 @@ const AdminCenterSidebar: React.FC = () => {
         <Flex gap={8} justify="space-between" className="admin-center-sidebar-button">
           <Flex gap={8}>
             {item.icon}
-            <Link to={`/worklenz/admin-center/${item.endpoint}`}>{t(item.name)}</Link>
+            <Link to={`/worklenz/admin-center/${item.endpoint}`}>
+              {t(item.name, { defaultValue: item.defaultValue })}
+            </Link>
           </Flex>
           <RightOutlined style={{ fontSize: 12, fontWeight: 'bold' }} />
         </Flex>

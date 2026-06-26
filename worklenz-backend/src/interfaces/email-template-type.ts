@@ -7,10 +7,14 @@ export enum IEmailTemplateType {
   Welcome,
   OTPVerification,
   ResetPassword,
+  ResetPasswordClientPortal,
   TaskAssigneeChange,
   DailyDigest,
   TaskDone,
   ProjectDailyDigest,
   TaskComment,
-  ProjectComment
+  ProjectComment,
+  ClientInvitation,
+  ClientPortalNewRequest,
+  ClientPortalRequestComment
 }

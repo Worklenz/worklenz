@@ -1,8 +1,8 @@
 import React from 'react';
-import { Button, DatePicker, Form, Input, TimePicker, Flex } from '@/shared/antd-imports';
+import { Button, DatePicker, Form, Input, TimePicker, Flex, InputNumber, Segmented } from '@/shared/antd-imports';
 import { ClockCircleOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -20,6 +20,17 @@ interface TimeLogFormProps {
   mode?: 'create' | 'edit';
 }
 
+type TimeLogInputMode = 'duration' | 'timeRange';
+
+interface TimeLogFormValues {
+  date: Dayjs | null;
+  startTime: Dayjs | null;
+  endTime: Dayjs | null;
+  hours: number | null;
+  minutes: number | null;
+  description?: string;
+}
+
 const TimeLogForm = ({
   onCancel,
   onSubmitSuccess,
@@ -30,18 +41,57 @@ const TimeLogForm = ({
   const currentSession = useAuthService().getCurrentSession();
   const { socket, connected } = useSocket();
   const [form] = Form.useForm();
-  const [formValues, setFormValues] = React.useState<{
-    date: any;
-    startTime: any;
-    endTime: any;
-  }>({
-    date: null,
-    startTime: null,
-    endTime: null,
+  const [inputMode, setInputMode] = React.useState<TimeLogInputMode>('duration');
+  const [formValues, setFormValues] = React.useState<TimeLogFormValues>({
+    date: dayjs(),
+    startTime: dayjs().second(0).millisecond(0),
+    endTime: dayjs().second(0).millisecond(0).add(30, 'minute'),
+    hours: 0,
+    minutes: 30,
   });
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
+
+  const getNowRoundedToMinute = React.useCallback(() => {
+    return dayjs().second(0).millisecond(0);
+  }, []);
+
+  const getDurationFromRange = React.useCallback((startTime?: Dayjs | null, endTime?: Dayjs | null) => {
+    if (!startTime || !endTime || endTime.isBefore(startTime)) {
+      return { hours: 0, minutes: 0 };
+    }
+
+    const totalMinutes = endTime.diff(startTime, 'minute');
+    return {
+      hours: Math.floor(totalMinutes / 60),
+      minutes: totalMinutes % 60,
+    };
+  }, []);
+
+  const getRangeFromDuration = React.useCallback(
+    (
+      dateValue?: Dayjs | null,
+      startTimeValue?: Dayjs | null,
+      hoursValue?: number | null,
+      minutesValue?: number | null
+    ) => {
+      const safeDate = dateValue || dayjs();
+      const safeStartTime = startTimeValue || getNowRoundedToMinute();
+      const totalMinutes = Math.max(0, Number(hoursValue || 0) * 60 + Number(minutesValue || 0));
+      const normalizedStart = dayjs(safeDate)
+        .hour(safeStartTime.hour())
+        .minute(safeStartTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      return {
+        startTime: normalizedStart,
+        endTime: normalizedStart.add(totalMinutes, 'minute'),
+      };
+    },
+    [getNowRoundedToMinute]
+  );
 
   React.useEffect(() => {
     if (initialValues && mode === 'edit') {
@@ -56,10 +106,14 @@ const TimeLogForm = ({
         endTime = dayjs(initialValues.end_time || initialValues.created_at);
       }
 
+      const { hours, minutes } = getDurationFromRange(startTime, endTime);
+
       form.setFieldsValue({
         date: createdAt,
         startTime: startTime,
         endTime: endTime,
+        hours,
+        minutes,
         description: initialValues.description || '',
       });
 
@@ -67,9 +121,22 @@ const TimeLogForm = ({
         date: createdAt,
         startTime: startTime,
         endTime: endTime,
+        hours,
+        minutes,
+        description: initialValues.description || '',
+      });
+    } else if (mode === 'create') {
+      const now = getNowRoundedToMinute();
+      const nextHalfHour = now.add(30, 'minute');
+      form.setFieldsValue({
+        date: dayjs(),
+        startTime: now,
+        endTime: nextHalfHour,
+        hours: 0,
+        minutes: 30,
       });
     }
-  }, [initialValues, mode, form]);
+  }, [initialValues, mode, form, getDurationFromRange, getNowRoundedToMinute]);
 
   const quickAssignMember = (session: any) => {
     if (!taskFormViewModel?.task || !connected) return;
@@ -93,59 +160,132 @@ const TimeLogForm = ({
     );
   };
 
-  const mapToRequest = () => {
-    return {
-      id: taskFormViewModel?.task?.id || undefined,
-      project_id: taskFormViewModel?.task?.project_id as string,
-      start_time: form.getFieldValue('startTime') || null,
-      end_time: form.getFieldValue('endTime') || null,
-      description: form.getFieldValue('description'),
-      created_at: form.getFieldValue('date') || null,
-    };
+  const handleModeChange = (nextMode: TimeLogInputMode) => {
+    if (nextMode === inputMode) return;
+
+    const currentDate = form.getFieldValue('date') as Dayjs | null;
+    const currentStartTime = form.getFieldValue('startTime') as Dayjs | null;
+    const currentEndTime = form.getFieldValue('endTime') as Dayjs | null;
+    const currentHours = form.getFieldValue('hours') as number | null;
+    const currentMinutes = form.getFieldValue('minutes') as number | null;
+
+    if (nextMode === 'duration') {
+      const { hours, minutes } = getDurationFromRange(currentStartTime, currentEndTime);
+      form.setFieldsValue({ hours, minutes });
+      setFormValues(prev => ({ ...prev, hours, minutes }));
+    } else {
+      const { startTime, endTime } = getRangeFromDuration(
+        currentDate,
+        currentStartTime,
+        currentHours,
+        currentMinutes
+      );
+      form.setFieldsValue({ startTime, endTime });
+      setFormValues(prev => ({ ...prev, startTime, endTime }));
+    }
+
+    setInputMode(nextMode);
   };
 
-  const createReqBody = () => {
-    const map = mapToRequest();
-    if (!map.start_time || !map.end_time || !map.created_at) return;
+  const createReqBody = (values: TimeLogFormValues) => {
+    if (!values.date) return;
 
-    const createdAt = new Date(map.created_at);
-    const startTime = dayjs(map.start_time);
-    const endTime = dayjs(map.end_time);
+    const dateValue = dayjs(values.date);
+    const startTimeValue = values.startTime || getNowRoundedToMinute();
 
-    const formattedStartTime = dayjs(createdAt)
-      .hour(startTime.hour())
-      .minute(startTime.minute())
+    if (inputMode === 'timeRange') {
+      if (!values.startTime || !values.endTime) return;
+
+      const formattedStartTime = dayjs(dateValue)
+        .hour(values.startTime.hour())
+        .minute(values.startTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      const formattedEndTime = dayjs(dateValue)
+        .hour(values.endTime.hour())
+        .minute(values.endTime.minute())
+        .second(0)
+        .millisecond(0);
+
+      const diff = formattedEndTime.diff(formattedStartTime, 'seconds');
+
+      return {
+        id: mode === 'edit' && initialValues?.id ? initialValues.id : taskFormViewModel?.task?.id,
+        project_id: taskFormViewModel?.task?.project_id as string,
+        formatted_start: formattedStartTime.toISOString(),
+        seconds_spent: Math.floor(Math.abs(diff)),
+        description: values.description,
+      };
+    }
+
+    const hours = Math.max(0, Number(values.hours || 0));
+    const minutes = Math.max(0, Number(values.minutes || 0));
+    const secondsSpent = hours * 3600 + minutes * 60;
+
+    const formattedStartTime = dayjs(dateValue)
+      .hour(startTimeValue.hour())
+      .minute(startTimeValue.minute())
       .second(0)
       .millisecond(0);
-
-    const formattedEndTime = dayjs(createdAt)
-      .hour(endTime.hour())
-      .minute(endTime.minute())
-      .second(0)
-      .millisecond(0);
-
-    const diff = formattedStartTime.diff(formattedEndTime, 'seconds');
 
     return {
       id: mode === 'edit' && initialValues?.id ? initialValues.id : taskFormViewModel?.task?.id,
       project_id: taskFormViewModel?.task?.project_id as string,
       formatted_start: formattedStartTime.toISOString(),
-      seconds_spent: Math.floor(Math.abs(diff)),
-      description: map.description,
+      seconds_spent: secondsSpent,
+      description: values.description,
     };
   };
 
-  const onFinish = async (values: any) => {
-    const { date, startTime, endTime } = values;
+  const onFinish = async (values: TimeLogFormValues) => {
+    const { startTime, endTime } = values;
 
-    if (startTime && endTime && startTime.isAfter(endTime)) {
+    if (inputMode === 'timeRange' && startTime && endTime && startTime.isAfter(endTime)) {
       form.setFields([
         {
           name: 'endTime',
-          errors: [t('taskTimeLogTab.timeLogForm.endTimeAfterStartError')],
+          errors: [
+            t('taskTimeLogTab.timeLogForm.endTimeAfterStartError', {
+              defaultValue: 'End time must be after start time',
+            }),
+          ],
         },
       ]);
       return;
+    }
+
+    if (inputMode === 'duration') {
+      const minutes = Number(values.minutes || 0);
+      const hours = Number(values.hours || 0);
+
+      if (minutes > 59) {
+        form.setFields([
+          {
+            name: 'minutes',
+            errors: [
+              t('taskTimeLogTab.timeLogForm.minutesRangeError', {
+                defaultValue: 'Minutes must be between 0 and 59',
+              }),
+            ],
+          },
+        ]);
+        return;
+      }
+
+      if (hours * 60 + minutes <= 0) {
+        form.setFields([
+          {
+            name: 'minutes',
+            errors: [
+              t('taskTimeLogTab.timeLogForm.durationGreaterThanZeroError', {
+                defaultValue: 'Duration must be greater than 0 minutes',
+              }),
+            ],
+          },
+        ]);
+        return;
+      }
     }
 
     if (!currentSession) return;
@@ -155,7 +295,7 @@ const TimeLogForm = ({
       quickAssignMember(currentSession);
     }
 
-    const requestBody = createReqBody();
+    const requestBody = createReqBody(values);
     if (!requestBody) return;
 
     try {
@@ -180,7 +320,17 @@ const TimeLogForm = ({
   };
 
   const isFormValid = () => {
-    return formValues.date && formValues.startTime && formValues.endTime;
+    if (!formValues.date) return false;
+
+    if (inputMode === 'timeRange') {
+      if (!formValues.startTime || !formValues.endTime) return false;
+      return !formValues.startTime.isAfter(formValues.endTime);
+    }
+
+    const hours = Number(formValues.hours || 0);
+    const minutes = Number(formValues.minutes || 0);
+    if (minutes < 0 || minutes > 59 || hours < 0) return false;
+    return hours * 60 + minutes > 0;
   };
 
   return (
@@ -215,38 +365,151 @@ const TimeLogForm = ({
         style={{ width: '100%', overflow: 'visible' }}
         layout="vertical"
         onFinish={onFinish}
-        onValuesChange={(_, values) => setFormValues(values)}
+        onValuesChange={(_, values) => setFormValues(values as TimeLogFormValues)}
       >
-        <Form.Item style={{ marginBlockEnd: 0 }}>
-          <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
-            <Form.Item
-              name="date"
-                                label={t('taskTimeLogTab.timeLogForm.date')}
-                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectDateError') }]}
-            >
-              <DatePicker disabledDate={current => current && current.toDate() > new Date()} />
-            </Form.Item>
-
-            <Form.Item
-              name="startTime"
-                                label={t('taskTimeLogTab.timeLogForm.startTime')}
-                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectStartTimeError') }]}
-            >
-              <TimePicker format="HH:mm" />
-            </Form.Item>
-
-            <Form.Item
-              name="endTime"
-                                label={t('taskTimeLogTab.timeLogForm.endTime')}
-                  rules={[{ required: true, message: t('taskTimeLogTab.timeLogForm.selectEndTimeError') }]}
-            >
-              <TimePicker format="HH:mm" />
-            </Form.Item>
-          </Flex>
+        <Form.Item
+          label={t('taskTimeLogTab.timeLogForm.inputMode', { defaultValue: 'Input Mode' })}
+          style={{ marginBlockEnd: 6 }}
+        >
+          <Segmented
+            size="small"
+            value={inputMode}
+            onChange={value => handleModeChange(value as TimeLogInputMode)}
+            options={[
+              {
+                label: t('taskTimeLogTab.timeLogForm.durationMode', { defaultValue: 'Duration' }),
+                value: 'duration',
+              },
+              {
+                label: t('taskTimeLogTab.timeLogForm.timeRangeMode', { defaultValue: 'Time Range' }),
+                value: 'timeRange',
+              },
+            ]}
+            block
+          />
         </Form.Item>
 
-                    <Form.Item name="description" label={t('taskTimeLogTab.timeLogForm.workDescription')} style={{ marginBlockEnd: 12 }}>
-              <Input.TextArea placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')} />
+        {inputMode === 'duration' ? (
+          <Form.Item style={{ marginBlockEnd: 6 }}>
+            <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
+              <Form.Item
+                name="date"
+                label={t('taskTimeLogTab.timeLogForm.date')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('taskTimeLogTab.timeLogForm.selectDateError'),
+                  },
+                ]}
+                style={{ flex: 1.4, minWidth: 170, marginBlockEnd: 0 }}
+              >
+                <DatePicker
+                  size="small"
+                  style={{ width: '100%' }}
+                  disabledDate={current => current && current.toDate() > new Date()}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="hours"
+                label={t('taskTimeLogTab.timeLogForm.hours', { defaultValue: 'Hours' })}
+                rules={[
+                  {
+                    type: 'number',
+                    min: 0,
+                    message: t('taskTimeLogTab.timeLogForm.hoursMinError', {
+                      defaultValue: 'Hours must be 0 or greater',
+                    }),
+                  },
+                ]}
+                style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
+              >
+                <InputNumber size="small" min={0} precision={0} style={{ width: '100%' }} />
+              </Form.Item>
+
+              <Form.Item
+                name="minutes"
+                label={t('taskTimeLogTab.timeLogForm.minutes', { defaultValue: 'Minutes' })}
+                rules={[
+                  {
+                    type: 'number',
+                    min: 0,
+                    max: 59,
+                    message: t('taskTimeLogTab.timeLogForm.minutesRangeError', {
+                      defaultValue: 'Minutes must be between 0 and 59',
+                    }),
+                  },
+                ]}
+                style={{ flex: 1, minWidth: 120, marginBlockEnd: 0 }}
+              >
+                <InputNumber size="small" min={0} max={59} precision={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Flex>
+          </Form.Item>
+        ) : (
+          <>
+            <Form.Item
+              name="date"
+              label={t('taskTimeLogTab.timeLogForm.date')}
+              rules={[
+                {
+                  required: true,
+                  message: t('taskTimeLogTab.timeLogForm.selectDateError'),
+                },
+              ]}
+            >
+              <DatePicker
+                size="small"
+                style={{ width: '100%' }}
+                disabledDate={current => current && current.toDate() > new Date()}
+              />
+            </Form.Item>
+
+            <Form.Item style={{ marginBlockEnd: 6 }}>
+            <Flex gap={8} wrap="wrap" style={{ width: '100%' }}>
+              <Form.Item
+                name="startTime"
+                label={t('taskTimeLogTab.timeLogForm.startTime')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('taskTimeLogTab.timeLogForm.selectStartTimeError'),
+                  },
+                ]}
+                style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
+              >
+                <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+              </Form.Item>
+
+              <Form.Item
+                name="endTime"
+                label={t('taskTimeLogTab.timeLogForm.endTime')}
+                rules={[
+                  {
+                    required: true,
+                    message: t('taskTimeLogTab.timeLogForm.selectEndTimeError'),
+                  },
+                ]}
+                style={{ flex: 1, minWidth: 140, marginBlockEnd: 0 }}
+              >
+                <TimePicker size="small" format="HH:mm" style={{ width: '100%' }} />
+              </Form.Item>
+            </Flex>
+            </Form.Item>
+          </>
+        )}
+
+        <Form.Item
+          name="description"
+          label={t('taskTimeLogTab.timeLogForm.workDescription')}
+          style={{ marginBlockEnd: 10 }}
+        >
+          <Input.TextArea
+            placeholder={t('taskTimeLogTab.timeLogForm.descriptionPlaceholder')}
+            maxLength={500}
+            showCount
+            autoSize={{ minRows: 2, maxRows: 6 }}
+          />
         </Form.Item>
 
         <Form.Item style={{ marginBlockEnd: 0 }}>
@@ -258,7 +521,9 @@ const TimeLogForm = ({
               disabled={!isFormValid()}
               htmlType="submit"
             >
-              {mode === 'edit' ? t('taskTimeLogTab.timeLogForm.updateTime') : t('taskTimeLogTab.timeLogForm.logTime')}
+              {mode === 'edit'
+                ? t('taskTimeLogTab.timeLogForm.updateTime')
+                : t('taskTimeLogTab.timeLogForm.logTime')}
             </Button>
           </Flex>
         </Form.Item>

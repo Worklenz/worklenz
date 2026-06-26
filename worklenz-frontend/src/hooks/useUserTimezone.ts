@@ -33,7 +33,7 @@ export const useUserTimezone = () => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     return dateObj.toLocaleString('en-US', {
       timeZone: timezone,
-      ...format
+      ...format,
     });
   };
 
@@ -65,6 +65,6 @@ export const useUserTimezone = () => {
     formatInUserTimezone,
     getStartOfDayInTimezone,
     getEndOfDayInTimezone,
-    setTimezone
+    setTimezone,
   };
 };

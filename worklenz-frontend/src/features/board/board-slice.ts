@@ -341,6 +341,9 @@ const boardSlice = createSlice({
         colorCodeDark: string;
       }>
     ) => {
+      if (!action.payload) {
+        return;
+      }
       const newSection = {
         id: action.payload.id,
         name: action.payload.name,
@@ -361,6 +364,9 @@ const boardSlice = createSlice({
       state,
       action: PayloadAction<{ sectionId: string; task: IProjectTask }>
     ) => {
+      if (!action.payload) {
+        return;
+      }
       const section = state.taskGroups.find(sec => sec.id === action.payload.sectionId);
       if (section) {
         section.tasks.unshift(action.payload.task);
@@ -371,6 +377,9 @@ const boardSlice = createSlice({
       state,
       action: PayloadAction<{ sectionId: string; task: IProjectTask }>
     ) => {
+      if (!action.payload) {
+        return;
+      }
       const section = state.taskGroups.find(sec => sec.id === action.payload.sectionId);
       if (section) {
         section.tasks.push(action.payload.task);
@@ -381,6 +390,9 @@ const boardSlice = createSlice({
       state,
       action: PayloadAction<{ sectionId: string; taskId: string; subtask: IProjectTask }>
     ) => {
+      if (!action.payload) {
+        return;
+      }
       const section = state.taskGroups.find(sec => sec.id === action.payload.sectionId);
       if (section) {
         const task = section.tasks.find(task => task.id === action.payload.taskId);
@@ -396,6 +408,9 @@ const boardSlice = createSlice({
     },
 
     deleteBoardTask: (state, action: PayloadAction<{ sectionId: string; taskId: string }>) => {
+      if (!action.payload) {
+        return;
+      }
       const { sectionId, taskId } = action.payload;
 
       if (sectionId) {
@@ -446,6 +461,9 @@ const boardSlice = createSlice({
     },
 
     deleteSection: (state, action: PayloadAction<{ sectionId: string }>) => {
+      if (!action.payload) {
+        return;
+      }
       state.taskGroups = state.taskGroups.filter(
         section => section.id !== action.payload.sectionId
       );
@@ -587,6 +605,7 @@ const boardSlice = createSlice({
         names: ITeamMemberViewModel[];
       }>
     ) => {
+      if (!action.payload) return;
       const { groupId, taskId, assignees, names } = action.payload;
 
       // Find the task in the specified group
@@ -733,6 +752,7 @@ const boardSlice = createSlice({
       }
     },
     updateTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
+      if (!action.payload) return;
       const { id, priority_id, color_code, color_code_dark } = action.payload;
 
       // Find the task in any group

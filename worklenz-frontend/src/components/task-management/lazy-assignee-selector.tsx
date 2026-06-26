@@ -76,7 +76,12 @@ const LazyAssigneeSelectorWrapper: React.FC<LazyAssigneeSelectorProps> = ({
   // Once loaded, show the full component
   return (
     <Suspense fallback={<LoadingPlaceholder isDarkMode={isDarkMode} />}>
-      <LazyAssigneeSelector task={task} groupId={groupId} isDarkMode={isDarkMode} kanbanMode={kanbanMode} />
+      <LazyAssigneeSelector
+        task={task}
+        groupId={groupId}
+        isDarkMode={isDarkMode}
+        kanbanMode={kanbanMode}
+      />
     </Suspense>
   );
 };

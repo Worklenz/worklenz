@@ -113,7 +113,7 @@ export interface ColumnRendererProps {
   listeners: any;
 }
 
-export type ColumnId = 
+export type ColumnId =
   | 'dragHandle'
   | 'checkbox'
   | 'taskKey'
@@ -242,4 +242,4 @@ export interface CustomColumnProps extends BaseColumnProps {
 export interface TaskLabelsCellProps {
   labels: Task['labels'];
   isDarkMode: boolean;
-} 
+}

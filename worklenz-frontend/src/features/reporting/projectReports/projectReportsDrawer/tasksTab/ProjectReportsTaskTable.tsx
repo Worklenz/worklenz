@@ -1,4 +1,12 @@
-import { Badge, Collapse, Flex, Table, TableColumnsType, Tag, Typography } from '@/shared/antd-imports';
+import {
+  Badge,
+  Collapse,
+  Flex,
+  Table,
+  TableColumnsType,
+  Tag,
+  Typography,
+} from '@/shared/antd-imports';
 import { useEffect } from 'react';
 import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';
@@ -47,7 +55,7 @@ const ProjectReportsTasksTable = ({
 
   // function to handle task drawer open
   const handleUpdateTaskDrawer = (id: string) => {
-    if (!id && !projectId) return;
+    if (!id || !projectId) return;
     dispatch(setSelectedTaskId(id));
     dispatch(setProjectId(projectId));
     dispatch(fetchPhasesByProjectId(projectId));
@@ -115,7 +123,7 @@ const ProjectReportsTasksTable = ({
       title: <CustomTableTitle title={t('dueDateColumn')} />,
       render: record => (
         <Typography.Text className="text-center group-hover:text-[#1890ff]">
-          {record.end_date ? `${dayjs(record.end_date).format('MMM DD, YYYY')}` : '-'}
+          {record.end_date ? `${dayjs(record.end_date, 'YYYY-MM-DD').format('MMM DD, YYYY')}` : '-'}
         </Typography.Text>
       ),
       width: 120,

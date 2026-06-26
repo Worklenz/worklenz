@@ -31,6 +31,68 @@
   border: 1px solid #2a4a6d;
 }
 
+/* ─── Clickable link styles ──────────────────────────────────────────────── */
+
+.comment-link {
+  display: inline;
+  word-break: break-all;
+  font-size: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+
+.theme-light .comment-link,
+.comment-content-light .comment-link {
+  color: #1677ff;
+  text-decoration-color: #91caff;
+}
+
+.theme-light .comment-link:hover,
+.comment-content-light .comment-link:hover {
+  color: #0958d9;
+  text-decoration-color: #1677ff;
+}
+
+.theme-dark .comment-link,
+.comment-content-dark .comment-link {
+  color: #4096ff;
+  text-decoration-color: #2a4a6d;
+}
+
+.theme-dark .comment-link:hover,
+.comment-content-dark .comment-link:hover {
+  color: #69b1ff;
+  text-decoration-color: #4096ff;
+}
+
+.theme-light .current-user-comment .comment-link {
+  color: #0958d9;
+  text-decoration-color: #91caff;
+}
+
+.theme-light .current-user-comment .comment-link:hover {
+  color: #003eb3;
+  text-decoration-color: #0958d9;
+}
+
+.theme-dark .current-user-comment .comment-link {
+  color: #69b1ff;
+  text-decoration-color: #3a5a7d;
+}
+
+.theme-dark .current-user-comment .comment-link:hover {
+  color: #95cbff;
+  text-decoration-color: #69b1ff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 .ant-upload-list {
   border: 1px dashed transparent;
   transition: 0.15s all;
@@ -144,10 +206,9 @@
   padding: 10px 0;
 }
 
-/* Comment actions */
+/* Comment actions — hidden; we use the hover bar instead */
 .ant-comment-actions {
-  margin-top: 2px;
-  padding-left: 12px;
+  display: none !important;
 }
 
 /* Comment content */
@@ -173,73 +234,6 @@
 
 .theme-dark .ant-upload-list-item-info {
   background-color: #2a2a2a;
-}
-
-/* Comment actions styling */
-.theme-light .ant-comment-actions > li > span {
-  color: #707070;
-  transition: color 0.3s;
-  font-size: 12px;
-}
-
-.theme-dark .ant-comment-actions > li > span {
-  color: #d1d0d3;
-  transition: color 0.3s;
-  font-size: 12px;
-}
-
-.theme-light .ant-comment-actions > li > span:hover {
-  color: #1890ff;
-}
-
-.theme-dark .ant-comment-actions > li > span:hover {
-  color: #1890ff;
-}
-
-/* Comment edit styles */
-.comment-edit-light .ant-form-item,
-.comment-edit-dark .ant-form-item {
-  margin-bottom: 8px;
-}
-
-.comment-edit-light .ant-input-textarea,
-.comment-edit-dark .ant-input-textarea {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.comment-edit-dark .ant-input {
-  background-color: #2a2a2a;
-  color: #d1d0d3;
-  border-color: #333;
-}
-
-.comment-edit-dark .ant-input:hover,
-.comment-edit-dark .ant-input:focus {
-  border-color: #1890ff;
-}
-
-.comment-edit-dark .ant-btn {
-  border-color: #333;
-  background-color: #2a2a2a;
-  color: #d1d0d3;
-}
-
-.comment-edit-dark .ant-btn:hover {
-  border-color: #1890ff;
-  color: #1890ff;
-}
-
-.comment-edit-dark .ant-btn-primary {
-  background-color: #1890ff;
-  color: #fff;
-  border-color: #1890ff;
-}
-
-.comment-edit-dark .ant-btn-primary:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
-  color: #fff;
 }
 
 /* Time separator */
@@ -285,4 +279,192 @@
 .ant-comment-avatar img {
   width: 28px;
   height: 28px;
+}
+
+/* ─── Comment wrapper for hover bar ─────────────────────────────────────── */
+
+.comment-wrapper {
+  position: relative;
+}
+
+/* ─── Hover bar (floats above the bubble on hover) ───────────────────────── */
+
+.comment-hover-bar {
+  position: absolute;
+  top: -52px;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.comment-hover-bar.theme-light {
+  background-color: #ffffff;
+  border: 1px solid #e6e6e6;
+}
+
+.comment-hover-bar.theme-dark {
+  background-color: #2a2a2a;
+  border: 1px solid #3a3a3a;
+}
+
+/* Show bar when the parent ant-comment is hovered */
+.ant-comment:hover .comment-hover-bar {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0.35s;
+}
+
+/* ─── Quick emoji reactions in the hover bar ─────────────────────────────── */
+
+.quick-reactions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.quick-emoji {
+  font-size: 17px;
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 6px;
+  transition:
+    transform 0.15s,
+    background-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.quick-emoji:hover {
+  transform: scale(1.25);
+}
+
+.theme-light .quick-emoji:hover {
+  background-color: #f0f2f5;
+}
+
+.theme-dark .quick-emoji:hover {
+  background-color: #3a3a3a;
+}
+
+/* Already-reacted emoji — subtle highlight */
+.quick-emoji.reacted-emoji {
+  background-color: #e6f4ff;
+}
+
+.theme-dark .quick-emoji.reacted-emoji {
+  background-color: #1e3a5f;
+}
+
+/* ─── Divider between reactions and action icon buttons ──────────────────── */
+
+.hover-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+}
+
+.hover-divider.theme-light {
+  background-color: #e6e6e6;
+}
+
+.hover-divider.theme-dark {
+  background-color: #3a3a3a;
+}
+
+/* ─── Icon action buttons inside the hover bar ───────────────────────────── */
+
+.hover-action-btn {
+  padding: 4px 7px !important;
+  border-radius: 6px !important;
+  transition: background-color 0.15s;
+}
+
+.theme-light .hover-action-btn:hover {
+  background-color: #f0f2f5 !important;
+}
+
+.theme-dark .hover-action-btn:hover {
+  background-color: #3a3a3a !important;
+}
+
+/* ─── Reaction badge row below the bubble ────────────────────────────────── */
+
+.reaction-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.reaction {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  user-select: none;
+}
+
+.reaction.theme-light {
+  background-color: #f5f5f5;
+  border: 1px solid #d9d9d9;
+  color: #595959;
+}
+
+.reaction.theme-dark {
+  background-color: #262626;
+  border: 1px solid #434343;
+  color: #d1d0d3;
+}
+
+.reaction.reacted.theme-light {
+  background-color: #e6f4ff;
+  border-color: #91caff;
+  color: #0958d9;
+}
+
+.reaction.reacted.theme-dark {
+  background-color: #1e3a5f;
+  border-color: #2a4a6d;
+  color: #69b1ff;
+}
+
+.reaction:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ─── Inline edit form inside the bubble ────────────────────────────────── */
+
+.comment-content-light .ant-input,
+.comment-content-dark .ant-input {
+  border-radius: 8px;
+}
+
+.comment-content-dark .ant-input {
+  background-color: #2a2a2a;
+  color: #d1d0d3;
+  border-color: #333;
+}
+
+.comment-content-dark .ant-input:hover,
+.comment-content-dark .ant-input:focus {
+  border-color: #1890ff;
 }

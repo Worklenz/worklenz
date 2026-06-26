@@ -1,14 +1,16 @@
-import { CaretDownFilled } from '@/shared/antd-imports';
-import Badge from 'antd/es/badge';
-import Button from 'antd/es/button';
-import Card from 'antd/es/card';
-import Checkbox from 'antd/es/checkbox';
-import Dropdown from 'antd/es/dropdown';
-import Empty from 'antd/es/empty';
-import Flex from 'antd/es/flex';
-import Input, { InputRef } from 'antd/es/input';
-import List from 'antd/es/list';
-import Space from 'antd/es/space';
+import {
+  CaretDownFilled,
+  Card,
+  Flex,
+  Input,
+  List,
+  Checkbox,
+  Dropdown,
+  Button,
+  Empty,
+  Space,
+  InputRef,
+} from '@/shared/antd-imports';
 import { useSearchParams } from 'react-router-dom';
 
 import { useMemo, useRef, useState, useEffect } from 'react';

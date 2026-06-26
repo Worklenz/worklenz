@@ -69,4 +69,51 @@ export default class PersonalOverviewController extends WorklenzControllerBase {
     const result = await db.query(q, [req.user?.team_id || null, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async getCompletedTasksTodayPercentage(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    const q = `
+      SELECT 
+        COUNT(*) FILTER (
+          WHERE ts.category_id IN (
+            SELECT id FROM sys_task_status_categories WHERE is_done = TRUE
+          )
+        ) AS completed_tasks,
+        COUNT(*) AS total_tasks
+      FROM tasks t
+      JOIN tasks_assignees ta ON t.id = ta.task_id
+      JOIN task_statuses ts ON t.status_id = ts.id
+      WHERE t.archived = FALSE
+        AND t.end_date::DATE = CURRENT_DATE::DATE
+        AND ta.team_member_id = (
+          SELECT id FROM team_members 
+          WHERE user_id = $1 AND team_id = $2
+        )
+        AND NOT EXISTS(
+          SELECT 1 FROM archived_projects 
+          WHERE project_id = t.project_id AND user_id = $1
+        )
+    `;
+
+    const result = await db.query(q, [userId, teamId]);
+    const [data] = result.rows;
+
+    const totalTasks = parseInt(data.total_tasks) || 0;
+    const completedTasks = parseInt(data.completed_tasks) || 0;
+    const percentage = totalTasks > 0 
+      ? Math.round((completedTasks / totalTasks) * 100 * 10) / 10 
+      : 0;
+
+    const response = {
+      total_tasks: totalTasks,
+      completed_tasks: completedTasks,
+      percentage: percentage,
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    return res.status(200).send(new ServerResponse(true, response));
+  }
 }

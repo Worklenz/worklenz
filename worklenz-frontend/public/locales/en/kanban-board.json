@@ -1,5 +1,7 @@
 {
   "rename": "Rename",
+  "renameStatus": "Rename Status",
+  "renamePhase": "Rename Phase",
   "delete": "Delete",
   "addTask": "Add Task",
   "addSectionButton": "Add Section",
@@ -41,7 +43,14 @@
   "noSubtasks": "No subtasks",
   "showSubtasks": "Show subtasks",
   "hideSubtasks": "Hide subtasks",
-  
+
+  "exampleTasks": {
+    "prefix": "e.g.",
+    "task1": "Define project scope",
+    "task2": "Review with stakeholders",
+    "task3": "Schedule kickoff"
+  },
+
   "errorLoadingTasks": "Error loading tasks",
   "noTasksFound": "No tasks found",
   "loadingFilters": "Loading filters...",

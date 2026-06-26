@@ -3,11 +3,14 @@ import { NotificationsService } from "../../services/notifications/notifications
 import { SocketEvents } from "../events";
 import { 
   getLoggedInUserIdFromSocket, 
-  log_error, 
   notifyProjectUpdates 
 } from "../util";
 import { logMemberAssignment } from "../../services/activity-logs/activity-logs.service";
 import { getAssignees, ITaskAssignee, runAssignOrRemove } from "./on-quick-assign-or-remove";
+import { ExternalNotificationsService } from "../../services/external-notifications.service";
+import db from "../../config/db";
+import { log_error } from "../../shared/utils";
+import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 interface TaskAssigneesChangeData {
   task_id: string;
@@ -16,6 +19,18 @@ interface TaskAssigneesChangeData {
   project_id: string;
   reporter_id: string;
   mode: number; // 0 for assign, 1 for unassign
+}
+
+async function isTaskCreationRestricted(userId: string, projectId: string): Promise<boolean> {
+  try {
+    const result = await db.query(
+      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
+      [userId, projectId]
+    );
+    return result.rows[0]?.restricted === true;
+  } catch {
+    return false;
+  }
 }
 
 export async function on_task_assignees_change(
@@ -29,7 +44,26 @@ export async function on_task_assignees_change(
     }
 
     const body: TaskAssigneesChangeData = JSON.parse(rawData);
+    
+    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    if (!hasAccess) {
+      logUnauthorizedSocketAccess(socket, 'TASK_ASSIGNEES_CHANGE', 'task', body.task_id);
+      return;
+    }
+
+    // Check restrict_task_creation before allowing assignment changes
     const userId = getLoggedInUserIdFromSocket(socket);
+    if (userId && body.project_id) {
+      const restricted = await isTaskCreationRestricted(userId, body.project_id);
+      if (restricted) {
+        socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), {
+          error: true,
+          message: "Task assignment is restricted to Admins and Team Leads only."
+        });
+        return;
+      }
+    }
+
     const newAssignees: string[] = body.team_member_id;
     const prevAssignees: ITaskAssignee[] = await getAssignees(body.task_id);
 
@@ -57,7 +91,7 @@ export async function on_task_assignees_change(
         logMemberAssignment({
           task_id: body.task_id,
           socket,
-          new_value: null,
+          new_value: assignee.team_member_id,
           old_value: assignee.team_member_id,
           assign_type: "UNASSIGN",
         });
@@ -116,6 +150,25 @@ export async function on_task_assignees_change(
 
     // Notify project updates once after all changes
     notifyProjectUpdates(socket, body.task_id);
+
+    // Send external notifications (Slack, Teams) if there were assignments
+    if (addedAssignees.length > 0) {
+      try {
+        const userQuery = `SELECT name FROM users WHERE id = $1`;
+        const userResult = await db.query(userQuery, [userId]);
+        const userName = userResult.rows[0]?.name || "Unknown User";
+        
+        await ExternalNotificationsService.sendExternalNotifications(
+          body.project_id,
+          body.task_id,
+          "task_assigned",
+          userName
+        );
+      } catch (notifError) {
+        log_error("Error sending external notifications:", notifError);
+        // Don't throw - continue even if notifications fail
+      }
+    }
 
     // Emit updated assignee list
     socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), { assigneeIds: newAssignees });

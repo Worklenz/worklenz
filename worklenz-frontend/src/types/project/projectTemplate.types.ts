@@ -5,6 +5,7 @@ export interface ICustomProjectTemplateCreateRequest {
     statuses: boolean;
     phases: boolean;
     labels: boolean;
+    customColumns: boolean;
   };
   taskIncludes: {
     status: boolean;
@@ -14,4 +15,5 @@ export interface ICustomProjectTemplateCreateRequest {
     description: boolean;
     subtasks: boolean;
   };
+  includeCustomColumns?: boolean;
 }

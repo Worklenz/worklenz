@@ -1,4 +1,5 @@
 {
+  "upgradeNow": "立即升级",
   "taskHeader": {
     "taskNamePlaceholder": "输入您的任务",
     "deleteTask": "删除任务",
@@ -45,7 +46,10 @@
     },
     "description": {
       "title": "描述",
-      "placeholder": "添加更详细的描述..."
+      "placeholder": "添加更详细的描述...",
+      "clickToAdd": "点击添加描述...",
+      "readMore": "阅读更多",
+      "showLess": "收起"
     },
     "subTasks": {
       "title": "子任务",
@@ -68,12 +72,15 @@
     "attachments": {
       "title": "附件",
       "chooseOrDropFileToUpload": "选择或拖放文件上传",
-      "uploading": "上传中..."
+      "uploading": "上传中...",
+      "maxFileSizeText": "最大文件大小：{{maxSize}}MB",
+      "upgradeLinkText": "需要更大上传？立即升级"
     },
     "comments": {
       "title": "评论",
       "addComment": "+ 添加新评论",
       "noComments": "还没有评论。成为第一个评论者！",
+      "edit": "编辑",
       "delete": "删除",
       "confirmDeleteComment": "您确定要删除此评论吗？",
       "addCommentPlaceholder": "添加评论...",
@@ -81,10 +88,15 @@
       "commentButton": "评论",
       "attachFiles": "附加文件",
       "addMoreFiles": "添加更多文件",
-      "selectedFiles": "选定文件 (最多 25MB，最多 {count} 个)",
-      "maxFilesError": "您最多只能上传 {count} 个文件",
+      "selectedFiles": "选定文件 (最多 25MB，最多 {{count}} 个文件)",
+      "maxFilesError": "您最多只能上传 {{count}} 个文件",
       "processFilesError": "处理文件失败",
       "addCommentError": "请添加评论或附加文件",
+      "fileTooLargeToSend": "评论中的文件超过 25MB 需要 Business 方案。请移除此文件或升级后继续。",
+      "historyLockedBoundary": "评论记录在此方案中仅限最近 90 天",
+      "historyLockedTitle": "评论历史已锁定",
+      "historyLockedBody": "90 天以前的评论仅在 Business 方案中可用。",
+      "viewFullComments": "查看评论记录",
       "createdBy": "由 {{user}} 在 {{time}} 创建",
       "updatedTime": "更新于 {{time}}"
     },
@@ -97,18 +109,32 @@
     "totalLogged": "总计记录",
     "exportToExcel": "导出到 Excel",
     "noTimeLogsFound": "未找到时间日志",
+    "historyLockedBoundary": "时间日志记录在此方案中仅限最近 90 天",
+    "historyLockedTitle": "时间日志历史已锁定",
+    "historyLockedBody": "90 天以前的时间日志仅在 Business 方案中可用。",
+    "viewFullTimeLog": "查看时间日志记录",
     "timeLogForm": {
+      "inputMode": "输入模式",
+      "durationMode": "时长",
+      "timeRangeMode": "时间范围",
       "date": "日期",
       "startTime": "开始时间",
       "endTime": "结束时间",
+      "hours": "小时",
+      "minutes": "分钟",
       "workDescription": "工作描述",
       "descriptionPlaceholder": "添加描述",
       "logTime": "记录时间",
       "updateTime": "更新时间",
       "cancel": "取消",
+      "durationHelper": "使用小时和分钟记录总时长。",
+      "timeRangeHelper": "通过选择开始和结束时间来记录时长。",
       "selectDateError": "请选择日期",
       "selectStartTimeError": "请选择开始时间",
       "selectEndTimeError": "请选择结束时间",
+      "hoursMinError": "小时必须为 0 或更大",
+      "minutesRangeError": "分钟必须在 0 到 59 之间",
+      "durationGreaterThanZeroError": "时长必须大于 0 分钟",
       "endTimeAfterStartError": "结束时间必须晚于开始时间"
     }
   },
@@ -118,7 +144,11 @@
     "remove": "移除",
     "none": "无",
     "weight": "权重",
-    "createdTask": "创建了任务。"
+    "createdTask": "创建了任务。",
+    "historyLockedBoundary": "活动记录在此方案中仅限最近 90 天",
+    "historyLockedTitle": "活动历史已锁定",
+    "historyLockedBody": "90 天以前的任务活动仅在 Business 方案中可用。",
+    "viewFullActivity": "查看活动记录"
   },
   "taskProgress": {
     "markAsDoneTitle": "将任务标记为完成？",

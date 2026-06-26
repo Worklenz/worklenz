@@ -1,4 +1,14 @@
-import { AutoComplete, Button, Drawer, Flex, Form, message, Modal, Select, Spin, Typography } from '@/shared/antd-imports';
+import {
+  AutoComplete,
+  Button,
+  Drawer,
+  Flex,
+  Form,
+  message,
+  Select,
+  Spin,
+  Typography,
+} from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -11,18 +21,18 @@ import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.se
 import { IJobTitle } from '@/types/job.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
-import { LinkOutlined } from '@ant-design/icons';
 
 interface FormValues {
-  email: string[];
+  emails: string[];
   jobTitle: string;
   access: 'member' | 'admin';
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const InviteTeamMembers = () => {
   const [searching, setSearching] = useState(false);
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
-  const [emails, setEmails] = useState<string[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -58,15 +68,16 @@ const InviteTeamMembers = () => {
   const handleFormSubmit = async (values: FormValues) => {
     try {
       setLoading(true);
+      const normalizedEmails = (values.emails || []).map(email => String(email).trim()).filter(Boolean);
+
       const body: ITeamMemberCreateRequest = {
         job_title: selectedJobTitle,
-        emails: emails,
+        emails: normalizedEmails,
         is_admin: values.access === 'admin',
       };
       const res = await teamMembersApiService.createTeamMember(body);
       if (res.done) {
         form.resetFields();
-        setEmails([]);
         setSelectedJobTitle(null);
         dispatch(triggerTeamMembersRefresh()); // Trigger refresh in TeamMembersSettings
         dispatch(toggleInviteMemberDrawer());
@@ -84,37 +95,29 @@ const InviteTeamMembers = () => {
   };
 
   const handleEmailChange = (value: string[]) => {
-    setEmails(value);
+    const normalizedEmails = (value || []).map(email => String(email).trim()).filter(Boolean);
+    form.setFieldValue('emails', normalizedEmails);
+    void form.validateFields(['emails']).catch(() => undefined);
   };
 
   return (
-    <Modal
+    <Drawer
       title={
         <Typography.Text strong style={{ fontSize: 16 }}>
           {t('addMemberDrawerTitle')}
         </Typography.Text>
       }
       open={isDrawerOpen}
-      onCancel={handleClose}
+      onClose={handleClose}
       destroyOnClose
       afterOpenChange={visible => visible && handleSearch('')}
       width={400}
       loading={loading}
       footer={
-        <Flex justify="space-between">
-          {/* <Button
-            style={{ width: 140, fontSize: 12 }}
-            block
-            icon={<LinkOutlined />}
-            disabled
-          >
-            {t('copyTeamLink')}
-          </Button> */}
-          <Flex justify="end">
-            <Button onClick={form.submit} style={{ fontSize: 12 }}>
-              {t('addToTeamButton')}
-            </Button>
-          </Flex>
+        <Flex justify="end">
+          <Button type="primary" onClick={form.submit}>
+            {t('addToTeamButton')}
+          </Button>
         </Flex>
       }
     >
@@ -129,10 +132,17 @@ const InviteTeamMembers = () => {
           label={t('memberEmailLabel')}
           rules={[
             {
-              type: 'array',
-              required: true,
               validator: (_, value) => {
-                if (!value?.length) return Promise.reject(t('memberEmailRequiredError'));
+                const normalizedEmails = Array.isArray(value)
+                  ? value
+                  : typeof value === 'string' && value
+                    ? [value]
+                    : [];
+                if (!normalizedEmails.length) return Promise.reject(t('memberEmailRequiredError'));
+                const hasInvalidEmail = normalizedEmails.some(
+                  (email: string) => !EMAIL_REGEX.test(String(email).trim())
+                );
+                if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError'));
                 return Promise.resolve();
               },
             },
@@ -187,7 +197,7 @@ const InviteTeamMembers = () => {
           />
         </Form.Item>
       </Form>
-    </Modal>
+    </Drawer>
   );
 };
 

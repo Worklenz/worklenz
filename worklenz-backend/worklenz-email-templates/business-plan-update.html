@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Announcing Our New Business Plan!</title>
+  <meta name="subject" content="Announcing Our New Business Plan!" />
+  <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+  <meta content="width=device-width,initial-scale=1" name="viewport">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f6f8fa;
+      font-family: 'Mada', 'Segoe UI', Arial, sans-serif;
+      color: #222;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: inherit !important;
+    }
+
+    #MessageViewBody a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    p {
+      line-height: 1.6;
+      margin: 0 0 16px 0;
+    }
+    
+    p:last-child {
+      margin-bottom: 0;
+    }
+
+    .padding-30 {
+      padding: 0px 30px;
+    }
+
+    .padding-20 {
+      padding: 0px 20px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(24, 144, 255, 0.08);
+      margin-bottom: 32px;
+      padding: 32px 32px 24px 32px;
+      transition: box-shadow 0.2s;
+    }
+
+    .card h3 {
+      color: #1890ff;
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 22px;
+      line-height: 1.3;
+    }
+
+    .card img {
+      border-radius: 10px;
+      margin: 18px 0 0 0;
+      box-shadow: 0 1px 8px rgba(24, 144, 255, 0.07);
+      max-width: 100%;
+      display: block;
+    }
+
+    .feature-list {
+      padding-left: 18px;
+      margin: 0 0 12px 0;
+    }
+
+    .feature-list li {
+      margin-bottom: 8px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+
+    .main-btn {
+      background: #1890ff;
+      border: none;
+      outline: none;
+      padding: 14px 28px;
+      font-size: 18px;
+      text-decoration: none;
+      color: white;
+      border-radius: 23px;
+      margin: 32px auto 0 auto;
+      font-family: 'Mada', sans-serif;
+      display: inline-block;
+      box-shadow: 0 2px 8px rgba(24, 144, 255, 0.13);
+      transition: background 0.2s, color 0.2s, border 0.2s;
+      border: 2px solid #1890ff;
+      text-align: center;
+    }
+
+    .main-btn:hover {
+      background: #40a9ff;
+      color: #fff;
+      border-color: #40a9ff;
+    }
+    
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+    }
+
+    .comparison-table th, .comparison-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .comparison-table th {
+      background-color: #f2f2f2;
+      font-weight: 600;
+    }
+
+    .plan-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .plan-table th, .plan-table td {
+      border: 1px solid #ddd;
+      padding: 14px 12px;
+      text-align: center;
+      vertical-align: top;
+      font-size: 14px;
+    }
+
+    .plan-table th {
+      background-color: #f2f2f2;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .price {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1890ff;
+      margin: 4px 0 8px 0;
+      display: inline-block;
+    }
+
+    .muted {
+      color: #888;
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .notice {
+      background: #f0f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 16px 18px;
+      margin: 16px 0;
+    }
+
+    .logo-light {
+      display: block;
+    }
+
+    .logo-dark {
+      display: none;
+    }
+
+    /* Footer (kept same design as provided) */
+    .footer {
+      padding: 25px;
+      text-align: center;
+      font-size: 12px;
+      color: #666666;
+    }
+
+    .social-links {
+      margin-bottom: 10px;
+    }
+
+    .social-links a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #666666;
+    }
+
+    .social-links img {
+      width: 20px;
+      height: 20px;
+      vertical-align: middle;
+    }
+
+    .social-links a:hover img {
+      opacity: 0.8;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 600px) {
+      /* increase base font for mobile readability */
+      body { font-size: 18px; }
+
+      /* Hide feature comparison section on mobile */
+      .feature-comparison-section { display: none; }
+
+      .card { padding: 22px 16px; margin-bottom: 24px; border-radius: 12px; }
+      .card h3 { font-size: 22px; margin-bottom: 12px; }
+      .feature-list li { font-size: 16px; margin-bottom: 8px; }
+
+      .main-btn { width: 100%; font-size: 18px; padding: 16px 20px; display: block; margin: 20px 0; }
+      .price { font-size: 26px; }
+      .muted { font-size: 14px; }
+
+      .notice { padding: 14px 16px; font-size: 15px; }
+      .social-links a { margin: 0 8px; font-size: 12px; }
+      .footer { padding: 20px 16px; font-size: 12px; }
+
+      /* Plan table: stack each plan card-style with larger labels */
+      .plan-table, .plan-table tbody, .plan-table tr { display: block; width: 100%; }
+      .plan-table thead { display: none; }
+      .plan-table td {
+        display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 22px 12px; border: 1px solid #ddd; font-size: 15px;
+      }
+      .plan-table td:first-child { border-bottom: 0; border-radius: 8px 8px 0 0; }
+      .plan-table td:last-child { border-radius: 0 0 8px 8px; }
+      .plan-table td::before { content: attr(data-plan); display: block; font-weight: 800; font-size: 20px; margin-bottom: 10px; color: #1890ff; }
+
+      /* Comparison table: stacked rows with larger label text */
+      .comparison-table { border: 0; width: 100%; }
+      .comparison-table thead { border: none; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; }
+      .comparison-table tr { display: block; border-bottom: 2px solid #f2f2f2; margin-bottom: 1em; padding-bottom: 1em; }
+      .comparison-table tr:last-child { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+      .comparison-table td { border-bottom: 1px solid #f2f2f2; display: block; font-size: 15px; text-align: right; padding: 10px 0; }
+      .comparison-table td::before { content: attr(data-label); float: left; font-weight: 700; text-transform: uppercase; font-size: 14px; color: #555; }
+      .comparison-table td:last-child { border-bottom: 0; }
+    }
+
+    @media (max-width: 480px) {
+      .card { padding: 14px 10px; }
+      .card h3 { font-size: 20px; }
+      .feature-list li { font-size: 15px; }
+      .price { font-size: 24px; }
+
+      .social-links a { margin: 0 6px; font-size: 11px; }
+      .footer { padding: 14px 12px; font-size: 11px; }
+
+      .comparison-table th, .comparison-table td { padding: 6px 4px; font-size: 12px; }
+      .plan-table th, .plan-table td { padding: 10px 8px; font-size: 13px; }
+      .plan-table th { font-size: 14px; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #181a1b;
+        color: #e6e6e6;
+      }
+
+      .card {
+        background: #23272a;
+        box-shadow: 0 2px 12px rgba(24, 144, 255, 0.13);
+      }
+
+      .main-btn {
+        background: #1890ff;
+        color: #fff;
+        border: 2px solid #1890ff;
+      }
+
+      .main-btn:hover {
+        background: #40a9ff;
+        color: #fff;
+        border-color: #40a9ff;
+      }
+
+      .logo-light {
+        display: none !important;
+      }
+
+      .logo-dark {
+        display: block !important;
+      }
+
+      .comparison-table th {
+        background-color: #333;
+        color: #fff;
+      }
+
+      .comparison-table th, .comparison-table td {
+        border: 1px solid #555;
+      }
+
+      .plan-table th {
+        background-color: #333;
+        color: #fff;
+      }
+
+      .plan-table th, .plan-table td {
+        border: 1px solid #555;
+      }
+
+      .notice {
+        background: #1f2a36;
+        border-left: 4px solid #1890ff;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background: #f6f8fa;" role="presentation">
+    <tr>
+      <td align="center">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; width:100%; margin:0 auto;" role="presentation">
+          <tr>
+            <td align="center" style="padding: 32px 16px 18px 16px;">
+              <a href="https://worklenz.com" target="_blank" style="display: inline-block;">
+                <img class="logo-light"
+                  src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png"
+                  alt="Worklenz Light Logo" style="width: 150px; max-width: 100%; height: auto; margin-bottom: 0; display: block;" />
+                <img class="logo-dark"
+                  src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-dark-mode.png"
+                  alt="Worklenz Dark Logo" style="width: 150px; max-width: 100%; height: auto; margin-bottom: 0; display: none;" />
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 0 16px;">
+              <div class="card">
+                <h3>🚀 Announcing Our New Business Plan!</h3>
+                <p>We're excited to introduce the new Business Plan, designed for growing businesses with complex needs. This plan includes everything in the Pro plan, plus a host of new features to help you manage your work more effectively.</p>
+                <p style="font-weight:600;">Effective date: <strong>21 August 2025</strong></p>
+              </div>
+              <div class="card">
+                <h3>🌟 Business Plan Features</h3>
+                <ul class="feature-list">
+                  <li>25 users included (add more at $5.99/user/month, up to 100)</li>
+                  <li>Unlimited projects</li>
+                  <li>Finance & Billing</li>
+                  <li>Client Portal</li>
+                  <li>Project Health Tracking</li>
+                  <li>Scheduler</li>
+                  <li>Gantt Chart (Full Access)</li>
+                  <li>Billable Features</li>
+                  <li>Advanced Team Progress Tracking & Deactivation</li>
+                  <li>CRM (coming soon)</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>💰 Pricing</h3>
+                <table class="plan-table">
+                  <thead>
+                    <tr>
+                      <th>Pro</th>
+                      <th>Business</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-plan="Pro">
+                        <div class="price">$69<span class="muted">/mo</span></div>
+                        <p class="muted" style="margin-bottom: 8px;">Monthly billing</p>
+                        <div class="price" style="font-size: 20px; color: #52c41a; margin: 4px 0;">$49<span class="muted" style="color: #52c41a;">/mo</span></div>
+                        <p class="muted" style="margin-bottom: 12px;">Annual billing (30% savings)</p>
+                        <p class="muted">15 users included • Up to 50 users max</p>
+                        <p class="muted">$5.99 per extra user / month</p>
+                        <p class="muted">Unlimited projects</p>
+                      </td>
+                      <td data-plan="Business">
+                        <div class="price">$99<span class="muted">/mo</span></div>
+                        <p class="muted" style="margin-bottom: 8px;">Monthly billing</p>
+                        <div class="price" style="font-size: 20px; color: #52c41a; margin: 4px 0;">$69<span class="muted" style="color: #52c41a;">/mo</span></div>
+                        <p class="muted" style="margin-bottom: 12px;">Annual billing (30% savings)</p>
+                        <p class="muted">25 users included • Up to 100 users max</p>
+                        <p class="muted">$5.99 per extra user / month</p>
+                        <p class="muted">Unlimited projects</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card feature-comparison-section">
+                <h3>📊 Feature Comparison</h3>
+                <table class="comparison-table">
+                  <thead>
+                    <tr>
+                      <th>Feature</th>
+                      <th>Starter</th>
+                      <th>Pro</th>
+                      <th>Business</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td data-label="Feature">14 days trial period</td>
+                      <td data-label="Starter">✔️</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Users Included</td>
+                      <td data-label="Starter">3</td>
+                      <td data-label="Pro">15</td>
+                      <td data-label="Business">25</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Active Projects</td>
+                      <td data-label="Starter">Limit 3</td>
+                      <td data-label="Pro">Unlimited</td>
+                      <td data-label="Business">Unlimited</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Task List</td>
+                      <td data-label="Starter">✔️</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Kanban Board</td>
+                      <td data-label="Starter">✔️</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Project Templates (In-built)</td>
+                      <td data-label="Starter">✔️</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Save Project Templates</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Project Insights</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Custom Fields</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">✔️</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Gantt Chart</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">Read-only</td>
+                      <td data-label="Business">Full Access</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Finance & Billing</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">❌</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">Client Portal</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">❌</td>
+                      <td data-label="Business">✔️</td>
+                    </tr>
+                    <tr>
+                      <td data-label="Feature">CRM</td>
+                      <td data-label="Starter">❌</td>
+                      <td data-label="Pro">❌</td>
+                      <td data-label="Business">Coming Soon</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="card notice">
+                <p style="margin: 0; font-size: 15px;">
+                  <strong>You can change plans any time from your account settings.</strong> Need help? Contact us via
+                  <a href="mailto:support@worklenz.com" style="color: #1890ff; text-decoration: none;">support@worklenz.com</a>.
+                </p>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="footer">
+              <div class="social-links">
+                <a href="https://lk.linkedin.com/showcase/worklenz/">LinkedIn</a>
+                <a href="https://www.facebook.com/worklenz/">Facebook</a>
+                <a href="https://discord.gg/kGtPDmfc">Discord</a>
+                <a href="https://twitter.com/worklenzhq">Twitter</a>
+                <a href="https://github.com/Worklenz/worklenz">Github</a>
+              </div>
+              <p style="margin: 0">
+                © 2025 Worklenz. All rights reserved.
+                Questions? Reach out at
+                <a href="mailto:support@worklenz.com" style="color: #666666; text-decoration: none">support@worklenz.com</a>
+                <a href="<%asm_group_unsubscribe_raw_url%>" style="color: #1890ff; text-decoration: none; font-weight: 700;">Unsubscribe</a>
+                <span style="color: #666666;"> from Worklenz newsletter</span>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>

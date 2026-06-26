@@ -12,7 +12,10 @@ const rootUrl = `${API_BASE_URL}/account`;
 
 export const accountApiService = {
   requestDeletion: async (request: AccountDeletionRequest): Promise<IServerResponse<any>> => {
-    const response = await apiClient.post<IServerResponse<any>>(`${rootUrl}/deletion-request`, request);
+    const response = await apiClient.post<IServerResponse<any>>(
+      `${rootUrl}/deletion-request`,
+      request
+    );
     return response.data;
   },
 

@@ -92,24 +92,26 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
         <PriorityFilterDropdown priorities={priorities} />
         <LabelsFilterDropdown />
         <MembersFilterDropdown />
-        <GroupByFilterDropdown />
       </Flex>
 
-      {position === 'list' && (
-        <Flex gap={12} wrap={'wrap'}>
-          <Flex
-            gap={4}
-            align="center"
-            style={{ cursor: 'pointer' }}
-            onClick={handleShowArchivedChange}
-          >
-            <Checkbox checked={archived} />
-            <Typography.Text>{t('showArchivedText')}</Typography.Text>
-          </Flex>
-          {/* show fields dropdown  */}
-          <ShowFieldsFilterDropdown />
-        </Flex>
-      )}
+      <Flex gap={12} align="center" style={{ flexShrink: 0 }}>
+        <GroupByFilterDropdown />
+        {position === 'list' && (
+          <>
+            <Flex
+              gap={4}
+              align="center"
+              style={{ cursor: 'pointer' }}
+              onClick={handleShowArchivedChange}
+            >
+              <Checkbox checked={archived} />
+              <Typography.Text>{t('showArchivedText')}</Typography.Text>
+            </Flex>
+            {/* show fields dropdown  */}
+            <ShowFieldsFilterDropdown />
+          </>
+        )}
+      </Flex>
     </Flex>
   );
 };

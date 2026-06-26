@@ -57,5 +57,32 @@
     "timeLoggedTaskAriaLabel": "Tarea con tiempo registrado:",
     "errorLoadingRecentTasks": "Error al cargar tareas recientes",
     "errorLoadingTimeLoggedTasks": "Error al cargar tareas con tiempo registrado"
+  },
+  "activityLogs": {
+    "title": "Actividad Reciente",
+    "refresh": "Actualizar registros de actividad",
+    "noActivities": "Sin actividades recientes",
+    "deletedProject": "(Eliminado)",
+    "project": {
+      "created": "{{userName}} creó el proyecto {{projectName}}",
+      "updated": "{{userName}} actualizó el proyecto {{projectName}}",
+      "deleted": "{{userName}} eliminó el proyecto {{projectName}}",
+      "archived": "{{userName}} archivó el proyecto {{projectName}}",
+      "unarchived": "{{userName}} desarchivó el proyecto {{projectName}}",
+      "favorited": "{{userName}} marcó como favorito el proyecto {{projectName}}",
+      "unfavorited": "{{userName}} quitó de favoritos el proyecto {{projectName}}",
+      "statusChanged": "{{userName}} cambió el estado del proyecto {{projectName}}",
+      "managerAssigned": "{{userName}} asignó un gerente de proyecto a {{projectName}}",
+      "managerRemoved": "{{userName}} removió el gerente del proyecto {{projectName}}",
+      "memberAdded": "{{userName}} añadió a {{memberName}} al proyecto {{projectName}}",
+      "memberRemoved": "{{userName}} eliminó a {{memberName}} del proyecto {{projectName}}"
+    },
+    "task": {
+      "created": "{{userName}} creó la tarea {{taskName}}",
+      "updated": "{{userName}} actualizó la tarea {{taskName}}"
+    },
+    "generic": {
+      "activity": "{{userName}} realizó una actividad"
+    }
   }
 }

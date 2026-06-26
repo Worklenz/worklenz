@@ -1,0 +1,154 @@
+{
+  "chartView": "Chart View",
+  "calendarView": "Calendar View",
+  "tableView": "Table View",
+  "noWorkloadData": "No workload data available",
+  "noMembersFound": "No team members found",
+  "errorLoadingData": "加载工作负载数据时出错",
+  "retry": "重试",
+  "refreshData": "刷新数据",
+
+  "overview": {
+    "teamMembers": "Team Members",
+    "totalWorkload": "Total Workload",
+    "hours": "hours",
+    "averageUtilization": "Average Utilization",
+    "criticalTasks": "Critical Tasks",
+    "totalTasks": "{{count}} Total Tasks",
+    "criticalTasksTooltip": "需要立即关注的高优先级任务。\n\n任务明细:\n• 关键任务: {{criticalTasks}}\n• 总任务: {{totalTasks}}\n• 关键百分比: {{criticalPercentage}}%"
+  },
+
+  "chart": {
+    "capacity": "Capacity",
+    "allocated": "Allocated",
+    "utilization": "Utilization",
+    "barChart": "Bar Chart",
+    "comparison": "Comparison",
+    "sortByName": "Sort by Name",
+    "sortByWorkload": "Sort by Workload",
+    "sortByUtilization": "Sort by Utilization",
+    "memberDetails": "Member Details"
+  },
+
+  "calendar": {
+    "tasks": "任务",
+    "more": "更多",
+    "totalTasks": "{{count}} 个任务",
+    "totalHours": "{{hours}} 小时",
+    "dayDetails": "{{date}} 的详情",
+    "utilization": "利用率",
+    "assignedTasks": "已分配任务",
+    "teamAvailability": "团队可用性",
+    "noTasksScheduled": "此日期没有安排任务",
+    "taskSummary": "任务摘要",
+    "task": "任务",
+    "tasks_plural": "任务",
+    "member": "成员",
+    "members_plural": "成员",
+    "logged": "已记录",
+    "planned": "已计划",
+    "unscheduled": "未安排",
+    "hoursAssigned": "已分配 {{hours}} 小时",
+    "capacityHours": "容量 {{hours}} 小时",
+    "unknownMember": "未知",
+    "currentProject": "当前项目",
+    "unknownInitial": "未",
+    "defaultPriority": "中等",
+    "defaultStatus": "进行中"
+  },
+
+  "table": {
+    "member": "Member",
+    "capacity": "Capacity",
+    "allocated": "Allocated",
+    "utilization": "Utilization",
+    "status": "Status",
+    "assignedTasks": "Assigned Tasks",
+    "tasks": "tasks",
+    "actions": "Actions",
+    "totalMembers": "Total: {{total}} members",
+    "taskName": "Task Name",
+    "project": "Project",
+    "duration": "Duration",
+    "estimatedHours": "Estimated Hours",
+    "priority": "Priority",
+    "progress": "Progress"
+  },
+
+  "status": {
+    "overallocated": "Overallocated",
+    "underutilized": "Underutilized",
+    "optimal": "Optimal"
+  },
+
+  "actions": {
+    "viewDetails": "View Details",
+    "adjustCapacity": "Adjust Capacity",
+    "reassignTasks": "Reassign Tasks",
+    "exportWorkload": "Export Workload",
+    "reassign": "Reassign"
+  },
+
+  "modal": {
+    "reassignTask": "Reassign Task",
+    "task": "Task",
+    "currentAssignee": "Current Assignee"
+  },
+
+  "filters": {
+    "title": "Workload Filters",
+    "filters": "Filters",
+
+    "timeScale": "Time Scale",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "workingDays": "工作日",
+    "monday": "星期一",
+    "tuesday": "星期二",
+    "wednesday": "星期三",
+    "thursday": "星期四",
+    "friday": "星期五",
+    "saturday": "星期六",
+    "sunday": "星期日",
+    "showWeekends": "Show Weekends",
+    "showOverallocated": "Show Overallocated Only",
+    "showUnderutilized": "Show Underutilized Only",
+    "clearAll": "Clear All Filters",
+    "dateRanges": "Date Ranges",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "lastWeek": "Last Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisQuarter": "This Quarter",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "custom": "Custom Range",
+    "refresh": "Refresh",
+    "export": "Export",
+    "settings": "Settings"
+  },
+
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close"
+  },
+
+  "calculations": {
+    "utilizationFormula": "Utilization = (Assigned Hours ÷ Weekly Capacity) × 100",
+    "weeklyCapacityFormula": "Weekly Capacity = Daily Hours × Working Days per Week",
+    "utilizationTooltip": "{{utilization}}% utilization\n\nCalculation:\n• Assigned Hours: {{assignedHours}}h\n• Weekly Capacity: {{weeklyCapacity}}h ({{dailyHours}}h × {{workingDays}} days)\n• Formula: ({{assignedHours}} ÷ {{weeklyCapacity}}) × 100 = {{utilization}}%",
+    "capacityTooltip": "Weekly Capacity: {{weeklyCapacity}} hours\n\nBased on organization settings:\n• Daily Hours: {{dailyHours}}h\n• Working Days: {{workingDays}} per week\n• Formula: {{dailyHours}}h × {{workingDays}} days = {{weeklyCapacity}}h",
+    "statusTooltip": {
+      "overallocated": "Overallocated (>100% utilization)\n\nThis member has more assigned work than their available capacity. Consider redistributing tasks or adjusting capacity.",
+      "underutilized": "Underutilized (<{{threshold}}% utilization)\n\nThis member has capacity for additional work. Consider assigning more tasks to optimize resource utilization.",
+      "optimal": "Optimal utilization ({{threshold}}-100%)\n\nThis member has a healthy workload balance between assigned tasks and available capacity."
+    },
+    "workingDaysInfo": "Working days based on organization schedule:\n{{workingDaysList}}",
+    "averageUtilizationTooltip": "Team Average: {{average}}%\n\nCalculated from {{memberCount}} team members:\n• Total Assigned Hours: {{totalAssigned}}h\n• Total Team Capacity: {{totalCapacity}}h\n• Formula: ({{totalAssigned}} ÷ {{totalCapacity}}) × 100 = {{average}}%"
+  }
+}

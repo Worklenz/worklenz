@@ -10,5 +10,6 @@
   "submitSuccessMessage": "感谢您完成调查！",
   "submitErrorMessage": "提交调查失败。请重试。",
   "submitErrorLog": "提交调查失败",
-  "fetchErrorLog": "获取调查失败"
-} 
+  "fetchErrorLog": "获取调查失败",
+  "dontShowAgain": "不再显示此调查"
+}

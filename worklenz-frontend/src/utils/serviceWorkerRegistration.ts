@@ -1,7 +1,7 @@
 // Service Worker Registration Utility
 // Handles registration, updates, and error handling
 
-import React from 'react';
+import React, { startTransition } from 'react';
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
@@ -16,33 +16,168 @@ type Config = {
   onError?: (error: Error) => void;
 };
 
-export function registerSW(config?: Config) {
-  if ('serviceWorker' in navigator) {
-    // Only register in production or when explicitly testing
-    const swUrl = '/sw.js';
+const APP_VERSION_STORAGE_KEY = 'app_version';
+const LATEST_VERSION_STORAGE_KEY = 'app_latest_version';
+const PENDING_UPDATE_VERSION_STORAGE_KEY = 'app_pending_update_version';
+const UPDATE_REQUESTED_AT_STORAGE_KEY = 'app_update_requested_at';
+const UPDATE_RELOAD_GRACE_PERIOD_MS = 60 * 1000;
 
-    if (isLocalhost) {
-      // This is running on localhost. Let's check if a service worker still exists or not.
-      checkValidServiceWorker(swUrl, config);
-
-      // Add some additional logging to localhost, pointing developers to the
-      // service worker/PWA documentation.
-      navigator.serviceWorker.ready.then(() => {
-        console.log(
-          'This web app is being served cache-first by a service ' +
-          'worker. To learn more, visit https://bit.ly/CRA-PWA'
-        );
-      });
-    } else {
-      // Is not localhost. Just register service worker
-      registerValidSW(swUrl, config);
-    }
-  } else {
-    console.log('Service workers are not supported in this browser.');
+declare global {
+  interface Window {
+    buildTimestamp?: string;
   }
 }
 
-function registerValidSW(swUrl: string, config?: Config) {
+const getLoadedBuildVersion = (): string | null => {
+  return window.buildTimestamp ? window.buildTimestamp.toString() : null;
+};
+
+const syncStoredVersionWithLoadedBuild = (): string | null => {
+  const loadedBuildVersion = getLoadedBuildVersion();
+
+  if (!loadedBuildVersion) {
+    return localStorage.getItem(APP_VERSION_STORAGE_KEY);
+  }
+
+  if (localStorage.getItem(APP_VERSION_STORAGE_KEY) !== loadedBuildVersion) {
+    localStorage.setItem(APP_VERSION_STORAGE_KEY, loadedBuildVersion);
+  }
+
+  if (localStorage.getItem(PENDING_UPDATE_VERSION_STORAGE_KEY) === loadedBuildVersion) {
+    localStorage.removeItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
+    localStorage.removeItem(UPDATE_REQUESTED_AT_STORAGE_KEY);
+  }
+
+  return loadedBuildVersion;
+};
+
+// Track registration state to prevent double registration
+let isRegistering = false;
+let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
+
+export function registerSW(config?: Config) {
+  if ('serviceWorker' in navigator) {
+    // Check if service worker is already registered
+    const checkExisting = navigator.serviceWorker.getRegistration();
+
+    if (checkExisting) {
+      return checkExisting
+        .then(registration => {
+          if (registration) {
+            // Service worker already registered, just call callbacks if needed
+            if (config) {
+              if (
+                config.onSuccess &&
+                registration.installing === null &&
+                registration.waiting === null
+              ) {
+                // Use setTimeout to defer callback execution outside of render phase
+                setTimeout(() => {
+                  try {
+                    config.onSuccess?.(registration);
+                  } catch (error) {
+                    console.error('Error in onSuccess callback:', error);
+                  }
+                }, 0);
+              }
+            }
+            return registration;
+          }
+          // No existing registration, continue with new registration
+          return null;
+        })
+        .then(registration => {
+          // If we got an existing registration, return it
+          if (registration) {
+            return registration;
+          }
+          // Otherwise, continue with new registration below
+          return null;
+        })
+        .catch(() => {
+          // Error checking existing registration, continue with new registration
+          return null;
+        })
+        .then(existingReg => {
+          // If we have an existing registration, return it
+          if (existingReg) {
+            return existingReg;
+          }
+
+          // Continue with new registration logic below
+          return performNewRegistration();
+        });
+    }
+
+    return performNewRegistration();
+  } else {
+    console.log('Service workers are not supported in this browser.');
+    return Promise.resolve(null);
+  }
+
+  function performNewRegistration(): Promise<ServiceWorkerRegistration | null> {
+    // Prevent double registration
+    if (isRegistering && registrationPromise) {
+      console.log('Service Worker registration already in progress, skipping duplicate call');
+      return registrationPromise.then(registration => {
+        if (registration && config) {
+          // Call callbacks for the duplicate registration attempt
+          if (
+            config.onSuccess &&
+            registration.installing === null &&
+            registration.waiting === null
+          ) {
+            // Use setTimeout to defer callback execution outside of render phase
+            setTimeout(() => {
+              try {
+                config.onSuccess?.(registration);
+              } catch (error) {
+                console.error('Error in onSuccess callback:', error);
+              }
+            }, 0);
+          }
+        }
+        return registration;
+      });
+    }
+
+    // Only register in production or when explicitly testing
+    const swUrl = '/sw.js';
+
+    isRegistering = true;
+    registrationPromise = new Promise<ServiceWorkerRegistration | null>(resolve => {
+      const registrationCallback = (registration: ServiceWorkerRegistration | null) => {
+        isRegistering = false;
+        resolve(registration);
+      };
+
+      if (isLocalhost) {
+        // This is running on localhost. Let's check if a service worker still exists or not.
+        checkValidServiceWorker(swUrl, config, registrationCallback);
+
+        // Add some additional logging to localhost, pointing developers to the
+        // service worker/PWA documentation.
+        navigator.serviceWorker.ready.then(() => {
+          console.log(
+            'This web app is being served cache-first by a service ' +
+              'worker. To learn more, visit https://bit.ly/CRA-PWA'
+          );
+        });
+      } else {
+        // Is not localhost. Just register service worker
+        registerValidSW(swUrl, config, registrationCallback);
+      }
+    });
+
+    return registrationPromise;
+  }
+}
+
+function registerValidSW(
+  swUrl: string,
+  config?: Config,
+  onComplete?: (registration: ServiceWorkerRegistration | null) => void
+) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
@@ -62,12 +197,18 @@ function registerValidSW(swUrl: string, config?: Config) {
               // content until all client tabs are closed.
               console.log(
                 'New content is available and will be used when all ' +
-                'tabs for this page are closed. See https://bit.ly/CRA-PWA.'
+                  'tabs for this page are closed. See https://bit.ly/CRA-PWA.'
               );
 
-              // Execute callback
+              // Execute callback - defer to prevent React concurrent mode issues
               if (config && config.onUpdate) {
-                config.onUpdate(registration);
+                setTimeout(() => {
+                  try {
+                    config.onUpdate?.(registration);
+                  } catch (error) {
+                    console.error('Error in onUpdate callback:', error);
+                  }
+                }, 0);
               }
             } else {
               // At this point, everything has been precached.
@@ -75,28 +216,58 @@ function registerValidSW(swUrl: string, config?: Config) {
               // "Content is cached for offline use." message.
               console.log('Content is cached for offline use.');
 
-              // Execute callback
+              // Execute callback - defer to prevent React concurrent mode issues
               if (config && config.onSuccess) {
-                config.onSuccess(registration);
+                setTimeout(() => {
+                  try {
+                    config.onSuccess?.(registration);
+                  } catch (error) {
+                    console.error('Error in onSuccess callback:', error);
+                  }
+                }, 0);
               }
 
               if (config && config.onOfflineReady) {
-                config.onOfflineReady();
+                setTimeout(() => {
+                  try {
+                    config.onOfflineReady?.();
+                  } catch (error) {
+                    console.error('Error in onOfflineReady callback:', error);
+                  }
+                }, 0);
               }
             }
           }
         };
       };
+
+      if (onComplete) {
+        onComplete(registration);
+      }
     })
     .catch(error => {
       console.error('Error during service worker registration:', error);
       if (config && config.onError) {
-        config.onError(error);
+        // Defer error callback to prevent React concurrent mode issues
+        setTimeout(() => {
+          try {
+            config.onError?.(error);
+          } catch (callbackError) {
+            console.error('Error in onError callback:', callbackError);
+          }
+        }, 0);
+      }
+      if (onComplete) {
+        onComplete(null);
       }
     });
 }
 
-function checkValidServiceWorker(swUrl: string, config?: Config) {
+function checkValidServiceWorker(
+  swUrl: string,
+  config?: Config,
+  onComplete?: (registration: ServiceWorkerRegistration | null) => void
+) {
   // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl, {
     headers: { 'Service-Worker': 'script' },
@@ -114,15 +285,19 @@ function checkValidServiceWorker(swUrl: string, config?: Config) {
             window.location.reload();
           });
         });
+        if (onComplete) {
+          onComplete(null);
+        }
       } else {
         // Service worker found. Proceed as normal.
-        registerValidSW(swUrl, config);
+        registerValidSW(swUrl, config, onComplete);
       }
     })
     .catch(() => {
-      console.log(
-        'No internet connection found. App is running in offline mode.'
-      );
+      console.log('No internet connection found. App is running in offline mode.');
+      if (onComplete) {
+        onComplete(null);
+      }
     });
 }
 
@@ -155,8 +330,8 @@ export class ServiceWorkerManager {
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel();
-      
-      messageChannel.port1.onmessage = (event) => {
+
+      messageChannel.port1.onmessage = event => {
         if (event.data.error) {
           reject(event.data.error);
         } else {
@@ -164,10 +339,7 @@ export class ServiceWorkerManager {
         }
       };
 
-      this.registration!.active!.postMessage(
-        { type, payload },
-        [messageChannel.port2]
-      );
+      this.registration!.active!.postMessage({ type, payload }, [messageChannel.port2]);
 
       // Timeout after 5 seconds
       setTimeout(() => {
@@ -198,11 +370,71 @@ export class ServiceWorkerManager {
     }
   }
 
-  // Check for updates
+  // Check for updates by comparing version.json
   async checkForUpdates(): Promise<boolean> {
     try {
-      const response = await this.sendMessage('CHECK_FOR_UPDATES');
-      return response.hasUpdates;
+      const currentVersion = syncStoredVersionWithLoadedBuild();
+
+      // Fetch latest version.json (bypassing all caches)
+      const response = await fetch('/version.json?' + Date.now(), {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to fetch version.json:', response.status);
+        return false;
+      }
+
+      const versionData = await response.json();
+      const latestVersion = versionData.buildId || versionData.buildTime;
+
+      if (!latestVersion) {
+        console.warn('Invalid version data received');
+        return false;
+      }
+
+      const latestVersionString = latestVersion.toString();
+      localStorage.setItem(LATEST_VERSION_STORAGE_KEY, latestVersionString);
+
+      // First time check - store current version
+      if (!currentVersion) {
+        localStorage.setItem(APP_VERSION_STORAGE_KEY, latestVersionString);
+        console.log('Initial version stored:', latestVersion);
+        return false;
+      }
+
+      const pendingVersion = localStorage.getItem(PENDING_UPDATE_VERSION_STORAGE_KEY);
+      const reloadRequestedAt = Number(
+        localStorage.getItem(UPDATE_REQUESTED_AT_STORAGE_KEY) || '0'
+      );
+      const isWaitingForRequestedReload =
+        pendingVersion === latestVersionString &&
+        Date.now() - reloadRequestedAt < UPDATE_RELOAD_GRACE_PERIOD_MS;
+
+      if (isWaitingForRequestedReload) {
+        return false;
+      }
+
+      const loadedBuildVersion = getLoadedBuildVersion();
+
+      // Compare versions against both the stored baseline and the currently loaded build.
+      const hasUpdate =
+        currentVersion !== latestVersionString && loadedBuildVersion !== latestVersionString;
+
+      if (hasUpdate) {
+        console.log('New version detected:', {
+          current: currentVersion,
+          latest: latestVersion,
+        });
+      }
+
+      return hasUpdate;
     } catch (error) {
       console.error('Failed to check for updates:', error);
       return false;
@@ -214,6 +446,24 @@ export class ServiceWorkerManager {
     if (!this.registration) return;
 
     try {
+      // Update stored version before reload
+      const response = await fetch('/version.json?' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+
+      if (response.ok) {
+        const versionData = await response.json();
+        const latestVersion = versionData.buildId || versionData.buildTime;
+        if (latestVersion) {
+          const latestVersionString = latestVersion.toString();
+          localStorage.setItem(APP_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(LATEST_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(PENDING_UPDATE_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(UPDATE_REQUESTED_AT_STORAGE_KEY, Date.now().toString());
+        }
+      }
+
       await this.registration.update();
       await this.sendMessage('SKIP_WAITING');
       window.location.reload();
@@ -226,15 +476,33 @@ export class ServiceWorkerManager {
   // Perform hard reload (clear cache and reload)
   async hardReload(): Promise<void> {
     try {
+      // Update stored version before reload
+      const response = await fetch('/version.json?' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+
+      if (response.ok) {
+        const versionData = await response.json();
+        const latestVersion = versionData.buildId || versionData.buildTime;
+        if (latestVersion) {
+          const latestVersionString = latestVersion.toString();
+          localStorage.setItem(APP_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(LATEST_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(PENDING_UPDATE_VERSION_STORAGE_KEY, latestVersionString);
+          localStorage.setItem(UPDATE_REQUESTED_AT_STORAGE_KEY, Date.now().toString());
+        }
+      }
+
       // Clear all caches first
       await this.clearCache();
-      
+
       // Force update the service worker
       if (this.registration) {
         await this.registration.update();
         await this.sendMessage('SKIP_WAITING');
       }
-      
+
       // Perform hard reload by clearing browser cache
       window.location.reload();
     } catch (error) {
@@ -268,25 +536,44 @@ export function useServiceWorker() {
   const [swManager, setSWManager] = React.useState<ServiceWorkerManager | null>(null);
 
   React.useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
-    const handleOffline = () => setIsOffline(true);
+    const handleOnline = () => {
+      // Use startTransition for non-urgent state updates to prevent concurrent mode errors
+      startTransition(() => {
+        setIsOffline(false);
+      });
+    };
+    const handleOffline = () => {
+      startTransition(() => {
+        setIsOffline(true);
+      });
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Register service worker
+    // Register service worker - this will safely handle duplicate calls
     registerSW({
-      onSuccess: (registration) => {
-        setSWManager(new ServiceWorkerManager(registration));
+      onSuccess: registration => {
+        // Use startTransition and setTimeout to defer state update outside render phase
+        setTimeout(() => {
+          startTransition(() => {
+            setSWManager(new ServiceWorkerManager(registration));
+          });
+        }, 0);
       },
-      onUpdate: (registration) => {
+      onUpdate: registration => {
         // You could show a toast here asking user to refresh
         console.log('New version available');
-        setSWManager(new ServiceWorkerManager(registration));
+        // Use startTransition and setTimeout to defer state update outside render phase
+        setTimeout(() => {
+          startTransition(() => {
+            setSWManager(new ServiceWorkerManager(registration));
+          });
+        }, 0);
       },
       onOfflineReady: () => {
         console.log('App ready for offline use');
-      }
+      },
     });
 
     return () => {
@@ -304,4 +591,4 @@ export function useServiceWorker() {
     checkForUpdates: () => swManager?.checkForUpdates(),
     getVersion: () => swManager?.getVersion(),
   };
-} 
+}

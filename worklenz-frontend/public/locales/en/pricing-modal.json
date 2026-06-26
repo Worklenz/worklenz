@@ -1,0 +1,343 @@
+{
+  "title": "Select the best plan for your team",
+  "subtitle": "Choose the perfect plan to power your team's productivity",
+  "billingCycle": {
+    "label": "Billing Cycle",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "savePercent": "Save 30%"
+  },
+  "pricingModel": {
+    "label": "Pricing Model",
+    "perUser": "Per User",
+    "basePlan": "Base Plan",
+    "default": "Default",
+    "explanation": {
+      "perUser": "Pay only for active users. Perfect for small teams (1-5 users) with flexible pricing that scales with your team.",
+      "basePlan": "Fixed base price with included users plus additional user costs. Ideal for larger teams (6+ users) with predictable billing."
+    },
+    "autoPerUser": "Automatically using per-user pricing for {{count}} user{{s}}",
+    "autoBase": "Automatically using base plan pricing for {{count}} user{{s}}",
+    "additionalUserCharge": "Includes {{included}} users. Each additional user is ${{price}}/month."
+  },
+  "teamSize": {
+    "label": "Team Size",
+    "help": "Select your current or expected team size",
+    "user": "user",
+    "users": "users",
+    "helpDescription": "Enter the number of users in your team (1-500)",
+    "placeholder": "Select team size"
+  },
+  "plans": {
+    "free": {
+      "name": "Free",
+      "description": "Perfect for getting started",
+      "features": [
+        "3 projects",
+        "Basic task management",
+        "Team collaboration",
+        "Manual management",
+        "Community support"
+      ],
+      "forever": "Forever"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "For professional teams",
+      "features": [
+        "Unlimited projects",
+        "Advanced task management",
+        "Gantt charts",
+        "Time tracking",
+        "Custom fields",
+        "Email support"
+      ],
+      "payPerUser": "Pay per user (1-5 users)",
+      "usersIncluded": "{{count}} Users Included",
+      "maxUsers": "Up to {{count}} Users Max"
+    },
+    "business": {
+      "name": "Business",
+      "description": "For growing organizations",
+      "features": [
+        "Everything in Pro",
+        "Advanced reporting",
+        "Custom workflows",
+        "API access",
+        "Priority support",
+        "Advanced integrations"
+      ],
+      "payPerUser": "Pay per user (1-5 users)",
+      "usersIncluded": "{{count}} Users Included",
+      "maxUsers": "Up to {{count}} Users Max",
+      "maxUsersAppSumo": "Up to 50 Users Max (AppSumo Special)"
+    },
+    "proSmall": {
+      "name": "Pro Small",
+      "description": "Ideal for small teams",
+      "features": [
+        "Unlimited projects",
+        "Advanced task management",
+        "Gantt charts",
+        "Time tracking",
+        "Custom fields",
+        "Email support"
+      ]
+    },
+    "businessSmall": {
+      "name": "Business Small",
+      "description": "For growing teams",
+      "features": [
+        "Everything in Pro Small",
+        "Advanced reporting",
+        "Custom workflows",
+        "API access",
+        "Priority support",
+        "Advanced integrations"
+      ]
+    },
+    "proLarge": {
+      "name": "Pro Large",
+      "description": "For larger teams",
+      "features": [
+        "Everything in Pro Small",
+        "Advanced team management",
+        "Resource allocation",
+        "Portfolio management",
+        "Priority support"
+      ]
+    },
+    "businessLarge": {
+      "name": "Business Large",
+      "description": "For enterprise teams",
+      "features": [
+        "Everything in Business Small",
+        "Advanced analytics",
+        "Custom branding",
+        "SSO integration",
+        "Dedicated support",
+        "SLA guarantee"
+      ]
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "description": "For large organizations",
+      "features": [
+        "Everything in Business Large",
+        "Unlimited users",
+        "Advanced security",
+        "Custom integrations",
+        "Dedicated account manager",
+        "On-premises deployment"
+      ]
+    }
+  },
+  "badges": {
+    "mostPopular": "Most Popular",
+    "recommended": "Recommended",
+    "bestValue": "Best Value",
+    "currentPlan": "Current Plan"
+  },
+  "pricing": {
+    "perMonth": "/month",
+    "perUser": "per user",
+    "forUsers": "for {{count}} {{unit}}",
+    "basePrice": "{{price}} base + {{additionalCost}} extra users",
+    "upToUsers": "Up to {{count}} users",
+    "usersRange": "1-{{count}} users",
+    "savePerYear": "Save ${{amount}}/year",
+    "originalPrice": "Original price",
+    "discountPercent": "-{{percent}}%"
+  },
+  "buttons": {
+    "currentPlan": "Current Plan",
+    "getStartedFree": "Get Started Free",
+    "contactSales": "Contact Sales",
+    "choosePlan": "Choose Plan",
+    "viewDetails": "View Details",
+    "chooseThisPlan": "Choose This Plan",
+    "switchToMobile": "Switch to mobile view",
+    "toggleTheme": "Toggle theme",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme",
+    "closeModal": "Close pricing modal",
+    "loadingPlans": "Loading Plans...",
+    "selectPlan": "Select a Plan",
+    "switchToFree": "Switch to Free Plan",
+    "planSummary": "{{planName}} Plan - ${{total}}{{period}}{{userText}}",
+    "planSummaryNoName": "${{total}}{{period}}{{userText}}"
+  },
+  "userTypes": {
+    "trial": {
+      "title": "Trial User:",
+      "message": "{{days}} days remaining. Upgrade now to keep your data and features!"
+    },
+    "appsumo": {
+      "title": "AppSumo Special:",
+      "message": "50% off Business+ plans!",
+      "countdown": "Only {{days}} days left to claim this exclusive offer.",
+      "standardPricing": "Standard pricing available"
+    },
+    "free": {
+      "title": "Current Plan:",
+      "message": "Free. Ready to unlock more features?"
+    },
+    "custom": {
+      "title": "Migrate from Custom Plan:",
+      "message": "Keep your grandfathered pricing when migrating to our new standard plans."
+    }
+  },
+  "recommendations": {
+    "switchModel": "Save ${{amount}}/month by switching to {{model}} for {{count}} users",
+    "perUserPricing": "Per User Pricing",
+    "basePlanPricing": "Base Plan Pricing",
+    "switch": "Switch"
+  },
+  "planDetails": {
+    "title": "Plan Details",
+    "features": "Features",
+    "limits": "Limits",
+    "projects": "Projects",
+    "users": "Users",
+    "storage": "Storage",
+    "unlimited": "Unlimited"
+  },
+  "tips": {
+    "switchAnytime": "💡 Tip: You can switch between pricing models anytime from your billing settings",
+    "smallTeamPricing": "💰 Small teams get better per-user rates",
+    "annualDiscount": "💸 Save up to 30% with annual billing",
+    "freeUpgrade": "🚀 Free users can upgrade anytime"
+  },
+  "errors": {
+    "loadingData": "Error loading pricing data",
+    "loadingPlansRetry": "Failed to load pricing plans. Please refresh the page.",
+    "calculating": "Calculating pricing...",
+    "selectedPlan": "Selected plan: {{plan}}"
+  },
+  "accessibility": {
+    "availablePlans": "Available Plans",
+    "teamSizeHelp": "Team size help",
+    "pricingUpdates": "Pricing updates"
+  },
+  "checkout": {
+    "title": "Confirm Your Subscription",
+    "subtitle": "Review your plan details before proceeding",
+    "summary": "Subscription Summary",
+    "plan": "Plan",
+    "teamSize": "Team Size",
+    "discount": "Discount",
+    "total": "Total",
+    "secureCheckout": "Secure Checkout",
+    "secureDescription": "Your payment will be processed securely through Paddle. You can cancel or change your plan anytime.",
+    "appsumoSpecial": "AppSumo Special Pricing",
+    "appsumoDescription": "You're getting 50% off for the first 12 months. This is a limited-time offer!",
+    "proceedToPayment": "Proceed to Payment",
+    "cancel": "Cancel",
+    "processing": {
+      "title": "Processing Your Subscription",
+      "subtitle": "Please wait while we set up your subscription...",
+      "doNotClose": "Do not close this window",
+      "doNotCloseDescription": "Your payment is being processed. Closing this window may interrupt the process."
+    },
+    "success": {
+      "title": "Subscription Created Successfully!",
+      "subtitle": "Your subscription has been activated. You'll receive a confirmation email shortly.",
+      "withId": "Your subscription ID is {{id}}. You'll receive a confirmation email shortly.",
+      "goToDashboard": "Go to Dashboard",
+      "viewBilling": "View Billing"
+    },
+    "error": {
+      "title": "Subscription Failed",
+      "subtitle": "Something went wrong during the subscription process.",
+      "tryAgain": "Try Again"
+    },
+    "steps": {
+      "confirm": "Confirm",
+      "payment": "Payment",
+      "complete": "Complete"
+    }
+  },
+  "ui": {
+    "loading": "Loading pricing options...",
+    "selectTeamSize": "Select your team size",
+    "chooseBilling": "Choose billing frequency",
+    "planSelected": "Plan Selected",
+    "totalCost": "Total Cost",
+    "perUserCost": "Per User Cost",
+    "included": "Included",
+    "popular": "Most Popular",
+    "recommended": "Recommended",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "change": "Change Plan",
+    "specialOffer": "Special Offer",
+    "limitedTime": "Limited Time",
+    "saveAmount": "Save ${{amount}}",
+    "freeForever": "Free Forever",
+    "noCommitment": "No commitment, cancel anytime",
+    "instantActivation": "Instant activation",
+    "supportIncluded": "Support included"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "Task Management",
+      "projectTracking": "Project Tracking",
+      "teamCollaboration": "Team Collaboration",
+      "fileSharing": "File Sharing",
+      "basicReporting": "Basic Reporting",
+      "mobileApp": "Mobile App Access"
+    },
+    "advanced": {
+      "ganttCharts": "Gantt Charts",
+      "timeTracking": "Time Tracking",
+      "advancedReporting": "Advanced Reporting",
+      "customFields": "Custom Fields",
+      "apiAccess": "API Access",
+      "prioritySupport": "Priority Support"
+    },
+    "enterprise": {
+      "sso": "Single Sign-On (SSO)",
+      "advancedSecurity": "Advanced Security",
+      "customIntegrations": "Custom Integrations",
+      "dedicatedSupport": "Dedicated Support",
+      "onPremise": "On-Premise Deployment",
+      "slaSupport": "SLA Support"
+    }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo Exclusive: 70% OFF Business Plans!",
+    "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m remaining",
+    "urgency": {
+      "finalHours": "FINAL HOURS",
+      "urgent": "URGENT",
+      "limitedTime": "LIMITED TIME"
+    },
+    "specialPricing": "🎯 Special pricing for AppSumo lifetime deal members",
+    "businessUsers": "💪 Business plans support up to 50 users (normally 25)",
+    "lifetimeTitle": "AppSumo Lifetime Deal Member",
+    "discountExpired": "Your 70% discount period has expired, but you can still upgrade to Business plans at standard pricing.",
+    "watchOffers": "💡 Watch for future campaigns and special offers!",
+    "discountApplied": "70% AppSumo Discount Applied"
+  },
+  "billing": {
+    "billedAnnually": "(billed annually)",
+    "billedMonthly": "(billed monthly)",
+    "perYear": "/year",
+    "perMonth": "/month",
+    "forUsers": " for {{count}} user{{s}}"
+  },
+  "ribbon": {
+    "recommended": "Recommended",
+    "popular": "Most Popular",
+    "bestValue": "Best Value",
+    "appsumoSpecial": "AppSumo Special"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Capture every detail with unlimited custom fields",
+    "upgradeModalSubCopy": "Your plan includes up to 10 custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.",
+    "benefit1": "Unlimited custom fields per project",
+    "benefit2": "Field types: text, number, dropdown, date, and more",
+    "benefit3": "Fields sync across all task views"
+  }
+}

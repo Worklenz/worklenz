@@ -3,6 +3,8 @@
   "projects": "项目",
   "members": "成员",
   "timeReports": "用时报告",
+  "timesheet": "Timesheet",
   "estimateVsActual": "预计用时 vs 实际用时",
+  "logs": "日志",
   "currentOrganizationTooltip": "当前的组织"
 }

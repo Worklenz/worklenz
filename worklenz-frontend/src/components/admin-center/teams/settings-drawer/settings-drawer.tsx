@@ -12,7 +12,7 @@ import {
   Typography,
   Tooltip,
 } from '@/shared/antd-imports';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import './settings-drawer.css';
 import logger from '@/utils/errorLogger';
@@ -28,12 +28,14 @@ interface SettingTeamDrawerProps {
   teamId: string;
   isSettingDrawerOpen: boolean;
   setIsSettingDrawerOpen: (value: boolean) => void;
+  reloadTeams?: () => void;
 }
 
 const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
   teamId,
   isSettingDrawerOpen,
   setIsSettingDrawerOpen,
+  reloadTeams,
 }) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('admin-center/teams');
@@ -42,11 +44,17 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
   const [updatingTeam, setUpdatingTeam] = useState(false);
 
+  // Tracks which member's name is currently being edited (by member id)
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  // Tracks the current value of the name input while editing
+  const [editingNameValue, setEditingNameValue] = useState<string>('');
+  // Ref to prevent the blur handler from firing after Enter/Escape
+  const committingRef = useRef(false);
+
   const [total, setTotal] = useState(0);
 
   const fetchTeamMembers = async () => {
     if (!teamId) return;
-
     try {
       setLoadingTeamMembers(true);
       const res = await adminCenterApiService.getOrganizationTeam(teamId);
@@ -68,6 +76,7 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
 
       const body = {
         name: values.name,
+        // Send updated member names along with the rest of team data
         teamMembers: teamData?.team_members || [],
       };
 
@@ -75,6 +84,11 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
 
       if (response.done) {
         setIsSettingDrawerOpen(false);
+        if (reloadTeams) {
+          setTimeout(() => {
+            reloadTeams();
+          }, 100);
+        }
       }
     } catch (error) {
       logger.error('Error updating team', error);
@@ -82,6 +96,66 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
       setUpdatingTeam(false);
     }
   };
+
+  // ── Inline name editing helpers ──────────────────────────────────────────
+
+  const startEditingName = (member: IOrganizationTeamMember) => {
+    // Pending invitations have no real name to edit yet
+    if (member.pending_invitation) return;
+    setEditingNameId(member.id);
+    setEditingNameValue(member.name || '');
+  };
+
+  const commitNameEdit = (memberId: string) => {
+    committingRef.current = true;
+    const trimmed = editingNameValue.trim();
+
+    if (trimmed && teamData?.team_members) {
+      setTeamData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          team_members: prev.team_members.map(m =>
+            m.id === memberId ? { ...m, name: trimmed } : m
+          ),
+        };
+      });
+    }
+
+    setEditingNameId(null);
+    setEditingNameValue('');
+    // Reset the guard after the current event cycle
+    setTimeout(() => {
+      committingRef.current = false;
+    }, 0);
+  };
+
+  const cancelNameEdit = () => {
+    committingRef.current = true;
+    setEditingNameId(null);
+    setEditingNameValue('');
+    setTimeout(() => {
+      committingRef.current = false;
+    }, 0);
+  };
+
+  const handleNameBlur = (memberId: string) => {
+    // Skip if blur was triggered by Enter/Escape handlers
+    if (committingRef.current) return;
+    commitNameEdit(memberId);
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent, memberId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitNameEdit(memberId);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelNameEdit();
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────
 
   const roleOptions = [
     { key: 'Admin', value: 'Admin', label: t('admin') },
@@ -93,23 +167,56 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
     {
       title: t('user'),
       key: 'user',
-      render: (_, record: IOrganizationTeamMember) => (
-        <Flex align="center" gap="8px" key={record.id}>
-          <SingleAvatar avatarUrl={record.avatar_url} name={record.name} />
-          <Typography.Text>{record.name || ''}</Typography.Text>
-        </Flex>
-      ),
+      render: (_, record: IOrganizationTeamMember) => {
+        const isPending = record.pending_invitation;
+        const isEditing = editingNameId === record.id;
+
+        return (
+          <Flex align="center" gap="8px" key={record.id}>
+            <SingleAvatar avatarUrl={record.avatar_url} name={record.name} />
+
+            {isEditing ? (
+              <Input
+                autoFocus
+                size="small"
+                value={editingNameValue}
+                style={{ width: 160 }}
+                onChange={e => setEditingNameValue(e.target.value)}
+                onBlur={() => handleNameBlur(record.id)}
+                onKeyDown={e => handleNameKeyDown(e, record.id)}
+                onClick={e => e.stopPropagation()}
+              />
+            ) : (
+              <Tooltip
+                title={
+                  isPending
+                    ? t('pendingInvitation')
+                    : t('clickToEditName', { defaultValue: 'Click to edit name' })
+                }
+              >
+                <Typography.Text
+                  style={{
+                    cursor: isPending ? 'not-allowed' : 'pointer',
+                    borderBottom: isPending ? 'none' : '1px dashed #d9d9d9',
+                    paddingBottom: 1,
+                  }}
+                  onClick={() => !isPending && startEditingName(record)}
+                >
+                  {record.name || ''}
+                </Typography.Text>
+              </Tooltip>
+            )}
+          </Flex>
+        );
+      },
     },
     {
       title: t('role'),
       key: 'role',
       render: (_, record: IOrganizationTeamMember) => {
         const handleRoleChange = (value: string) => {
-          if (value === 'Owner') {
-            return;
-          }
+          if (value === 'Owner') return;
 
-          // Update the team member's role in teamData
           if (teamData && teamData.team_members) {
             const updatedMembers = teamData.team_members.map(member => {
               if (member.id === record.id) {
@@ -168,6 +275,8 @@ const SettingTeamDrawer: React.FC<SettingTeamDrawerProps> = ({
       onClose={() => {
         form.resetFields();
         setTeamData(null);
+        setEditingNameId(null);
+        setEditingNameValue('');
         setTimeout(() => {
           setIsSettingDrawerOpen(false);
         }, 100);

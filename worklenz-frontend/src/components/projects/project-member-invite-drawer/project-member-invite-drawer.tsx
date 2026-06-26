@@ -1,4 +1,14 @@
-import { Drawer, Flex, Form, Select, Typography, List, Button, Modal, Divider } from 'antd/es';
+import {
+  Drawer,
+  Flex,
+  Form,
+  Select,
+  Typography,
+  List,
+  Button,
+  Modal,
+  Divider,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 
@@ -18,6 +28,8 @@ import logger from '@/utils/errorLogger';
 import { validateEmail } from '@/utils/validateEmail';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { evt_project_invite_members } from '@/shared/worklenz-analytics-events';
 
 const ProjectMemberDrawer = () => {
   const { t } = useTranslation('project-view/project-member-drawer');
@@ -32,9 +44,12 @@ const ProjectMemberDrawer = () => {
   const [isInviting, setIsInviting] = useState(false);
   const [members, setMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
   const [teamMembersLoading, setTeamMembersLoading] = useState(false);
+  const { trackMixpanelEvent } = useMixpanelTracking();
 
   // Filter out members already in the project
-  const currentProjectMemberIds = (currentMembersList || []).map(m => m.team_member_id).filter(Boolean);
+  const currentProjectMemberIds = (currentMembersList || [])
+    .map(m => m.team_member_id)
+    .filter(Boolean);
   const availableMembers = (members?.data || []).filter(
     member => member.id && !currentProjectMemberIds.includes(member.id)
   );
@@ -81,6 +96,8 @@ const ProjectMemberDrawer = () => {
     try {
       const res = await dispatch(addProjectMember({ memberId, projectId })).unwrap();
       if (res.done) {
+        // Track invite via selection (count 1)
+        trackMixpanelEvent(evt_project_invite_members, { count: 1, project_id: projectId });
         form.resetFields();
         dispatch(
           getTeamMembers({
@@ -141,6 +158,8 @@ const ProjectMemberDrawer = () => {
       setIsInviting(true);
       const res = await dispatch(createByEmail(body)).unwrap();
       if (res.done) {
+        // Track invite via email (count 1)
+        trackMixpanelEvent(evt_project_invite_members, { count: 1, project_id: projectId });
         form.resetFields();
         await fetchProjectMembers();
         dispatch(
@@ -181,9 +200,9 @@ const ProjectMemberDrawer = () => {
   );
 
   const renderNotFoundContent = () => (
-    <Flex style={{ display: 'block'}}>
+    <Flex style={{ display: 'block' }}>
       <Button
-        className='mb-2'
+        className="mb-2"
         block
         type="primary"
         onClick={sendInviteToProject}
@@ -203,15 +222,17 @@ const ProjectMemberDrawer = () => {
   );
 
   return (
-      <Modal
-        title={
-          <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>{isFromAssigner ? t('inviteMember') : t('title')}</Typography.Text>
-        }
-        open={isDrawerOpen}
-        onCancel={() => dispatch(toggleProjectMemberDrawer())}
-        afterOpenChange={handleOpenChange}
-        footer={
-          <>
+    <Modal
+      title={
+        <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
+          {isFromAssigner ? t('inviteMember') : t('title')}
+        </Typography.Text>
+      }
+      open={isDrawerOpen}
+      onCancel={() => dispatch(toggleProjectMemberDrawer())}
+      afterOpenChange={handleOpenChange}
+      footer={
+        <>
           {/* {!isFromAssigner && <Button
             style={{ width: 140, fontSize: 12 }}
             block
@@ -220,49 +241,52 @@ const ProjectMemberDrawer = () => {
           >
             {t('copyProjectLink')}
           </Button>} */}
-          </>
-        }
-      >
-        <Form form={form} layout="vertical" onFinish={handleSelectChange}>
-          <Form.Item name="memberName" label={t('searchLabel')}>
-            <Select
-              loading={teamMembersLoading}
-              placeholder={t('searchPlaceholder')}
-              showSearch
-              onSearch={handleSearch}
-              onChange={handleSelectChange}
-              onKeyDown={handleKeyDown}
-              options={availableMembers.map(member => ({
-                key: member.id,
-                value: member.id,
-                name: member.name,
-                label: renderMemberOption(member),
-              }))}
-              filterOption={false}
-              notFoundContent={renderNotFoundContent()}
-              optionLabelProp="name"
-            />
-          </Form.Item>
-        </Form>
-        {!isFromAssigner && <><div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{t('members')}</div>
-        <div style={{ maxHeight: 360, minHeight: 120, overflowY: 'auto', marginBottom: 16 }}>
-          <List
-            loading={isLoading}
-            bordered
-            size="small"
-            itemLayout="horizontal"
-            dataSource={currentMembersList}
-            renderItem={member => (
-              <List.Item key={member.id} >
-                <Flex gap={4} align="center" justify="space-between" style={{ width: '100%' }}>
-                  {renderMemberOption(member)}
-                </Flex>
-              </List.Item>
-            )}
+        </>
+      }
+    >
+      <Form form={form} layout="vertical" onFinish={handleSelectChange}>
+        <Form.Item name="memberName" label={t('searchLabel')}>
+          <Select
+            loading={teamMembersLoading}
+            placeholder={t('search', { defaultValue: 'Search' })}
+            showSearch
+            onSearch={handleSearch}
+            onChange={handleSelectChange}
+            onKeyDown={handleKeyDown}
+            options={availableMembers.map(member => ({
+              key: member.id,
+              value: member.id,
+              name: member.name,
+              label: renderMemberOption(member),
+            }))}
+            filterOption={false}
+            notFoundContent={renderNotFoundContent()}
+            optionLabelProp="name"
           />
-        </div></>
-        }
-      </Modal>
+        </Form.Item>
+      </Form>
+      {!isFromAssigner && (
+        <>
+          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 8 }}>{t('members')}</div>
+          <div style={{ maxHeight: 360, minHeight: 120, overflowY: 'auto', marginBottom: 16 }}>
+            <List
+              loading={isLoading}
+              bordered
+              size="small"
+              itemLayout="horizontal"
+              dataSource={currentMembersList}
+              renderItem={(member: any) => (
+                <List.Item key={member.id}>
+                  <Flex gap={4} align="center" justify="space-between" style={{ width: '100%' }}>
+                    {renderMemberOption(member)}
+                  </Flex>
+                </List.Item>
+              )}
+            />
+          </div>
+        </>
+      )}
+    </Modal>
   );
 };
 

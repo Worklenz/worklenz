@@ -1,0 +1,17 @@
+.task-drawer-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 24px 0 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 12px;
+  margin-bottom: 0;
+}
+
+[data-theme="dark"] .task-drawer-title-section {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.task-drawer-title-name {
+  width: 100%;
+}

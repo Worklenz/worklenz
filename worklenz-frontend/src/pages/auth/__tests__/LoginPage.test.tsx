@@ -115,9 +115,7 @@ const renderWithProviders = (component: React.ReactElement, initialState: any = 
   return render(
     <Provider store={store}>
       <BrowserRouter>
-        <I18nextProvider i18n={i18n}>
-          {component}
-        </I18nextProvider>
+        <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
       </BrowserRouter>
     </Provider>
   );
@@ -133,7 +131,7 @@ describe('LoginPage', () => {
 
   it('renders login form correctly', () => {
     renderWithProviders(<LoginPage />);
-    
+
     expect(screen.getByText('Sign in to your account')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
@@ -144,17 +142,17 @@ describe('LoginPage', () => {
 
   it('shows Google login button when enabled', () => {
     renderWithProviders(<LoginPage />);
-    
+
     expect(screen.getByText('Sign in with Google')).toBeInTheDocument();
   });
 
   it('validates required fields', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     const submitButton = screen.getByRole('button', { name: 'Sign In' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Please input your email!')).toBeInTheDocument();
       expect(screen.getByText('Please input your password!')).toBeInTheDocument();
@@ -164,13 +162,13 @@ describe('LoginPage', () => {
   it('validates email format', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Email');
     await user.type(emailInput, 'invalid-email');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Sign In' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Please enter a valid email!')).toBeInTheDocument();
     });
@@ -179,16 +177,16 @@ describe('LoginPage', () => {
   it('validates password minimum length', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Email');
     const passwordInput = screen.getByPlaceholderText('Password');
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, '123');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Sign In' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Password must be at least 8 characters!')).toBeInTheDocument();
     });
@@ -204,16 +202,16 @@ describe('LoginPage', () => {
     });
 
     renderWithProviders(<LoginPage />);
-    
+
     const emailInput = screen.getByPlaceholderText('Email');
     const passwordInput = screen.getByPlaceholderText('Password');
-    
+
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');
-    
+
     const submitButton = screen.getByRole('button', { name: 'Sign In' });
     await user.click(submitButton);
-    
+
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith({
         email: 'test@example.com',
@@ -226,7 +224,7 @@ describe('LoginPage', () => {
   it('shows loading state during login', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />, { auth: { isLoading: true } });
-    
+
     const submitButton = screen.getByRole('button', { name: 'Sign In' });
     expect(submitButton).toBeDisabled();
     expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
@@ -235,26 +233,26 @@ describe('LoginPage', () => {
   it('handles Google login click', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { href: '' },
       writable: true,
     });
-    
+
     const googleButton = screen.getByText('Sign in with Google');
     await user.click(googleButton);
-    
+
     expect(window.location.href).toBe('http://localhost:3000/secure/google');
   });
 
   it('navigates to signup page', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     const signupLink = screen.getByText('Sign up');
     await user.click(signupLink);
-    
+
     // Link navigation is handled by React Router, so we just check the element exists
     expect(signupLink.closest('a')).toHaveAttribute('href', '/auth/signup');
   });
@@ -262,20 +260,20 @@ describe('LoginPage', () => {
   it('navigates to forgot password page', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     const forgotPasswordLink = screen.getByText('Forgot password?');
     await user.click(forgotPasswordLink);
-    
+
     expect(forgotPasswordLink.closest('a')).toHaveAttribute('href', '/auth/forgot-password');
   });
 
   it('toggles remember me checkbox', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
-    
+
     const rememberMeCheckbox = screen.getByRole('checkbox', { name: 'Remember me' });
     expect(rememberMeCheckbox).toBeChecked(); // Default is true
-    
+
     await user.click(rememberMeCheckbox);
     expect(rememberMeCheckbox).not.toBeChecked();
   });

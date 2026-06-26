@@ -1,6 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, Button, Typography, Card, Avatar, Tag, Alert, Space, Dropdown, MenuProps } from '@/shared/antd-imports';
-import { CloseCircleOutlined, MailOutlined, PlusOutlined, UserOutlined, CheckCircleOutlined, ExclamationCircleOutlined, GlobalOutlined } from '@/shared/antd-imports';
+import {
+  Form,
+  Input,
+  Button,
+  Typography,
+  Card,
+  Avatar,
+  Tag,
+  Alert,
+  Space,
+  Dropdown,
+  MenuProps,
+} from '@/shared/antd-imports';
+import {
+  CloseCircleOutlined,
+  MailOutlined,
+  PlusOutlined,
+  UserOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  GlobalOutlined,
+} from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { setTeamMembers } from '@/features/account-setup/account-setup.slice';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,7 +45,12 @@ interface MembersStepProps {
 const getEmailSuggestions = (orgName?: string) => {
   if (!orgName) return [];
   const cleanOrgName = orgName.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return [`info@${cleanOrgName}.com`, `team@${cleanOrgName}.com`, `hello@${cleanOrgName}.com`, `contact@${cleanOrgName}.com`];
+  return [
+    `info@${cleanOrgName}.com`,
+    `team@${cleanOrgName}.com`,
+    `hello@${cleanOrgName}.com`,
+    `contact@${cleanOrgName}.com`,
+  ];
 };
 
 const getRoleSuggestions = (t: any) => [
@@ -34,7 +59,7 @@ const getRoleSuggestions = (t: any) => [
   { role: 'Project Manager', icon: '📊', description: t('roleSuggestions.projectManager') },
   { role: 'Marketing', icon: '📢', description: t('roleSuggestions.marketing') },
   { role: 'Sales', icon: '💼', description: t('roleSuggestions.sales') },
-  { role: 'Operations', icon: '⚙️', description: t('roleSuggestions.operations') }
+  { role: 'Operations', icon: '⚙️', description: t('roleSuggestions.operations') },
 ];
 
 const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) => {
@@ -59,12 +84,19 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
   };
 
   const removeEmail = (id: number) => {
-    if (teamMembers.length > 1) dispatch(setTeamMembers(teamMembers.filter(teamMember => teamMember.id !== id)));
+    if (teamMembers.length > 1)
+      dispatch(setTeamMembers(teamMembers.filter(teamMember => teamMember.id !== id)));
   };
 
   const updateEmail = (id: number, value: string) => {
     const sanitizedValue = sanitizeInput(value);
-    dispatch(setTeamMembers(teamMembers.map(teamMember => teamMember.id === id ? { ...teamMember, value: sanitizedValue } : teamMember)));
+    dispatch(
+      setTeamMembers(
+        teamMembers.map(teamMember =>
+          teamMember.id === id ? { ...teamMember, value: sanitizedValue } : teamMember
+        )
+      )
+    );
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
@@ -110,7 +142,7 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
     { key: 'pt', label: t('languages.pt'), flag: '🇵🇹' },
     { key: 'de', label: t('languages.de'), flag: '🇩🇪' },
     { key: 'alb', label: t('languages.alb'), flag: '🇦🇱' },
-    { key: 'zh', label: t('languages.zh'), flag: '🇨🇳' }
+    { key: 'zh', label: t('languages.zh'), flag: '🇨🇳' },
   ];
 
   const handleLanguageChange = (languageKey: string) => {
@@ -119,7 +151,16 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
   };
 
   const currentLanguage = languages.find(lang => lang.key === language) || languages[0];
-  const languageMenuItems: MenuProps['items'] = languages.map(lang => ({ key: lang.key, label: <div className="flex items-center space-x-2"><span>{lang.flag}</span><span>{lang.label}</span></div>, onClick: () => handleLanguageChange(lang.key) }));
+  const languageMenuItems: MenuProps['items'] = languages.map(lang => ({
+    key: lang.key,
+    label: (
+      <div className="flex items-center space-x-2">
+        <span>{lang.flag}</span>
+        <span>{lang.label}</span>
+      </div>
+    ),
+    onClick: () => handleLanguageChange(lang.key),
+  }));
 
   return (
     <div className="w-full members-step">
@@ -139,31 +180,43 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
           {teamMembers.map((teamMember, index) => {
             const emailStatus = getEmailStatus(teamMember.value, teamMember.id);
             return (
-              <div 
+              <div
                 key={teamMember.id}
                 className={`flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 ${
                   focusedIndex === index ? 'border-2' : ''
                 }`}
-                style={{ 
-                  borderColor: focusedIndex === index ? token?.colorPrimary : 
-                               emailStatus === 'invalid' ? token?.colorError : token?.colorBorder,
-                  backgroundColor: token?.colorBgContainer 
+                style={{
+                  borderColor:
+                    focusedIndex === index
+                      ? token?.colorPrimary
+                      : emailStatus === 'invalid'
+                        ? token?.colorError
+                        : token?.colorBorder,
+                  backgroundColor: token?.colorBgContainer,
                 }}
               >
-                <Avatar 
+                <Avatar
                   size={32}
-                  style={{ 
-                    backgroundColor: emailStatus === 'valid' ? token?.colorSuccess : 
-                                    emailStatus === 'invalid' ? token?.colorError : token?.colorBorderSecondary,
-                    color: '#fff'
+                  style={{
+                    backgroundColor:
+                      emailStatus === 'valid'
+                        ? token?.colorSuccess
+                        : emailStatus === 'invalid'
+                          ? token?.colorError
+                          : token?.colorBorderSecondary,
+                    color: '#fff',
                   }}
                   icon={
-                    emailStatus === 'valid' ? <CheckCircleOutlined /> :
-                    emailStatus === 'invalid' ? <ExclamationCircleOutlined /> :
-                    <UserOutlined />
+                    emailStatus === 'valid' ? (
+                      <CheckCircleOutlined />
+                    ) : emailStatus === 'invalid' ? (
+                      <ExclamationCircleOutlined />
+                    ) : (
+                      <UserOutlined />
+                    )
                   }
                 />
-                
+
                 <div className="flex-1">
                   <Input
                     placeholder={t('memberPlaceholder', { index: index + 1 })}
@@ -172,11 +225,11 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
                     onKeyPress={e => handleKeyPress(e, index)}
                     onFocus={() => setFocusedIndex(index)}
                     onBlur={() => handleBlur(teamMember.id, teamMember.value)}
-                    ref={el => inputRefs.current[index] = el}
+                    ref={el => (inputRefs.current[index] = el)}
                     className="border-0 shadow-none"
                     style={{
                       backgroundColor: 'transparent',
-                      color: token?.colorText
+                      color: token?.colorText,
                     }}
                     prefix={<MailOutlined style={{ color: token?.colorTextTertiary }} />}
                     status={emailStatus === 'invalid' ? 'error' : undefined}
@@ -221,9 +274,9 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
             icon={<PlusOutlined />}
             onClick={addEmail}
             className="w-full mt-4 h-12 text-base"
-            style={{ 
+            style={{
               borderColor: token?.colorBorder,
-              color: token?.colorTextSecondary 
+              color: token?.colorTextSecondary,
             }}
           >
             {t('addAnotherTeamMember', { current: teamMembers.length, max: 5 })}
@@ -240,7 +293,7 @@ const MembersStep: React.FC<MembersStepProps> = ({ isDarkMode, styles, token }) 
           showIcon
           style={{
             backgroundColor: token?.colorInfoBg,
-            borderColor: token?.colorInfoBorder
+            borderColor: token?.colorInfoBorder,
           }}
         />
       </div>

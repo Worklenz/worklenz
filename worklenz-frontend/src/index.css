@@ -51,6 +51,22 @@ html.light body {
   }
 }
 
+/* Cookie consent banner animations */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* antdesign override imports  */
 
 *,
@@ -474,4 +490,7 @@ tr:hover .action-buttons {
 .custom-selection-dropdown [data-theme="dark"] .ant-dropdown-menu-item:hover,
 .custom-selection-dropdown .theme-dark .ant-dropdown-menu-item:hover {
   background-color: #374151 !important;
+}
+.ant-menu-inline-collapsed-tooltip {
+  display: none !important;
 }

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, Flex, Spin, Typography } from 'antd/es';
+import { Card, Flex, Spin, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +9,8 @@ import { setSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
 import logger from '@/utils/errorLogger';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
+import { invitationRedirectService } from '@/services/invitation-redirect.service';
+import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
 
 const REDIRECT_DELAY = 500; // Delay in milliseconds before redirecting
 
@@ -18,6 +20,19 @@ const AuthenticatingPage: React.FC = () => {
   const dispatch = useAppDispatch();
 
   const handleSuccessRedirect = () => {
+    // Check for pending invitation first (highest priority)
+    const pendingInvitation = invitationRedirectService.getPendingInvitation();
+    if (pendingInvitation) {
+      console.log(
+        '[Authenticating] Found pending invitation, redirecting to:',
+        pendingInvitation.url
+      );
+      // Don't clear here - let the invite page clear it after successful join
+      navigate(pendingInvitation.url);
+      return;
+    }
+
+    // Check for project redirect
     const project = localStorage.getItem(WORKLENZ_REDIRECT_PROJ_KEY);
     if (project) {
       localStorage.removeItem(WORKLENZ_REDIRECT_PROJ_KEY);
@@ -25,6 +40,7 @@ const AuthenticatingPage: React.FC = () => {
       return;
     }
 
+    // Default redirect
     navigate('/worklenz/home');
   };
 
@@ -66,7 +82,7 @@ const AuthenticatingPage: React.FC = () => {
   return (
     <Card style={cardStyles}>
       <Flex vertical align="center" gap="middle">
-        <Spin size="large" />
+        <WorklenzLogoLoader />
         <Typography.Title level={3}>
           {t('authenticating', { defaultValue: 'Authenticating...' })}
         </Typography.Title>

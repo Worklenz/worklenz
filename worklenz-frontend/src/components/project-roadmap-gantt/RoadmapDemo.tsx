@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Space, message } from '@/shared/antd-imports';
 import ProjectRoadmapGantt from './ProjectRoadmapGantt';
 import { sampleProjectRoadmap } from './sample-data';
 import { ProjectPhase, ProjectRoadmap } from '../../types/project-roadmap.types';
@@ -12,33 +12,27 @@ const RoadmapDemo: React.FC = () => {
   const handlePhaseUpdate = (phaseId: string, updates: Partial<ProjectPhase>) => {
     setRoadmap(prevRoadmap => ({
       ...prevRoadmap,
-      phases: prevRoadmap.phases.map(phase => 
-        phase.id === phaseId 
-          ? { ...phase, ...updates }
-          : phase
-      )
+      phases: prevRoadmap.phases.map(phase =>
+        phase.id === phaseId ? { ...phase, ...updates } : phase
+      ),
     }));
-    
+
     message.success('Phase updated successfully!');
   };
 
   const handleTaskUpdate = (phaseId: string, taskId: string, updates: any) => {
     setRoadmap(prevRoadmap => ({
       ...prevRoadmap,
-      phases: prevRoadmap.phases.map(phase => 
-        phase.id === phaseId 
+      phases: prevRoadmap.phases.map(phase =>
+        phase.id === phaseId
           ? {
               ...phase,
-              tasks: phase.tasks.map(task => 
-                task.id === taskId 
-                  ? { ...task, ...updates }
-                  : task
-              )
+              tasks: phase.tasks.map(task => (task.id === taskId ? { ...task, ...updates } : task)),
             }
           : phase
-      )
+      ),
     }));
-    
+
     message.success('Task updated successfully!');
   };
 
@@ -57,12 +51,12 @@ const RoadmapDemo: React.FC = () => {
                 Project Roadmap Gantt Chart Demo
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-0">
-                Interactive Gantt chart showing project phases as milestones/epics. 
-                Click on any phase card or Gantt bar to view detailed information in a modal.
+                Interactive Gantt chart showing project phases as milestones/epics. Click on any
+                phase card or Gantt bar to view detailed information in a modal.
               </p>
             </div>
             <Space>
-              <Button 
+              <Button
                 onClick={resetToSampleData}
                 className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
@@ -91,17 +85,54 @@ const RoadmapDemo: React.FC = () => {
             Features Demonstrated:
           </h3>
           <ul className="space-y-2 text-gray-700 dark:text-gray-300">
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Phase-based Grouping:</strong> Projects organized by phases (Planning, Development, Testing, Deployment)</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Interactive Phase Cards:</strong> Click on phase cards for detailed view</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Gantt Chart Visualization:</strong> Timeline view with tasks, milestones, and dependencies</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Modal Details:</strong> Comprehensive phase information with tasks, milestones, and team members</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Progress Tracking:</strong> Visual progress indicators and completion statistics</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Multiple View Modes:</strong> Week, Month, and Year timeline views</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Task Management:</strong> Task assignments, priorities, and status tracking</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Milestone Tracking:</strong> Critical path milestones and completion status</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Team Overview:</strong> Team member assignments and workload distribution</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Editable Fields:</strong> In-modal editing for phase attributes (name, description, dates, status)</li>
-            <li>• <strong className="text-gray-900 dark:text-gray-100">Theme Support:</strong> Automatic light/dark theme adaptation with consistent styling</li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Phase-based Grouping:</strong>{' '}
+              Projects organized by phases (Planning, Development, Testing, Deployment)
+            </li>
+            <li>
+              •{' '}
+              <strong className="text-gray-900 dark:text-gray-100">Interactive Phase Cards:</strong>{' '}
+              Click on phase cards for detailed view
+            </li>
+            <li>
+              •{' '}
+              <strong className="text-gray-900 dark:text-gray-100">
+                Gantt Chart Visualization:
+              </strong>{' '}
+              Timeline view with tasks, milestones, and dependencies
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Modal Details:</strong>{' '}
+              Comprehensive phase information with tasks, milestones, and team members
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Progress Tracking:</strong>{' '}
+              Visual progress indicators and completion statistics
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Multiple View Modes:</strong>{' '}
+              Week, Month, and Year timeline views
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Task Management:</strong> Task
+              assignments, priorities, and status tracking
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Milestone Tracking:</strong>{' '}
+              Critical path milestones and completion status
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Team Overview:</strong> Team
+              member assignments and workload distribution
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Editable Fields:</strong>{' '}
+              In-modal editing for phase attributes (name, description, dates, status)
+            </li>
+            <li>
+              • <strong className="text-gray-900 dark:text-gray-100">Theme Support:</strong>{' '}
+              Automatic light/dark theme adaptation with consistent styling
+            </li>
           </ul>
         </div>
       </div>

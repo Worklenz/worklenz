@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Breadcrumb, Button, Typography, Tooltip } from '@/shared/antd-imports';
-import { HomeOutlined } from '@/shared/antd-imports';
+import { Typography, Tooltip } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchTask, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
@@ -11,6 +10,7 @@ import './task-hierarchy-breadcrumb.css';
 interface TaskHierarchyBreadcrumbProps {
   t: TFunction;
   onBackClick?: () => void;
+  projectName?: string | null;
 }
 
 interface TaskHierarchyItem {
@@ -19,13 +19,16 @@ interface TaskHierarchyItem {
   parent_task_id?: string;
 }
 
-// Utility function to truncate text
-const truncateText = (text: string, maxLength: number = 25): string => {
+const truncateText = (text: string, maxLength: number = 30): string => {
   if (!text || text.length <= maxLength) return text;
   return `${text.substring(0, maxLength)}...`;
 };
 
-const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, onBackClick }) => {
+const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({
+  t,
+  onBackClick,
+  projectName,
+}) => {
   const dispatch = useAppDispatch();
   const { taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const { projectId } = useAppSelector(state => state.projectReducer);
@@ -36,14 +39,10 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
   const task = taskFormViewModel?.task;
   const isSubTask = task?.is_sub_task || !!task?.parent_task_id;
 
-  // Recursively fetch the complete hierarchy path
   const fetchHierarchyPath = async (currentTaskId: string): Promise<TaskHierarchyItem[]> => {
     if (!projectId) return [];
-    
     const path: TaskHierarchyItem[] = [];
     let taskId = currentTaskId;
-    
-    // Traverse up the hierarchy until we reach the root
     while (taskId) {
       try {
         const response = await tasksApiService.getFormViewModel(taskId, projectId);
@@ -52,10 +51,8 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
           path.unshift({
             id: taskData.id,
             name: taskData.name || '',
-            parent_task_id: taskData.parent_task_id || undefined
+            parent_task_id: taskData.parent_task_id || undefined,
           });
-          
-          // Move to parent task
           taskId = taskData.parent_task_id || '';
         } else {
           break;
@@ -65,18 +62,15 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
         break;
       }
     }
-    
     return path;
   };
 
-  // Fetch the complete hierarchy when component mounts or task changes
   useEffect(() => {
     const loadHierarchy = async () => {
       if (!isSubTask || !task?.parent_task_id || !projectId) {
         setHierarchyPath([]);
         return;
       }
-
       setLoading(true);
       try {
         const path = await fetchHierarchyPath(task.parent_task_id);
@@ -88,102 +82,83 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({ t, on
         setLoading(false);
       }
     };
-
     loadHierarchy();
   }, [task?.parent_task_id, projectId, isSubTask]);
 
   const handleNavigateToTask = (taskId: string) => {
     if (projectId) {
-      if (onBackClick) {
-        onBackClick();
-      }
-      
-      // Navigate to the selected task
+      if (onBackClick) onBackClick();
       dispatch(setSelectedTaskId(taskId));
       dispatch(fetchTask({ taskId, projectId }));
     }
   };
 
-  if (!isSubTask || hierarchyPath.length === 0) {
-    return null;
+  const mutedColor = themeMode === 'dark' ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
+  const linkColor = themeMode === 'dark' ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.65)';
+  const separatorColor = themeMode === 'dark' ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)';
+
+  // Build parts: [projectName, ...parentTasks]
+  const parts: React.ReactNode[] = [];
+
+  // 1. Project name — always plain muted text, no icon, no link
+  if (projectName) {
+    parts.push(
+      <Tooltip key="project" title={projectName.length > 30 ? projectName : ''} trigger="hover">
+        <Typography.Text style={{ color: mutedColor, fontSize: '12px', fontWeight: 400 }}>
+          {truncateText(projectName, 30)}
+        </Typography.Text>
+      </Tooltip>
+    );
   }
 
-  // Create breadcrumb items from the hierarchy path
-  const breadcrumbItems = [
-    // Add all parent tasks in the hierarchy
-    ...hierarchyPath.map((hierarchyTask, index) => {
-      const truncatedName = truncateText(hierarchyTask.name, 25);
-      const shouldShowTooltip = hierarchyTask.name.length > 25;
-      
-      return {
-        title: (
-          <Tooltip title={shouldShowTooltip ? hierarchyTask.name : ''} trigger="hover">
-            <Button
-              type="link"
-              icon={index === 0 ? <HomeOutlined /> : undefined}
-              onClick={() => handleNavigateToTask(hierarchyTask.id)}
-              style={{
-                padding: 0,
-                height: 'auto',
-                color: themeMode === 'dark' ? '#1890ff' : '#1890ff',
-                fontSize: '14px',
-                marginRight: '0px',
-                maxWidth: '200px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                display: 'flex',
-                alignItems: 'center',
-                gap: index === 0 ? '6px' : '0px', // Add gap between icon and text for root task
-              }}
-            >
-              {truncatedName}
-            </Button>
-          </Tooltip>
-        ),
-      };
-    }),
-    // Add the current task as the last item (non-clickable)
-    {
-      title: (() => {
-        const currentTaskName = task?.name || t('taskHeader.currentTask', 'Current Task');
-        const truncatedCurrentName = truncateText(currentTaskName, 25);
-        const shouldShowCurrentTooltip = currentTaskName.length > 25;
-        
-        return (
-          <Tooltip title={shouldShowCurrentTooltip ? currentTaskName : ''} trigger="hover">
-            <Typography.Text
-              className="current-task-name"
-              style={{
-                color: themeMode === 'dark' ? '#ffffffd9' : '#000000d9',
-                fontSize: '14px',
-                fontWeight: 500,
-                maxWidth: '200px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                display: 'inline-block',
-              }}
-            >
-              {truncatedCurrentName}
-            </Typography.Text>
-          </Tooltip>
-        );
-      })(),
-    },
-  ];
+  // 2. Parent tasks — clickable but still muted style
+  if (isSubTask && !loading) {
+    hierarchyPath.forEach(hierarchyTask => {
+      const truncated = truncateText(hierarchyTask.name, 25);
+      const showTooltip = hierarchyTask.name.length > 25;
+      parts.push(
+        <Tooltip key={hierarchyTask.id} title={showTooltip ? hierarchyTask.name : ''} trigger="hover">
+          <Typography.Text
+            onClick={() => handleNavigateToTask(hierarchyTask.id)}
+            style={{
+              color: linkColor,
+              fontSize: '12px',
+              fontWeight: 400,
+              cursor: 'pointer',
+            }}
+          >
+            {truncated}
+          </Typography.Text>
+        </Tooltip>
+      );
+    });
+  }
 
+  if (parts.length === 0) return null;
+
+  // Render parts joined by " / " separator — plain text, no Breadcrumb component
   return (
     <div className="task-hierarchy-breadcrumb">
       {loading ? (
-        <Typography.Text style={{ color: themeMode === 'dark' ? '#ffffffd9' : '#000000d9' }}>
-          {t('taskHeader.loadingHierarchy', 'Loading hierarchy...')}
+        <Typography.Text style={{ color: mutedColor, fontSize: '12px' }}>
+          {t('taskHeader.loadingHierarchy', 'Loading...')}
         </Typography.Text>
       ) : (
-        <Breadcrumb items={breadcrumbItems} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'nowrap', overflow: 'hidden' }}>
+          {parts.map((part, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && (
+                <Typography.Text style={{ color: separatorColor, fontSize: '12px', userSelect: 'none' }}>
+                  /
+                </Typography.Text>
+              )}
+              {part}
+            </React.Fragment>
+          ))}
+        </div>
       )}
     </div>
   );
 };
 
-export default TaskHierarchyBreadcrumb; 
+export default TaskHierarchyBreadcrumb;

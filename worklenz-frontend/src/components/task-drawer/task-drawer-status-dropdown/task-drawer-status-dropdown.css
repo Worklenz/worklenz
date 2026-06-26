@@ -17,3 +17,12 @@
   align-items: center;
   height: 41px !important;
 }
+
+.task-drawer-status-select.ant-select {
+  border-radius: 16px;
+}
+
+.task-drawer-status-select .ant-select-selector {
+  background-color: var(--task-drawer-status-bg) !important;
+  border-radius: 16px !important;
+}

@@ -4,7 +4,7 @@ CREATE DOMAIN WL_EMAIL AS TEXT CHECK (value ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]
 
 -- Enumerated Types
 -- Add new values using "ALTER TYPE WL_TASK_LIST_COL_KEY ADD VALUE 'NEW_VALUE_NAME' AFTER 'REPORTER';"
-CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
+CREATE TYPE WL_TASK_LIST_COL_KEY AS ENUM ('ASSIGNEES', 'COMPLETED_DATE', 'CREATED_DATE', 'DESCRIPTION', 'DUE_DATE', 'DUE_TIME', 'ESTIMATION', 'KEY', 'LABELS', 'LAST_UPDATED', 'NAME', 'PRIORITY', 'PROGRESS', 'START_DATE', 'STATUS', 'TIME_TRACKING', 'REPORTER', 'PHASE');
 
 CREATE TYPE REACTION_TYPES AS ENUM ('like');
 
@@ -13,8 +13,6 @@ CREATE TYPE DEPENDENCY_TYPE AS ENUM ('blocked_by');
 CREATE TYPE SCHEDULE_TYPE AS ENUM ('daily', 'weekly', 'yearly', 'monthly', 'every_x_days', 'every_x_weeks', 'every_x_months');
 
 CREATE TYPE LANGUAGE_TYPE AS ENUM ('en', 'es', 'pt', 'alb', 'de', 'zh_cn', 'ko');
-
-CREATE TYPE PROGRESS_MODE_TYPE AS ENUM ('manual', 'weighted', 'time', 'default');
 
 -- START: Users
 CREATE SEQUENCE IF NOT EXISTS users_user_no_seq START 1;
@@ -36,7 +34,7 @@ CREATE TABLE IF NOT EXISTS project_access_levels (
 ALTER TABLE project_access_levels
     ADD CONSTRAINT project_access_levels_pk
         PRIMARY KEY (id);
-
+        
 CREATE TABLE IF NOT EXISTS countries (
     id       UUID       DEFAULT uuid_generate_v4() NOT NULL,
     code     CHAR(2)                               NOT NULL,
@@ -79,11 +77,24 @@ ALTER TABLE bounced_emails
         PRIMARY KEY (id);
 
 CREATE TABLE IF NOT EXISTS clients (
-    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                                                NOT NULL,
-    team_id    UUID                                                NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+    id                    UUID                     DEFAULT uuid_generate_v4()                         NOT NULL,
+    name                  TEXT                                                                    NOT NULL,
+    team_id               UUID                                                                    NOT NULL,
+    email                 WL_EMAIL,
+    company_name          TEXT,
+    phone                 TEXT,
+    address               TEXT,
+    address_line_1        TEXT,
+    city                  TEXT,
+    state                 TEXT,
+    zip_code              TEXT,
+    country               TEXT,
+    contact_person        TEXT,
+    client_portal_enabled BOOLEAN                  DEFAULT FALSE,
+    client_portal_access_code TEXT,
+    status                TEXT                     DEFAULT 'active'::TEXT,
+    created_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL,
+    updated_at            TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP                      NOT NULL
 );
 
 ALTER TABLE clients
@@ -93,6 +104,10 @@ ALTER TABLE clients
 ALTER TABLE clients
     ADD CONSTRAINT clients_name_check
         CHECK (CHAR_LENGTH(name) <= 60);
+
+ALTER TABLE clients
+    ADD CONSTRAINT clients_status_check
+        CHECK (status = ANY (ARRAY ['active'::TEXT, 'inactive'::TEXT, 'pending'::TEXT]));
 
 CREATE TABLE IF NOT EXISTS cpt_phases (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
@@ -271,269 +286,6 @@ ALTER TABLE job_titles
     ADD CONSTRAINT job_titles_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
 
-CREATE TABLE IF NOT EXISTS licensing_admin_users (
-    id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                               NOT NULL,
-    username   TEXT                               NOT NULL,
-    phone_no   TEXT                               NOT NULL,
-    otp        TEXT,
-    otp_expiry TIMESTAMP WITH TIME ZONE,
-    active     BOOLEAN DEFAULT TRUE               NOT NULL
-);
-
-ALTER TABLE licensing_admin_users
-    ADD CONSTRAINT licensing_admin_users_id_pk
-        PRIMARY KEY (id);
-
-CREATE TABLE IF NOT EXISTS licensing_app_sumo_batches (
-    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    name       TEXT                                                NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    created_by UUID                                                NOT NULL
-);
-
-ALTER TABLE licensing_app_sumo_batches
-    ADD CONSTRAINT licensing_app_sumo_batches_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE licensing_app_sumo_batches
-    ADD CONSTRAINT licensing_app_sumo_batches_created_by_fk
-        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
-
-CREATE TABLE IF NOT EXISTS licensing_coupon_codes (
-    id                 UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    coupon_code        TEXT                                                NOT NULL,
-    is_redeemed        BOOLEAN                  DEFAULT FALSE,
-    is_app_sumo        BOOLEAN                  DEFAULT FALSE,
-    projects_limit     INTEGER,
-    team_members_limit INTEGER                  DEFAULT 3,
-    storage_limit      INTEGER                  DEFAULT 5,
-    redeemed_by        UUID,
-    batch_id           UUID,
-    created_by         UUID                                                NOT NULL,
-    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    redeemed_at        TIMESTAMP WITH TIME ZONE,
-    is_refunded        BOOLEAN                  DEFAULT FALSE,
-    reason             TEXT,
-    feedback           TEXT,
-    refunded_at        TIMESTAMP WITH TIME ZONE
-);
-
-ALTER TABLE licensing_coupon_codes
-    ADD CONSTRAINT licensing_coupon_codes_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE licensing_coupon_codes
-    ADD CONSTRAINT licensing_coupon_codes_created_by_fk
-        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
-
-CREATE TABLE IF NOT EXISTS licensing_credit_subs (
-    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    next_plan_id   UUID                                                NOT NULL,
-    user_id        UUID                                                NOT NULL,
-    credit_given   NUMERIC                                             NOT NULL,
-    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    created_by     UUID                                                NOT NULL,
-    checkout_url   TEXT,
-    credit_balance NUMERIC                  DEFAULT 0
-);
-
-ALTER TABLE licensing_credit_subs
-    ADD CONSTRAINT licensing_credit_subs_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE licensing_credit_subs
-    ADD CONSTRAINT licensing_credit_subs_created_by_fk
-        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
-
-CREATE TABLE IF NOT EXISTS licensing_custom_subs (
-    id           UUID                     DEFAULT uuid_generate_v4()        NOT NULL,
-    user_id      UUID                                                       NOT NULL,
-    billing_type TEXT                     DEFAULT 'year'::CHARACTER VARYING NOT NULL,
-    currency     TEXT                     DEFAULT 'LKR'::CHARACTER VARYING  NOT NULL,
-    rate         NUMERIC                  DEFAULT 0                         NOT NULL,
-    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP         NOT NULL,
-    end_date     DATE                                                       NOT NULL,
-    user_limit   INTEGER
-);
-
-ALTER TABLE licensing_custom_subs
-    ADD PRIMARY KEY (id);
-
-CREATE TABLE IF NOT EXISTS licensing_custom_subs_logs (
-    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    subscription_id UUID                                                NOT NULL,
-    log_text        TEXT                                                NOT NULL,
-    description     TEXT,
-    admin_user_id   UUID                                                NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
-);
-
-ALTER TABLE licensing_custom_subs_logs
-    ADD PRIMARY KEY (id);
-
-ALTER TABLE licensing_custom_subs_logs
-    ADD CONSTRAINT licensing_custom_subs_logs_licensing_admin_users_id_fk
-        FOREIGN KEY (admin_user_id) REFERENCES licensing_admin_users;
-
-CREATE TABLE IF NOT EXISTS licensing_payment_details (
-    id                      UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    user_id                 UUID,
-    alert_id                TEXT                                                NOT NULL,
-    alert_name              TEXT                                                NOT NULL,
-    balance_currency        TEXT                     DEFAULT 'USD'::TEXT,
-    balance_earnings        NUMERIC                  DEFAULT 0                  NOT NULL,
-    balance_fee             NUMERIC                  DEFAULT 0                  NOT NULL,
-    balance_gross           NUMERIC                  DEFAULT 0                  NOT NULL,
-    balance_tax             NUMERIC                  DEFAULT 0                  NOT NULL,
-    checkout_id             TEXT                                                NOT NULL,
-    country                 TEXT                                                NOT NULL,
-    coupon                  TEXT                                                NOT NULL,
-    currency                TEXT                     DEFAULT 'USD'::TEXT        NOT NULL,
-    custom_data             TEXT,
-    customer_name           TEXT                                                NOT NULL,
-    earnings                NUMERIC                  DEFAULT 0                  NOT NULL,
-    email                   TEXT                                                NOT NULL,
-    event_time              TEXT                                                NOT NULL,
-    fee                     NUMERIC                  DEFAULT 0                  NOT NULL,
-    initial_payment         NUMERIC                  DEFAULT 1                  NOT NULL,
-    instalments             NUMERIC                  DEFAULT 1                  NOT NULL,
-    marketing_consent       INTEGER                  DEFAULT 0,
-    next_bill_date          DATE                                                NOT NULL,
-    next_payment_amount     NUMERIC                  DEFAULT 0                  NOT NULL,
-    order_id                TEXT                                                NOT NULL,
-    p_signature             TEXT                                                NOT NULL,
-    passthrough             TEXT,
-    payment_method          TEXT                     DEFAULT 'card'::TEXT       NOT NULL,
-    payment_tax             NUMERIC                  DEFAULT 0,
-    plan_name               TEXT                                                NOT NULL,
-    quantity                NUMERIC                  DEFAULT 0                  NOT NULL,
-    receipt_url             TEXT                                                NOT NULL,
-    sale_gross              TEXT                     DEFAULT 0                  NOT NULL,
-    status                  TEXT                                                NOT NULL,
-    subscription_id         TEXT                                                NOT NULL,
-    subscription_payment_id TEXT                                                NOT NULL,
-    subscription_plan_id    INTEGER,
-    unit_price              NUMERIC                  DEFAULT 0                  NOT NULL,
-    paddle_user_id          TEXT                                                NOT NULL,
-    created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    payment_status          TEXT                     DEFAULT 'success'::TEXT    NOT NULL
-);
-
-ALTER TABLE licensing_payment_details
-    ADD PRIMARY KEY (id);
-
-CREATE TABLE IF NOT EXISTS licensing_pricing_plans (
-    id               UUID    DEFAULT uuid_generate_v4() NOT NULL,
-    name             TEXT    DEFAULT ''::TEXT           NOT NULL,
-    billing_type     TEXT    DEFAULT 'month'::TEXT      NOT NULL,
-    billing_period   INTEGER DEFAULT 1                  NOT NULL,
-    default_currency TEXT    DEFAULT 'USD'::TEXT        NOT NULL,
-    initial_price    TEXT    DEFAULT '0'::TEXT          NOT NULL,
-    recurring_price  TEXT    DEFAULT '0'::TEXT          NOT NULL,
-    trial_days       INTEGER DEFAULT 0                  NOT NULL,
-    paddle_id        INTEGER DEFAULT 0,
-    active           BOOLEAN DEFAULT FALSE              NOT NULL,
-    is_startup_plan  BOOLEAN DEFAULT FALSE              NOT NULL
-);
-
-ALTER TABLE licensing_pricing_plans
-    ADD CONSTRAINT licensing_pricing_plans_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE licensing_credit_subs
-    ADD CONSTRAINT licensing_credit_subs_next_plan_id_fk
-        FOREIGN KEY (next_plan_id) REFERENCES licensing_pricing_plans;
-
-ALTER TABLE licensing_pricing_plans
-    ADD UNIQUE (paddle_id);
-
-ALTER TABLE licensing_payment_details
-    ADD CONSTRAINT licensing_payment_details_licensing_pricing_plans_paddle_id_fk
-        FOREIGN KEY (subscription_plan_id) REFERENCES licensing_pricing_plans (paddle_id);
-
-ALTER TABLE licensing_pricing_plans
-    ADD CONSTRAINT billing_type_allowed
-        CHECK (billing_type = ANY (ARRAY ['month'::TEXT, 'year'::TEXT]));
-
-CREATE TABLE IF NOT EXISTS licensing_settings (
-    default_trial_storage NUMERIC DEFAULT 1  NOT NULL,
-    default_storage       NUMERIC DEFAULT 25 NOT NULL,
-    storage_addon_price   NUMERIC DEFAULT 0  NOT NULL,
-    storage_addon_size    NUMERIC DEFAULT 0,
-    default_monthly_plan  UUID,
-    default_annual_plan   UUID,
-    default_startup_plan  UUID,
-    projects_limit        INTEGER DEFAULT 5  NOT NULL,
-    team_member_limit     INTEGER DEFAULT 0  NOT NULL,
-    free_tier_storage     INTEGER DEFAULT 5  NOT NULL,
-    trial_duration        INTEGER DEFAULT 14 NOT NULL
-);
-
-COMMENT ON COLUMN licensing_settings.default_trial_storage IS 'default storage amount for a trial in Gigabytes(GB)';
-
-COMMENT ON COLUMN licensing_settings.default_storage IS 'default storage amount for a paid account in Gigabytes(GB)';
-
-ALTER TABLE licensing_settings
-    ADD CONSTRAINT licensing_settings_licensing_pricing_plans_id_fk
-        FOREIGN KEY (default_startup_plan) REFERENCES licensing_pricing_plans;
-
-ALTER TABLE licensing_settings
-    ADD CONSTRAINT licensing_settings_licensing_user_plans_id_fk
-        FOREIGN KEY (default_monthly_plan) REFERENCES licensing_pricing_plans;
-
-ALTER TABLE licensing_settings
-    ADD CONSTRAINT licensing_settings_licensing_user_plans_id_fk_2
-        FOREIGN KEY (default_annual_plan) REFERENCES licensing_pricing_plans;
-
-CREATE TABLE IF NOT EXISTS licensing_user_subscription_modifiers (
-    subscription_id INTEGER                                            NOT NULL,
-    modifier_id     INTEGER                                            NOT NULL,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS licensing_user_subscriptions (
-    id                          UUID    DEFAULT uuid_generate_v4() NOT NULL,
-    user_id                     UUID                               NOT NULL,
-    paddle_user_id              INTEGER,
-    cancel_url                  TEXT,
-    update_url                  TEXT,
-    checkout_id                 TEXT,
-    next_bill_date              TEXT,
-    quantity                    INTEGER DEFAULT 1                  NOT NULL,
-    subscription_id             INTEGER,
-    subscription_plan_id        INTEGER,
-    unit_price                  NUMERIC,
-    plan_id                     UUID                               NOT NULL,
-    status                      TEXT,
-    custom_value_month          NUMERIC DEFAULT 0                  NOT NULL,
-    custom_value_year           NUMERIC DEFAULT 0                  NOT NULL,
-    custom_storage_amount       NUMERIC DEFAULT 0                  NOT NULL,
-    custom_storage_unit         TEXT    DEFAULT 'MB'::TEXT         NOT NULL,
-    cancellation_effective_date DATE,
-    currency                    TEXT    DEFAULT 'USD'::TEXT        NOT NULL,
-    event_time                  TEXT,
-    paused_at                   TEXT,
-    paused_from                 TEXT,
-    paused_reason               TEXT,
-    active                      BOOLEAN DEFAULT TRUE
-);
-
-ALTER TABLE licensing_user_subscriptions
-    ADD CONSTRAINT licensing_user_plans_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE licensing_user_subscriptions
-    ADD UNIQUE (subscription_id);
-
-ALTER TABLE licensing_user_subscriptions
-    ADD CONSTRAINT licensing_user_subscriptions_licensing_pricing_plans_id_fk
-        FOREIGN KEY (plan_id) REFERENCES licensing_pricing_plans;
-
-ALTER TABLE licensing_user_subscriptions
-    ADD CONSTRAINT licensing_user_subscriptions_statuses_allowed
-        CHECK (status = ANY
-               (ARRAY ['active'::TEXT, 'past_due'::TEXT, 'trialing'::TEXT, 'paused'::TEXT, 'deleted'::TEXT]));
 
 CREATE TABLE IF NOT EXISTS notification_settings (
     email_notifications_enabled BOOLEAN DEFAULT TRUE  NOT NULL,
@@ -780,9 +532,7 @@ CREATE TABLE IF NOT EXISTS projects (
     hours_per_day          INTEGER                  DEFAULT 8,
     health_id              UUID,
     estimated_working_days INTEGER                  DEFAULT 0,
-    use_manual_progress    BOOLEAN                  DEFAULT FALSE              NOT NULL,
-    use_weighted_progress  BOOLEAN                  DEFAULT FALSE              NOT NULL,
-    use_time_progress      BOOLEAN                  DEFAULT FALSE              NOT NULL
+    priority_id            UUID
 );
 
 ALTER TABLE projects
@@ -1117,7 +867,7 @@ ALTER TABLE pt_task_statuses
 
 CREATE TABLE IF NOT EXISTS task_activity_logs (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    task_id        UUID                                                NOT NULL,
+    task_id        UUID,
     team_id        UUID                                                NOT NULL,
     attribute_type TEXT                                                NOT NULL,
     user_id        UUID                                                NOT NULL,
@@ -1262,6 +1012,22 @@ ALTER TABLE task_priorities
     ADD CONSTRAINT task_priorities_pk
         PRIMARY KEY (id);
 
+CREATE TABLE IF NOT EXISTS sys_project_priorities (
+    id              UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name            TEXT                               NOT NULL,
+    value           INTEGER DEFAULT 0                  NOT NULL,
+    color_code      WL_HEX_COLOR                       NOT NULL,
+    color_code_dark WL_HEX_COLOR
+);
+
+ALTER TABLE sys_project_priorities
+    ADD CONSTRAINT sys_project_priorities_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE projects
+    ADD CONSTRAINT projects_priority_id_fk
+        FOREIGN KEY (priority_id) REFERENCES sys_project_priorities;
+
 ALTER TABLE cpt_tasks
     ADD CONSTRAINT cpt_tasks_priority_fk
         FOREIGN KEY (priority_id) REFERENCES task_priorities;
@@ -1356,11 +1122,30 @@ CREATE TABLE IF NOT EXISTS task_updates (
     project_id  UUID                                                NOT NULL,
     is_sent     BOOLEAN                  DEFAULT FALSE              NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
-    retry_count INTEGER                  DEFAULT 0
+    retry_count INTEGER                  DEFAULT 0,
+    attempts    INTEGER                  DEFAULT 0
 );
 
 ALTER TABLE task_updates
     ADD CONSTRAINT task_updates_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS failed_task_notifications (
+    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_update_id UUID                                                UNIQUE,
+    user_id        UUID,
+    task_id        UUID,
+    project_id     UUID,
+    type           VARCHAR(50),
+    email          VARCHAR(255),
+    attempts       INTEGER,
+    last_error     TEXT,
+    failed_at      TIMESTAMP                DEFAULT NOW(),
+    created_at     TIMESTAMP
+);
+
+ALTER TABLE failed_task_notifications
+    ADD CONSTRAINT failed_task_notifications_pk
         PRIMARY KEY (id);
 
 ALTER TABLE task_updates
@@ -1419,11 +1204,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     priority_sort_order INTEGER                  DEFAULT 0                  NOT NULL,
     phase_sort_order    INTEGER                  DEFAULT 0                  NOT NULL,
     billable            BOOLEAN                  DEFAULT TRUE,
-    schedule_id         UUID,
-    manual_progress     BOOLEAN                  DEFAULT FALSE              NOT NULL,
-    progress_value      INTEGER                  DEFAULT NULL,
-    progress_mode       PROGRESS_MODE_TYPE       DEFAULT 'default'          NOT NULL,
-    weight              INTEGER                  DEFAULT NULL
+    schedule_id         UUID
 );
 
 ALTER TABLE tasks
@@ -1433,7 +1214,7 @@ ALTER TABLE tasks
 ALTER TABLE task_activity_logs
     ADD CONSTRAINT task_activity_logs_tasks_id_fk
         FOREIGN KEY (task_id) REFERENCES tasks
-            ON DELETE CASCADE;
+            ON DELETE SET NULL;
 
 ALTER TABLE task_attachments
     ADD CONSTRAINT task_attachments_task_id_fk
@@ -1643,26 +1424,6 @@ ALTER TABLE archived_projects
 
 ALTER TABLE favorite_projects
     ADD CONSTRAINT favorite_projects_user_id_fk
-        FOREIGN KEY (user_id) REFERENCES users;
-
-ALTER TABLE licensing_coupon_codes
-    ADD CONSTRAINT licensing_coupon_codes_users_id_fk
-        FOREIGN KEY (redeemed_by) REFERENCES users;
-
-ALTER TABLE licensing_credit_subs
-    ADD CONSTRAINT licensing_credit_subs_user_id_fk
-        FOREIGN KEY (user_id) REFERENCES users;
-
-ALTER TABLE licensing_custom_subs
-    ADD CONSTRAINT licensing_custom_subs_users_id_fk
-        FOREIGN KEY (user_id) REFERENCES users;
-
-ALTER TABLE licensing_payment_details
-    ADD CONSTRAINT licensing_payment_details_users_id_fk
-        FOREIGN KEY (user_id) REFERENCES users;
-
-ALTER TABLE licensing_user_subscriptions
-    ADD CONSTRAINT licensing_user_subscriptions_users_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
 ALTER TABLE notification_settings
@@ -1972,35 +1733,6 @@ ALTER TABLE worklenz_alerts
     ADD CONSTRAINT worklenz_alerts_type_check
         CHECK (type = ANY (ARRAY ['success'::TEXT, 'info'::TEXT, 'warning'::TEXT, 'error'::TEXT]));
 
-CREATE TABLE IF NOT EXISTS licensing_coupon_logs (
-    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    coupon_code TEXT                                                NOT NULL,
-    redeemed_by UUID                                                NOT NULL,
-    redeemed_at TIMESTAMP WITH TIME ZONE                            NOT NULL,
-    is_refunded BOOLEAN                  DEFAULT TRUE               NOT NULL,
-    reason      TEXT,
-    reverted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    feedback    TEXT
-);
-
-ALTER TABLE licensing_coupon_logs
-    ADD CONSTRAINT licensing_coupon_logs_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE licensing_coupon_logs
-    ADD CONSTRAINT licensing_coupon_logs_users_id_fk
-        FOREIGN KEY (redeemed_by) REFERENCES users;
-
-CREATE TABLE IF NOT EXISTS sys_license_types (
-    id          UUID DEFAULT uuid_generate_v4() NOT NULL,
-    name        TEXT                            NOT NULL,
-    key         TEXT                            NOT NULL,
-    description TEXT
-);
-
-ALTER TABLE sys_license_types
-    ADD PRIMARY KEY (id);
-
 CREATE TABLE IF NOT EXISTS task_comment_mentions (
     comment_id      UUID                                               NOT NULL,
     mentioned_index INTEGER                  DEFAULT 0                 NOT NULL,
@@ -2085,35 +1817,68 @@ ALTER TABLE task_dependencies
             ON DELETE CASCADE;
 
 CREATE TABLE IF NOT EXISTS task_recurring_schedules (
-    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    schedule_type   SCHEDULE_TYPE            DEFAULT 'daily'::SCHEDULE_TYPE,
-    days_of_week    INTEGER[],
-    day_of_month    INTEGER,
-    week_of_month   INTEGER,
-    interval_days   INTEGER,
-    interval_weeks  INTEGER,
-    interval_months INTEGER,
-    start_date      DATE,
-    end_date        DATE,
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id                          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    schedule_type               SCHEDULE_TYPE            DEFAULT 'daily'::SCHEDULE_TYPE,
+    days_of_week                INTEGER[],
+    day_of_month                INTEGER,
+    date_of_month               INTEGER,
+    week_of_month               INTEGER,
+    interval_days               INTEGER,
+    interval_weeks              INTEGER,
+    interval_months             INTEGER,
+    start_date                  DATE,
+    end_date                    DATE,
+    last_checked_at             TIMESTAMP WITH TIME ZONE,
+    last_created_task_end_date  DATE,
+    max_occurrences             INTEGER,
+    occurrence_count            INTEGER                  DEFAULT 0,
+    is_active                   BOOLEAN                  DEFAULT TRUE,
+    timezone_id                 UUID,
+    created_by                  UUID,
+    created_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE task_recurring_schedules
     ADD CONSTRAINT task_recurring_schedules_pk
         PRIMARY KEY (id);
 
+ALTER TABLE task_recurring_schedules
+    ADD CONSTRAINT task_recurring_schedules_timezone_id_fk
+        FOREIGN KEY (timezone_id) REFERENCES timezones(id)
+        ON DELETE SET NULL;
+
+ALTER TABLE task_recurring_schedules
+    ADD CONSTRAINT task_recurring_schedules_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES users(id)
+        ON DELETE SET NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
+ON tasks (schedule_id, (end_date::DATE))
+WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_task_recurring_schedules_timezone_id
+ON task_recurring_schedules(timezone_id)
+WHERE timezone_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_task_recurring_schedules_active_schedules
+ON task_recurring_schedules(is_active, end_date, occurrence_count, max_occurrences)
+WHERE is_active IS NOT FALSE;
+
 CREATE TABLE IF NOT EXISTS task_recurring_templates (
-    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
-    task_id     UUID                                                NOT NULL,
-    schedule_id UUID                                                NOT NULL,
-    name        TEXT                                                NOT NULL,
-    description TEXT,
-    end_date    TIMESTAMP WITH TIME ZONE,
-    priority_id UUID                                                NOT NULL,
-    project_id  UUID                                                NOT NULL,
-    assignees   JSONB,
-    labels      JSONB,
-    created_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    id            UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    task_id       UUID                                                NOT NULL,
+    schedule_id   UUID                                                NOT NULL,
+    name          TEXT                                                NOT NULL,
+    description   TEXT,
+    end_date      TIMESTAMP WITH TIME ZONE,
+    priority_id   UUID                                                NOT NULL,
+    project_id    UUID                                                NOT NULL,
+    reporter_id   UUID,
+    status_id     UUID,
+    assignees     JSONB,
+    labels        JSONB,
+    duration_days INTEGER,
+    created_at    TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 ALTER TABLE task_recurring_templates

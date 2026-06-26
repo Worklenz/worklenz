@@ -4,12 +4,12 @@ import {
   ProfileOutlined,
   TeamOutlined,
   UserOutlined,
-} from '@/shared/antd-imports';
+} from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
 const Overview = lazy(() => import('./overview/overview'));
 const Users = lazy(() => import('./users/users'));
 const Teams = lazy(() => import('./teams/teams'));
-const Billing = lazy(() => import('./billing/billing'));
+const Billing = lazy(() => import('./billing/BillingSection'));
 const Projects = lazy(() => import('./projects/projects'));
 
 // type of a menu item in admin center sidebar
