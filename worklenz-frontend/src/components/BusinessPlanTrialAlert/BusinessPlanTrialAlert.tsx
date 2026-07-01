@@ -295,22 +295,30 @@ export const BusinessPlanTrialAlert = () => {
 
   // Active trial state - show countdown
   if (isOnTrial) {
+    const postTrialPlanName = currentSession?.post_trial_plan_name;
+
     const getMessage = () => {
-      if (trialDaysRemaining === 0) {
-        return t('business-trial-expires-today', {
-          defaultValue: 'Your Business trial expires today!',
-        });
-      } else if (trialDaysRemaining === 1) {
-        return t('business-trial-days-remaining', {
-          days: 1,
-          defaultValue: '1 day remaining in your Business trial',
-        });
-      } else {
-        return t('business-trial-days-remaining_plural', {
-          days: trialDaysRemaining,
-          defaultValue: `${trialDaysRemaining} days remaining in your Business trial`,
-        });
-      }
+      const base =
+        trialDaysRemaining === 0
+          ? t('business-trial-expires-today', {
+              defaultValue: 'Your Business trial expires today!',
+            })
+          : trialDaysRemaining === 1
+            ? t('business-trial-days-remaining', {
+                days: 1,
+                defaultValue: '1 day remaining in your Business trial',
+              })
+            : t('business-trial-days-remaining_plural', {
+                days: trialDaysRemaining,
+                defaultValue: `${trialDaysRemaining} days remaining in your Business trial`,
+              });
+
+      if (!postTrialPlanName) return base;
+
+      return `${base} — ${t('business-trial-then-plan', {
+        plan: postTrialPlanName,
+        defaultValue: `you'll continue on ${postTrialPlanName} after that`,
+      })}`;
     };
 
     return (

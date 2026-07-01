@@ -21,11 +21,6 @@ export function hasBusinessPlanAccess(user: any): boolean {
     return true;
   }
 
-  // Strict LTD rule: LTD users should not have Business feature access
-  if (String(user.subscription_status || "").toLowerCase() === "life_time_deal") {
-    return false;
-  }
-
   const subscriptionType = user.subscription_type;
   const planName = (user.plan_name || "").toLowerCase();
 
@@ -104,12 +99,12 @@ export async function isRestrictedFromProPlanFeatures(teamId: string | null | un
   }
 
   // Check if user is on Pro Plan
-  const isProPlan = subscriptionData.subscription_type === "PADDLE" && 
+  const isProPlan = subscriptionData.subscription_type === "PADDLE" &&
                    subscriptionData.plan_name?.toLowerCase().includes('pro');
-  
-  // Check if user is on AppSumo/Lifetime Deal
-  const isAppSumo = subscriptionData.is_ltd === true;
-  
+
+  // Check if user is on AppSumo/Lifetime Deal (an active Business trial overrides this)
+  const isAppSumo = subscriptionData.is_ltd === true && subscriptionData.subscription_type !== "BUSINESS_TRIAL";
+
   return isProPlan || isAppSumo;
 }
 

@@ -99,15 +99,6 @@ export async function checkTeamSubscriptionStatus(team_id: string) {
     const result = await db.query(q, [team_id]);
     const [data] = result.rows;
 
-    // AppSumo LTD users should never have Business trial access
-    if (
-      data &&
-      data.is_ltd === true &&
-      data.active_plan_trial === "BUSINESS_LARGE"
-    ) {
-      data.active_plan_trial = null;
-    }
-
     // Resolve effective subscription_type to account for active plan trials,
     // mirroring the logic in deserialize_user so server-side checks are consistent.
     if (data && data.active_plan_trial) {

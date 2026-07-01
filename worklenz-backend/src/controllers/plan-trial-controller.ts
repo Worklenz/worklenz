@@ -23,18 +23,14 @@ export default class PlanTrialController extends WorklenzControllerBase {
       const unlockCount = AppSumoLtdEntitlementService.getBusinessUnlockCodeCount();
       const entitlement = await AppSumoLtdEntitlementService.getEntitlementForUser(userId);
 
-      // AppSumo LTD users should not use Business trials:
+      const trialInfo = await PlanTrialService.getPlanTrialInfo(userId, "BUSINESS_LARGE");
+
+      // AppSumo LTD users don't get to start a *new* Business trial on demand:
       // - < 5 codes: they should buy/redeem more codes to unlock Business
       // - >= 5 codes: Business is already unlocked
-      if (entitlement.is_ltd) {
-        await PlanTrialService.cancelPlanTrialByTier(
-          userId,
-          "BUSINESS_LARGE",
-          entitlement.redeemed_codes_count >= unlockCount
-            ? "appsumo_ltd_business_unlocked"
-            : "appsumo_ltd_not_eligible_for_business_trial"
-        );
-
+      // An already-active trial (e.g. from signup) is left running regardless of
+      // AppSumo redemption; it must not be cancelled here.
+      if (entitlement.is_ltd && !trialInfo.trial_id) {
         return res.status(200).send(
           new ServerResponse(true, {
             can_start_trial: false,
@@ -44,8 +40,6 @@ export default class PlanTrialController extends WorklenzControllerBase {
           })
         );
       }
-
-      const trialInfo = await PlanTrialService.getPlanTrialInfo(userId, "BUSINESS_LARGE");
 
       return res.status(200).send(new ServerResponse(true, trialInfo));
     } catch (error) {
@@ -70,12 +64,14 @@ export default class PlanTrialController extends WorklenzControllerBase {
       const unlockCount = AppSumoLtdEntitlementService.getBusinessUnlockCodeCount();
       const entitlement = await AppSumoLtdEntitlementService.getEntitlementForUser(userId);
 
+      // AppSumo LTD users can't start a *new* Business trial on demand. An
+      // already-active trial (e.g. from signup) is left running and is not
+      // cancelled here.
       if (entitlement.is_ltd) {
-        await PlanTrialService.cancelPlanTrialByTier(
-          userId,
-          "BUSINESS_LARGE",
-          "appsumo_ltd_not_eligible_for_business_trial"
-        );
+        const existingTrial = await PlanTrialService.getPlanTrialInfo(userId, "BUSINESS_LARGE");
+        if (existingTrial.trial_id) {
+          return res.status(400).send(new ServerResponse(false, null, "You already have an active Business trial"));
+        }
 
         if (entitlement.redeemed_codes_count >= unlockCount) {
           return res
@@ -128,22 +124,7 @@ export default class PlanTrialController extends WorklenzControllerBase {
     }
 
     try {
-      const unlockCount = AppSumoLtdEntitlementService.getBusinessUnlockCodeCount();
-      const entitlement = await AppSumoLtdEntitlementService.getEntitlementForUser(userId);
-
-      let activeTrial = await PlanTrialService.getActivePlanTrial(userId);
-
-      // If an AppSumo LTD user somehow has an active Business trial, auto-cancel it.
-      if (entitlement.is_ltd && activeTrial?.tier_name === "BUSINESS_LARGE") {
-        await PlanTrialService.cancelPlanTrialByTier(
-          userId,
-          "BUSINESS_LARGE",
-          entitlement.redeemed_codes_count >= unlockCount
-            ? "appsumo_ltd_business_unlocked"
-            : "appsumo_ltd_not_eligible_for_business_trial"
-        );
-        activeTrial = null;
-      }
+      const activeTrial = await PlanTrialService.getActivePlanTrial(userId);
 
       return res.status(200).send(new ServerResponse(true, {
         has_active_trial: !!activeTrial,

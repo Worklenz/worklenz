@@ -211,6 +211,13 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
                     Advanced Analytics
                   </Tag>
                 </Space>
+
+                {currentSession?.post_trial_plan_name && (
+                  <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
+                    After your trial ends, you'll continue on{' '}
+                    <strong>{currentSession.post_trial_plan_name}</strong>.
+                  </Text>
+                )}
               </Space>
             </Space>
           </Col>

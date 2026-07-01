@@ -22,9 +22,6 @@ function hasBusinessAccess(subscriptionData: any): boolean {
 
   if (isTruthy(subscriptionData.business_plan_override)) return true;
 
-  // LTD users never get business access
-  if (subscriptionData.is_ltd === true) return false;
-
   const subType: string = (subscriptionData.subscription_type || "").toUpperCase();
 
   if (subType === "BUSINESS_TRIAL" || subType === "ENTERPRISE_TRIAL") return true;
