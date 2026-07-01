@@ -1053,6 +1053,13 @@ export default class BillingController extends WorklenzControllerBase {
              plan_tier_id = $3,
              user_limit = $4,
              end_date = ${newEndDate},
+             next_billing_date = ${newEndDate},
+             auto_renew = TRUE,
+             retry_count = 0,
+             last_retry_at = NULL,
+             next_retry_date = NULL,
+             grace_period_ends = NULL,
+             payment_gateway_id = (SELECT id FROM licensing_payment_gateways WHERE name = 'directpay'),
              card_id = (SELECT id FROM licensing_directpay_cards WHERE user_id = $1 AND is_active = TRUE ORDER BY created_at DESC LIMIT 1)
          WHERE id = $5`,
         [ownerId, amount, planTierId, userLimit, existing.id]
@@ -1061,11 +1068,13 @@ export default class BillingController extends WorklenzControllerBase {
     } else {
       const insertResult = await db.query(
         `INSERT INTO licensing_custom_subs
-           (user_id, billing_type, currency, rate, end_date, user_limit, plan_tier_id, status, card_id)
+           (user_id, billing_type, currency, rate, end_date, next_billing_date, user_limit, plan_tier_id, status, auto_renew, payment_gateway_id, card_id)
          VALUES (
            $1, 'month', 'LKR', $2,
            CURRENT_DATE + INTERVAL '1 month',
-           $3, $4, 'active',
+           CURRENT_DATE + INTERVAL '1 month',
+           $3, $4, 'active', TRUE,
+           (SELECT id FROM licensing_payment_gateways WHERE name = 'directpay'),
            (SELECT id FROM licensing_directpay_cards WHERE user_id = $1 AND is_active = TRUE ORDER BY created_at DESC LIMIT 1)
          ) RETURNING id`,
         [ownerId, amount, userLimit, planTierId]
