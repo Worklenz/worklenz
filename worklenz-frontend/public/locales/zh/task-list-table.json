@@ -109,6 +109,14 @@
       "inviteMember": "邀请成员"
     },
 
+    "limitPopover": {
+      "title": "已达到自定义字段限制",
+      "body": "您已用完方案中可用的 {{limit}} 个自定义字段。请升级方案以为项目添加无限自定义字段。",
+      "appSumoTitle": "需要升级方案",
+      "appSumoBody": "添加超出当前方案限制的自定义字段需要 Business 方案。",
+      "cta": "立即升级"
+    },
+
     "modal": {
       "addFieldTitle": "添加字段",
       "editFieldTitle": "编辑字段",

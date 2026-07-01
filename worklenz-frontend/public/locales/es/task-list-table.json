@@ -116,6 +116,14 @@
       "inviteMember": "Invitar miembro"
     },
 
+    "limitPopover": {
+      "title": "Límite de Campos Personalizados Alcanzado",
+      "body": "Ha utilizado los {{limit}} campos personalizados disponibles en su plan. Actualice para agregar campos personalizados ilimitados a sus proyectos.",
+      "appSumoTitle": "Actualización de Plan Requerida",
+      "appSumoBody": "Agregar campos personalizados más allá del límite de su plan actual requiere un plan Business.",
+      "cta": "Actualizar Ahora"
+    },
+
     "modal": {
       "addFieldTitle": "Agregar campo",
       "editFieldTitle": "Editar campo",

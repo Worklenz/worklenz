@@ -243,5 +243,12 @@
     "perYear": "/Jahr",
     "perMonth": "/Monat",
     "forUsers": " für {{count}} Benutzer{{s}}"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Erfassen Sie jedes Detail mit unbegrenzten benutzerdefinierten Feldern",
+    "upgradeModalSubCopy": "Ihr Plan umfasst bis zu {{limit}} benutzerdefinierte Felder. Wechseln Sie zu Business, um unbegrenzte Felder zu erstellen und genau das zu verfolgen, was für Ihr Team wichtig ist.",
+    "benefit1": "Unbegrenzte benutzerdefinierte Felder pro Projekt",
+    "benefit2": "Feldtypen: Text, Zahl, Dropdown, Datum und mehr",
+    "benefit3": "Felder werden über alle Aufgabenansichten synchronisiert"
   }
 }

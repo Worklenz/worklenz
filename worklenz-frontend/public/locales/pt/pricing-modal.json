@@ -243,5 +243,12 @@
     "perYear": "/ano",
     "perMonth": "/mês",
     "forUsers": " para {{count}} usuário{{s}}"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Capture cada detalhe com campos personalizados ilimitados",
+    "upgradeModalSubCopy": "Seu plano inclui até {{limit}} campos personalizados. Atualize para o Business para criar campos ilimitados e acompanhar exatamente o que importa para sua equipe.",
+    "benefit1": "Campos personalizados ilimitados por projeto",
+    "benefit2": "Tipos de campo: texto, número, lista suspensa, data e mais",
+    "benefit3": "Os campos são sincronizados em todas as visualizações de tarefas"
   }
 }

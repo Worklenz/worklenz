@@ -205,5 +205,12 @@
       "payment": "付款",
       "complete": "完成"
     }
+  },
+  "customFields": {
+    "upgradeModalHeadline": "使用无限自定义字段捕获每一个细节",
+    "upgradeModalSubCopy": "您的方案最多支持 {{limit}} 个自定义字段。升级到 Business 方案即可创建无限字段，精确追踪对团队重要的一切。",
+    "benefit1": "每个项目无限自定义字段",
+    "benefit2": "字段类型：文本、数字、下拉菜单、日期等",
+    "benefit3": "字段在所有任务视图中同步"
   }
 }

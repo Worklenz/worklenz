@@ -116,6 +116,14 @@
       "inviteMember": "Mitglied einladen"
     },
 
+    "limitPopover": {
+      "title": "Limit für benutzerdefinierte Felder erreicht",
+      "body": "Sie haben alle {{limit}} benutzerdefinierten Felder Ihres Plans verwendet. Führen Sie ein Upgrade durch, um unbegrenzte benutzerdefinierte Felder zu Ihren Projekten hinzuzufügen.",
+      "appSumoTitle": "Plan-Upgrade erforderlich",
+      "appSumoBody": "Um benutzerdefinierte Felder über Ihr aktuelles Planlimit hinaus hinzuzufügen, ist ein Business-Plan erforderlich.",
+      "cta": "Jetzt upgraden"
+    },
+
     "modal": {
       "addFieldTitle": "Feld hinzufügen",
       "editFieldTitle": "Feld bearbeiten",

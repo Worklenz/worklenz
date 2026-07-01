@@ -116,6 +116,14 @@
       "inviteMember": "Fto anëtar"
     },
 
+    "limitPopover": {
+      "title": "Limiti i Fushave të Personalizuara u Arrit",
+      "body": "Keni përdorur të gjitha {{limit}} fushat e personalizuara të disponueshme në planin tuaj. Kaloni në një plan më të lartë për fusha të pakufizuara.",
+      "appSumoTitle": "Kërkohet Përmirësim i Planit",
+      "appSumoBody": "Shtimi i fushave të personalizuara përtej limitit të planit tuaj aktual kërkon një plan Business.",
+      "cta": "Përmirëso Tani"
+    },
+
     "modal": {
       "addFieldTitle": "Shto fushë",
       "editFieldTitle": "Redakto fushën",

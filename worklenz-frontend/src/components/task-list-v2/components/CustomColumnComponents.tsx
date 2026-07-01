@@ -106,7 +106,8 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       })
     : t('customColumns.limitPopover.body', {
         defaultValue:
-          'You have used all 10 custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.',
+          'You have used all {{limit}} custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.',
+        limit: LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT,
       });
 
   const popoverContent = (

@@ -25,6 +25,7 @@ import { setSession } from '@/utils/session-helper';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
+import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
 import {
   MixpanelBillingEvents,
   PlanSelectionEventProps,
@@ -943,7 +944,8 @@ const UpgradePlans = () => {
                 <Typography.Text type="secondary">
                   {t('pricing-modal:customFields.upgradeModalSubCopy', {
                     defaultValue:
-                      'Your plan includes up to 10 custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.',
+                      'Your plan includes up to {{limit}} custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.',
+                    limit: LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT,
                   })}
                 </Typography.Text>
                 <Flex vertical gap={6}>
