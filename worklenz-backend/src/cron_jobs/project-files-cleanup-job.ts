@@ -1,4 +1,5 @@
 import { CronJob } from "cron";
+import { PoolClient } from "pg";
 
 import db from "../config/db";
 import { log_error } from "../shared/utils";
@@ -21,24 +22,26 @@ const ADVISORY_LOCK_ID = 900200;
 
 const log = (value: string) => console.log("project-files-cleanup-job:", value);
 
-async function acquireAdvisoryLock(): Promise<boolean> {
-  const result = await db.query("SELECT pg_try_advisory_lock($1) AS acquired;", [
+async function acquireAdvisoryLock(client: PoolClient): Promise<boolean> {
+  const result = await client.query("SELECT pg_try_advisory_lock($1) AS acquired;", [
     ADVISORY_LOCK_ID,
   ]);
   return result.rows[0]?.acquired === true;
 }
 
-async function releaseAdvisoryLock(): Promise<void> {
-  await db.query("SELECT pg_advisory_unlock($1);", [ADVISORY_LOCK_ID]);
+async function releaseAdvisoryLock(client: PoolClient): Promise<void> {
+  await client.query("SELECT pg_advisory_unlock($1);", [ADVISORY_LOCK_ID]);
 }
 
 async function onCleanupTick(): Promise<void> {
   let locked = false;
+  let lockClient: PoolClient | null = null;
   try {
-    locked = await acquireAdvisoryLock();
+    lockClient = await db.pool.connect();
+    locked = await acquireAdvisoryLock(lockClient);
     if (!locked) return; // Another instance is already running the cleanup.
 
-    const staleResult = await db.query(
+    const staleResult = await lockClient.query(
       `SELECT id, team_id, project_id, type
        FROM project_files
        WHERE status = 'pending'
@@ -64,19 +67,20 @@ async function onCleanupTick(): Promise<void> {
       void deleteObject(storageKey);
     }
 
-    await db.query("DELETE FROM project_files WHERE id = ANY($1::uuid[]);", [ids]);
+    await lockClient.query("DELETE FROM project_files WHERE id = ANY($1::uuid[]);", [ids]);
 
     log(`Cleaned up ${ids.length} orphaned pending upload record(s).`);
   } catch (error) {
     log_error(error);
   } finally {
-    if (locked) {
+    if (locked && lockClient) {
       try {
-        await releaseAdvisoryLock();
+        await releaseAdvisoryLock(lockClient);
       } catch (error) {
         log_error(error);
       }
     }
+    lockClient?.release();
   }
 }
 

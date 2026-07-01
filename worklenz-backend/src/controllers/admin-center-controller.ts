@@ -706,29 +706,23 @@ export default class AdminCenterController extends WorklenzControllerBase {
       );
     }
 
-    // Validate trial_expire_date exists before processing
-    if (!data.billing_info.trial_expire_date) {
-      return res.status(200).send(
-        new ServerResponse(false, null, "Trial expiration date not found")
+    if (data.billing_info.trial_expire_date) {
+      const validTillDate = moment(data.billing_info.trial_expire_date);
+      const daysDifference = validTillDate.diff(moment(), "days");
+      const dateString = calculateMonthDays(
+        moment().format("YYYY-MM-DD"),
+        data.billing_info.trial_expire_date
       );
-    }
 
-    const validTillDate = moment(data.billing_info.trial_expire_date);
+      data.billing_info.expire_date_string = dateString;
 
-    const daysDifference = validTillDate.diff(moment(), "days");
-    const dateString = calculateMonthDays(
-      moment().format("YYYY-MM-DD"),
-      data.billing_info.trial_expire_date
-    );
-
-    data.billing_info.expire_date_string = dateString;
-
-    if (daysDifference < 0) {
-      data.billing_info.expire_date_string = `Your trial plan expired ${dateString} ago`;
-    } else if (daysDifference === 0 && daysDifference < 7) {
-      data.billing_info.expire_date_string = `Your trial plan expires today`;
-    } else {
-      data.billing_info.expire_date_string = `Your trial plan expires in ${dateString}.`;
+      if (daysDifference < 0) {
+        data.billing_info.expire_date_string = `Your trial plan expired ${dateString} ago`;
+      } else if (daysDifference === 0 && daysDifference < 7) {
+        data.billing_info.expire_date_string = `Your trial plan expires today`;
+      } else {
+        data.billing_info.expire_date_string = `Your trial plan expires in ${dateString}.`;
+      }
     }
 
     if (data.billing_info.billing_type === "year")

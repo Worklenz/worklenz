@@ -289,7 +289,34 @@ const CurrentPlanDetails = () => {
   }, [billingInfo, currentSession]);
 
   const renderExtra = useCallback(() => {
-    if (!billingInfo || billingInfo.is_custom) return null;
+    if (!billingInfo) return null;
+
+    // LKR subscribers (Pro or Business) always have is_custom=true but still need a renew button
+    if (
+      billingInfo.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS ||
+      billingInfo.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_PRO
+    ) {
+      return (
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => {
+              trackMixpanelEvent(evt_upgrade_plan_click, {
+                user_type: billingInfo.subscription_type?.toLowerCase(),
+                current_plan: billingInfo.plan_name,
+                subscription_type: billingInfo.subscription_type,
+                source: 'admin_center_billing',
+              });
+              dispatch(toggleUpgradeModal());
+            }}
+          >
+            {t('renewPlan', 'Renew Plan')}
+          </Button>
+        </Space>
+      );
+    }
+
+    if (billingInfo.is_custom) return null;
 
     return (
       <Space>
@@ -386,6 +413,7 @@ const CurrentPlanDetails = () => {
     handleSubscriptionAction,
     dispatch,
     t,
+    trackMixpanelEvent,
   ]);
 
   const renderLtdDetails = useCallback(() => {

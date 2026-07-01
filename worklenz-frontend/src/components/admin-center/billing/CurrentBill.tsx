@@ -149,7 +149,9 @@ const CurrentBill: React.FC = React.memo(() => {
   );
 
   const shouldShowLkrHistory = useMemo(
-    () => currentSession?.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS,
+    () =>
+      currentSession?.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS ||
+      currentSession?.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_PRO,
     [currentSession?.subscription_type]
   );
 

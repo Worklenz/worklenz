@@ -161,6 +161,8 @@ export const getSubscriptionPlanType = (session: ILocalSession | null): string =
       return 'Custom';
     case ISUBSCRIPTION_TYPE.CREDIT:
       return 'Credit';
+    case ISUBSCRIPTION_TYPE.ANNUAL_PRO:
+      return 'Annual Pro';
     case ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS:
       return 'Annual Business';
     case ISUBSCRIPTION_TYPE.SELF_HOSTED:
@@ -254,6 +256,11 @@ export const shouldRestrictBillableFeature = (session: ILocalSession | null): bo
 
   // AppSumo/Lifetime Deal users have Pro Plan features and should be restricted
   if (session.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL) {
+    return true;
+  }
+
+  // LKR Pro plan users are restricted
+  if (session.subscription_type === ISUBSCRIPTION_TYPE.ANNUAL_PRO) {
     return true;
   }
 

@@ -30,6 +30,8 @@ const UpgradePlansLKR: React.FC = () => {
   const [directPayLoading, setDirectPayLoading] = useState<boolean>(false);
   const [checkoutPlan, setCheckoutPlan] = useState<'pro' | 'startup' | null>(null);
   const [directPayError, setDirectPayError] = useState<string | null>(null);
+  const [savedCardFailed, setSavedCardFailed] = useState<{ card_id: string; card_brand: string; card_number_masked: string } | null>(null);
+  const [removingCard, setRemovingCard] = useState(false);
 
   const [lkrPricingLoading, setLkrPricingLoading] = useState<boolean>(true);
   const [lkrPricingError, setLkrPricingError] = useState<string | null>(null);
@@ -211,7 +213,8 @@ const UpgradePlansLKR: React.FC = () => {
           effectivePlan
         );
         if (!payResult.done) {
-          throw new Error(payResult.message || `Payment with ${card_brand} ${card_number_masked} failed`);
+          setSavedCardFailed({ card_id: String(card_id), card_brand, card_number_masked });
+          throw new Error(payResult.message || `Payment with ${card_brand} ${card_number_masked} failed. Please top up your card or use a different card.`);
         }
         message.success(`Payment successful with ${card_brand} ${card_number_masked}`);
         dispatch(verifyAuthentication());
@@ -256,6 +259,21 @@ const UpgradePlansLKR: React.FC = () => {
     }
   };
 
+  const handleRemoveSavedCard = async () => {
+    if (!savedCardFailed) return;
+    try {
+      setRemovingCard(true);
+      await billingApiService.deleteCard(savedCardFailed.card_id);
+      setSavedCardFailed(null);
+      setDirectPayError(null);
+      message.info('Saved card removed. You can now add a new card.');
+    } catch {
+      message.error('Failed to remove card. Please contact support.');
+    } finally {
+      setRemovingCard(false);
+    }
+  };
+
   const handleUpgradeNow = async (e: React.MouseEvent, planKey: 'pro' | 'startup') => {
     e.stopPropagation();
     handlePlanSelect(planKey);
@@ -288,9 +306,21 @@ const UpgradePlansLKR: React.FC = () => {
       )}
 
       {directPayError && (
-        <Typography.Paragraph type="danger" style={{ marginBottom: '1rem' }}>
+        <Typography.Paragraph type="danger" style={{ marginBottom: savedCardFailed ? '0.5rem' : '1rem' }}>
           {directPayError}
         </Typography.Paragraph>
+      )}
+
+      {savedCardFailed && (
+        <div style={{ marginBottom: '1rem' }}>
+          <Button
+            size="small"
+            loading={removingCard}
+            onClick={handleRemoveSavedCard}
+          >
+            Use a different card
+          </Button>
+        </div>
       )}
 
       <Row justify="center" gutter={[24, 32]}>
