@@ -81,6 +81,8 @@ export interface IBusinessEdition {
    * CE: no-op.
    */
   startBackgroundJobs(): void;
+  /** Starts periodic Business Edition license validation. CE is a no-op. */
+  startLicenseValidationJob(): void;
   /** Server-side plan gating. CE returns "unrestricted" (self-hosted core has no SaaS plans). */
   featureGate: IFeatureGate;
   /** Slack integration; CE is inert (no configs, no sends). */

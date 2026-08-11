@@ -26,6 +26,9 @@ const ceBusiness: IBusinessEdition = {
   startBackgroundJobs(): void {
     // No Business-plan background jobs in open-core.
   },
+  startLicenseValidationJob(): void {
+    // Open-core does not require a commercial license.
+  },
   featureGate: {
     // Open-core / self-hosted has no SaaS plan concept, so gating is permissive: every team
     // has "business" access (no seat/custom-field/billable limits are enforced).

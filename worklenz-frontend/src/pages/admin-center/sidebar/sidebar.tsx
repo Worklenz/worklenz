@@ -27,6 +27,9 @@ const AdminCenterSidebar: React.FC = () => {
     if (item.selfHostedExcluded && isSelfHosted) {
       return false;
     }
+    if (item.selfHostedOnly && !isSelfHosted) {
+      return false;
+    }
     return true;
   });
 

@@ -14,6 +14,7 @@ const Teams = lazy(() => import('../pages/admin-center/teams/teams'));
 const Billing = lazy(() => import('../pages/admin-center/billing/BillingSection'));
 const Projects = lazy(() => import('../pages/admin-center/projects/projects'));
 const Settings = lazy(() => import('../pages/admin-center/settings/settings'));
+const SelfHostedBilling = lazy(() => import('../pages/admin-center/self-hosted-billing/self-hosted-billing'));
 
 // type of a menu item in admin center sidebar
 type AdminCenterMenuItems = {
@@ -24,6 +25,7 @@ type AdminCenterMenuItems = {
   icon: ReactNode;
   element: ReactNode;
   selfHostedExcluded?: boolean;
+  selfHostedOnly?: boolean;
 };
 // settings all element items use for sidebar and routes
 export const adminCenterItems: AdminCenterMenuItems[] = [
@@ -67,6 +69,15 @@ export const adminCenterItems: AdminCenterMenuItems[] = [
     icon: React.createElement(CreditCardOutlined),
     element: React.createElement(Billing),
     selfHostedExcluded: true,
+  },
+  {
+    key: 'self-hosted-billing',
+    name: 'selfHostedBilling',
+    defaultValue: 'Business Plan',
+    endpoint: 'business-plan',
+    icon: React.createElement(CreditCardOutlined),
+    element: React.createElement(SelfHostedBilling),
+    selfHostedOnly: true,
   },
   {
     key: 'settings',

@@ -1,0 +1,12 @@
+{
+  "title": "Business Plan",
+  "unavailableTitle": "Business Edition licensing is not available",
+  "unavailableDescription": "This deployment is running the Community Edition Docker image. Switch to the Business Edition image to purchase and activate the Business plan.",
+  "activating": "Payment received — activating your Business plan license...",
+  "active": "Active",
+  "maxUsers": "Up to {{count}} users",
+  "cancelSubscription": "Cancel subscription",
+  "updatePaymentMethod": "Update payment method",
+  "subscribeDescription": "Subscribe to the Business plan to unlock Business Edition features on this self-hosted installation — billed monthly via Paddle.",
+  "subscribeButton": "Subscribe to Business Plan"
+}

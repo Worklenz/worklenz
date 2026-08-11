@@ -16,6 +16,7 @@ import {startRecurringTasksJob} from "../cron_jobs/recurring-tasks";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
+import business from "../business";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -108,6 +109,7 @@ function onListening() {
 
   process.env.ENABLE_EMAIL_CRONJOBS === "true" && startCronJobs();
   process.env.ENABLE_RECURRING_JOBS === "true" && startRecurringTasksJob();
+  business.startLicenseValidationJob();
   // void initRedis();
   FileConstants.init();
   void DbTaskStatusChangeListener.connect();

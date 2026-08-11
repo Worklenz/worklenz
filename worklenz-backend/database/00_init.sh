@@ -5,6 +5,8 @@ echo "Starting database initialization..."
 
 SQL_DIR="/docker-entrypoint-initdb.d/sql"
 MIGRATIONS_DIR="/docker-entrypoint-initdb.d/migrations"
+BUSINESS_MIGRATIONS_DIR="${BUSINESS_MIGRATIONS_DIR:-}"
+BUSINESS_SCHEMA_FILE="${BUSINESS_SCHEMA_FILE:-}"
 BACKUP_DIR="/docker-entrypoint-initdb.d/pg_backups"
 
 # --------------------------------------------
@@ -65,6 +67,11 @@ done
 
 echo "✅ Base schema SQL execution complete."
 
+if [ -n "$BUSINESS_SCHEMA_FILE" ] && [ -f "$BUSINESS_SCHEMA_FILE" ]; then
+  echo "Executing Business Edition schema: $(basename "$BUSINESS_SCHEMA_FILE")..."
+  psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$BUSINESS_SCHEMA_FILE"
+fi
+
 # --------------------------------------------
 # 🚀 STEP 3: Apply SQL migrations
 # --------------------------------------------
@@ -83,6 +90,20 @@ if [ -d "$MIGRATIONS_DIR" ] && compgen -G "$MIGRATIONS_DIR/*.sql" > /dev/null; t
   done
 else
   echo "No migration files found or directory is empty, skipping migrations."
+fi
+
+if [ -n "$BUSINESS_MIGRATIONS_DIR" ] && [ -d "$BUSINESS_MIGRATIONS_DIR" ] && compgen -G "$BUSINESS_MIGRATIONS_DIR/*.sql" > /dev/null; then
+  echo "Applying Business Edition migrations..."
+  for f in "$BUSINESS_MIGRATIONS_DIR"/*.sql; do
+    version="business/$(basename "$f")"
+    if ! psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM schema_migrations WHERE version = '$version'" | grep -q 1; then
+      echo "Applying Business migration: $(basename "$f")"
+      psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$f"
+      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "INSERT INTO schema_migrations (version) VALUES ('$version');"
+    else
+      echo "Skipping already applied Business migration: $(basename "$f")"
+    fi
+  done
 fi
 
 echo "🎉 Database initialization completed successfully."

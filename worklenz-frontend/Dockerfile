@@ -2,6 +2,16 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+# The edition seam is resolved when Vite builds the frontend. Docker deployments
+# must provide this as a build argument; runtime environment variables are too late.
+ARG VITE_EDITION=ce
+ENV VITE_EDITION=${VITE_EDITION}
+
+# Paddle Billing (v2) client-side token for the self-hosted Business plan purchase flow.
+# Public/non-secret, but still resolved at build time like VITE_EDITION above.
+ARG VITE_PADDLE_CLIENT_TOKEN=
+ENV VITE_PADDLE_CLIENT_TOKEN=${VITE_PADDLE_CLIENT_TOKEN}
+
 COPY package.json package-lock.json ./
 
 RUN npm ci

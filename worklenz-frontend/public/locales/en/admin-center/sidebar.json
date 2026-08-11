@@ -3,6 +3,7 @@
   "users": "Users",
   "teams": "Teams",
   "billing": "Billing",
+  "selfHostedBilling": "Business Plan",
   "projects": "Projects",
   "settings": "Utilization Settings",
   "adminCenter": "Admin Center"
