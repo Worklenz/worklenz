@@ -37,6 +37,6 @@ All contributions should be submitted as pull requests against the `development`
 
 ## License
 
-By contributing to Worklenz, you agree that your contributions will be licensed under the [GNU Affero General Public License Version 3 (AGPLv3)](LICENSE).
+By contributing to Worklenz, you agree to sign our [Contributor License Agreement](https://cla-assistant.io/Worklenz/worklenz), which is checked automatically on every pull request. The CLA grants ceydigital solutions private limited a perpetual, worldwide, sublicensable license to your contribution, alongside the [GNU Affero General Public License Version 3 (AGPLv3)](LICENSE) under which the core project is released — you keep full ownership of your original work.
 
 Thank you again for your interest in contributing to Worklenz! We look forward to your contributions.
