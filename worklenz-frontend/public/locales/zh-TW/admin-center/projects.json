@@ -1,0 +1,12 @@
+{
+  "membersCount": "成員數量",
+  "createdAt": "建立於",
+  "projectName": "專案名稱",
+  "teamName": "團隊名稱",
+  "refreshProjects": "重新整理專案",
+  "searchPlaceholder": "按專案名稱搜尋",
+  "deleteProject": "您確定要刪除此專案嗎？",
+  "confirm": "確認",
+  "cancel": "取消",
+  "delete": "刪除專案"
+}

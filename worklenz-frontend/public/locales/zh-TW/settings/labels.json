@@ -1,0 +1,15 @@
+{
+  "labelColumn": "標籤",
+  "deleteConfirmationTitle": "您確定嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "associatedTaskColumn": "關聯任務計數",
+  "searchPlaceholder": "按名稱搜尋",
+  "emptyText": "標籤可以在更新或建立任務時建立。",
+  "pinTooltip": "點選將其固定到主選單",
+  "colorChangeTooltip": "點選更改顏色",
+  "pageTitle": "管理標籤",
+  "deleteConfirmTitle": "您確定要刪除這個嗎？",
+  "deleteButton": "刪除",
+  "cancelButton": "取消"
+}

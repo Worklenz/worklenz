@@ -1,0 +1,23 @@
+{
+  "bugTracking": "錯誤跟蹤",
+  "construction": "建築與施工",
+  "designCreative": "設計與創意",
+  "education": "教育",
+  "finance": "金融",
+  "hrRecruiting": "人力資源與招聘",
+  "informationTechnology": "資訊科技",
+  "legal": "法律",
+  "manufacturing": "製造業",
+  "marketing": "市場營銷",
+  "nonprofit": "非營利",
+  "personalUse": "個人使用",
+  "salesCRM": "銷售與客戶關係管理",
+  "serviceConsulting": "服務與諮詢",
+  "softwareDevelopment": "軟體開發",
+  "description": "描述",
+  "phase": "階段",
+  "statuses": "狀態",
+  "priorities": "優先順序",
+  "labels": "標籤",
+  "tasks": "任務"
+}

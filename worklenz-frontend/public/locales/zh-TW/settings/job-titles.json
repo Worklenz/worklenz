@@ -1,0 +1,20 @@
+{
+  "nameColumn": "名稱",
+  "deleteConfirmationTitle": "您確定嗎？",
+  "deleteConfirmationOk": "是",
+  "deleteConfirmationCancel": "取消",
+  "searchPlaceholder": "按名稱搜尋",
+  "createJobTitleButton": "建立職位",
+  "pinTooltip": "點選將其固定到主選單",
+  "createJobTitleDrawerTitle": "建立職位",
+  "updateJobTitleDrawerTitle": "更新職位",
+  "nameLabel": "名稱",
+  "namePlaceholder": "名稱",
+  "nameRequiredError": "請輸入名稱",
+  "createButton": "建立",
+  "updateButton": "更新",
+  "createJobTitleSuccessMessage": "職位建立成功！",
+  "createJobTitleErrorMessage": "職位建立失敗！",
+  "updateJobTitleSuccessMessage": "職位更新成功！",
+  "updateJobTitleErrorMessage": "職位更新失敗！"
+}

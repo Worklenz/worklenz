@@ -1,0 +1,14 @@
+{
+  "title": "驗證重置電子郵件",
+  "description": "輸入您的新密碼",
+  "placeholder": "輸入您的新密碼",
+  "confirmPasswordPlaceholder": "確認您的新密碼",
+  "passwordHint": "至少8個字元，包括大小寫字母、一個數字和一個符號。",
+  "resetPasswordButton": "重置密碼",
+  "orText": "或",
+  "resendResetEmail": "重新傳送重置電子郵件",
+  "passwordRequired": "請輸入您的新密碼",
+  "returnToLoginButton": "返回登入",
+  "confirmPasswordRequired": "請確認您的新密碼",
+  "passwordMismatch": "兩次輸入的密碼不匹配"
+}

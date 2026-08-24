@@ -1,0 +1,22 @@
+{
+  "overviewTitle": "概覽",
+  "includeArchivedButton": "包含已歸檔專案",
+  "teamCount": "團隊",
+  "teamCountPlural": "團隊",
+  "projectCount": "專案",
+  "projectCountPlural": "專案",
+  "memberCount": "成員",
+  "memberCountPlural": "成員",
+  "activeProjectCount": "活躍專案",
+  "activeProjectCountPlural": "活躍專案",
+  "overdueProjectCount": "逾期專案",
+  "overdueProjectCountPlural": "逾期專案",
+  "unassignedMemberCount": "未分配成員",
+  "unassignedMemberCountPlural": "未分配成員",
+  "memberWithOverdueTaskCount": "有逾期任務的成員",
+  "memberWithOverdueTaskCountPlural": "有逾期任務的成員",
+  "teamsText": "團隊",
+  "nameColumn": "名稱",
+  "projectsColumn": "專案",
+  "membersColumn": "成員"
+}

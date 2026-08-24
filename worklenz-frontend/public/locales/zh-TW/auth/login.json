@@ -1,0 +1,27 @@
+{
+  "headerDescription": "登入到您的賬戶",
+  "emailLabel": "電子郵件",
+  "emailPlaceholder": "輸入您的電子郵件",
+  "emailRequired": "請輸入您的電子郵件！",
+  "passwordLabel": "密碼",
+  "passwordPlaceholder": "輸入您的密碼",
+  "passwordRequired": "請輸入您的密碼！",
+  "rememberMe": "記住我",
+  "loginButton": "登入",
+  "signupButton": "註冊",
+  "forgotPasswordButton": "忘記密碼？",
+  "signInWithGoogleButton": "使用Google登入",
+  "dontHaveAccountText": "沒有賬戶？",
+  "orText": "或",
+  "successMessage": "您已成功登入！",
+  "loginError": "登入失敗",
+  "googleLoginError": "Google登入失敗",
+  "validationMessages": {
+    "email": "請輸入有效的電子郵件地址",
+    "password": "密碼必須至少包含8個字元"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "登入失敗",
+    "loginErrorMessage": "請檢查您的電子郵件和密碼並重試"
+  }
+}

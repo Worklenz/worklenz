@@ -1,0 +1,27 @@
+{
+  "title": "儲存為模板",
+  "templateName": "模板名稱",
+  "includes": "專案中應包含哪些內容到模板中？",
+  "includesOptions": {
+    "statuses": "狀態",
+    "phases": "階段",
+    "labels": "標籤"
+  },
+  "taskIncludes": "任務中應包含哪些內容到模板中？",
+  "taskIncludesOptions": {
+    "statuses": "狀態",
+    "phases": "階段",
+    "labels": "標籤",
+    "name": "名稱",
+    "priority": "優先順序",
+    "status": "狀態",
+    "phase": "階段",
+    "label": "標籤",
+    "timeEstimate": "預計用時",
+    "description": "描述",
+    "subTasks": "子任務"
+  },
+  "cancel": "取消",
+  "save": "儲存",
+  "templateNamePlaceholder": "輸入模板名稱"
+}

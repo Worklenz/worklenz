@@ -1,0 +1,29 @@
+{
+  "details": {
+    "task-key": "任務ID",
+    "phase": "階段",
+    "assignees": "受託人",
+    "due-date": "截止日期",
+    "time-estimation": "估計時間",
+    "priority": "優先順序",
+    "labels": "標籤",
+    "billable": "可計費",
+    "notify": "通知",
+    "when-done-notify": "完成時通知",
+    "start-date": "開始日期",
+    "end-date": "結束日期",
+    "hide-start-date": "隱藏開始日期",
+    "show-start-date": "顯示開始日期",
+    "hours": "小時",
+    "minutes": "分鐘"
+  },
+  "description": {
+    "title": "描述",
+    "placeholder": "新增更詳細的描述..."
+  },
+  "subTasks": {
+    "title": "子任務",
+    "add-sub-task": "+ 新增子任務",
+    "refresh-sub-tasks": "重新整理子任務"
+  }
+}

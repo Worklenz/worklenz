@@ -1,0 +1,19 @@
+{
+  "title": "編輯任務模板",
+  "cancelText": "取消",
+  "saveText": "儲存",
+  "templateNameText": "模板名稱",
+  "selectedTasks": "已選任務",
+  "removeTask": "移除",
+  "description": "描述",
+  "phase": "階段",
+  "statuses": "狀態",
+  "priorities": "優先順序",
+  "labels": "標籤",
+  "tasks": "任務",
+  "noTemplateSelected": "未選擇模板",
+  "noDescription": "無描述",
+  "worklenzTemplates": "Worklenz模板",
+  "yourTemplatesLibrary": "您的模板庫",
+  "searchTemplates": "搜尋模板"
+}

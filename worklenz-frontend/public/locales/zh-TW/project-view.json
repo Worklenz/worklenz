@@ -1,0 +1,14 @@
+{
+  "taskList": "任務列表",
+  "board": "看板",
+  "insights": "資料洞察",
+  "files": "檔案",
+  "members": "成員",
+  "updates": "動態更新",
+  "projectView": "專案檢視",
+  "loading": "正在載入專案...",
+  "error": "載入專案時出錯",
+  "pinnedTab": "已固定為預設標籤頁",
+  "pinTab": "固定為預設標籤頁",
+  "unpinTab": "取消固定預設標籤頁"
+} 
