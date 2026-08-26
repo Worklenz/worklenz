@@ -69,7 +69,66 @@ Prefer full control over your data? Run Worklenz on your own server.
 - **🗓️ Resource Management** - Plan team capacity, avoid overallocation, and schedule work with a visual scheduler.
 - **🧩 Project Templates** - Start new projects in seconds using pre-built templates for common workflows.
 - **🤝 Team Collaboration** - Comment on tasks, share files, and keep all communication in context - right where the work is.
+- **📥 CSV Task Import** - Bulk-import tasks from any CSV file with intelligent column mapping and a pre-import preview.
 <br><br>
+
+### 📥 CSV Task Import
+
+Import tasks in bulk from CSV files directly into any project. The import wizard guides you through uploading, mapping columns, previewing data, and creating tasks — all from the browser.
+
+#### How to Use
+
+1. Open a project and click the **⋮ menu** (top-right of the project header) → **Import Tasks**.
+2. Select **CSV** as the import source and upload your `.csv` file (or download the sample template first).
+3. **Map columns** — the wizard auto-matches common headers (e.g. *Task Name*, *Status*, *Assignee*, *Due Date*). You can adjust any mapping via the dropdown.
+4. **Preview** — review the parsed data in a table before importing. Errors and warnings are highlighted.
+5. Click **Import** to create the tasks inside the project.
+
+#### Supported Fields
+
+| CSV Column (auto-matched) | WorkLenz Field |
+|---|---|
+| Task Name, Title, Summary, Subject | **Task name** (required) |
+| Status, State, Phase | **Status** |
+| Assignee, Assigned To, Owner | **Assignees** |
+| Due Date, Deadline, End Date | **Due date** |
+| Start Date, Begin Date | **Start date** |
+| Priority, Urgency, Severity | **Priority** |
+| Description, Details, Notes | **Description** |
+| Estimate, Story Points, Hours | **Estimation** |
+| Label, Tags, Category | **Labels** |
+
+Columns that don't match a built-in field are imported as **custom columns**.
+
+#### Supported Date Formats
+
+| Format | Example |
+|---|---|
+| ISO 8601 | `2026-08-21`, `2026-08-21T14:30:00Z` |
+| US (MM/DD/YYYY) | `08/21/2026` |
+| EU (DD/MM/YYYY) | `21/08/2026` |
+| Natural | `21 Aug 2026`, `August 21, 2026` |
+| Unix Timestamp | `1787443200` (seconds or milliseconds) |
+
+#### Safety Limits
+
+- **Max file size:** 10 MB
+- **Max rows:** 5 000 tasks per import
+- Binary files (PDF, PNG, ZIP, etc.) are rejected at upload
+
+#### Delimiter Support
+
+Comma (`,`), semicolon (`;`), and tab (`\t`) delimited files are all auto-detected.
+
+#### Running Tests
+
+```bash
+cd worklenz-backend
+npm test -- --testPathPattern="src/__tests__/csv-parser.test.ts"
+```
+
+The test suite covers date-strategy parsing, RFC 4180 tokenization, BOM handling, delimiter detection, binary rejection, and header auto-mapping (47 tests).
+<br>
 
 ## 📸 Screenshots
 
