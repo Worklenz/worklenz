@@ -59,7 +59,7 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
         </Typography.Title>
         <Typography.Paragraph
           type="secondary"
-          style={{ marginBottom: 24, color: themeToken.colorTextSecondary }}
+          style={{ marginBottom: 12, color: themeToken.colorTextSecondary }}
         >
           {t('importStep.uploadCsvHelp', {
             defaultValue:
@@ -77,6 +77,28 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
           {t('importStep.structureCsvSuffix', {
             defaultValue: 'to ensure the data is in the right format and upload it to begin.',
           })}
+        </Typography.Paragraph>
+        <Typography.Paragraph
+          type="secondary"
+          style={{ marginBottom: 24, fontSize: 13 }}
+        >
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              const sampleCsv = `Task Name,Status,Assignee,Priority,Due Date,Description\nDesign homepage mockup,To Do,alice@example.com,High,2026-09-15,Create wireframes and visual design\nImplement login API,In Progress,bob@example.com,Medium,2026-09-20,Build REST endpoint for auth\nWrite unit tests,To Do,carol@example.com,Low,2026-09-25,Cover all service methods`;
+              const blob = new Blob([sampleCsv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = 'worklenz-sample-import.csv';
+              link.click();
+              URL.revokeObjectURL(url);
+            }}
+            style={{ color: themeToken.colorPrimary }}
+          >
+            {t('importStep.downloadSampleCsv', { defaultValue: '⬇ Download sample CSV template' })}
+          </a>
         </Typography.Paragraph>
         <Upload.Dragger
           style={{

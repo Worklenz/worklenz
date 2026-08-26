@@ -334,6 +334,25 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           })}
         </Typography.Text>
 
+        {/* Validation: warn if no column is mapped to 'key' (Task Name) */}
+        {!Object.values(fieldMappings).includes('key') && (
+          <div
+            style={{
+              background: '#fff2f0',
+              border: '1px solid #ffccc7',
+              borderRadius: 6,
+              padding: '8px 12px',
+              marginBottom: 12,
+              color: '#ff4d4f',
+              fontSize: 13,
+            }}
+          >
+            ⚠ {t('importStep.taskNameRequired', {
+              defaultValue: 'At least one column must be mapped to "Task Name" to proceed.',
+            })}
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <Input
             placeholder={t('importStep.searchCsvColumns', {
@@ -387,7 +406,10 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
             <span style={{ flex: 2 }}>
               {t('importStep.worklenzFields', { defaultValue: 'Worklenz fields' })}
             </span>
-            <span style={{ width: 140, textAlign: 'center' }}>
+            <span style={{ width: 60, textAlign: 'center', fontSize: 12 }}>
+              {t('importStep.autoMatch', { defaultValue: 'Match' })}
+            </span>
+            <span style={{ width: 100, textAlign: 'center' }}>
               {t('importStep.includeInImport', { defaultValue: 'Include in import' })}
             </span>
           </div>
@@ -476,7 +498,29 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                     );
                   })()}
                 </span>
-                <span style={{ width: 140, textAlign: 'center' }}>
+                <span style={{ width: 60, textAlign: 'center' }}>
+                  {(() => {
+                    const mapped = fieldMappings[col] || '';
+                    const isAutoMatched = !!mapped && knownTargetKeys.has(
+                      mapped.toLowerCase().replace(/[^a-z0-9]/g, '')
+                    );
+                    return isAutoMatched ? (
+                      <span
+                        style={{
+                          color: palette.success,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          background: `${palette.success}15`,
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                        }}
+                      >
+                        ✓ Auto
+                      </span>
+                    ) : null;
+                  })()}
+                </span>
+                <span style={{ width: 100, textAlign: 'center' }}>
                   <Checkbox
                     checked={includeInImport[col] !== false}
                     onChange={e => setIncludeInImport(i => ({ ...i, [col]: e.target.checked }))}
