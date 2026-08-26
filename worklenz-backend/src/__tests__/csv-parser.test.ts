@@ -1,15 +1,3 @@
-/**
- * Unit tests for csv-parser-strategies.ts
- *
- * Tests cover:
- *  - Date parsing strategies (Strategy Pattern)
- *  - Delimiter detection
- *  - BOM stripping
- *  - RFC 4180 CSV tokenizer
- *  - Binary file rejection
- *  - Auto-field-mapping heuristics (Adapter Pattern)
- */
-
 import {
   IsoDateStrategy,
   UsDateStrategy,
@@ -27,12 +15,8 @@ import {
   MAX_CSV_ROWS,
 } from "../services/import-providers/csv-parser-strategies";
 
-// Unmock the module under test (Jest automock is enabled)
 jest.unmock("../services/import-providers/csv-parser-strategies");
 
-// ---------------------------------------------------------------
-// Date Parsing Strategies
-// ---------------------------------------------------------------
 
 describe("IsoDateStrategy", () => {
   const strategy = new IsoDateStrategy();
@@ -189,10 +173,6 @@ describe("detectDateStrategy", () => {
   });
 });
 
-// ---------------------------------------------------------------
-// CSV Sanitization & Delimiter Detection
-// ---------------------------------------------------------------
-
 describe("stripBom", () => {
   it("removes UTF-8 BOM from the start of text", () => {
     const withBom = "\uFEFFTitle,Status,Assignee";
@@ -225,10 +205,6 @@ describe("detectDelimiter", () => {
     expect(detectDelimiter("")).toBe(",");
   });
 });
-
-// ---------------------------------------------------------------
-// RFC 4180 CSV Tokenizer
-// ---------------------------------------------------------------
 
 describe("tokenizeCsv", () => {
   it("parses simple comma-delimited CSV", () => {
@@ -294,9 +270,6 @@ describe("tokenizeCsv", () => {
   });
 });
 
-// ---------------------------------------------------------------
-// Binary Content Detection
-// ---------------------------------------------------------------
 
 describe("isBinaryContent", () => {
   it("detects PDF files", () => {
@@ -308,9 +281,7 @@ describe("isBinaryContent", () => {
   });
 });
 
-// ---------------------------------------------------------------
-// Auto-Field Mapping (Adapter Pattern)
-// ---------------------------------------------------------------
+
 
 describe("suggestFieldMapping", () => {
   it("maps 'Task Name' to 'key'", () => {
