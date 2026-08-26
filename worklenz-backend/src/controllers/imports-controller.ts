@@ -506,6 +506,36 @@ export default class ImportsController {
             },
           );
         }
+      } else if (providerKey === "csv") {
+        // CSV Provider: use Strategy Pattern auto-matching from csv-parser-strategies
+        try {
+          const { autoMapHeaders } = await import(
+            "../services/import-providers/csv-parser-strategies"
+          );
+          const staged = await ImportsService.listStageTasks(jobId);
+          if (staged.length > 0 && staged[0].raw) {
+            const rawObj = typeof staged[0].raw === "object" ? staged[0].raw as Record<string, unknown> : {};
+            const headers = Object.keys(rawObj);
+            if (headers.length > 0) {
+              const mappings = autoMapHeaders(headers);
+              rows = headers.map((h) => ({
+                source_field: h,
+                target_field: mappings[h] || h,
+                required: mappings[h] === "key",
+                include: true,
+              }));
+            }
+          }
+        } catch (err) {
+          await ImportsService.appendLog(
+            job.id,
+            "warn",
+            "CSV auto fields failed, using defaults",
+            {
+              error: (err as any)?.message,
+            },
+          );
+        }
       }
 
       rows = ensureRequiredTargets(rows);
@@ -615,6 +645,28 @@ export default class ImportsController {
       // source_reference, then hand off to the background worker. This avoids
       // parsing tens-of-thousands of rows inside an HTTP request handler.
       if (job.flow_type === "csv" && body.csvText) {
+        // --- Validate CSV input (Strategy Pattern safety gates) ---
+        const csvText = body.csvText;
+        if (typeof csvText !== "string" || !csvText.trim()) {
+          throw createHttpError(400, "CSV text must be a non-empty string.");
+        }
+        const { isBinaryContent, MAX_CSV_SIZE_BYTES } = await import(
+          "../services/import-providers/csv-parser-strategies"
+        );
+        const byteLength = Buffer.byteLength(csvText, "utf-8");
+        if (byteLength > MAX_CSV_SIZE_BYTES) {
+          throw createHttpError(
+            400,
+            `The CSV file exceeds the maximum allowed size of ${MAX_CSV_SIZE_BYTES / (1024 * 1024)} MB.`
+          );
+        }
+        if (isBinaryContent(csvText)) {
+          throw createHttpError(
+            400,
+            "The uploaded file does not appear to be a CSV. Please upload a valid CSV file."
+          );
+        }
+
         const patch: Record<string, unknown> = { csvText: body.csvText };
         if (body.fields) patch.fields = body.fields;
         if (body.values) patch.values = body.values;
