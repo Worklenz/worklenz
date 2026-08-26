@@ -5,7 +5,7 @@ import {
   NaturalDateStrategy,
   UnixTimestampStrategy,
   parseDate,
-  detectDateStrategy,feat(backend): implement RFC 4180 CSV parsing, date strategies, and safety gates
+  detectDateStrategy,
   stripBom,
   detectDelimiter,
   tokenizeCsv,
