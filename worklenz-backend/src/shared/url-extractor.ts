@@ -14,18 +14,24 @@ const MAX_HTML_LENGTH = 100_000;
 function stripHtml(html: string): string {
   let result = "";
   let inTag = false;
+  let tagStart = -1;
   const len = Math.min(html.length, MAX_HTML_LENGTH);
   for (let i = 0; i < len; i++) {
     const ch = html[i];
-    if (ch === "<") {
+    if (ch === "<" && !inTag) {
       inTag = true;
+      tagStart = i;
     } else if (ch === ">") {
       if (inTag) result += " ";
       inTag = false;
+      tagStart = -1;
     } else if (!inTag) {
       result += ch;
     }
   }
+  // Unterminated '<' (no closing '>'): keep the trailing text so URLs after it
+  // are still extracted.
+  if (inTag && tagStart !== -1) result += html.slice(tagStart, len);
   return result;
 }
 
