@@ -1,11 +1,11 @@
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {ServerResponse} from "../models/server-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import {getColor} from "../shared/utils";
+import { getColor } from "../shared/utils";
 
 export default class NotificationController extends WorklenzControllerBase {
 
@@ -21,13 +21,15 @@ export default class NotificationController extends WorklenzControllerBase {
              (SELECT color_code FROM projects WHERE id = un.project_id) AS color,
              un.project_id,
              t.id AS task_id,
-             un.team_id
+             un.team_id,
+             un.comment_id
       FROM user_notifications un
              LEFT JOIN tasks t ON un.task_id = t.id
       WHERE user_id = $1
         AND read = $2
       ORDER BY created_at DESC
       LIMIT 100;
+
     `;
 
     const result = await db.query(q, [req.user?.id, req.query.filter === "Read"]);
@@ -35,8 +37,12 @@ export default class NotificationController extends WorklenzControllerBase {
     for (const item of result.rows) {
       item.team_color = getColor(item.team_name);
       item.url = item.project_id ? `/worklenz/projects/${item.project_id}` : null;
-      item.params = {task: item.task_id, tab: "tasks-list"};
+      item.params = { task: item.task_id, tab: "tasks-list" };
+      if (item.comment_id) {
+        item.params.comment = item.comment_id;
+      }
     }
+
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }

@@ -19,12 +19,14 @@ interface TaskStatusDropdownProps {
   task: Task;
   projectId: string;
   isDarkMode?: boolean;
+  disabled?: boolean;
 }
 
 const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
   task,
   projectId,
   isDarkMode = false,
+  disabled = false,
 }) => {
   const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
@@ -138,7 +140,6 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
           team_id: projectId,
         })
       );
-      socket?.emit(SocketEvents.GET_TASK_PROGRESS.toString(), task.id);
       setIsOpen(false);
     },
     [task, connected, socket, projectId, dispatch, currentGroupingV3, groups, t]
@@ -212,14 +213,17 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       <button
         ref={buttonRef}
         onClick={e => {
+          if (disabled) return;
           e.preventDefault();
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
+        disabled={disabled}
         className={`
           inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
           transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] max-w-full justify-center
           whitespace-nowrap
+          ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
         style={{
           backgroundColor: currentStatus
@@ -244,7 +248,7 @@ const TaskStatusDropdown: React.FC<TaskStatusDropdownProps> = ({
       </button>
 
       {/* Dropdown Menu - Redesigned */}
-      {isOpen &&
+      {isOpen && !disabled &&
         createPortal(
           <div
             ref={dropdownRef}

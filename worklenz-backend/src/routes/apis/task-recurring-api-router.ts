@@ -5,6 +5,7 @@ import { verifyTaskAccessViaSchedule } from "../../middlewares/verify-task-acces
 
 const taskRecurringApiRouter = express.Router();
 
+taskRecurringApiRouter.get("/", TaskRecurringController.getTeamRecurringTasks);
 taskRecurringApiRouter.get("/:id", verifyTaskAccessViaSchedule('params', 'id'), TaskRecurringController.getById);
 taskRecurringApiRouter.put("/:id", verifyTaskAccessViaSchedule('params', 'id'), TaskRecurringController.updateSchedule);
 

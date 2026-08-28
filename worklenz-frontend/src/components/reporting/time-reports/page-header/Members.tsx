@@ -96,14 +96,14 @@ const Members: React.FC = () => {
         setTeamLeadsWithMembers(fallbackTeamLeads);
 
         if (fallbackTeamLeads.length === 0) {
-          setTeamLeadError('No Team Leads found in your organization');
+          setTeamLeadError('noTeamLeadsFoundError');
         }
       } else {
-        setTeamLeadError('Unable to load Team Lead data');
+        setTeamLeadError('unableToLoadTeamLeadData');
       }
     } catch (error) {
       console.error('Error fetching team leads:', error);
-      setTeamLeadError('Failed to load Team Lead data. Please try again.');
+      setTeamLeadError('failedToLoadTeamLeadData');
       setTeamLeadsWithMembers([]);
     } finally {
       setLoadingTeamLeads(false);
@@ -235,20 +235,20 @@ const Members: React.FC = () => {
 
     if (isNoneSelected) {
       if (selectedTeamLeadName) {
-        return `${selectedTeamLeadName}'s ${t('teamMembers')}`;
+        return t('teamMembersFor', { name: selectedTeamLeadName });
       }
       return t('members');
     }
 
     if (isAllSelected) {
       if (selectedTeamLeadName) {
-        return `All ${selectedTeamLeadName}'s ${t('teamMembers')}`;
+        return t('allTeamMembersFor', { name: selectedTeamLeadName });
       }
-      return `All ${t('members')}`;
+      return t('allMembers');
     }
 
     if (selectedTeamLeadName) {
-      return `${selectedTeamLeadName}'s ${t('teamMembers')} (${activeFiltersCount})`;
+      return `${t('teamMembersFor', { name: selectedTeamLeadName })} (${activeFiltersCount})`;
     }
     return `${t('members')} (${activeFiltersCount})`;
   };
@@ -306,7 +306,7 @@ const Members: React.FC = () => {
                 </Typography.Text>
                 {loadingTeamLeads && <Spin size="small" style={{ fontSize: '10px' }} />}
                 {teamLeadError && (
-                  <Tooltip title={teamLeadError}>
+                  <Tooltip title={t(teamLeadError, { defaultValue: teamLeadError })}>
                     <Button
                       type="link"
                       size="small"
@@ -318,7 +318,7 @@ const Members: React.FC = () => {
                         color: colors.errorColor,
                       }}
                     >
-                      Retry
+                      {t('retry', { defaultValue: 'Retry' })}
                     </Button>
                   </Tooltip>
                 )}
@@ -326,13 +326,13 @@ const Members: React.FC = () => {
 
               {teamLeadError ? (
                 <Alert
-                  message={teamLeadError}
+                  message={t(teamLeadError, { defaultValue: teamLeadError })}
                   type="warning"
                   showIcon
                   style={{ fontSize: '11px', marginBottom: '8px', padding: '4px 8px' }}
                   action={
                     <Button size="small" type="text" onClick={handleRetryTeamLeads}>
-                      Retry
+                      {t('retry', { defaultValue: 'Retry' })}
                     </Button>
                   }
                 />
@@ -345,11 +345,11 @@ const Members: React.FC = () => {
                     fontSize: '11px',
                   }}
                 >
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description="No Team Leads found"
-                    style={{ margin: 0 }}
-                  />
+                    <Empty
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description={t('noTeamLeadsFound', { defaultValue: 'No Team Leads found' })}
+                      style={{ margin: 0 }}
+                    />
                 </div>
               ) : (
                 <Select

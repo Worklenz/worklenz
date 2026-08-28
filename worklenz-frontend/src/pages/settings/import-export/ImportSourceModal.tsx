@@ -4,7 +4,6 @@ import {
   ArrowRightOutlined,
   Modal,
   Button,
-  Card,
   Typography,
   Steps,
   message,
@@ -20,110 +19,54 @@ import {
 import type { ImportJob } from '@/api/imports';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { IProjectStatus } from '@/types/project/projectStatus.types';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { fetchStatusesCategories } from '@/features/taskAttributes/taskStatusSlice';
+import {
+  stepSet,
+  csvTextSet,
+  csvColumnsSet,
+  csvRowsSet,
+  fieldMappingsSet,
+  includeInImportSet,
+  statusValueMappingSet,
+  pendingNewStatusesSet,
+  addUsersSet,
+  userEmailsSet,
+  spaceNameSet,
+  spaceTypeSet,
+  spaceTemplateSet,
+  delimiterSet,
+  encodingSet,
+  stepErrorSet,
+  importWizardReset,
+} from '@/features/imports/importWizardSlice';
 import { AuthGateContent } from './import-source-modal/components/AuthGateContent';
+import { ChooseImportSourceContent } from './import-source-modal/components/ChooseImportSourceContent';
 import { ImportCompletionContent } from './import-source-modal/components/ImportCompletionContent';
 import { ImportStepContent } from './import-source-modal/components/ImportStepContent';
-import { AUTH_GATE_APPS, DIRECT_INTEGRATION_APPS, isJiraProvider } from './import-source-modal/constants';
+import {
+  AUTH_GATE_APPS,
+  DIRECT_INTEGRATION_APPS,
+  isJiraProvider,
+} from './import-source-modal/constants';
 import { useImportAuthHandlers } from './import-source-modal/hooks/useImportAuthHandlers';
 import { useImportDerivedData } from './import-source-modal/hooks/useImportDerivedData';
 import { useImportFinishHandler } from './import-source-modal/hooks/useImportFinishHandler';
 import { useImportJobHelpers } from './import-source-modal/hooks/useImportJobHelpers';
 import { ClickupTeam, ImportSourceModalProps } from './import-source-modal/types';
-import { parseCsvText } from './import-source-modal/utils';
+import { autoMapCsvColumns, parseCsvText } from './import-source-modal/utils';
 import './import-export-settings.css';
 
-const JiraIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="jiraGrad1SingleModal" x1="98.031%" x2="58.888%" y1=".161%" y2="40.766%">
-        <stop offset="18%" stopColor="#0052CC" />
-        <stop offset="100%" stopColor="#2684FF" />
-      </linearGradient>
-      <linearGradient id="jiraGrad2SingleModal" x1="100.665%" x2="55.402%" y1=".455%" y2="44.727%">
-        <stop offset="18%" stopColor="#0052CC" />
-        <stop offset="100%" stopColor="#2684FF" />
-      </linearGradient>
-    </defs>
-    <path
-      fill="#2684FF"
-      d="M244.658 0H121.707a55.5 55.5 0 0 0 55.502 55.502h22.649V77.37c.02 30.625 24.841 55.447 55.466 55.467V10.666C255.324 4.777 250.55 0 244.658 0"
-    />
-    <path
-      fill="url(#jiraGrad1SingleModal)"
-      d="M183.822 61.262H60.872c.019 30.625 24.84 55.447 55.466 55.467h22.649v21.938c.039 30.625 24.877 55.43 55.502 55.43V71.93c0-5.891-4.776-10.667-10.667-10.667"
-    />
-    <path
-      fill="url(#jiraGrad2SingleModal)"
-      d="M122.951 122.489H0c0 30.653 24.85 55.502 55.502 55.502h22.72v21.867c.02 30.597 24.798 55.408 55.396 55.466V133.156c0-5.891-4.776-10.667-10.667-10.667"
-    />
-  </svg>
-);
-
-const AsanaIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 256 237" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      fill="#F06A6A"
-      d="M200.325 125.27c-30.749 0-55.675 24.927-55.675 55.677s24.926 55.677 55.675 55.677S256 211.696 256 180.947c0-30.75-24.926-55.677-55.675-55.677m-144.65.005C24.927 125.275 0 150.197 0 180.947s24.927 55.677 55.675 55.677c30.75 0 55.678-24.928 55.678-55.677c0-30.75-24.928-55.672-55.678-55.672m128-69.6c0 30.75-24.927 55.68-55.674 55.68c-30.75 0-55.676-24.93-55.676-55.68C72.325 24.928 97.25 0 128 0c30.747 0 55.673 24.93 55.673 55.674"
-    />
-  </svg>
-);
-
-const TrelloIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="trelloGradSingleModal" x1="50%" x2="50%" y1="0%" y2="100%">
-        <stop offset="0%" stopColor="#0091E6" />
-        <stop offset="100%" stopColor="#0079BF" />
-      </linearGradient>
-    </defs>
-    <rect width="256" height="256" fill="url(#trelloGradSingleModal)" rx="25" />
-    <rect width="78.08" height="112" x="144.64" y="33.28" fill="#FFF" rx="12" />
-    <rect width="78.08" height="176" x="33.28" y="33.28" fill="#FFF" rx="12" />
-  </svg>
-);
-
-const MondayIcon = () => (
-  <svg
-    className="import-source-icon-wide"
-    width="34"
-    height="20"
-    viewBox="0 0 256 156"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      fill="#F62B54"
-      d="M31.846 153.489a31.97 31.97 0 0 1-27.86-16.167a30.91 30.91 0 0 1 .875-31.823l57.373-90.096A31.99 31.99 0 0 1 90.556.015a31.93 31.93 0 0 1 27.41 16.896c5.349 10.113 4.68 22.28-1.725 31.774L58.904 138.78a31.98 31.98 0 0 1-27.058 14.709"
-    />
-    <path
-      fill="#FFCC00"
-      d="M130.256 153.488c-11.572 0-22.22-6.187-27.812-16.13a30.81 30.81 0 0 1 .875-31.737l57.264-89.89A31.94 31.94 0 0 1 188.93.016c11.669.255 22.244 6.782 27.592 16.993a30.81 30.81 0 0 1-2.066 31.92l-57.252 89.889a31.93 31.93 0 0 1-26.948 14.671"
-    />
-    <ellipse cx="226.466" cy="125.324" fill="#00CA72" rx="29.538" ry="28.918" />
-  </svg>
-);
-
-const AVAILABLE_IMPORT_SOURCES = [
-  { key: 'asana', icon: <AsanaIcon />, label: 'Asana', order: 1, comingSoon: false },
-  { key: 'jira-software', icon: <JiraIcon />, label: 'Jira', order: 0, comingSoon: false },
-  { key: 'trello', icon: <TrelloIcon />, label: 'Trello', order: 2, comingSoon: true },
-  { key: 'monday', icon: <MondayIcon />, label: 'Monday.com', order: 3, comingSoon: true },
-  {
-    key: 'csv',
-    icon: (
-      <img
-        src="/file-types/csv.png"
-        alt="CSV"
-        style={{ width: 36, height: 36, objectFit: 'contain' }}
-      />
-    ),
-    label: 'CSV',
-    order: 99,
-    comingSoon: false,
-  },
-];
-
-export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onClose, source }) => {
+export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
+  open,
+  onClose,
+  source,
+  createTargetProject,
+  initialProjectName,
+  hideProjectSetup = false,
+  onImportStarted,
+}) => {
   const [selectedSource, setSelectedSource] = React.useState(source);
   const activeSource = source || selectedSource;
 
@@ -183,7 +126,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   }, [open, source]);
 
   React.useEffect(() => {
-    if (!activeSource) return;
+    if (!open || !activeSource) return;
 
     setStep(0);
     setReviewSubScreen('main');
@@ -205,11 +148,11 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     setTrelloToken('');
     setAuthError(null);
     setShowCompletion(false);
-    setCsvText('');
-    setCsvRows([]);
-    setSpaceName(activeSource.label ? `${activeSource.label} import` : '');
-    setSpaceType('');
-    setSpaceTemplate('');
+    dispatch(
+      importWizardReset({
+        spaceName: initialProjectName || (activeSource.label ? `${activeSource.label} import` : ''),
+      })
+    );
     setIsImporting(false);
     setFieldMappingRows([]);
     setHierarchyRows([]);
@@ -231,26 +174,80 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     return () => {
       cancelled = true;
     };
-  }, [activeSource, authNeeded, integrationType, providerForApi]);
+  }, [open, activeSource, authNeeded, initialProjectName, integrationType, providerForApi]);
 
   // Steps for each flow
   const steps =
     integrationType === 'direct'
       ? [
-        tt('steps.selectList', 'Select list'),
-        tt('steps.createProject', 'Create project'),
-        tt('steps.reviewImport', 'Review Details & Import'),
-      ]
+          tt('steps.selectList', 'Select list'),
+          tt('steps.createProject', 'Create project'),
+          tt('steps.reviewImport', 'Review Details & Import'),
+        ]
       : [
-        tt('steps.uploadCsv', 'Upload CSV'),
-        tt('steps.setupProject', 'Set up project'),
-        tt('steps.mapFields', 'Map fields'),
-        tt('steps.mapValues', 'Map statuses'),
-        tt('steps.moveUsers', 'Move users'),
-        tt('steps.reviewDetails', 'Review details'),
-      ];
+          tt('steps.uploadCsv', 'Upload CSV'),
+          tt('steps.previewCsv', 'Preview'),
+          ...(hideProjectSetup ? [] : [tt('steps.setupProject', 'Set up project')]),
+          tt('steps.mapFields', 'Map fields'),
+          tt('steps.mapValues', 'Map statuses'),
+          tt('steps.moveUsers', 'Move users'),
+          tt('steps.reviewDetails', 'Review details'),
+        ];
 
-  const [step, setStep] = React.useState(0);
+  const dispatch = useAppDispatch();
+  const statusCategories = useAppSelector(state => state.taskStatusReducer.statusCategories);
+
+  // --- Wizard state owned by importWizardSlice (single source of truth; see
+  // src/features/imports/importWizardSlice.ts). Read via selectors and written
+  // through setState-shaped shims (makeWizardSetter below) so the rest of this
+  // component and every step component keeps its existing [value, setValue] API. ---
+  const wizard = useAppSelector(state => state.importWizardReducer);
+  const {
+    step,
+    furthestCompletedStep,
+    csvText,
+    csvColumns,
+    csvRows,
+    fieldMappings,
+    includeInImport,
+    statusValueMapping,
+    pendingNewStatuses,
+    addUsers,
+    userEmails,
+    spaceName,
+    spaceType,
+    spaceTemplate,
+    delimiter,
+    encoding,
+  } = wizard;
+
+  function makeWizardSetter<T>(
+    current: T,
+    actionCreator: (value: T) => { type: string; payload: T }
+  ): React.Dispatch<React.SetStateAction<T>> {
+    return updater => {
+      const next =
+        typeof updater === 'function' ? (updater as (prev: T) => T)(current) : updater;
+      dispatch(actionCreator(next));
+    };
+  }
+
+  const setStep = makeWizardSetter(step, stepSet);
+  const setCsvText = makeWizardSetter(csvText, csvTextSet);
+  const setCsvColumns = makeWizardSetter(csvColumns, csvColumnsSet);
+  const setCsvRows = makeWizardSetter(csvRows, csvRowsSet);
+  const setFieldMappings = makeWizardSetter(fieldMappings, fieldMappingsSet);
+  const setIncludeInImport = makeWizardSetter(includeInImport, includeInImportSet);
+  const setStatusValueMapping = makeWizardSetter(statusValueMapping, statusValueMappingSet);
+  const setPendingNewStatuses = makeWizardSetter(pendingNewStatuses, pendingNewStatusesSet);
+  const setAddUsers = makeWizardSetter(addUsers, addUsersSet);
+  const setUserEmails = makeWizardSetter(userEmails, userEmailsSet);
+  const setSpaceName = makeWizardSetter(spaceName, spaceNameSet);
+  const setSpaceType = makeWizardSetter(spaceType, spaceTypeSet);
+  const setSpaceTemplate = makeWizardSetter(spaceTemplate, spaceTemplateSet);
+  const setDelimiter = makeWizardSetter(delimiter, delimiterSet);
+  const setEncoding = makeWizardSetter(encoding, encodingSet);
+
   const totalSteps = steps.length;
   const [showCompletion, setShowCompletion] = React.useState(false);
   // Review Details sub-screens
@@ -268,35 +265,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     Array<{ source_level: string; target_level: string; position?: number }>
   >([]);
   const [csvSettingsOpen, setCsvSettingsOpen] = React.useState(false);
-  const [encoding, setEncoding] = React.useState('UTF-8');
 
-  // State for CSV columns and mapping
-  const [csvColumns, setCsvColumns] = React.useState<string[]>([]);
-  const [csvText, setCsvText] = React.useState<string>('');
-  const [csvRows, setCsvRows] = React.useState<Record<string, any>[]>([]);
   const uploadedCsvFileRef = React.useRef<File | null>(null);
-  const [fieldMappings, setFieldMappings] = React.useState<Record<string, string>>({});
-  const [includeInImport, setIncludeInImport] = React.useState<Record<string, boolean>>({});
-  // Delimiter for CSV parsing
-  const [delimiter, setDelimiter] = React.useState<string>('');
 
   // Search/filter for mapping step
   const [searchValue, setSearchValue] = React.useState<string>('');
   const [filter, setFilter] = React.useState<string>('all');
 
-  // Status value mapping step
-  const [statusValueMapping, setStatusValueMapping] = React.useState<Record<string, string>>({});
-
-  // Move users step state
-  const [addUsers, setAddUsers] = React.useState<boolean>(true);
-  const [userEmails, setUserEmails] = React.useState<Record<string, string>>({});
-
   // Importing state
   const [isImporting, setIsImporting] = React.useState<boolean>(false);
   const [autoMappingRunning, setAutoMappingRunning] = React.useState(false);
-  const [spaceName, setSpaceName] = React.useState<string>('');
-  const [spaceType, setSpaceType] = React.useState<string>('');
-  const [spaceTemplate, setSpaceTemplate] = React.useState<string>('');
   const [defaultProjectStatusId, setDefaultProjectStatusId] = React.useState<string | null>(null);
   const [worklenzStatuses, setWorklenzStatuses] = React.useState<IProjectStatus[]>([]);
 
@@ -339,7 +317,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       const rows = Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : [];
       setCsvText(text || '');
       setCsvColumns(fields);
-      setFieldMappings({});
+      setFieldMappings(autoMapCsvColumns(fields));
       setIncludeInImport(Object.fromEntries(fields.map((f: string) => [f, true])));
       setCsvRows(rows);
       setUserEmails({});
@@ -457,12 +435,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
           ]);
 
           setFieldMappingRows(
-            (fieldsResp as Array<{
-              source_field: string;
-              target_field: string;
-              required?: boolean;
-              include?: boolean;
-            }>).map(row => ({
+            (
+              fieldsResp as Array<{
+                source_field: string;
+                target_field: string;
+                required?: boolean;
+                include?: boolean;
+              }>
+            ).map(row => ({
               ...row,
               // Default: include only "recommended" Worklenz fields (and any required fields).
               // If backend explicitly sends include, respect it.
@@ -519,6 +499,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     };
   }, [defaultWorkTypes]);
 
+  // Categories a newly-created status must belong to (To Do / Doing / Done) — needed
+  // when the user chooses to create a new status during CSV status mapping. Reuses
+  // the shared taskStatusReducer slice (same data the task-board "add status" UI
+  // fetches) instead of a component-local request, so it's cached across the app.
+  React.useEffect(() => {
+    if (!statusCategories.length) dispatch(fetchStatusesCategories());
+  }, [dispatch, statusCategories.length]);
+
   React.useEffect(() => {
     if (!csvText.trim()) return;
     parseCsvData(csvText);
@@ -558,16 +546,22 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   ]);
 
   const navigationDisabled = authNeeded && !authCompleted;
+  const projectSetupStep = hideProjectSetup ? 0 : 2;
+  const csvMappingStep = hideProjectSetup ? 2 : 3;
+
+  // Clear a project-name-conflict error (set in useImportFinishHandler's catch
+  // block) as soon as the user edits the name — the next Finish attempt will
+  // re-validate against the server anyway.
+  const spaceNameErrorClearedRef = React.useRef(spaceName);
+  React.useEffect(() => {
+    if (spaceNameErrorClearedRef.current === spaceName) return;
+    spaceNameErrorClearedRef.current = spaceName;
+    if (wizard.stepErrors[projectSetupStep]) {
+      dispatch(stepErrorSet({ step: projectSetupStep, error: null }));
+    }
+  }, [spaceName, projectSetupStep, wizard.stepErrors, dispatch]);
   const hasTaskTitleMapping = React.useMemo(() => {
-    const aliases = new Set([
-      'key',
-      'title',
-      'name',
-      'task',
-      'taskname',
-      'tasktitle',
-      'summary',
-    ]);
+    const aliases = new Set(['key', 'title', 'name', 'task', 'taskname', 'tasktitle', 'summary']);
 
     return Object.entries(fieldMappings).some(([sourceColumn, targetField]) => {
       if (!targetField) return false;
@@ -576,6 +570,39 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
       return aliases.has(normalized);
     });
   }, [fieldMappings, includeInImport]);
+
+  // Live per-step validation surfaced on the Steps bar itself, not just on a blocked
+  // Next click — but only once a step has actually been reached, so we don't flag
+  // steps the user hasn't gotten to yet.
+  React.useEffect(() => {
+    if (integrationType !== 'csv' || step < csvMappingStep) return;
+    dispatch(
+      stepErrorSet({
+        step: csvMappingStep,
+        error: hasTaskTitleMapping
+          ? null
+          : t('importStep.taskTitleRequired', {
+              defaultValue:
+                'Task name / Title mapping is required. Map at least one CSV column to Task name / Title.',
+            }),
+      })
+    );
+  }, [integrationType, step, csvMappingStep, hasTaskTitleMapping, dispatch, t]);
+
+  React.useEffect(() => {
+    if (integrationType !== 'csv' || step < totalSteps - 1) return;
+    const invalid = !csvText.trim() || !spaceName.trim();
+    dispatch(
+      stepErrorSet({
+        step: totalSteps - 1,
+        error: invalid
+          ? t('importStep.reviewStepIncomplete', {
+              defaultValue: 'Upload a CSV file and enter a project name to finish.',
+            })
+          : null,
+      })
+    );
+  }, [integrationType, step, totalSteps, csvText, spaceName, dispatch, t]);
 
   const { ensureImportJob, ensureDefaultProjectStatusId, persistAsanaSelection } =
     useImportJobHelpers({
@@ -593,7 +620,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
 
   const handleBack = () => setStep(s => Math.max(0, s - 1));
   const handleNext = () => {
-    if (integrationType === 'csv' && step === 2 && !hasTaskTitleMapping) {
+    if (integrationType === 'csv' && step === csvMappingStep && !hasTaskTitleMapping) {
       message.error(
         t('importStep.taskTitleRequired', {
           defaultValue:
@@ -609,6 +636,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     onClose();
   };
   const handleFinish = useImportFinishHandler({
+    setStep,
+    projectSetupStep,
     integrationType,
     lowerKey,
     isJira,
@@ -644,11 +673,14 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
     includeInImport,
     fieldMappings,
     statusValueMapping,
+    pendingNewStatuses,
     csvUserRows,
     userEmails,
     ensureImportJob,
     ensureDefaultProjectStatusId,
     persistImportOptions,
+    createTargetProject,
+    onImportStarted,
   });
 
   const handleStartNewImport = () => {
@@ -704,7 +736,8 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
   const normalizedSourceIcon = React.useMemo(() => {
     if (!activeSource?.icon || !React.isValidElement(activeSource.icon)) return activeSource?.icon;
 
-    const isImageTag = typeof activeSource.icon.type === 'string' && activeSource.icon.type === 'img';
+    const isImageTag =
+      typeof activeSource.icon.type === 'string' && activeSource.icon.type === 'img';
     if (!isImageTag) return activeSource.icon;
 
     const currentStyle = (activeSource.icon.props as { style?: React.CSSProperties })?.style || {};
@@ -737,108 +770,21 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
         </div>
       )}
       <Typography.Title level={3} style={{ margin: 0, fontSize: 26 }}>
-        {activeSource?.label || t('importHeader', { defaultValue: 'Create a project by importing tasks' })}
+        {activeSource?.label ||
+          t('importHeader', { defaultValue: 'Create a project by importing tasks' })}
       </Typography.Title>
     </div>
   );
 
   if (!activeSource) {
     return (
-      <Modal
+      <ChooseImportSourceContent
         open={open}
-        onCancel={onClose}
-        footer={null}
-        width={900}
-        destroyOnHidden
-        title={modalTitle}
-        styles={{
-          header: {
-            paddingBottom: 8,
-          },
-          body: {
-            padding: 0,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          },
-        }}
-      >
-        <div className="import-export-settings import-export-modal-content-wrapper">
-          <Typography.Title level={4} className="section-title">
-            {t('importFrom', { defaultValue: 'Choose your source' })}
-          </Typography.Title>
-
-          <div className="import-source-grid">
-            {AVAILABLE_IMPORT_SOURCES.filter(sourceOption => sourceOption.key !== 'csv')
-              .sort((a, b) => a.order - b.order)
-              .map(sourceOption => (
-                <div
-                  className={`import-source-card${sourceOption.comingSoon ? ' import-source-card--coming-soon' : ''}`}
-                  key={sourceOption.key}
-                  role={sourceOption.comingSoon ? undefined : 'button'}
-                  tabIndex={sourceOption.comingSoon ? -1 : 0}
-                  onClick={sourceOption.comingSoon ? undefined : () => handleSourcePick(sourceOption)}
-                  onKeyDown={sourceOption.comingSoon ? undefined : e => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleSourcePick(sourceOption);
-                    }
-                  }}
-                >
-                  <div className="import-source-content">
-                    <div className="import-source-icon">{sourceOption.icon}</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <span className="import-source-label">{sourceOption.label}</span>
-                      {sourceOption.comingSoon && (
-                        <span className="import-source-coming-soon-badge">Coming soon</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-          </div>
-
-          <div className="cant-find-app-section mt-10">
-            <Card className="cant-find-app-card" bordered={false}>
-              <Typography.Title level={5} className="mb-1">
-                {t('cantFindAppTitle', { defaultValue: "Can't find your app?" })}
-              </Typography.Title>
-              <Typography.Text type="secondary" className="mb-4 d-block">
-                {t('cantFindAppDesc', {
-                  defaultValue:
-                    "If you don't see your app here, select CSV to use any CSV file to import your data.",
-                })}
-              </Typography.Text>
-              <div
-                className="csv-dropzone"
-                role="button"
-                tabIndex={0}
-                onClick={() => {
-                  const csvSource = AVAILABLE_IMPORT_SOURCES.find(item => item.key === 'csv');
-                  if (csvSource) handleSourcePick(csvSource);
-                }}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    const csvSource = AVAILABLE_IMPORT_SOURCES.find(item => item.key === 'csv');
-                    if (csvSource) handleSourcePick(csvSource);
-                  }
-                }}
-              >
-                <div className="csv-dropzone-icon">
-                  <img src="/file-types/csv.png" alt="CSV file" />
-                </div>
-                <Typography.Text className="csv-dropzone-title">
-                  {t('selectCsv', { defaultValue: 'Select a CSV file to import' })}
-                </Typography.Text>
-                <Typography.Text type="secondary" className="csv-dropzone-helper">
-                  {t('dragCsv', { defaultValue: 'or Drag and Drop here' })}
-                </Typography.Text>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </Modal>
+        onClose={onClose}
+        t={t}
+        modalTitle={modalTitle}
+        onSourcePick={handleSourcePick}
+      />
     );
   }
 
@@ -927,9 +873,16 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
               <Steps
                 direction="horizontal"
                 current={step}
-                items={steps.map(title => ({ title }))}
+                items={steps.map((title, index) => ({
+                  title,
+                  status: wizard.stepErrors[index] ? 'error' : undefined,
+                }))}
                 onChange={current => {
                   if (navigationDisabled) return;
+                  // Only allow jumping to a step already reached — never skip ahead of
+                  // unfinished steps (matches standard wizard UX: back anytime, forward
+                  // only by completing the step in between).
+                  if (current > furthestCompletedStep) return;
                   setStep(current);
                 }}
               />
@@ -979,7 +932,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   authCompleted={authCompleted}
                   t={t}
                   themeToken={themeToken}
-                  sourceLabel={activeSource?.label || t('importStep.yourApp', { defaultValue: 'your app' })}
+                  sourceLabel={
+                    activeSource?.label || t('importStep.yourApp', { defaultValue: 'your app' })
+                  }
                   source={activeSource}
                   asanaWorkspaces={asanaWorkspaces}
                   clickupTeams={clickupTeams}
@@ -1041,12 +996,17 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   statusOptions={statusOptions}
                   statusValueMapping={statusValueMapping}
                   setStatusValueMapping={setStatusValueMapping}
+                  pendingNewStatuses={pendingNewStatuses}
+                  setPendingNewStatuses={setPendingNewStatuses}
+                  statusCategories={statusCategories}
                   csvUserRows={csvUserRows}
                   userEmails={userEmails}
                   setUserEmails={setUserEmails}
                   addUsers={addUsers}
                   setAddUsers={setAddUsers}
                   csvRows={csvRows}
+                  hideProjectSetup={hideProjectSetup}
+                  onCsvUploaded={() => setStep(s => (s === 0 ? Math.min(totalSteps - 1, s + 1) : s))}
                 />
               </div>
               <div
@@ -1075,7 +1035,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({ open, onCl
                   disabled={
                     navigationDisabled ||
                     isImporting ||
-                    (integrationType === 'csv' && step === 2 && !hasTaskTitleMapping) ||
+                    (integrationType === 'csv' &&
+                      step === csvMappingStep &&
+                      !hasTaskTitleMapping) ||
                     (step === totalSteps - 1 &&
                       integrationType === 'csv' &&
                       (!csvText.trim() || !spaceName.trim()))

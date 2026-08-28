@@ -1,4 +1,4 @@
-import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
+import { toggleSaveAsTemplateDrawer, closeSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
@@ -63,11 +63,27 @@ const SaveProjectAsTemplate = () => {
   const [form] = Form.useForm();
 
   const { isSaveAsTemplateDrawerOpen } = useAppSelector(state => state.projectsReducer);
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { projectId, project } = useAppSelector(state => state.projectReducer);
 
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState('');
+
+  // Generate auto template name based on project name and timestamp
+  const generateAutoTemplateName = () => {
+    if (project?.name) {
+      const timestamp = new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      });
+      return `${project.name} - ${timestamp}`;
+    }
+    const timestamp = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+    return `Template - ${timestamp}`;
+  };
   const [expandedPanels, setExpandedPanels] = useState<string | string[]>(['project', 'task']);
   const [quickSelectMode, setQuickSelectMode] = useState<'all' | 'none' | 'custom'>('custom');
 
@@ -310,7 +326,7 @@ const SaveProjectAsTemplate = () => {
     setProjectAttributesState(projectAttributes);
     setTaskAttributesState(taskAttributes);
 
-    dispatch(toggleSaveAsTemplateDrawer());
+    dispatch(closeSaveAsTemplateDrawer());
   };
 
   // Calculate selected counts

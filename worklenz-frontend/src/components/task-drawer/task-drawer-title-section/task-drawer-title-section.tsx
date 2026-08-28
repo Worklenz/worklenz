@@ -16,9 +16,10 @@ import './task-drawer-title-section.css';
 type Props = {
   inputRef: React.RefObject<InputRef | null>;
   t: TFunction;
+  canCreateTask?: boolean;
 };
 
-const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
+const TaskDrawerTitleSection = ({ inputRef, t, canCreateTask = true }: Props) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const [isEditing, setIsEditing] = useState(false);
@@ -27,8 +28,14 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
     state => state.taskDrawerReducer
   );
   const projectName = useAppSelector(state => state.projectReducer.project?.name ?? null);
+  const taskManagementEntity = useAppSelector(state => 
+    selectedTaskId ? state.taskManagement.entities[selectedTaskId] : null
+  );
 
-  const decodedTaskName = decodeHtmlEntities(taskFormViewModel?.task?.name);
+  // Try to get name from drawer state first, then fallback to task management entity
+  const drawerTaskName = taskFormViewModel?.task?.name;
+  const entityTaskName = taskManagementEntity?.title || taskManagementEntity?.name;
+  const decodedTaskName = decodeHtmlEntities(drawerTaskName || entityTaskName);
   const [taskName, setTaskName] = useState<string>(decodedTaskName);
   // Snapshot the name at the moment editing starts so the blur handler can
   // compare against the true pre-edit value. We cannot use taskFormViewModel.task.name
@@ -62,6 +69,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
   };
 
   const handleStartEditing = () => {
+    if (!canCreateTask) return;
     // Capture the name before the user starts typing so blur can detect a real change
     originalNameRef.current = decodedTaskName || taskName;
     setIsEditing(true);
@@ -112,7 +120,8 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
     }
   };
 
-  const isLoadingTaskName = loadingTask && !taskFormViewModel?.task?.name;
+  // Show loading skeleton only if we're loading AND we don't have any task name (from drawer or entities)
+  const isLoadingTaskName = loadingTask && !drawerTaskName && !entityTaskName;
 
   return (
     <div className="task-drawer-title-section">
@@ -151,7 +160,7 @@ const TaskDrawerTitleSection = ({ inputRef, t }: Props) => {
             className="task-name-display task-name-display--large"
             style={{
               margin: 0,
-              cursor: 'text',
+              cursor: canCreateTask ? 'text' : 'default',
               lineHeight: 1.3,
               fontWeight: 700,
               fontSize: '22px',

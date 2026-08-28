@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from 'react';
 import {
   DatePicker,
@@ -39,7 +38,6 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { getUserSession } from '@/utils/session-helper';
 import { safeTextDisplay } from '@/utils/html-entities';
-import { ALPHA_CHANNEL } from '@/shared/constants';
 import { colors } from '@/styles/colors';
 
 interface taskProps {
@@ -191,10 +189,8 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
                     <Tag
                       key={index}
                       style={{ marginRight: '4px' }}
-                      // FIX: Use ALPHA_CHANNEL (transparent bg) consistent with CustomColorLabel
-                      color={label.color_code + ALPHA_CHANNEL}
+                      color={label.color_code}
                     >
-                      {/* FIX: Mirror CustomColorLabel text color logic for light/dark consistency */}
                       <span
                         style={{
                           color:

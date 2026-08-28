@@ -1,0 +1,15 @@
+{
+  "pageTitle": "组织货币",
+  "pageSubtitle": "为您的组织设置基础货币。财务总计将使用实时汇率转换为此货币。",
+  "save": "保存",
+  "saveChanges": "保存更改",
+  "adminOnly": "只有组织所有者和管理员可以更改此设置。",
+  "successMessage": "组织基础货币已设置为 {{currency}}",
+  "errorMessage": "保存货币设置失败",
+  "selectAriaLabel": "组织基础货币",
+  "ratesCardTitle": "实时汇率 - 1 {{currency}} =",
+  "ratesUpdated": "更新时间：{{time}}",
+  "refreshRatesTooltip": "刷新汇率",
+  "refreshRatesAriaLabel": "刷新汇率",
+  "noRateData": "暂无汇率数据。"
+}

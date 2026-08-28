@@ -21,5 +21,14 @@
   "selectColor": "选择颜色",
   "managePhases": "管理阶段",
   "close": "关闭",
-  "apply": "应用"
+  "apply": "应用",
+  "selectDefaultAssignee": "默认负责人",
+  "phaseAssigneesInfo": "阶段负责人已启用。为下面每个阶段设置默认负责人——当任务进入该阶段时将自动分配给他们。",
+  "phasesText": "阶段",
+  "phaseText": "阶段",
+  "searchMembers": "搜索成员...",
+  "noMembersFound": "未找到成员",
+  "continue": "继续",
+  "pendingMemberLabel": "（待处理）",
+  "inviteMember": "邀请成员"
 }

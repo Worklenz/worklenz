@@ -1,0 +1,15 @@
+/* Match Home > Overview's priority table formatting (tasks-list.css) — antd's
+   default 14px text and padding read inconsistently next to that table. */
+.insights-overview-table .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+.insights-overview-table .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+.insights-overview-table .ant-table-tbody .ant-typography {
+  font-size: 12px !important;
+}

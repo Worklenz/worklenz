@@ -246,11 +246,13 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
                'no_due', (SELECT COUNT(*)
                           FROM tasks
                           WHERE project_id = $1
-                            AND end_date IS NULL),
+                            AND end_date IS NULL
+                            AND is_completed(tasks.status_id, tasks.project_id) IS FALSE),
                'upcoming', (SELECT COUNT(*)
                             FROM tasks
                             WHERE project_id = $1
-                              AND end_date > CURRENT_TIMESTAMP)
+                              AND end_date > CURRENT_TIMESTAMP
+                              AND is_completed(tasks.status_id, tasks.project_id) IS FALSE)
                ) AS counts;
     `;
 
@@ -924,14 +926,15 @@ export default class ReportingOverviewBase extends ReportingControllerBase {
   protected static async getProjectsByCategory(teamId: string | null, archivedClause = ""): Promise<any> {
     const q = `
       SELECT
-        pc.id,
-        pc.color_code AS color,
-        pc.name AS label,
-        COUNT(pc.id) AS count
-      FROM project_categories pc
-        JOIN projects ON pc.id = projects.category_id
+        COALESCE(pc.id::text, 'uncategorized') AS id,
+        COALESCE(pc.color_code, '#888888') AS color,
+        COALESCE(pc.name, 'uncategorized') AS label,
+        COUNT(projects.id) AS count
+      FROM projects
+        LEFT JOIN project_categories pc ON pc.id = projects.category_id
         WHERE projects.team_id = $1 ${archivedClause}
-      GROUP BY pc.id, pc.name;
+      GROUP BY pc.id, pc.name, pc.color_code
+      ORDER BY COALESCE(pc.name, 'uncategorized');
     `;
     const result = await db.query(q, [teamId]);
 

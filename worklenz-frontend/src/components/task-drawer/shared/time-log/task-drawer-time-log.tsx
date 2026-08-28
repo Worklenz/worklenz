@@ -12,28 +12,30 @@ import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
 import TaskTimer from '@/components/taskListCommon/task-timer/task-timer';
 import { useTaskTimerWithConflictCheck } from '@/hooks/useTaskTimerWithConflictCheck';
 import logger from '@/utils/errorLogger';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
+import { formatSecondsToTimeString } from '@/utils/time-format.utils';
 
 interface TaskDrawerTimeLogProps {
   t: TFunction;
   refreshTrigger?: number;
+  isGuest?: boolean;
 }
 
-const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) => {
+const TaskDrawerTimeLog = ({ t, refreshTrigger = 0, isGuest = false }: TaskDrawerTimeLogProps) => {
   const [timeLoggedList, setTimeLoggedList] = useState<ITaskLogViewModel[]>([]);
-  const [totalTimeText, setTotalTimeText] = useState<string>('0m 0s');
+  const [totalTimeText, setTotalTimeText] = useState<string>('0s');
+  const [subtasksTotalSeconds, setSubtasksTotalSeconds] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
   const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
 
   const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const dispatch = useAppDispatch();
   const currentSession = useAuthService().getCurrentSession();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
@@ -42,38 +44,21 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
     taskFormViewModel?.task?.timer_start_time || null
   );
 
-  const formatTimeComponents = (hours: number, minutes: number, seconds: number): string => {
-    const parts = [];
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
-    return parts.join(' ');
-  };
+  // Hidden entirely (not shown as 0s) unless the task has subtasks AND those
+  // subtasks actually have logged time — a non-zero total already implies both.
+  const showSubtasksLogged = subtasksTotalSeconds > 0;
+  const subtasksTimeText = formatSecondsToTimeString(subtasksTotalSeconds);
 
   const buildTotalTimeText = useCallback((logs: ITaskLogViewModel[]) => {
     let totalLogged = 0;
 
     for (const log of logs) {
       const timeSpentInSeconds = Number(log.time_spent || '0');
-
-      // Calculate hours, minutes, seconds for individual time log
-      const hours = Math.floor(timeSpentInSeconds / 3600);
-      const minutes = Math.floor((timeSpentInSeconds % 3600) / 60);
-      const seconds = timeSpentInSeconds % 60;
-
-      // Format individual time log text
-      log.time_spent_text = formatTimeComponents(hours, minutes, seconds);
-
-      // Add to total
+      log.time_spent_text = formatSecondsToTimeString(timeSpentInSeconds);
       totalLogged += timeSpentInSeconds;
     }
 
-    // Format total time text
-    const totalHours = Math.floor(totalLogged / 3600);
-    const totalMinutes = Math.floor((totalLogged % 3600) / 60);
-    const totalSeconds = totalLogged % 60;
-
-    setTotalTimeText(formatTimeComponents(totalHours, totalMinutes, totalSeconds));
+    setTotalTimeText(formatSecondsToTimeString(totalLogged));
   }, []);
 
   const fetchTimeLoggedList = useCallback(async () => {
@@ -82,8 +67,9 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
       setLoading(true);
       const res = await taskTimeLogsApiService.getByTask(selectedTaskId);
       if (res.done) {
-        buildTotalTimeText(res.body);
-        setTimeLoggedList(res.body);
+        buildTotalTimeText(res.body.logs);
+        setTimeLoggedList(res.body.logs);
+        setSubtasksTotalSeconds(res.body.subtasks_total_time_spent || 0);
       }
     } catch (error) {
       logger.error('Failed to fetch time logs', error);
@@ -131,7 +117,7 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
 
     return (
       <Flex vertical gap={8}>
-        <TimeLogList timeLoggedList={visibleLogs} onRefresh={fetchTimeLoggedList} />
+        <TimeLogList timeLoggedList={visibleLogs} onRefresh={fetchTimeLoggedList} isGuest={isGuest} />
         {lockedCount > 0 && (
           <Flex align="center" justify="space-between">
             <Typography.Text type="secondary">
@@ -170,7 +156,7 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
                         trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'time_log_history' });
                         trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'time_log_history' });
                       }
-                      promptUpgrade();
+                      dispatch(toggleUpgradeModal());
                     }}
                   >
                     {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
@@ -192,20 +178,32 @@ const TaskDrawerTimeLog = ({ t, refreshTrigger = 0 }: TaskDrawerTimeLogProps) =>
     <Flex vertical justify="space-between" style={{ width: '100%', height: '78vh' }}>
       <Flex vertical>
         <Flex align="center" justify="space-between" style={{ width: '100%' }}>
-          <Typography.Text type="secondary">
-            {t('taskTimeLogTab.totalLogged')}: {totalTimeText}
-          </Typography.Text>
+          <Flex gap={12} align="center">
+            <Typography.Text type="secondary">
+              {t('taskTimeLogTab.totalLogged', { defaultValue: 'Total Logged' })}: {totalTimeText}
+            </Typography.Text>
+            {showSubtasksLogged && (
+              <Typography.Text type="secondary">
+                {t('taskTimeLogTab.subtasksLogged', { defaultValue: 'Subtasks Logged' })}:{' '}
+                {subtasksTimeText}
+              </Typography.Text>
+            )}
+          </Flex>
           <Flex gap={8} align="center">
-            <TaskTimer
-              taskId={selectedTaskId || ''}
-              started={started}
-              handleStartTimer={handleStartTimer}
-              handleStopTimer={handleTimerStop}
-              timeString={timeString}
-            />
-            <Button size="small" icon={<DownloadOutlined />} onClick={handleExportToExcel}>
-              {t('taskTimeLogTab.exportToExcel')}
-            </Button>
+            {!isGuest && (
+              <>
+                <TaskTimer
+                  taskId={selectedTaskId || ''}
+                  started={started}
+                  handleStartTimer={handleStartTimer}
+                  handleStopTimer={handleTimerStop}
+                  timeString={timeString}
+                />
+                <Button size="small" icon={<DownloadOutlined />} onClick={handleExportToExcel}>
+                  {t('taskTimeLogTab.exportToExcel')}
+                </Button>
+              </>
+            )}
           </Flex>
         </Flex>
         <Divider style={{ marginBlock: 8 }} />

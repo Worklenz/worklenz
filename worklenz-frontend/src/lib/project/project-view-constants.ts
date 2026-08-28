@@ -2,6 +2,7 @@ import React, { ReactNode, Suspense } from 'react';
 import { InlineSuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import i18n from '@/i18n';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
@@ -198,43 +199,58 @@ export const updateTabLabels = () => {
   }
 };
 
-// Function to get filtered tab items based on user permissions
 /**
- * Business-plan flags, injected by the caller (which reads them from the edition-aware
- * `useBusinessFeatures()` hook). Kept as params so this plain module never imports edition code.
+ * Check if user is a guest in the project
+ * A guest user can only access Task List, Board, and Members views
+ * @param currentProject - The project data
+ * @returns true if user is a guest, false otherwise
  */
-export interface ITabBusinessFlags {
-  hasBusinessAccess: boolean;
-  isFree: boolean;
-}
+export const isUserGuest = (currentProject?: IProjectViewModel | null): boolean => {
+  // Check if project has is_guest flag (to be added to project response)
+  if (currentProject && typeof currentProject === 'object' && 'is_guest' in currentProject) {
+    return (currentProject as any).is_guest === true;
+  }
+  return false;
+};
 
+/**
+ * Get restricted views for guests
+ * Guests can only access Task List, Board, and Members views
+ */
+const GUEST_RESTRICTED_VIEWS = ['roadmap', 'workload', 'project-insights-member-overview', 'finance', 'updates', 'all-attachments'];
+const GUEST_ALLOWED_VIEWS = ['tasks-list', 'board', 'members'];
+
+// Function to get filtered tab items based on user permissions
 export const getFilteredTabItems = (
   currentSession: ILocalSession | null,
   currentProject?: IProjectViewModel | null,
-  flags: ITabBusinessFlags = { hasBusinessAccess: false, isFree: true }
+  canCreateTask?: boolean
 ): TabItems[] => {
   const hasFinancePermission = hasFinanceViewPermission(currentSession, currentProject);
-  const { hasBusinessAccess, isFree } = flags;
+  const isFree = isFreeUser(currentSession);
+  const isGuest = isUserGuest(currentProject);
 
   return tabItems
     .map(item => {
+      // If user is a guest, only show allowed views (Task List, Board, and Members)
+      if (isGuest && GUEST_RESTRICTED_VIEWS.includes(item.key)) {
+        return null; // Hide restricted views for guests
+      }
+
+      // Hide roadmap tab when user cannot create/edit tasks
+      if (item.key === 'roadmap' && canCreateTask === false) {
+        return null;
+      }
+
       // Handle finance tab specially
       if (item.key === 'finance') {
-        // If user has finance permission but no business access, show tab as disabled
-        if (hasFinancePermission && !hasBusinessAccess) {
-          return {
-            ...item,
-            disabled: true,
-            disabledReason: i18n.t('common:business-plan-upgrade'),
-            // Keep placeholder element for disabled finance tab to prevent loading
-            element: React.createElement('div'),
-          };
-        }
-        // If user has no finance permission, hide the tab
+        // If user has no finance permission, hide the tab entirely
         if (!hasFinancePermission) {
           return null;
         }
-        // User has finance permission and business access - set actual element
+        // Business-plan gating is handled inside ProjectViewFinance itself
+        // (blurred preview + upgrade prompt), so the tab is never disabled —
+        // it always navigates normally, same as the top-nav Finance section.
         return {
           ...item,
           element: React.createElement(

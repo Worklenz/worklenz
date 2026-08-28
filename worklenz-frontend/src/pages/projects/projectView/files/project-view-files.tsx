@@ -20,14 +20,16 @@ import {
   DeleteOutlined,
   InboxOutlined,
   ImportOutlined,
+  PlusOutlined,
   SearchOutlined,
   CheckCircleTwoTone,
   CloseCircleTwoTone,
   ClockCircleOutlined,
 } from '@/shared/antd-imports';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
+import { ProjectLinksTab } from './components/ProjectLinksTab';
 import type { UploadFile } from 'antd/es/upload/interface';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import projectFilesApiService from '@/api/projects/project-files.api.service';
@@ -36,12 +38,12 @@ import { DEFAULT_PAGE_SIZE, IconsMap } from '@/shared/constants';
 import { evt_file_uploaded, evt_project_files_visit } from '@/shared/worklenz-analytics-events';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import { fetchStorageInfo } from '@/features/admin-center/admin-center.slice';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { toggleUpgradeModal, openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { colors } from '@/styles/colors';
 import {
@@ -105,9 +107,9 @@ const ProjectViewFiles = () => {
   const { trackAppSumoEvent } = useAppSumoTracking();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const maxFileSizeBytes = hasBusinessAccess
     ? BUSINESS_FILE_SIZE_LIMIT_BYTES
     : STARTER_FILE_SIZE_LIMIT_BYTES;
@@ -138,7 +140,8 @@ const ProjectViewFiles = () => {
     pageSize: DEFAULT_PAGE_SIZE,
   });
 
-  const [activeTab, setActiveTab] = useState<'project' | 'task'>('project');
+  const [activeTab, setActiveTab] = useState<'project' | 'task' | 'links'>('project');
+  const [linkAddModalOpen, setLinkAddModalOpen] = useState(false);
   const [taskAttachments, setTaskAttachments] = useState<ITaskAttachmentViewModel[]>([]);
   const [taskAttachmentsLoading, setTaskAttachmentsLoading] = useState(false);
   const [deletingTaskAttachmentId, setDeletingTaskAttachmentId] = useState<string | null>(null);
@@ -155,6 +158,11 @@ const ProjectViewFiles = () => {
   const [previewDownloadFn, setPreviewDownloadFn] = useState<(() => void) | null>(null);
   const [isStorageUpgradePopoverOpen, setIsStorageUpgradePopoverOpen] = useState(false);
   const [oversizedFileSizeMb, setOversizedFileSizeMb] = useState<number | null>(null);
+
+  // Aborts in-flight direct uploads when the uploader is closed or the
+  // component unmounts, so the browser stops PUTting bytes and the backend
+  // never receives a confirm for an abandoned upload.
+  const uploadAbortRef = useRef<AbortController | null>(null);
 
   const GB = 1024 * MB;
   const storageTotalBytes = storageInfo?.total ? storageInfo.total * GB : null;
@@ -307,7 +315,7 @@ const ProjectViewFiles = () => {
 
   useEffect(() => {
     trackMixpanelEvent(evt_project_files_visit);
-    dispatch(fetchStorageInfo());
+    if (isOwnerOrAdmin) dispatch(fetchStorageInfo());
   }, [trackMixpanelEvent]);
 
   useEffect(() => {
@@ -348,9 +356,15 @@ const ProjectViewFiles = () => {
   };
 
   const closeUploader = () => {
+    uploadAbortRef.current?.abort();
     setIsUploaderOpen(false);
     resetUploader();
   };
+
+  // Abort any in-flight upload if the component unmounts mid-upload.
+  useEffect(() => {
+    return () => uploadAbortRef.current?.abort();
+  }, []);
 
   const beforeUpload: UploadProps['beforeUpload'] = file => {
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -426,6 +440,9 @@ const ProjectViewFiles = () => {
       return;
     }
 
+    const abortController = new AbortController();
+    uploadAbortRef.current = abortController;
+
     try {
       setUploading(true);
 
@@ -442,12 +459,40 @@ const ProjectViewFiles = () => {
         }));
 
         try {
-          const response = await projectFilesApiService.upload(projectId, rawFile, percent => {
-            updatePendingFile(file.uid, current => ({ ...current, status: 'uploading', percent }));
-          });
+          // Step 1 — get presigned URL from backend (fast, no file bytes)
+          const presignResponse = await projectFilesApiService.presign(
+            projectId,
+            rawFile.name,
+            rawFile.size,
+            rawFile.type || 'application/octet-stream'
+          );
 
-          if (!response.done) {
-            throw new Error('Upload failed');
+          if (!presignResponse.done || !presignResponse.body) {
+            throw new Error(presignResponse.message || 'Failed to initiate upload');
+          }
+
+          const { file_id, upload_url } = presignResponse.body;
+
+          // Step 2 — upload directly to S3/Azure (progress tracked via XHR).
+          // The shared AbortSignal lets closeUploader()/unmount cancel the PUT.
+          await projectFilesApiService.uploadDirect(
+            upload_url,
+            rawFile,
+            percent => {
+              updatePendingFile(file.uid, current => ({
+                ...current,
+                status: 'uploading',
+                percent,
+              }));
+            },
+            abortController.signal
+          );
+
+          // Step 3 — confirm with backend so it marks the DB record active
+          const confirmResponse = await projectFilesApiService.confirm(projectId, file_id);
+
+          if (!confirmResponse.done) {
+            throw new Error(confirmResponse.message || 'Upload confirmation failed');
           }
 
           trackMixpanelEvent(evt_file_uploaded, { file_type: getFileType(rawFile.name) });
@@ -459,11 +504,20 @@ const ProjectViewFiles = () => {
           }));
         } catch (error: unknown) {
           hasError = true;
-          const serverMessage = (error as any)?.response?.data?.message as string | undefined;
+
+          // Distinguish storage-side errors from backend errors
+          const axiosMessage = (error as any)?.response?.data?.message as string | undefined;
+          const rawMessage = error instanceof Error ? error.message : undefined;
+          const serverMessage = axiosMessage || rawMessage;
+
           const tooLarge = serverMessage?.toLowerCase().includes('max file size') || false;
+          const expired = serverMessage?.toLowerCase().includes('expired') || false;
+
           const errorMessage = tooLarge
             ? t('fileTooLargeLabel', { defaultValue: 'File too large' })
-            : serverMessage || t('uploadFailedShort', { defaultValue: 'Upload failed' });
+            : expired
+              ? t('uploadExpired', { defaultValue: 'Upload session expired. Please try again.' })
+              : serverMessage || t('uploadFailedShort', { defaultValue: 'Upload failed' });
 
           updatePendingFile(file.uid, current => ({
             ...current,
@@ -471,6 +525,11 @@ const ProjectViewFiles = () => {
             percent: undefined,
             errorMessage,
           }));
+
+          logger.error('Error uploading file', error);
+
+          // Stop processing the remaining queue if the user cancelled.
+          if (abortController.signal.aborted) break;
         }
       }
 
@@ -487,6 +546,7 @@ const ProjectViewFiles = () => {
       message.error(t('uploadFailed', { defaultValue: 'Upload failed. Please try again.' }));
     } finally {
       setUploading(false);
+      uploadAbortRef.current = null;
     }
   };
 
@@ -766,7 +826,7 @@ const ProjectViewFiles = () => {
     <Card
       style={{ width: '100%' }}
       title={
-        <Flex justify="space-between" align="center">
+        <Flex justify="space-between" align="center" wrap gap={8}>
           <Segmented
             options={[
               {
@@ -777,17 +837,21 @@ const ProjectViewFiles = () => {
                 label: t('taskAttachmentsTab', { defaultValue: 'Task Attachments' }),
                 value: 'task',
               },
+              {
+                label: t('linksTab', { defaultValue: 'Links' }),
+                value: 'links',
+              },
             ]}
             value={activeTab}
-            onChange={v => setActiveTab(v as 'project' | 'task')}
+            onChange={v => setActiveTab(v as 'project' | 'task' | 'links')}
           />
 
           {activeTab === 'project' && (
-            <Space size={8}>
+            <Space size={8} wrap style={{ justifyContent: 'flex-end' }}>
               <Input
                 allowClear
                 placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
-                style={{ width: 280 }}
+                style={{ width: 280, maxWidth: '100%' }}
                 onChange={e => handleSearch(e.target.value)}
                 value={searchValue}
                 suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
@@ -803,67 +867,82 @@ const ProjectViewFiles = () => {
               </Button>
             </Space>
           )}
+
+          {activeTab === 'links' && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setLinkAddModalOpen(true)}
+              disabled={!projectId}
+            >
+              {t('addLink', { defaultValue: 'Add Link' })}
+            </Button>
+          )}
         </Flex>
       }
     >
-      {activeTab === 'project' ? (
+      {activeTab === 'project' && (
         <>
-          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-            {formattedStorage}
-          </Typography.Text>
-          {storageTotalBytes !== null && (
-            <Progress
-              percent={Math.min(storagePercent, 100)}
-              size="small"
-              style={{ marginBottom: 12 }}
-              status={storagePercent >= 90 ? 'exception' : 'normal'}
-              showInfo={false}
-            />
-          )}
-          {!hasBusinessAccess && (
-            <Popover
-              trigger="click"
-              open={isStorageUpgradePopoverOpen}
-              onOpenChange={open => {
-                setIsStorageUpgradePopoverOpen(open);
-                if (isAppSumoUser) {
-                  trackAppSumoEvent(
-                    open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
-                    { feature: 'storage' }
-                  );
-                }
-              }}
-              title={t('storageLimitTitle', { defaultValue: 'Storage Limit' })}
-              content={
-                <Flex vertical gap={12} style={{ maxWidth: 280 }}>
-                  <Typography.Text>
-                    {t('storageLimitBody', {
-                      defaultValue:
-                        'You are using {{used}} of your {{total}} storage limit. Upgrade to get more storage for your team files.',
-                      used: formatFileSize(storageUsage.used),
-                      total: formatFileSize(storageTotalBytes ?? STARTER_STORAGE_LIMIT_BYTES),
-                    })}
-                  </Typography.Text>
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setIsStorageUpgradePopoverOpen(false);
-                      if (isAppSumoUser) {
-                        trackAppSumoEvent(AppSumoUpsellEvents.STORAGE_ADD_MORE_CLICKED, { feature: 'storage' });
-                        trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'storage' });
-                      }
-                      promptUpgrade();
-                    }}
-                  >
-                    {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+          {isOwnerOrAdmin && (
+            <>
+              <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                {formattedStorage}
+              </Typography.Text>
+              {storageTotalBytes !== null && (
+                <Progress
+                  percent={Math.min(storagePercent, 100)}
+                  size="small"
+                  style={{ marginBottom: 12 }}
+                  status={storagePercent >= 90 ? 'exception' : 'normal'}
+                  showInfo={false}
+                />
+              )}
+              {!hasBusinessAccess && (
+                <Popover
+                  trigger="click"
+                  open={isStorageUpgradePopoverOpen}
+                  onOpenChange={open => {
+                    setIsStorageUpgradePopoverOpen(open);
+                    if (isAppSumoUser) {
+                      trackAppSumoEvent(
+                        open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
+                        { feature: 'storage' }
+                      );
+                    }
+                  }}
+                  title={t('storageLimitTitle', { defaultValue: 'Storage Limit' })}
+                  content={
+                    <Flex vertical gap={12} style={{ maxWidth: 280 }}>
+                      <Typography.Text>
+                        {t('storageLimitBody', {
+                          defaultValue:
+                            'You are using {{used}} of your {{total}} storage limit. Upgrade to get more storage for your team files.',
+                          used: formatFileSize(storageUsage.used),
+                          total: formatFileSize(storageTotalBytes ?? STARTER_STORAGE_LIMIT_BYTES),
+                        })}
+                      </Typography.Text>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          setIsStorageUpgradePopoverOpen(false);
+                          if (isAppSumoUser) {
+                            trackAppSumoEvent(AppSumoUpsellEvents.STORAGE_ADD_MORE_CLICKED, { feature: 'storage' });
+                            trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'storage' });
+                          }
+                          dispatch(toggleUpgradeModal());
+                        }}
+                      >
+                        {t('upgradeNow', { defaultValue: 'Upgrade Now' })}
+                      </Button>
+                    </Flex>
+                  }
+                >
+                  <Button size="small" type="default" style={{ marginBottom: 16 }}>
+                    {t('addMoreStorage', { defaultValue: 'Add More Storage' })}
                   </Button>
-                </Flex>
-              }
-            >
-              <Button size="small" type="default" style={{ marginBottom: 16 }}>
-                {t('addMoreStorage', { defaultValue: 'Add More Storage' })}
-              </Button>
-            </Popover>
+                </Popover>
+              )}
+            </>
           )}
 
           <Table<ProjectFile>
@@ -871,6 +950,7 @@ const ProjectViewFiles = () => {
             columns={columns}
             rowKey={record => record.id}
             loading={loading}
+            scroll={{ x: 'max-content' }}
             locale={{ emptyText: t('emptyText', { defaultValue: 'There are no files yet.' }) }}
             pagination={{
               total: paginationConfig.total,
@@ -883,12 +963,15 @@ const ProjectViewFiles = () => {
             onChange={handleTableChange}
           />
         </>
-      ) : (
+      )}
+
+      {activeTab === 'task' && (
         <Table<ITaskAttachmentViewModel>
           dataSource={taskAttachments}
           columns={taskAttachmentColumns}
           rowKey={record => record.id || ''}
           loading={taskAttachmentsLoading}
+          scroll={{ x: 'max-content' }}
           locale={{
             emptyText: t('taskAttachmentsEmptyText', {
               defaultValue: 'No task attachments found.',
@@ -902,6 +985,14 @@ const ProjectViewFiles = () => {
             onChange: (page, pageSize) =>
               setTaskAttachmentsPagination(prev => ({ ...prev, pageIndex: page, pageSize })),
           }}
+        />
+      )}
+
+      {activeTab === 'links' && (
+        <ProjectLinksTab
+          active={activeTab === 'links'}
+          addModalOpen={linkAddModalOpen}
+          onAddModalOpenChange={setLinkAddModalOpen}
         />
       )}
 
@@ -951,7 +1042,7 @@ const ProjectViewFiles = () => {
                 type="primary"
                 onClick={() => {
                   setOversizedFileSizeMb(null);
-                  promptUpgrade('fileSizeLimit');
+                  dispatch(openUpgradeModal('fileSizeLimit'));
                 }}
               >
                 {t('upgradeNow', { defaultValue: 'Upgrade Now' })}

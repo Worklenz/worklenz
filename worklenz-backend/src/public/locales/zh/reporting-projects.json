@@ -9,6 +9,7 @@
   "tasksProgressColumn": "任务进度",
   "lastActivityColumn": "最后活动",
   "statusColumn": "状态",
+  "priorityColumn": "优先级",
   "datesColumn": "开始/结束日期",
   "daysLeftColumn": "剩余天数/逾期",
   "projectHealthColumn": "项目健康状况",
@@ -40,5 +41,9 @@
   "goodText": "良好",
   "setCategoryText": "设置类别",
   "searchByNameInputPlaceholder": "按名称搜索",
-  "todayText": "今天"
+  "todayText": "今天",
+  "setStartDate": "设置开始日期",
+  "setEndDate": "设置结束日期",
+  "clearStartDate": "清除开始日期",
+  "clearEndDate": "清除结束日期"
 }

@@ -5,7 +5,7 @@ import { Avatar, Tooltip } from '@/shared/antd-imports';
 interface CustomAvatarProps {
   avatarName: string;
   size?: number;
-   avatarUrl?: string; 
+  avatarUrl?: string;
 }
 
 const CustomAvatar = React.forwardRef<HTMLDivElement, CustomAvatarProps>(
@@ -16,16 +16,18 @@ const CustomAvatar = React.forwardRef<HTMLDivElement, CustomAvatarProps>(
       <Tooltip title={avatarName}>
         <div ref={ref} style={{ display: 'inline-block' }}>
           <Avatar
-          src={avatarUrl || undefined}
+            src={avatarUrl || undefined}
             style={{
               backgroundColor: AvatarNamesMap[avatarCharacter],
               verticalAlign: 'middle',
               width: size,
               height: size,
+              border: 'none',
+              outline: 'none',
             }}
           >
-             {!avatarUrl && avatarCharacter}
-         
+            {!avatarUrl && avatarCharacter}
+
           </Avatar>
         </div>
       </Tooltip>

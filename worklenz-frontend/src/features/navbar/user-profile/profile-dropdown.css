@@ -1,57 +1,40 @@
 .profile-dropdown .ant-dropdown-menu {
-  margin-top: 2px !important;
+  margin-top: 8px !important;
+  padding: 4px !important;
+  border-radius: 8px !important;
 }
 
 .profile-dropdown .ant-dropdown-menu-item {
   padding: 0 !important;
+  border-radius: 5px !important;
 }
 
 .profile-card .ant-card-head {
-  padding: 0 16px;
+  padding: 0 12px;
+  min-height: unset;
 }
 
 .profile-card .ant-card-body {
-  padding: 8px 0;
+  padding: 4px;
 }
 
-.profile-card .ant-card-body a {
-  display: flex !important;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-  padding: 8px 12px;
-}
-
-.profile-card .ant-card-body div {
+.profile-card .ant-card-body > a,
+.profile-card .ant-card-body > div {
   display: flex !important;
   align-items: center;
   gap: 8px;
   margin: 0;
-  padding: 8px 12px;
-}
-
-.profile-card .ant-card-body a:hover {
-  color: #1890ff !important;
-  background-color: #f8f7f9 !important;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 20px;
+  border-radius: 5px;
+  transition: background 0.1s;
   box-sizing: border-box;
 }
 
-.profile-card .ant-card-body div:hover {
-  color: #1890ff !important;
-  background-color: #f8f7f9 !important;
-  box-sizing: border-box;
-}
-
-.profile-card.dark .ant-card-body a:hover {
-  color: #1890ff !important;
-  background-color: #424242 !important;
-  box-sizing: border-box;
-}
-
-.profile-card.dark .ant-card-body div:hover {
-  color: #1890ff !important;
-  background-color: #424242 !important;
-  box-sizing: border-box;
+.profile-card .ant-card-body > a .anticon,
+.profile-card .ant-card-body > div .anticon {
+  font-size: 14px;
 }
 
 .profile-card {

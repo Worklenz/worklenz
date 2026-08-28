@@ -82,7 +82,7 @@
   "projectFinanceTitle": "Project Finance",
   "projectFinanceUpgradeBody": "Track budgets, costs, and billable time across your projects. Requires the Business plan.",
   "upgrade-now": "Upgrade Now",
-  "seeSpends": "See Spends",
+  "seeSpends": "Track Spend",
   "closePopover": "Close popover",
   "disconnected": "Disconnected",
   "offline": "Offline",
@@ -112,10 +112,11 @@
     "accept": "Accept analytics cookies",
     "reject": "Reject analytics cookies"
   },
-  "or-switch-team":"OR SWITCH TEAM",
-  "trial-expired":"Trial Expired",
-  "switch-to-another-team":"Switch to another team",
-  "need-help":"Need help?",
-  "contact-support":"Contact support",
-  "view-pricing":"view pricing"
+  "or-switch-team": "OR SWITCH TEAM",
+  "trial-expired": "Trial Expired",
+  "switch-to-another-team": "Switch to another team",
+  "need-help": "Need help?",
+  "contact-support": "Contact support",
+  "view-pricing": "view pricing",
+  "justNow": "Just now"
 }

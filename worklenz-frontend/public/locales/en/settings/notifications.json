@@ -1,5 +1,7 @@
 {
   "title": "Notifications Settings",
+  "generalSectionTitle": "General Notifications",
+  "generalSectionDescription": "Applies immediately when toggled — no separate save needed.",
   "emailTitle": "Send me email notifications",
   "emailDescription": "This includes new task assignments",
   "dailyDigestTitle": "Send me a daily digest",
@@ -7,5 +9,17 @@
   "popupTitle": "Pop up notifications on my computer when Worklenz is open",
   "popupDescription": "Pop up notifications can be disabled by your browser. Change your browser settings to allow them.",
   "unreadItemsTitle": "Show the number of unread items",
-  "unreadItemsDescription": "You'll see counts for each notification."
+  "unreadItemsDescription": "You'll see counts for each notification.",
+  "taskDigestSectionTitle": "Scheduled Task Digest Emails",
+  "taskDigestSectionDescription": "Receive a personalised task summary email on your schedule. Admin and PM sections appear automatically based on your role.",
+  "dailyReminderTitle": "Daily Task Reminder",
+  "dailyReminderDescription": "Sent every day at your chosen time. Includes tasks due today, tomorrow, and overdue.",
+  "weeklyStartTitle": "Weekly Start Summary",
+  "weeklyStartDescription": "Sent every Monday. Covers your full week ahead with tasks due this week and overdue.",
+  "weeklyEndTitle": "Weekly End Summary",
+  "weeklyEndDescription": "Sent every Friday. A wrap-up of completed tasks, overdue, and a look at next week.",
+  "channelLabel": "Channel",
+  "timeLabel": "Send at",
+  "saveDigestPreferences": "Save Notification Preferences",
+  "digestPreferencesSaved": "Your notification preferences have been saved"
 }

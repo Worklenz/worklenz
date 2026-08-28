@@ -1,18 +1,16 @@
 import { Form, Input, Select, Typography } from '@/shared/antd-imports';
 import React from 'react';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
-import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
-import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
+import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   setDecimals,
   setLabel,
   setLabelPosition,
-} from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 
 const WithLabelTypeNumberColumn = () => {
-  //   get theme details from theme reducer
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
 
   // get initial data from task list custom column slice
@@ -27,31 +25,31 @@ const WithLabelTypeNumberColumn = () => {
 
   return (
     <>
-      <Form.Item name={'label'} label={<Typography.Text>Label</Typography.Text>}>
+      <Form.Item name={'label'} label={t('customColumns.fieldTypeForms.label')} style={{ width: 140, flexShrink: 0 }}>
         <Input value={label} onChange={e => dispatch(setLabel(e.currentTarget.value))} />
       </Form.Item>
 
-      <Form.Item name={'labelPosition'} label={<Typography.Text>Position</Typography.Text>}>
+      <Form.Item
+        name={'labelPosition'}
+        label={t('customColumns.fieldTypeForms.position')}
+        style={{ width: 120, flexShrink: 0 }}
+      >
         <Select
           options={[
-            {
-              key: 'left',
-              value: 'left',
-              label: 'Left',
-            },
-            { key: 'right', value: 'right', label: 'Right' },
+            { key: 'left', value: 'left', label: t('customColumns.fieldTypeForms.left') },
+            { key: 'right', value: 'right', label: t('customColumns.fieldTypeForms.right') },
           ]}
           defaultValue={labelPosition}
           value={labelPosition}
           onChange={value => dispatch(setLabelPosition(value))}
-          style={{
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
-            borderRadius: 4,
-          }}
         />
       </Form.Item>
 
-      <Form.Item name={'decimals'} label={<Typography.Text>Decimals</Typography.Text>}>
+      <Form.Item
+        name={'decimals'}
+        label={t('customColumns.fieldTypeForms.decimals')}
+        style={{ width: 120, flexShrink: 0 }}
+      >
         <Select
           options={[1, 2, 3, 4].map(item => ({
             key: item,
@@ -60,18 +58,10 @@ const WithLabelTypeNumberColumn = () => {
           }))}
           value={decimals}
           onChange={value => dispatch(setDecimals(value))}
-          style={{
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
-            borderRadius: 4,
-          }}
         />
       </Form.Item>
 
-      <Form.Item
-        name={'previewValue'}
-        label={<Typography.Text>Preview</Typography.Text>}
-        className="col-span-5"
-      >
+      <Form.Item name={'previewValue'} label={t('customColumns.fieldTypeForms.preview')}>
         <Typography.Text>
           {labelPosition === 'left'
             ? `${label} ${previewValue.toFixed(decimals)}`

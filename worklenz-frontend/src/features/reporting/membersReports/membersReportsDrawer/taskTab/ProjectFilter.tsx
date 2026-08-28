@@ -26,6 +26,7 @@ const ProjectFilter = ({ projectList, loading, onSelect }: ProjectFilterProps) =
         loading={loading}
         onChange={onSelect}
         allowClear
+        style={{ minWidth: 200 }}
       />
     </Flex>
   );

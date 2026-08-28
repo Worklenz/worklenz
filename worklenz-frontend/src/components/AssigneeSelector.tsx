@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
-import { PlusOutlined, UserAddOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, UserAddOutlined, theme } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
@@ -10,6 +10,8 @@ import { SocketEvents } from '@/shared/socket-events';
 import { useAuthService } from '@/hooks/useAuth';
 import { Avatar, Button, Checkbox } from '@/components';
 import { sortTeamMembers } from '@/utils/sort-team-members';
+import { projectsApiService } from '@/api/projects/projects.api.service';
+import { IProjectMemberViewModel } from '@/types/projectMember.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   setIsFromAssigner,
@@ -27,6 +29,60 @@ interface AssigneeSelectorProps {
   /** When provided, renders this element as the dropdown trigger instead of the default plus button */
   triggerElement?: React.ReactNode;
   disabled?: boolean;
+  /** Overrides the "active project" redux value used for the assign/unassign socket
+   * payload's project_id — required on pages where the task list spans multiple
+   * projects at once (e.g. Home > My Tasks), since there's no single active project
+   * there and falling back to whatever project the user last opened would silently
+   * assign against the wrong project. */
+  projectIdOverride?: string;
+  /** Included in the assign/unassign socket payload so the backend's team-members
+   * lookup in its ack response is scoped correctly. Optional — existing callers run
+   * inside a single-project view where this has never been needed. */
+  teamId?: string;
+  /** Hides the "Invite member" footer action — that flow opens a project-scoped
+   * invite drawer via the same "active project" redux state this component now lets
+   * you override, so it isn't reliable on cross-project pages. */
+  hideInviteFooter?: boolean;
+  /** Called with the socket ack payload after a successful assign/unassign, in
+   * addition to the existing updateEnhancedKanbanTaskAssignees dispatch — for
+   * callers whose task list isn't backed by the enhanced-kanban slice (e.g. an RTK
+   * Query list) to refresh themselves. */
+  onAssigneesChanged?: (data: unknown) => void;
+}
+
+const PROJECT_MEMBERS_PAGE_SIZE = 200;
+// Hard ceiling on pages fetched per open, purely as a safety net against an
+// unexpected server response (e.g. `total` never shrinking) looping forever —
+// no real project is expected to come anywhere near this many members.
+const MAX_PROJECT_MEMBERS_PAGES = 25;
+
+// The project-scoped members endpoint is paginated (see toPaginationOptions
+// in worklenz-controller-base.ts), so a single page can silently truncate the
+// list for projects with more members than one page holds. Walk every page
+// up front instead of assuming everything fits in the first one.
+async function fetchAllProjectMembers(projectId: string): Promise<IProjectMemberViewModel[]> {
+  const members: IProjectMemberViewModel[] = [];
+  let index = 1;
+  let total = Infinity;
+
+  while (members.length < total && index <= MAX_PROJECT_MEMBERS_PAGES) {
+    const res = await projectsApiService.getMembers(
+      projectId,
+      index,
+      PROJECT_MEMBERS_PAGE_SIZE,
+      null,
+      null,
+      null
+    );
+    const page = res.body?.data || [];
+    members.push(...page);
+    total = res.body?.total ?? members.length;
+
+    if (page.length < PROJECT_MEMBERS_PAGE_SIZE) break; // last page
+    index += 1;
+  }
+
+  return members;
 }
 
 /**
@@ -40,8 +96,13 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   isDarkMode = false,
   kanbanMode = false,
   triggerElement,
-  disabled
+  disabled,
+  projectIdOverride,
+  teamId,
+  hideInviteFooter = false,
+  onAssigneesChanged,
 }) => {
+  const { token } = theme.useToken();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
@@ -49,17 +110,43 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [openUpward, setOpenUpward] = useState(false);
   const [optimisticAssignees, setOptimisticAssignees] = useState<string[]>([]);
   const [pendingChanges, setPendingChanges] = useState<Set<string>>(new Set());
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Guards against a slower, now-stale fetch (e.g. quickly closing this
+  // dropdown and opening a different row's) overwriting the members list
+  // with the wrong project's response after the fact.
+  const membersRequestId = useRef(0);
 
-  const { projectId } = useSelector((state: RootState) => state.projectReducer);
+  const { projectId: activeProjectId } = useSelector((state: RootState) => state.projectReducer);
+  const projectId = projectIdOverride ?? activeProjectId;
   const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
   const { isAdmin } = useAuthStatus();
   const isProjectManager = useIsProjectManager();
+
+  // A persistent listener scoped to this task, matched by data.id, instead of
+  // a fresh socket.once() per click (see handleMemberToggle below) — with
+  // .once(), any two AssigneeSelector instances that both had a click in
+  // flight at the same time would BOTH fire on whichever ack arrived first,
+  // since Socket.IO invokes every listener registered for an event name.
+  // That misapplied one task's update to another and left the second task's
+  // real ack with no listener left to receive it.
+  useEffect(() => {
+    if (!socket || !task?.id) return;
+    const handleAssigneesUpdate = (data: { id?: string } & Record<string, unknown>) => {
+      if (data?.id !== task.id) return;
+      dispatch(updateEnhancedKanbanTaskAssignees(data));
+      onAssigneesChanged?.(data);
+    };
+    socket.on(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
+    return () => {
+      socket.off(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), handleAssigneesUpdate);
+    };
+  }, [socket, task?.id, dispatch, onAssigneesChanged]);
 
   const filteredMembers = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -167,14 +254,46 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     e.stopPropagation();
     if (disabled) return;
     if (!isOpen) {
-      // Prepare team members data when opening
       const assignees = task?.assignees?.map(assignee => assignee.team_member_id);
-      const membersData = (members?.data || []).map(member => ({
-        ...member,
-        selected: assignees?.includes(member.id),
-      }));
-      const sortedMembers = sortTeamMembers(membersData);
-      setTeamMembers({ data: sortedMembers });
+
+      if (projectIdOverride) {
+        // Cross-project caller (e.g. Home > My Tasks, where each row can
+        // belong to a different project) — scope the picker to this task's
+        // actual project members instead of the whole team roster. Showing
+        // the full team here would let a misclick assign someone with zero
+        // relationship to the project, and the backend's create_task_assignee
+        // silently grants them standing project membership as a side effect,
+        // not just a task assignment.
+        const requestId = ++membersRequestId.current;
+        setTeamMembers({ data: [] });
+        setIsLoadingMembers(true);
+        // Walks every page of the project's member list (see
+        // fetchAllProjectMembers above) instead of assuming a single page
+        // covers the whole project — a project with more members than one
+        // page holds would otherwise silently hide the rest from this picker.
+        fetchAllProjectMembers(projectIdOverride)
+          .then(allMembers => {
+            if (membersRequestId.current !== requestId) return; // stale response
+            const membersData = allMembers.map(pm => ({
+              id: pm.team_member_id,
+              name: pm.name,
+              email: pm.email,
+              avatar_url: pm.avatar_url,
+              pending_invitation: pm.pending_invitation,
+              selected: assignees?.includes(pm.team_member_id || ''),
+            }));
+            setTeamMembers({ data: sortTeamMembers(membersData) });
+          })
+          .finally(() => {
+            if (membersRequestId.current === requestId) setIsLoadingMembers(false);
+          });
+      } else {
+        const membersData = (members?.data || []).map(member => ({
+          ...member,
+          selected: assignees?.includes(member.id),
+        }));
+        setTeamMembers({ data: sortTeamMembers(membersData) });
+      }
 
       setIsOpen(true);
 
@@ -224,13 +343,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       reporter_id: currentSession.id,
       mode: checked ? 0 : 1,
       parent_task: task.parent_task_id,
+      team_id: teamId,
     };
 
-    // Emit socket event - the socket handler will update Redux with proper types
+    // Emit socket event — the persistent, task-scoped listener registered
+    // above (not a per-click .once()) picks up the ack and updates Redux.
     socket?.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), JSON.stringify(body));
-    socket?.once(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), (data: any) => {
-      dispatch(updateEnhancedKanbanTaskAssignees(data));
-    });
 
     // Remove from pending changes after a short delay (optimistic)
     setTimeout(() => {
@@ -276,13 +394,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             w-5 h-5 rounded-full border border-dashed flex items-center justify-center
             transition-colors duration-200
             ${
-              isOpen
-                ? isDarkMode
-                  ? 'border-blue-500 bg-blue-900/20 text-blue-400'
-                  : 'border-blue-500 bg-blue-50 text-blue-600'
-                : isDarkMode
-                  ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
-                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+              isDarkMode
+                ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
             }
           `}
         >
@@ -296,32 +410,32 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
             ref={dropdownRef}
             onClick={e => e.stopPropagation()}
             data-open-upward={openUpward}
-            className={`
-            fixed z-[99999] w-72 rounded-md shadow-lg border
-            ${isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'}
-          `}
+            className="fixed z-[99999] w-72 rounded-md shadow-lg border"
             style={{
               top: dropdownPosition.top,
               left: dropdownPosition.left,
+              // Uses the app's actual theme surface/border colors instead of
+              // Tailwind's default `gray` palette, which is a cool/blue-tinted
+              // gray that visibly clashed with the rest of the (antd-token-driven)
+              // UI, especially in dark mode.
+              background: token.colorBgElevated,
+              borderColor: token.colorBorderSecondary,
             }}
           >
             {/* Header */}
-            <div className={`p-2 border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`}>
+            <div className="p-2 border-b" style={{ borderColor: token.colorBorderSecondary }}>
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search members..."
-                className={`
-                w-full px-2 py-1 text-xs rounded border
-                ${
-                  isDarkMode
-                    ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400 focus:border-blue-500'
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
-                }
-                focus:outline-none focus:ring-1 focus:ring-blue-500
-              `}
+                className="w-full px-2 py-1 text-xs rounded border focus:outline-none focus:ring-1 focus:ring-blue-500"
+                style={{
+                  background: token.colorBgContainer,
+                  borderColor: token.colorBorderSecondary,
+                  color: token.colorText,
+                }}
               />
             </div>
 
@@ -331,21 +445,22 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                 filteredMembers.map(member => (
                   <div
                     key={member.id}
-                    className={`
-                    flex items-center gap-2 p-2 cursor-pointer transition-colors
-                    ${
-                      member.pending_invitation
-                        ? 'opacity-50 cursor-not-allowed'
-                        : isDarkMode
-                          ? 'hover:bg-gray-700'
-                          : 'hover:bg-gray-50'
-                    }
-                  `}
+                    className={`flex items-center gap-2 p-2 transition-colors ${
+                      member.pending_invitation ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
                     onClick={() => {
                       if (!member.pending_invitation) {
                         const isSelected = checkMemberSelected(member.id || '');
                         handleMemberToggle(member.id || '', !isSelected);
                       }
+                    }}
+                    onMouseEnter={e => {
+                      if (!member.pending_invitation) {
+                        (e.currentTarget as HTMLDivElement).style.background = token.colorBgTextHover;
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLDivElement).style.background = 'transparent';
                     }}
                     style={{
                       transition: 'all 0.15s ease-in-out',
@@ -405,14 +520,14 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
                 <div
                   className={`p-4 text-center ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}
                 >
-                  <div className="text-xs">No members found</div>
+                  <div className="text-xs">{isLoadingMembers ? 'Loading members…' : 'No members found'}</div>
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            {(isAdmin || isProjectManager) && (
-              <div className={`p-2 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+            {(isAdmin || isProjectManager) && !hideInviteFooter && (
+              <div className="p-2 border-t" style={{ borderColor: token.colorBorderSecondary }}>
                 <button
                   className={`
                   w-full flex items-center justify-center gap-1 px-2 py-1 text-xs rounded

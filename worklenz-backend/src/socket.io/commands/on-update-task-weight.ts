@@ -42,8 +42,8 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
     });
     
     if (projectId) {
-      // Emit the update to all clients in the project room
-      socket.emit(
+      // Broadcast the weight update to all clients in the project room
+      io.to(projectId).emit(
         SocketEvents.TASK_PROGRESS_UPDATED.toString(),
         {
           task_id,
@@ -62,8 +62,8 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
           [parent_task_id]
         );
         
-        // Emit the parent task's updated progress
-        socket.emit(
+        // Broadcast the parent task's updated progress to all clients
+        io.to(projectId).emit(
           SocketEvents.TASK_PROGRESS_UPDATED.toString(),
           {
             task_id: parent_task_id,
@@ -82,13 +82,13 @@ export async function on_update_task_weight(io: any, socket: Socket, data: strin
         if (grandparentId) {
           await TasksControllerV2.updateTaskProgress(grandparentId);
           
-          // Emit the grandparent's updated progress
+          // Broadcast the grandparent's updated progress to all clients
           const grandparentProgressRatio = await db.query(
             "SELECT get_task_complete_ratio($1) as ratio",
             [grandparentId]
           );
           
-          socket.emit(
+          io.to(projectId).emit(
             SocketEvents.TASK_PROGRESS_UPDATED.toString(),
             {
               task_id: grandparentId,

@@ -1,3 +1,39 @@
+/* Plain <button> reset — matches .navbar-icon-hover so the profile trigger
+   looks identical to the other top navbar icon buttons (no AntD Button
+   hover background / focus-visible outline). */
+.profile-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+  overflow: hidden;
+}
+
+/* Ensure the avatar image inside is pixel-perfect and fills the button */
+.profile-button .ant-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.profile-button .ant-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  border-radius: 50%;
+}
+
 .profile-button:hover .anticon {
   color: #1677ff;
 }

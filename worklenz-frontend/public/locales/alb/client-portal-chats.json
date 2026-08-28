@@ -58,5 +58,11 @@
   "emojiPicker": "Shto emoji",
   "noChatsWithClient": "Ende nuk ka biseda me këtë klient",
   "startConversationWithClient": "Filloni një bisedë për të diskutuar këtë kërkesë me klientin.",
-  "messageUnavailable": "Mesazhi nuk është i disponueshëm"
+  "messageUnavailable": "Mesazhi nuk është i disponueshëm",
+  "convertToTask": "Kthe në detyrë",
+  "convertToTaskEmpty": "Mesazhi nuk ka tekst për ta përdorur si emër detyre",
+  "convertToTaskError": "Dështoi krijimi i detyrës",
+  "convertToTaskSuccess": "Detyra u krijua nga mesazhi",
+  "noClientProject": "Ky klient nuk ka asnjë projekt të caktuar",
+  "createTask": "Krijo detyrë"
 }

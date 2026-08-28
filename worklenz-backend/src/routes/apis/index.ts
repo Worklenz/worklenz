@@ -59,19 +59,33 @@ import scheduleApiV2Router from "./gannt-apis/schedule-api-v2-router";
 import projectManagerApiRouter from "./project-managers-api-router";
 import surveyApiRouter from "./survey-api-router";
 
+import billingApiRouter from "../../ee/routes/apis/billing-api-router";
+import planTrialApiRouter from "../../ee/routes/apis/plan-trial-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
+import teamFilesApiRouter from "./team-files-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
+import projectFinanceApiRouter from "../../ee/routes/apis/project-finance-api-router";
+import projectRatecardApiRouter from "../../ee/routes/apis/project-ratecard-api-router";
+import ratecardApiRouter from "../../ee/routes/apis/ratecard-api-router";
 import holidayApiRouter from "./holiday-api-router";
 import userActivityLogsApiRouter from "./user-activity-logs-api-router";
 import supportApiRouter from "./support-api-router";
 import accountApiRouter from "./account-api-router";
+import planRecommendationApiRouter from "./plan-recommendation-api-router";
+import migrationApiRouter from "./migration-api-router";
+import subscriptionsApiRouter from "../../ee/routes/apis/subscriptions-api-router";
+import plansApiRouter from "./plans-api-router";
+import usersApiRouter from "./users-api-router";
+import clientPortalApiRouter from "../../ee/routes/apis/client-portal-api-router";
+import slackApiRouter from "../../ee/routes/apis/slack-api-router";
 import onboardingApiRouter from "./onboarding-api-router";
 import importsApiRouter from "./imports-api-router";
-
-import business from "../../business";
+import digestApiRouter from "./digest-api-router";
+import DigestPreferencesController from "../../controllers/digest-preferences-controller";
+import financeOverviewApiRouter from "./finance-overview-api-router";
 
 const api = express.Router();
 
@@ -125,6 +139,7 @@ api.use("/schedule-gannt-v2", scheduleApiV2Router);
 api.use("/project-managers", projectManagerApiRouter);
 api.use("/surveys", surveyApiRouter);
 api.use("/onboarding", onboardingApiRouter);
+api.use("/finance-overview", financeOverviewApiRouter);
 
 api.get("/overview/:id", safeControllerFunction(OverviewController.getById));
 api.get(
@@ -153,22 +168,43 @@ api.get(
   safeControllerFunction(LogsController.getActivityLog)
 );
 
+api.use("/billing", billingApiRouter);
+api.use("/plan-trials", planTrialApiRouter);
 api.use("/task-dependencies", taskDependenciesApiRouter);
 
 api.use("/task-recurring", taskRecurringApiRouter);
+api.use("/team-files", teamFilesApiRouter);
 
 api.use("/custom-columns", customColumnsApiRouter);
 api.use("/support", supportApiRouter);
 api.use("/account", accountApiRouter);
 
+api.use("/project-finance", projectFinanceApiRouter);
+
+api.use("/project-ratecard", projectRatecardApiRouter);
+
+api.use("/ratecard", ratecardApiRouter);
+
 api.use("/holidays", holidayApiRouter);
 
 api.use("/logs", userActivityLogsApiRouter);
 
+api.use("/plan-recommendations", planRecommendationApiRouter);
+
+// Migration and subscription management APIs
+api.use("/migration", migrationApiRouter);
+api.use("/subscriptions", subscriptionsApiRouter);
+api.use("/plans", plansApiRouter);
+api.use("/users", usersApiRouter);
 api.use("/imports", importsApiRouter);
 
-// Business-plan (EE) routes — billing, subscriptions, finance, rate cards, client portal, slack.
-// No-op in the open-core (CE) build.
-business.registerBusinessRoutes(api);
+// Client portal APIs
+api.use("/client-portal", clientPortalApiRouter);
+
+// Slack integration APIs
+api.use("/slack", slackApiRouter);
+
+// Digest preferences (auth required)
+api.use("/digest", digestApiRouter);
 
 export default api;

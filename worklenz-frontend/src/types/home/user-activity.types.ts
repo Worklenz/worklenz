@@ -19,6 +19,7 @@ export interface IUserTimeLoggedTask {
   total_time_logged_string: string;
   last_logged_at: string;
   logged_by_timer: boolean;
+  billable: boolean;
   project_color?: string;
   task_status?: string;
   status_color?: string;

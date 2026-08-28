@@ -33,7 +33,7 @@ END $$;
 
 -- Insert specific holidays for years 2025-2028 (from our JSON data)
 
--- 2025 holidays
+-- 2025 holidays (Poya days - verified dates)
 INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
 VALUES
     ('LK', 'Duruthu Full Moon Poya Day', 'Commemorates the first visit of Buddha to Sri Lanka', '2025-01-13', false),
@@ -55,6 +55,27 @@ VALUES
     ('LK', 'Unduvap Full Moon Poya Day', 'Commemorates the arrival of Sanghamitta Theri with the Sacred Bo sapling', '2025-12-04', false)
 ON CONFLICT (country_code, name, date) DO NOTHING;
 
--- NOTE: Data for 2026+ should be added only after verification from official sources
--- Use the holiday management script to generate templates for new years:
--- node update-sri-lankan-holidays.js --poya-template YYYY
+-- 2026 holidays (Poya days - Official dates from date-holidays library)
+INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+VALUES
+    ('LK', 'Duruthu Full Moon Poya Day', 'Commemorates the first visit of Buddha to Sri Lanka', '2026-01-03', false),
+    ('LK', 'Navam Full Moon Poya Day', 'Commemorates the appointment of Sariputta and Moggallana as Buddha''s chief disciples', '2026-02-01', false),
+    ('LK', 'Medin Full Moon Poya Day', 'Commemorates Buddha''s first visit to his father''s palace after enlightenment', '2026-03-02', false),
+    ('LK', 'Eid al-Fitr', 'Festival marking the end of Ramadan', '2026-03-21', false),
+    ('LK', 'Bak Full Moon Poya Day', 'Commemorates Buddha''s second visit to Sri Lanka', '2026-04-01', false),
+    ('LK', 'Good Friday', 'Christian commemoration of the crucifixion of Jesus Christ', '2026-04-03', false),
+    ('LK', 'Vesak Full Moon Poya Day', 'Most sacred day for Buddhists - commemorates birth, enlightenment and passing of Buddha', '2026-05-01', false),
+    ('LK', 'Day after Vesak Full Moon Poya Day', 'Additional day for Vesak celebrations', '2026-05-02', false),
+    ('LK', 'Eid al-Adha', 'Islamic festival of sacrifice', '2026-05-28', false),
+    ('LK', 'Poson Full Moon Poya Day', 'Commemorates the introduction of Buddhism to Sri Lanka by Arahat Mahinda', '2026-05-30', false),
+    ('LK', 'Esala Full Moon Poya Day', 'Commemorates Buddha''s first sermon and the arrival of the Sacred Tooth Relic', '2026-06-29', false),
+    ('LK', 'Nikini Full Moon Poya Day', 'Commemorates the first Buddhist council', '2026-08-27', false),
+    ('LK', 'Binara Full Moon Poya Day', 'Commemorates Buddha''s visit to heaven to preach to his mother', '2026-09-26', false),
+    ('LK', 'Vap Full Moon Poya Day', 'Marks the end of Buddhist Lent and Buddha''s return from heaven', '2026-10-25', false),
+    ('LK', 'Deepavali', 'Hindu Festival of Lights', '2026-11-08', false),
+    ('LK', 'Il Full Moon Poya Day', 'Commemorates Buddha''s ordination of sixty disciples', '2026-11-24', false),
+    ('LK', 'Unduvap Full Moon Poya Day', 'Commemorates the arrival of Sanghamitta Theri with the Sacred Bo sapling', '2026-12-23', false)
+ON CONFLICT (country_code, name, date) DO NOTHING;
+
+-- NOTE: Data for 2027+ should be kept in sync with the date-holidays library
+-- Verify dates regularly from official sources for accuracy

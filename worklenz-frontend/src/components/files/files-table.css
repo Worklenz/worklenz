@@ -1,0 +1,29 @@
+.files-table .ant-table {
+  font-size: 12px;
+}
+
+.files-table .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 8px !important;
+}
+
+.files-table .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 8px !important;
+}
+
+.files-table .ant-table-thead > tr > th .ant-typography,
+.files-table .ant-table-tbody > tr > td .ant-typography {
+  font-size: 12px !important;
+}
+
+@media (max-width: 900px) {
+  .files-table .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .files-table .ant-table {
+    min-width: 1000px;
+  }
+}

@@ -21,6 +21,9 @@ type MembersReportsState = {
   order: string;
   duration: string;
   dateRange: string;
+
+  // stat type filter for overview tasks stats drawer
+  selectedStatType: 'total_tasks' | 'assigned' | 'completed' | 'ongoing' | 'overdue' | null;
 };
 
 const initialState: MembersReportsState = {
@@ -42,6 +45,9 @@ const initialState: MembersReportsState = {
   order: 'asc',
   duration: durations[1].key,
   dateRange: '',
+
+  // stat type filter for overview tasks stats drawer
+  selectedStatType: null,
 };
 
 export const fetchMembersData = createAsyncThunk(
@@ -111,6 +117,12 @@ const membersReportsSlice = createSlice({
       state.index = action.payload.index;
       state.pageSize = action.payload.pageSize;
     },
+    setSelectedStatType: (state, action) => {
+      state.selectedStatType = action.payload;
+    },
+    clearSelectedStatType: (state) => {
+      state.selectedStatType = null;
+    },
   },
   extraReducers: builder => {
     builder
@@ -144,5 +156,7 @@ export const {
   setDuration,
   setDateRange,
   setPagination,
+  setSelectedStatType,
+  clearSelectedStatType,
 } = membersReportsSlice.actions;
 export default membersReportsSlice.reducer;

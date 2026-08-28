@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { getCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import config from '@/config/env';
-import { GanttTask, GanttPhase } from '../types/gantt-types';
+import { GanttTask, GanttPhase, GanttGroupingMode } from '../types/gantt-types';
 
 const rootUrl = '/roadmap';
 
@@ -32,6 +32,7 @@ export interface RoadmapTasksResponse {
     avatar_url?: string;
   }>;
   dependencies: Array<{
+    id: string;
     related_task_id: string;
     dependency_type: string;
     related_task_name: string;
@@ -122,21 +123,24 @@ export const roadmapApi = createApi({
     },
     credentials: 'include',
   }),
-  // Removed tagTypes since we're not using caching
+  // No tagTypes: cache invalidation is driven by explicit refetch() calls
+  // (mutations, socket events) in ProjectViewGantt rather than RTK Query tags.
   endpoints: builder => ({
-    getRoadmapTasks: builder.query<IServerResponse<RoadmapTasksResponse[]>, { projectId: string }>({
-      query: ({ projectId }) => {
+    getRoadmapTasks: builder.query<
+      IServerResponse<RoadmapTasksResponse[]>,
+      { projectId: string; groupBy?: GanttGroupingMode }
+    >({
+      query: ({ projectId, groupBy }) => {
         const params = new URLSearchParams({
           project_id: projectId,
+          group_by: groupBy || 'phase',
         });
         return `${rootUrl}/roadmap-tasks?${params.toString()}`;
       },
-      // Disable caching - always fetch fresh data for real-time gantt updates
-      keepUnusedDataFor: 0,
-      // Always refetch when component mounts or args change
-      refetchOnMountOrArgChange: true,
-      // Always refetch when window regains focus
-      refetchOnFocus: true,
+      // Data is kept for a short window so switching tabs and back (or a
+      // focus event) doesn't force a full refetch; mutations/socket events
+      // already trigger explicit refetch() calls from ProjectViewGantt.
+      keepUnusedDataFor: 60,
     }),
 
     getProjectPhases: builder.query<IServerResponse<ProjectPhaseResponse[]>, { projectId: string }>(
@@ -147,12 +151,9 @@ export const roadmapApi = createApi({
           });
           return `${rootUrl}/project-phases?${params.toString()}`;
         },
-        // Disable caching - always fetch fresh data for real-time gantt updates
-        keepUnusedDataFor: 0,
-        // Always refetch when component mounts or args change
-        refetchOnMountOrArgChange: true,
-        // Always refetch when window regains focus
-        refetchOnFocus: true,
+        // See getRoadmapTasks above — short cache window, explicit refetch()
+        // on mutations/socket events instead of forced refetch-on-focus/mount.
+        keepUnusedDataFor: 60,
       }
     ),
 
@@ -218,7 +219,8 @@ export const {
  */
 export const transformToGanttTasks = (
   apiTasks: RoadmapTasksResponse[],
-  apiPhases: ProjectPhaseResponse[]
+  apiPhases: ProjectPhaseResponse[],
+  projectColor?: string
 ): GanttTask[] => {
   // Group tasks by phase
   const tasksByPhase = new Map<string, RoadmapTasksResponse[]>();
@@ -288,7 +290,9 @@ export const transformToGanttTasks = (
       progress: 0,
       level: 0,
       expanded: true,
-      color: phase.color_code,
+      // Header title color matches this phase's own assigned color (the same swatch
+      // shown in the Phase Options list), same treatment as Status/Priority headers.
+      color: phase.color_code || undefined,
       type: 'milestone',
       is_milestone: true,
       phase_id: phase.id,
@@ -297,7 +301,9 @@ export const transformToGanttTasks = (
       doing_progress: phase.doing_progress,
       done_progress: phase.done_progress,
       total_tasks: phase.total_tasks,
-      children: phaseTasks.map(task => transformTask(task, 1)),
+      // No-date tasks are kept here (not filtered out) so they still show up under
+      // their phase — the timeline bar handles the missing-dates case on its own.
+      children: phaseTasks.map(task => transformTask(task, 1, projectColor)),
     };
 
     console.log(`Final phase milestone:`, {
@@ -319,11 +325,13 @@ export const transformToGanttTasks = (
     progress: 0,
     level: 0,
     expanded: true,
-    color: '#9CA3AF', // Gray color for unmapped phase
+    color: undefined,
     type: 'milestone',
     is_milestone: true,
     phase_id: null,
-    children: unassignedTasks.map(task => transformTask(task, 1)),
+    // No-date tasks are kept here (not filtered out) so they still show up under
+    // the unmapped phase — the timeline bar handles the missing-dates case on its own.
+    children: unassignedTasks.map(task => transformTask(task, 1, projectColor)),
   };
 
   result.push(unmappedPhase);
@@ -332,9 +340,205 @@ export const transformToGanttTasks = (
 };
 
 /**
+/**
+ * Transform API response to Gantt tasks grouped by status category (Todo, Doing, Done)
+ */
+export const transformToGanttTasksByStatus = (
+  apiTasks: RoadmapTasksResponse[],
+  statusCategories: Array<{ id: string; name: string; color_code?: string }>,
+  statuses?: Array<any>,
+  projectColor?: string,
+  themeMode: 'light' | 'dark' = 'light'
+): GanttTask[] => {
+  const projectStatuses = Array.isArray(statuses) ? statuses.filter(Boolean) : [];
+
+  const statusEntries = projectStatuses.length > 0
+    ? projectStatuses.map(status => ({
+        id: status.id || status.name,
+        name: status.name || 'Untitled status',
+        // Dark variant matches the same color_code/color_code_dark pairing the Task List
+        // view's status labels already use, so the header text stays legible in dark mode
+        // instead of falling back to the (often too-dark-for-dark-bg) light value.
+        color_code:
+          (themeMode === 'dark' ? status.color_code_dark : undefined) ||
+          status.color_code ||
+          status.color ||
+          undefined,
+        category_id: status.category_id,
+      }))
+    : statusCategories.map(category => ({
+        id: category.id,
+        name: category.name,
+        color_code: category.color_code,
+        category_id: category.id,
+      }));
+
+  const tasksByStatus = new Map<string, RoadmapTasksResponse[]>();
+  statusEntries.forEach(status => {
+    tasksByStatus.set(String(status.id), []);
+  });
+
+  apiTasks.forEach(task => {
+    const statusName = task.status_name?.trim().toLowerCase() || '';
+    const matchedStatus = projectStatuses.find(status => {
+      const candidateName = status.name?.trim().toLowerCase() || '';
+      return candidateName && candidateName === statusName;
+    });
+
+    const targetKey = matchedStatus?.id ? String(matchedStatus.id) : null;
+    if (targetKey && tasksByStatus.has(targetKey)) {
+      tasksByStatus.get(targetKey)!.push(task);
+      return;
+    }
+
+    if (!projectStatuses.length) {
+      const fallbackStatus = statusCategories.find(category => category.name?.trim().toLowerCase() === statusName);
+      if (fallbackStatus) {
+        const fallbackKey = String(fallbackStatus.id);
+        if (!tasksByStatus.has(fallbackKey)) {
+          tasksByStatus.set(fallbackKey, []);
+        }
+        tasksByStatus.get(fallbackKey)!.push(task);
+      }
+    }
+  });
+
+  const result: GanttTask[] = [];
+
+  statusEntries.forEach(status => {
+    const statusTasks = tasksByStatus.get(String(status.id)) || [];
+
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (statusTasks.length > 0) {
+      const taskDates = statusTasks
+        .filter(task => task.start_date && task.end_date)
+        .map(task => ({
+          start: new Date(task.start_date!),
+          end: new Date(task.end_date!),
+        }));
+
+      if (taskDates.length > 0) {
+        startDate = new Date(Math.min(...taskDates.map(d => d.start.getTime())));
+        endDate = new Date(Math.max(...taskDates.map(d => d.end.getTime())));
+      }
+    }
+
+    const statusGroup: GanttTask = {
+      id: `status-${status.id}`,
+      name: status.name,
+      start_date: startDate,
+      end_date: endDate,
+      progress: 0,
+      level: 0,
+      expanded: true,
+      color: status.color_code || undefined,
+      type: 'milestone',
+      is_milestone: true,
+      status: String(status.id),
+      // No-date tasks are kept here (not filtered out) so they still show up under
+      // their status — the timeline bar handles the missing-dates case on its own.
+      children: statusTasks.map(task => transformTask(task, 1, projectColor)),
+    };
+
+    result.push(statusGroup);
+  });
+
+  return result;
+};
+
+/**
+ * Transform API response to Gantt tasks grouped by priority
+ */
+export const transformToGanttTasksByPriority = (
+  apiTasks: RoadmapTasksResponse[],
+  projectColor?: string,
+  priorities?: Array<any>,
+  themeMode: 'light' | 'dark' = 'light'
+): GanttTask[] => {
+  // Fixed priority order: Critical, High, Medium, Low
+  const priorityOrder = [
+    { value: 3, name: 'Critical' },
+    { value: 2, name: 'High' },
+    { value: 1, name: 'Medium' },
+    { value: 0, name: 'Low' },
+  ];
+
+  // Group tasks by priority value
+  const tasksByPriority = new Map<number, RoadmapTasksResponse[]>();
+
+  apiTasks.forEach(task => {
+    const priorityValue = task.priority_value ?? 0;
+    if (!tasksByPriority.has(priorityValue)) {
+      tasksByPriority.set(priorityValue, []);
+    }
+    tasksByPriority.get(priorityValue)!.push(task);
+  });
+
+  const result: GanttTask[] = [];
+
+  // Create priority groups in fixed order
+  priorityOrder.forEach(priority => {
+    const priorityTasks = tasksByPriority.get(priority.value) || [];
+
+    // Calculate date range from tasks
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (priorityTasks.length > 0) {
+      const taskDates = priorityTasks
+        .filter(task => task.start_date && task.end_date)
+        .map(task => ({
+          start: new Date(task.start_date!),
+          end: new Date(task.end_date!),
+        }));
+
+      if (taskDates.length > 0) {
+        startDate = new Date(Math.min(...taskDates.map(d => d.start.getTime())));
+        endDate = new Date(Math.max(...taskDates.map(d => d.end.getTime())));
+      }
+    }
+
+    // Section header title color matches the same priority label color used in the Task
+    // List view (Critical/High/Medium/Low), picking the dark variant in dark mode so it
+    // stays legible instead of defaulting to plain text.
+    const matchedPriority = (priorities || []).find(
+      (p: any) => p?.name?.toLowerCase() === priority.name.toLowerCase()
+    );
+    const priorityColor =
+      (themeMode === 'dark' ? matchedPriority?.color_code_dark : undefined) ||
+      matchedPriority?.color_code ||
+      undefined;
+
+    // Create priority group
+    const priorityGroup: GanttTask = {
+      id: `priority-${priority.value}`,
+      name: priority.name,
+      start_date: startDate,
+      end_date: endDate,
+      progress: 0,
+      level: 0,
+      expanded: true,
+      color: priorityColor,
+      type: 'milestone',
+      is_milestone: true,
+      priority: priority.name,
+      // No-date tasks are kept here (not filtered out) so they still show up under
+      // their priority — the timeline bar handles the missing-dates case on its own.
+      children: priorityTasks.map(task => transformTask(task, 1, projectColor)),
+    };
+
+    result.push(priorityGroup);
+  });
+
+  return result;
+};
+
+/**
  * Helper function to transform individual task
  */
-const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask => {
+const transformTask = (task: RoadmapTasksResponse, level: number = 0, projectColor?: string): GanttTask => {
   const taskPhaseId = task.phases.length > 0 ? task.phases[0].phase_id : null;
 
   return {
@@ -361,7 +565,7 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0): GanttTask
     })),
     level,
     expanded: true,
-    color: task.status_color || task.priority_color,
+    color: projectColor || task.status_color || task.priority_color,
     assignees: task.assignees.map(a => a.assignee_name),
     priority: task.priority_name,
     status: task.status_name,

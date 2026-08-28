@@ -4,6 +4,7 @@ import { NotificationsDataModel } from '@/types/notifications/notifications.type
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { notificationsApiService } from '@/api/notifications/notifications.api.service';
+import { toArray } from '@/utils/to-array';
 
 type NotificationState = {
   notificationType: 'Read' | 'Unread';
@@ -39,14 +40,14 @@ const initialState: NotificationState = {
 
 export const fetchInvitations = createAsyncThunk('notification/fetchInvitations', async () => {
   const res = await teamsApiService.getInvitations();
-  return res.body;
+  return res.body ?? [];
 });
 
 export const fetchNotifications = createAsyncThunk(
   'notification/fetchNotifications',
   async (filter: string) => {
     const res = await notificationsApiService.getNotifications(filter);
-    return res.body;
+    return res.body ?? [];
   }
 );
 
@@ -76,12 +77,13 @@ const notificationSlice = createSlice({
     });
     builder.addCase(fetchInvitations.fulfilled, (state, action) => {
       state.loadingInvitations = false;
-      state.invitations = action.payload;
-      state.invitationsCount = action.payload.length;
+      const invitations = toArray(action.payload);
+      state.invitations = invitations;
+      state.invitationsCount = invitations.length;
 
       // Reset and rebuild dataset
       state._dataset = [];
-      action.payload.forEach(invitation => {
+      invitations.forEach(invitation => {
         state._dataset.push({
           type: 'invitation',
           data: invitation,
@@ -97,14 +99,15 @@ const notificationSlice = createSlice({
     });
     builder.addCase(fetchNotifications.fulfilled, (state, action) => {
       state.loading = false;
-      state.notifications = action.payload;
-      state.notificationsCount = action.payload.length;
+      const notifications = toArray(action.payload);
+      state.notifications = notifications;
+      state.notificationsCount = notifications.length;
 
       // Reset and rebuild dataset for notifications
       // Remove previous notifications from dataset
       state._dataset = state._dataset.filter(item => item.type === 'invitation');
 
-      action.payload.forEach(notification => {
+      notifications.forEach(notification => {
         state._dataset.push({
           type: 'notification',
           data: notification,

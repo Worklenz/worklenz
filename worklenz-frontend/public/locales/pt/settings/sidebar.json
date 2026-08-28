@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Configurações",
   "searchSettings": "Pesquisar configurações...",
   "account-personal": "Conta e pessoal",
   "workspace-setup": "Configuração do espaço de trabalho",
@@ -34,12 +35,18 @@
   "appearance-search": "tema modo escuro modo claro interface aparência",
   "ratecard": "Cartão de tarifas",
   "ratecard-search": "financeiro faturamento preços tarifas custo cartão de tarifas",
+  "organization-currency": "Moeda",
+  "organization-currency-search": "moeda câmbio taxa de conversão finançaas organização base",
   "integrations": "Integrações",
   "integrations-search": "aplicativos conexões slack api integrações ferramentas",
+  "configuration": "Configuração",
+  "configuration-search": "configuração definições configuração geral configuração da organização",
   "account-deletion": "Excluir Conta",
   "account-deletion-search": "excluir conta remover perfil zona de perigo encerrar conta",
   "team-hierarchy": "Hierarquia da Equipe",
   "team-hierarchy-search": "hierarquia organograma estrutura gerentes árvore organizacional",
   "mobile-app": "App Móvel",
-  "mobile-app-search": "ios android celular móvel baixar código qr app store google play"
+  "mobile-app-search": "ios android celular móvel baixar código qr app store google play",
+  "configuration": "Configuração",
+  "configuration-search": "configuração ajustes workspace organização gerenciamento de configuração"
 }

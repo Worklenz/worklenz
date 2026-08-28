@@ -15,7 +15,7 @@ import { IO } from "../../shared/io";
 import {
   getCurrentProjectsCount,
   getFreePlanSettings,
-} from "../../shared/licensing-utils";
+} from "../../ee/shared/paddle-utils";
 import OnboardingController from "../onboarding-controller";
 
 export default class ProjectTemplatesController extends ProjectTemplatesControllerBase {
@@ -24,7 +24,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name FROM pt_project_templates ORDER BY name;`;
+    const q = `
+      SELECT
+        pt.id,
+        pt.name,
+        pt.image_url,
+        (SELECT COUNT(*) FROM pt_tasks WHERE template_id = pt.id)::int AS task_count,
+        (SELECT COUNT(*) FROM pt_phases WHERE template_id = pt.id)::int AS phase_count
+      FROM pt_project_templates pt
+      ORDER BY pt.name;
+    `;
     const result = await db.query(q, []);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -36,10 +45,26 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
   ): Promise<IWorkLenzResponse> {
     const { searchQuery } = this.toPaginationOptions(req.query, "name");
 
-    const q = `SELECT id, name, created_at, FALSE AS selected FROM custom_project_templates WHERE team_id = $1 ${searchQuery} ORDER BY name;`;
+    const q = `SELECT id, name, color_code, created_at, FALSE AS selected FROM custom_project_templates WHERE team_id = $1 ${searchQuery} ORDER BY name;`;
     const result = await db.query(q, [req.user?.team_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async getCustomTemplateById(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const data = await ProjectTemplatesController.getCustomTemplateData(id);
+    if (!data) {
+      return res
+        .status(200)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
 
   @HandleExceptions()
   public static async deleteCustomTemplate(
@@ -172,22 +197,35 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       }
     }
 
-    const { template_id } = req.body;
+    const { template_id, project_name, color_code } = req.body;
     let project_id: string | null = null;
 
     const data = await this.getTemplateData(template_id);
     if (data) {
+      const safeProjectName =
+        typeof project_name === "string" ? project_name.trim() : "";
+      const safeColorCode =
+        typeof color_code === "string" ? color_code.trim() : "";
+
+      // Check for duplicate project name before creating
+      const nameToUse = safeProjectName || data.name;
+      if (await this.findDuplicateProjectName(nameToUse, req.user?.team_id)) {
+        return res.status(200).send(
+          new ServerResponse(false, null, `A project with the name "${nameToUse}" already exists. Please choose a different name.`)
+        );
+      }
+
       // Store the nested arrays separately
       const tasks = data.tasks;
       const phases = data.phases;
       const labels = data.labels;
-      
+
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
-        name: data.name,
+        name: safeProjectName || data.name,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
-        color_code: data.color_code,
+        color_code: safeColorCode || data.color_code,
         image_url: data.image_url,
         team_id: req.user?.team_id || null,
         user_id: req.user?.id || null,
@@ -324,24 +362,40 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
       }
     }
 
-    const { template_id } = req.body;
+    const { template_id, project_name, color_code } = req.body;
     let project_id: string | null = null;
 
     const data = await this.getCustomTemplateData(template_id);
-    
+
     if (data) {
+      const safeProjectName =
+        typeof project_name === "string" ? project_name.trim() : "";
+      const safeColorCode =
+        typeof color_code === "string" ? color_code.trim() : "";
+
+      // Check for duplicate project name before creating
+      const nameToUse = safeProjectName || data.name;
+      if (await this.findDuplicateProjectName(nameToUse, req.user?.team_id)) {
+        return res.status(200).send(
+          new ServerResponse(false, null, `A project with the name "${nameToUse}" already exists. Please choose a different name.`)
+        );
+      }
+
       // Store the nested arrays separately
       const tasks = data.tasks;
       const phases = data.phases;
       const status = data.status;
       const labels = data.labels;
-      
+
+      // If no project name provided, use the template name
+      const projectName = nameToUse;
+
       // Create a clean project object with only the fields needed for create_project
       const projectData: any = {
-        name: data.name,
+        name: projectName,
         notes: data.description ? data.description.substring(0, 500) : null, // truncate to DB limit of 500 chars
         phase_label: data.phase_label,
-        color_code: data.color_code,
+        color_code: safeColorCode || data.color_code,
         team_id: req.user?.team_id || null,
         user_id: req.user?.id || null,
         folder_id: null,
@@ -353,7 +407,7 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
         man_days: 0,
         hours_per_day: 8
       };
-      
+
       project_id = await this.importTemplate(projectData);
 
       await this.deleteDefaultStatusForProject(project_id as string);

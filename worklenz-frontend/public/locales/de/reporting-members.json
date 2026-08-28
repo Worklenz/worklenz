@@ -9,9 +9,13 @@
   "customRangeText": "Benutzerdefinierter Bereich",
   "startDateInputPlaceholder": "Startdatum",
   "EndDateInputPlaceholder": "Enddatum",
+  "quickRanges": "Schnellbereiche",
+  "readyToApplyCustomRange": "Benutzerdefinierter Bereich bereit zum Anwenden",
+  "selectStartEndDates": "Start- und Enddatum auswählen",
   "filterButton": "Filtern",
 
   "membersTitle": "Mitglieder",
+  "membersHeaderTitle": "Mitglieder ({{count}})",
   "includeArchivedButton": "Archivierte Projekte einschließen",
   "exportButton": "Exportieren",
   "excelButton": "Excel",
@@ -31,5 +35,6 @@
 
   "todoText": "Zu erledigen",
   "doingText": "Tun",
-  "doneText": "Erledigt"
+  "doneText": "Erledigt",
+  "customDateRangeInvalidError": "Das Enddatum darf nicht vor dem Startdatum liegen. Bitte wählen Sie einen gültigen Zeitraum."
 }

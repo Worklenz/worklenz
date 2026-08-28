@@ -1,5 +1,7 @@
 {
   "title": "Benachrichtigungseinstellungen",
+  "generalSectionTitle": "Allgemeine Benachrichtigungen",
+  "generalSectionDescription": "Wird sofort beim Umschalten angewendet — kein separates Speichern erforderlich.",
   "emailTitle": "E-Mail-Benachrichtigungen erhalten",
   "emailDescription": "Dies beinhaltet neue Aufgaben-Zuweisungen",
   "dailyDigestTitle": "Tägliche Übersicht erhalten",
@@ -7,5 +9,17 @@
   "popupTitle": "Popup-Benachrichtigungen auf meinem Computer anzeigen, wenn Worklenz geöffnet ist",
   "popupDescription": "Popup-Benachrichtigungen können von Ihrem Browser blockiert werden. Ändern Sie Ihre Browser-Einstellungen, um diese zu erlauben.",
   "unreadItemsTitle": "Anzahl ungelesener Elemente anzeigen",
-  "unreadItemsDescription": "Sie sehen Zähler für jede Benachrichtigung."
+  "unreadItemsDescription": "Sie sehen Zähler für jede Benachrichtigung.",
+  "taskDigestSectionTitle": "Geplante Aufgaben-Digest-E-Mails",
+  "taskDigestSectionDescription": "Erhalten Sie eine personalisierte Aufgabenzusammenfassung nach Ihrem Zeitplan. Admin- und PM-Bereiche erscheinen automatisch basierend auf Ihrer Rolle.",
+  "dailyReminderTitle": "Tägliche Aufgabenerinnerung",
+  "dailyReminderDescription": "Täglich zu Ihrer gewählten Zeit gesendet. Enthält heute fällige, morgen fällige und überfällige Aufgaben.",
+  "weeklyStartTitle": "Wöchentliche Startzusammenfassung",
+  "weeklyStartDescription": "Jeden Montag gesendet. Zeigt Ihre gesamte Woche mit dieser Woche fälligen und überfälligen Aufgaben.",
+  "weeklyEndTitle": "Wöchentliche Endzusammenfassung",
+  "weeklyEndDescription": "Jeden Freitag gesendet. Rückblick auf abgeschlossene Aufgaben, Überfällige und Ausblick auf nächste Woche.",
+  "channelLabel": "Kanal",
+  "timeLabel": "Senden um",
+  "saveDigestPreferences": "Benachrichtigungseinstellungen speichern",
+  "digestPreferencesSaved": "Ihre Benachrichtigungseinstellungen wurden gespeichert"
 }

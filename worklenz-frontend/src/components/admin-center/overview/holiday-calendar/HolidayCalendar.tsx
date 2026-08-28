@@ -15,7 +15,7 @@ import {
   Popconfirm,
   message,
 } from '@/shared/antd-imports';
-import { PlusOutlined, DeleteOutlined } from '@/shared/antd-imports';
+import { PlusOutlined, DeleteOutlined, LeftOutlined, RightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import dayjs, { Dayjs } from 'dayjs';
 import { holidayApiService } from '@/api/holiday/holiday.api.service';
@@ -140,6 +140,7 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
   const [isPopulatingHolidays, setIsPopulatingHolidays] = useState(false);
   const [hasAttemptedPopulation, setHasAttemptedPopulation] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // ---------------------------------------------------------------------------
   // fetchHolidayTypes
@@ -464,6 +465,21 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
     }
   };
 
+  const handleMonthYearChange = (date: Dayjs | null) => {
+    if (date) {
+      setCurrentDate(date);
+      setDatePickerOpen(false);
+    }
+  };
+
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => prev.subtract(1, 'month'));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(prev => prev.add(1, 'month'));
+  };
+
   // Shared dropdown options used in both Create and Edit modals.
   // Each Option value is always a real DB UUID (or a temp placeholder if the
   // API has not yet responded — the isTempId guard in handleCreate/Update
@@ -543,6 +559,32 @@ const HolidayCalendar: React.FC<HolidayCalendarProps> = ({ themeMode, workingDay
       </div>
 
       <div className={`calendar-container holiday-calendar ${themeMode}`}>
+        {/* Month navigation + DatePicker for Month/Year Selection */}
+        <div className="calendar-header-container">
+          <Button
+            type="text"
+            icon={<LeftOutlined />}
+            onClick={handlePrevMonth}
+            aria-label={t('previousMonth') || 'Previous month'}
+          />
+          <DatePicker
+            picker="month"
+            value={currentDate}
+            onChange={handleMonthYearChange}
+            open={datePickerOpen}
+            onOpenChange={setDatePickerOpen}
+            format="MMM YYYY"
+            style={{ width: '120px' }}
+            getPopupContainer={(trigger) => trigger.parentElement || document.body}
+          />
+          <Button
+            type="text"
+            icon={<RightOutlined />}
+            onClick={handleNextMonth}
+            aria-label={t('nextMonth') || 'Next month'}
+          />
+        </div>
+
         <Calendar
           value={currentDate}
           onPanelChange={onPanelChange}

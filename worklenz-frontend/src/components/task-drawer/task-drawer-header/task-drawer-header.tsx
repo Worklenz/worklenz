@@ -43,13 +43,15 @@ import {
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerNavigation from '../task-drawer-navigation/task-drawer-navigation';
 import logger from '@/utils/errorLogger';
+import homePageApi from '@/api/home-page/home-page.api.service';
 
 type TaskDrawerHeaderProps = {
   t: TFunction;
   canCreateTask?: boolean;
+  isGuest?: boolean;
 };
 
-const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
+const TaskDrawerHeader = ({ t, canCreateTask, isGuest = false }: TaskDrawerHeaderProps) => {
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
@@ -77,10 +79,10 @@ const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
   }, [selectedTaskId, dispatch, navigationContext]);
 
   const handleCopyTaskLink = async () => {
-    if (!selectedTaskId || !taskFormViewModel?.task?.project_id) return;
+    if (!selectedTaskId) return;
 
     try {
-      const taskLink = `${window.location.origin}/worklenz/projects/${taskFormViewModel.task.project_id}?tab=tasks-list&pinned_tab=tasks-list&task=${selectedTaskId}`;
+      const taskLink = `${window.location.origin}/worklenz/t/${selectedTaskId}`;
 
       await navigator.clipboard.writeText(taskLink);
 
@@ -135,6 +137,9 @@ const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
         dispatch(deleteKanbanTask(selectedTaskId));
       }
 
+      // Invalidate home page cache to refresh the task list
+      dispatch(homePageApi.util.invalidateTags(['myTasks', 'taskCounts']));
+
       dispatch(setShowTaskDrawer(false));
 
       setTimeout(() => {
@@ -177,7 +182,7 @@ const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
         </div>
 
         {/* Delete Task item */}
-        {canCreateTask && (
+        {canCreateTask && !isGuest && (
           <div
             className="task-drawer-dropdown-item task-drawer-dropdown-item--danger"
             onClick={() => setShowDeleteConfirm(true)}
@@ -188,7 +193,7 @@ const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
         )}
 
         {/* Confirmation */}
-        {canCreateTask && showDeleteConfirm && (
+        {canCreateTask && !isGuest && showDeleteConfirm && (
           <div
             style={{
               padding: '8px 12px',
@@ -315,6 +320,7 @@ const TaskDrawerHeader = ({ t, canCreateTask }: TaskDrawerHeaderProps) => {
             ({} as ITaskViewModel)
           }
           teamId={currentSession?.team_id ?? ''}
+          disabled={isGuest}
         />
 
         <Dropdown

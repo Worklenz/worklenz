@@ -92,41 +92,6 @@ export class SocketService {
     return () => this.socket?.off('user_status_changed', callback);
   }
 
-  // Room Methods
-  public joinRoom(roomId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket) {
-        reject(new Error('Socket not initialized'));
-        return;
-      }
-
-      this.socket.emit('join_room', { roomId }, (response: { success: boolean }) => {
-        if (response.success) {
-          resolve();
-        } else {
-          reject(new Error('Failed to join room'));
-        }
-      });
-    });
-  }
-
-  public leaveRoom(roomId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket) {
-        reject(new Error('Socket not initialized'));
-        return;
-      }
-
-      this.socket.emit('leave_room', { roomId }, (response: { success: boolean }) => {
-        if (response.success) {
-          resolve();
-        } else {
-          reject(new Error('Failed to leave room'));
-        }
-      });
-    });
-  }
-
   // Custom Event Handler
   public on<T>(event: string, callback: (data: T) => void): () => void {
     if (!this.socket) throw new Error('Socket not initialized');

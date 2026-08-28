@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Moneda de la Organizacion",
+  "pageSubtitle": "Establece la moneda base de tu organizacion. Los totales financieros se convertiran a esta moneda usando tipos de cambio en tiempo real.",
+  "save": "Guardar",
+  "saveChanges": "Guardar cambios",
+  "adminOnly": "Solo los propietarios y administradores pueden cambiar esta configuracion.",
+  "successMessage": "Moneda base establecida en {{currency}}",
+  "errorMessage": "Error al guardar la configuracion de moneda",
+  "selectAriaLabel": "Moneda base de la organizacion",
+  "ratesCardTitle": "Tipos de cambio en vivo - 1 {{currency}} =",
+  "ratesUpdated": "Actualizado: {{time}}",
+  "refreshRatesTooltip": "Actualizar tasas",
+  "refreshRatesAriaLabel": "Actualizar tasas de cambio",
+  "noRateData": "No hay datos de tasas disponibles."
+}

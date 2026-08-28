@@ -1,7 +1,7 @@
 import { Card, Badge, Button } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { SlackIntegration } from '@/components/settings/integrations/SlackIntegration';
+import { SlackIntegration } from '@/ee/components/settings/integrations/SlackIntegration';
 import {
   MSTeamsIcon,
   SlackIcon,

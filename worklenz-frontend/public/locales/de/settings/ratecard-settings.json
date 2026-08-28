@@ -13,7 +13,6 @@
   "createError": "Rate Card konnte nicht erstellt werden",
   "deleteSuccess": "Rate Card erfolgreich gelöscht",
   "deleteError": "Rate Card konnte nicht gelöscht werden",
-
   "jobTitleColumn": "Berufsbezeichnung",
   "ratePerHourColumn": "Stundensatz",
   "ratePerDayColumn": "Tagessatz",
@@ -51,5 +50,6 @@
   "cancelButton": "Abbrechen",
   "discardButton": "Verwerfen",
   "manDaysCalculationMessage": "Organisation verwendet Manntage-Berechnung ({{hours}}h/Tag). Die obigen Sätze stellen Tagessätze dar.",
-  "hourlyCalculationMessage": "Organisation verwendet Stunden-Berechnung. Die obigen Sätze stellen Stundensätze dar."
+  "hourlyCalculationMessage": "Organisation verwendet Stunden-Berechnung. Die obigen Sätze stellen Stundensätze dar.",
+  "createSuccess": "Tarifkarte erfolgreich erstellt"
 }

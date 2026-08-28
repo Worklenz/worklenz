@@ -2,6 +2,9 @@
   "keyColumn": "Chave",
   "taskColumn": "Tarefa",
   "descriptionColumn": "Descrição",
+  "descriptionSaveOffline": "Está offline — a descrição não foi guardada. Reconecte-se e tente novamente.",
+  "descriptionSaveTimeout": "Guardar a descrição excedeu o tempo limite. Tente novamente.",
+  "descriptionSaveFailed": "Falha ao guardar a descrição. Tente novamente.",
   "progressColumn": "Progresso",
   "membersColumn": "Membros",
   "assigneesColumn": "Atribuídos",
@@ -31,24 +34,19 @@
   "todoSelectorText": "A Fazer",
   "doingSelectorText": "Fazendo",
   "doneSelectorText": "Feito",
-
   "lowSelectorText": "Baixo",
   "mediumSelectorText": "Médio",
   "highSelectorText": "Alto",
-
   "selectText": "Selecionar",
   "labelsSelectorInputTip": "Pressione enter para criar!",
-
   "addTaskText": "Adicionar Tarefa",
   "addSubTaskText": "+ Adicionar Subtarefa",
   "addSubTaskInputPlaceholder": "Digite o nome da subtarefa e pressione Enter para salvar",
   "noTasksInGroup": "Nenhuma tarefa neste grupo",
   "dropTaskHere": "Soltar tarefa aqui",
   "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
-
   "openButton": "Abrir",
   "okButton": "Ok",
-
   "noLabelsFound": "Nenhuma etiqueta encontrada",
   "searchInputPlaceholder": "Buscar ou criar",
   "assigneeSelectorInviteButton": "Convide um novo membro por e-mail",
@@ -56,9 +54,7 @@
   "searchLabelsPlaceholder": "Buscar etiquetas...",
   "createLabelButton": "Criar \"{{name}}\"",
   "manageLabelsPath": "Configurações → Etiquetas",
-
   "pendingInvitation": "Convite Pendente",
-
   "contextMenu": {
     "duplicateTask": "Tarefa duplicada",
     "assignToMe": "Atribuir a mim",
@@ -79,21 +75,18 @@
   "clearStartDate": "Limpar data de início",
   "dueDatePlaceholder": "Data de vencimento",
   "startDatePlaceholder": "Data de início",
-
   "exampleTasks": {
     "prefix": "ex.",
     "task1": "Definir o escopo e os objetivos do projeto",
     "task2": "Revisar e alinhar com as partes interessadas",
     "task3": "Agendar reunião de kickoff"
   },
-
   "emptyStates": {
     "noTaskGroups": "Nenhum grupo de tarefas encontrado",
     "noTaskGroupsDescription": "As tarefas aparecerão aqui quando forem criadas ou quando filtros forem aplicados.",
     "errorPrefix": "Erro:",
     "dragTaskFallback": "Tarefa"
   },
-
   "customColumns": {
     "addCustomColumn": "Adicionar uma coluna personalizada",
     "customColumnHeader": "Coluna Personalizada",
@@ -115,7 +108,13 @@
       "noMembersFound": "Nenhum membro encontrado",
       "inviteMember": "Convidar membro"
     },
-
+    "limitPopover": {
+      "title": "Limite de Campos Personalizados Atingido",
+      "body": "Você usou todos os {{limit}} campos personalizados disponíveis no seu plano. Faça upgrade para adicionar campos personalizados ilimitados aos seus projetos.",
+      "appSumoTitle": "Atualização de Plano Necessária",
+      "appSumoBody": "Adicionar campos personalizados além do limite do seu plano atual requer um plano Business.",
+      "cta": "Fazer Upgrade Agora"
+    },
     "modal": {
       "addFieldTitle": "Adicionar campo",
       "editFieldTitle": "Editar campo",
@@ -136,7 +135,6 @@
       "createErrorMessage": "Falha ao criar a coluna personalizada",
       "updateErrorMessage": "Falha ao atualizar a coluna personalizada"
     },
-
     "fieldTypes": {
       "people": "Pessoas",
       "text": "Texto",
@@ -147,9 +145,39 @@
       "labels": "Etiquetas",
       "key": "Chave",
       "formula": "Fórmula"
+    },
+    "fieldTypeForms": {
+      "numberType": "Tipo de número",
+      "numberTypeOptions": {
+        "unformatted": "Sem formatação",
+        "percentage": "Porcentagem",
+        "withLabel": "Com rótulo",
+        "formatted": "Formatado"
+      },
+      "decimals": "Casas decimais",
+      "preview": "Pré-visualização",
+      "label": "Rótulo",
+      "position": "Posição",
+      "left": "Esquerda",
+      "right": "Direita",
+      "firstColumn": "Primeira coluna",
+      "secondColumn": "Segunda coluna",
+      "expression": "Expressão",
+      "selectFirstColumn": "Selecionar primeira coluna",
+      "selectSecondColumn": "Selecionar segunda coluna",
+      "expressionOptions": {
+        "add": "+ Adicionar",
+        "subtract": "- Subtrair",
+        "divide": "/ Dividir",
+        "multiply": "x Multiplicar"
+      },
+      "selections": "Seleções",
+      "addSelection": "+ Adicionar uma seleção",
+      "labels": "Rótulos",
+      "addLabel": "+ Adicionar um rótulo",
+      "keyLabelPlaceholder": "ex: MK"
     }
   },
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} subtarefa",
@@ -163,7 +191,6 @@
       "recurring": "Tarefa recorrente"
     }
   },
-
   "timer": {
     "conflictTitle": "Temporizador Já Em Execução",
     "conflictMessage": "Você tem um temporizador executando para \"{{taskName}}\" no projeto \"{{projectName}}\". Gostaria de parar esse temporizador e iniciar um novo para esta tarefa?",

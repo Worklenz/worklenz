@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Configuração",
+  "configurationDescription": "Faça a gestão das definições de toda a organização que se aplicam a todos os projetos.",
+  "businessPlanRequired": "Plano Business necessário",
+  "businessPlanRequiredDescription": "As definições de restrição de tarefas ao nível da organização estão disponíveis nos planos Business e Enterprise.",
+  "upgradePlan": "Atualizar plano",
+  "taskManagementSection": "Gestão de tarefas",
+  "restrictTaskCreation": "Restringir a atribuição de tarefas a administradores e líderes de equipa",
+  "restrictTaskCreationTooltip": "Quando ativado, apenas administradores e líderes de equipa podem criar e atribuir tarefas em todos os projetos. Os membros da equipa só veem as tarefas que lhes foram atribuídas. As definições ao nível do projeto sobrepõem-se a esta definição ao nível da organização.",
+  "restrictTaskCreationNote": "Nota: as definições ao nível do projeto têm prioridade sobre esta definição ao nível da organização. As alterações entram em vigor imediatamente.",
+  "timeTrackingSection": "Registo de tempo",
+  "limitTimelogBackdating": "Limitar quanto tempo atrás se pode registar",
+  "limitTimelogBackdatingTooltip": "Quando ativado, os membros não podem criar um registo de tempo com data anterior ao número de dias permitido. Aplica-se a todos, incluindo proprietários e administradores. Os cronómetros em curso e os registos importados não são afetados.",
+  "timelogBackdateLimitDays": "Dias máximos que um registo de tempo pode ser retroagido",
+  "timelogBackdateLimitNote": "Nota: os registos de tempo existentes nunca são alterados. Editar um registo já antigo continua possível desde que a sua data não seja alterada.",
+  "days": "dias"
+}

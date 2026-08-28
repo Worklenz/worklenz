@@ -33,13 +33,14 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import TasksControllerBase from "./tasks-controller-base";
 import { insertToActivityLogs } from "../services/activity-logs/activity-logs.service";
+import { syncTaskDescriptionLinks } from "../shared/url-extractor";
 import {
   IActivityLog,
   IActivityLogAttributeTypes,
   IActivityLogChangeType,
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
-import business from "../business";
+import { isRestrictedFromProPlanFeatures } from "../ee/middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -239,7 +240,7 @@ export default class TasksController extends TasksControllerBase {
 
     // Check if user is trying to set billable and if they're restricted
     if (req.body.billable === true) {
-      const isRestricted = await business.featureGate.isRestrictedFromProFeatures(teamId);
+      const isRestricted = await isRestrictedFromProPlanFeatures(teamId);
 
       if (isRestricted) {
         return res
@@ -367,6 +368,11 @@ export default class TasksController extends TasksControllerBase {
 
     if (task) {
       this.sendAssignmentNotifications(task, userId);
+    }
+
+    if ("description" in req.body) {
+      const teamId = req.user?.team_id as string;
+      void syncTaskDescriptionLinks(req.body.project_id, req.body.id, teamId, req.body.description || "", userId);
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -573,6 +579,49 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
+  public static async quickSearch(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const queryParams: any[] = [req.user?.team_id || null, req.user?.id || null];
+    let paramOffset = 3;
+
+    let filterByMember = "";
+    if (!req.user?.owner && !req.user?.is_admin) {
+      queryParams.push(req.user?.id || null);
+      filterByMember = ` AND is_member_of_project(p.id, $${paramOffset}, $1) `;
+      paramOffset++;
+    }
+
+    const { searchQuery, searchParams, size, offset } = this.toPaginationOptions(
+      req.query,
+      ["t.name", "(p.key || '-' || t.task_no::text)"],
+      false,
+      paramOffset,
+    );
+    queryParams.push(...searchParams);
+    paramOffset += searchParams.length;
+
+    const q = `
+      SELECT t.id, t.name, t.task_no,
+             p.id AS project_id, p.name AS project_name, p.key AS project_key
+      FROM tasks t
+             INNER JOIN projects p ON p.id = t.project_id
+      WHERE p.team_id = $1
+        AND t.archived IS FALSE
+        AND NOT EXISTS (SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $2)
+        ${filterByMember} ${searchQuery}
+      ORDER BY t.updated_at DESC
+      LIMIT $${paramOffset} OFFSET $${paramOffset + 1};
+    `;
+    queryParams.push(size, offset);
+
+    const result = await db.query(q, queryParams);
+
+    return res.status(200).send(new ServerResponse(true, { total: result.rowCount, data: result.rows }));
+  }
+
+  @HandleExceptions()
   public static async getSelectedTasksByProject(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
@@ -734,6 +783,7 @@ export default class TasksController extends TasksControllerBase {
       });
 
       task.names = WorklenzControllerBase.createTagList(task.assignees);
+      task.assignee_names = task.names;
 
       const totalMinutes = task.total_minutes;
       const hours = Math.floor(totalMinutes / 60);
@@ -1096,14 +1146,31 @@ export default class TasksController extends TasksControllerBase {
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
     const q = `
-      SELECT project_members.team_member_id AS id,
+      SELECT DISTINCT project_members.team_member_id AS id,
              tmiv.name,
              tmiv.email,
              tmiv.avatar_url
       FROM project_members
              LEFT JOIN team_member_info_view tmiv ON project_members.team_member_id = tmiv.team_member_id
       WHERE project_id = $1
-        AND EXISTS(SELECT 1 FROM tasks_assignees WHERE project_member_id = project_members.id);
+        AND EXISTS(SELECT 1 FROM tasks_assignees WHERE project_member_id = project_members.id)
+        AND NOT EXISTS(
+          -- Exclude members who are ONLY guests (only have GUEST access, no other access)
+          SELECT 1
+          FROM project_members pm_guest
+          WHERE pm_guest.team_member_id = project_members.team_member_id
+            AND pm_guest.project_access_level_id = (
+                SELECT id FROM project_access_levels WHERE key = 'GUEST'
+            )
+            AND NOT EXISTS(
+                SELECT 1
+                FROM project_members pm_non_guest
+                WHERE pm_non_guest.team_member_id = project_members.team_member_id
+                  AND pm_non_guest.project_access_level_id != (
+                      SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                  )
+            )
+        );
     `;
     const result = await db.query(q, [req.params.id]);
 

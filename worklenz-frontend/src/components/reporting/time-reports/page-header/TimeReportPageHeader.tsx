@@ -39,7 +39,7 @@ const TimeReportPageHeader: React.FC = () => {
   }, [dispatch, isMembersTimeSheet]);
 
   return (
-    <div style={{ display: 'flex', gap: '8px' }}>
+    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', rowGap: '8px' }}>
       <Team />
       <Categories />
       <Projects />

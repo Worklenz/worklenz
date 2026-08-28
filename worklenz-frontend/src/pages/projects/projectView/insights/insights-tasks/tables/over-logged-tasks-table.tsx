@@ -7,13 +7,20 @@ import { IInsightTasks } from '@/types/project/projectInsights.types';
 import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useTranslation } from 'react-i18next';
 
-const OverLoggedTasksTable = () => {
-  const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
+const OverLoggedTasksTable = ({
+  projectId,
+  includeArchivedTasks,
+}: {
+  projectId: string;
+  includeArchivedTasks: boolean;
+}) => {
 
   const [overLoggedTaskList, setOverLoggedTaskList] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const getOverLoggedTasks = async () => {
     try {
@@ -40,12 +47,12 @@ const OverLoggedTasksTable = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('common.name', { defaultValue: 'Name' }),
       render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('common.status', { defaultValue: 'Status' }),
       render: (record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -72,7 +79,7 @@ const OverLoggedTasksTable = () => {
     },
     {
       key: 'members',
-      title: 'Members',
+      title: t('tasksTable.members', { defaultValue: 'Members' }),
       render: (record: IInsightTasks) =>
         record.status_name ? (
           <Avatar.Group>
@@ -103,7 +110,7 @@ const OverLoggedTasksTable = () => {
     },
     {
       key: 'overLoggedTime',
-      title: 'Over Logged Time',
+      title: t('tasksTable.overLoggedTime', { defaultValue: 'Over Logged Time' }),
       render: (_, record: IInsightTasks) => (
         <Typography.Text>{record.overlogged_time_string}</Typography.Text>
       ),

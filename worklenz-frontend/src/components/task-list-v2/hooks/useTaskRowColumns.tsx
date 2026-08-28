@@ -77,6 +77,10 @@ interface UseTaskRowColumnsProps {
 
   // Task creation/assignment restriction
   canCreateTask?: boolean;
+
+  // Guest access restriction
+  isGuest?: boolean;
+
 }
 
 export const useTaskRowColumns = ({
@@ -107,6 +111,7 @@ export const useTaskRowColumns = ({
   listeners,
   depth = 0,
   canCreateTask = true,
+  isGuest = false,
 }: UseTaskRowColumnsProps) => {
   const dispatch = useAppDispatch();
   const groups = useAppSelector(selectGroups);
@@ -129,6 +134,8 @@ export const useTaskRowColumns = ({
     dispatch(setShowTaskDrawer(true));
     dispatch(fetchTaskDrawer({ taskId: task.id, projectId }));
   }, [dispatch, groups, task.id, projectId]);
+
+  const isReadOnly = isGuest;
 
   const renderColumn = useCallback(
     (
@@ -182,6 +189,7 @@ export const useTaskRowColumns = ({
                 width={width}
                 isSelected={isSelected}
                 onCheckboxChange={handleCheckboxChange}
+                disabled={isGuest}
               />
             );
 
@@ -207,6 +215,7 @@ export const useTaskRowColumns = ({
                 onCancelEdit={handleCancelEdit}
                 depth={depth}
                 canCreateTask={canCreateTask}
+                isGuest={isGuest}
               />
             );
 
@@ -218,6 +227,7 @@ export const useTaskRowColumns = ({
                 taskId={task.id || ''}
                 parentTaskId={task.parent_task_id || null}
                 onOpenDrawer={openDrawerForTask}
+                disabled={isReadOnly}
               />
             );
 
@@ -228,6 +238,7 @@ export const useTaskRowColumns = ({
                 task={task}
                 projectId={projectId}
                 isDarkMode={isDarkMode}
+                disabled={isReadOnly}
               />
             );
 
@@ -239,6 +250,7 @@ export const useTaskRowColumns = ({
                 convertedTask={convertedTask}
                 isDarkMode={isDarkMode}
                 canCreateTask={canCreateTask}
+                isGuest={isReadOnly}
               />
             );
 
@@ -249,6 +261,7 @@ export const useTaskRowColumns = ({
                 task={task}
                 projectId={projectId}
                 isDarkMode={isDarkMode}
+                disabled={isReadOnly}
               />
             );
 
@@ -263,6 +276,7 @@ export const useTaskRowColumns = ({
                 isDarkMode={isDarkMode}
                 activeDatePicker={activeDatePicker}
                 onActiveDatePickerChange={setActiveDatePicker}
+                disabled={!canCreateTask || isReadOnly}
               />
             );
 
@@ -277,6 +291,7 @@ export const useTaskRowColumns = ({
                 isDarkMode={isDarkMode}
                 activeDatePicker={activeDatePicker}
                 onActiveDatePickerChange={setActiveDatePicker}
+                disabled={!canCreateTask || isReadOnly}
               />
             );
 
@@ -286,7 +301,7 @@ export const useTaskRowColumns = ({
                 className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
                 style={{ width }}
               >
-                <TaskListDueTimeCell task={task} />
+                <TaskListDueTimeCell task={task} disabled={!canCreateTask || isReadOnly} />
               </div>
             );
 
@@ -301,6 +316,7 @@ export const useTaskRowColumns = ({
                 labelsAdapter={labelsAdapter}
                 isDarkMode={isDarkMode}
                 columnId={columnId}
+                disabled={isReadOnly}
               />
             );
 
@@ -311,16 +327,22 @@ export const useTaskRowColumns = ({
                 task={task}
                 projectId={projectId}
                 isDarkMode={isDarkMode}
+                disabled={isReadOnly}
               />
             );
 
           case 'timeTracking':
             return (
-              <TimeTrackingColumn width={width} taskId={task.id || ''} isDarkMode={isDarkMode} />
+              <TimeTrackingColumn 
+                width={width} 
+                taskId={task.id || ''} 
+                isDarkMode={isDarkMode}
+                disabled={isReadOnly}
+              />
             );
 
           case 'estimation':
-            return <EstimationColumn width={width} task={task} />;
+            return <EstimationColumn width={width} task={task} disabled={!canCreateTask || isReadOnly} />;
 
           case 'completedDate':
             return <DateColumn width={width} formattedDate={formattedDates.completed} />;
@@ -347,6 +369,7 @@ export const useTaskRowColumns = ({
                   width={width}
                   column={column}
                   task={task}
+                  disabled={isReadOnly}
                   updateTaskCustomColumnValue={updateTaskCustomColumnValue}
                 />
               );
@@ -407,6 +430,8 @@ export const useTaskRowColumns = ({
       listeners,
       depth,
       canCreateTask,
+      isGuest,
+      isReadOnly,
       openDrawerForTask,
     ]
   );

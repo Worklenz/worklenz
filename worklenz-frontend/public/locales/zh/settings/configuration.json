@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "配置",
+  "configurationDescription": "管理适用于所有项目的组织级设置。",
+  "businessPlanRequired": "需要商业版套餐",
+  "businessPlanRequiredDescription": "组织级任务限制设置仅在商业版和企业版套餐中提供。",
+  "upgradePlan": "升级套餐",
+  "taskManagementSection": "任务管理",
+  "restrictTaskCreation": "仅允许管理员和团队负责人分配任务",
+  "restrictTaskCreationTooltip": "启用后，只有管理员和团队负责人可以在所有项目中创建和分配任务。团队成员只能查看分配给自己的任务。项目级设置会覆盖此组织级设置。",
+  "restrictTaskCreationNote": "注意：项目级设置的优先级高于此组织级设置。更改会立即生效。",
+  "timeTrackingSection": "工时跟踪",
+  "limitTimelogBackdating": "限制工时可补录的最长天数",
+  "limitTimelogBackdatingTooltip": "启用后，成员无法创建早于允许天数的工时记录。该限制适用于所有人，包括所有者和管理员。正在运行的计时器和导入的记录不受影响。",
+  "timelogBackdateLimitDays": "工时记录最多可补录的天数",
+  "timelogBackdateLimitNote": "注意：已有的工时记录不会被修改。只要不更改日期，仍可编辑较早的记录。",
+  "days": "天"
+}

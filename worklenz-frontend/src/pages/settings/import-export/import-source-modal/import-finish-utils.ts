@@ -14,11 +14,19 @@ interface CreateAndAttachTargetProjectArgs {
   ) => Promise<void>;
   t: (key: string, defaultValue: string) => string;
   importOptionOverrides?: { importMembers?: boolean; importAttachments?: boolean };
+  createTargetProject?: () => Promise<string>;
+  targetProjectId?: string;
+  onTargetProjectCreated?: (projectId: string) => void;
 }
 
 interface EnsureFieldMappingsArgs {
   jobId: string;
-  fieldMappingRows: Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>;
+  fieldMappingRows: Array<{
+    source_field: string;
+    target_field: string;
+    required?: boolean;
+    include?: boolean;
+  }>;
   hierarchyRows: Array<{ source_level: string; target_level: string; position?: number }>;
   runAutoMapping: (suppressToast?: boolean) => Promise<void>;
 }
@@ -47,16 +55,31 @@ export const createAndAttachTargetProject = async ({
   persistImportOptions,
   t,
   importOptionOverrides,
+  createTargetProject,
+  targetProjectId: existingTargetProjectId,
+  onTargetProjectCreated,
 }: CreateAndAttachTargetProjectArgs): Promise<string> => {
-  const statusId = await ensureDefaultProjectStatusId();
-  const projectPayload = buildProjectPayload(spaceName.trim(), statusId);
+  let projectId: string;
 
-  const projectResp = await projectsApiService.createProject(projectPayload);
-  const projectId = projectResp?.body?.id;
-  if (!projectResp?.done || !projectId) {
-    throw new Error(
-      projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
-    );
+  if (existingTargetProjectId) {
+    // A retry can happen after the project was created but before ingestion completed.
+    // Keep using that project instead of creating a duplicate.
+    projectId = existingTargetProjectId;
+  } else if (createTargetProject) {
+    projectId = await createTargetProject();
+    onTargetProjectCreated?.(projectId);
+  } else {
+    const statusId = await ensureDefaultProjectStatusId();
+    const projectPayload = buildProjectPayload(spaceName.trim(), statusId);
+    const projectResp = await projectsApiService.createProject(projectPayload);
+    const createdProjectId = projectResp?.body?.id;
+    if (!projectResp?.done || !createdProjectId) {
+      throw new Error(
+        projectResp?.message || t('importStep.projectCreateError', 'Failed to create project')
+      );
+    }
+    projectId = createdProjectId;
+    onTargetProjectCreated?.(projectId);
   }
 
   await updateImportTarget(jobId, {
@@ -67,6 +90,13 @@ export const createAndAttachTargetProject = async ({
   await persistImportOptions(jobId, importOptionOverrides);
 
   return projectId;
+};
+
+export const deleteImportTargetProject = async (projectId: string): Promise<void> => {
+  const response = await projectsApiService.deleteProject(projectId);
+  if (!response.done) {
+    throw new Error(response.message || 'Failed to roll back the import project');
+  }
 };
 
 export const ensureFieldMappingsAreSaved = async ({
@@ -83,4 +113,3 @@ export const ensureFieldMappingsAreSaved = async ({
     await saveImportFields(jobId, fieldMappingRows as any);
   }
 };
-

@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Configuration",
+  "configurationDescription": "Manage organization-wide settings that apply across all projects.",
+  "businessPlanRequired": "Business Plan Required",
+  "businessPlanRequiredDescription": "Organization-level task restriction settings are available on Business and Enterprise plans.",
+  "upgradePlan": "Upgrade Plan",
+  "taskManagementSection": "Task Management",
+  "restrictTaskCreation": "Restrict task assignment to Admins and Team Leads",
+  "restrictTaskCreationTooltip": "When enabled, only Admins and Team Leads can create and assign tasks across all projects. Team Members can only view tasks assigned to them. Project-level settings override this organization-level setting.",
+  "restrictTaskCreationNote": "Note: Project-level settings take priority over this organization-level setting. Changes take effect immediately.",
+  "timeTrackingSection": "Time Tracking",
+  "limitTimelogBackdating": "Limit how far back time can be logged",
+  "limitTimelogBackdatingTooltip": "When enabled, members cannot create a time log dated earlier than the allowed number of days. Applies to everyone, including Owners and Admins. Running timers and imported logs are unaffected.",
+  "timelogBackdateLimitDays": "Maximum days a time log can be backdated",
+  "timelogBackdateLimitNote": "Note: Existing time logs are never altered. Editing an already-old log stays possible as long as its date is not changed.",
+  "days": "days"
+}

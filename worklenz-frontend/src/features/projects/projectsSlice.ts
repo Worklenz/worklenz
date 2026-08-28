@@ -8,7 +8,10 @@ import { IProjectManager } from '@/types/project/projectManager.types';
 import { IGroupedProjectsViewModel } from '@/types/project/groupedProjectsViewModel.types';
 import { ProjectGroupBy } from '@/types/project/project.types';
 
-interface ProjectState {
+const DEFAULT_PROJECT_SORT_FIELD = 'name';
+const DEFAULT_PROJECT_SORT_ORDER = 'ascend';
+
+export interface ProjectState {
   projects: {
     data: IProjectViewModel[];
     total: number;
@@ -26,6 +29,7 @@ interface ProjectState {
   filteredCategories: string[];
   filteredStatuses: string[];
   filteredPriorities: string[]; // FIX #1: was missing from interface
+  filteredClients: string[];
   requestParams: {
     index: number;
     size: number;
@@ -36,6 +40,7 @@ interface ProjectState {
     statuses: string | null;
     categories: string | null;
     priorities: string | null; // FIX #2: was missing from interface
+    clients: string | null;
   };
   groupedRequestParams: {
     index: number;
@@ -48,10 +53,16 @@ interface ProjectState {
     statuses: string | null;
     categories: string | null;
     priorities: string | null; // FIX #2: was missing from interface
+    clients: string | null;
   };
   projectManagers: IProjectManager[];
   projectManagersLoading: boolean;
 }
+
+/** Query params for the flat project list. */
+export type ProjectRequestParams = ProjectState['requestParams'];
+/** Query params for the grouped project list. */
+export type GroupedProjectRequestParams = ProjectState['groupedRequestParams'];
 
 interface UpdateProjectMemberDefaultViewPayload {
   projectId: string;
@@ -76,28 +87,31 @@ const initialState: ProjectState = {
   filteredCategories: [],
   filteredStatuses: [],
   filteredPriorities: [], // FIX #1: now properly typed
+  filteredClients: [],
   requestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: '',
-    order: '',
+    field: DEFAULT_PROJECT_SORT_FIELD,
+    order: DEFAULT_PROJECT_SORT_ORDER,
     search: '',
     filter: 0,
     statuses: null,
     categories: null,
     priorities: null,
+    clients: null,
   },
   groupedRequestParams: {
     index: 1,
     size: DEFAULT_PAGE_SIZE,
-    field: 'priority',
-    order: 'descend',
+    field: DEFAULT_PROJECT_SORT_FIELD,
+    order: DEFAULT_PROJECT_SORT_ORDER,
     search: '',
     groupBy: ProjectGroupBy.PRIORITY,
     filter: 0,
     statuses: null,
     categories: null,
     priorities: null, // FIX #2: now properly typed
+    clients: null,
   },
   projectManagers: [],
   projectManagersLoading: false,
@@ -116,6 +130,7 @@ export const fetchProjects = createAsyncThunk(
       statuses: string | null;
       categories: string | null;
       priorities: string | null;
+      clients: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -129,7 +144,8 @@ export const fetchProjects = createAsyncThunk(
         params.filter,
         params.statuses,
         params.categories,
-        params.priorities
+        params.priorities,
+        params.clients
       );
       return projectsResponse.body;
     } catch (error) {
@@ -156,6 +172,7 @@ export const fetchGroupedProjects = createAsyncThunk(
       statuses: string | null;
       categories: string | null;
       priorities: string | null;
+      clients: string | null;
     },
     { rejectWithValue }
   ) => {
@@ -170,7 +187,8 @@ export const fetchGroupedProjects = createAsyncThunk(
         params.filter,
         params.statuses,
         params.categories,
-        params.priorities
+        params.priorities,
+        params.clients
       );
       return groupedProjectsResponse.body;
     } catch (error) {
@@ -263,10 +281,17 @@ const projectSlice = createSlice({
     toggleSaveAsTemplateDrawer: state => {
       state.isSaveAsTemplateDrawerOpen = !state.isSaveAsTemplateDrawerOpen;
     },
+    openSaveAsTemplateDrawer: state => {
+      state.isSaveAsTemplateDrawerOpen = true;
+    },
+    closeSaveAsTemplateDrawer: state => {
+      state.isSaveAsTemplateDrawerOpen = false;
+    },
+
     createProject: (state, action: PayloadAction<IProjectViewModel>) => {
       state.creatingProject = true;
     },
-    deleteProject: (state, action: PayloadAction<string>) => {},
+    deleteProject: (state, action: PayloadAction<string>) => { },
     setCategories: (state, action: PayloadAction<IProjectCategory[]>) => {
       state.categories = action.payload;
     },
@@ -278,6 +303,9 @@ const projectSlice = createSlice({
     },
     setFilteredPriorities: (state, action: PayloadAction<string[]>) => {
       state.filteredPriorities = action.payload;
+    },
+    setFilteredClients: (state, action: PayloadAction<string[]>) => {
+      state.filteredClients = action.payload;
     },
     // FIX #2: priorities is now properly typed in the interface so it
     // will be included in the spread and never silently dropped
@@ -379,8 +407,11 @@ export const {
   setFilteredCategories,
   setFilteredStatuses,
   setFilteredPriorities,
+  setFilteredClients,
   setRequestParams,
   setGroupedRequestParams,
   setProjectMemberDefaultView,
+  openSaveAsTemplateDrawer,
+  closeSaveAsTemplateDrawer,
 } = projectSlice.actions;
 export default projectSlice.reducer;

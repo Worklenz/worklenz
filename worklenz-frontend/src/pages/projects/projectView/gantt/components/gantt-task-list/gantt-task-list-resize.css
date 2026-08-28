@@ -1,0 +1,94 @@
+/* Resizable left panel styles */
+.gantt-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  padding: 0 1px;
+  background-color: transparent;
+  cursor: col-resize;
+  transition: background-color 0.2s ease;
+  z-index: 30;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gantt-resize-handle:hover {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.gantt-resize-handle::before {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 40px;
+  background-color: #d9d9d9;
+  border-radius: 1.5px;
+  transition: background-color 0.2s ease;
+  cursor: col-resize;
+}
+
+.gantt-resize-handle:hover::before {
+  background-color: #1890ff;
+}
+
+.gantt-resize-handle.dragging::before {
+  background-color: #1890ff;
+}
+
+/* Dark mode support */
+.dark .gantt-resize-handle::before {
+  background-color: #595959;
+}
+
+.dark .gantt-resize-handle:hover::before,
+.dark .gantt-resize-handle.dragging::before {
+  background-color: #177ddc;
+}
+
+.gantt-left-panel {
+  position: relative;
+  flex-shrink: 0;
+  /* Background/border-right color are set inline from theme tokens
+     (ProjectViewGantt.tsx) so this panel always matches the timeline panel's
+     background exactly, in both light and dark mode. */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  transition: width 0.1s ease-out;
+}
+
+/* Remove transition during drag for smooth performance */
+.gantt-left-panel.resizing {
+  transition: none;
+}
+
+/* Smooth resizing with cursor change */
+.gantt-scroll-container.resizing {
+  user-select: none;
+}
+
+.gantt-scroll-container.resizing * {
+  cursor: col-resize !important;
+}
+
+/* While actively dragging the divider, the cursor sweeps across whatever task rows the
+   panel grows/shrinks past — without this, their :hover styles (e.g. the trailing "Add
+   Task" row's rollover background) flicker on as the row boundary catches up to the
+   cursor mid-drag, purely because :hover is a function of cursor position, not user
+   intent. Disabling pointer events for the duration of the drag stops any hover state
+   from being triggered at all; nothing here needs to keep receiving mouse events, since
+   the actual drag tracking (mousemove/mouseup) is bound to document, not to any row. */
+.gantt-scroll-container.resizing * {
+  pointer-events: none;
+}
+
+/* Ensure divider stays on top during drag */
+.gantt-resize-handle.active {
+  z-index: 50;
+}
+

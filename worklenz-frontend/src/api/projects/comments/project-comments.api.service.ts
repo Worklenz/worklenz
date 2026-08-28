@@ -9,6 +9,10 @@ import {
 } from '@/types/project/projectComments.types';
 import { toQueryString } from '@/utils/toQueryString';
 import { IProjectUpdateCommentViewModel } from '@/types/project/project.types';
+import {
+  IInboxProjectConversation,
+  IPinnedProjectComment,
+} from '@/types/home/inbox.types';
 
 const rootUrl = `${API_BASE_URL}/project-comments`;
 const reactionsUrl = `${API_BASE_URL}/project-comment-reactions`;
@@ -25,6 +29,19 @@ export const projectCommentsApiService = {
     return response.data;
   },
 
+  uploadCommentAttachment: async (
+    projectId: string,
+    fileData: string,
+    fileName: string,
+    fileType: string
+  ): Promise<IServerResponse<{ name: string; url: string; key: string; type?: string; size?: number }>> => {
+    const url = `${rootUrl}/attachment/upload`;
+    const response = await apiClient.post<
+      IServerResponse<{ name: string; url: string; key: string; type?: string; size?: number }>
+    >(url, { project_id: projectId, fileData, fileName, fileType });
+    return response.data;
+  },
+
   getMentionMembers: async (
     projectId: string,
     index: number,
@@ -33,15 +50,49 @@ export const projectCommentsApiService = {
     order: string | null,
     search: string | null
   ): Promise<IServerResponse<IMentionMemberViewModel[]>> => {
-    const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}/project-members/${projectId}${toQueryString({ index, size, field, order, search: s })}`;
+    const url = `${rootUrl}/project-members/${projectId}${toQueryString({ index, size, field, order, search: search || '' })}`;
     const response = await apiClient.get<IServerResponse<IMentionMemberViewModel[]>>(`${url}`);
     return response.data;
   },
 
   getCountByProjectId: async (projectId: string): Promise<IServerResponse<number>> => {
-    const url = `${rootUrl}/${projectId}/comments/count`;
+    const url = `${rootUrl}/comments-count/${projectId}`;
     const response = await apiClient.get<IServerResponse<number>>(`${url}`);
+    return response.data;
+  },
+
+  // Inbox
+  getInboxConversations: async (): Promise<IServerResponse<IInboxProjectConversation[]>> => {
+    const url = `${rootUrl}/inbox/conversations`;
+    const response = await apiClient.get<IServerResponse<IInboxProjectConversation[]>>(`${url}`);
+    return response.data;
+  },
+
+  markConversationRead: async (projectId: string): Promise<IServerResponse<any>> => {
+    const url = `${rootUrl}/read/${projectId}`;
+    const response = await apiClient.put<IServerResponse<any>>(`${url}`, {});
+    return response.data;
+  },
+
+  // Pinned messages
+  setPinned: async (
+    commentId: string,
+    projectId: string,
+    pinned: boolean
+  ): Promise<IServerResponse<any>> => {
+    const url = `${rootUrl}/pin/${commentId}`;
+    const response = await apiClient.put<IServerResponse<any>>(`${url}`, {
+      project_id: projectId,
+      pinned,
+    });
+    return response.data;
+  },
+
+  getPinnedByProjectId: async (
+    projectId: string
+  ): Promise<IServerResponse<IPinnedProjectComment[]>> => {
+    const url = `${rootUrl}/pinned/${projectId}`;
+    const response = await apiClient.get<IServerResponse<IPinnedProjectComment[]>>(`${url}`);
     return response.data;
   },
 

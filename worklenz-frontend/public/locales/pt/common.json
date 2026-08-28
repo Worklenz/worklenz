@@ -110,12 +110,13 @@
   "customFieldLimitReached": "Limite de campos personalizados atingido. Faça upgrade para adicionar mais.",
   "projectFinanceUpgradeBody": "Acompanhe orçamentos, custos e tempo faturável em seus projetos. Requer o plano Business.",
   "upgrade-now": "Atualizar agora",
-  "seeSpends": "Ver gastos",
+  "seeSpends": "Rastrear Gastos",
   "closePopover": "Fechar popover",
   "or-switch-team": "OR SWITCH TEAM",
   "trial-expired": "Trial Expired",
   "switch-to-another-team": "Switch to another team",
   "need-help": "Need help?",
   "contact-support": "Contact support",
-  "view-pricing": "view pricing"
+  "view-pricing": "view pricing",
+  "justNow": "Agora mesmo"
 }

@@ -5,6 +5,9 @@
     "clickNavigateTimeline": "Kliko për të naviguar te detyra në rrjedhën kohore",
     "clickTimelineSetDates": "Kliko në rrjedhën kohore për të vendosur datat për këtë detyrë",
     "clickTimelineAddDates": "Kliko rrjedhën kohore për të shtuar data",
+    "setTaskDate": "Cakto Datat e Detyrës",
+    "setTaskDateHint": "Kliko në rrjedhën kohore për të vendosur një interval {{duration}} ditësh për këtë detyrë",
+    "addTask": "Shto Detyrë",
     "resizeStartDate": "Ndrysho datën e fillimit",
     "resizeEndDate": "Ndrysho datën e përfundimit",
     "dragToMove": "Tërhiq për të lëvizur detyrën",
@@ -14,11 +17,53 @@
     "phaseTitle": "Faza: {{name}} - {{startDate}} deri {{endDate}}",
     "taskTitle": "{{name}} - {{startDate}} deri {{endDate}}",
     "datesUpdatedSuccessfully": "Datat e detyrës u përditësuan me sukses",
-    "failedToUpdateDates": "Dështoi përditësimi i datave të detyrës"
+    "failedToUpdateDates": "Dështoi përditësimi i datave të detyrës",
+    "addSubtask": "Shto Nën-detyrë",
+    "addTaskInputPlaceholder": "Shkruaj emrin e detyrës dhe shtyp Enter për të ruajtur",
+    "writeTaskName": "Shkruaj emrin e detyrës",
+    "writeSubtaskName": "Shkruaj emrin e nën-detyrës",
+    "expandSubtasks": "Zgjero nën-detyrat",
+    "collapseSubtasks": "Mblidh nën-detyrat",
+    "finishToStartDependency": "Dependencë Përfundim-Nisje",
+    "startToFinishDependency": "Dependencë Nisje-Përfundim",
+    "dependencyType": "Lloji i dependencës",
+    "removeDependency": "Hiq",
+    "circularDependencyError": "Kjo do të krijonte një dependencë rrethor.",
+    "dependencyCreatedSuccessfully": "Dependenca u krijua me sukses.",
+    "dependencyRemovedSuccessfully": "Dependenca u hoq me sukses.",
+    "failedToCreateDependency": "Dështoi krijimi i dependencës.",
+    "failedToRemoveDependency": "Dështoi heqja e dependencës.",
+    "taskAddedToRoadmap": "Detyra u shtua në rrugën e projektit për 5 ditët e ardhshme.",
+    "failedToAddTaskToRoadmap": "Dështoi shtimi i detyrës në rrugën e projektit.",
+    "unscheduledTaskNotFound": "Nuk mund të gjendet detyra e zgjedhur."
   },
   "common": {
     "noStart": "Pa fillim",
     "noEnd": "Pa fund"
+  },
+  "sections": {
+    "unmapped": "Pa caktim"
+  },
+  "grouping": {
+    "phase": "Faza",
+    "status": "Statusi",
+    "priority": "Prioriteti"
+  },
+  "toolbar": {
+    "zoomIn": "Zmadhim",
+    "zoomOut": "Zvogëlim",
+    "expandAll": "Zgjero të gjitha",
+    "collapseAll": "Mblidh të gjitha",
+    "today": "Sot",
+    "fullscreen": "Ekran i plotë",
+    "noDate": "Pa datë"
+  },
+  "viewMode": {
+    "day": "Ditë",
+    "week": "Javë",
+    "month": "Muaj",
+    "quarter": "Tremujor",
+    "year": "Vit"
   },
   "businessPlan": {
     "phaseCreationRestricted": "Krijimi i fazave është i disponueshëm vetëm për përdoruesit e planët Business",
@@ -26,5 +71,18 @@
     "phaseEditingRestricted": "Redaktimi i fazave është i disponueshëm vetëm për përdoruesit e planët Business",
     "taskEditingRestricted": "Redaktimi i detyrave është i disponueshëm vetëm për përdoruesit e planët Business",
     "phaseReorderingRestricted": "Riorganizimi i fazave është i disponueshëm vetëm për përdoruesit e planët Business"
-  }
+  },
+  "list": {
+    "taskNameColumn": "Emri i detyrës",
+    "addNewPhase": "Shto fazë të re",
+    "addNewStatus": "Shto status të ri",
+    "noTasksAvailable": "Nuk ka detyra të disponueshme"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Fazat dhe detyrat",
+    "tasksCount": "detyra",
+    "complete": "e përfunduar"
+  },
+  "unscheduledTasksTitle": "Detyra të paplanifikuara",
+  "noUnscheduledTasks": "Nuk ka detyra të paplanifikuara të disponueshme."
 }

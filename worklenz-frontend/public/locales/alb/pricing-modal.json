@@ -218,5 +218,12 @@
       "payment": "Pagesa",
       "complete": "Përfundo"
     }
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Kapni çdo detaj me fusha të personalizuara të pakufizuara",
+    "upgradeModalSubCopy": "Plani juaj përfshin deri në {{limit}} fusha të personalizuara. Kaloni në Business për të krijuar fusha të pakufizuara dhe për të gjurmuar saktësisht atë që ka rëndësi për ekipin tuaj.",
+    "benefit1": "Fusha të personalizuara të pakufizuara për çdo projekt",
+    "benefit2": "Lloje fushash: tekst, numër, listë zbritëse, datë dhe më shumë",
+    "benefit3": "Fushat sinkronizohen në të gjitha pamjet e detyrave"
   }
 }

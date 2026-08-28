@@ -88,6 +88,22 @@ export default class TeamsController extends WorklenzControllerBase {
   public static async activate(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT activate_team($1, $2)`;
     await db.query(q, [req.body.id, req.user?.id ?? null]);
+    
+    // Refresh the user session with updated team data to ensure the new active_team
+    // is immediately reflected in req.user. Without this, the session remains stale
+    // until the next deserialize cycle, causing team switches to revert.
+    if (req.user?.id) {
+      try {
+        const userQuery = `SELECT deserialize_user($1) AS user;`;
+        const userResult = await db.query(userQuery, [req.user.id]);
+        if (userResult.rows.length && userResult.rows[0]?.user) {
+          req.user = userResult.rows[0].user;
+        }
+      } catch (error) {
+        console.error('Failed to refresh user session after team activation:', error);
+      }
+    }
+    
     return res.status(200).send(new ServerResponse(true, { subdomain: null }));
   }
 }

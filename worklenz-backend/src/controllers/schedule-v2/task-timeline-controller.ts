@@ -15,6 +15,7 @@ interface ITaskTimelineFilters {
     projectId?: string;
     statusId?: string;
     priorityId?: string;
+    clientName?: string;
 }
 
 export default class TaskTimelineController extends WorklenzControllerBase {
@@ -24,7 +25,7 @@ export default class TaskTimelineController extends WorklenzControllerBase {
      */
     @HandleExceptions()
     public static async getTasksForTimeline(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-        const { startDate, endDate, memberId, projectId, statusId, priorityId } = req.query as ITaskTimelineFilters;
+        const { startDate, endDate, memberId, projectId, statusId, priorityId, clientName } = req.query as ITaskTimelineFilters;
 
         const params: any[] = [req.user?.team_id];
         let paramIndex = 2;
@@ -44,28 +45,54 @@ export default class TaskTimelineController extends WorklenzControllerBase {
             paramIndex++;
         }
 
+        // Parse comma-separated member IDs
         if (memberId) {
-            whereClause += ` AND ta.team_member_id = $${paramIndex}`;
-            params.push(memberId);
-            paramIndex++;
+            const memberIds = memberId.split(',').filter(id => id.trim());
+            if (memberIds.length > 0) {
+                const placeholders = memberIds.map(() => `$${paramIndex++}`).join(',');
+                whereClause += ` AND ta.team_member_id IN (${placeholders})`;
+                params.push(...memberIds);
+            }
         }
 
+        // Parse comma-separated project IDs
         if (projectId) {
-            whereClause += ` AND t.project_id = $${paramIndex}`;
-            params.push(projectId);
-            paramIndex++;
+            const projectIds = projectId.split(',').filter(id => id.trim());
+            if (projectIds.length > 0) {
+                const placeholders = projectIds.map(() => `$${paramIndex++}`).join(',');
+                whereClause += ` AND t.project_id IN (${placeholders})`;
+                params.push(...projectIds);
+            }
         }
 
+        // Parse comma-separated status IDs
         if (statusId) {
-            whereClause += ` AND t.status_id = $${paramIndex}`;
-            params.push(statusId);
-            paramIndex++;
+            const statusIds = statusId.split(',').filter(id => id.trim());
+            if (statusIds.length > 0) {
+                const placeholders = statusIds.map(() => `$${paramIndex++}`).join(',');
+                whereClause += ` AND t.status_id IN (${placeholders})`;
+                params.push(...statusIds);
+            }
         }
 
+        // Parse comma-separated priority IDs
         if (priorityId) {
-            whereClause += ` AND t.priority_id = $${paramIndex}`;
-            params.push(priorityId);
-            paramIndex++;
+            const priorityIds = priorityId.split(',').filter(id => id.trim());
+            if (priorityIds.length > 0) {
+                const placeholders = priorityIds.map(() => `$${paramIndex++}`).join(',');
+                whereClause += ` AND t.priority_id IN (${placeholders})`;
+                params.push(...priorityIds);
+            }
+        }
+
+        // Parse comma-separated client names
+        if (clientName) {
+            const clientNames = clientName.split(',').filter(name => name.trim());
+            if (clientNames.length > 0) {
+                const placeholders = clientNames.map(() => `$${paramIndex++}`).join(',');
+                whereClause += ` AND p.client_id IN (SELECT id FROM clients WHERE name IN (${placeholders}))`;
+                params.push(...clientNames);
+            }
         }
 
         const query = `
@@ -77,7 +104,7 @@ export default class TaskTimelineController extends WorklenzControllerBase {
                 t.parent_task_id,
                 t.project_id,
                 t.done,
-                t.total_minutes,
+                t.total_minutes::int AS total_minutes,
                 p.name AS project_name,
                 p.color_code AS project_color,
                 ts.id AS status_id,
@@ -87,6 +114,8 @@ export default class TaskTimelineController extends WorklenzControllerBase {
                 tp.id AS priority_id,
                 tp.name AS priority_name,
                 tp.color_code AS priority_color,
+                (SELECT pp.name FROM project_phases pp WHERE pp.id = (SELECT tph.phase_id FROM task_phase tph WHERE tph.task_id = t.id LIMIT 1)) AS phase_name,
+                (SELECT pp.color_code FROM project_phases pp WHERE pp.id = (SELECT tph.phase_id FROM task_phase tph WHERE tph.task_id = t.id LIMIT 1)) AS phase_color,
                 COALESCE(
                     (SELECT json_agg(json_build_object(
                         'id', tm.id,

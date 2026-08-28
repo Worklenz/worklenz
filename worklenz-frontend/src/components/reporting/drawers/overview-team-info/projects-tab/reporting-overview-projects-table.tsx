@@ -28,10 +28,6 @@ import ProjectDaysLeftAndOverdueCell from '@/pages/reporting/projects-reports/co
 import ProjectUpdateCell from '@/pages/reporting/projects-reports/components/projects-reports-table/table-cells/project-update-cell/project-update-cell';
 import {
   resetProjectReports,
-  setField,
-  setIndex,
-  setOrder,
-  setPageSize,
   toggleProjectReportsDrawer,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { colors } from '@/styles/colors';
@@ -61,6 +57,7 @@ const ReportingOverviewProjectsTable = ({
   const { socket } = useSocket();
 
   const { includeArchivedProjects } = useAppSelector(state => state.reportingReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [projectList, setProjectList] = useState<IRPTProject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationProps>({
@@ -72,8 +69,6 @@ const ReportingOverviewProjectsTable = ({
   const [order, setOrder] = useState<'asc' | 'desc'>('asc');
   const [field, setField] = useState<string>('name');
 
-  // ✅ Update local projectList directly when socket response arrives
-  // This component uses local state not Redux, so we patch the list in place
   const handleHealthChangeResponse = useCallback(
     (data: { id: string; health_id: string; color_code: string; name: string }) => {
       setProjectList(prev =>
@@ -89,7 +84,7 @@ const ReportingOverviewProjectsTable = ({
         )
       );
     },
-    [setProjectList]
+    []
   );
 
   useEffect(() => {
@@ -133,7 +128,6 @@ const ReportingOverviewProjectsTable = ({
               project={record.name}
               projectColor={record.color_code}
             />
-
             <Button
               className="hidden group-hover:flex"
               type="text"
@@ -281,11 +275,17 @@ const ReportingOverviewProjectsTable = ({
     [t, order]
   );
 
-  const handleTableChange = (pagination: PaginationProps, filters: any, sorter: any) => {
+  // ✅ FIX 1: Renamed parameter from `pagination` to `newPagination` to avoid
+  // shadowing the state variable, and merged all updates into a single
+  // setPagination call so pageSize and current are never lost.
+  const handleTableChange = (newPagination: PaginationProps, filters: any, sorter: any) => {
     if (sorter.order) setOrder(sorter.order);
     if (sorter.field) setField(sorter.field);
-    setPagination({ ...pagination, current: pagination.current });
-    setPagination({ ...pagination, pageSize: pagination.pageSize });
+    setPagination(prev => ({
+      ...prev,
+      current: newPagination.current ?? prev.current,
+      pageSize: newPagination.pageSize ?? prev.pageSize,
+    }));
   };
 
   useEffect(() => {
@@ -302,7 +302,7 @@ const ReportingOverviewProjectsTable = ({
   const tableRowProps = useMemo(
     () => ({
       style: { height: 56, cursor: 'pointer' },
-      className: 'group even:bg-[#4e4e4e10]',
+      className: 'group',
     }),
     []
   );
@@ -314,14 +314,23 @@ const ReportingOverviewProjectsTable = ({
           Table: {
             cellPaddingBlock: 12,
             cellPaddingInline: 10,
+            headerBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            bodySortBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            headerSortActiveBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            headerSortHoverBg: themeMode === 'dark' ? '#2a2a2a' : '#edebf0',
+            rowHoverBg: themeMode === 'dark' ? '#2a2a2a' : '#edebf0',
+            fixedHeaderSortActiveBg: themeMode === 'dark' ? '#181818' : '#ffffff',
+            colorBgContainer: themeMode === 'dark' ? '#181818' : '#ffffff',
           },
         },
       },
     }),
-    []
+    [themeMode]
   );
 
-  const fetchOverviewProjects = async () => {
+  // FIX 2: Wrap in useCallback so the effect dependency is stable and correct.
+  // All values read inside are listed as deps, so the closure is never stale.
+  const fetchOverviewProjects = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = {
@@ -337,27 +346,32 @@ const ReportingOverviewProjectsTable = ({
       const response = await reportingApiService.getOverviewProjects(params);
       if (response.done) {
         setProjectList(response.body.projects || []);
-        setPagination({ ...pagination, total: response.body.total });
+        setPagination(prev => ({ ...prev, total: response.body.total }));
       }
     } catch (error) {
       logger.error('fetchOverviewProjects', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [teamsId, pagination.current, pagination.pageSize, searchQuery, order, field, includeArchivedProjects]);
 
+  // FIX 4: fetchOverviewProjects is now the single dependency.
+  // It changes whenever page, pageSize, search, sort, or archived changes —
+  // so the API is always called with the correct values.
   useEffect(() => {
     fetchOverviewProjects();
-  }, [searchQuery, order, field]);
+  }, [fetchOverviewProjects]);
 
   return (
     <ConfigProvider {...tableConfig}>
       <Table
         columns={columns}
         dataSource={projectList}
+        // ✅ FIX 3: Replaced `defaultPageSize` (uncontrolled, ignored after mount)
+        // with `pageSize` (controlled) so the table always reflects state.
         pagination={{
           showSizeChanger: true,
-          defaultPageSize: 10,
+          pageSize: pagination.pageSize,
           total: pagination.total,
           current: pagination.current,
           pageSizeOptions: PAGE_SIZE_OPTIONS,

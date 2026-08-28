@@ -2,7 +2,8 @@ import { categoriesApiService } from '@/api/settings/categories/categories.api.s
 import { fetchProjectCategories } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { 
   setSelectedProjectCategories,
-  fetchProjectDataForCurrentView 
+  fetchProjectDataForCurrentView,
+  setOrgCategories 
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -23,6 +24,8 @@ import {
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+const NO_CATEGORY_ID = '__no_category__';
+
 const ProjectCategoriesFilterDropdown = () => {
   const { t } = useTranslation('reporting-projects-filters');
   const dispatch = useAppDispatch();
@@ -31,7 +34,7 @@ const ProjectCategoriesFilterDropdown = () => {
   const categoryInputRef = useRef<InputRef>(null);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [orgCategories, setOrgCategories] = useState<IProjectCategoryViewModel[]>([]);
+  const [localOrgCategories, setLocalOrgCategories] = useState<IProjectCategoryViewModel[]>([]);
   const [loading, setLoading] = useState(false);
   const { projectCategories, loading: projectCategoriesLoading } = useAppSelector(
     state => state.projectCategoriesReducer
@@ -51,7 +54,10 @@ const ProjectCategoriesFilterDropdown = () => {
     setLoading(true);
     const response = await categoriesApiService.getCategoriesByOrganization();
     if (response.done) {
-      setOrgCategories(response.body as IProjectCategoryViewModel[]);
+      const categories = response.body as IProjectCategoryViewModel[];
+      setLocalOrgCategories(categories);
+      // Store in Redux for "all selected" check
+      dispatch(setOrgCategories(categories));
     }
     setLoading(false);
   };
@@ -60,24 +66,30 @@ const ProjectCategoriesFilterDropdown = () => {
     getOrgCategories();
   }, []);
 
-  // Add filtered categories memo
+  // Add filtered categories memo - include "No Category" option
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return orgCategories;
+    const noCategoryOption: IProjectCategoryViewModel = {
+      id: NO_CATEGORY_ID,
+      name: t('noCategoryText', { defaultValue: 'No Category' }),
+      color_code: '#888888',
+    };
 
-    return orgCategories.filter(category =>
-      category.name?.toLowerCase().includes(searchQuery.toLowerCase().trim())
+    const searchLower = searchQuery.toLowerCase().trim();
+    
+    if (!searchLower) {
+      return [noCategoryOption, ...localOrgCategories];
+    }
+
+    const filtered = localOrgCategories.filter(category =>
+      category.name?.toLowerCase().includes(searchLower)
     );
-  }, [orgCategories, searchQuery]);
+
+    // Include "No Category" if it matches the search
+    const noCategoryMatches = noCategoryOption.name?.toLowerCase().includes(searchLower);
+    return noCategoryMatches ? [noCategoryOption, ...filtered] : filtered;
+  }, [localOrgCategories, searchQuery, t]);
 
   const handleCategoryChange = (category: IProjectCategoryViewModel) => {
-    const isSelected = orgCategories.some(h => h.id === category.id);
-    let updatedCategory: IProjectCategoryViewModel[];
-
-    if (isSelected) {
-      updatedCategory = orgCategories.filter(h => h.id !== category.id);
-    } else {
-      updatedCategory = [...orgCategories, category];
-    }
     dispatch(setSelectedProjectCategories(category));
     dispatch(fetchProjectDataForCurrentView());
   };
@@ -116,7 +128,10 @@ const ProjectCategoriesFilterDropdown = () => {
                   border: 'none',
                 }}
               >
-                <Checkbox id={category.id} onChange={() => handleCategoryChange(category)}>
+                <Checkbox 
+                  id={category.id} 
+                  onChange={() => handleCategoryChange(category)}
+                >
                   <Flex gap={8}>
                     <Badge color={category.color_code} />
                     {category.name}

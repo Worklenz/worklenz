@@ -7,5 +7,6 @@ const userActivityLogsApiRouter = express.Router();
 
 userActivityLogsApiRouter.get('/user-recent-tasks', safeControllerFunction(UserActivityLogsController.getRecentTasks));
 userActivityLogsApiRouter.get('/user-time-logged-tasks', safeControllerFunction(UserActivityLogsController.getTimeLoggedTasks));
+userActivityLogsApiRouter.get('/user-time-logged-summary', safeControllerFunction(UserActivityLogsController.getTimeLoggedSummary));
 
 export default userActivityLogsApiRouter;

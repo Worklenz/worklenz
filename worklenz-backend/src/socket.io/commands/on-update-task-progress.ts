@@ -14,11 +14,10 @@ interface UpdateTaskProgressData {
 /**
  * Recursively updates all ancestor tasks' progress when a subtask changes
  * @param io Socket.io instance
- * @param socket Socket instance for emitting events
  * @param projectId Project ID for room broadcasting
  * @param taskId The task ID to update (starts with the parent task)
  */
-async function updateTaskAncestors(io: any, socket: Socket, projectId: string, taskId: string | null) {
+async function updateTaskAncestors(io: any, projectId: string, taskId: string | null) {
   if (!taskId) return;
   
   try {
@@ -53,8 +52,8 @@ async function updateTaskAncestors(io: any, socket: Socket, projectId: string, t
       }
     }
     
-    // Emit the updated progress
-    socket.emit(
+    // Broadcast the updated progress to ALL clients in the project room
+    io.to(projectId).emit(
       SocketEvents.TASK_PROGRESS_UPDATED.toString(),
       {
         task_id: taskId,
@@ -73,7 +72,7 @@ async function updateTaskAncestors(io: any, socket: Socket, projectId: string, t
     
     // If there's a parent, recursively update it
     if (parentTaskId) {
-      await updateTaskAncestors(io, socket, projectId, parentTaskId);
+      await updateTaskAncestors(io, projectId, parentTaskId);
     }
   } catch (error) {
     log_error(`Error updating ancestor task ${taskId}: ${error}`);
@@ -148,8 +147,8 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
         }
       }
 
-      // Emit the update to all clients in the project room
-      socket.emit(
+      // Broadcast the update to all clients in the project room
+      io.to(projectId).emit(
         SocketEvents.TASK_PROGRESS_UPDATED.toString(),
         {
           task_id,
@@ -164,8 +163,8 @@ export async function on_update_task_progress(io: any, socket: Socket, data: str
       if (parent_task_id) {
         // Use the controller method to update the parent task's progress
         await TasksControllerV2.updateTaskProgress(parent_task_id);
-        // Also use the existing method for socket notifications
-        await updateTaskAncestors(io, socket, projectId, parent_task_id);
+        // Also broadcast ancestor updates to all clients in the project room
+        await updateTaskAncestors(io, projectId, parent_task_id);
       }
       
       // Notify that project updates are available

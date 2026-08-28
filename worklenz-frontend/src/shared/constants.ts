@@ -160,6 +160,14 @@ export const CLIENT_PORTAL_API_BASE_URL = '/api/client-portal';
 
 export const DEFAULT_TASK_NAME = 'Untitled Task';
 
+// Fired on `document` whenever a task's fixed cost is added/changed (Quick
+// Action "Add Expense" modal, Project Finance table inline edit, ...) so
+// pages showing fixed-cost data elsewhere (e.g. Finance > Expenses) can
+// refetch without a full page reload. There's no backend socket event for
+// this yet — mirrors the same document-CustomEvent pattern already used for
+// task comments (see task-comments.tsx).
+export const TASK_FIXED_COST_CHANGED_EVENT = 'task-fixed-cost-changed';
+
 export const YESTERDAY = 'YESTERDAY';
 export const LAST_WEEK = 'LAST_WEEK';
 export const LAST_MONTH = 'LAST_MONTH';
@@ -257,6 +265,7 @@ export enum ISUBSCRIPTION_TYPE {
   CUSTOM = 'CUSTOM',
   FREE = 'FREE',
   CREDIT = 'CREDIT',
+  ANNUAL_PRO = 'ANNUAL_PRO',
   ANNUAL_BUSINESS = 'ANNUAL_BUSINESS',
   SELF_HOSTED = 'SELF_HOSTED',
 }

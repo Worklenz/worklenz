@@ -8,6 +8,7 @@ import { colors } from '@/styles/colors';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useTranslation } from 'react-i18next';
 
 const TaskCompletedEarlyTable = ({
   projectId,
@@ -19,6 +20,7 @@ const TaskCompletedEarlyTable = ({
   const [earlyCompletedTaskList, setEarlyCompletedTaskList] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const getEarlyCompletedTasks = async () => {
     try {
@@ -44,12 +46,12 @@ const TaskCompletedEarlyTable = ({
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('common.name', { defaultValue: 'Name' }),
       render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('common.status', { defaultValue: 'Status' }),
       render: (record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -76,16 +78,16 @@ const TaskCompletedEarlyTable = ({
     },
     {
       key: 'dueDate',
-      title: 'End Date',
+      title: t('common.dueDate', { defaultValue: 'End Date' }),
       render: (record: IInsightTasks) => (
         <Typography.Text>
-          {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
+          {record.end_date ? simpleDateFormat(record.end_date) : t('common.na', { defaultValue: 'N/A' })}
         </Typography.Text>
       ),
     },
     {
       key: 'completedDate',
-      title: 'Completed At',
+      title: t('tasksTable.completedAt', { defaultValue: 'Completed At' }),
       render: (record: IInsightTasks) => (
         <Typography.Text>{simpleDateFormat(record.completed_at || null)}</Typography.Text>
       ),

@@ -1,6 +1,6 @@
 import db from "../config/db";
 import { log_error } from "../shared/utils";
-import business from "../business";
+import { SlackService } from "../ee/services/slack.service";
 import { TeamsNotificationService } from "./teams-notification.service";
 
 interface TaskNotificationData {
@@ -415,7 +415,7 @@ export class ExternalNotificationsService {
       }
 
       // Get Slack channel configs for this project
-      const slackConfigs = await business.slack.getChannelConfigsByProject(projectId);
+      const slackConfigs = await SlackService.getChannelConfigsByProject(projectId);
 
       // Send to Slack channels
       for (const config of slackConfigs) {
@@ -427,7 +427,7 @@ export class ExternalNotificationsService {
 
           const slackMessage = this.formatSlackMessage(notificationType, taskData, userName);
 
-          await business.slack.sendNotification(
+          await SlackService.sendNotification(
             config.id,
             notificationType,
             "task",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Avatar,
@@ -40,12 +40,17 @@ import { RolePermissionsPopover } from './role-permissions-popover';
 
 type UpdateMemberDrawerProps = {
   selectedMemberId: string | null;
-  // Pass the current name from the table row so the drawer title shows
-  // the correct (already-updated) name instantly, without waiting for getById
   selectedMemberName?: string | null;
   onNameUpdate?: (memberId: string, newName: string) => void;
   onRoleUpdate?: (memberId: string, newRoleName: string) => void;
   onJobTitleUpdate?: (memberId: string, newJobTitle: string) => void;
+  // NEW: called after a team lead is assigned or removed so the table
+  // row updates immediately without a full refetch
+  onTeamLeadUpdate?: (
+    memberId: string,
+    teamLeadId: string | null,
+    teamLeadName: string | null
+  ) => void;
   initialRoleName?: string;
 };
 
@@ -55,6 +60,7 @@ const UpdateMemberDrawer = ({
   onNameUpdate,
   onRoleUpdate,
   onJobTitleUpdate,
+  onTeamLeadUpdate,
   initialRoleName,
 }: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
@@ -62,7 +68,7 @@ const UpdateMemberDrawer = ({
   const auth = useAuthService();
   const [form] = Form.useForm();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [resentSuccess, setResentSuccess] = useState(false);
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
@@ -77,12 +83,10 @@ const UpdateMemberDrawer = ({
   const [jobTitlesPage, setJobTitlesPage] = useState(1);
   const jobTitlesPageSize = 10;
   const scrollPositionRef = useRef(0);
+  const isMountedRef = useRef(true);
 
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isUpdateMemberDrawerOpen);
 
-  // Use the name from the parent table row while the drawer is loading its own fetch.
-  // Once getById completes, teamMember.name takes over (which will be the same value).
-  // This prevents the flash: updated name → old name → updated name.
   const displayName = teamMember?.name ?? selectedMemberName ?? '';
 
   const isOwnAccount = useMemo(() => {
@@ -101,6 +105,10 @@ const UpdateMemberDrawer = ({
   const canEditOwnAccount = useMemo(() => {
     return isOwnAccount && currentUser?.owner;
   }, [isOwnAccount, currentUser?.owner]);
+
+  const isOwnerEditingOwnDetails = useMemo(() => {
+    return isOwnAccount && currentUserRole === ROLE_NAMES.OWNER;
+  }, [isOwnAccount, currentUserRole]);
 
   const availableRoles = useMemo(() => {
     return getAvailableRoleOptions(currentUser?.role_name, currentUser?.owner);
@@ -169,14 +177,12 @@ const UpdateMemberDrawer = ({
     }
   };
 
-  // Handle scroll to load more job titles
   const handleJobTitleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.target as HTMLDivElement;
     const scrollTop = target.scrollTop;
     const scrollHeight = target.scrollHeight;
     const clientHeight = target.clientHeight;
 
-    // Check if scrolled to the very end of the list
     if (scrollTop + clientHeight >= scrollHeight) {
       const hasMore = jobTitles.length < jobTitlesTotal;
       if (hasMore && !jobTitlesLoading) {
@@ -189,44 +195,22 @@ const UpdateMemberDrawer = ({
     scrollPositionRef.current = scrollTop;
   };
 
-  const getTeamMember = async () => {
+  const getTeamMember = useCallback(async () => {
     if (!selectedMemberId) return;
 
     try {
       setLoading(true);
       const res = await teamMembersApiService.getById(selectedMemberId);
+      if (!isMountedRef.current) return;
       if (res.done) {
         setTeamMember(res.body);
-
-        let accessLevel = 'member';
-        const roleNameToUse = res.body.role_name || initialRoleName;
-        const roleName = (roleNameToUse || '').toLowerCase().trim();
-
-        if (roleName === 'owner') {
-          accessLevel = 'owner';
-        } else if (roleName === 'admin') {
-          accessLevel = 'admin';
-        } else if (roleName === 'team lead' || roleName === 'teamlead') {
-          accessLevel = 'team-lead';
-        } else {
-          accessLevel = 'member';
-        }
-
-        setTimeout(() => {
-          form.setFieldsValue({
-            name: res.body?.name,
-            jobTitle: res.body?.job_title,
-            access: accessLevel,
-            manager: res.body?.reports_to_member_id || null,
-          });
-        }, 0);
       }
     } catch (error) {
       logger.error('Error fetching team member:', error);
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) setLoading(false);
     }
-  };
+  }, [selectedMemberId]);
 
   const handleFormSubmit = async (values: any) => {
     if (!selectedMemberId || !teamMember?.email) return;
@@ -245,59 +229,90 @@ const UpdateMemberDrawer = ({
         }
       }
 
-      const body: ITeamMemberCreateRequest = {
-        job_title: form.getFieldValue('jobTitle'),
-        emails: [teamMember.email],
-        is_admin: accessValue === 'admin' || accessValue === 'owner',
-        role_name:
-          accessValue === 'owner'
-            ? ROLE_NAMES.OWNER
-            : accessValue === 'team-lead'
-              ? ROLE_NAMES.TEAM_LEAD
-              : accessValue === 'admin'
-                ? ROLE_NAMES.ADMIN
-                : ROLE_NAMES.MEMBER,
-      };
+      // For team owner editing their own details, skip the role/admin update
+      // since they can't change their own role
+      if (!isOwnerEditingOwnDetails) {
+        const body: ITeamMemberCreateRequest = {
+          job_title: form.getFieldValue('jobTitle'),
+          emails: [teamMember.email],
+          is_admin: accessValue === 'admin' || accessValue === 'owner',
+          role_name:
+            accessValue === 'owner'
+              ? ROLE_NAMES.OWNER
+              : accessValue === 'team-lead'
+                ? ROLE_NAMES.TEAM_LEAD
+                : accessValue === 'admin'
+                  ? ROLE_NAMES.ADMIN
+                  : ROLE_NAMES.MEMBER,
+        };
 
-      const res = await teamMembersApiService.update(selectedMemberId, body);
-      if (res.done) {
-        const currentManagerId = teamMember?.reports_to_member_id;
-        const newManagerId = values.manager;
-
-        if (currentManagerId !== newManagerId) {
-          if (newManagerId) {
-            await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
-          } else if (currentManagerId) {
-            await teamManagementApiService.removeManagerAssignment(selectedMemberId);
+        const res = await teamMembersApiService.update(selectedMemberId, body);
+        if (!res.done) {
+          throw new Error(res.message || t('updateError'));
+        }
+      } else {
+        // For owner, just update job title via the job_title field if it changed
+        const currentJobTitle = teamMember?.job_title;
+        const newJobTitle = form.getFieldValue('jobTitle');
+        if (newJobTitle !== currentJobTitle) {
+          const body: ITeamMemberCreateRequest = {
+            job_title: newJobTitle,
+            emails: [teamMember.email],
+            is_admin: false,
+            role_name: ROLE_NAMES.OWNER,
+          };
+          const res = await teamMembersApiService.update(selectedMemberId, body);
+          if (!res.done) {
+            throw new Error(res.message || t('updateError'));
           }
         }
-        const selectedJobTitleId = form.getFieldValue('jobTitle');
-        const resolvedJobTitle =
-          jobTitles.find(j => j.id === selectedJobTitleId)?.name ?? selectedJobTitleId ?? '';
+      }
 
-        form.resetFields();
-        setSelectedJobTitle(null);
-        dispatch(toggleUpdateMemberDrawer());
-        const resolvedName = trimmedName || teamMember.name || '';
+      const currentManagerId = teamMember?.reports_to_member_id;
+      const newManagerId = values.manager;
 
-        const newRoleName =
-          accessValue === 'owner'
-            ? 'Owner'
-            : accessValue === 'team-lead'
-              ? 'Team Lead'
-              : accessValue === 'admin'
-                ? 'Admin'
-                : 'Member';
-        onNameUpdate?.(selectedMemberId, resolvedName);
-        onRoleUpdate?.(selectedMemberId, newRoleName);
-        onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
-        setTeamMember(prev => (prev ? { ...prev, name: resolvedName } : prev));
-
-        const authorizeResponse = await authApiService.verify();
-        if (authorizeResponse.authenticated) {
-          setSession(authorizeResponse.user);
-          dispatch(setUser(authorizeResponse.user));
+      // Handle team lead assignment changes and notify parent immediately
+      if (currentManagerId !== newManagerId) {
+        if (newManagerId) {
+          await teamManagementApiService.assignManager(selectedMemberId, newManagerId);
+          // Find the selected team lead's name so the table cell updates right away
+          const assignedLead = teamLeads.find(lead => lead.id === newManagerId);
+          onTeamLeadUpdate?.(selectedMemberId, newManagerId, assignedLead?.name ?? null);
+        } else if (currentManagerId) {
+          await teamManagementApiService.removeManagerAssignment(selectedMemberId);
+          onTeamLeadUpdate?.(selectedMemberId, null, null);
         }
+      }
+
+      const selectedJobTitleId = form.getFieldValue('jobTitle');
+      const resolvedJobTitle =
+        jobTitles.find(j => j.id === selectedJobTitleId)?.name ?? selectedJobTitleId ?? '';
+
+      form.resetFields();
+      setSelectedJobTitle(null);
+      dispatch(toggleUpdateMemberDrawer());
+      const resolvedName = trimmedName || teamMember.name || '';
+
+      const newRoleName =
+        accessValue === 'owner'
+          ? 'Owner'
+          : accessValue === 'team-lead'
+            ? 'Team Lead'
+            : accessValue === 'admin'
+              ? 'Admin'
+              : 'Member';
+
+      onNameUpdate?.(selectedMemberId, resolvedName);
+      if (!isOwnerEditingOwnDetails) {
+        onRoleUpdate?.(selectedMemberId, newRoleName);
+      }
+      onJobTitleUpdate?.(selectedMemberId, resolvedJobTitle);
+      setTeamMember(prev => (prev ? { ...prev, name: resolvedName } : prev));
+
+      const authorizeResponse = await authApiService.verify();
+      if (authorizeResponse.authenticated) {
+        setSession(authorizeResponse.user);
+        dispatch(setUser(authorizeResponse.user));
       }
     } catch (error) {
       logger.error('Error updating member:', error);
@@ -324,17 +339,17 @@ const UpdateMemberDrawer = ({
 
   const afterOpenChange = async (visible: boolean) => {
     if (visible) {
-      form.resetFields();
-      // Reset job titles pagination state
+      // Don't reset the form here - let useEffect handle data loading and form population
+      // Only reset helper state
       setJobTitles([]);
       setJobTitlesPage(1);
       setJobTitlesTotal(0);
       scrollPositionRef.current = 0;
-
-      await Promise.all([getJobTitles(1, false), getTeamMember(), getTeamLeads()]);
     } else {
+      // When drawer closes, clean up
       setTeamMember(null);
       setResentSuccess(false);
+      form.resetFields();
     }
   };
 
@@ -361,6 +376,30 @@ const UpdateMemberDrawer = ({
     }
   }, [teamMember, isDrawerOpen, initialRoleName, form]);
 
+  // Load team member data when drawer opens or selectedMemberId changes
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    const loadData = async () => {
+      if (isDrawerOpen && selectedMemberId) {
+        // Load team member data first and don't wait for job titles/team leads
+        await getTeamMember();
+
+        if (!isMountedRef.current) return;
+
+        // Load job titles and team leads in parallel (don't wait for them)
+        getJobTitles(1, false);
+        getTeamLeads();
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [selectedMemberId, isDrawerOpen, getTeamMember]);
+
   const canBeAssignedToManager = useMemo(() => {
     const roleName = teamMember?.role_name || '';
     return !['Owner', 'Admin', 'Team Lead'].includes(roleName);
@@ -379,8 +418,6 @@ const UpdateMemberDrawer = ({
                 textTransform: 'capitalize',
               }}
             >
-              {/* Use displayName so the correct (updated) name shows immediately
-                  while getById is still in flight, preventing the old-name flash */}
               {displayName}
             </Typography.Text>
             <Typography.Text
@@ -411,6 +448,7 @@ const UpdateMemberDrawer = ({
         <Form.Item
           label={t('nameColumn', { defaultValue: 'Name' })}
           name="name"
+          initialValue=""
           rules={[
             {
               required: true,
@@ -425,16 +463,31 @@ const UpdateMemberDrawer = ({
             placeholder={t('memberNamePlaceholder', {
               defaultValue: 'Enter member name',
             })}
-            disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+            disabled={
+              isOwnAccount
+                ? !canEditOwnAccount
+                : !(
+                    currentUserRole === ROLE_NAMES.OWNER ||
+                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
+                  )
+            }
           />
         </Form.Item>
 
-        <Form.Item label={t('jobTitleLabel')} name="jobTitle">
+        <Form.Item label={t('jobTitleLabel')} name="jobTitle" initialValue={null}>
           <Select
             optionLabelProp="label"
             size="middle"
             placeholder={t('jobTitlePlaceholder')}
             showSearch
+            disabled={
+              isOwnAccount
+                ? !canEditOwnAccount
+                : !(
+                    currentUserRole === ROLE_NAMES.OWNER ||
+                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
+                  )
+            }
             filterOption={(input, option) =>
               (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
             }
@@ -467,36 +520,38 @@ const UpdateMemberDrawer = ({
           />
         </Form.Item>
 
-        <Form.Item
-          label={
-            <Flex align="center" gap={6}>
-              <span>{t('memberAccessLabel', { defaultValue: 'Access Level' })}</span>
-              <RolePermissionsPopover />
-            </Flex>
-          }
-          name="access"
-          rules={[{ required: true }]}
-        >
-          <Select
-            disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
-            options={translatedRoleOptions}
-            optionRender={option => (
-              <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
-                <Typography.Text>{String(option.data.label)}</Typography.Text>
-                {option.data.description && (
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.4 }}
-                  >
-                    {option.data.description}
-                  </Typography.Text>
-                )}
+        {!isOwnerEditingOwnDetails && (
+          <Form.Item
+            label={
+              <Flex align="center" gap={6}>
+                <span>{t('memberAccessLabel', { defaultValue: 'Access Level' })}</span>
+                <RolePermissionsPopover />
               </Flex>
-            )}
-          />
-        </Form.Item>
+            }
+            name="access"
+            rules={[{ required: true }]}
+          >
+            <Select
+              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
+              options={translatedRoleOptions}
+              optionRender={option => (
+                <Flex vertical gap={2} style={{ whiteSpace: 'normal', lineHeight: 1.4 }}>
+                  <Typography.Text>{String(option.data.label)}</Typography.Text>
+                  {option.data.description && (
+                    <Typography.Text
+                      type="secondary"
+                      style={{ fontSize: 12, whiteSpace: 'normal', lineHeight: 1.4 }}
+                    >
+                      {option.data.description}
+                    </Typography.Text>
+                  )}
+                </Flex>
+              )}
+            />
+          </Form.Item>
+        )}
 
-        {canBeAssignedToManager && (
+        {!isOwnerEditingOwnDetails && (
           <Form.Item
             label={
               <Flex align="center" gap={4}>
@@ -509,12 +564,13 @@ const UpdateMemberDrawer = ({
               </Flex>
             }
             name="manager"
+            style={canBeAssignedToManager ? {} : { display: 'none' }}
           >
             <Select
               allowClear
               placeholder={t('selectManagerPlaceholder')}
               loading={loadingTeamLeads}
-              disabled={!canManageTarget}
+              disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
               showSearch
               filterOption={(input, option) =>
                 (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
@@ -560,14 +616,14 @@ const UpdateMemberDrawer = ({
                 {t('addedText')}
                 {''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
-                  {calculateTimeDifference(teamMember?.created_at || '')}
+                  {calculateTimeDifference(teamMember?.created_at || '', t('justNow', { defaultValue: 'Just now' }))}
                 </Tooltip>
               </Typography.Text>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
                 {t('updatedText')}
                 {''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
-                  {calculateTimeDifference(teamMember?.updated_at || '')}
+                  {calculateTimeDifference(teamMember?.updated_at || '', t('justNow', { defaultValue: 'Just now' }))}
                 </Tooltip>
               </Typography.Text>
             </Flex>

@@ -12,6 +12,27 @@ import {
 } from '@/shared/antd-imports';
 import { decodeBuffer } from '../utils';
 
+// A small, valid CSV matching the headers Worklenz auto-maps on upload (see
+// CSV_COLUMN_ALIASES in ImportSourceModal.tsx), so users have a concrete example
+// of the expected shape instead of guessing.
+const SAMPLE_CSV_CONTENT = [
+  'Title,Description,Status,Priority,Assignee,Due Date,Labels,Estimate',
+  '"Design homepage mockup","Create initial wireframes for the new homepage",To Do,High,jane@example.com,2026-09-01,Design,3',
+  '"Fix login redirect bug","Users are redirected to the wrong page after login",Doing,Critical,john@example.com,2026-08-25,Bug,1',
+].join('\n');
+
+const downloadSampleCsv = () => {
+  const blob = new Blob([SAMPLE_CSV_CONTENT], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'worklenz-sample-import.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 interface CsvSetupStepsContentProps {
   step: number;
   t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
@@ -27,6 +48,7 @@ interface CsvSetupStepsContentProps {
   sourceLabel: string;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
+  onCsvUploaded?: () => void;
 }
 
 export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
@@ -44,6 +66,7 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
   sourceLabel,
   spaceName,
   setSpaceName,
+  onCsvUploaded,
 }) => {
   const [uploadedFileName, setUploadedFileName] = React.useState('');
   const [uploadedSummary, setUploadedSummary] = React.useState<{
@@ -66,16 +89,17 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
               'Start by finding the Download or Export option in your app and export a CSV file.',
           })}
           <br />
-          <a
-            href="https://worklenz.com/blog/"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: themeToken.colorPrimary }}
-          >
-            {t('importStep.structureCsv', { defaultValue: 'Structure the CSV' })}
-          </a>{' '}
           {t('importStep.structureCsvSuffix', {
-            defaultValue: 'to ensure the data is in the right format and upload it to begin.',
+            defaultValue: 'Not sure about the format?',
+          })}{' '}
+          <a
+            onClick={downloadSampleCsv}
+            style={{ color: themeToken.colorPrimary, cursor: 'pointer' }}
+          >
+            {t('importStep.structureCsv', { defaultValue: 'Download a sample CSV' })}
+          </a>{' '}
+          {t('importStep.structureCsvHint', {
+            defaultValue: 'to see the expected columns.',
           })}
         </Typography.Paragraph>
         <Upload.Dragger
@@ -115,6 +139,11 @@ export const CsvSetupStepsContent: React.FC<CsvSetupStepsContentProps> = ({
                     columns: summary.columnsCount,
                   })
                 );
+                if (summary.columnsCount > 0 && summary.rowsCount > 0) {
+                  // Brief delay so the success message and preview table are visible
+                  // before the wizard advances on its own.
+                  window.setTimeout(() => onCsvUploaded?.(), 900);
+                }
               } catch {
                 antdMessage.error(
                   t('importStep.csvReadError', {

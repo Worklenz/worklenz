@@ -1,6 +1,5 @@
 import {
   useCreatePersonalTaskMutation,
-  useGetMyTasksQuery,
   useGetPersonalTasksQuery,
   useGetProjectsByTeamQuery,
 } from '@/api/home-page/home-page.api.service';
@@ -15,6 +14,10 @@ import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 
 const getActiveProjectsFilter = () => +(localStorage.getItem(MY_DASHBOARD_ACTIVE_FILTER) || 0);
+
+const getUserTimeZone = (): string => {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+};
 
 interface IHomePageState {
   loadingProjects: boolean;
@@ -49,7 +52,7 @@ const initialState: IHomePageState = {
     current_tab: MY_DASHBOARD_DEFAULT_VIEW,
     is_calendar_view: getActiveProjectsFilter() !== 0,
     selected_date: getActiveProjectsFilter() === 0 ? dayjs() : null,
-    time_zone: '',
+    time_zone: getUserTimeZone(),
   },
   model: {
     total: 0,
@@ -58,6 +61,7 @@ const initialState: IHomePageState = {
     upcoming: 0,
     overdue: 0,
     no_due_date: 0,
+    in_progress: 0,
   },
   selectedDate: dayjs(),
 };
@@ -76,14 +80,6 @@ export const createPersonalTask = createAsyncThunk(
   async (newTodo: IMyTask) => {
     const response = useCreatePersonalTaskMutation();
     return response;
-  }
-);
-
-export const fetchHomeTasks = createAsyncThunk(
-  'homePage/fetchHomeTasks',
-  async (homeTasksConfig: IHomeTasksConfig) => {
-    const response = useGetMyTasksQuery(homeTasksConfig);
-    return response.data?.body;
   }
 );
 
@@ -130,24 +126,6 @@ export const homePageSlice = createSlice({
     });
     builder.addCase(fetchPersonalTasks.rejected, state => {
       state.loadingPersonalTasks = false;
-    });
-
-    builder.addCase(fetchHomeTasks.fulfilled, (state, action) => {
-      state.model = action.payload || {
-        total: 0,
-        tasks: [],
-        today: 0,
-        upcoming: 0,
-        overdue: 0,
-        no_due_date: 0,
-      };
-      state.homeTasksLoading = false;
-    });
-    builder.addCase(fetchHomeTasks.pending, state => {
-      state.homeTasksLoading = true;
-    });
-    builder.addCase(fetchHomeTasks.rejected, state => {
-      state.homeTasksLoading = false;
     });
   },
 });
