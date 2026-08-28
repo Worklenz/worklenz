@@ -1,183 +1,38 @@
-import { Button, Drawer, Dropdown } from '@/shared/antd-imports';
-import { useEffect, useState } from 'react';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { DownOutlined, EditOutlined, ImportOutlined } from '@/shared/antd-imports';
-import TemplateDrawer from '@/components/common/template-drawer/template-drawer';
+import { useState } from 'react';
+import { Button } from '@/shared/antd-imports';
+import { EditOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
-import {
-  setProjectData,
-  setProjectId,
-  toggleProjectDrawer,
-} from '@/features/project/project-drawer.slice';
-import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
-import {
-  evt_projects_create_click,
-  evt_project_import_from_template_click,
-} from '@/shared/worklenz-analytics-events';
+
+import { CreateProjectModal } from '@/components/projects/create-project-modal/create-project-modal';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import ProjectImportModal from '@/pages/projects/projectView/ProjectImportModal';
-import { projectsApi } from '@/api/projects/projects.v1.api.service';
+import { evt_projects_create_click } from '@/shared/worklenz-analytics-events';
+
 interface CreateProjectButtonProps {
   className?: string;
+  style?: React.CSSProperties;
 }
 
-const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className }) => {
-  const dispatch = useAppDispatch();
-  const navigate = useNavigate();
-  const { trackMixpanelEvent } = useMixpanelTracking();
-  const [isTemplateDrawerOpen, setIsTemplateDrawerOpen] = useState(false);
-  const [currentTemplateId, setCurrentTemplateId] = useState<string>('');
-  const [selectedType, setSelectedType] = useState<'worklenz' | 'custom'>('worklenz');
-  const [projectImporting, setProjectImporting] = useState(false);
-  const [currentPath, setCurrentPath] = useState<string>('');
-  const [isImportExportOpen, setIsImportExportOpen] = useState(false);
-  const location = useLocation();
+const CreateProjectButton: React.FC<CreateProjectButtonProps> = ({ className, style }) => {
   const { t } = useTranslation('create-first-project-form');
+  const { trackMixpanelEvent } = useMixpanelTracking();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    const pathKey = location.pathname.split('/').pop();
-    setCurrentPath(pathKey ?? 'home');
-  }, [location]);
-
-  const handleTemplateDrawerOpen = () => {
-    trackMixpanelEvent(evt_project_import_from_template_click);
-    setIsTemplateDrawerOpen(true);
-  };
-
-  const handleTemplateDrawerClose = () => {
-    setIsTemplateDrawerOpen(false);
-    setCurrentTemplateId('');
-    setSelectedType('worklenz');
-  };
-
-  const handleTemplateSelect = (templateId: string) => {
-    setCurrentTemplateId(templateId);
-  };
-
-  const createFromWorklenzTemplate = async () => {
-    if (!currentTemplateId || currentTemplateId === '') return;
-    try {
-      setProjectImporting(true);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setProjectImporting(false);
-      handleTemplateDrawerClose();
-    }
-  };
-
-  const createFromCustomTemplate = async () => {
-    if (!currentTemplateId || currentTemplateId === '') return;
-    try {
-      setProjectImporting(true);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setProjectImporting(false);
-      handleTemplateDrawerClose();
-    }
-  };
-
-  const setCreatedProjectTemplate = async () => {
-    if (!currentTemplateId || currentTemplateId === '') return;
-    try {
-      setProjectImporting(true);
-      if (selectedType === 'worklenz') {
-        const res = await projectTemplatesApiService.createFromWorklenzTemplate({
-          template_id: currentTemplateId,
-        });
-        if (res.done && res.body.project_id) {
-          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
-          navigate(
-            `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
-          );
-        }
-      } else {
-        const res = await projectTemplatesApiService.createFromCustomTemplate({
-          template_id: currentTemplateId,
-        });
-        if (res.done && res.body.project_id) {
-          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
-          navigate(
-            `/worklenz/projects/${res.body.project_id}?tab=tasks-list&pinned_tab=tasks-list`
-          );
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setProjectImporting(false);
-      handleTemplateDrawerClose();
-    }
-  };
-
-  const dropdownItems = [
-    {
-      key: 'template',
-      label: (
-        <div className="w-full m-0 p-0" onClick={handleTemplateDrawerOpen}>
-          <ImportOutlined className="mr-2" />
-          {currentPath === 'home' ? t('templateButton') : t('createFromTemplate')}
-        </div>
-      ),
-    },
-    // {
-    //   key: 'import-export',
-    //   label: (
-    //     <div className="w-full m-0 p-0" onClick={() => setIsImportExportOpen(true)}>
-    //       <ImportOutlined className="mr-2" />
-    //       {t('importTasks', { defaultValue: 'Import Tasks' })}
-    //     </div>
-    //   ),
-    // },
-  ];
-
-  const handleCreateProject = () => {
+  const handleOpen = () => {
     trackMixpanelEvent(evt_projects_create_click);
-    dispatch(setProjectId(null));
-    dispatch(setProjectData({} as IProjectViewModel));
-    setTimeout(() => {
-      dispatch(toggleProjectDrawer());
-    }, 300);
+    setIsModalOpen(true);
+  };
+
+  const handleClose = () => {
+    setIsModalOpen(false);
   };
 
   return (
     <div className={className}>
-      <Dropdown.Button
-        type="primary"
-        trigger={['click']}
-        icon={<DownOutlined />}
-        onClick={handleCreateProject}
-        menu={{ items: dropdownItems }}
-      >
-        <EditOutlined /> {t('createProject')}
-      </Dropdown.Button>
+      <Button type="primary" icon={<EditOutlined />} onClick={handleOpen} style={style}>
+        {t('createProject', { defaultValue: 'Create Project' })}
+      </Button>
 
-      <Drawer
-        title={t('templateDrawerTitle')}
-        width={1000}
-        onClose={handleTemplateDrawerClose}
-        open={isTemplateDrawerOpen}
-        footer={
-          <div className="flex justify-end px-4 py-2.5">
-            <Button className="mr-2" onClick={handleTemplateDrawerClose}>
-              {t('cancel')}
-            </Button>
-            <Button type="primary" loading={projectImporting} onClick={setCreatedProjectTemplate}>
-              {t('create')}
-            </Button>
-          </div>
-        }
-      >
-        <TemplateDrawer
-          showBothTabs={true}
-          templateSelected={handleTemplateSelect}
-          selectedTemplateType={setSelectedType}
-        />
-      </Drawer>
-      <ProjectImportModal open={isImportExportOpen} onClose={() => setIsImportExportOpen(false)} />
+      <CreateProjectModal open={isModalOpen} onClose={handleClose} />
     </div>
   );
 };

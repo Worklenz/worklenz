@@ -16,13 +16,13 @@ const AllTasksGroupByDropdown = () => {
   const { groupBy } = useAppSelector(state => state.allTasksReportsReducer);
 
   const groupByOptions = [
-    { key: 'none', value: 'none', label: t('noGrouping') },
-    { key: 'project', value: 'project', label: t('groupByProject') },
-    { key: 'status', value: 'status', label: t('groupByStatus') },
-    { key: 'priority', value: 'priority', label: t('groupByPriority') },
-    { key: 'assignee', value: 'assignee', label: t('groupByAssignee') },
-    { key: 'dueDate', value: 'dueDate', label: t('groupByDueDate') },
-    { key: 'phase', value: 'phase', label: t('groupByPhase') },
+    { key: 'none', value: 'none', label: t('noGrouping', { defaultValue: 'None' }) },
+    { key: 'project', value: 'project', label: t('groupByProject', { defaultValue: 'Project' }) },
+    { key: 'status', value: 'status', label: t('groupByStatus', { defaultValue: 'Status' }) },
+    { key: 'priority', value: 'priority', label: t('groupByPriority', { defaultValue: 'Priority' }) },
+    { key: 'assignee', value: 'assignee', label: t('groupByAssignee', { defaultValue: 'Assignee' }) },
+    { key: 'dueDate', value: 'dueDate', label: t('groupByDueDate', { defaultValue: 'Due Date' }) },
+    { key: 'phase', value: 'phase', label: t('groupByPhase', { defaultValue: 'Phase' }) },
   ];
 
   const handleChange = (value: string) => {
@@ -32,7 +32,7 @@ const AllTasksGroupByDropdown = () => {
 
   return (
     <Flex align="center" gap={4}>
-      {t('groupBy')}
+      {t('groupBy', { defaultValue: 'Group by' })}
       <Select
         value={groupBy}
         options={groupByOptions}

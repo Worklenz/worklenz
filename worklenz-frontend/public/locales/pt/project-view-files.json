@@ -46,5 +46,22 @@
   "taskColumn": "Tarefa",
   "taskAttachmentsEmptyText": "Nenhum anexo de tarefa encontrado.",
   "taskAttachmentDeleteSuccess": "Anexo excluído com sucesso.",
-  "taskAttachmentDeleteFailed": "Não foi possível excluir o anexo."
+  "taskAttachmentDeleteFailed": "Não foi possível excluir o anexo.",
+  "linksTab": "Links",
+  "addLink": "Adicionar Link",
+  "editLink": "Editar Link",
+  "linkTitle": "Título",
+  "linkTitleRequired": "O título é obrigatório",
+  "linkUrl": "URL",
+  "linkDescription": "Descrição",
+  "linkDescriptionPlaceholder": "Descrição opcional",
+  "linkSource": "Origem",
+  "linkAddedBy": "Adicionado por",
+  "linkAddedOn": "Adicionado em",
+  "linkLastModified": "Última modificação",
+  "invalidUrl": "Por favor, insira uma URL válida",
+  "deleteLink": "Excluir link",
+  "openTask": "Abrir tarefa",
+  "fromTask": "De: {{taskName}}",
+  "noLinks": "Ainda não há links. Clique em \"Adicionar Link\" para adicionar seu primeiro link."
 }

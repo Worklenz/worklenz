@@ -3,6 +3,17 @@ description: Use this template to document a detailed feature specification.
 title: "[Spec]: "
 labels: ["spec"]
 body:
+  - type: dropdown
+    id: plan
+    attributes:
+      label: Target Plan
+      description: Select which plan this feature belongs to
+      options:
+        - Free
+        - Pro
+        - Business
+    validations:
+      required: true
   - type: textarea
     id: overview
     attributes:

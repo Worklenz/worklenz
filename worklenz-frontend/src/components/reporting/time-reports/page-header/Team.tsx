@@ -96,7 +96,7 @@ const Team: React.FC = () => {
 
   const getButtonText = () => {
     if (isNoneSelected) return t('teams');
-    if (isAllSelected) return `All ${t('teams')}`;
+    if (isAllSelected) return t('allTeams');
     return `${t('teams')} (${activeFiltersCount})`;
   };
 

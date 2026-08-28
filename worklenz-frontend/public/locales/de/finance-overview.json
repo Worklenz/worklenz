@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Finanzübersicht",
+  "pageSubTitle": "Budget, tatsächliche Kosten und Abweichung über alle Projekte zusammengefasst. Klicken Sie auf ein Projekt für die vollständige Finanzansicht.",
+  "noBudgetSet": "Kein Budget festgelegt",
+  "emptyValue": "—",
+  "viewFinanceButton": "Finanzen anzeigen",
+  "viewButton": "Ansehen",
+  "exportButton": "Als Excel exportieren",
+  "exportSuccess": "Erfolgreich exportiert.",
+  "exportFailed": "Export fehlgeschlagen.",
+  "kpiCard": {
+    "totalManualBudget": "Gesamtbudget",
+    "totalActualCost": "Tatsächliche Gesamtkosten",
+    "totalVariance": "Gesamtabweichung",
+    "budgetUtilization": "Budgetauslastung",
+    "estimatedHours": "Geschätzte Stunden",
+    "mixedCurrencyWarning": "Projekte verwenden unterschiedliche Währungen. Diese Summe wurde nicht währungsumgerechnet.",
+    "mixedCurrencyNote": "Anzeige von {{dominant}} für {{count}} von {{total}} Projekten. Enthält auch: {{others}}.",
+    "prevCurrency": "Vorherige Währung",
+    "nextCurrency": "Nächste Währung"
+  },
+  "attention": {
+    "title": "Projekte mit Handlungsbedarf",
+    "emptyState": "Alle Projekte liegen im Budget.",
+    "overBudget": "Über Budget",
+    "watch": "Beobachten",
+    "ofBudgetSpent": "des Budgets verbraucht"
+  },
+  "distribution": {
+    "title": "Budget-Statusverteilung",
+    "onTrack": "Im Plan (≤65% verbraucht)",
+    "watch": "Beobachten (65–100% verbraucht)",
+    "overBudget": "Über Budget (>100% verbraucht)",
+    "projects": "Projekte",
+    "total": "Gesamt",
+    "breakdown": "Kostenaufschlüsselung: {{fixed}} fix · {{timeBased}} zeitbasiert"
+  },
+  "tableCard": {
+    "title": "Finanzielle Projektgesundheit"
+  },
+  "currencyNote": {
+    "convertedPrefix": "KPI-Summen in",
+    "convertedSuffix": "umgerechnet mit aktuellen Wechselkursen. Kurse aktualisiert {{time}}.",
+    "changeCurrency": "Wahrung andern",
+    "unavailable": "Wechselkurse nicht verfugbar - KPI-Summen konnen nicht umgerechnet werden.",
+    "checkSettings": "Wahrungseinstellungen prufen",
+    "fetchUnavailable": "Wechselkursdienst nicht verfugbar.",
+    "fetchFailed": "Wechselkurse konnten nicht abgerufen werden."
+  },
+  "table": {
+    "project": "Projekt",
+    "client": "Kunde",
+    "manualBudget": "Manuelles Budget",
+    "actualCost": "Tatsächliche Kosten",
+    "variance": "Abweichung",
+    "budgetUtilization": "Budgetauslastung",
+    "estHours": "Gesch. Stunden",
+    "searchPlaceholder": "Projekte suchen"
+  }
+}

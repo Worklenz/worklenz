@@ -152,7 +152,6 @@ export enum AppSumoUpsellEvents {
   SEAT_LIMIT_ADD_MORE_CLICKED = 'appsumo_seat_limit_add_more_clicked',
   // Feature gates
   CUSTOM_FIELD_LIMIT_HIT = 'appsumo_custom_field_limit_hit',
-  CLIENT_PORTAL_GATED_CLICK = 'appsumo_client_portal_gated_click',
   PROJECT_FINANCE_GATED_CLICK = 'appsumo_project_finance_gated_click',
   ORG_LOGO_GATED_CLICK = 'appsumo_org_logo_change_gated_click',
   // File & storage
@@ -213,6 +212,12 @@ export enum MixpanelBillingEvents {
   APPSUMO_DISCOUNT_VIEWED = 'appsumo_discount_viewed',
   APPSUMO_UPGRADE_INITIATED = 'appsumo_upgrade_initiated',
   APPSUMO_PLAN_SELECTED = 'appsumo_plan_selected',
+
+  // AppSumo promo popup/banner events
+  APPSUMO_PROMO_POPUP_VIEWED = 'appsumo_promo_popup_viewed',
+  APPSUMO_PROMO_POPUP_CLICKED = 'appsumo_promo_popup_clicked',
+  APPSUMO_PROMO_POPUP_CLOSED = 'appsumo_promo_popup_closed',
+  APPSUMO_PROMO_DRAWER_BANNER_CLICKED = 'appsumo_promo_drawer_banner_clicked',
 
   // Business Plan Trial events
   BUSINESS_TRIAL_ELIGIBLE = 'business_trial_eligible',

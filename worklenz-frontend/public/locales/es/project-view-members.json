@@ -22,5 +22,7 @@
   "seatRemainingText": "{{remaining}} asientos restantes.",
   "seatLimitPopoverCta": "Actualizar ahora",
   "addMoreSeats": "Agregar más asientos",
-  "closePopover": "Cerrar ventana emergente"
+  "closePopover": "Cerrar ventana emergente",
+  "invite": "Invitar",
+  "Invite": "Invitar"
 }

@@ -1,6 +1,6 @@
 import { forEach } from "lodash";
 import {DEFAULT_PAGE_SIZE} from "../shared/constants";
-import {toTsQuery} from "../shared/utils";
+import {toTsQuery, escapeHtmlEntities} from "../shared/utils";
 
 export default abstract class WorklenzControllerBase {
 
@@ -40,8 +40,11 @@ export default abstract class WorklenzControllerBase {
     let searchParams: string[] = [];
 
     if (search) {
-      // Use parameterized queries instead of string interpolation
-      const searchPattern = `%${search}%`;
+      // HTML-encode the search term to match how names are stored in the DB
+      // (sanitizePlainText encodes & to &amp;, < to &lt;, > to &gt; before saving —
+      // use the same entity mapping here so the pattern matches stored values)
+      const encodedSearch = escapeHtmlEntities(search);
+      const searchPattern = `%${encodedSearch}%`;
       let s = "";
       let currentParam = paramOffset;
       

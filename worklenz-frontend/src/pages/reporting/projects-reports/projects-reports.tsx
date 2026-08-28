@@ -101,7 +101,7 @@ const ProjectsReports = () => {
 
   return (
     <Flex vertical>
-      <CustomPageHeader title={pageTitle} children={headerChildren} />
+      <CustomPageHeader title={pageTitle} children={headerChildren} style={{ padding: 0, marginBottom: 16 }} />
 
       <Card title={cardTitle}>{cardContent}</Card>
     </Flex>

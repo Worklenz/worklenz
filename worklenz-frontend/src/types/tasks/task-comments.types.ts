@@ -21,11 +21,13 @@ export interface ITaskComment {
   task_id?: string;
   created_at?: string;
   updated_at?: string;
+  mentions?: { team_member_id: string; name: string }[];
 }
 
 export interface ITaskCommentViewModel extends ITaskComment {
   edit?: boolean;
   is_edited?: boolean;
+  is_deleted?: boolean;
   member_name?: string;
   team_member_id?: string;
   avatar_url?: string;

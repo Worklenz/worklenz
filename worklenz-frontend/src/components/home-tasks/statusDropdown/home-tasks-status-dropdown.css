@@ -1,3 +1,11 @@
+/* antd's dark theme gives the inner `.ant-select-selector` its own opaque
+   background, which sits on top of and hides whatever color is set on the
+   outer `.ant-select` via the `style` prop — apply the status color here
+   instead so it's actually visible in both light and dark mode. */
+.home-status-select .ant-select-selector {
+  background-color: var(--status-color) !important;
+}
+
 .status-dropdown .ant-dropdown-menu {
   padding: 0 !important;
   margin-top: 8px !important;

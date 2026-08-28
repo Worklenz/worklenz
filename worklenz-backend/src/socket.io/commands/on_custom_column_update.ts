@@ -1,7 +1,8 @@
 import { Server, Socket } from "socket.io";
 import { SocketEvents } from "../events";
 import db from "../../config/db";
-import { log_error } from "../util";
+import { getLoggedInUserIdFromSocket, log_error } from "../util";
+import { verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
 
 interface TaskCustomColumnUpdateData {
   task_id: string;
@@ -38,12 +39,30 @@ export const on_task_custom_column_update = async (_io: Server, socket: Socket, 
   try {
     // Parse the data
     const parsedData: TaskCustomColumnUpdateData = typeof data === "string" ? JSON.parse(data) : data;
-    const { task_id, column_key, value, project_id } = parsedData;
+    const { task_id, column_key, value } = parsedData;
 
-    if (!task_id || !column_key || value === undefined || !project_id) {
-      console.error("Invalid data for task custom column update", { task_id, column_key, value, project_id });
+    if (!task_id || !column_key || value === undefined) {
+      console.error("Invalid data for task custom column update", { task_id, column_key, value });
       return;
     }
+
+    // Resolve the task's actual project rather than trusting a client-supplied
+    // project_id, which can go stale (e.g. after the task moves projects).
+    const [hasAccess, taskProjectResult] = await Promise.all([
+      verifyNonGuestTaskAccessSocket(socket, task_id),
+      db.query(
+        `SELECT project_id FROM tasks WHERE id = $1 LIMIT 1`,
+        [task_id]
+      ),
+    ]);
+
+    if (!hasAccess || taskProjectResult.rowCount === 0) {
+      logUnauthorizedSocketAccess(socket, "TASK_CUSTOM_COLUMN_UPDATE", "task", task_id);
+      console.warn("Unauthorized custom column update", { task_id, column_key });
+      return;
+    }
+
+    const project_id = taskProjectResult.rows[0].project_id;
 
     // Get column information
     const columnQuery = `

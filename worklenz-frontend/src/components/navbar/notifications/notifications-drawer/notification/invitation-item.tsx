@@ -60,7 +60,14 @@ const InvitationItem: React.FC<InvitationItemProps> = ({ item, isUnreadNotificat
       const res = await acceptInvite(true);
       if (res && res.id) {
         setJoining(true);
-        await dispatch(setActiveTeam(res.id));
+        
+        // Switch team and wait for backend to complete
+        await dispatch(setActiveTeam(res.id)).unwrap();
+        
+        // Add delay to ensure database transaction is committed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify authentication with updated session
         await handleVerifyAuth();
         window.location.reload();
         setJoining(false);

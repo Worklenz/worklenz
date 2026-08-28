@@ -10,6 +10,7 @@ export interface IWorklenzNotification {
   color?: string;
   url?: string;
   task_id?: string;
+  comment_id?: string;
   params?: Params;
   created_at?: string;
 }

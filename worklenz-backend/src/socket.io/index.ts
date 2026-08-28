@@ -52,14 +52,22 @@ import { on_task_recurring_change } from "./commands/on-task-recurring-change";
 import { on_task_assignees_change } from "./commands/on-task-assignees-change";
 import { on_task_custom_column_update } from "./commands/on_custom_column_update";
 import { on_custom_column_pinned_change } from "./commands/on_custom_column_pinned_change";
+import { on_custom_column_created } from "./commands/on_custom_column_created";
 import { on_update_task_progress } from "./commands/on-update-task-progress";
 import { on_update_task_weight } from "./commands/on-update-task-weight";
 import { on_get_task_subtasks_count } from "./commands/on-get-task-subtasks-count";
 import { on_get_done_statuses } from "./commands/on-get-done-statuses";
 import { on_schedule_task_drag_change } from "./commands/on_schedule_task_drag_change";
 import { on_task_due_time_change } from "./commands/on-task-due-time-change";
+import { on_subtask_sort_order_change } from "./commands/on-subtask-sort-order-change";
 
-import business from "../business";
+// Client Portal imports
+import { on_client_connect } from "../ee/socket.io/commands/client-portal/on-client-connect";
+import { on_chat_send_message } from "../ee/socket.io/commands/client-portal/on-chat-send-message";
+import { on_chat_join } from "../ee/socket.io/commands/client-portal/on-chat-join";
+import { on_chat_leave } from "../ee/socket.io/commands/client-portal/on-chat-leave";
+import { on_chat_typing } from "../ee/socket.io/commands/client-portal/on-chat-typing";
+import { on_chat_mark_read } from "../ee/socket.io/commands/client-portal/on-chat-mark-read";
 
 export function register(io: any, socket: Socket) {
   log(socket.id, "client registered");
@@ -75,7 +83,7 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.TASK_START_DATE_CHANGE.toString(), data => on_task_start_date_change(io, socket, data));
   socket.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), data => on_task_end_date_change(io, socket, data));
   socket.on(SocketEvents.TASK_TIME_ESTIMATION_CHANGE.toString(), data => on_time_estimation_change(io, socket, data));
-  socket.on(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), data => on_task_description_change(io, socket, data));
+  socket.on(SocketEvents.TASK_DESCRIPTION_CHANGE.toString(), (data, callback) => on_task_description_change(io, socket, data, callback));
   socket.on(SocketEvents.GET_TASK_PROGRESS.toString(), data => on_get_task_progress(io, socket, data));
   socket.on(SocketEvents.TASK_TIMER_START.toString(), data => on_task_timer_start(io, socket, data));
   socket.on(SocketEvents.TASK_TIMER_STOP.toString(), data => on_task_timer_stop(io, socket, data));
@@ -113,16 +121,23 @@ export function register(io: any, socket: Socket) {
   socket.on(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), data => on_task_assignees_change(io, socket, data));
   socket.on(SocketEvents.TASK_CUSTOM_COLUMN_UPDATE.toString(), data => on_task_custom_column_update(io, socket, data));
   socket.on(SocketEvents.CUSTOM_COLUMN_PINNED_CHANGE.toString(), data => on_custom_column_pinned_change(io, socket, data));
+  socket.on(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), data => on_custom_column_created(io, socket, data));
   socket.on(SocketEvents.UPDATE_TASK_PROGRESS.toString(), data => on_update_task_progress(io, socket, data));
   socket.on(SocketEvents.UPDATE_TASK_WEIGHT.toString(), data => on_update_task_weight(io, socket, data));
   socket.on(SocketEvents.GET_TASK_SUBTASKS_COUNT.toString(), (taskId) => on_get_task_subtasks_count(io, socket, taskId));
   socket.on(SocketEvents.GET_DONE_STATUSES.toString(), (projectId, callback) => on_get_done_statuses(io, socket, projectId, callback));
   socket.on(SocketEvents.SCHEDULE_TASK_UPDATE.toString(), data => on_schedule_task_drag_change(io, socket, data));
   socket.on(SocketEvents.TASK_DUE_TIME_CHANGE.toString(), data => on_task_due_time_change(io, socket, data));
+  socket.on(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), data => on_subtask_sort_order_change(io, socket, data));
   
-  // Client Portal events (EE: registered by business seam; CE: no-op)
-  business.registerClientPortalSocketHandlers(io, socket);
-
+  // Client Portal events
+  socket.on("client_portal:connect", data => on_client_connect(io, socket, data));
+  socket.on(SocketEvents.CHAT_SEND_MESSAGE.toString(), data => on_chat_send_message(io, socket, data));
+  socket.on(SocketEvents.CHAT_JOIN.toString(), data => on_chat_join(io, socket, data));
+  socket.on(SocketEvents.CHAT_LEAVE.toString(), data => on_chat_leave(io, socket, data));
+  socket.on(SocketEvents.CHAT_TYPING.toString(), data => on_chat_typing(io, socket, data));
+  socket.on(SocketEvents.CHAT_MESSAGE_READ.toString(), data => on_chat_mark_read(io, socket, data));
+  
   // socket.io built-in event
   socket.on("disconnect", (reason) => on_disconnect(io, socket, reason));
 }

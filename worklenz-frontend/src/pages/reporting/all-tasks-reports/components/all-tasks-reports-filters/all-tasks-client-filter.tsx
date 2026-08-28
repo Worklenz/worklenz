@@ -9,7 +9,7 @@ import {
   Typography,
   Spin,
 } from '@/shared/antd-imports';
-import { CaretDownFilled, SearchOutlined } from '@/shared/antd-imports';
+import { CaretDownFilled } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -69,7 +69,6 @@ const AllTasksClientFilter = () => {
       <Flex vertical gap={8}>
         <Input
           placeholder={t('searchClients', { defaultValue: 'Search clients...' })}
-          prefix={<SearchOutlined />}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           allowClear

@@ -13,10 +13,10 @@ import PeopleDropdown from '@/components/common/people-dropdown/PeopleDropdown';
 import AvatarGroup from '@/components/AvatarGroup';
 import dayjs from 'dayjs';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser, hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { openUpgradeModal, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import {
   getTaskCustomFieldDisplayName,
@@ -24,6 +24,7 @@ import {
 } from '@/utils/task-custom-columns';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
 import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
+import { isUserGuest } from '@/lib/project/project-view-constants';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
@@ -33,14 +34,18 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   const { t: tCommon } = useTranslation('common');
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const { isFreeUser: isFree, hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const isFree = isFreeUser(currentSession);
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const isLtdUser =
     currentSession?.subscription_type === ISUBSCRIPTION_TYPE.LIFE_TIME_DEAL ||
     String(currentSession?.subscription_status || '').toLowerCase() === 'life_time_deal';
 
   const customColumns = useAppSelector(selectCustomColumns);
   const customColumnsCount = customColumns?.length ?? 0;
+
+  // Check if current user is a guest
+  const selectedProject = useAppSelector(state => state.projectReducer.project);
+  const isGuest = isUserGuest(selectedProject);
 
   // At or over the custom field limit (non-business users)
   const hasReachedLimit = !hasBusinessAccess && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
@@ -71,8 +76,12 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   }, [popoverOpen]);
 
   const handleModalOpen = useCallback(() => {
+    // Prevent guests from creating custom columns
+    if (isGuest) {
+      return;
+    }
     if (isFree) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
       return;
     }
     if (isGrandfathered || hasReachedLimit) {
@@ -85,14 +94,14 @@ export const AddCustomColumnButton: React.FC = memo(() => {
     }
     dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
     dispatch(toggleCustomColumnModalOpen(true));
-  }, [dispatch, isFree, hasReachedLimit, isGrandfathered]);
+  }, [dispatch, isFree, hasReachedLimit, isGrandfathered, isGuest]);
 
   const handleUpgradeNow = useCallback(() => {
     setPopoverOpen(false);
     if (isAppSumoUser) {
       trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'custom_fields' });
     }
-    promptUpgrade('customFields');
+    dispatch(openUpgradeModal('customFields'));
   }, [dispatch, isAppSumoUser, trackAppSumoEvent]);
 
   const popoverTitle = isGrandfathered
@@ -106,7 +115,8 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       })
     : t('customColumns.limitPopover.body', {
         defaultValue:
-          'You have used all 10 custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.',
+          'You have used all {{limit}} custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.',
+        limit: LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT,
       });
 
   const popoverContent = (
@@ -118,13 +128,15 @@ export const AddCustomColumnButton: React.FC = memo(() => {
     </Flex>
   );
 
-  const tooltipTitle = hasReachedLimit || isGrandfathered
-    ? t('customColumns.limitPopover.title', { defaultValue: 'Custom Field Limit Reached' })
-    : isFree
-      ? tCommon('upgrade-plan', { defaultValue: 'Upgrade plan' })
-      : t('customColumns.addCustomColumn', { defaultValue: 'Add a custom column' });
+  const tooltipTitle = isGuest
+    ? t('customColumns.guestCannotAddColumn', { defaultValue: 'Guest users cannot add custom columns' })
+    : hasReachedLimit || isGrandfathered
+      ? t('customColumns.limitPopover.title', { defaultValue: 'Custom Field Limit Reached' })
+      : isFree
+        ? tCommon('upgrade-plan', { defaultValue: 'Upgrade plan' })
+        : t('customColumns.addCustomColumn', { defaultValue: 'Add a custom column' });
 
-  return (
+  return isGuest ? null : (
     <Popover
       open={popoverOpen}
       title={popoverTitle}
@@ -136,15 +148,15 @@ export const AddCustomColumnButton: React.FC = memo(() => {
         <button
           ref={buttonRef}
           onClick={handleModalOpen}
-          disabled={isFree}
+          disabled={isFree || isGuest}
           className={`
             group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
             flex items-center justify-center
             ${
-              isFree
+              isFree || isGuest
                 ? isDarkMode
-                  ? 'border-gray-600 text-gray-500 cursor-pointer'
-                  : 'border-gray-300 text-gray-400 cursor-pointer'
+                  ? 'border-gray-600 text-gray-500 cursor-not-allowed opacity-50'
+                  : 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
                 : isDarkMode
                   ? 'border-gray-600 hover:border-blue-500 hover:bg-blue-500/10 text-gray-500 hover:text-blue-400'
                   : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-400 hover:text-blue-600'
@@ -157,8 +169,8 @@ export const AddCustomColumnButton: React.FC = memo(() => {
             <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
           )}
 
-          {/* Subtle glow effect on hover - only for non-free users */}
-          {!isFree && (
+          {/* Subtle glow effect on hover - only for non-free and non-guest users */}
+          {!isFree && !isGuest && (
             <div
               className={`
               absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
@@ -185,7 +197,8 @@ export const CustomColumnHeader: React.FC<{
   dragListeners?: any;
   dragAttributes?: any;
   setDragActivatorRef?: (element: HTMLElement | null) => void;
-}> = ({ column, onSettingsClick, dragListeners, dragAttributes, setDragActivatorRef }) => {
+  isGuest?: boolean;
+}> = ({ column, onSettingsClick, dragListeners, dragAttributes, setDragActivatorRef, isGuest = false }) => {
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
 
@@ -211,20 +224,22 @@ export const CustomColumnHeader: React.FC<{
       >
         {displayName}
       </span>
-      {/* Right-side icons: settings icon only */}
-      <Flex align="center" gap={4} className="flex-shrink-0" onClick={e => e.stopPropagation()}>
-        <Tooltip title={t('customColumns.customColumnSettings')}>
-          <SettingOutlined
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
-              isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-            }`}
-            onClick={e => {
-              e.stopPropagation();
-              onSettingsClick(column.key || column.id);
-            }}
-          />
-        </Tooltip>
-      </Flex>
+      {/* Right-side icons: settings icon only - hidden for guests */}
+      {!isGuest && (
+        <Flex align="center" gap={4} className="flex-shrink-0" onClick={e => e.stopPropagation()}>
+          <Tooltip title={t('customColumns.customColumnSettings')}>
+            <SettingOutlined
+              className={`hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200 ${
+                isHovered ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+              }`}
+              onClick={e => {
+                e.stopPropagation();
+                onSettingsClick(column.key || column.id);
+              }}
+            />
+          </Tooltip>
+        </Flex>
+      )}
     </Flex>
   );
 };
@@ -233,12 +248,13 @@ export const CustomColumnHeader: React.FC<{
 export const CustomColumnCell: React.FC<{
   column: any;
   task: any;
+  disabled?: boolean;
   updateTaskCustomColumnValue: (
     taskId: string,
     columnKey: string,
     value: string | number | boolean | string[] | null
   ) => void;
-}> = memo(({ column, task, updateTaskCustomColumnValue }) => {
+}> = memo(({ column, task, disabled = false, updateTaskCustomColumnValue }) => {
   const { t } = useTranslation('task-list-table');
 
   const customValue = task.custom_column_values?.[column.key];
@@ -246,6 +262,10 @@ export const CustomColumnCell: React.FC<{
 
   if (!fieldType || !column.custom_column) {
     return <span className="text-gray-400 text-sm">-</span>;
+  }
+
+  if (disabled) {
+    return <ReadOnlyCustomColumnCell fieldType={fieldType} customValue={customValue} />;
   }
 
   // Render different input types based on field type
@@ -305,6 +325,28 @@ export const CustomColumnCell: React.FC<{
 });
 
 CustomColumnCell.displayName = 'CustomColumnCell';
+
+const ReadOnlyCustomColumnCell: React.FC<{
+  fieldType: string;
+  customValue: any;
+}> = memo(({ fieldType, customValue }) => {
+  const members = useAppSelector(state => state.teamMembersReducer.teamMembers);
+  const displayValue =
+    fieldType === 'people'
+      ? parsePeopleCustomFieldValue(customValue)
+          .map(memberId => members?.data?.find(member => member.id === memberId)?.name)
+          .filter(Boolean)
+          .join(', ')
+      : fieldType === 'date' && customValue
+        ? dayjs(customValue).format('MMM DD, YYYY')
+        : Array.isArray(customValue)
+          ? customValue.join(', ')
+          : String(customValue ?? '');
+
+  return <span className="text-sm px-2 truncate">{displayValue || '-'}</span>;
+});
+
+ReadOnlyCustomColumnCell.displayName = 'ReadOnlyCustomColumnCell';
 
 export const TextCustomColumnCell: React.FC<{
   task: any;

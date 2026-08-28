@@ -33,7 +33,7 @@ const InsightsTasks = ({ t }: { t: TFunction }) => {
               </Tooltip>
             </Typography.Text>
           }
-          extra={<Button type="link">{t('common.seeAll')}</Button>}
+         
           style={{ width: '100%' }}
         >
           <OverdueTasksTable projectId={projectId} includeArchivedTasks={includeArchivedTasks} />
@@ -55,10 +55,10 @@ const InsightsTasks = ({ t }: { t: TFunction }) => {
               </Tooltip>
             </Typography.Text>
           }
-          extra={<Button type="link">{t('common.seeAll')}</Button>}
+         
           style={{ width: '100%' }}
         >
-          <OverLoggedTasksTable projectId={projectId} includeArchivedTasks={includeArchivedTasks} />
+          <OverLoggedTasksTable {...{ projectId, includeArchivedTasks }} />
         </Card>
 
         <Card
@@ -68,7 +68,7 @@ const InsightsTasks = ({ t }: { t: TFunction }) => {
               {t('tasks.tasksCompletedEarly')}
             </Typography.Text>
           }
-          extra={<Button type="link">{t('common.seeAll')}</Button>}
+          
           style={{ width: '100%' }}
         >
           <TaskCompletedEarlyTable
@@ -84,7 +84,7 @@ const InsightsTasks = ({ t }: { t: TFunction }) => {
               {t('tasks.tasksCompletedLate')}
             </Typography.Text>
           }
-          extra={<Button type="link">{t('common.seeAll')}</Button>}
+  
           style={{ width: '100%' }}
         >
           <TaskCompletedLateTable

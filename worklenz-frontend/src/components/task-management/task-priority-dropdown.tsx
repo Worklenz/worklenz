@@ -10,12 +10,14 @@ interface TaskPriorityDropdownProps {
   task: Task;
   projectId: string;
   isDarkMode?: boolean;
+  disabled?: boolean;
 }
 
 const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
   task,
   projectId,
   isDarkMode = false,
+  disabled = false,
 }) => {
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -130,14 +132,17 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
       <button
         ref={buttonRef}
         onClick={e => {
+          if (disabled) return;
           e.preventDefault();
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
+        disabled={disabled}
         className={`
           inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
           transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] max-w-full justify-center
           whitespace-nowrap
+          ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
         style={{
           backgroundColor: currentPriority
@@ -164,7 +169,7 @@ const TaskPriorityDropdown: React.FC<TaskPriorityDropdownProps> = ({
       </button>
 
       {/* Dropdown Menu */}
-      {isOpen &&
+      {isOpen && !disabled &&
         createPortal(
           <div
             ref={dropdownRef}

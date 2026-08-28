@@ -26,10 +26,10 @@ export const projectsApiService = {
     filter: number | null = null,
     statuses: string | null = null,
     categories: string | null = null,
-    priorities: string | null = null
+    priorities: string | null = null,
+    clients: string | null = null
   ): Promise<IServerResponse<IProjectsViewModel>> => {
-    const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}${toQueryString({ index, size, field, order, search: s, filter, statuses, categories, priorities })}`;
+    const url = `${rootUrl}${toQueryString({ index, size, field, order, search: search || '', filter, statuses, categories, priorities, clients })}`;
     const response = await apiClient.get<IServerResponse<IProjectsViewModel>>(`${url}`);
     return response.data;
   },
@@ -44,10 +44,10 @@ export const projectsApiService = {
     filter: number | null = null,
     statuses: string | null = null,
     categories: string | null = null,
-    priorities: string | null = null
+    priorities: string | null = null,
+    clients: string | null = null
   ): Promise<IServerResponse<IGroupedProjectsViewModel>> => {
-    const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: s, groupBy, filter, statuses, categories, priorities })}`;
+    const url = `${rootUrl}/grouped${toQueryString({ index, size, field, order, search: search || '', groupBy, filter, statuses, categories, priorities, clients })}`;
     const response = await apiClient.get<IServerResponse<IGroupedProjectsViewModel>>(`${url}`);
     return response.data;
   },
@@ -89,8 +89,7 @@ export const projectsApiService = {
     order: string | null,
     search: string | null
   ): Promise<IServerResponse<IProjectMembersViewModel>> => {
-    const s = encodeURIComponent(search || '');
-    const url = `${rootUrl}/members/${id}${toQueryString({ index, size, field, order, search: s })}`;
+    const url = `${rootUrl}/members/${id}${toQueryString({ index, size, field, order, search: search || '' })}`;
     const response = await apiClient.get<IServerResponse<IProjectMembersViewModel>>(`${url}`);
     return response.data;
   },

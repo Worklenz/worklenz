@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
-import { Tag, Tooltip } from '@/shared/antd-imports';
+import { Tag, Tooltip, Avatar as AntAvatar } from '@/shared/antd-imports';
 import { ClockCircleOutlined, ArrowsAltOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import dayjs from 'dayjs';
+
 
 interface ScheduleTaskRowProps {
   task: {
@@ -103,11 +104,9 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
     const priorityById = priorityList.find(p => p.id === task.priority);
     if (priorityById) {
       // Map value back to name
-      const value = Number(priorityById.value);
-      const name =
-        value === 0 ? 'Low' : value === 1 ? 'Medium' : value === 2 ? 'High' : task.priority;
+
       return {
-        name: name,
+        name: priorityById.name || task.priority,
         color: isDarkMode
           ? priorityById.color_code_dark || priorityById.color_code
           : priorityById.color_code,
@@ -116,6 +115,7 @@ const ScheduleTaskRow: React.FC<ScheduleTaskRowProps> = ({ task, onClick }) => {
 
     // Fallback colors
     const fallbackColors: Record<string, string> = {
+      critical: '#f5222d',
       high: '#ff4d4f',
       medium: '#faad14',
       low: '#52c41a',

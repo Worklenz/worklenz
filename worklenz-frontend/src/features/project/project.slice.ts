@@ -86,6 +86,13 @@ const projectSlice = createSlice({
     setProject: (state, action: PayloadAction<IProjectViewModel>) => {
       state.project = action.payload;
     },
+    mergeProject: (state, action: PayloadAction<Partial<IProjectViewModel>>) => {
+      if (state.project) {
+        state.project = { ...state.project, ...action.payload };
+      } else {
+        state.project = action.payload as IProjectViewModel;
+      }
+    },
     setColumns: (state, action: PayloadAction<ITaskListColumn[]>) => {
       state.columns = action.payload;
     },
@@ -213,6 +220,7 @@ const projectSlice = createSlice({
 export const {
   setProjectId,
   setProject,
+  mergeProject,
   setColumns,
   setMembers,
   setLabels,

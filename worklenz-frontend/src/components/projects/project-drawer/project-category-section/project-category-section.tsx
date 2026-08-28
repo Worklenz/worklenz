@@ -22,9 +22,9 @@ import {
 } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { colors } from '@/styles/colors';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { safeTextDisplay } from '@/utils/html-entities';
 
 interface ProjectCategorySectionProps {
@@ -36,8 +36,9 @@ interface ProjectCategorySectionProps {
 const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionProps) => {
   const dispatch = useAppDispatch();
   const { t: tCommon } = useTranslation('common');
-  const { isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
+  const isFree = isFreeUser(currentSession);
 
   // Read categories directly from Redux - this will auto-update when categories change
   const categories = useAppSelector(state => state.projectCategoriesReducer.projectCategories);
@@ -68,7 +69,7 @@ const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionPro
 
   const handleShowAddCategoryInput = () => {
     if (isFree) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
       return;
     }
     setIsAddCategoryInputShow(true);
@@ -77,7 +78,7 @@ const ProjectCategorySection = ({ form, t, disabled }: ProjectCategorySectionPro
 
   const handleSelectClick = () => {
     if (isFree) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
     }
   };
 

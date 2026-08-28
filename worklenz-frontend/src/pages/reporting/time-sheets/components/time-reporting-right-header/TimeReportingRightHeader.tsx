@@ -31,8 +31,9 @@ const TimeReportingRightHeader: React.FC<headerState> = ({
   return (
     <CustomPageHeader
       title={title}
+      style={{ padding: 0, marginBottom: 16 }}
       children={
-        <Space>
+        <Space wrap style={{ rowGap: 8 }}>
           <Button>
             <Checkbox checked={archived} onChange={e => dispatch(setArchived(e.target.checked))}>
               <Typography.Text>{t('includeArchivedProjects')}</Typography.Text>

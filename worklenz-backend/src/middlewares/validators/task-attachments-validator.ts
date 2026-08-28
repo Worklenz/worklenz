@@ -3,7 +3,7 @@ import { NextFunction } from "express";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
-import { getFreePlanSettings, getUsedStorage } from "../../shared/licensing-utils";
+import { getFreePlanSettings, getUsedStorage } from "../../ee/shared/paddle-utils";
 import { megabytesToBytes, sanitizeSVG } from "../../shared/utils";
 
 // Dangerous file extensions that should never be uploaded

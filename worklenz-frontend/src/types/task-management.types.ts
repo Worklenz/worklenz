@@ -30,6 +30,9 @@ export interface Task {
   has_filtered_children?: boolean; // Flag to auto-expand when filtered descendants exist
   parent_task_id?: string;
   parent_task_container_id?: string;
+  parent_task_name?: string | null;
+  parent_task_key?: string | null;
+  parent_is_subtask?: boolean;  // true when parent itself has a parent — task is depth ≥ 2
   is_sub_task?: boolean; // Add this property
   is_parent_container?: boolean;
   parent_task_not_archived?: boolean;

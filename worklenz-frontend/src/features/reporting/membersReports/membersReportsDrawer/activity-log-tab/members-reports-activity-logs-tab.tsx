@@ -1,5 +1,5 @@
 import { Flex, Skeleton } from '@/shared/antd-imports';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import EmptyListPlaceholder from '@/components/EmptyListPlaceholder';
 import ActivityLogCard from './activity-log-card';
 import { useTranslation } from 'react-i18next';
@@ -65,7 +65,16 @@ const MembersReportsActivityLogsTab = ({ memberId = null }: MembersReportsActivi
       )}
 
       {/* update task drawer  */}
-      {createPortal(<TaskDrawer />, document.body)}
+      {createPortal(
+        // No fallback: TaskDrawer renders nothing visible while closed, and the
+        // prefetch in MembersReportsDrawer means the chunk is normally already
+        // loaded by the time this suspends — an unpositioned spinner dropped
+        // into document.body would be a worse glitch than a brief blank frame.
+        <Suspense fallback={null}>
+          <TaskDrawer />
+        </Suspense>,
+        document.body
+      )}
     </Skeleton>
   );
 };

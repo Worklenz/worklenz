@@ -23,9 +23,12 @@ import {
   fetchEnhancedKanbanLabels,
   fetchEnhancedKanbanGroups,
   fetchEnhancedKanbanTaskAssignees,
+  fetchBoardSubTasks,
   updateEnhancedKanbanTaskPriority,
   selectKanbanLoadedProjectId,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTaskGroups } from '@/features/tasks/tasks.slice';
 import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status';
 import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
 import { ITaskListGroup } from '@/types/tasks/taskList.types';
@@ -57,7 +60,7 @@ const initialDragState: DragStateRef = {
   dragType: null,
 };
 
-const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ projectId }) => {
+const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string; isGuest?: boolean }> = ({ projectId, isGuest = false }) => {
   const { t } = useTranslation('kanban-board');
   const dispatch = useDispatch();
   const authService = useAuthService();
@@ -98,6 +101,40 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     }
   }, [dispatch, projectId, loadedProjectId]);
 
+  // When a filter is active, automatically fetch and expand sub-tasks for any parent task
+  // whose descendants match the filter (has_filtered_children = true → show_sub_tasks = true).
+  // This ensures matching sub-tasks are visible without requiring manual expansion.
+  const { priorities, labels, members, search, statuses } = useSelector(
+    (state: RootState) => state.enhancedKanbanReducer
+  );
+  const hasActiveFilter =
+    priorities.length > 0 ||
+    labels.some((l: any) => l.selected) ||
+    members.length > 0 ||
+    !!search ||
+    statuses.length > 0;
+
+  useEffect(() => {
+    if (!hasActiveFilter || !projectId) return;
+
+    taskGroups.forEach(group => {
+      group.tasks.forEach(task => {
+        // show_sub_tasks is set to true by transformV3TaskToProjectTask when
+        // has_filtered_children is true, meaning a descendant matches the filter.
+        // Fetch sub-tasks if not already loaded.
+        if (task.show_sub_tasks && task.id && (!task.sub_tasks || task.sub_tasks.length === 0) && !task.sub_tasks_loading) {
+          dispatch(
+            fetchBoardSubTasks({
+              taskId: task.id,
+              projectId,
+              parentTaskIdForQuery: task.parent_task_container_id || task.id,
+            }) as any
+          );
+        }
+      });
+    });
+  }, [taskGroups, hasActiveFilter, projectId, dispatch]);
+
   // Cleanup RAF on unmount
   useEffect(() => {
     return () => {
@@ -137,10 +174,11 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   }, []);
 
   const handleGroupDragStart = useCallback((e: React.DragEvent, groupId: string) => {
+    if (isGuest) return; // Prevent guests from dragging
     dragStateRef.current = { ...dragStateRef.current, draggedGroupId: groupId, dragType: 'group' };
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', groupId);
-  }, []);
+  }, [isGuest]);
 
   const handleGroupDragOver = useCallback((e: React.DragEvent) => {
     if (dragStateRef.current.dragType !== 'group') return;
@@ -201,6 +239,9 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
             phases: newPhaseList,
             project_id: projectId,
           });
+          // Refresh task list and groups so Task List reflects new phase ordering immediately
+          dispatch(fetchTasksV3(projectId) as any);
+          dispatch(fetchTaskGroups(projectId) as any);
         }
       } catch (err) {
         logger.error('Failed to update column order', err);
@@ -210,6 +251,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
   );
 
   const handleTaskDragStart = useCallback((e: React.DragEvent, taskId: string, groupId: string) => {
+    if (isGuest) return; // Prevent guests from dragging
     dragStateRef.current = {
       ...dragStateRef.current,
       draggedTaskId: taskId,
@@ -218,7 +260,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
     };
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', taskId);
-  }, []);
+  }, [isGuest]);
 
   const handleTaskDragOver = useCallback(
     (e: React.DragEvent, groupId: string, taskIdx: number | null) => {
@@ -503,7 +545,7 @@ const EnhancedKanbanBoardNativeDnD: React.FC<{ projectId: string }> = ({ project
                 hoveredGroupId={hoverState.groupId}
               />
             ))}
-            <EnhancedKanbanCreateSection />
+            {!isGuest && <EnhancedKanbanCreateSection />}
           </div>
         )}
       </div>

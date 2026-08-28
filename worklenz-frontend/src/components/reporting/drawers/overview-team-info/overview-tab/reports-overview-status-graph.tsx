@@ -53,9 +53,14 @@ const OverviewReportsProjectStatusGraph = ({
       },
       tooltip: {
         callbacks: {
+          title: contexts => {
+            const label = contexts[0]?.label ?? '';
+            return t(`${label}Text`);
+          },
           label: context => {
             const value = context.raw as number;
-            return `${context.label}: ${value} task${value !== 1 ? 's' : ''}`;
+            const translatedLabel = t(`${context.label}Text`);
+            return `${translatedLabel}: ${value} project${value !== 1 ? 's' : ''}`;
           },
         },
       },
@@ -72,31 +77,37 @@ const OverviewReportsProjectStatusGraph = ({
         </Typography.Text>
       }
     >
-      <div className="flex flex-wrap items-center justify-center gap-6 xl:flex-nowrap">
-        <Doughnut
-          data={chartData}
-          options={options}
-          className="max-h-[200px] w-full max-w-[200px]"
-        />
+      <div className="flex items-start gap-6">
+        <div className="shrink-0" style={{ width: 160, height: 160 }}>
+          <Doughnut
+            data={chartData}
+            options={options}
+            style={{ width: 160, height: 160 }}
+          />
+        </div>
 
-        <div className="flex flex-row flex-wrap gap-3 xl:flex-col">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
           {/* total tasks */}
-          <Flex gap={4} align="center">
-            <Badge color="#a9a9a9" />
-            <Typography.Text ellipsis>
-              {t('allText')} ({data?.all})
+          <Flex gap={4} align="center" className="min-w-0">
+            <Badge color="#a9a9a9" className="shrink-0" />
+            <Typography.Text ellipsis={{ tooltip: `${t('allText')} (${totalTasks})` }} className="min-w-0 flex-1">
+              {t('allText')} ({totalTasks})
             </Typography.Text>
           </Flex>
 
-          {/* status-specific tasks */}
-          {statusGraphItems.map(item => (
-            <Flex key={item.name} gap={4} align="center">
-              <Badge color={item.color} />
-              <Typography.Text ellipsis>
-                {t(`${item.name}Text`)} ({item.count})
-              </Typography.Text>
-            </Flex>
-          ))}
+          {/* status-specific tasks — scrollable after 10 items */}
+          <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
+            <div className="flex flex-col gap-2">
+              {statusGraphItems.map(item => (
+                <Flex key={item.name} gap={4} align="center" className="min-w-0">
+                  <Badge color={item.color} className="shrink-0" />
+                  <Typography.Text ellipsis={{ tooltip: `${t(`${item.name}Text`)} (${item.count})` }} className="min-w-0 flex-1">
+                    {t(`${item.name}Text`)} ({item.count})
+                  </Typography.Text>
+                </Flex>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </Card>

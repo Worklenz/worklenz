@@ -17,3 +17,12 @@
   align-items: center;
   height: 32px;
 }
+
+/* The tint color is set via inline style on the outer .ant-select wrapper,
+   which has square corners, while the rounded pill shape lives on the inner
+   .ant-select-selector. Without clipping, the square background peeks out
+   past the rounded corners and reads as a broken/dashed border. */
+.priority-selector-tinted {
+  border-radius: 6px;
+  overflow: hidden;
+}

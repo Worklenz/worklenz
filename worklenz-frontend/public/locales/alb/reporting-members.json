@@ -9,9 +9,13 @@
   "customRangeText": "Interval i Përshtatur",
   "startDateInputPlaceholder": "Data e fillimit",
   "EndDateInputPlaceholder": "Data e përfundimit",
+  "quickRanges": "Intervale të Shpejta",
+  "readyToApplyCustomRange": "Gati për të aplikuar intervalin e personalizuar",
+  "selectStartEndDates": "Zgjidh datat e fillimit dhe përfundimit",
   "filterButton": "Filtro",
 
   "membersTitle": "Anëtarët",
+  "membersHeaderTitle": "Anëtarët ({{count}})",
   "includeArchivedButton": "Përfshij Projektet e Arkivuara",
   "exportButton": "Eksporto",
   "excelButton": "Excel",
@@ -31,5 +35,6 @@
 
   "todoText": "Për Të Bërë",
   "doingText": "Duke bërë",
-  "doneText": "E Përfunduar"
+  "doneText": "E Përfunduar",
+  "customDateRangeInvalidError": "Data e përfundimit nuk mund të jetë para datës së fillimit. Ju lutemi zgjidhni një interval të vlefshëm."
 }

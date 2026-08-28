@@ -5,6 +5,9 @@
     "clickNavigateTimeline": "点击导航到时间线中的任务",
     "clickTimelineSetDates": "点击时间线为此任务设置日期",
     "clickTimelineAddDates": "点击时间线添加日期",
+    "setTaskDate": "设置任务日期",
+    "setTaskDateHint": "点击时间线为此任务设置{{duration}}天日期范围",
+    "addTask": "添加任务",
     "resizeStartDate": "调整开始日期",
     "resizeEndDate": "调整结束日期",
     "dragToMove": "拖拽移动任务",
@@ -14,11 +17,53 @@
     "phaseTitle": "阶段：{{name}} - {{startDate}}至{{endDate}}",
     "taskTitle": "{{name}} - {{startDate}}至{{endDate}}",
     "datesUpdatedSuccessfully": "任务日期更新成功",
-    "failedToUpdateDates": "任务日期更新失败"
+    "failedToUpdateDates": "任务日期更新失败",
+    "addSubtask": "添加子任务",
+    "addTaskInputPlaceholder": "输入任务名称并按回车键保存",
+    "writeTaskName": "输入任务名称",
+    "writeSubtaskName": "输入子任务名称",
+    "expandSubtasks": "展开子任务",
+    "collapseSubtasks": "折叠子任务",
+    "finishToStartDependency": "完成-开始依赖",
+    "startToFinishDependency": "开始-完成依赖",
+    "dependencyType": "依赖类型",
+    "removeDependency": "删除",
+    "circularDependencyError": "这将创建循环依赖。",
+    "dependencyCreatedSuccessfully": "依赖创建成功。",
+    "dependencyRemovedSuccessfully": "依赖删除成功。",
+    "failedToCreateDependency": "依赖创建失败。",
+    "failedToRemoveDependency": "依赖删除失败。",
+    "taskAddedToRoadmap": "任务已添加到路线图，持续5天。",
+    "failedToAddTaskToRoadmap": "任务添加至路线图失败。",
+    "unscheduledTaskNotFound": "无法找到所选任务。"
   },
   "common": {
     "noStart": "无开始",
     "noEnd": "无结束"
+  },
+  "sections": {
+    "unmapped": "未分配"
+  },
+  "grouping": {
+    "phase": "阶段",
+    "status": "状态",
+    "priority": "优先级"
+  },
+  "toolbar": {
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "expandAll": "展开全部",
+    "collapseAll": "折叠全部",
+    "today": "今天",
+    "fullscreen": "全屏",
+    "noDate": "无日期"
+  },
+  "viewMode": {
+    "day": "日",
+    "week": "周",
+    "month": "月",
+    "quarter": "季度",
+    "year": "年"
   },
   "businessPlan": {
     "phaseCreationRestricted": "阶段创建仅限商务计划用户",
@@ -26,5 +71,18 @@
     "phaseEditingRestricted": "阶段编辑仅限商务计划用户",
     "taskEditingRestricted": "任务编辑仅限商务计划用户",
     "phaseReorderingRestricted": "阶段重新排序仅限商务计划用户"
-  }
+  },
+  "list": {
+    "taskNameColumn": "任务名称",
+    "addNewPhase": "添加新阶段",
+    "addNewStatus": "添加新状态",
+    "noTasksAvailable": "没有可用的任务"
+  },
+  "roadmap": {
+    "phasesAndTasks": "阶段与任务",
+    "tasksCount": "任务",
+    "complete": "完成"
+  },
+  "unscheduledTasksTitle": "未安排的任务",
+  "noUnscheduledTasks": "没有可用的未安排任务。"
 }

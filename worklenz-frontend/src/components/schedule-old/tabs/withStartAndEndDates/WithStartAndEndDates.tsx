@@ -2,6 +2,9 @@ import { useMemo, useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
+import { toggleDrawer } from '@/features/projects/status/StatusSlice';
+import { useAuthService } from '@/hooks/useAuth';
+import useIsProjectManager from '@/hooks/useIsProjectManager';
 import {
   useFetchScheduleMembersQuery,
   useFetchMemberScheduleSummaryQuery,
@@ -9,15 +12,21 @@ import {
 } from '@/api/schedule/scheduleApi';
 import { Empty, Spin } from '@/shared/antd-imports';
 import dayjs from 'dayjs';
-import GroupByFilterDropdown from '@/components/project-task-filters/filter-dropdowns/group-by-filter-dropdown';
 import { setMembers } from '@/features/tasks/tasks.slice';
+import { Select, Flex as AntFlex } from '@/shared/antd-imports';
 import ScheduleTaskGroupHeader from '@/components/schedule/ScheduleTaskGroupHeader';
 import ScheduleTaskRow from '@/components/schedule/ScheduleTaskRow';
 import ScheduleTaskListHeader from '@/components/schedule/ScheduleTaskListHeader';
+import { SettingOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from '@/shared/antd-imports';
+
 
 const WithStartAndEndDates = () => {
   const { t } = useTranslation('schedule');
   const dispatch = useAppDispatch();
+  const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
+  const isProjectManager = useIsProjectManager();
+
 
   // Get selected member, project, segment data, and date range from Redux
   const selectedMemberId = useAppSelector(state => state.schedule?.selectedMemberId);
@@ -26,7 +35,7 @@ const WithStartAndEndDates = () => {
   const selectedDateRange = useAppSelector(state => state.schedule?.selectedDateRange);
 
   // Get groupBy from Redux store
-  const groupBy = useAppSelector(state => state.groupByFilterDropdownReducer?.groupBy || 'status');
+  const [groupBy, setGroupBy] = useState<string>('status');
 
   // Fetch all team members to get member details
   const { data: teamDataResponse } = useFetchScheduleMembersQuery();
@@ -243,9 +252,30 @@ const WithStartAndEndDates = () => {
       {selectedProjectId ? (
         <>
           {/* Show group by filter for project tasks */}
-          <div style={{ marginBottom: '16px' }}>
-            <GroupByFilterDropdown />
+          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>Group by:</span>
+            <Select
+              value={groupBy}
+              onChange={(value) => setGroupBy(value)}
+              style={{ width: 120 }}
+              options={[
+                { value: 'status', label: 'Status' },
+                { value: 'priority', label: 'Priority' },
+                { value: 'phase', label: 'Phase' },
+              ]}
+            />
+            {groupBy === 'status' && (isOwnerOrAdmin || isProjectManager) && (
+              <Tooltip title="Manage Statuses">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<SettingOutlined />}
+                  onClick={() => dispatch(toggleDrawer())}
+                />
+              </Tooltip>
+            )}
           </div>
+
 
           {projectTasksLoading ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>

@@ -1,18 +1,22 @@
 {
-  "name": "Name",
+  "name": "Project Name",
   "client": "Client",
   "category": "Category",
   "status": "Status",
   "priority": "Priority",
   "tasksProgress": "Tasks Progress",
   "updated_at": "Last Updated",
+  "endDate": "Project End Date",
+  "favorite": "Favorite",
   "setting": "Settings",
+  "settingsDisabledForGuest": "Settings Disabled For Guest",
+  "settingsTooltip": "Open project settings",
   "projects": "Projects",
   "refreshProjects": "Refresh projects",
   "all": "All",
   "favorites": "Favorites",
   "archived": "Archived",
-  "placeholder": "Search by name",
+  "placeholder": "Search by project name",
   "archive": "Archive",
   "unarchive": "Unarchive",
   "archiveConfirm": "Are you sure you want to archive this project?",
@@ -34,5 +38,15 @@
     "categories": "categories",
     "clients": "clients"
   },
-  "noPermission": "You don't have permission to perform this action"
+  "noPermission": "You don't have permission to perform this action",
+  "fieldsText": "Fields",
+  "fieldsWithCount": "Fields: {{count}}",
+  "showFields": "Show Fields",
+  "noOptionsFound": "No Options Found",
+  "activeFiltersCount": "Filters: {{count}}",
+  "filter": {
+    "noClient": "No Client",
+    "noPriority": "No Priority",
+    "noCategory": "No Category"
+  }
 }

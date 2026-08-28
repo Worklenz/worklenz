@@ -1,5 +1,14 @@
 {
   "upgradeNow": "Actualizar ahora",
+  "description": {
+    "loadingEditor": "Cargando el editor...",
+    "wordCount": "{{count}} palabras",
+    "save": "Guardar",
+    "discard": "Descartar",
+    "offline": "Estás sin conexión — la descripción no se guardó. Vuelve a conectarte e inténtalo de nuevo.",
+    "saveTimeout": "Se agotó el tiempo al guardar la descripción. Inténtalo de nuevo.",
+    "saveFailed": "No se pudo guardar la descripción. Inténtalo de nuevo."
+  },
   "taskHeader": {
     "taskNamePlaceholder": "Escribe tu tarea",
     "deleteTask": "Eliminar tarea",
@@ -47,9 +56,9 @@
     "description": {
       "title": "Descripción",
       "placeholder": "Añade una descripción más detallada...",
-       "clickToAdd": "Haz clic para añadir una descripción...",
-  "readMore": "Leer más",
-  "showLess": "Mostrar menos"
+      "clickToAdd": "Haz clic para añadir una descripción...",
+      "readMore": "Leer más",
+      "showLess": "Mostrar menos"
     },
     "subTasks": {
       "title": "Subtareas",
@@ -59,6 +68,8 @@
       "edit": "Editar",
       "delete": "Eliminar",
       "confirmDeleteSubTask": "¿Estás seguro de que quieres eliminar esta subtarea?",
+      "confirmDeleteYes": "Sí",
+      "confirmDeleteNo": "No",
       "deleteSubTask": "Eliminar subtarea"
     },
     "dependencies": {
@@ -83,6 +94,8 @@
       "edit": "Editar",
       "delete": "Eliminar",
       "confirmDeleteComment": "¿Estás seguro de que quieres eliminar este comentario?",
+      "edited": "(editado)",
+      "messageDeleted": "Este mensaje fue eliminado",
       "addCommentPlaceholder": "Añadir un comentario...",
       "cancel": "Cancelar",
       "commentButton": "Comentar",
@@ -92,6 +105,7 @@
       "maxFilesError": "Solo puedes subir un máximo de {{count}} archivos",
       "processFilesError": "Error al procesar archivos",
       "addCommentError": "Por favor añade un comentario o adjunta archivos",
+      "enterHint": "Enter para enviar  ·  Shift+Enter para nueva línea",
       "fileTooLargeToSend": "Los archivos de más de 25MB en comentarios requieren el plan Business. Quita este archivo o actualiza para continuar.",
       "historyLockedBoundary": "El historial de comentarios está limitado a los últimos 90 días en este plan",
       "historyLockedTitle": "Historial de comentarios bloqueado",
@@ -107,6 +121,7 @@
     "title": "Registro de tiempo",
     "addTimeLog": "Añadir nuevo registro de tiempo",
     "totalLogged": "Total registrado",
+    "subtasksLogged": "Subtareas registradas",
     "exportToExcel": "Exportar a Excel",
     "noTimeLogsFound": "No se encontraron registros de tiempo",
     "historyLockedBoundary": "El historial de tiempo está limitado a los últimos 90 días en este plan",
@@ -125,7 +140,7 @@
       "workDescription": "Descripción del trabajo",
       "descriptionPlaceholder": "Añadir una descripción",
       "logTime": "Registrar tiempo",
-      "updateTime": "Actualizar tiempo",
+      "updateTime": "Actualizar",
       "cancel": "Cancelar",
       "durationHelper": "Registra el tiempo total con horas y minutos.",
       "timeRangeHelper": "Registra el tiempo seleccionando hora de inicio y fin.",
@@ -135,7 +150,13 @@
       "hoursMinError": "Las horas deben ser 0 o más",
       "minutesRangeError": "Los minutos deben estar entre 0 y 59",
       "durationGreaterThanZeroError": "La duración debe ser mayor a 0 minutos",
-      "endTimeAfterStartError": "La hora de finalización debe ser posterior a la de inicio"
+      "endTimeAfterStartError": "La hora de finalización debe ser posterior a la de inicio",
+      "moveToProject": "Mover al proyecto",
+      "moveToProjectTooltip": "Reasignar este registro de tiempo a un proyecto diferente",
+      "moveToTask": "Mover a la tarea",
+      "moveToTaskTooltip": "Reasignar este registro de tiempo a una tarea diferente",
+      "backdateLimitError": "Los registros de tiempo no pueden retrocederse más de {{days}} días. La fecha más antigua que puedes registrar es {{earliestDate}}.",
+      "saveError": "No se pudo guardar el registro de tiempo. Por favor, inténtalo de nuevo."
     }
   },
   "taskActivityLogTab": {

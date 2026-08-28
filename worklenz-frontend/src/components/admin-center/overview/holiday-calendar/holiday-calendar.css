@@ -1,5 +1,99 @@
+:root {
+  /* Light theme defaults - will be overridden by JS */
+  --calendar-bg-primary: #ffffff;
+  --calendar-bg-secondary: #fafbfc;
+  --calendar-bg-tertiary: #f1f3f4;
+  --calendar-bg-disabled: #fafafa;
+  --calendar-border-light: #f0f0f0;
+  --calendar-border-default: #d9d9d9;
+  --calendar-border-dark: #e8eaed;
+  --calendar-text-primary: #1f1f1f;
+  --calendar-text-secondary: rgba(0, 0, 0, 0.85);
+  --calendar-text-tertiary: #bfbfbf;
+  --calendar-color-primary: #1890ff;
+  --calendar-color-primary-dark: #177ddc;
+  --calendar-color-success: #52c41a;
+  --calendar-color-success-light: #f6ffed;
+  --calendar-color-success-border: #b7eb8f;
+  --calendar-color-primary-light: #e6f7ff;
+  --calendar-color-primary-border: #91d5ff;
+}
+
+.holiday-calendar.dark {
+  --calendar-bg-primary: #2a2a2a;
+  --calendar-bg-secondary: #1f1f1f;
+  --calendar-bg-tertiary: #262626;
+  --calendar-bg-disabled: #141414;
+  --calendar-border-light: #303030;
+  --calendar-border-default: #434343;
+  --calendar-border-dark: #303030;
+  --calendar-text-primary: #ffffff;
+  --calendar-text-secondary: rgba(255, 255, 255, 0.85);
+  --calendar-text-tertiary: #595959;
+  --calendar-color-primary: #1890ff;
+  --calendar-color-primary-dark: #177ddc;
+  --calendar-color-success: #52c41a;
+  --calendar-color-success-light: #162312;
+  --calendar-color-success-border: #274916;
+  --calendar-color-primary-light: #111b26;
+  --calendar-color-primary-border: #13334c;
+}
+
 .holiday-calendar {
   width: 100%;
+}
+
+/* Custom Calendar Header with DatePicker */
+.calendar-header-container {
+  background: linear-gradient(135deg, var(--calendar-bg-secondary) 0%, var(--calendar-bg-tertiary) 100%);
+  border-bottom: 1px solid var(--calendar-border-dark);
+  border-radius: 12px 12px 0 0;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-header-container .ant-picker {
+  border-radius: 6px;
+  border: 1px solid var(--calendar-border-default);
+  background: var(--calendar-bg-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.calendar-header-container .ant-picker:hover {
+  border-color: var(--calendar-color-primary);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+}
+
+.calendar-header-container .ant-picker-focused {
+  border-color: var(--calendar-color-primary);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.holiday-calendar.dark .calendar-header-container .ant-picker {
+  background: var(--calendar-bg-primary);
+  border-color: var(--calendar-border-default);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.holiday-calendar.dark .calendar-header-container .ant-picker:hover {
+  border-color: var(--calendar-color-primary-dark);
+  box-shadow: 0 4px 12px rgba(23, 125, 220, 0.2);
+}
+
+.holiday-calendar.dark .calendar-header-container .ant-picker-focused {
+  border-color: var(--calendar-color-primary-dark);
+  box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.3);
+}
+
+.calendar-header-container .ant-picker-input > input {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--calendar-text-primary);
+  text-align: center;
 }
 
 .holiday-calendar .ant-picker-calendar {
@@ -15,31 +109,27 @@
 
 .holiday-calendar .ant-picker-calendar-header {
   padding: 20px 24px;
-  background: linear-gradient(135deg, #fafbfc 0%, #f1f3f4 100%);
-  border-bottom: 1px solid #e8eaed;
+  background: linear-gradient(135deg, var(--calendar-bg-secondary) 0%, var(--calendar-bg-tertiary) 100%);
+  border-bottom: 1px solid var(--calendar-border-dark);
   border-radius: 12px 12px 0 0;
-}
-
-.holiday-calendar.dark .ant-picker-calendar-header {
-  background: linear-gradient(135deg, #1f1f1f 0%, #262626 100%);
-  border-bottom-color: #303030;
+  display: none !important;
 }
 
 .holiday-calendar .ant-picker-calendar-date {
   position: relative;
   height: 85px;
   padding: 6px 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--calendar-border-light);
   border-radius: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  background: #ffffff;
+  background: var(--calendar-bg-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .holiday-calendar.dark .ant-picker-calendar-date {
-  border-color: #303030;
-  background: #1f1f1f;
+  border-color: var(--calendar-border-light);
+  background: var(--calendar-bg-secondary);
 }
 
 /* Calendar cell wrapper */
@@ -51,8 +141,8 @@
 
 /* Working day styles */
 .calendar-cell.working-day {
-  background: #ffffff;
-  border: 1px solid #d9d9d9;
+  background: var(--calendar-bg-primary);
+  border: 1px solid var(--calendar-border-default);
   position: relative;
 }
 
@@ -70,8 +160,8 @@
 }
 
 .holiday-calendar.dark .calendar-cell.working-day {
-  background: #1f1f1f;
-  border: 1px solid #434343;
+  background: var(--calendar-bg-secondary);
+  border: 1px solid var(--calendar-border-default);
 }
 
 .holiday-calendar.dark .calendar-cell.working-day::before {
@@ -80,20 +170,20 @@
 
 /* Non-working day styles */
 .calendar-cell.non-working-day {
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
+  background: var(--calendar-bg-disabled);
+  border: 1px solid var(--calendar-border-light);
   opacity: 0.65;
 }
 
 .holiday-calendar.dark .calendar-cell.non-working-day {
-  background: #141414;
-  border: 1px solid #303030;
+  background: var(--calendar-bg-disabled);
+  border: 1px solid var(--calendar-border-light);
   opacity: 0.65;
 }
 
 /* Today styles */
 .calendar-cell.today {
-  border: 2px solid #1890ff;
+  border: 2px solid var(--calendar-color-primary);
   box-shadow:
     0 0 0 3px rgba(24, 144, 255, 0.15),
     0 4px 12px rgba(24, 144, 255, 0.1);
@@ -101,7 +191,7 @@
 }
 
 .holiday-calendar.dark .calendar-cell.today {
-  border: 2px solid #177ddc;
+  border: 2px solid var(--calendar-color-primary-dark);
   box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.3);
 }
 
@@ -119,7 +209,7 @@
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.08),
     0 2px 6px rgba(0, 0, 0, 0.04);
-  border-color: #d9d9d9;
+  border-color: var(--calendar-border-default);
 }
 
 @media (hover: none) and (pointer: coarse) {
@@ -202,14 +292,10 @@
 .holiday-calendar .ant-picker-calendar-date-value {
   font-size: 14px;
   font-weight: 600;
-  color: #1f1f1f;
+  color: var(--calendar-text-primary);
   margin-bottom: 6px;
   line-height: 1.2;
   text-align: center;
-}
-
-.holiday-calendar.dark .ant-picker-calendar-date-value {
-  color: #ffffff;
 }
 
 .holiday-calendar .ant-picker-calendar-date-content {
@@ -260,49 +346,49 @@
 }
 
 .holiday-calendar .ant-picker-calendar-date-today {
-  border-color: #1890ff;
-  background: #e6f7ff;
+  border-color: var(--calendar-color-primary);
+  background: var(--calendar-color-primary-light);
 }
 
 .holiday-calendar.dark .ant-picker-calendar-date-today {
-  border-color: #177ddc;
-  background: #111b26;
+  border-color: var(--calendar-color-primary-dark);
+  background: var(--calendar-color-primary-light);
 }
 
 .holiday-calendar .ant-picker-calendar-date-selected {
-  border-color: #1890ff;
-  background: #e6f7ff;
+  border-color: var(--calendar-color-primary);
+  background: var(--calendar-color-primary-light);
 }
 
 .holiday-calendar.dark .ant-picker-calendar-date-selected {
-  border-color: #177ddc;
-  background: #111b26;
+  border-color: var(--calendar-color-primary-dark);
+  background: var(--calendar-color-primary-light);
 }
 
 .holiday-calendar .ant-picker-calendar-date-other {
-  color: #bfbfbf;
+  color: var(--calendar-text-tertiary);
 }
 
 .holiday-calendar.dark .ant-picker-calendar-date-other {
-  color: #595959;
+  color: var(--calendar-text-tertiary);
 }
 
 .holiday-calendar .ant-picker-calendar-date-other .ant-picker-calendar-date-value {
-  color: #bfbfbf;
+  color: var(--calendar-text-tertiary);
 }
 
 .holiday-calendar.dark .ant-picker-calendar-date-other .ant-picker-calendar-date-value {
-  color: #595959;
+  color: var(--calendar-text-tertiary);
 }
 
 .holiday-calendar .ant-picker-calendar-mini {
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--calendar-border-light);
   border-radius: 6px;
 }
 
 .holiday-calendar.dark .ant-picker-calendar-mini {
-  border-color: #303030;
-  background: #1f1f1f;
+  border-color: var(--calendar-border-light);
+  background: var(--calendar-bg-secondary);
 }
 
 .holiday-calendar .ant-picker-calendar-mini .ant-picker-calendar-date {
@@ -324,62 +410,62 @@
 }
 
 .holiday-calendar.dark .ant-modal-content {
-  background: #1f1f1f;
-  border: 1px solid #303030;
+  background: var(--calendar-bg-secondary);
+  border: 1px solid var(--calendar-border-light);
 }
 
 .holiday-calendar.dark .ant-modal-header {
-  background: #1f1f1f;
-  border-bottom: 1px solid #303030;
+  background: var(--calendar-bg-secondary);
+  border-bottom: 1px solid var(--calendar-border-light);
 }
 
 .holiday-calendar.dark .ant-modal-title {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 .holiday-calendar.dark .ant-modal-close {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 .holiday-calendar.dark .ant-form-item-label > label {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 .holiday-calendar.dark .ant-input,
 .holiday-calendar.dark .ant-input-textarea {
-  background: #2a2a2a;
-  border-color: #434343;
-  color: #ffffff;
+  background: var(--calendar-bg-primary);
+  border-color: var(--calendar-border-default);
+  color: var(--calendar-text-primary);
 }
 
 .holiday-calendar.dark .ant-input:focus,
 .holiday-calendar.dark .ant-input-textarea:focus {
-  border-color: #177ddc;
+  border-color: var(--calendar-color-primary-dark);
   box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
 }
 
 .holiday-calendar.dark .ant-select-selector {
-  background: #2a2a2a !important;
-  border-color: #434343 !important;
-  color: #ffffff !important;
+  background: var(--calendar-bg-primary) !important;
+  border-color: var(--calendar-border-default) !important;
+  color: var(--calendar-text-primary) !important;
 }
 
 .holiday-calendar.dark .ant-select-focused .ant-select-selector {
-  border-color: #177ddc !important;
+  border-color: var(--calendar-color-primary-dark) !important;
   box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2) !important;
 }
 
 .holiday-calendar.dark .ant-picker {
-  background: #2a2a2a;
-  border-color: #434343;
+  background: var(--calendar-bg-primary);
+  border-color: var(--calendar-border-default);
 }
 
 .holiday-calendar.dark .ant-picker-input > input {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 .holiday-calendar.dark .ant-picker-focused {
-  border-color: #177ddc;
+  border-color: var(--calendar-color-primary-dark);
   box-shadow: 0 0 0 2px rgba(23, 125, 220, 0.2);
 }
 
@@ -390,17 +476,17 @@
 }
 
 .holiday-calendar.dark .ant-btn {
-  border-color: #434343;
+  border-color: var(--calendar-border-default);
 }
 
 .holiday-calendar.dark .ant-btn-primary {
-  background: #177ddc;
-  border-color: #177ddc;
+  background: var(--calendar-color-primary-dark);
+  border-color: var(--calendar-color-primary-dark);
 }
 
 .holiday-calendar.dark .ant-btn-primary:hover {
-  background: #1890ff;
-  border-color: #1890ff;
+  background: var(--calendar-color-primary);
+  border-color: var(--calendar-color-primary);
 }
 
 /* Card styles */
@@ -413,25 +499,25 @@
 }
 
 .holiday-calendar.dark .ant-card {
-  background: #1f1f1f;
-  border-color: #303030;
+  background: var(--calendar-bg-secondary);
+  border-color: var(--calendar-border-light);
 }
 
 .holiday-calendar.dark .ant-card-head {
-  border-bottom-color: #303030;
+  border-bottom-color: var(--calendar-border-light);
 }
 
 .holiday-calendar.dark .ant-card-head-title {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 /* Typography styles */
 .holiday-calendar.dark .ant-typography {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 .holiday-calendar.dark .ant-typography h5 {
-  color: #ffffff;
+  color: var(--calendar-text-primary);
 }
 
 /* Space styles */
@@ -453,27 +539,15 @@
 
 /* Holiday tag specific styles */
 .holiday-tag.official-holiday {
-  background: #e6f7ff !important;
-  border-color: #91d5ff !important;
-  color: #1890ff !important;
+  background: var(--calendar-color-primary-light) !important;
+  border-color: var(--calendar-color-primary-border) !important;
+  color: var(--calendar-color-primary) !important;
 }
 
 .holiday-tag.custom-holiday {
-  background: #f6ffed !important;
-  border-color: #b7eb8f !important;
-  color: #52c41a !important;
-}
-
-.holiday-calendar.dark .holiday-tag.official-holiday {
-  background: #111b26 !important;
-  border-color: #13334c !important;
-  color: #69c0ff !important;
-}
-
-.holiday-calendar.dark .holiday-tag.custom-holiday {
-  background: #162312 !important;
-  border-color: #274916 !important;
-  color: #95de64 !important;
+  background: var(--calendar-color-success-light) !important;
+  border-color: var(--calendar-color-success-border) !important;
+  color: var(--calendar-color-success) !important;
 }
 
 /* Holiday tag icons */
@@ -499,15 +573,15 @@
   gap: 24px;
   margin-top: 16px;
   padding: 12px 16px;
-  background: #fafafa;
+  background: var(--calendar-bg-disabled);
   border-radius: 6px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--calendar-border-default);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .holiday-calendar.dark .calendar-legend {
-  background: #1f1f1f;
-  border-color: #434343;
+  background: var(--calendar-bg-secondary);
+  border-color: var(--calendar-border-default);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
@@ -516,12 +590,12 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--calendar-text-secondary);
   font-weight: 500;
 }
 
 .holiday-calendar.dark .legend-item {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--calendar-text-secondary);
 }
 
 /* Legend item hover effects */
@@ -562,7 +636,7 @@
 }
 
 .legend-dot.today-dot {
-  background: #1890ff;
+  background: var(--calendar-color-primary);
   box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.2);
   animation: todayPulse 2s ease-in-out infinite;
 }
@@ -578,7 +652,7 @@
 }
 
 .holiday-calendar.dark .legend-dot.today-dot {
-  background: #1890ff;
+  background: var(--calendar-color-primary);
   box-shadow: 0 0 0 1px rgba(24, 144, 255, 0.3);
   animation: todayPulse 2s ease-in-out infinite;
 }
@@ -631,29 +705,29 @@
 }
 
 .custom-holiday-legend {
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  color: #52c41a;
+  background: var(--calendar-color-success-light);
+  border: 1px solid var(--calendar-color-success-border);
+  color: var(--calendar-color-success);
   box-shadow: 0 1px 2px rgba(82, 196, 26, 0.1);
 }
 
 .official-holiday-legend {
-  background: #e6f7ff;
-  border: 1px solid #91d5ff;
-  color: #1890ff;
+  background: var(--calendar-color-primary-light);
+  border: 1px solid var(--calendar-color-primary-border);
+  color: var(--calendar-color-primary);
   box-shadow: 0 1px 2px rgba(24, 144, 255, 0.1);
 }
 
 .holiday-calendar.dark .custom-holiday-legend {
-  background: #162312;
-  border: 1px solid #274916;
+  background: var(--calendar-color-success-light);
+  border: 1px solid var(--calendar-color-success-border);
   color: #95de64;
   box-shadow: 0 1px 2px rgba(149, 222, 100, 0.2);
 }
 
 .holiday-calendar.dark .official-holiday-legend {
-  background: #111b26;
-  border: 1px solid #13334c;
+  background: var(--calendar-color-primary-light);
+  border: 1px solid var(--calendar-color-primary-border);
   color: #69c0ff;
   box-shadow: 0 1px 2px rgba(105, 192, 255, 0.2);
 }

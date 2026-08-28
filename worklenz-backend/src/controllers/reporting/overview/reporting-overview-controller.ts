@@ -128,15 +128,15 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
              COALESCE((SELECT COUNT(*) FROM projects WHERE team_id = teams.id ${archivedClause}), 0) AS projects_count,
              (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
               FROM (
-                     --
-                     SELECT (SELECT name
+                     SELECT tm.id AS team_member_id,
+                            (SELECT name
                              FROM team_member_info_view
-                             WHERE team_member_info_view.team_member_id = tm.id),
+                             WHERE team_member_info_view.team_member_id = tm.id) AS name,
                             u.avatar_url
                      FROM team_members tm
                             LEFT JOIN users u ON tm.user_id = u.id
                      WHERE team_id = teams.id
-                     --
+                       AND (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) IS NOT NULL
                    ) rec) AS members
       FROM teams
       WHERE in_organization(id, $1)
@@ -145,8 +145,11 @@ export default class ReportingOverviewController extends ReportingOverviewBase {
     const result = await db.query(q, [teamId]);
 
     for (const team of result.rows) {
-      team.members = this.createTagList(team?.members);
-      team.members.map((a: any) => a.color_code = getColor(a.name));
+      // Don't apply createTagList here - let the frontend Avatars component handle display logic
+      // Just ensure all members have color codes
+      if (Array.isArray(team?.members)) {
+        team.members.map((a: any) => a.color_code = getColor(a.name));
+      }
     }
 
     return res.status(200).send(new ServerResponse(true, result.rows));

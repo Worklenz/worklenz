@@ -13,8 +13,6 @@ const projectMembersApiRouter = express.Router();
 
 projectMembersApiRouter.post("/", projectManagerValidator, safeControllerFunction(ProjectMembersController.create));
 projectMembersApiRouter.post("/invite", teamOwnerOrAdminValidator, projectMemberInviteValidator, safeControllerFunction(ProjectMembersController.createByEmail));
-projectMembersApiRouter.get("/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectMembersController.get)); // id = project id
-projectMembersApiRouter.delete("/:id", projectManagerValidator, safeControllerFunction(ProjectMembersController.deleteById));
 
 // Project invitation link routes
 projectMembersApiRouter.post("/invitation-link", teamOwnerOrAdminValidator, safeControllerFunction(ProjectMembersController.generateProjectInvitationLink));
@@ -22,5 +20,13 @@ projectMembersApiRouter.get("/invitation-link/status", safeControllerFunction(Pr
 projectMembersApiRouter.put("/invitation-link/revoke", teamOwnerOrAdminValidator, safeControllerFunction(ProjectMembersController.revokeProjectInvitationLink));
 projectMembersApiRouter.get("/invitation-link/validate/:token", safeControllerFunction(ProjectMembersController.validateProjectInvitationLink));
 projectMembersApiRouter.post("/invitation-link/accept/:token", safeControllerFunction(ProjectMembersController.acceptProjectInvitationByLink));
+
+// Guest members management routes
+projectMembersApiRouter.get("/guests", teamOwnerOrAdminValidator, safeControllerFunction(ProjectMembersController.getGuestMembers));
+projectMembersApiRouter.patch("/guests/deactivate/:id", teamOwnerOrAdminValidator, safeControllerFunction(ProjectMembersController.toggleGuestStatus));
+projectMembersApiRouter.delete("/guests/:id", teamOwnerOrAdminValidator, safeControllerFunction(ProjectMembersController.deleteGuest));
+
+projectMembersApiRouter.get("/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(ProjectMembersController.get)); // id = project id
+projectMembersApiRouter.delete("/:id", projectManagerValidator, safeControllerFunction(ProjectMembersController.deleteById));
 
 export default projectMembersApiRouter;

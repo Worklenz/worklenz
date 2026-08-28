@@ -12,31 +12,45 @@
   width: unset !important;
 }
 
-@media (max-width: 1000px) {
-  .project-card.ant-card .ant-card-body {
-    padding: 0 !important;
-  }
+/* The card fills whatever space the flex column in project-list.tsx (page
+   wrapper -> box + card) leaves it — no viewport-relative guessing, so it
+   can never grow past the pane's real available height and force the
+   pane/page to scroll. Only the table body (list view, via a ResizeObserver-
+   measured scroll.y on its own flex-bounded wrapper) or the group scroll
+   container (group view) ever scrolls. Table sits flush inside the card —
+   no outer padding, matching Recurring Tasks' borderless table container. */
+.project-card.ant-card {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Allow the scrollbar gutter to render outside the card body content area */
 .project-card.ant-card .ant-card-body {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Group view scroll container — scrollbar stays inside the card */
 .project-group-scroll-container {
   flex: 1;
+  min-height: 0;
+  /* prevent flex child from overflowing its parent, keeping pagination visible */
   overflow-y: auto;
   overflow-x: hidden;
-  margin: -24px;
-  padding: 24px;
+  padding: 12px 24px 0 24px;
 }
 
 /* remove the border after the tabs in project view  */
-:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top > .ant-tabs-nav::before,
-:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > .ant-tabs-nav::before,
-:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top > div > .ant-tabs-nav::before,
-:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom > div > .ant-tabs-nav::before {
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top>.ant-tabs-nav::before,
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom>.ant-tabs-nav::before,
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-top>div>.ant-tabs-nav::before,
+:where(.css-dev-only-do-not-override-17sis5b).ant-tabs-bottom>div>.ant-tabs-nav::before {
   border: none;
 }
 
@@ -120,23 +134,39 @@
   width: 100%;
   text-align: center;
 }
-/* Light mode */
-.project-filter-segmented .ant-segmented-item-selected {
-  background-color: #fff;
-  border-radius: 4px;
-  box-shadow:
-    0 2px 8px -2px #0000000d,
-    0 1px 4px -1px #00000012,
-    0 0 1px #00000014;
-  color: #262626;
+
+/* Match Home > Overview's priority table formatting (see tasks-list.css) —
+   antd's default 14px text/padding read inconsistently next to that table. */
+.project-card .ant-table-thead>tr>th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 8px !important;
 }
 
-/* Dark mode */
-html.dark .project-filter-segmented .ant-segmented-item-selected,
-html[data-theme="dark"] .project-filter-segmented .ant-segmented-item-selected {
-  background-color: #3a3a3a !important;
-  color: #e6e6e6 !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.15),
-    0 1px 4px rgba(0, 0, 0, 0.5) !important;
+.project-card .ant-table-tbody>tr>td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+.project-card .ant-table-tbody .ant-typography {
+  font-size: 12px !important;
+}
+
+/* Project Name is sorted by default (defaultSortOrder in useProjectListColumns.tsx),
+   so antd tints every cell in that column with its "active sort column" background
+   (.ant-table-column-sort) — drop it so Name reads the same as every other column
+   instead of looking permanently highlighted. Sorting itself is unaffected. */
+.project-card .ant-table-thead th.ant-table-column-sort,
+.project-card .ant-table-tbody td.ant-table-column-sort {
+  background: transparent;
+}
+
+/* Row hover — same as Home > Overview's priority table: no custom override,
+   antd's own default already tints every cell in the hovered row uniformly.
+   (The previous override here referenced an undefined --ant-color-primary-bg
+   custom property, which made light-mode hover silently resolve to
+   transparent, so only cells with antd's own default hover style visibly
+   changed — reading as "just one cell" instead of the whole row.) */
+.project-card .ant-table-wrapper .ant-table-row {
+  transition: background-color 0.15s ease;
 }

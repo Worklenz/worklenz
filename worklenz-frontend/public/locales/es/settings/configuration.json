@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Configuración",
+  "configurationDescription": "Gestiona los ajustes de toda la organización que se aplican a todos los proyectos.",
+  "businessPlanRequired": "Se requiere el plan Business",
+  "businessPlanRequiredDescription": "Los ajustes de restricción de tareas a nivel de organización están disponibles en los planes Business y Enterprise.",
+  "upgradePlan": "Mejorar plan",
+  "taskManagementSection": "Gestión de tareas",
+  "restrictTaskCreation": "Restringir la asignación de tareas a administradores y líderes de equipo",
+  "restrictTaskCreationTooltip": "Cuando está activado, solo los administradores y líderes de equipo pueden crear y asignar tareas en todos los proyectos. Los miembros del equipo solo pueden ver las tareas asignadas a ellos. Los ajustes a nivel de proyecto anulan este ajuste a nivel de organización.",
+  "restrictTaskCreationNote": "Nota: los ajustes a nivel de proyecto tienen prioridad sobre este ajuste a nivel de organización. Los cambios se aplican de inmediato.",
+  "timeTrackingSection": "Seguimiento del tiempo",
+  "limitTimelogBackdating": "Limitar cuánto tiempo atrás se puede registrar",
+  "limitTimelogBackdatingTooltip": "Cuando está activado, los miembros no pueden crear un registro de tiempo con una fecha anterior al número de días permitido. Se aplica a todos, incluidos propietarios y administradores. Los temporizadores en curso y los registros importados no se ven afectados.",
+  "timelogBackdateLimitDays": "Días máximos que se puede retroceder un registro de tiempo",
+  "timelogBackdateLimitNote": "Nota: los registros de tiempo existentes nunca se modifican. Editar un registro ya antiguo sigue siendo posible mientras no se cambie su fecha.",
+  "days": "días"
+}

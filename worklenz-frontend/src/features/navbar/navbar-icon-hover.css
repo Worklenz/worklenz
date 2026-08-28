@@ -1,0 +1,29 @@
+/* Base reset for top navbar icon buttons. These are plain <button> elements
+   (not AntD's Button) on purpose — AntD's .ant-btn always ships a hover
+   background and a focus-visible outline ring that read as a stray border
+   around icon-only buttons. The left nav-rail icons use plain <button>s for
+   the same reason; this mirrors that pattern so both look identical. */
+.navbar-icon-hover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+}
+
+.navbar-icon-hover:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.navbar-icon-hover:hover .anticon,
+.navbar-icon-hover:hover svg {
+  color: #1677ff;
+}

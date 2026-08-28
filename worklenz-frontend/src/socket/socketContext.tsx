@@ -20,6 +20,7 @@ const SocketContext = createContext<SocketContextType | null>(null);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [modal, contextHolder] = Modal.useModal();
   const profile = getUserSession();
@@ -44,9 +45,11 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         timeout: 20000,
       });
       socketRef.current = globalSocketInstance;
+      setSocket(globalSocketInstance);
     } else if (globalSocketInstance && !socketRef.current) {
       // Reuse existing global socket instance
       socketRef.current = globalSocketInstance;
+      setSocket(globalSocketInstance);
       isInitialized.current = true;
     }
 
@@ -95,10 +98,17 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     socket.on(
       SocketEvents.TEAM_MEMBER_REMOVED.toString(),
-      (data: { teamId: string; message: string }) => {
+      (data: { teamId: string; message: string; removedUserId?: string }) => {
         if (!data) return;
 
-        if (profile && profile.team_id === data.teamId) {
+        // Only show the modal if:
+        // 1. If removedUserId is provided (new format), verify current user is the removed one
+        // 2. If removedUserId is not provided (old format for backward compatibility), show the modal based on team_id match
+        const shouldShowModal = data.removedUserId !== undefined
+          ? profile && profile.id === data.removedUserId && profile.team_id === data.teamId
+          : profile && profile.team_id === data.teamId;
+
+        if (shouldShowModal) {
           modal.confirm({
             title: 'You no longer have permissions to stay on this team!',
             content: data.message,
@@ -115,26 +125,27 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Cleanup function
     return () => {
-    if (socket) {
+      if (socketRef.current) {
         // Remove all listeners first
-        socket.off('connect');
-        socket.off('connect_error');
-        socket.off('disconnect');
-        socket.off(SocketEvents.INVITATIONS_UPDATE.toString());
-        socket.off(SocketEvents.TEAM_MEMBER_REMOVED.toString());
-        socket.removeAllListeners();
+        socketRef.current.off('connect');
+        socketRef.current.off('connect_error');
+        socketRef.current.off('disconnect');
+        socketRef.current.off(SocketEvents.INVITATIONS_UPDATE.toString());
+        socketRef.current.off(SocketEvents.TEAM_MEMBER_REMOVED.toString());
+        socketRef.current.removeAllListeners();
 
         // Then close the connection
-        socket.close();
+        socketRef.current.close();
         socketRef.current = null;
-        globalSocketInstance = null; // Clear global instance
-        isInitialized.current = false; // Reset initialization flag
+        globalSocketInstance = null;
+        isInitialized.current = false;
+        setSocket(null);
       }
-      };
-  }, []); // Remove dependencies to prevent re-initialization
+    };
+  }, []);
 
   const value = {
-    socket: socketRef.current,
+    socket: socket,
     connected,
     modalContextHolder: contextHolder,
   };

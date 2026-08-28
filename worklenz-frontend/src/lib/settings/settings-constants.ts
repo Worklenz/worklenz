@@ -1,4 +1,4 @@
-import RateCardSettings from '@/pages/settings/rate-card-settings/RateCardSettings';
+import RateCardSettings from '@/ee/pages/settings/rate-card-settings/RateCardSettings';
 import {
   BankOutlined,
   FileZipOutlined,
@@ -17,9 +17,12 @@ import {
   DeleteOutlined,
   DollarCircleOutlined,
   ApiOutlined,
+  UsergroupAddOutlined,
 } from '@/shared/antd-imports';
-import { MobileOutlined } from '@ant-design/icons';
+import { MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
+import { ILocalSession } from '@/types/auth/local-session.types';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
@@ -39,6 +42,9 @@ const TaskTemplatesSettings = lazy(
 const TeamMembersSettings = lazy(
   () => import('@/pages/settings/team-members/team-members-settings')
 );
+const GuestMembersSettings = lazy(
+  () => import('@/pages/settings/guest-members/guest-members-settings')
+);
 const TeamHierarchy = lazy(() => import('@/components/settings/team-hierarchy/team-hierarchy'));
 const TeamsSettings = lazy(() => import('../../pages/settings/teams/teams-settings'));
 const ChangePassword = lazy(() => import('@/pages/settings/change-password/change-password'));
@@ -55,6 +61,9 @@ const MobileAppSettings = lazy(
 );
 const ConfigurationSettings = lazy(
   () => import('@/pages/settings/configuration/configuration-settings')
+);
+const OrganizationCurrencySettings = lazy(
+  () => import('@/pages/settings/organization-currency/organization-currency-settings')
 );
 
 // type of menu item in settings sidebar
@@ -214,6 +223,17 @@ export const settingsItems: SettingMenuItem[] = [
     adminOnly: true,
   },
   {
+    key: 'guest-members',
+    name: 'guest-members',
+    defaultValue: 'Guest Members',
+    endpoint: 'guest-members',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
+    icon: React.createElement(UsergroupAddOutlined),
+    element: React.createElement(GuestMembersSettings),
+    adminOnly: true,
+  },
+  {
     key: 'team-hierarchy',
     name: 'team-hierarchy',
     defaultValue: 'Team Hierarchy',
@@ -234,6 +254,18 @@ export const settingsItems: SettingMenuItem[] = [
     icon: React.createElement(DollarCircleOutlined),
     element: React.createElement(RateCardSettings),
     businessPlanRequired: true,
+    adminOnly: true,
+  },
+  {
+    key: 'organization-currency',
+    name: 'organization-currency',
+    defaultValue: 'Currency',
+    endpoint: 'organization-currency',
+    groupKey: 'financial-billing',
+    groupDefaultValue: 'Financial & Billing',
+    icon: React.createElement(SwapOutlined),
+    element: React.createElement(OrganizationCurrencySettings),
+    adminOnly: true,
   },
   {
     key: 'teams',
@@ -283,7 +315,9 @@ export const settingsItems: SettingMenuItem[] = [
   },
 ];
 
-export const getAccessibleSettings = (isAdmin: boolean, hasBusinessAccess: boolean) => {
+export const getAccessibleSettings = (isAdmin: boolean, session: ILocalSession | null) => {
+  const hasBusinessAccess = hasBusinessFeatureAccess(session);
+
   return settingsItems.filter(item => {
     // Check admin requirement
     if (item.adminOnly && !isAdmin) {

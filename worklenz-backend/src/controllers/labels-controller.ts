@@ -190,30 +190,31 @@ public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promi
       );
     }
 
-    // Use a transaction to ensure all deletions happen atomically
-    await db.query('BEGIN');
-    
+    // Use one checked-out connection for the complete transaction.
+    const client = await db.pool.connect();
     try {
+      await client.query('BEGIN');
+
       // Manually delete references from task_labels first
       if (usageCount > 0) {
-        await db.query('DELETE FROM task_labels WHERE label_id = $1', [labelId]);
+        await client.query('DELETE FROM task_labels WHERE label_id = $1', [labelId]);
       }
       
       // Manually delete references from cpt_task_labels
       if (ptUsageCount > 0) {
-        await db.query('DELETE FROM cpt_task_labels WHERE label_id = $1', [labelId]);
+        await client.query('DELETE FROM cpt_task_labels WHERE label_id = $1', [labelId]);
       }
       
       // Now delete the label itself
       const deleteQuery = `DELETE FROM team_labels WHERE id = $1 AND team_id = $2;`;
-      const result = await db.query(deleteQuery, [labelId, teamId]);
+      const result = await client.query(deleteQuery, [labelId, teamId]);
       
       if (result.rowCount === 0) {
-        await db.query('ROLLBACK');
+        await client.query('ROLLBACK');
         return res.status(404).send(new ServerResponse(false, null, "Label not found"));
       }
       
-      await db.query('COMMIT');
+      await client.query('COMMIT');
       
       return res.status(200).send(
         new ServerResponse(
@@ -225,8 +226,10 @@ public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promi
         )
       );
     } catch (error) {
-      await db.query('ROLLBACK');
+      await client.query('ROLLBACK').catch(() => void 0);
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

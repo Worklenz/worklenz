@@ -21,6 +21,8 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 
 interface TaskDetailsFormProps {
   taskFormViewModel?: ITaskFormViewModel | null;
+  canCreateTask?: boolean;
+  isGuest?: boolean;
 }
 
 // Custom wrapper that enforces stricter rules for displaying progress input
@@ -62,13 +64,16 @@ const ConditionalProgressInput = ({ task, form }: ConditionalProgressInputProps)
   return null;
 };
 
-const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => {
+const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGuest = false }: TaskDetailsFormProps) => {
   const { t } = useTranslation('task-drawer/task-drawer');
   const [form] = Form.useForm();
   const { project } = useAppSelector(state => state.projectReducer);
 
   // Use ref to track the current task ID to prevent unnecessary form resets
   const previousTaskIdRef = useRef<string | null>(null);
+
+  // Guests cannot edit tasks - disable all fields
+  const isReadOnly = isGuest || !canCreateTask;
 
   useEffect(() => {
     if (!taskFormViewModel) {
@@ -91,7 +96,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
         dueTime: task?.due_time || null,
         hours: task?.total_hours || 0,
         minutes: task?.total_minutes || 0,
-        priority: task?.priority || 'medium',
+        priority: task?.priority_id || 'medium',
         labels: task?.labels || [],
         billable: task?.billable || false,
         notify: [],
@@ -142,18 +147,34 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
           dueTime: null,
         }}
         onFinish={handleSubmit}
+        disabled={isReadOnly}
       >
         <TaskDrawerKey
           taskKey={taskFormViewModel?.task?.task_key || 'NEW-TASK'}
           label={t('taskInfoTab.details.task-key')}
         />
-        <TaskDrawerPhaseSelector
-          phases={taskFormViewModel?.phases || []}
-          task={taskFormViewModel?.task as ITaskViewModel}
-        />
+        {taskFormViewModel?.task && (
+          <TaskDrawerPhaseSelector
+            phases={taskFormViewModel?.phases || []}
+            task={taskFormViewModel.task as ITaskViewModel}
+          />
+        )}
 
         <Form.Item name="assignees" label={t('taskInfoTab.details.assignees')}>
-          <Flex gap={4} align="center">
+          {!isGuest ? (
+            <Flex gap={4} align="center">
+              <Avatars
+                members={
+                  taskFormViewModel?.task?.assignee_names ||
+                  (taskFormViewModel?.task?.names as unknown as InlineMember[]) ||
+                  []
+                }
+              />
+              <TaskDrawerAssigneeSelector
+                task={(taskFormViewModel?.task as ITaskViewModel) || null}
+              />
+            </Flex>
+          ) : (
             <Avatars
               members={
                 taskFormViewModel?.task?.assignee_names ||
@@ -161,38 +182,47 @@ const TaskDetailsForm = ({ taskFormViewModel = null }: TaskDetailsFormProps) => 
                 []
               }
             />
-            <TaskDrawerAssigneeSelector
-              task={(taskFormViewModel?.task as ITaskViewModel) || null}
-            />
-          </Flex>
+          )}
         </Form.Item>
 
      {taskFormViewModel?.task && (
-  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} />
+  <TaskDrawerDueDate task={taskFormViewModel.task as ITaskViewModel} t={t} form={form} disabled={isGuest} />
 )}
 
-        <TaskDrawerEstimation t={t} task={taskFormViewModel?.task as ITaskViewModel} form={form} />
+        {taskFormViewModel?.task && (
+          <TaskDrawerEstimation t={t} task={taskFormViewModel.task as ITaskViewModel} form={form} disabled={isGuest} />
+        )}
 
         {taskFormViewModel?.task && (
           <ConditionalProgressInput task={taskFormViewModel?.task as ITaskViewModel} form={form} />
         )}
 
         <Form.Item name="priority" label={t('taskInfoTab.details.priority')}>
-          <TaskDrawerPrioritySelector task={taskFormViewModel?.task as ITaskViewModel} />
+          {taskFormViewModel?.task && (
+            <TaskDrawerPrioritySelector task={taskFormViewModel.task as ITaskViewModel} />
+          )}
         </Form.Item>
 
-        <TaskDrawerLabels task={taskFormViewModel?.task as ITaskViewModel} t={t} />
+        {taskFormViewModel?.task && (
+          <TaskDrawerLabels task={taskFormViewModel.task as ITaskViewModel} t={t} isGuest={isGuest} />
+        )}
 
         <Form.Item name="billable" label={t('taskInfoTab.details.billable')}>
-          <TaskDrawerBillable task={taskFormViewModel?.task as ITaskViewModel} />
+          {taskFormViewModel?.task && (
+            <TaskDrawerBillable task={taskFormViewModel.task as ITaskViewModel} disabled={isGuest} />
+          )}
         </Form.Item>
 
         <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
-          <TaskDrawerRecurringConfig task={taskFormViewModel?.task as ITaskViewModel} />
+          {taskFormViewModel?.task && (
+            <TaskDrawerRecurringConfig task={taskFormViewModel.task as ITaskViewModel} disabled={isGuest} />
+          )}
         </Form.Item>
 
         <Form.Item name="notify" label={t('taskInfoTab.details.notify')}>
-          <NotifyMemberSelector task={taskFormViewModel?.task as ITaskViewModel} t={t} />
+          {taskFormViewModel?.task && (
+            <NotifyMemberSelector task={taskFormViewModel.task as ITaskViewModel} t={t} disabled={isGuest} />
+          )}
         </Form.Item>
       </Form>
     </ConfigProvider>

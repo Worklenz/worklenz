@@ -23,7 +23,7 @@ ALTER TABLE task_statuses
     ADD CONSTRAINT task_statuses_name_check CHECK (CHAR_LENGTH(name) <= 50);
 
 ALTER TABLE tasks
-    ADD CONSTRAINT tasks_name_check CHECK (CHAR_LENGTH(name) <= 500);
+    ADD CONSTRAINT tasks_name_check CHECK (CHAR_LENGTH(name) <= 250);
 
 ALTER TABLE tasks
     ADD CONSTRAINT tasks_description_check CHECK (CHAR_LENGTH(description) <= 500000);

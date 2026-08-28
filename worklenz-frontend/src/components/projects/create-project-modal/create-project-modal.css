@@ -1,0 +1,296 @@
+.create-project-modal .ant-modal-content {
+  overflow: hidden;
+}
+
+.create-project-layout {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  height: min(68vh, 560px);
+  align-items: stretch;
+}
+
+.create-project-config-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-right: 1px solid var(--create-project-border-secondary);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.create-project-template-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.create-project-template-tabs {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--create-project-border);
+}
+
+.create-project-template-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--create-project-border);
+}
+
+.create-project-template-search {
+  width: 100%;
+}
+
+.create-project-template-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 16px;
+  align-content: start;
+  overflow-y: auto;
+  padding: 14px 4px 4px 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.create-project-template-card {
+  position: relative;
+  display: flex;
+  min-height: 184px;
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px;
+  border: 1px solid var(--create-project-border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.create-project-template-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.create-project-template-card:focus-visible {
+  outline: 2px solid var(--create-project-primary);
+  outline-offset: 2px;
+}
+
+.create-project-template-card--selected {
+  box-shadow: 0 0 0 1px var(--create-project-primary);
+}
+
+.create-project-template-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1.78;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--create-project-fill-quaternary);
+}
+
+.create-project-template-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.create-project-blank-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--create-project-primary-bg);
+  color: var(--create-project-primary);
+  font-size: 22px;
+}
+
+.create-project-template-board {
+  display: grid;
+  width: 92%;
+  height: 86%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.create-project-template-board span {
+  position: relative;
+  display: block;
+  border: 1px solid var(--create-project-text-secondary);
+  border-radius: 4px;
+  opacity: 0.55;
+}
+
+.create-project-template-board span::before,
+.create-project-template-board span::after {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--create-project-text-secondary);
+  content: "";
+  opacity: 0.85;
+}
+
+.create-project-template-board span::before {
+  top: 10px;
+}
+
+.create-project-template-board span::after {
+  top: 24px;
+  opacity: 0.35;
+}
+
+.create-project-template-card-body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 8px 6px;
+}
+
+.create-project-template-preview-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--create-project-border);
+  border-radius: 6px;
+  background: var(--create-project-bg-container);
+  color: var(--create-project-text-secondary);
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.create-project-template-card:hover .create-project-template-preview-btn,
+.create-project-template-preview-btn:focus-visible {
+  opacity: 1;
+}
+
+.create-project-template-preview-btn:hover {
+  border-color: var(--create-project-primary);
+  color: var(--create-project-primary);
+}
+
+.create-project-color-swatch {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 2px solid var(--create-project-bg-container);
+  border-radius: 50%;
+  outline: none;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.create-project-color-swatch:hover {
+  transform: scale(1.12);
+}
+
+.create-project-color-swatch:focus-visible {
+  box-shadow: 0 0 0 2px var(--create-project-primary);
+}
+
+.create-project-color-swatch--selected {
+  box-shadow:
+    0 0 0 2px var(--create-project-bg-container),
+    0 0 0 4px currentColor;
+  transform: scale(1.08);
+}
+
+.create-project-starting-card {
+  padding: 14px;
+  border: 1px solid;
+  border-radius: 8px;
+}
+
+.create-project-starting-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.create-project-config-note {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin-top: auto;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.create-project-template-empty {
+  grid-column: 1 / -1;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.create-project-error {
+  margin: 0 20px 12px;
+}
+
+.create-project-footer {
+  padding: 14px 16px;
+  border-top: 1px solid var(--create-project-border-secondary);
+}
+
+@media (max-width: 768px) {
+  .create-project-layout {
+    grid-template-columns: 1fr;
+    max-height: none;
+  }
+
+  .create-project-config-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--create-project-border-secondary);
+  }
+
+  .create-project-template-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .create-project-template-search {
+    max-width: none;
+  }
+
+  .create-project-template-list {
+    max-height: 360px;
+  }
+
+  .create-project-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+}

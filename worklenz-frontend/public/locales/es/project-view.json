@@ -6,11 +6,18 @@
   "members": "Miembros",
   "updates": "Actualizaciones",
   "roadmap": "Hoja de Ruta",
+  "workload": "Carga de trabajo",
   "projectView": "Vista del Proyecto",
   "loading": "Cargando proyecto...",
   "error": "Error al cargar el proyecto",
   "pinnedTab": "Fijado como pestaña predeterminada",
   "pinTab": "Fijar como pestaña predeterminada",
   "unpinTab": "Desfijar pestaña predeterminada",
-  "finance": "Finance"
+  "finance": "Finance",
+  "projectUpdated": "Proyecto Actualizado",
+  "projectDataUpdatedDesc": "Un miembro del equipo ha actualizado este proyecto.",
+  "projectHealthUpdatedDesc": "El estado de salud del proyecto ha sido actualizado.",
+  "projectStatusUpdatedDesc": "El estado del proyecto ha sido actualizado.",
+  "projectDatesUpdatedDesc": "Las fechas del proyecto han sido actualizadas.",
+  "projectCategoryUpdatedDesc": "La categoría del proyecto ha sido actualizada."
 }

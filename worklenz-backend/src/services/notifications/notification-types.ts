@@ -11,4 +11,5 @@ export const NotificationTypes = {
   TASK_UNASSIGN: "TASK_UNASSIGN",
   ADD_TO_A_TEAM: "ADD_TO_A_TEAM",
   REMOVED_FROM_A_TEAM: "REMOVED_FROM_A_TEAM",
+  PHASE_TASK_ASSIGNED: "phase_task_assigned",
 };

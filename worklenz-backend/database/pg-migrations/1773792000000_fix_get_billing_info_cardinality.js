@@ -17,7 +17,7 @@ DECLARE
     _result    JSON;
 BEGIN
     SELECT EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
-    SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes WHERE redeemed_by = _user_id) INTO _is_ltd;
+    _is_ltd := FALSE; -- AppSumo entitlement lookup is private-only; see database/pg-migrations-private/
 
     SELECT ROW_TO_JSON(rec)
     INTO _result
@@ -36,12 +36,8 @@ BEGIN
                  lus.paused_reason,
                  _is_custom AS is_custom,
                  _is_ltd AS is_ltd_user,
-                 (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = _user_id) AS ltd_users,
-                 (SELECT COUNT(*)
-                  FROM licensing_coupon_codes lcc
-                  WHERE lcc.redeemed_by = _user_id
-                    AND lcc.is_redeemed = TRUE
-                    AND lcc.is_refunded = FALSE) AS redeemed_codes_count,
+                 NULL::INTEGER AS ltd_users,
+                 0 AS redeemed_codes_count,
                  (CASE
                       WHEN (ud.business_plan_override = TRUE) THEN 'Business Plan'
                       WHEN (_is_custom) THEN 'Custom Plan'
@@ -91,7 +87,7 @@ DECLARE
     _result    JSON;
 BEGIN
     SELECT EXISTS(SELECT id FROM licensing_custom_subs WHERE user_id = _user_id) INTO _is_custom;
-    SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes WHERE redeemed_by = _user_id) INTO _is_ltd;
+    _is_ltd := FALSE; -- AppSumo entitlement lookup is private-only; see database/pg-migrations-private/
 
     SELECT ROW_TO_JSON(rec)
     INTO _result
@@ -110,12 +106,8 @@ BEGIN
                  lus.paused_reason,
                  _is_custom AS is_custom,
                  _is_ltd AS is_ltd_user,
-                 (SELECT SUM(team_members_limit) FROM licensing_coupon_codes WHERE redeemed_by = _user_id) AS ltd_users,
-                 (SELECT COUNT(*)
-                  FROM licensing_coupon_codes lcc
-                  WHERE lcc.redeemed_by = _user_id
-                    AND lcc.is_redeemed = TRUE
-                    AND lcc.is_refunded = FALSE) AS redeemed_codes_count,
+                 NULL::INTEGER AS ltd_users,
+                 0 AS redeemed_codes_count,
                  (CASE
                       WHEN (ud.business_plan_override = TRUE) THEN 'Business Plan'
                       WHEN (_is_custom) THEN 'Custom Plan'

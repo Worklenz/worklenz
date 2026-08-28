@@ -7,8 +7,9 @@ import {
   Typography,
   Flex,
   Dropdown,
+  Skeleton,
 } from '@/shared/antd-imports';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
@@ -329,14 +330,20 @@ const CategoriesDrawer = ({
   const { token } = theme.useToken();
   const [form] = Form.useForm();
   const dispatch = useAppDispatch();
+  // Tracks whether we're still fetching the category's existing data.
+  // Used to hold off rendering the form fields until the real
+  // name/color are available, avoiding the default-blue flicker.
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!drawerOpen) return; // ← guard: only run when opening
     if (categoryId) {
+      setLoading(true);
       getCategoryById(categoryId);
     } else {
       form.resetFields();
       form.setFieldsValue({ color_code: Object.keys(WorklenzColorShades)[0] });
+      setLoading(false);
     }
   }, [categoryId, drawerOpen, form]);
 
@@ -354,6 +361,8 @@ const CategoriesDrawer = ({
       }
     } catch (error) {
       message.error(t('fetchCategoryErrorMessage', 'Failed to fetch category'));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -401,7 +410,11 @@ const CategoriesDrawer = ({
   };
 
   const handleClose = () => {
-    form.resetFields();
+    // Don't resetFields() here — the Drawer animates closed over ~300ms
+    // (destroyOnClose only unmounts *after* that animation finishes), so
+    // resetting synchronously on click made the color picker briefly show
+    // the default blue while the drawer was still visually closing.
+    // The useEffect above already repopulates fields correctly on next open.
     drawerClosed();
   };
 
@@ -505,35 +518,51 @@ const CategoriesDrawer = ({
       width={400}
     >
       <Form form={form} layout="vertical" onFinish={handleFormSubmit}>
-        <Form.Item
-          name="name"
-          label={t('categoryNameLabel', 'Category Name')}
-          rules={[
-            {
-              required: true,
-              message: t('nameRequiredMessage', 'Please enter a category name'),
-            },
-          ]}
-        >
-          <Input placeholder={t('categoryNamePlaceholder', 'Enter category name')} maxLength={40} />
-        </Form.Item>
+        {loading ? (
+          <>
+            <Form.Item label={t('categoryNameLabel', 'Category Name')}>
+              <Skeleton.Input active size="default" style={{ width: '100%' }} />
+            </Form.Item>
+            <Form.Item label={t('categoryColorLabel', 'Category Color')}>
+              <Skeleton.Avatar active shape="square" size={40} />
+            </Form.Item>
+          </>
+        ) : (
+          <>
+            <Form.Item
+              name="name"
+              label={t('categoryNameLabel', 'Category Name')}
+              rules={[
+                {
+                  required: true,
+                  message: t('nameRequiredMessage', 'Please enter a category name'),
+                },
+              ]}
+            >
+              <Input
+                placeholder={t('categoryNamePlaceholder', 'Enter category name')}
+                maxLength={40}
+              />
+            </Form.Item>
 
-        <Form.Item
-          name="color_code"
-          label={t('categoryColorLabel', 'Category Color')}
-          rules={[
-            {
-              required: true,
-              message: t('colorRequiredMessage', 'Please select a color'),
-            },
-          ]}
-        >
-          <ColorPicker />
-        </Form.Item>
+            <Form.Item
+              name="color_code"
+              label={t('categoryColorLabel', 'Category Color')}
+              rules={[
+                {
+                  required: true,
+                  message: t('colorRequiredMessage', 'Please select a color'),
+                },
+              ]}
+            >
+              <ColorPicker />
+            </Form.Item>
+          </>
+        )}
 
         <Flex justify="end" gap={8}>
           <Button onClick={handleClose}>{t('cancel', 'Cancel')}</Button>
-          <Button type="primary" htmlType="submit">
+          <Button type="primary" htmlType="submit" disabled={loading}>
             {categoryId ? t('save', 'Save') : t('create', 'Create')}
           </Button>
         </Flex>

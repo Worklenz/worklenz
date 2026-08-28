@@ -1,63 +1,96 @@
 import {
+  AppstoreOutlined,
+  BarChartOutlined,
   ClockCircleOutlined,
+  CrownOutlined,
+  DollarOutlined,
+  GroupOutlined,
   HomeOutlined,
   MenuOutlined,
   ProjectOutlined,
-  QuestionCircleOutlined,
   ReadOutlined,
 } from '@/shared/antd-imports';
-import { Card, Dropdown, Flex, MenuProps, Space, Typography } from '@/shared/antd-imports';
-import React, { memo } from 'react';
+import { Card, Dropdown, Flex, MenuProps, Space, theme, Typography } from '@/shared/antd-imports';
+import React, { memo, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import InviteButton from '../invite/InviteButton';
 import SwitchTeamButton from '../switch-team/SwitchTeamButton';
+import { isRouteGatedForFreePlan, NavRoutesType } from '../navRoutes';
 // custom css
 import './mobileMenu.css';
 import { Button } from 'antd';
 
-const MobileMenuButton = () => {
+// Keyed by NavRoutesType['name'] — mirrors every entry in navRoutes.ts so the
+// mobile menu always has an icon for whatever the desktop nav currently shows.
+const ROUTE_ICONS: Record<string, ReactNode> = {
+  home: React.createElement(HomeOutlined),
+  projects: React.createElement(ProjectOutlined),
+  planner: React.createElement(ClockCircleOutlined),
+  'client-portal': React.createElement(GroupOutlined),
+  finance: React.createElement(DollarOutlined),
+  reporting: React.createElement(ReadOutlined),
+  'Team Reports': React.createElement(BarChartOutlined),
+};
+const DEFAULT_ROUTE_ICON = React.createElement(AppstoreOutlined);
+
+interface MobileMenuButtonProps {
+  routes: NavRoutesType[];
+  isFreePlan: boolean;
+}
+
+const MobileMenuButton = ({ routes, isFreePlan }: MobileMenuButtonProps) => {
   // localization
   const { t } = useTranslation('navbar');
-
-  const navLinks = [
-    {
-      name: 'home',
-      icon: React.createElement(HomeOutlined),
-    },
-    {
-      name: 'projects',
-      icon: React.createElement(ProjectOutlined),
-    },
-    {
-      name: 'schedule',
-      icon: React.createElement(ClockCircleOutlined),
-    },
-    {
-      name: 'reporting',
-      icon: React.createElement(ReadOutlined),
-    },
-    {
-      name: 'help',
-      icon: React.createElement(QuestionCircleOutlined),
-    },
-  ];
+  const dispatch = useAppDispatch();
+  const { token } = theme.useToken();
 
   const mobileMenu: MenuProps['items'] = [
     {
       key: '1',
       label: (
         <Card className="mobile-menu-card" bordered={false} style={{ width: 230 }}>
-          {navLinks.map((navEl, index) => (
-            <NavLink key={index} to={`/worklenz/${navEl.name}`}>
-              <Typography.Text strong>
+          {routes.map((route, index) => {
+            const gated = isRouteGatedForFreePlan(route, isFreePlan);
+            const content = (
+              <Typography.Text strong style={{ color: token.colorText }}>
                 <Space>
-                  {navEl.icon}
-                  {t(navEl.name)}
+                  {ROUTE_ICONS[route.name] ?? DEFAULT_ROUTE_ICON}
+                  {t(route.name)}
+                  {gated && (
+                    <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
+                  )}
                 </Space>
               </Typography.Text>
-            </NavLink>
-          ))}
+            );
+
+            // Free-plan users tapping a gated route open the same upgrade
+            // modal desktop's handleMenuClick opens — never navigate them
+            // straight to a paid route.
+            return gated ? (
+              <a
+                key={index}
+                role="button"
+                tabIndex={0}
+                onClick={() => dispatch(toggleUpgradeModal())}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    dispatch(toggleUpgradeModal());
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                {content}
+              </a>
+            ) : (
+              <NavLink key={index} to={route.path}>
+                {content}
+              </NavLink>
+            );
+          })}
 
           <Flex
             vertical

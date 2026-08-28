@@ -1,9 +1,15 @@
 {
+  "pageTitle": "Shabllonet e Detyrave",
   "nameColumn": "Emri",
   "createdColumn": "Krijuar",
-  "editToolTip": "Redakto",
+  "editToolTip": "Modifiko",
   "deleteToolTip": "Fshi",
   "confirmText": "Jeni i sigurt?",
   "okText": "Po",
-  "cancelText": "Anulo"
+  "cancelText": "Anulo",
+  "noTemplatesYet": "Ende nuk ka shabllone detyre",
+  "step1": "Navigoni në një projekt dhe hapeni.",
+  "step2": "Zgjidhni detyrat duke përdorur opsionin e Redaktimit Masiv.",
+  "step3": "Klikoni mbi Më Shumë Opsione në shiritin e veprimit masiv dhe zgjidhni Krijo Shabllon Detyre.",
+  "totalItems": "Artikuj të Plotë"
 }

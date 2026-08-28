@@ -2,6 +2,7 @@ import db from "../config/db";
 import { Socket } from "socket.io";
 import { getLoggedInUserIdFromSocket } from "./util";
 import { log_error } from "../shared/utils";
+import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 
 /**
  * Verify user has access to a task via their team
@@ -33,6 +34,57 @@ export async function verifyTaskAccessSocket(
     return result.rowCount ? result.rowCount > 0 : false;
   } catch (error) {
     log_error(`Error verifying task access: ${error}`);
+    return false;
+  }
+}
+
+export async function verifyNonGuestTaskAccessSocket(
+  socket: Socket,
+  taskId: string
+): Promise<boolean> {
+  const userId = getLoggedInUserIdFromSocket(socket);
+
+  if (!userId || !taskId) return false;
+
+  try {
+    const q = `
+      SELECT 1
+      FROM tasks t
+      INNER JOIN projects p ON t.project_id = p.id
+      ${NON_GUEST_ACCESS_JOIN('$2')}
+      WHERE t.id = $1
+        AND ${NON_GUEST_ACCESS_PREDICATE}
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [taskId, userId]);
+    return result.rowCount ? result.rowCount > 0 : false;
+  } catch (error) {
+    log_error(`Error verifying non-guest task access: ${error}`);
+    return false;
+  }
+}
+
+export async function verifyNonGuestProjectAccessSocket(
+  socket: Socket,
+  projectId: string
+): Promise<boolean> {
+  const userId = getLoggedInUserIdFromSocket(socket);
+
+  if (!userId || !projectId) return false;
+
+  try {
+    const q = `
+      SELECT 1
+      FROM projects p
+      ${NON_GUEST_ACCESS_JOIN('$2')}
+      WHERE p.id = $1
+        AND ${NON_GUEST_ACCESS_PREDICATE}
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [projectId, userId]);
+    return result.rowCount ? result.rowCount > 0 : false;
+  } catch (error) {
+    log_error(`Error verifying non-guest project access: ${error}`);
     return false;
   }
 }

@@ -42,12 +42,11 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { getRoleColor } from '@/types/roles/role.types';
-import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface PaginationType {
@@ -89,15 +88,13 @@ const ProjectViewMembers = () => {
   const [searchQuery, setSearchQuery] = useState(''); // <-- Add search state
   const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
   const { trackAppSumoEvent } = useAppSumoTracking();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const isAppSumoUser = billingInfo?.subscription_type?.toLowerCase().includes('appsumo') ?? false;
 
   const totalUsedSeats = billingInfo?.total_used ?? members?.total ?? 0;
   const totalAvailableSeats = billingInfo?.total_seats ?? 0;
   const remainingSeats = Math.max(0, totalAvailableSeats - totalUsedSeats);
   const hasReachedSeatLimit =
-    !hasBusinessAccess && totalAvailableSeats > 0 && totalUsedSeats >= totalAvailableSeats;
+    !hasBusinessFeatureAccess(user) && totalAvailableSeats > 0 && totalUsedSeats >= totalAvailableSeats;
   const seatUsageText = useMemo(() => {
     if (!totalAvailableSeats) {
       return t('seatUsageText', {
@@ -400,7 +397,7 @@ const ProjectViewMembers = () => {
                         trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'seat_limit_project_members' });
                         trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_ADD_MORE_CLICKED, { feature: 'project_members' });
                       }
-                      promptUpgrade();
+                      dispatch(toggleUpgradeModal());
                     }}
                   >
                     {t('seatLimitPopoverCta', { defaultValue: t('seatLimitPopoverCta') })}

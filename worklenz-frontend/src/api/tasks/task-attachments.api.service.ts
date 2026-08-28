@@ -11,11 +11,96 @@ import { toQueryString } from '@/utils/toQueryString';
 
 const rootUrl = `${API_BASE_URL}/attachments`;
 
+interface PresignResponse {
+  file_id: string;
+  upload_url: string;
+  expires_in: number;
+}
+
 const taskAttachmentsApiService = {
   createTaskAttachment: async (
     body: ITaskAttachment
   ): Promise<IServerResponse<ITaskAttachmentViewModel>> => {
     const response = await apiClient.post(`${rootUrl}/tasks`, body);
+    return response.data;
+  },
+
+  /**
+   * Step 1: Request a presigned URL for direct browser upload
+   */
+  presignTaskAttachment: async (
+    taskId: string,
+    projectId: string,
+    filename: string,
+    size: number,
+    mimeType: string
+  ): Promise<IServerResponse<PresignResponse>> => {
+    const response = await apiClient.post(`${rootUrl}/tasks/presign`, {
+      task_id: taskId,
+      project_id: projectId,
+      filename,
+      size,
+      mime_type: mimeType,
+    });
+    return response.data;
+  },
+
+  /**
+   * Step 2: Upload file directly to storage using presigned URL
+   * Returns progress updates via callback
+   */
+  uploadDirect: (
+    uploadUrl: string,
+    file: File,
+    onProgress?: (percent: number) => void,
+    signal?: AbortSignal
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', event => {
+          if (event.lengthComputable) {
+            onProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        });
+      }
+
+      xhr.addEventListener('load', () => {
+        // S3 returns 200, Azure returns 201 for a successful PUT
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Storage upload failed with status ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Network error during file upload')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+
+      // Support AbortSignal for cancellation
+      if (signal) {
+        signal.addEventListener('abort', () => xhr.abort(), { once: true });
+      }
+
+      xhr.send(file);
+    });
+  },
+
+  /**
+   * Step 3: Confirm upload completion
+   */
+  confirmTaskAttachment: async (
+    fileId: string,
+    taskId: string
+  ): Promise<IServerResponse<ITaskAttachmentViewModel>> => {
+    const response = await apiClient.post(`${rootUrl}/tasks/confirm`, {
+      file_id: fileId,
+      task_id: taskId,
+    });
     return response.data;
   },
 

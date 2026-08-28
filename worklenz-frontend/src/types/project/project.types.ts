@@ -38,6 +38,22 @@ export interface IProjectUpdateComment {
   updated_at?: string;
 }
 
+export interface IProjectCommentReplyPreview {
+  id?: string;
+  author_name?: string;
+  content_snippet?: string;
+  is_deleted?: boolean;
+}
+
+export interface IProjectCommentAttachment {
+  id?: string;
+  name: string;
+  url: string;
+  type?: string;
+  size?: number;
+  created_at?: string;
+}
+
 export interface IProjectUpdateCommentViewModel extends IProjectUpdateComment {
   created_by?: string;
   avatar_url?: string;
@@ -48,6 +64,13 @@ export interface IProjectUpdateCommentViewModel extends IProjectUpdateComment {
   edit_count?: number;
   last_edited_at?: string;
   last_edited_by_name?: string;
+  is_deleted?: boolean;
+  reply_to_id?: string;
+  reply_to?: IProjectCommentReplyPreview | null;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
+  pinned_by_name?: string | null;
+  attachments?: IProjectCommentAttachment[];
 }
 
 export enum IProjectFilter {

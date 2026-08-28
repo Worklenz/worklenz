@@ -152,9 +152,6 @@ const InviteTeamMembersModal = () => {
 
   const accessOptions = useMemo(
     () => [
-      { value: 'member', label: t('memberText') },
-      { value: 'team-lead', label: 'Team Lead' },
-      { value: 'admin', label: t('adminText') },
       { value: 'guest', label: t('guestText') },
     ],
     [t]
