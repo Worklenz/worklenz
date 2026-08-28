@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { themeWiseColor } from '@utils/themeWiseColor';
 
 interface HealthStatusDataType {
   value: string;
@@ -19,6 +20,7 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
   const { t } = useTranslation('reporting-projects');
   const { socket } = useSocket();
   const { projectHealths, loading } = useAppSelector(state => state.projectHealthReducer);
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const projectHealth = projectHealths.find(status => status.id === value) || {
     color_code: color,
@@ -70,14 +72,14 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
           paddingInline: 8,
           height: 30,
           backgroundColor: projectHealth?.color_code || colors.transparent,
-          color: colors.darkGray,
-          cursor: 'default',
+ color: themeWiseColor(colors.darkGray, colors.white, themeMode),       
+    cursor: 'default',
         }}
       >
         <Typography.Text
           style={{
             textTransform: 'capitalize',
-            color: colors.darkGray,
+            color: themeWiseColor(colors.darkGray, colors.white, themeMode),
             fontSize: 13,
           }}
         >
@@ -104,15 +106,15 @@ const ProjectHealthCell = ({ value, label, color, projectId }: HealthStatusDataT
           paddingInline: 8,
           height: 30,
           backgroundColor: projectHealth?.color_code || colors.transparent,
-          color: colors.darkGray,
+          color: themeWiseColor(colors.darkGray, colors.white, themeMode),  
           cursor: 'pointer',
         }}
       >
         <Typography.Text
           style={{
             textTransform: 'capitalize',
-            color: colors.darkGray,
-            fontSize: 13,
+ color: themeWiseColor(colors.darkGray, colors.white, themeMode),
+             fontSize: 13,
           }}
         >
           {projectHealth?.name}

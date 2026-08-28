@@ -1,14 +1,14 @@
 import { Drawer, Typography, Flex, Button, Space, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { toggleMembersReportsDrawer } from '../membersReportsSlice';
+import { toggleMembersReportsDrawer, clearSelectedStatType } from '../membersReportsSlice';
 import { DownOutlined } from '@/shared/antd-imports';
 import MembersReportsDrawerTabs from './members-reports-drawer-tabs';
 import { useTranslation } from 'react-i18next';
 import MembersOverviewTasksStatsDrawer from './overviewTab/members-overview-tasks-stats-drawer/members-overview-tasks-stats-drawer';
 import MembersOverviewProjectsStatsDrawer from './overviewTab/members-overview-projects-stats-drawer/members-overview-projects-stats-drawer';
 import TimeWiseFilter from '@/components/reporting/time-wise-filter';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthService } from '@/hooks/useAuth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
 import logger from '@/utils/errorLogger';
@@ -32,8 +32,20 @@ const MembersReportsDrawer = ({ memberId }: MembersReportsDrawerProps) => {
 
   const selectedMember = membersList?.find(member => member.id === memberId);
 
+  // Prefetch the task-drawer chunk when the drawer opens so the first tab switch is fast.
+  // Once loaded, the dynamic import resolves from the module cache on later opens, so this
+  // is a cheap no-op after the first successful fetch.
+  useEffect(() => {
+    if (isDrawerOpen) {
+      import('@components/task-drawer/task-drawer').catch(error => {
+        logger.error('prefetch task-drawer chunk', error);
+      });
+    }
+  }, [isDrawerOpen]);
+
   const handleClose = () => {
     dispatch(toggleMembersReportsDrawer());
+    dispatch(clearSelectedStatType());
   };
 
   const exportTimeLogs = () => {

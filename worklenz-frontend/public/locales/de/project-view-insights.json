@@ -1,4 +1,7 @@
 {
+  "overviewTab": "Übersicht",
+  "membersTab": "Mitglieder",
+  "tasksTab": "Aufgaben",
   "overview": {
     "title": "Übersicht",
     "statusOverview": "Statusübersicht",
@@ -26,6 +29,29 @@
     "overLoggedTasksTooltip": "Aufgaben, bei denen mehr Zeit erfasst wurde als geschätzt",
     "overdueTasksTooltip": "Aufgaben, deren Fälligkeitsdatum überschritten wurde"
   },
+  "projectDeadline": {
+    "title": "Projektdeadline",
+    "overdueTasksHours": "Überfällige Aufgaben (Stunden)",
+    "overdueTasksHoursTooltip": "Aufgaben, bei denen mehr Zeit erfasst wurde als das Projektenddatum",
+    "overdueTasks": "Überfällige Aufgaben",
+    "overdueTasksTooltip": "Aufgaben, die das Projektenddatum überschritten haben"
+  },
+  "priorityChart": {
+    "priorityAxis": "Priorität",
+    "taskCountAxis": "Aufgabenanzahl",
+    "tasks": "Aufgaben",
+    "taskCount": "Aufgabe",
+    "noPriority": "Keine Priorität",
+    "low": "Niedrig",
+    "medium": "Mittel",
+    "high": "Hoch",
+    "critical": "Kritisch"
+  },
+  "memberStats": {
+    "projectMembers": "Projektmitglieder",
+    "assigneesWithOverdueTasks": "Zuweisungen mit überfälligen Aufgaben",
+    "unassignedMembers": "Nicht zugewiesene Mitglieder"
+  },
   "common": {
     "seeAll": "Alle anzeigen",
     "totalLoggedHours": "Gesamterfasste Stunden",
@@ -36,6 +62,20 @@
     "overdueTasksTooltip": "Aufgaben, deren Fälligkeitsdatum überschritten wurde",
     "totalLoggedHoursTooltip": "Zeitschätzung und erfasste Zeit für Aufgaben.",
     "includeArchivedTasks": "Archivierte Aufgaben einbeziehen",
-    "export": "Exportieren"
+    "export": "Exportieren",
+    "name": "Name",
+    "status": "Status",
+    "dueDate": "Fälligkeitsdatum",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "na": "n/a"
+  },
+  "justNow": "Gerade eben",
+  "tasksTable": {
+    "daysOverdue": "Tage überfällig",
+    "completedAt": "Abgeschlossen am",
+    "members": "Mitglieder",
+    "overLoggedTime": "Überbuchte Zeit",
+    "completedDate": "Abschlussdatum",
+    "totalAllocation": "Gesamtzuweisung"
   }
 }

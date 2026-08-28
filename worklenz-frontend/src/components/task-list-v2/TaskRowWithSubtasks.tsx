@@ -6,6 +6,7 @@ import {
   createSubtask,
   selectSubtaskLoading,
   fetchSubTasks,
+  reorderSubtasks,
 } from '@/features/task-management/task-management.slice';
 import TaskRow from './TaskRow';
 import SubtaskLoadingSkeleton from './SubtaskLoadingSkeleton';
@@ -16,6 +17,22 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
+import {
+  DndContext,
+  DragEndEvent,
+  DragStartEvent,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 interface TaskRowWithSubtasksProps {
   taskId: string;
@@ -30,6 +47,10 @@ interface TaskRowWithSubtasksProps {
   depth?: number;
   maxDepth?: number;
   canCreateTask?: boolean;
+  /** Passed down to TaskRow to enable DnD when the row is inside a subtask DndContext */
+  enableSubtaskDnd?: boolean;
+  /** Guest access restriction - prevents viewing and editing */
+  isGuest?: boolean;
 }
 
 interface AddSubtaskRowProps {
@@ -235,26 +256,26 @@ AddSubtaskRow.displayName = 'AddSubtaskRow';
 const getSubtaskBackgroundColor = (depth: number) => {
   switch (depth) {
     case 1:
-      return 'bg-gray-50 dark:bg-transparent';
+      return 'bg-gray-50 dark:bg-[#1a1a1a]';
     case 2:
-      return 'bg-blue-50 dark:bg-transparent';
+      return 'bg-blue-50/40 dark:bg-[#1a2030]';
     case 3:
-      return 'bg-green-50 dark:bg-transparent';
+      return 'bg-purple-50/40 dark:bg-[#1e1a2e]';
     default:
-      return 'bg-gray-50 dark:bg-transparent';
+      return 'bg-gray-50 dark:bg-[#1a1a1a]';
   }
 };
 
 const getBorderColor = (depth: number) => {
   switch (depth) {
     case 1:
-      return 'border-blue-200 dark:border-blue-700';
+      return 'border-blue-300 dark:border-blue-600';
     case 2:
-      return 'border-green-200 dark:border-green-700';
+      return 'border-violet-400 dark:border-violet-500';
     case 3:
-      return 'border-purple-200 dark:border-purple-700';
+      return 'border-purple-400 dark:border-purple-500';
     default:
-      return 'border-blue-200 dark:border-blue-700';
+      return 'border-blue-300 dark:border-blue-600';
   }
 };
 
@@ -268,10 +289,18 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     depth = 0,
     maxDepth = 3,
     canCreateTask = true,
+    enableSubtaskDnd = false,
+    isGuest = false,
   }) => {
     const task = useAppSelector(state => selectTaskById(state, taskId));
     const isLoadingSubtasks = useAppSelector(state => selectSubtaskLoading(state, taskId));
     const dispatch = useAppDispatch();
+    const { socket, connected } = useSocket();
+
+    const subtaskDndSensors = useSensors(
+      useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+      useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    );
 
     const selectedMemberIds = useAppSelector(
       state =>
@@ -326,7 +355,6 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
 
       return task.sub_tasks.filter((subtask: Task) => {
         if (subtask.has_filtered_children) return true;
-        if (subtask.sub_tasks_count && subtask.sub_tasks_count > 0) return true;
 
         let matchesFilters = true;
 
@@ -388,12 +416,67 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     // FIX: Also moved above early return for the same reason
     const handleSubtaskAdded = useCallback(() => {}, []);
 
+    // ── Sync from drawer → task list via socket ack ──────────────────────────
+    // The drawer drag dispatches reorderSubtasks to Redux directly (optimistic),
+    // so the task list is already in sync. No re-fetch needed here — doing so
+    // would trigger a loading state / splash. The listener is kept only to
+    // confirm the ack arrived (for future extensibility).
+    const taskIdRef = useRef(taskId);
+    useEffect(() => { taskIdRef.current = taskId; });
+
+    useEffect(() => {
+      if (!socket) return;
+      // No action needed on ack — optimistic Redux update already applied.
+      return () => {};
+    }, [socket]);
+
+    // Subtask drag-and-drop handlers
+    const handleSubtaskDragEnd = useCallback(
+      (event: DragEndEvent, currentFilteredSubtasks: Task[]) => {
+        // Disable drag and drop for guest users
+        if (isGuest) return;
+
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = currentFilteredSubtasks.findIndex(s => s.id === active.id);
+        const newIndex = currentFilteredSubtasks.findIndex(s => s.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const reordered = arrayMove(currentFilteredSubtasks, oldIndex, newIndex);
+
+        // Optimistic update in Redux
+        dispatch(reorderSubtasks({ parentTaskId: taskId, orderedSubtasks: reordered }));
+
+        // Persist via socket
+        const subtaskUpdates = reordered.map((subtask, index) => ({
+          task_id: subtask.id,
+          sort_order: index,
+        }));
+
+        if (socket && connected) {
+          socket.emit(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), {
+            parent_task_id: taskId,
+            subtask_updates: subtaskUpdates,
+          });
+        }
+      },
+      [dispatch, taskId, socket, connected, isGuest]
+    );
+
     // Safe to early return here — all hooks have been called above
     if (!task) {
       return null;
     }
 
     const canHaveSubtasks = depth < maxDepth;
+
+    // Effective depth for rendering children: when a subtask surfaces as an
+    // orphaned flat row (depth=0 but parent_task_id is set), its children
+    // should render as if they're at least depth 1, since the parent row
+    // itself is conceptually a subtask.
+    const effectiveDepth =
+      depth === 0 && task.parent_task_id ? 1 : depth;
 
     return (
       <>
@@ -407,6 +490,8 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
           isSubtask={depth > 0}
           depth={depth}
           canCreateTask={canCreateTask}
+          enableSubtaskDnd={enableSubtaskDnd}
+          isGuest={isGuest}
         />
 
         {/* Subtasks and add subtask row when expanded */}
@@ -419,29 +504,44 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
               </>
             )}
 
-            {/* Render existing subtasks when not loading - RECURSIVELY */}
-            {!isLoadingSubtasks &&
-              filteredSubtasks.map((subtask: Task) => (
-                <div
-                  key={subtask.id}
-                  className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}
+            {/* Render existing subtasks when not loading - wrapped in DnD for reordering */}
+            {!isLoadingSubtasks && filteredSubtasks.length > 0 && (
+              <DndContext
+                sensors={subtaskDndSensors}
+                collisionDetection={closestCenter}
+                modifiers={[restrictToVerticalAxis]}
+                onDragEnd={(event) => handleSubtaskDragEnd(event, filteredSubtasks)}
+              >
+                <SortableContext
+                  items={filteredSubtasks.map(s => s.id)}
+                  strategy={verticalListSortingStrategy}
                 >
-                  <TaskRowWithSubtasks
-                    taskId={subtask.id}
-                    projectId={projectId}
-                    visibleColumns={visibleColumns}
-                    updateTaskCustomColumnValue={updateTaskCustomColumnValue}
-                    depth={depth + 1}
-                    maxDepth={maxDepth}
-                    canCreateTask={canCreateTask}
-                  />
-                </div>
-              ))}
+                  {filteredSubtasks.map((subtask: Task) => (
+                    <div
+                      key={subtask.id}
+                      className={`subtask-row-wrapper ${getSubtaskBackgroundColor(effectiveDepth + 1)} border-l-4 ${getBorderColor(effectiveDepth + 1)}`}
+                    >
+                      <TaskRowWithSubtasks
+                        taskId={subtask.id}
+                        projectId={projectId}
+                        visibleColumns={visibleColumns}
+                        updateTaskCustomColumnValue={updateTaskCustomColumnValue}
+                        depth={effectiveDepth + 1}
+                        maxDepth={maxDepth}
+                        canCreateTask={canCreateTask}
+                        enableSubtaskDnd={true}
+                        isGuest={isGuest}
+                      />
+                    </div>
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
 
             {/* Add subtask row - only show when not loading and task creation is allowed */}
-            {!isLoadingSubtasks && !task.is_parent_container && canCreateTask && (
+            {!isLoadingSubtasks && !task.is_parent_container && canCreateTask && !isGuest && (
               <div
-                className={`${getSubtaskBackgroundColor(depth + 1)} border-l-2 ${getBorderColor(depth + 1)}`}
+                className={`${getSubtaskBackgroundColor(effectiveDepth + 1)} border-l-4 ${getBorderColor(effectiveDepth + 1)}`}
               >
                 <AddSubtaskRow
                   parentTaskId={taskId}
@@ -452,7 +552,7 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
                   autoFocus={false}
                   isActive={true}
                   onActivate={undefined}
-                  depth={depth + 1}
+                  depth={effectiveDepth + 1}
                 />
               </div>
             )}

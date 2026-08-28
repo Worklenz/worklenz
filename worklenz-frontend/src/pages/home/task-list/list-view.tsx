@@ -3,16 +3,15 @@ import AddTaskInlineForm from './add-task-inline-form';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
 import { IHomeTasksModel } from '@/types/home/home-page.types';
-import { useState } from 'react';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setHomeTasksConfig } from '@/features/home-page/home-page.slice';
 
 interface ListViewProps {
   model: IHomeTasksModel;
-  refetch: () => void;
+
 }
 
-const ListView = ({ model, refetch }: ListViewProps) => {
+const ListView = ({ model }: ListViewProps) => {
   const { t } = useTranslation('home');
   const dispatch = useAppDispatch();
 

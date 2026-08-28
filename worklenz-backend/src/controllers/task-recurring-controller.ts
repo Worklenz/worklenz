@@ -5,10 +5,156 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
+import { SqlHelper } from "../shared/sql-helpers";
 
 const VALID_SCHEDULE_TYPES = ["daily", "weekly", "monthly", "yearly", "every_x_days", "every_x_weeks", "every_x_months"];
 
+const SORT_COLUMN_MAP: Record<string, string> = {
+  name: "tasks.name",
+  project: "p.name",
+  start_date: "trs.start_date",
+  end_date: "trs.end_date",
+  est_time: "tasks.total_minutes",
+  priority: "tp.value",
+  recur_type: "trs.recurring_mode",
+};
+
+function parseCsvParam(value: unknown): string[] {
+  if (!value || typeof value !== "string") return [];
+  return value.split(",").map(v => v.trim()).filter(Boolean);
+}
+
 export default class TaskRecurringController extends WorklenzControllerBase {
+  @HandleExceptions()
+  public static async getTeamRecurringTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id;
+    let paramOffset = 2;
+    const queryParams: any[] = [req.user?.team_id || null];
+
+    let filterByMember = "";
+    if (!req.user?.owner && !req.user?.is_admin) {
+      queryParams.push(userId);
+      filterByMember = ` AND is_member_of_project(p.id, $${paramOffset}, $1) `;
+      paramOffset++;
+    }
+
+    let projectFilter = "";
+    const projectIds = parseCsvParam(req.query.project_id);
+    if (projectIds.length) {
+      const { clause } = SqlHelper.buildInClause(projectIds, paramOffset);
+      projectFilter = ` AND p.id IN (${clause}) `;
+      queryParams.push(...projectIds);
+      paramOffset += projectIds.length;
+    }
+
+    let assigneeFilter = "";
+    const assigneeIds = parseCsvParam(req.query.team_member_id);
+    if (assigneeIds.length) {
+      const { clause } = SqlHelper.buildInClause(assigneeIds, paramOffset);
+      assigneeFilter = ` AND EXISTS(SELECT 1 FROM tasks_assignees ta WHERE ta.task_id = tasks.id AND ta.team_member_id IN (${clause})) `;
+      queryParams.push(...assigneeIds);
+      paramOffset += assigneeIds.length;
+    }
+
+    let recurringModeFilter = "";
+    const recurringModes = parseCsvParam(req.query.recurring_mode).filter(v => ["create_task", "change_status"].includes(v));
+    if (recurringModes.length) {
+      const { clause } = SqlHelper.buildInClause(recurringModes, paramOffset);
+      recurringModeFilter = ` AND trs.recurring_mode IN (${clause}) `;
+      queryParams.push(...recurringModes);
+      paramOffset += recurringModes.length;
+    }
+
+    let scheduleTypeFilter = "";
+    const scheduleTypes = parseCsvParam(req.query.schedule_type).filter(v => VALID_SCHEDULE_TYPES.includes(v));
+    if (scheduleTypes.length) {
+      const { clause } = SqlHelper.buildInClause(scheduleTypes, paramOffset);
+      scheduleTypeFilter = ` AND trs.schedule_type IN (${clause}) `;
+      queryParams.push(...scheduleTypes);
+      paramOffset += scheduleTypes.length;
+    }
+
+    let priorityFilter = "";
+    const priorityIds = parseCsvParam(req.query.priority_id);
+    if (priorityIds.length) {
+      const { clause } = SqlHelper.buildInClause(priorityIds, paramOffset);
+      priorityFilter = ` AND tasks.priority_id IN (${clause}) `;
+      queryParams.push(...priorityIds);
+      paramOffset += priorityIds.length;
+    }
+
+    const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["tasks.name"], false, paramOffset);
+    if (searchParams.length > 0) {
+      queryParams.push(...searchParams);
+      paramOffset += searchParams.length;
+    }
+
+    const orderColumn = SORT_COLUMN_MAP[sortField as string] || "tasks.name";
+    const orderDirection = sortOrder === "desc" ? "DESC" : "ASC";
+
+    const limitParam = paramOffset;
+    const offsetParam = paramOffset + 1;
+    queryParams.push(size, offset);
+
+    const q = `
+      SELECT ROW_TO_JSON(rec) AS recurring_tasks
+      FROM (SELECT COUNT(*) AS total,
+                   (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
+                    FROM (SELECT tasks.id,
+                                 tasks.name,
+                                 CONCAT(p.key, '-', tasks.task_no) AS task_key,
+                                 tasks.total_minutes,
+                                 p.id AS project_id,
+                                 p.name AS project_name,
+                                 p.color_code AS project_color,
+                                 tasks.priority_id,
+                                 tp.name AS priority_name,
+                                 tp.color_code AS priority_color,
+                                 tp.color_code_dark AS priority_color_dark,
+                                 (SELECT get_task_assignees(tasks.id)) AS assignees,
+                                 trs.id AS schedule_id,
+                                 trs.schedule_type,
+                                 trs.days_of_week,
+                                 trs.day_of_month,
+                                 trs.date_of_month,
+                                 trs.week_of_month,
+                                 trs.interval_days,
+                                 trs.interval_weeks,
+                                 trs.interval_months,
+                                 trs.is_active,
+                                 trs.start_date,
+                                 trs.end_date,
+                                 trs.recurring_mode
+                          FROM tasks
+                                 INNER JOIN task_recurring_schedules trs ON tasks.schedule_id = trs.id
+                                 INNER JOIN projects p ON tasks.project_id = p.id
+                                 INNER JOIN task_priorities tp ON tasks.priority_id = tp.id
+                          WHERE tasks.archived IS FALSE
+                            AND p.team_id = $1
+                            ${filterByMember} ${projectFilter} ${assigneeFilter} ${recurringModeFilter} ${scheduleTypeFilter} ${priorityFilter} ${searchQuery}
+                          ORDER BY ${orderColumn} ${orderDirection} NULLS LAST
+                          LIMIT $${limitParam} OFFSET $${offsetParam}) t) AS data
+            FROM tasks
+                   INNER JOIN task_recurring_schedules trs ON tasks.schedule_id = trs.id
+                   INNER JOIN projects p ON tasks.project_id = p.id
+            WHERE tasks.archived IS FALSE
+              AND p.team_id = $1
+              ${filterByMember} ${projectFilter} ${assigneeFilter} ${recurringModeFilter} ${scheduleTypeFilter} ${priorityFilter} ${searchQuery}) rec;
+    `;
+
+    const result = await db.query(q, queryParams);
+    const [row] = result.rows;
+    const data = row?.recurring_tasks?.data || [];
+    const total = row?.recurring_tasks?.total || 0;
+
+    for (const item of data) {
+      const totalMinutes = Number(item.total_minutes) || 0;
+      item.est_time_string = `${~~(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+    }
+
+    return res.status(200).send(new ServerResponse(true, {total: Number(total), data}));
+  }
+
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { id } = req.params;

@@ -1,4 +1,4 @@
-import { Flex, Typography, theme } from '@/shared/antd-imports';
+import { Col, Flex, Row, Typography, theme } from '@/shared/antd-imports';
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import OverviewStatCard from './overview-stat-card';
 import { BankOutlined, FileOutlined, UsergroupAddOutlined } from '@/shared/antd-imports';
@@ -182,13 +182,19 @@ const OverviewStats = () => {
   );
 
   return (
-    <Flex gap={24}>
-      {renderStatCard(teamIcon, stats?.teams?.count, 'teamCount', teamStats)}
+    <Row gutter={[24, 24]}>
+      <Col xs={24} sm={12} lg={8}>
+        {renderStatCard(teamIcon, stats?.teams?.count, 'teamCount', teamStats)}
+      </Col>
 
-      {renderStatCard(projectIcon, stats?.projects?.count, 'projectCount', projectStats)}
+      <Col xs={24} sm={12} lg={8}>
+        {renderStatCard(projectIcon, stats?.projects?.count, 'projectCount', projectStats)}
+      </Col>
 
-      {renderStatCard(memberIcon, stats?.members?.count, 'memberCount', memberStats)}
-    </Flex>
+      <Col xs={24} sm={12} lg={8}>
+        {renderStatCard(memberIcon, stats?.members?.count, 'memberCount', memberStats)}
+      </Col>
+    </Row>
   );
 };
 

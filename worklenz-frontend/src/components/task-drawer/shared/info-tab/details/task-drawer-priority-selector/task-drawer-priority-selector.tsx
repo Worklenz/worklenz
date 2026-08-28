@@ -1,11 +1,10 @@
 import { Flex, Select, Typography } from '@/shared/antd-imports';
 import './priority-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { ALPHA_CHANNEL } from '@/shared/constants';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { ITaskPriority } from '@/types/tasks/taskPriority.types';
 import {
   DoubleLeftOutlined,
   ExclamationOutlined,
@@ -23,12 +22,11 @@ import { updateTaskPriority as updateTasksListTaskPriority } from '@/features/ta
 import { updateEnhancedKanbanTaskPriority } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 
 type PriorityDropdownProps = {
-  task: ITaskViewModel;
+  task: ITaskViewModel | undefined | null;
 };
 
 const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
   const { socket } = useSocket();
-  const [selectedPriority, setSelectedPriority] = useState<ITaskPriority | undefined>(undefined);
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const currentSession = useAuthService().getCurrentSession();
@@ -36,33 +34,44 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
   const { tab } = useTabSearchParam();
 
   useEffect(() => {
-    setSelectedPriority(priorityList?.find(priority => priority.id === task?.priority_id));
-  }, [priorityList, task?.priority_id]);
+    if (!socket || !task?.id) return;
 
-  const handlePriorityChange = (priorityId: string) => {
-    if (!task.id || !priorityId) return;
-
-    socket?.emit(
-      SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-      JSON.stringify({
-        task_id: task.id,
-        priority_id: priorityId,
-        team_id: currentSession?.team_id,
-      })
-    );
-    socket?.once(
-      SocketEvents.TASK_PRIORITY_CHANGE.toString(),
-      (data: ITaskListPriorityChangeResponse) => {
-        dispatch(setTaskPriority(data));
-        if (tab === 'tasks-list') {
-          dispatch(updateTasksListTaskPriority(data));
-        }
-        if (tab === 'board') {
-          dispatch(updateEnhancedKanbanTaskPriority(data));
-        }
+    const handleResponse = (data: ITaskListPriorityChangeResponse) => {
+      // Guard against task being undefined during drawer close transition
+      if (!task?.id) return;
+      // Event name is shared across every open priority dropdown/board, so
+      // ignore responses for other tasks instead of applying them here.
+      if (data.id !== task?.id) return;
+      dispatch(setTaskPriority(data));
+      if (tab === 'tasks-list') {
+        dispatch(updateTasksListTaskPriority(data));
       }
-    );
-  };
+      if (tab === 'board') {
+        dispatch(updateEnhancedKanbanTaskPriority(data));
+      }
+    };
+
+    socket.on(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handleResponse);
+    return () => {
+      socket.off(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handleResponse);
+    };
+  }, [socket, task?.id, tab, dispatch]);
+
+  const handlePriorityChange = useCallback(
+    (priorityId: string) => {
+      if (!task?.id || !priorityId) return;
+
+      socket?.emit(
+        SocketEvents.TASK_PRIORITY_CHANGE.toString(),
+        JSON.stringify({
+          task_id: task.id,
+          priority_id: priorityId,
+          team_id: currentSession?.team_id,
+        })
+      );
+    },
+    [socket, task?.id, currentSession?.team_id]
+  );
 
   const options = useMemo(
     () =>
@@ -107,10 +116,22 @@ const PriorityDropdown = ({ task }: PriorityDropdownProps) => {
     [priorityList, themeMode]
   );
 
+  const selectedPriority = useMemo(
+    () => priorityList?.find(priority => priority.id === task?.priority_id),
+    [priorityList, task?.priority_id]
+  );
+
+  // Guard placed after every hook above (not before) — an early return before
+  // hooks would violate the Rules of Hooks whenever `task` toggles between
+  // defined and undefined/null across renders of the same instance, e.g. the
+  // drawer-close race condition this prop being optional is meant to guard.
+  if (!task) return null;
+
   return (
     <>
       {
         <Select
+          className="priority-selector-tinted"
           value={task?.priority_id}
           onChange={handlePriorityChange}
           dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}

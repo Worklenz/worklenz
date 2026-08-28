@@ -35,7 +35,7 @@ const LabelsSettings = () => {
   useDocumentTitle(t('pageTitle', 'Manage Labels'));
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
-  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
+  const [selectedLabel, setSelectedLabel] = useState<ITaskLabel | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [labels, setLabels] = useState<ITaskLabel[]>([]);
@@ -153,17 +153,17 @@ const LabelsSettings = () => {
   };
 
   const handleCreateClick = () => {
-  setSelectedLabelId(null);
-  setShowDrawer(true);
-};
+    setSelectedLabel(null);
+    setShowDrawer(true);
+  };
 
-  const handleEditClick = (id: string) => {
-    setSelectedLabelId(id);
+  const handleEditClick = (record: ITaskLabel) => {
+    setSelectedLabel(record);
     setShowDrawer(true);
   };
 
   const handleDrawerClose = () => {
-    setSelectedLabelId(null);
+    setSelectedLabel(null);
     setShowDrawer(false);
     getLabels();
   };
@@ -174,7 +174,7 @@ const LabelsSettings = () => {
       key: 'label',
       title: t('labelColumn', 'Label'),
       onCell: record => ({
-        onClick: () => handleEditClick(record.id!),
+        onClick: () => handleEditClick(record),
       }),
       render: (record: ITaskLabel) => <CustomColorLabel label={record} />,
     },
@@ -196,7 +196,7 @@ const LabelsSettings = () => {
                 size="small"
                 onClick={e => {
                   e.stopPropagation();
-                  handleEditClick(record.id!);
+                  handleEditClick(record);
                 }}
               />
             </Tooltip>
@@ -227,9 +227,9 @@ const LabelsSettings = () => {
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
             />
-             <Button type="primary" onClick={handleCreateClick}>
-      {t('createLabelButton', 'Create Label')}
-    </Button>
+            <Button type="primary" onClick={handleCreateClick}>
+              {t('createLabelButton', { defaultValue: 'Create Label' })}
+            </Button>
 
             <Tooltip
               title={t('pinTooltip', 'Click to pin this into the main menu')}
@@ -244,8 +244,8 @@ const LabelsSettings = () => {
     >
       <Table
         locale={{
-  emptyText: <Empty description="No labels found" />,
-}}
+          emptyText: <Empty description={t('emptyText', { defaultValue: 'No labels found' })} />,
+        }}
         loading={loading}
         className="custom-two-colors-row-table"
         dataSource={filteredData}
@@ -253,7 +253,7 @@ const LabelsSettings = () => {
         rowKey={record => record.id!}
         onRow={record => ({
           style: { cursor: 'pointer' },
-          onClick: () => handleEditClick(record.id!),
+          onClick: () => handleEditClick(record),
         })}
         pagination={{
           showSizeChanger: true,
@@ -265,7 +265,7 @@ const LabelsSettings = () => {
 
       <LabelsDrawer
         drawerOpen={showDrawer}
-        labelId={selectedLabelId}
+        selectedLabel={selectedLabel}
         drawerClosed={handleDrawerClose}
       />
     </Card>

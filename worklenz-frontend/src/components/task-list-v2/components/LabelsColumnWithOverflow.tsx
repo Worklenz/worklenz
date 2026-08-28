@@ -12,6 +12,7 @@ interface LabelsColumnWithOverflowProps {
   labelsAdapter: any;
   isDarkMode: boolean;
   columnId: string;
+  disabled?: boolean;
 }
 
 /**
@@ -19,7 +20,7 @@ interface LabelsColumnWithOverflowProps {
  * Shows visible labels + "+N" badge with tooltip for hidden labels
  */
 export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> = memo(
-  ({ width, task, labelsAdapter, isDarkMode, columnId }) => {
+  ({ width, task, labelsAdapter, isDarkMode, columnId, disabled = false }) => {
     // Reactively read the column width from CSS custom property
     const columnWidth = useColumnWidth(columnId);
 
@@ -116,16 +117,10 @@ export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> =
           <div className="flex items-center gap-1" style={{ flexShrink: 0 }}>
             <Tooltip title={tooltipContent} placement="top">
               <div
-                className={`
-                  inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-medium
-                  cursor-default transition-colors duration-200
-                  ${
-                    isDarkMode
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }
-                `}
+                className="inline-flex items-center justify-center px-2 py-0.5 rounded-md text-xs font-medium cursor-default transition-colors duration-200"
                 style={{
+                  backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                  color: isDarkMode ? '#d1d5db' : '#4b5563',
                   minWidth: '28px',
                   height: '20px',
                   flexShrink: 0,
@@ -134,7 +129,7 @@ export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> =
                 {overflowCount} {overflowCount === 1 ? 'label' : 'labels'}
               </div>
             </Tooltip>
-            <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+            {!disabled && <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />}
           </div>
         </div>
       );
@@ -153,7 +148,7 @@ export const LabelsColumnWithOverflow: React.FC<LabelsColumnWithOverflowProps> =
           {renderOverflowBadge()}
 
           {/* Labels selector button */}
-          <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />
+          {!disabled && <LabelsSelector task={labelsAdapter} isDarkMode={isDarkMode} />}
         </div>
       </div>
     );

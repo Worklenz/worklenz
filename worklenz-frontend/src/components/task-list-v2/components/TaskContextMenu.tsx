@@ -3,8 +3,8 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
 import alertService from '@/services/alerts/alertService';
@@ -19,7 +19,6 @@ import {
   IGroupBy,
   setDuplicateTask,
   setDuplicateTaskModalStatus,
-  toggleTaskExpansion,
   updateTaskAssignees,
 } from '@/features/task-management/task-management.slice';
 import { deselectAll, selectTasks } from '@/features/projects/bulkActions/bulkActionSlice';
@@ -43,7 +42,6 @@ import {
   message,
   LinkOutlined,
 } from '@/shared/antd-imports';
-import DuplicateTaskModal from './DuplicateTaskModal';
 
 interface TaskContextMenuProps {
   task: Task;
@@ -62,15 +60,12 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-list-table');
-  const { t: tCommon } = useTranslation('common');
-  const { socket, connected } = useSocket();
+  const { socket } = useSocket();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const { isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const isFree = isFreeUser(currentSession);
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  const { groups: taskGroups } = useAppSelector(state => state.taskManagement);
   const statusList = useAppSelector(state => state.taskStatusReducer.status);
   const priorityList = useAppSelector(state => state.priorityReducer.priorities);
   const phaseList = useAppSelector(state => state.phaseReducer.phaseList);
@@ -124,6 +119,14 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
       setAdjustedPosition({ x: newX, y: newY });
     }
   }, [position]);
+
+  // Reset any pending delete confirmation if the user's permission changes
+  // mid-session, so the inline confirm UI never reappears without a fresh click.
+  useEffect(() => {
+    if (!canCreateTask) {
+      setShowDeleteConfirm(false);
+    }
+  }, [canCreateTask]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -211,7 +214,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   const handleArchive = useCallback(async () => {
     // Only show upgrade modal when archiving (not unarchiving) and user is free
     if (isFree && !archived) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
       onClose();
       return;
     }
@@ -452,10 +455,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   }, [task?.id, projectId, dispatch, onClose]);
 
   const handleCopyLink = useCallback(async () => {
-    if (!projectId || !task.id) return;
+    if (!task.id) return;
 
     try {
-      const taskLink = `${window.location.origin}/worklenz/projects/${projectId}?tab=tasks-list&pinned_tab=tasks-list&task=${task.id}`;
+      const taskLink = `${window.location.origin}/worklenz/t/${task.id}`;
       await navigator.clipboard.writeText(taskLink);
       message.success(t('contextMenu.linkCopied'));
     } catch (error) {
@@ -464,7 +467,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     } finally {
       onClose();
     }
-  }, [projectId, task.id, onClose, t]);
+  }, [task.id, onClose, t]);
 
   const handleDuplicateTask = useCallback(async () => {
     if (!projectId || !task.id) return;
@@ -479,35 +482,37 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
   }, [projectId, task.id, dispatch, onClose]);
 
+  // Shared disabled style for restricted items.
+  // Note: no `pointer-events-none` here — it would suppress the `cursor-not-allowed`
+  // rule. The `disabled` attribute and `onClick={undefined}` already block the action.
+  const disabledCls = 'opacity-40 cursor-not-allowed';
+
   const menuItems = useMemo(() => {
     const items = [
-      ...(canCreateTask
-        ? [
-            {
-              key: 'assignToMe',
-              label: (
-                <button
-                  onClick={handleAssignToMe}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
-                  disabled={updatingAssignToMe}
-                >
-                  {updatingAssignToMe ? (
-                    <LoadingOutlined className="text-gray-500 dark:text-gray-400" />
-                  ) : (
-                    <UserAddOutlined className="text-gray-500 dark:text-gray-400" />
-                  )}
-                  <span>{t('contextMenu.assignToMe')}</span>
-                </button>
-              ),
-            },
-          ]
-        : []),
+      {
+        key: 'assignToMe',
+        label: (
+          <button
+            onClick={canCreateTask ? handleAssignToMe : undefined}
+            disabled={updatingAssignToMe || !canCreateTask}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
+          >
+            {updatingAssignToMe ? (
+              <LoadingOutlined className="text-gray-500 dark:text-gray-400" />
+            ) : (
+              <UserAddOutlined className="text-gray-500 dark:text-gray-400" />
+            )}
+            <span>{t('contextMenu.assignToMe')}</span>
+          </button>
+        ),
+      },
       {
         key: 'duplicateTask',
         label: (
           <button
-            onClick={handleDuplicateTask}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            onClick={canCreateTask ? handleDuplicateTask : undefined}
+            disabled={!canCreateTask}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
           >
             <CopyOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.duplicateTask')}</span>
@@ -540,7 +545,9 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
             onMouseEnter={() => setShowMoveToSubmenu(true)}
             onMouseLeave={() => setShowMoveToSubmenu(false)}
           >
-            <button className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left">
+            <button
+              className="flex items-center justify-between gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            >
               <div className="flex items-center gap-2">
                 <RetweetOutlined className="text-gray-500 dark:text-gray-400" />
                 <span>{t('contextMenu.moveTo')}</span>
@@ -593,8 +600,9 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         key: 'archive',
         label: (
           <button
-            onClick={handleArchive}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            onClick={canCreateTask ? handleArchive : undefined}
+            disabled={!canCreateTask}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
           >
             <div className="flex items-center gap-2">
               <InboxOutlined className="text-gray-500 dark:text-gray-400" />
@@ -614,8 +622,8 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         key: 'convertToSubTask',
         label: (
           <button
-            onClick={() => {
-              // Convert task to the format expected by bulkActionSlice
+            disabled={!canCreateTask}
+            onClick={canCreateTask ? () => {
               const projectTask = {
                 id: task.id,
                 name: task.title || task.name || '',
@@ -647,14 +655,10 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
                 updated_at: task.updatedAt,
                 sort_order: task.order,
               };
-
-              // Select the task in bulk action reducer
               dispatch(selectTasks([projectTask]));
-
-              // Open the drawer
               dispatch(setConvertToSubtaskDrawerOpen(true));
-            }}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            } : undefined}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
           >
             <DoubleRightOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.convertToSubTask')}</span>
@@ -669,8 +673,9 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
         key: 'convertToTask',
         label: (
           <button
-            onClick={handleConvertToTask}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left"
+            onClick={canCreateTask ? handleConvertToTask : undefined}
+            disabled={!canCreateTask}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
           >
             <DoubleRightOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.convertToTask')}</span>
@@ -680,56 +685,44 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     }
 
     // Add Delete
-    if (canCreateTask) {
-      if (showDeleteConfirm) {
-        const isSubtask = !!task.parent_task_id;
-        const confirmMessage = isSubtask
-          ? t('contextMenu.deleteSubtaskConfirmMessage', {
-              defaultValue:
-                'Are you sure you want to delete this subtask? This action cannot be undone.',
-            })
-          : t('contextMenu.deleteConfirmMessage', {
-              defaultValue:
-                'Are you sure you want to delete this task? This action cannot be undone.',
-            });
-
-        items.push({
-          key: 'delete-confirm',
-          label: (
-            <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/10">
-              <DeleteOutlined className="text-red-500 dark:text-red-400" />
-              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                {t('contextMenu.deleteConfirmOk', { defaultValue: 'Delete' })}?
-              </span>
-              <button
-                onClick={handleDeleteConfirm}
-                className="px-2 py-0.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded"
-              >
-                Yes
-              </button>
-              <button
-                onClick={handleDeleteCancel}
-                className="px-2 py-0.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
-              >
-                No
-              </button>
-            </div>
-          ),
-        });
-      } else {
-        items.push({
-          key: 'delete',
-          label: (
+    if (showDeleteConfirm && canCreateTask) {
+      items.push({
+        key: 'delete-confirm',
+        label: (
+          <div className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/10">
+            <DeleteOutlined className="text-red-500 dark:text-red-400" />
+            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+              {t('contextMenu.deleteConfirmOk', { defaultValue: 'Delete' })}?
+            </span>
             <button
-              onClick={handleDeleteClick}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 w-full text-left"
+              onClick={handleDeleteConfirm}
+              className="px-2 py-0.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded"
             >
-              <DeleteOutlined className="text-red-500 dark:text-red-400" />
-              <span>{t('contextMenu.delete')}</span>
+              Yes
             </button>
-          ),
-        });
-      }
+            <button
+              onClick={handleDeleteCancel}
+              className="px-2 py-0.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+            >
+              No
+            </button>
+          </div>
+        ),
+      });
+    } else {
+      items.push({
+        key: 'delete',
+        label: (
+          <button
+            onClick={canCreateTask ? handleDeleteClick : undefined}
+            disabled={!canCreateTask}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 w-full text-left ${!canCreateTask ? disabledCls : ''}`}
+          >
+            <DeleteOutlined className="text-red-500 dark:text-red-400" />
+            <span>{t('contextMenu.delete')}</span>
+          </button>
+        ),
+      });
     }
 
     return items;
@@ -740,6 +733,7 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
     archived,
     isFree,
     showDeleteConfirm,
+    showMoveToSubmenu,
     canCreateTask,
     handleAssignToMe,
     handleArchive,

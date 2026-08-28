@@ -20,12 +20,14 @@ interface AttachmentsPreviewProps {
   attachment: ITaskAttachmentViewModel;
   onDelete?: (id: string) => void;
   isCommentAttachment?: boolean;
+  isGuest?: boolean;
 }
 
 const AttachmentsPreview = ({
   attachment,
   onDelete,
   isCommentAttachment = false,
+  isGuest = false,
 }: AttachmentsPreviewProps) => {
   const { selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
   const [deleting, setDeleting] = useState(false);
@@ -45,7 +47,7 @@ const AttachmentsPreview = ({
   };
 
   const download = async (id?: string, name?: string) => {
-    if (!id || !name) return;
+    if (isGuest || !id || !name) return;
     try {
       setDownloading(true);
       const res = await attachmentsApiService.downloadAttachment(id, name);
@@ -64,8 +66,10 @@ const AttachmentsPreview = ({
     }
   };
 
+  const handlePreviewOpen = () => setPreviewOpen(true);
+
   const handleDelete = async (id?: string) => {
-    if (!id || !selectedTaskId) return;
+    if (isGuest || !id || !selectedTaskId) return;
     try {
       setDeleting(true);
 
@@ -92,7 +96,20 @@ const AttachmentsPreview = ({
     <>
       <div className="ant-upload-list-picture-card-container">
         {attachment && (
-          <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
+          <div
+            className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card"
+            style={{ cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            onClick={handlePreviewOpen}
+            onKeyDown={event => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handlePreviewOpen();
+              }
+            }}
+            aria-label={`Preview attachment ${attachment.name}`}
+          >
             <Tooltip
               title={
                 <div>
@@ -124,6 +141,10 @@ const AttachmentsPreview = ({
                     rel="noopener noreferrer"
                     className="ant-upload-list-item-thumbnail"
                     href={attachment.url}
+                    onClick={event => {
+                      event.preventDefault();
+                      handlePreviewOpen();
+                    }}
                   >
                     {!isImageFile() && (
                       <span
@@ -141,28 +162,39 @@ const AttachmentsPreview = ({
                 type="text"
                 size="small"
                 title="Preview file"
-                onClick={() => setPreviewOpen(true)}
+                onClick={event => {
+                  event.stopPropagation();
+                  handlePreviewOpen();
+                }}
                 className="ant-upload-list-item-card-actions-btn"
               >
                 <EyeOutlined />
               </Button>
 
-              <Button
-                type="text"
-                size="small"
-                title="Download file"
-                onClick={() => download(attachment.id, attachment.name)}
-                loading={downloading}
-                className="ant-upload-list-item-card-actions-btn"
-              >
-                <DownloadOutlined />
-              </Button>
+              {!isGuest && (
+                <Button
+                  type="text"
+                  size="small"
+                  title="Download file"
+                  onClick={event => {
+                    event.stopPropagation();
+                    void download(attachment.id, attachment.name);
+                  }}
+                  loading={downloading}
+                  className="ant-upload-list-item-card-actions-btn"
+                >
+                  <DownloadOutlined />
+                </Button>
+              )}
 
-              <Popconfirm
+              {!isGuest && <Popconfirm
                 title="Delete Attachment"
                 description="Are you sure you want to delete this attachment?"
                 icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
-                onConfirm={() => handleDelete(attachment.id)}
+                onConfirm={event => {
+                  event?.stopPropagation();
+                  void handleDelete(attachment.id);
+                }}
                 okText="Yes"
                 cancelText="No"
               >
@@ -171,11 +203,12 @@ const AttachmentsPreview = ({
                   size="small"
                   title="Remove file"
                   loading={deleting}
+                  onClick={event => event.stopPropagation()}
                   className="ant-upload-list-item-card-actions-btn"
                 >
                   <DeleteOutlined />
                 </Button>
-              </Popconfirm>
+              </Popconfirm>}
             </span>
           </div>
         )}
@@ -186,7 +219,7 @@ const AttachmentsPreview = ({
         name={attachment.name}
         url={attachment.url}
         onClose={() => setPreviewOpen(false)}
-        onDownload={() => void download(attachment.id, attachment.name)}
+        onDownload={isGuest ? undefined : () => void download(attachment.id, attachment.name)}
         downloading={downloading}
       />
     </>

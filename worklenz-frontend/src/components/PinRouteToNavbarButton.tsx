@@ -14,35 +14,24 @@ type PinRouteToNavbarButtonProps = {
 
 // this component pin the given path to navbar
 const PinRouteToNavbarButton = ({ name, path, adminOnly = false }: PinRouteToNavbarButtonProps) => {
-  const navRoutesList: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
+  // Load pinned route names from localStorage, default to all route names if empty
+  const pinnedRouteNames: string[] = getJSONFromLocalStorage('navRoutesPinned') || navRoutes.map(r => r.name);
 
-const migratedList = navRoutesList.map(item =>
-    item.path === path && item.name !== name ? { ...item, name } : item
-  );
-  if (JSON.stringify(migratedList) !== JSON.stringify(navRoutesList)) {
-    saveJSONToLocalStorage('navRoutes', migratedList);
-    window.dispatchEvent(new Event('navRoutesUpdated'));
-  }
-
-  const [isPinned, setIsPinned] = useState(
-    // this function check the current name is available in local storage's navRoutes list if it's available then isPinned state will be true
-    migratedList.filter(item => item.name === name).length > 0
-  );
+  const [isPinned, setIsPinned] = useState(pinnedRouteNames.includes(name));
 
   // this function handle pin to the navbar
   const handlePinToNavbar = (name: string, path: string) => {
-    let newNavRoutesList;
+    const currentPinned: string[] = getJSONFromLocalStorage('navRoutesPinned') || navRoutes.map(r => r.name);
 
-    const route: NavRoutesType = { name, path, adminOnly };
-
+    let newPinnedList: string[];
     if (isPinned) {
-      newNavRoutesList = navRoutesList.filter(item => item.name !== route.name);
+      newPinnedList = currentPinned.filter(routeName => routeName !== name);
     } else {
-      newNavRoutesList = [...navRoutesList, route];
+      newPinnedList = [...currentPinned, name];
     }
 
     setIsPinned(prev => !prev);
-    saveJSONToLocalStorage('navRoutes', newNavRoutesList);
+    saveJSONToLocalStorage('navRoutesPinned', newPinnedList);
 
     // Notify navbar to re-read localStorage immediately (fixes real-time sidebar update)
     window.dispatchEvent(new Event('navRoutesUpdated'));

@@ -12,6 +12,7 @@ export interface IReceiver {
   project?: string;
   project_color?: string;
   task_id?: string;
+  comment_id?: string;
 }
 
 export interface ICreateNotificationRequest {
@@ -21,4 +22,6 @@ export interface ICreateNotificationRequest {
   message: string;
   taskId: string | null;
   projectId: string | null;
+  commentId?: string;
+
 }

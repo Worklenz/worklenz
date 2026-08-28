@@ -1,193 +1,136 @@
 import { GanttViewMode, GanttTask } from '../types/gantt-types';
 
 export interface TimelineColumn {
-  date: Date;
+  date: Date; // start of this column's span
+  endDate: Date; // inclusive end of this column's span
   index: number;
   key: string;
-  width: number;
+  width: number; // this column's own pixel width — variable for Month/Quarter/Year units
+  left: number; // cumulative pixel offset from the start of the timeline
 }
 
-export interface TimelineConfiguration {
-  columns: TimelineColumn[];
-  totalWidth: number;
-  startDate: Date;
-  endDate: Date;
-  pixelsPerDay: number;
+type TimelineUnit = 'day' | 'month' | 'year';
+
+// Which fine-grained unit each view mode ticks by. Day and Week both tick by individual
+// day — Week is not "one column per week", it's the same day-by-day ruler as Day, just
+// zoomed further out (smaller pxPerDay) with a "Week N" grouping row instead of a month
+// grouping row. This mirrors Planner > Timeline's TIMELINE_ZOOM_CFG exactly, and is what
+// makes Day/Week immune to the variable-column-width problem entirely (every column is
+// exactly one day, always pxPerDay wide) — only Month/Quarter/Year need variable widths,
+// since a 28-day Feb and a 31-day Jan can't both be "one column" of equal real duration.
+const UNIT_BY_VIEW_MODE: Record<GanttViewMode, TimelineUnit> = {
+  day: 'day',
+  week: 'day',
+  month: 'month',
+  quarter: 'month',
+  year: 'year',
+};
+
+function daysBetween(from: Date, to: Date): number {
+  // Date-only day difference via UTC epoch of each local calendar date — immune to DST
+  // (a plain (to.getTime()-from.getTime())/86400000 can be off by a fractional day across
+  // a DST boundary).
+  const utcFrom = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate());
+  const utcTo = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
+  return Math.round((utcTo - utcFrom) / 86400000);
+}
+
+function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 /**
  * Unified Timeline Calculator
- * This class ensures consistent timeline calculations across all components
+ *
+ * Single-formula continuous model, matching Planner > Timeline's zoom mechanism: every
+ * position on the timeline — grid columns, header cells, task bars, the today line — is
+ * `daysSinceRangeStart(date) * pxPerDay`. There is exactly one source of truth (rangeStart
+ * + pxPerDay), so there is no separate "grid" computation that can drift out of alignment
+ * with the header or with where a task bar actually renders — which is what the old
+ * column-count/column-width-based model kept doing at Week/Month zoom.
  */
 export class UnifiedTimelineCalculator {
-  private config: TimelineConfiguration;
   private viewMode: GanttViewMode;
-  private columnWidth: number;
+  private unit: TimelineUnit;
+  private pxPerDay: number;
+  private rangeStart: Date;
+  private rangeEnd: Date;
+  private columns: TimelineColumn[];
+  private totalWidth: number;
 
-  constructor(viewMode: GanttViewMode, dateRange: { start: Date; end: Date }, columnWidth: number) {
-    console.log('UnifiedTimelineCalculator constructor:', {
-      viewMode,
-      dateRange: {
-        start: dateRange.start,
-        end: dateRange.end,
-        daysDiff: Math.ceil(
-          (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24)
-        ),
-      },
-      columnWidth,
-    });
-
+  constructor(viewMode: GanttViewMode, dateRange: { start: Date; end: Date }, pxPerDay: number) {
     this.viewMode = viewMode;
-    this.columnWidth = columnWidth;
-    this.config = this.generateTimelineConfiguration(viewMode, dateRange, columnWidth);
-
-    console.log('Generated timeline config:', {
-      columnsCount: this.config.columns.length,
-      totalWidth: this.config.totalWidth,
-      pixelsPerDay: this.config.pixelsPerDay,
-      firstColumn: this.config.columns[0],
-      lastColumn: this.config.columns[this.config.columns.length - 1],
-    });
+    this.unit = UNIT_BY_VIEW_MODE[viewMode] ?? 'day';
+    this.pxPerDay = pxPerDay > 0 ? pxPerDay : 1;
+    this.rangeStart = startOfDay(dateRange.start);
+    this.rangeEnd = new Date(dateRange.end);
+    this.columns = this.generateColumns();
+    const last = this.columns[this.columns.length - 1];
+    this.totalWidth = last ? last.left + last.width : 0;
   }
 
-  /**
-   * Generate timeline configuration with exact column-to-date mapping
-   */
-  private generateTimelineConfiguration(
-    viewMode: GanttViewMode,
-    dateRange: { start: Date; end: Date },
-    columnWidth: number
-  ): TimelineConfiguration {
+  private columnKey(date: Date): string {
+    switch (this.unit) {
+      case 'day':
+        return `day-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      case 'month':
+        return `month-${date.getFullYear()}-${date.getMonth()}`;
+      case 'year':
+        return `year-${date.getFullYear()}`;
+    }
+  }
+
+  private generateColumns(): TimelineColumn[] {
     const columns: TimelineColumn[] = [];
-    const { start, end } = dateRange;
+    let cursor = new Date(this.rangeStart);
+    let left = 0;
+    let index = 0;
 
-    switch (viewMode) {
-      case 'day': {
-        const current = new Date(start);
-        let index = 0;
-        while (current <= end) {
-          columns.push({
-            date: new Date(current),
-            index,
-            key: `day-${current.getFullYear()}-${current.getMonth()}-${current.getDate()}`,
-            width: columnWidth,
-          });
-          current.setDate(current.getDate() + 1);
-          index++;
-        }
-        break;
+    // Safety cap so a misconfigured range can never spin the loop forever.
+    const MAX_COLUMNS = 20000;
+
+    while (cursor <= this.rangeEnd && index < MAX_COLUMNS) {
+      let stepEnd: Date; // exclusive — start of the next column
+      let colEndDate: Date; // inclusive end date of this column's own span
+
+      if (this.unit === 'day') {
+        stepEnd = new Date(cursor);
+        stepEnd.setDate(stepEnd.getDate() + 1);
+        colEndDate = new Date(cursor);
+      } else if (this.unit === 'month') {
+        stepEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        colEndDate = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+      } else {
+        stepEnd = new Date(cursor.getFullYear() + 1, 0, 1);
+        colEndDate = new Date(cursor.getFullYear(), 11, 31);
       }
 
-      case 'week': {
-        const current = new Date(start);
-        // Align to start of week (Sunday)
-        current.setDate(current.getDate() - current.getDay());
-        let index = 0;
-        while (current <= end) {
-          columns.push({
-            date: new Date(current),
-            index,
-            key: `week-${current.getFullYear()}-${this.getWeekNumber(current)}`,
-            width: columnWidth,
-          });
-          current.setDate(current.getDate() + 7);
-          index++;
-        }
-        break;
-      }
+      const days = Math.max(1, daysBetween(cursor, stepEnd));
+      const width = days * this.pxPerDay;
 
-      case 'month': {
-        const startYear = start.getFullYear();
-        const startMonth = start.getMonth();
-        const endYear = end.getFullYear();
-        const endMonth = end.getMonth();
+      columns.push({
+        date: new Date(cursor),
+        endDate: colEndDate,
+        index,
+        key: this.columnKey(cursor),
+        width,
+        left,
+      });
 
-        let currentYear = startYear;
-        let currentMonth = startMonth;
-        let index = 0;
-
-        while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
-          const date = new Date(currentYear, currentMonth, 1);
-          columns.push({
-            date,
-            index,
-            key: `month-${currentYear}-${currentMonth}`,
-            width: columnWidth,
-          });
-
-          currentMonth++;
-          if (currentMonth > 11) {
-            currentMonth = 0;
-            currentYear++;
-          }
-          index++;
-        }
-        break;
-      }
-
-      case 'quarter': {
-        const startYear = start.getFullYear();
-        const startQuarter = Math.ceil((start.getMonth() + 1) / 3);
-        const endYear = end.getFullYear();
-        const endQuarter = Math.ceil((end.getMonth() + 1) / 3);
-
-        let currentYear = startYear;
-        let currentQuarter = startQuarter;
-        let index = 0;
-
-        while (currentYear < endYear || (currentYear === endYear && currentQuarter <= endQuarter)) {
-          const quarterStartMonth = (currentQuarter - 1) * 3;
-          const date = new Date(currentYear, quarterStartMonth, 1);
-          columns.push({
-            date,
-            index,
-            key: `quarter-${currentYear}-${currentQuarter}`,
-            width: columnWidth,
-          });
-
-          currentQuarter++;
-          if (currentQuarter > 4) {
-            currentQuarter = 1;
-            currentYear++;
-          }
-          index++;
-        }
-        break;
-      }
-
-      case 'year': {
-        const startYear = start.getFullYear();
-        const endYear = end.getFullYear();
-        let index = 0;
-
-        for (let year = startYear; year <= endYear; year++) {
-          columns.push({
-            date: new Date(year, 0, 1),
-            index,
-            key: `year-${year}`,
-            width: columnWidth,
-          });
-          index++;
-        }
-        break;
-      }
+      left += width;
+      cursor = stepEnd;
+      index++;
     }
 
-    const totalWidth = columns.length * columnWidth;
-    const totalTimeSpan = end.getTime() - start.getTime();
-    const pixelsPerDay = totalWidth / (totalTimeSpan / (1000 * 60 * 60 * 24));
-
-    return {
-      columns,
-      totalWidth,
-      startDate: start,
-      endDate: end,
-      pixelsPerDay,
-    };
+    return columns;
   }
 
   /**
-   * Calculate task bar position and width based on timeline columns
+   * Calculate task bar position and width — a pure continuous day-based formula, the same
+   * one used to size every column's width above, so a bar can never drift out of alignment
+   * with the grid/header regardless of zoom level or how far it is from the range start.
    */
   calculateTaskPosition(
     startDate: Date | null,
@@ -197,189 +140,85 @@ export class UnifiedTimelineCalculator {
     width: number;
     isValid: boolean;
   } {
-    if (!startDate || !endDate || this.config.columns.length === 0) {
+    if (!startDate || !endDate) {
       return { left: 0, width: 0, isValid: false };
     }
 
-    // For day view, use precise column-based positioning
-    if (this.viewMode === 'day') {
-      return this.calculateDayViewPosition(startDate, endDate);
-    }
+    const start = startOfDay(startDate);
+    const end = startOfDay(endDate);
 
-    // For other view modes, use percentage-based positioning
-    const startPosition = this.dateToPixelPosition(startDate);
-    const endPosition = this.dateToPixelPosition(endDate);
+    // Clamp both bounds against the timeline range — a task whose dates fall outside a
+    // stale/just-recomputed range (e.g. right after editing a due date) should sit at the
+    // grid's edge rather than push the bar (and scrollable area) out to an arbitrary offset.
+    const minWidth = this.pxPerDay * 0.3;
+    const rawLeft = daysBetween(this.rangeStart, start) * this.pxPerDay;
+    const left = this.totalWidth > 0 ? Math.max(0, Math.min(rawLeft, this.totalWidth)) : Math.max(0, rawLeft);
 
-    const left = Math.max(0, startPosition);
-    const width = Math.max(this.columnWidth * 0.1, endPosition - startPosition);
+    const rawWidth = (daysBetween(start, end) + 1) * this.pxPerDay;
+    const maxWidth = this.totalWidth > 0 ? Math.max(minWidth, this.totalWidth - left) : rawWidth;
+    const width = Math.max(minWidth, Math.min(rawWidth, maxWidth));
 
-    return {
-      left,
-      width,
-      isValid: true,
-    };
+    return { left, width, isValid: true };
   }
 
   /**
-   * Calculate precise position for day view by finding exact column matches
-   */
-  private calculateDayViewPosition(
-    startDate: Date,
-    endDate: Date
-  ): {
-    left: number;
-    width: number;
-    isValid: boolean;
-  } {
-    // Normalize dates to start of day for comparison
-    const startDay = new Date(startDate);
-    startDay.setHours(0, 0, 0, 0);
-
-    const endDay = new Date(endDate);
-    endDay.setHours(0, 0, 0, 0);
-
-    // Find start and end column indices
-    let startColumnIndex = -1;
-    let endColumnIndex = -1;
-
-    for (let i = 0; i < this.config.columns.length; i++) {
-      const columnDate = new Date(this.config.columns[i].date);
-      columnDate.setHours(0, 0, 0, 0);
-
-      // Find the first column that matches or is after the start date
-      if (startColumnIndex === -1 && columnDate.getTime() === startDay.getTime()) {
-        startColumnIndex = i;
-      }
-
-      // Find the last column that matches the end date
-      if (columnDate.getTime() === endDay.getTime()) {
-        endColumnIndex = i;
-      }
-    }
-
-    // If we didn't find exact matches, find the closest columns
-    if (startColumnIndex === -1) {
-      for (let i = 0; i < this.config.columns.length; i++) {
-        const columnDate = new Date(this.config.columns[i].date);
-        columnDate.setHours(0, 0, 0, 0);
-
-        if (columnDate.getTime() >= startDay.getTime()) {
-          startColumnIndex = i;
-          break;
-        }
-      }
-    }
-
-    if (endColumnIndex === -1) {
-      for (let i = this.config.columns.length - 1; i >= 0; i--) {
-        const columnDate = new Date(this.config.columns[i].date);
-        columnDate.setHours(0, 0, 0, 0);
-
-        if (columnDate.getTime() <= endDay.getTime()) {
-          endColumnIndex = i;
-        } else {
-          break;
-        }
-      }
-    }
-
-    // If we couldn't find exact matches, fall back to percentage-based
-    if (startColumnIndex === -1 || endColumnIndex === -1) {
-      const startPosition = this.dateToPixelPosition(startDate);
-      const endPosition = this.dateToPixelPosition(endDate);
-
-      return {
-        left: Math.max(0, startPosition),
-        width: Math.max(this.columnWidth * 0.1, endPosition - startPosition),
-        isValid: true,
-      };
-    }
-
-    const left = startColumnIndex * this.columnWidth;
-    const width = Math.max(
-      this.columnWidth,
-      (endColumnIndex - startColumnIndex + 1) * this.columnWidth
-    );
-
-    return {
-      left,
-      width,
-      isValid: true,
-    };
-  }
-
-  /**
-   * Convert date to exact pixel position on timeline
-   */
-  private dateToPixelPosition(date: Date): number {
-    const targetTime = date.getTime();
-    const timelineStartTime = this.config.startDate.getTime();
-    const timelineEndTime = this.config.endDate.getTime();
-
-    // Clamp date to timeline bounds
-    const clampedTime = Math.max(timelineStartTime, Math.min(timelineEndTime, targetTime));
-
-    // Calculate position as percentage of total timeline
-    const timeProgress = (clampedTime - timelineStartTime) / (timelineEndTime - timelineStartTime);
-
-    return timeProgress * this.config.totalWidth;
-  }
-
-  /**
-   * Convert pixel position to date
+   * Convert a pixel position back to a date, with fractional-hour precision (matching the
+   * old Day-view "hour within the column" behavior) — same continuous formula in reverse.
    */
   pixelPositionToDate(pixelPosition: number): Date {
-    const progress = Math.max(0, Math.min(1, pixelPosition / this.config.totalWidth));
-    const timelineSpan = this.config.endDate.getTime() - this.config.startDate.getTime();
-    const targetTime = this.config.startDate.getTime() + progress * timelineSpan;
+    const fractionalDays = Math.max(0, pixelPosition / this.pxPerDay);
+    const wholeDays = Math.floor(fractionalDays);
+    const hourFraction = (fractionalDays - wholeDays) * 24;
 
-    return new Date(targetTime);
+    const result = new Date(this.rangeStart);
+    result.setDate(result.getDate() + wholeDays);
+    result.setHours(Math.floor(hourFraction), Math.round((hourFraction % 1) * 60), 0, 0);
+    return result;
   }
 
   /**
-   * Find which column a pixel position falls into
+   * Find the column whose span contains the given date (e.g. for "is this column today").
    */
-  pixelToColumnIndex(pixelPosition: number): number {
-    return Math.max(
-      0,
-      Math.min(this.config.columns.length - 1, Math.floor(pixelPosition / this.columnWidth))
-    );
+  getColumnAtDate(date: Date): TimelineColumn | null {
+    const target = startOfDay(date).getTime();
+    for (const column of this.columns) {
+      const colStart = startOfDay(column.date).getTime();
+      const colEnd = new Date(column.endDate);
+      colEnd.setHours(23, 59, 59, 999);
+      if (target >= colStart && target <= colEnd.getTime()) {
+        return column;
+      }
+    }
+    return null;
   }
 
-  /**
-   * Get column by index
-   */
   getColumn(index: number): TimelineColumn | null {
-    return this.config.columns[index] || null;
+    return this.columns[index] ?? null;
   }
 
-  /**
-   * Get all timeline columns
-   */
   getColumns(): TimelineColumn[] {
-    return [...this.config.columns];
+    return this.columns;
+  }
+
+  getTotalWidth(): number {
+    return this.totalWidth;
+  }
+
+  getPxPerDay(): number {
+    return this.pxPerDay;
+  }
+
+  getUnit(): TimelineUnit {
+    return this.unit;
   }
 
   /**
-   * Get timeline configuration
-   */
-  getConfiguration(): TimelineConfiguration {
-    return { ...this.config };
-  }
-
-  /**
-   * Helper: Get week number of the year
-   */
-  private getWeekNumber(date: Date): number {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  }
-
-  /**
-   * Create date range that aligns with view mode boundaries
+   * Create date range that aligns with view mode boundaries — rounds to whichever unit
+   * the top grouping row uses (Day/Week round to a unit their topUnit needs: Day groups by
+   * month, Week groups by whole weeks; Month/Quarter/Year round to whole years), then pads
+   * by one of that same unit on each side, so the first/last group is never a partial one.
+   * Mirrors Planner > Timeline's topUnit-based boundary rounding, applied dynamically off
+   * the actual earliest/latest task dates rather than a fixed window.
    */
   static createAlignedDateRange(
     tasks: GanttTask[],
@@ -393,7 +232,6 @@ export class UnifiedTimelineCalculator {
       return { start, end };
     }
 
-    // Find task date boundaries
     let earliestDate: Date | null = null;
     let latestDate: Date | null = null;
 
@@ -417,62 +255,30 @@ export class UnifiedTimelineCalculator {
 
     collectDates(tasks);
 
-    console.log('Date collection results:', {
-      tasksCount: tasks.length,
-      earliestDate,
-      latestDate,
-      viewMode,
-    });
-
-    // Ensure we have valid start and end dates, with proper fallback handling
     let start: Date;
     let end: Date;
 
     if (earliestDate && latestDate) {
       start = new Date(earliestDate);
       end = new Date(latestDate);
-      console.log('Using task dates for range:', { start, end });
     } else if (earliestDate) {
       start = new Date(earliestDate);
       end = new Date(earliestDate);
-      end.setDate(end.getDate() + 30); // Add 30 days as fallback
-      console.log('Using earliest date with 30-day extension:', { start, end });
+      end.setDate(end.getDate() + 30);
     } else if (latestDate) {
       end = new Date(latestDate);
       start = new Date(latestDate);
-      start.setDate(start.getDate() - 30); // Subtract 30 days as fallback
-      console.log('Using latest date with 30-day extension backward:', { start, end });
+      start.setDate(start.getDate() - 30);
     } else {
-      // No dates found, create a reasonable default range
       const today = new Date();
       start = new Date(today);
       start.setDate(start.getDate() - 15);
       end = new Date(today);
       end.setDate(end.getDate() + 15);
-      console.log('Using default date range (no task dates found):', { start, end });
     }
 
-    // Align boundaries to view mode
     switch (viewMode) {
       case 'day':
-        start.setHours(0, 0, 0, 0);
-        end.setHours(23, 59, 59, 999);
-        if (padding) {
-          start.setDate(start.getDate() - 7);
-          end.setDate(end.getDate() + 7);
-        }
-        break;
-      case 'week':
-        start.setDate(start.getDate() - start.getDay());
-        start.setHours(0, 0, 0, 0);
-        end.setDate(end.getDate() + (6 - end.getDay()));
-        end.setHours(23, 59, 59, 999);
-        if (padding) {
-          start.setDate(start.getDate() - 14);
-          end.setDate(end.getDate() + 14);
-        }
-        break;
-      case 'month':
         start.setDate(1);
         start.setHours(0, 0, 0, 0);
         end.setMonth(end.getMonth() + 1, 0);
@@ -482,7 +288,29 @@ export class UnifiedTimelineCalculator {
           end.setMonth(end.getMonth() + 1);
         }
         break;
-      case 'quarter':
+      case 'week':
+        // Round to whole weeks (Sunday-to-Saturday) — Week zoom groups its top header row
+        // by week number, so a partial week at either edge would look like a cut-off group.
+        start.setDate(start.getDate() - start.getDay());
+        start.setHours(0, 0, 0, 0);
+        end.setDate(end.getDate() + (6 - end.getDay()));
+        end.setHours(23, 59, 59, 999);
+        if (padding) {
+          start.setDate(start.getDate() - 7);
+          end.setDate(end.getDate() + 7);
+        }
+        break;
+      case 'month':
+        start.setMonth(0, 1);
+        start.setHours(0, 0, 0, 0);
+        end.setMonth(11, 31);
+        end.setHours(23, 59, 59, 999);
+        if (padding) {
+          start.setFullYear(start.getFullYear() - 1);
+          end.setFullYear(end.getFullYear() + 1);
+        }
+        break;
+      case 'quarter': {
         const startQuarter = Math.floor(start.getMonth() / 3);
         const endQuarter = Math.floor(end.getMonth() / 3);
         start.setMonth(startQuarter * 3, 1);
@@ -494,6 +322,7 @@ export class UnifiedTimelineCalculator {
           end.setMonth(end.getMonth() + 3);
         }
         break;
+      }
       case 'year':
         start.setMonth(0, 1);
         start.setHours(0, 0, 0, 0);

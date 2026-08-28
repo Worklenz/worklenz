@@ -75,10 +75,10 @@
   "rename": "重命名",
   "delete": "删除",
   "enterStatusName": "输入状态名称",
-  "selectCategory": "选择类别",
   "close": "关闭",
   "cannotMoveStatus": "无法移动状态",
   "cannotMoveStatusMessage": "无法移动此状态，因为这会使\"{{categoryName}}\"类别为空。每个类别必须至少有一个状态。",
+  "dropToMoveToCategory": "拖放到此处以移动到 {{categoryName}}",
   "ok": "确定",
   "clearSort": "清除排序",
   "sortAscending": "升序排列",
@@ -86,5 +86,6 @@
   "sortByField": "按{{field}}排序",
   "ascendingOrder": "升序",
   "descendingOrder": "降序",
-  "currentSort": "当前排序：{{field}} {{order}}"
+  "currentSort": "当前排序：{{field}} {{order}}",
+  "apply": "应用"
 }

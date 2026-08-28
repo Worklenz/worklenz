@@ -16,5 +16,8 @@
   "createJobTitleSuccessMessage": "Jobtitel erfolgreich erstellt!",
   "createJobTitleErrorMessage": "Erstellung des Jobtitels fehlgeschlagen!",
   "updateJobTitleSuccessMessage": "Jobtitel erfolgreich aktualisiert!",
-  "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!"
+  "updateJobTitleErrorMessage": "Aktualisierung des Jobtitels fehlgeschlagen!",
+  "paginationTotal": "{{start}}-{{end}} von {{total}} Einträgen",
+  "editTooltip": "Bearbeiten",
+  "deleteTooltip": "Löschen"
 }

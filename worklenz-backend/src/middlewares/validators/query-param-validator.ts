@@ -236,6 +236,73 @@ export const validateEnumParam = (
 };
 
 /**
+ * Validates an array of UUIDs with optional sentinel values (like __no_category__, __no_client__)
+ * 
+ * @param paramName - Name of the query parameter (should contain comma-separated or space-separated UUIDs)
+ * @param separator - Separator used in the string (default: ',' for comma-separated, common in reporting routes)
+ * @param allowedSentinels - Array of allowed non-UUID sentinel values (e.g., ['__no_category__', '__no_client__'])
+ * @returns Express middleware function
+ * 
+ * @example
+ * router.get('/projects', validateUuidArrayParamWithSentinels('categories', ',', ['__no_category__']), controller.getProjects);
+ * // URL: /projects?categories=uuid1,uuid2,__no_category__
+ */
+export const validateUuidArrayParamWithSentinels = (
+  paramName: string,
+  separator: string = ',',
+  allowedSentinels: string[] = []
+) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const value = req.query[paramName];
+    
+    // Optional parameter - if not provided, skip validation
+    if (!value) {
+      return next();
+    }
+    
+    if (typeof value !== 'string') {
+      res.status(400).json(new ServerResponse(false, null, `${paramName} must be a string`));
+      return;
+    }
+    
+    // Split by separator, trim whitespace, and filter empty strings
+    const values = value.split(separator)
+      .map(id => id.trim())
+      .filter(Boolean);
+    
+    if (values.length === 0) {
+      res.status(400).json(new ServerResponse(false, null, `${paramName} must contain at least one value`));
+      return;
+    }
+    
+    // Validate each value is either a valid UUID or an allowed sentinel
+    const invalidValues = values.filter(val => {
+      if (allowedSentinels.includes(val)) {
+        return false; // Sentinel value is allowed
+      }
+      return !isValidUuid(val); // Otherwise must be a valid UUID
+    });
+    
+    if (invalidValues.length > 0) {
+      const sentinelMsg = allowedSentinels.length > 0 
+        ? ` or one of: ${allowedSentinels.join(', ')}`
+        : '';
+      res.status(400).json(new ServerResponse(
+        false, 
+        null, 
+        `Invalid ${paramName} format. All values must be valid UUIDs${sentinelMsg}`
+      ));
+      return;
+    }
+    
+    // Store validated array in request for use in controller
+    (req as any)[`validated_${paramName}`] = values;
+    
+    next();
+  };
+};
+
+/**
  * Validates integer parameter
  * 
  * @param paramName - Name of the parameter to validate

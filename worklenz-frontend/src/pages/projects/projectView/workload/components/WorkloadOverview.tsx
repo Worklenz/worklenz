@@ -290,14 +290,20 @@ const WorkloadOverview = ({ data, isLoading }: WorkloadOverviewProps) => {
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
-            title={`Team composition and allocation status.
-
-Member Status:
-• Total Members: ${summary.totalMembers}
-• Overallocated: ${summary.overallocatedMembers} (>100% utilization)
-• Underutilized: ${summary.underutilizedMembers} (<${alertThresholds.underutilization}% utilization)
-• Optimal: ${summary.totalMembers - summary.overallocatedMembers - summary.underutilizedMembers}`}
-            placement="top"
+          overlayStyle={{ maxWidth: 'none' }}
+  overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
+            title={
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.teamMembersTooltip.title')}</div>
+                <div style={{ marginBottom: 4, opacity: 0.85 }}>{t('overview.teamMembersTooltip.memberStatusLabel')}</div>
+                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                  <li>{t('overview.teamMembersTooltip.totalMembersLabel')} {summary.totalMembers}</li>
+                  <li>{t('overview.teamMembersTooltip.overallocatedLabel')} {summary.overallocatedMembers} (&gt;100% utilization)</li>
+                  <li>{t('overview.teamMembersTooltip.underutilizedLabel')} {summary.underutilizedMembers} (&lt;{alertThresholds.underutilization}% utilization)</li>
+                  <li>{t('overview.teamMembersTooltip.optimalLabel')} {summary.totalMembers - summary.overallocatedMembers - summary.underutilizedMembers}</li>
+                </ul>
+              </div>
+            }
           >
             <Statistic
               title={
@@ -316,13 +322,19 @@ Member Status:
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
-            title={`Total estimated workload across all team members.
-
-Includes:
-• Estimated Hours: ${summary.totalEstimatedHours}h
-• Actual Hours Logged: ${summary.totalActualHours}h
-• Progress: ${summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : summary.totalActualHours > 0 ? 100 : 0}%`}
-            placement="top"
+          overlayStyle={{ maxWidth: 'none' }}
+  overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
+            title={
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.totalWorkloadTooltip.title')}</div>
+                <div style={{ marginBottom: 4, opacity: 0.85 }}>{t('overview.totalWorkloadTooltip.includesLabel')}</div>
+                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                  <li >{t('overview.totalWorkloadTooltip.estimatedHoursLabel')} {summary.totalEstimatedHours}h</li>
+                  <li >{t('overview.totalWorkloadTooltip.actualHoursLoggedLabel')} {summary.totalActualHours}h</li>
+                  <li >{t('overview.totalWorkloadTooltip.progressLabel')} {summary.totalEstimatedHours > 0 ? Math.round((summary.totalActualHours / summary.totalEstimatedHours) * 100) : summary.totalActualHours > 0 ? 100 : 0}%</li>
+                </ul>
+              </div>
+            }
           >
             <Statistic
               title={
@@ -352,16 +364,19 @@ Includes:
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
-            title={t('calculations.averageUtilizationTooltip', {
-              average: summary.averageUtilization.toFixed(1),
-              memberCount: summary.totalMembers,
-              totalAssigned: summary.totalEstimatedHours,
-              totalCapacity:
-                summary.totalMembers > 0
-                  ? Math.round((summary.totalEstimatedHours * 100) / summary.averageUtilization)
-                  : 0,
-            })}
-            placement="top"
+            overlayStyle={{ maxWidth: 'none' }}
+            overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
+            title={
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.averageUtilization')}</div>
+                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                  <li>{t('overview.averageUtilizationTooltip.averageLabel')} {summary.averageUtilization.toFixed(1)}%</li>
+                  <li >{t('overview.averageUtilizationTooltip.membersLabel')} {summary.totalMembers}</li>
+                  <li >{t('overview.averageUtilizationTooltip.totalAssignedLabel')} {summary.totalEstimatedHours}h</li>
+                  <li >{t('overview.averageUtilizationTooltip.totalCapacityLabel')} {summary.totalMembers > 0 && summary.averageUtilization > 0 ? Math.round((summary.totalEstimatedHours * 100) / summary.averageUtilization) : 0}h</li>
+                </ul>
+              </div>
+            }
           >
             <Statistic
               title={
@@ -389,12 +404,18 @@ Includes:
       <Col xs={24} sm={12} md={6}>
         <Card style={{ height: '100%' }}>
           <Tooltip
-            title={t('overview.criticalTasksTooltip', {
-              criticalTasks: summary.criticalTasks,
-              totalTasks: summary.totalTasks,
-              criticalPercentage: Math.round((summary.criticalTasks / summary.totalTasks) * 100),
-            })}
-            placement="top"
+            overlayStyle={{ maxWidth: 'none' }}
+            overlayInnerStyle={{ width: 'max-content', maxWidth: 320 }}
+            title={
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>{t('overview.criticalTasks')}</div>
+                <ul style={{ paddingLeft: 16, margin: 0, listStyleType: 'disc' }}>
+                  <li >{t('overview.criticalTasksTooltip.criticalTasksLabel')} {summary.criticalTasks}</li>
+                  <li >{t('overview.criticalTasksTooltip.totalTasksLabel')} {summary.totalTasks}</li>
+                  <li >{t('overview.criticalTasksTooltip.criticalPercentageLabel')} {summary.totalTasks > 0 ? Math.round((summary.criticalTasks / summary.totalTasks) * 100) : 0}%</li>
+                </ul>
+              </div>
+            }
           >
             <Statistic
               title={

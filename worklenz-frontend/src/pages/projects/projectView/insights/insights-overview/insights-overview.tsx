@@ -9,6 +9,7 @@ import LastUpdatedTasks from './tables/last-updated-tasks';
 import ProjectDeadline from './tables/project-deadline';
 import ProjectStats from '../project-stats/project-stats';
 import { TFunction } from 'i18next';
+import './insights-overview.css';
 
 const InsightsOverview = ({ t }: { t: TFunction }) => {
   const navigate = useNavigate();

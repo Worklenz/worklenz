@@ -1,10 +1,12 @@
 import {Server, Socket} from "socket.io";
+import {PoolClient} from "pg";
 import db from "../../config/db";
 import {SocketEvents} from "../events";
 
 import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
 
 export async function on_task_timer_stop(_io: Server, socket: Socket, data?: string) {
+  let client: PoolClient | null = null;
   try {
     const body = JSON.parse(data as string);
     const userId = getLoggedInUserIdFromSocket(socket);
@@ -22,7 +24,9 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
       return;
     }
     
-    await db.query("BEGIN");
+    client = await db.pool.connect();
+    const transactionClient = client;
+    await transactionClient.query("BEGIN");
     
     try {
       // First, get the timer data and calculate time spent
@@ -48,15 +52,15 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
         FROM time_calculation
         WHERE time_spent > 0;
       `;
-      await db.query(timerQuery, [userId, body.task_id]);
+      await transactionClient.query(timerQuery, [userId, body.task_id]);
       
       // Then, delete the timer
       const deleteQuery = `DELETE FROM task_timers WHERE user_id = $1 AND task_id = $2;`;
-      await db.query(deleteQuery, [userId, body.task_id]);
+      await transactionClient.query(deleteQuery, [userId, body.task_id]);
       
-      await db.query("COMMIT");
+      await transactionClient.query("COMMIT");
     } catch (error) {
-      await db.query("ROLLBACK");
+      await transactionClient.query("ROLLBACK");
       throw error;
     }
 
@@ -68,6 +72,8 @@ export async function on_task_timer_stop(_io: Server, socket: Socket, data?: str
     return;
   } catch (error) {
     log_error(error);
+  } finally {
+    client?.release();
   }
 
   socket.emit(SocketEvents.TASK_TIMER_STOP.toString(), null);

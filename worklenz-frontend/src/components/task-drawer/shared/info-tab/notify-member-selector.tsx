@@ -23,8 +23,8 @@ import { ITaskViewModel } from '@/types/tasks/task.types';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import logger from '@/utils/errorLogger';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sortTeamMembers } from '@/utils/sort-team-members';
 import { SocketEvents } from '@/shared/socket-events';
@@ -40,16 +40,16 @@ import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 interface NotifyMemberSelectorProps {
   task: ITaskViewModel;
   t: TFunction;
+  disabled?: boolean;
 }
 
-const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
+const NotifyMemberSelector = ({ task, t, disabled = false }: NotifyMemberSelectorProps) => {
   const { token } = theme.useToken();
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
   const dispatch = useAppDispatch();
   const { tab } = useTabSearchParam();
-  const { isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const isFree = isFreeUser(currentSession);
 
   const membersInputRef = useRef<InputRef>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -231,7 +231,7 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
         <Tooltip title={t('common:upgrade-plan')} placement="top">
           <div
             style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-            onClick={() => promptUpgrade()}
+            onClick={() => dispatch(toggleUpgradeModal())}
           >
             <Button
               type="dashed"
@@ -266,9 +266,9 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
       {hasSubscribers ? <Avatars members={subscribers || []} /> : null}
       <Dropdown
         overlayClassName="custom-dropdown"
-        trigger={['click']}
+        trigger={disabled ? [] : ['click']}
         dropdownRender={() => membersDropdownContent}
-        onOpenChange={handleMembersDropdownOpen}
+        onOpenChange={disabled ? undefined : handleMembersDropdownOpen}
       >
         <Button
           type="dashed"
@@ -279,7 +279,12 @@ const NotifyMemberSelector = ({ task, t }: NotifyMemberSelectorProps) => {
           title={t('taskInfoTab.notify.addSubscriber', {
             defaultValue: 'Add notified member',
           })}
-          style={addNotifyButtonStyles}
+          style={{
+            ...addNotifyButtonStyles,
+            opacity: disabled ? 0.4 : 1,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+          }}
+          disabled={disabled}
           icon={
             <PlusOutlined
               style={{

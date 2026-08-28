@@ -1,0 +1,5 @@
+# Files kept in the public tree even though a broader rule in exclude.txt
+# would otherwise drop them. One path per line (exact tracked path).
+#
+# Currently this only rescues a couple of docs from the blanket docs/ exclusion.
+docs/SELF_HOSTING.md

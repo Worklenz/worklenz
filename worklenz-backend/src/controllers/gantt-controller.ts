@@ -98,7 +98,20 @@ export default class GanttController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getRoadmapTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const projectId = req.query.project_id;
-    
+
+    // Roadmap shares the same per-grouping sort columns Task List/Board already
+    // use (see update_task_sort_orders_bulk) so reordering a task in either view
+    // is reflected in both — order by whichever column matches the grouping
+    // currently active in the Roadmap UI. Whitelisted lookup, not string
+    // interpolation of the raw query param, since this feeds directly into the
+    // SQL text.
+    const sortColumnByGroupBy: Record<string, string> = {
+      phase: "t.phase_sort_order",
+      status: "t.status_sort_order",
+      priority: "t.priority_sort_order",
+    };
+    const sortColumn = sortColumnByGroupBy[req.query.group_by as string] || "t.phase_sort_order";
+
     const q = `
       SELECT 
         t.id,
@@ -110,7 +123,7 @@ export default class GanttController extends WorklenzControllerBase {
         t.parent_task_id,
         CASE WHEN t.done THEN 100 ELSE 0 END as progress,
         ts.name as status_name,
-        tsc.color_code as status_color,
+        COALESCE(tsc.color_code, '#1890ff') as status_color,
         tp.name as priority_name,
         tp.value as priority_value,
         tp.color_code as priority_color,
@@ -143,6 +156,7 @@ export default class GanttController extends WorklenzControllerBase {
           SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(dependency_info))), '[]'::JSON)
           FROM (
             SELECT 
+              td.id,
               td.related_task_id,
               td.dependency_type,
               rt.name as related_task_name
@@ -155,18 +169,25 @@ export default class GanttController extends WorklenzControllerBase {
       LEFT JOIN task_statuses ts ON t.status_id = ts.id
       LEFT JOIN sys_task_status_categories tsc ON ts.category_id = tsc.id
       LEFT JOIN task_priorities tp ON t.priority_id = tp.id
-      WHERE t.project_id = $1 
+      WHERE t.project_id = $1
         AND t.archived = FALSE
         AND t.parent_task_id IS NULL
-      ORDER BY COALESCE(t.roadmap_sort_order, t.sort_order, 0), t.created_at;
+      ORDER BY ${sortColumn}, t.created_at;
     `;
     
     const result = await db.query(q, [projectId]);
-    
-    // Get subtasks for each parent task
+
+    // Fetch subtasks for all parent tasks in a single batched query instead of
+    // one query per parent (that N+1 pattern made load time scale linearly
+    // with task count), then group them back onto their parent in JS.
     for (const task of result.rows) {
+      task.subtasks = [];
+    }
+
+    if (result.rows.length > 0) {
+      const parentIds = result.rows.map(task => task.id);
       const subtasksQuery = `
-        SELECT 
+        SELECT
           id,
           name,
           start_date,
@@ -175,16 +196,25 @@ export default class GanttController extends WorklenzControllerBase {
           roadmap_sort_order,
           parent_task_id,
           CASE WHEN done THEN 100 ELSE 0 END as progress
-        FROM tasks 
-        WHERE parent_task_id = $1 
+        FROM tasks
+        WHERE parent_task_id = ANY($1::uuid[])
           AND archived = FALSE
         ORDER BY COALESCE(roadmap_sort_order, sort_order, 0), created_at;
       `;
-      
-      const subtasksResult = await db.query(subtasksQuery, [task.id]);
-      task.subtasks = subtasksResult.rows;
+
+      const subtasksResult = await db.query(subtasksQuery, [parentIds]);
+      const subtasksByParentId = new Map<string, any[]>();
+      for (const subtask of subtasksResult.rows) {
+        const siblings = subtasksByParentId.get(subtask.parent_task_id) || [];
+        siblings.push(subtask);
+        subtasksByParentId.set(subtask.parent_task_id, siblings);
+      }
+
+      for (const task of result.rows) {
+        task.subtasks = subtasksByParentId.get(task.id) || [];
+      }
     }
-    
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -192,54 +222,30 @@ export default class GanttController extends WorklenzControllerBase {
   public static async getProjectPhases(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const projectId = req.query.project_id;
     
+    // Single grouped pass instead of 4 correlated per-phase subqueries: one
+    // LEFT JOIN chain computed once, with conditional aggregation for each
+    // status-category bucket. project_phases.id is the primary key, so the
+    // other pp.* columns are functionally dependent and don't need to be in
+    // GROUP BY (standard Postgres behavior).
     const q = `
-      SELECT 
+      SELECT
         pp.id,
         pp.name,
         pp.color_code,
         pp.start_date,
         pp.end_date,
         pp.sort_index,
-        -- Calculate task counts by status category for progress
-        COALESCE(
-          (SELECT COUNT(*) 
-           FROM tasks t 
-           JOIN task_phase tp ON t.id = tp.task_id 
-           JOIN task_statuses ts ON t.status_id = ts.id
-           JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
-           WHERE tp.phase_id = pp.id 
-             AND t.archived = FALSE 
-             AND stsc.is_todo = TRUE), 0
-        ) as todo_count,
-        COALESCE(
-          (SELECT COUNT(*) 
-           FROM tasks t 
-           JOIN task_phase tp ON t.id = tp.task_id 
-           JOIN task_statuses ts ON t.status_id = ts.id
-           JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
-           WHERE tp.phase_id = pp.id 
-             AND t.archived = FALSE 
-             AND stsc.is_doing = TRUE), 0
-        ) as doing_count,
-        COALESCE(
-          (SELECT COUNT(*) 
-           FROM tasks t 
-           JOIN task_phase tp ON t.id = tp.task_id 
-           JOIN task_statuses ts ON t.status_id = ts.id
-           JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
-           WHERE tp.phase_id = pp.id 
-             AND t.archived = FALSE 
-             AND stsc.is_done = TRUE), 0
-        ) as done_count,
-        COALESCE(
-          (SELECT COUNT(*) 
-           FROM tasks t 
-           JOIN task_phase tp ON t.id = tp.task_id 
-           WHERE tp.phase_id = pp.id 
-             AND t.archived = FALSE), 0
-        ) as total_count
+        COUNT(CASE WHEN stsc.is_todo = TRUE THEN 1 END) as todo_count,
+        COUNT(CASE WHEN stsc.is_doing = TRUE THEN 1 END) as doing_count,
+        COUNT(CASE WHEN stsc.is_done = TRUE THEN 1 END) as done_count,
+        COUNT(t.id) as total_count
       FROM project_phases pp
+      LEFT JOIN task_phase tp ON tp.phase_id = pp.id
+      LEFT JOIN tasks t ON t.id = tp.task_id AND t.archived = FALSE
+      LEFT JOIN task_statuses ts ON t.status_id = ts.id
+      LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
       WHERE pp.project_id = $1
+      GROUP BY pp.id
       ORDER BY pp.sort_index DESC, pp.created_at DESC;
     `;
     

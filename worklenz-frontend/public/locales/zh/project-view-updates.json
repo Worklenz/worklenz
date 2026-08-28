@@ -1,7 +1,7 @@
 {
   "title": "项目更新",
   "inputPlaceholder": "在此输入您的更新... 使用 @ 提及团队成员",
-  "addButton": "发布更新",
+  "addButton": "发送",
   "cancelButton": "取消",
   "deleteButton": "删除",
   "deleteConfirmTitle": "删除此更新？",
@@ -9,11 +9,14 @@
   "yes": "是",
   "no": "否",
   "emptyState": "暂无更新。开始对话吧！",
+  "today": "今天",
+  "yesterday": "昨天",
   "historyLockedBoundary": "聊天记录在此方案中仅限最近 90 天",
   "historyLockedTitle": "聊天记录已锁定",
   "historyLockedBody": "90 天以前的聊天记录仅在 Business 方案中可用。",
   "viewFullHistory": "查看聊天记录",
   "upgradeNow": "立即升级",
+  "inputHint": "按 Enter 发送 · Shift+Enter 换行",
   "reactions": {
     "like": "点赞",
     "love": "喜欢",
@@ -28,6 +31,20 @@
   },
   "actions": {
     "edit": "编辑",
-    "save": "保存"
-  }
+    "save": "保存",
+    "reply": "回复",
+    "convertToTask": "转换为任务",
+    "pin": "置顶消息",
+    "unpin": "取消置顶"
+  },
+  "messageDeleted": "此消息已被删除",
+  "replyingTo": "回复",
+  "pinned": "已置顶",
+  "pinnedBy": "置顶者",
+  "pinError": "更新置顶失败",
+  "convertToTaskSuccess": "已从消息创建任务",
+  "convertToTaskError": "创建任务失败",
+  "convertToTaskEmpty": "消息没有可用作任务名称的文本",
+  "attachFile": "附加文件",
+  "attachmentUploadError": "附件上传失败"
 }

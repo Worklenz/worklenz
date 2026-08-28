@@ -51,10 +51,23 @@ export default class AuthController extends WorklenzControllerBase {
       // If no error and not authenticated, don't show any title (this might be a redirect without completion)
     }
 
-    if (req.user)
-      req.user.build_v = FileConstants.getRelease();
+    // Passport deserializes the authenticated session on every request. Reusing its
+    // result avoids a second deserialize_user() query on this startup-critical route.
+    const user = req.user;
 
-    return res.status(200).send(new AuthResponse(title, req.isAuthenticated(), req.user || null, auth_error, message));
+    if (user) {
+      user.build_v = FileConstants.getRelease();
+      user.appsumo_popup_frequency_days = AuthController.getAppSumoPopupFrequencyDays();
+    }
+
+    return res.status(200).send(new AuthResponse(title, req.isAuthenticated(), user || null, auth_error, message));
+  }
+
+  /** How often (in days) the AppSumo promo popup should reappear for a dismissed user.
+   * Backend-configurable via APPSUMO_POPUP_FREQUENCY_DAYS so it can be tuned without a frontend deploy. */
+  private static getAppSumoPopupFrequencyDays(): number {
+    const parsed = parseInt(process.env.APPSUMO_POPUP_FREQUENCY_DAYS || "", 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   }
 
   public static logout(req: IWorkLenzRequest, res: IWorkLenzResponse) {

@@ -1,4 +1,4 @@
-import { Tag, theme } from '@/shared/antd-imports';
+import { Tag, theme, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useMemo } from 'react';
 import type { IntegrationItemProps } from './integrations.types';
@@ -10,6 +10,7 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
   badge,
   channels,
   comingSoon,
+  locked,
   onClick,
 }) => {
   const { t } = useTranslation('project-integrations');
@@ -88,6 +89,11 @@ export const IntegrationItem: React.FC<IntegrationItemProps> = ({
             {comingSoon && (
               <Tag color="purple" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
                 🔜 {t('comingSoon', { defaultValue: 'Coming Soon' })}
+              </Tag>
+            )}
+            {locked && !comingSoon && (
+              <Tag color="gold" style={{ margin: 0, fontSize: 11, padding: '0 6px' }}>
+                <CrownOutlined /> {t('businessPlan', { defaultValue: 'Business' })}
               </Tag>
             )}
             {badge !== undefined && badge > 0 && !comingSoon && (

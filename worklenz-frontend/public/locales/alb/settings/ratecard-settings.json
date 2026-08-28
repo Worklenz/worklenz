@@ -13,7 +13,6 @@
   "createError": "Dështoi të krijohet rate card",
   "deleteSuccess": "Rate card u fshi me sukses",
   "deleteError": "Dështoi të fshihet rate card",
-
   "jobTitleColumn": "Titulli i punës",
   "ratePerHourColumn": "Tarifa për orë",
   "ratePerDayColumn": "Tarifa për ditë",
@@ -51,5 +50,6 @@
   "cancelButton": "Anulo",
   "discardButton": "Hidh poshtë",
   "manDaysCalculationMessage": "Organizata po përdor llogaritjen e ditëve-njeri ({{hours}}h/ditë). Tarifat më sipër përfaqësojnë tarifa ditore.",
-  "hourlyCalculationMessage": "Organizata po përdor llogaritjen orore. Tarifat më sipër përfaqësojnë tarifa orore."
+  "hourlyCalculationMessage": "Organizata po përdor llogaritjen orore. Tarifat më sipër përfaqësojnë tarifa orore.",
+  "createSuccess": "Karta e tarifave u krijua me sukses"
 }

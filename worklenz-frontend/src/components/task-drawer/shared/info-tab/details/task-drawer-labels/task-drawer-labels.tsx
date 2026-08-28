@@ -21,24 +21,22 @@ import { useAuthService } from '@/hooks/useAuth';
 import { SocketEvents } from '@/shared/socket-events';
 import { useSocket } from '@/socket/socketContext';
 import { ITaskViewModel } from '@/types/tasks/task.types';
-import { ALPHA_CHANNEL } from '@/shared/constants';
 import { TFunction } from 'i18next';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setTaskLabels } from '@/features/task-drawer/task-drawer.slice';
-import { setLabels, updateTaskLabel } from '@/features/tasks/tasks.slice';
-import { setBoardLabels, updateBoardTaskLabel } from '@/features/board/board-slice';
+import { updateTaskLabel, addMissingLabelsToFilter } from '@/features/tasks/tasks.slice';
 import { updateEnhancedKanbanTaskLabels } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
-import { ITaskLabelFilter } from '@/types/tasks/taskLabel.types';
 import { PlusOutlined, CloseOutlined } from '@/shared/antd-imports';
 
 interface TaskDrawerLabelsProps {
   task: ITaskViewModel;
   t: TFunction;
+  isGuest?: boolean;
 }
 
-const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
+const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) => {
   const { token } = theme.useToken();
   const addLabelButtonStyles = {
     width: 28,
@@ -89,6 +87,10 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
         if (tab === 'board') {
           dispatch(updateEnhancedKanbanTaskLabels(data));
         }
+        // Merge any labels not yet in the filter list — no API call, no selected-state reset.
+        if (data.all_labels?.length) {
+          dispatch(addMissingLabelsToFilter(data.all_labels));
+        }
       });
     } catch (error) {
       console.error('Error changing label:', error);
@@ -106,14 +108,18 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
     socket?.emit(SocketEvents.CREATE_LABEL.toString(), JSON.stringify(labelData));
     setSearchQuery('');
     socket?.once(SocketEvents.CREATE_LABEL.toString(), (data: ILabelsChangeResponse) => {
-      dispatch(setTaskLabels(data));
-      if (tab === 'tasks-list') {
-        dispatch(updateTaskLabel(data));
-      }
-      if (tab === 'board') {
-        dispatch(updateEnhancedKanbanTaskLabels(data));
-      }
-    });
+        dispatch(setTaskLabels(data));
+        if (tab === 'tasks-list') {
+          dispatch(updateTaskLabel(data));
+        }
+        if (tab === 'board') {
+          dispatch(updateEnhancedKanbanTaskLabels(data));
+        }
+        // Merge the new label into the filter list — no API call, no selected-state reset.
+        if (data.all_labels?.length) {
+          dispatch(addMissingLabelsToFilter(data.all_labels));
+        }
+      });
   };
 
   useEffect(() => {
@@ -221,7 +227,7 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
         {task?.labels?.map((label, index) => (
           <Tag
             key={label.id}
-            color={label.color_code + ALPHA_CHANNEL}
+            color={label.color_code}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -229,50 +235,56 @@ const TaskDrawerLabels = ({ task, t }: TaskDrawerLabelsProps) => {
               height: 18,
               fontSize: 11,
               marginBottom: 4,
-              color: themeMode === 'dark' ? '#FFFFFF' : getContrastColor(label.color_code || '#000000'),
+              color: getContrastColor(label.color_code || '#000000'),
             }}
-            closable
+            closable={!isGuest}
             closeIcon={
-              <CloseOutlined
-                style={{
-                  color: themeMode === 'dark' ? '#FFFFFF' : getContrastColor(label.color_code || '#000000'),
-                  fontSize: 10,
-                }}
-              />
+              !isGuest && (
+                <CloseOutlined
+                  style={{
+                    color: getContrastColor(label.color_code || '#000000'),
+                    fontSize: 10,
+                  }}
+                />
+              )
             }
             onClose={e => {
               e.preventDefault();
-              handleLabelChange(label);
+              if (!isGuest) {
+                handleLabelChange(label);
+              }
             }}
           >
             {label.name}
           </Tag>
         ))}
-        <Dropdown
-          trigger={['click']}
-          dropdownRender={() => labelDropdownContent}
-          onOpenChange={handleLabelDropdownOpen}
-        >
-          <Button
-            type="dashed"
-            aria-label={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
-            title={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
-            icon={
-              <PlusOutlined
-                style={{
-                  fontSize: 13,
-                  width: 24,
-                  height: 24,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              />
-            }
-            style={addLabelButtonStyles}
-            size="small"
-          />
-        </Dropdown>
+        {!isGuest && (
+          <Dropdown
+            trigger={['click']}
+            dropdownRender={() => labelDropdownContent}
+            onOpenChange={handleLabelDropdownOpen}
+          >
+            <Button
+              type="dashed"
+              aria-label={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
+              title={t('taskInfoTab.labels.addLabel', { defaultValue: 'Add label' })}
+              icon={
+                <PlusOutlined
+                  style={{
+                    fontSize: 13,
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              }
+              style={addLabelButtonStyles}
+              size="small"
+            />
+          </Dropdown>
+        )}
       </Flex>
     </Form.Item>
   );

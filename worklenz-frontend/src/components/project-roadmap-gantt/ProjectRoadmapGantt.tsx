@@ -11,6 +11,7 @@ import {
 import PhaseModal from './PhaseModal';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { themeWiseColor } from '../../utils/themeWiseColor';
+import { useTranslation } from 'react-i18next';
 import 'gantt-task-react/dist/index.css';
 import './gantt-theme.css';
 
@@ -34,6 +35,7 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
   // Theme support
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
+  const { t } = useTranslation('gantt');
 
   const defaultViewOptions: GanttViewOptions = {
     viewMode: 'month',
@@ -244,21 +246,21 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
                 onClick={() => setViewMode(ViewMode.Week)}
                 className="dark:border-gray-600 dark:text-gray-300"
               >
-                Week
+                {t('viewMode.week', { defaultValue: 'Week' })}
               </Button>
               <Button
                 type={viewMode === ViewMode.Month ? 'primary' : 'default'}
                 onClick={() => setViewMode(ViewMode.Month)}
                 className="dark:border-gray-600 dark:text-gray-300"
               >
-                Month
+                {t('viewMode.month', { defaultValue: 'Month' })}
               </Button>
               <Button
                 type={viewMode === ViewMode.Year ? 'primary' : 'default'}
                 onClick={() => setViewMode(ViewMode.Year)}
                 className="dark:border-gray-600 dark:text-gray-300"
               >
-                Year
+                {t('viewMode.year', { defaultValue: 'Year' })}
               </Button>
             </Space>
           </div>
@@ -290,11 +292,11 @@ const ProjectRoadmapGantt: React.FC<ProjectRoadmapGanttProps> = ({
                   </div>
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <TeamOutlined className="w-4 h-4" />
-                    <span>{phase.tasks.length} tasks</span>
+                    <span>{phase.tasks.length} {t('roadmap.tasksCount', { defaultValue: 'tasks' })}</span>
                   </div>
                   <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                     <CheckCircleOutlined className="w-4 h-4" />
-                    <span>{phase.progress}% complete</span>
+                    <span>{phase.progress}% {t('roadmap.complete', { defaultValue: 'complete' })}</span>
                   </div>
                 </div>
               </div>

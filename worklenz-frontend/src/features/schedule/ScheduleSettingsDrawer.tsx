@@ -1,4 +1,4 @@
-import { Button, Checkbox, Col, Drawer, Form, Input, Row } from '@/shared/antd-imports';
+import { Button, Checkbox, Col, Drawer, Form, Input, InputNumber, Row } from '@/shared/antd-imports';
 import React, { useEffect, useRef } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
@@ -8,11 +8,13 @@ import {
   toggleSettingsDrawer,
   updateWorking,
   triggerScheduleRefresh,
+  setDefaultEstimateHours,
 } from './scheduleSlice';
 import { useTranslation } from 'react-i18next';
 import Skeleton from 'antd/es/skeleton/Skeleton';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { scheduleApi } from '@/api/schedule/scheduleApi';
+import { setShowWeekends, selectShowWeekends } from './scheduleSliceRTK';
 
 const ScheduleSettingsDrawer: React.FC = () => {
   const isDrawerOpen = useAppSelector(state => state.scheduleReducer.isSettingsDrawerOpen);
@@ -20,8 +22,9 @@ const ScheduleSettingsDrawer: React.FC = () => {
   const [form] = Form.useForm();
   const { t } = useTranslation('schedule');
 
-  const { workingDays, workingHours, loading } = useAppSelector(state => state.scheduleReducer);
+  const { workingDays, workingHours, defaultEstimateHours, loading } = useAppSelector(state => state.scheduleReducer);
   const { date, type } = useAppSelector(state => state.scheduleReducer);
+  const showWeekends = useAppSelector(selectShowWeekends);
 
   // Track if settings have been loaded at least once
   const hasLoadedSettings = useRef(false);
@@ -78,6 +81,14 @@ const ScheduleSettingsDrawer: React.FC = () => {
         dispatch(toggleSettingsDrawer());
       }}
     >
+      <Checkbox
+        checked={showWeekends}
+        onChange={e => dispatch(setShowWeekends(e.target.checked))}
+        style={{ marginBottom: 20 }}
+      >
+        {t('showWeekends', { defaultValue: 'Show weekends' })}
+      </Checkbox>
+
       <Skeleton loading={loading} active paragraph={{ rows: 1 }}>
         <Form layout="vertical" form={form} onFinish={handleFormSubmit}>
           <Form.Item label={t('workingDays', { defaultValue: 'Working Days' })} name="workingDays">
@@ -115,8 +126,11 @@ const ScheduleSettingsDrawer: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            label={t('workingHours', { defaultValue: 'Working Hours' })}
+            label={t('workingHoursPerDay', { defaultValue: 'Working hours / day' })}
             name="workingHours"
+            extra={t('sharedAcrossViews', {
+              defaultValue: 'Shared with Schedule, Resources & Workload.',
+            })}
           >
             <Input
               max={24}
@@ -126,6 +140,16 @@ const ScheduleSettingsDrawer: React.FC = () => {
                   {t('hours', { defaultValue: 'hours' })}
                 </span>
               }
+            />
+          </Form.Item>
+
+          <Form.Item label={t('defaultEstimate', { defaultValue: 'Default estimate for un-estimated tasks' })}>
+            <InputNumber
+              min={0.5}
+              step={0.5}
+              value={defaultEstimateHours}
+              onChange={v => dispatch(setDefaultEstimateHours(v || 0.5))}
+              style={{ width: '100%' }}
             />
           </Form.Item>
 

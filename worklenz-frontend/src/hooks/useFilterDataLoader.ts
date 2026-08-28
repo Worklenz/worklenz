@@ -63,6 +63,9 @@ export const useFilterDataLoader = () => {
         if (!statuses.length) {
           dispatch(fetchStatuses(projectId));
         }
+
+        // Always load phases (project-specific)
+        dispatch(fetchPhasesByProjectId(projectId));
       }
 
       // Load team members for member filters

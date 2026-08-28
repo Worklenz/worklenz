@@ -1,5 +1,14 @@
 {
   "upgradeNow": "Fazer upgrade agora",
+  "description": {
+    "loadingEditor": "A carregar o editor...",
+    "wordCount": "{{count}} palavras",
+    "save": "Guardar",
+    "discard": "Descartar",
+    "offline": "Está offline — a descrição não foi guardada. Reconecte-se e tente novamente.",
+    "saveTimeout": "Guardar a descrição excedeu o tempo limite. Tente novamente.",
+    "saveFailed": "Falha ao guardar a descrição. Tente novamente."
+  },
   "taskHeader": {
     "taskNamePlaceholder": "Digite sua tarefa",
     "deleteTask": "Excluir tarefa",
@@ -59,6 +68,8 @@
       "edit": "Editar",
       "delete": "Excluir",
       "confirmDeleteSubTask": "Tem certeza de que deseja excluir esta subtarefa?",
+      "confirmDeleteYes": "Sim",
+      "confirmDeleteNo": "Não",
       "deleteSubTask": "Excluir subtarefa"
     },
     "dependencies": {
@@ -83,6 +94,8 @@
       "edit": "Editar",
       "delete": "Excluir",
       "confirmDeleteComment": "Tem certeza de que deseja excluir este comentário?",
+      "edited": "(editado)",
+      "messageDeleted": "Esta mensagem foi apagada",
       "addCommentPlaceholder": "Adicionar um comentário...",
       "cancel": "Cancelar",
       "commentButton": "Comentar",
@@ -92,6 +105,7 @@
       "maxFilesError": "Você pode enviar no máximo {{count}} arquivos",
       "processFilesError": "Falha ao processar arquivos",
       "addCommentError": "Por favor, adicione um comentário ou anexe arquivos",
+      "enterHint": "Enter para enviar  ·  Shift+Enter para nova linha",
       "fileTooLargeToSend": "Arquivos acima de 25MB em comentários exigem o plano Business. Remova este arquivo ou faça upgrade para continuar.",
       "historyLockedBoundary": "O histórico de comentários está limitado aos últimos 90 dias neste plano",
       "historyLockedTitle": "Histórico de comentários bloqueado",
@@ -107,6 +121,7 @@
     "title": "Registro de tempo",
     "addTimeLog": "Adicionar novo registro de tempo",
     "totalLogged": "Total registrado",
+    "subtasksLogged": "Subtarefas registradas",
     "exportToExcel": "Exportar para Excel",
     "noTimeLogsFound": "Nenhum registro de tempo encontrado",
     "historyLockedBoundary": "O histórico de registros de tempo está limitado aos últimos 90 dias neste plano",
@@ -125,7 +140,7 @@
       "workDescription": "Descrição do trabalho",
       "descriptionPlaceholder": "Adicionar uma descrição",
       "logTime": "Registrar tempo",
-      "updateTime": "Atualizar tempo",
+      "updateTime": "Atualizar",
       "cancel": "Cancelar",
       "durationHelper": "Registre o tempo total com horas e minutos.",
       "timeRangeHelper": "Registre o tempo selecionando hora de início e término.",
@@ -135,7 +150,15 @@
       "hoursMinError": "As horas devem ser 0 ou mais",
       "minutesRangeError": "Os minutos devem estar entre 0 e 59",
       "durationGreaterThanZeroError": "A duração deve ser maior que 0 minutos",
-      "endTimeAfterStartError": "A hora de término deve ser posterior à hora de início"
+      "endTimeAfterStartError": "A hora de término deve ser posterior à hora de início",
+      "moveToProject": "Mover para projeto",
+      "moveToProjectTooltip": "Reatribuir este registro de tempo a um projeto diferente",
+      "selectProject": "Pesquisar projeto...",
+      "moveToTask": "Mover para tarefa",
+      "moveToTaskTooltip": "Reatribuir este registro de tempo a uma tarefa diferente",
+      "selectTask": "Selecionar tarefa...",
+      "backdateLimitError": "Os registos de tempo não podem ser retroagidos mais de {{days}} dias. A data mais antiga que pode registar é {{earliestDate}}.",
+      "saveError": "Não foi possível guardar o registo de tempo. Por favor, tente novamente."
     }
   },
   "taskActivityLogTab": {

@@ -1,9 +1,15 @@
 {
+  "pageTitle": "Aufgabenvorlagen",
   "nameColumn": "Name",
   "createdColumn": "Erstellt",
   "editToolTip": "Bearbeiten",
   "deleteToolTip": "Löschen",
   "confirmText": "Sind Sie sicher?",
   "okText": "Ja",
-  "cancelText": "Abbrechen"
+  "cancelText": "Abbrechen",
+  "noTemplatesYet": "Noch keine Aufgabenvorlagen",
+  "step1": "Navigieren Sie zu einem Projekt und öffnen Sie es.",
+  "step2": "Wählen Sie Aufgaben mit der Option Massenbearbeitung aus.",
+  "step3": "Klicken Sie auf Weitere Optionen in der Massenaktionsleiste und wählen Sie Aufgabenvorlage erstellen.",
+  "totalItems": "Gesamte Elemente"
 }

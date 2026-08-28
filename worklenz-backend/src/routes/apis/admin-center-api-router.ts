@@ -5,6 +5,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import organizationSettingsValidator from "../../middlewares/validators/organization-settings-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
+import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
 
 const adminCenterApiRouter = express.Router();
 
@@ -15,7 +16,8 @@ adminCenterApiRouter.get("/organization/admins", teamOwnerOrAdminValidator, safe
 adminCenterApiRouter.put("/organization", teamOwnerOrAdminValidator, organizationSettingsValidator, safeControllerFunction(AdminCenterController.updateOrganizationName));
 adminCenterApiRouter.put("/organization/calculation-method", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.updateOrganizationCalculationMethod));
 adminCenterApiRouter.put("/organization/owner/contact-number", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(AdminCenterController.updateOwnerContactNumber));
-// Organization logo (upload/delete) is a Business-plan feature — mounted by the EE branding router.
+adminCenterApiRouter.post("/organization/logo", teamOwnerOrAdminValidator, requireBusinessPlan, safeControllerFunction(AdminCenterController.uploadOrganizationLogo));
+adminCenterApiRouter.delete("/organization/logo", teamOwnerOrAdminValidator, requireBusinessPlan, safeControllerFunction(AdminCenterController.deleteOrganizationLogo));
 
 // holiday settings
 adminCenterApiRouter.get("/organization/holiday-settings", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationHolidaySettings));
@@ -34,6 +36,33 @@ adminCenterApiRouter.put("/organization/team-member/:id", teamOwnerOrAdminValida
 
 adminCenterApiRouter.get("/", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationTeams));
 
-// Billing / subscriptions / AppSumo are Business-plan features — mounted by the EE billing router.
+// billing
+adminCenterApiRouter.get("/billing/info", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingInfo));
+adminCenterApiRouter.get("/billing/account-storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getAccountStorage));
+adminCenterApiRouter.get("/billing/storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingStorageInfo));
+adminCenterApiRouter.get("/billing/transactions", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingTransactions));
+adminCenterApiRouter.get("/billing/charges", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingCharges));
+adminCenterApiRouter.get("/billing/modifiers", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingCharges));
+adminCenterApiRouter.get("/billing/countries", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getCountries));
+
+adminCenterApiRouter.get("/billing/purchase-storage", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.purchaseStorage));
+
+adminCenterApiRouter.get("/billing/configuration", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getBillingConfiguration));
+adminCenterApiRouter.put("/billing/configuration", teamOwnerOrAdminValidator, phoneNumberValidator, safeControllerFunction(AdminCenterController.updateBillingConfiguration));
+
+adminCenterApiRouter.get("/billing/upgrade-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.upgradePlan));
+adminCenterApiRouter.get("/billing/change-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.changePlan));
+adminCenterApiRouter.get("/billing/cancel-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.cancelPlan));
+adminCenterApiRouter.get("/billing/pause-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.pauseSubscription));
+adminCenterApiRouter.get("/billing/resume-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.resumeSubscription));
+
+adminCenterApiRouter.get("/billing/plans", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getPlans));
+adminCenterApiRouter.get("/billing/switch-to-free-plan/:id", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.switchToFreePlan));
+adminCenterApiRouter.get("/billing/free-plan", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getFreePlanLimits));
+
+adminCenterApiRouter.post("/billing/redeem", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.redeem));
+
+// AppSumo endpoints
+adminCenterApiRouter.get("/appsumo/countdown-widget", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getAppSumoCountdownWidget));
 
 export default adminCenterApiRouter;

@@ -74,6 +74,20 @@ export const statusApiService = {
     return response.data;
   },
 
+  updateStatusColor: async (
+  statusId: string,
+  colorCode: string,
+  currentProjectId: string
+): Promise<IServerResponse<ITaskStatus>> => {
+  const q = toQueryString({ current_project_id: currentProjectId });
+  const response = await apiClient.put<IServerResponse<ITaskStatus>>(
+    `${rootUrl}/color/${statusId}${q}`,
+    { color_code: colorCode }
+  );
+  return response.data;
+},
+
+
   updateStatusOrder: async (
     body: ITaskStatusCreateRequest,
     currentProjectId: string

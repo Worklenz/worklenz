@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Konfigurimi",
+  "configurationDescription": "Menaxhoni cilësimet në nivel organizate që zbatohen në të gjitha projektet.",
+  "businessPlanRequired": "Kërkohet Plani Business",
+  "businessPlanRequiredDescription": "Cilësimet e kufizimeve të detyrave në nivel organizate janë të disponueshme në planet Business dhe Enterprise.",
+  "upgradePlan": "Përmirëso Planin",
+  "taskManagementSection": "Menaxhimi i Detyrave",
+  "restrictTaskCreation": "Kufizo caktimin e detyrave vetëm te Administratorët dhe Drejtuesit e Ekipit",
+  "restrictTaskCreationTooltip": "Kur aktivizohet, vetëm Administratorët dhe Drejtuesit e Ekipit mund të krijojnë dhe caktojnë detyra në të gjitha projektet. Anëtarët e ekipit mund të shohin vetëm detyrat e caktuara për ta. Cilësimet në nivel projekti e mbizotërojnë këtë cilësim në nivel organizate.",
+  "restrictTaskCreationNote": "Shënim: Cilësimet në nivel projekti kanë përparësi ndaj këtij cilësimi në nivel organizate. Ndryshimet hyjnë në fuqi menjëherë.",
+  "timeTrackingSection": "Gjurmimi i Kohës",
+  "limitTimelogBackdating": "Kufizo sa prapa mund të regjistrohet koha",
+  "limitTimelogBackdatingTooltip": "Kur aktivizohet, anëtarët nuk mund të krijojnë një regjistrim kohe me datë më të hershme se numri i lejuar i ditëve. Zbatohet për të gjithë, përfshirë Pronarët dhe Administratorët. Kronometrat në punë dhe regjistrimet e importuara nuk preken.",
+  "timelogBackdateLimitDays": "Ditët maksimale që një regjistrim kohe mund të datohet prapa",
+  "timelogBackdateLimitNote": "Shënim: Regjistrimet ekzistuese të kohës nuk ndryshohen kurrë. Redaktimi i një regjistrimi tashmë të vjetër mbetet i mundur për sa kohë data e tij nuk ndryshon.",
+  "days": "ditë"
+}

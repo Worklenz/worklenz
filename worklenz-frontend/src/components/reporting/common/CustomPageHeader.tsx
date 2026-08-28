@@ -14,7 +14,10 @@ const CustomPageHeader: React.FC<CustomPageHeaderProps> = ({
   className = 'site-page-header',
   style = { padding: '16px 0' },
 }) => {
-  return <WorklenzPageHeader className={className} title={title} style={style} extra={children} />;
+  const mergedStyle: React.CSSProperties = { flexWrap: 'wrap', rowGap: 12, ...style };
+  return (
+    <WorklenzPageHeader className={className} title={title} style={mergedStyle} extra={children} />
+  );
 };
 
 export default memo(CustomPageHeader);

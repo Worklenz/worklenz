@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect, useCallback, useRef } from 'react';
-import { CheckCircleOutlined, HolderOutlined, InputNumber, Popover, Button, Flex, Typography, Tooltip } from '@/shared/antd-imports';
+import { CheckCircleOutlined, HolderOutlined, InputNumber, Popover, Button, Flex, Typography, Tooltip, message } from '@/shared/antd-imports';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import { CustomNumberLabel, CustomColordLabel } from '@/components';
 import LabelsSelector from '@/components/LabelsSelector';
 import { CustomColumnCell } from './CustomColumnComponents';
 import { safeTextDisplay } from '@/utils/html-entities';
+import { resolveTaskProgress } from '@/features/task-management/task-progress';
 
 // Utility function to get task display name with fallbacks
 export const getTaskDisplayName = (task: Task): string => {
@@ -93,9 +94,10 @@ export const DragHandleColumn: React.FC<DragHandleColumnProps> = memo(
   ({ width, isSubtask, attributes, listeners }) => (
     <div
       className="flex items-center justify-center pl-1 h-full w-full"
-      {...(isSubtask ? {} : { ...attributes, ...listeners })}
+      {...attributes}
+      {...listeners}
     >
-      {!isSubtask && <HolderOutlined className="text-gray-400 hover:text-gray-600" />}
+      <HolderOutlined className="text-gray-400 hover:text-gray-600" />
     </div>
   )
 );
@@ -106,13 +108,15 @@ interface CheckboxColumnProps {
   width: string;
   isSelected: boolean;
   onCheckboxChange: (e: any) => void;
+  disabled?: boolean;
 }
 
 export const CheckboxColumn: React.FC<CheckboxColumnProps> = memo(
-  ({ width, isSelected, onCheckboxChange }) => (
+  ({ width, isSelected, onCheckboxChange, disabled = false }) => (
     <div className="flex items-center justify-center h-full w-full dark:border-gray-700">
       <Checkbox
         checked={isSelected}
+        disabled={disabled}
         onChange={onCheckboxChange}
         onClick={e => e.stopPropagation()}
       />
@@ -146,6 +150,7 @@ interface DescriptionColumnProps {
   taskId: string;
   parentTaskId?: string | null;
   onOpenDrawer?: () => void;
+  disabled?: boolean;
 }
 
 /** Strip HTML tags to plain text for display and editing in the task list cell. */
@@ -174,7 +179,7 @@ const hasRichFormatting = (html: string): boolean => {
 };
 
 export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
-  ({ width, description, taskId, parentTaskId, onOpenDrawer }) => {
+  ({ width, description, taskId, parentTaskId, onOpenDrawer, disabled = false }) => {
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
 
@@ -189,6 +194,9 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
     const originalRef = useRef('');
 
     const openEditor = useCallback(() => {
+      // If disabled (guest), don't allow editing
+      if (disabled) return;
+      
       // If the description has rich formatting (lists, bold, etc.), editing as
       // plain text would silently destroy it. Redirect to the task drawer instead.
       if (isRich) {
@@ -198,7 +206,7 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
       originalRef.current = plainText;
       setDraft(plainText);
       setIsEditing(true);
-    }, [isRich, plainText, onOpenDrawer]);
+    }, [isRich, plainText, onOpenDrawer, disabled]);
 
     // Focus the input after it mounts.
     useEffect(() => {
@@ -210,21 +218,72 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
       }
     }, [isEditing]);
 
+    // Guards against a blur firing while a save from a prior blur/Enter is
+    // still in flight (e.g. Enter immediately followed by a click elsewhere).
+    const isSavingRef = useRef(false);
+
     const saveAndClose = useCallback(() => {
+      // A save from a prior trigger (e.g. Enter) is still in flight — let
+      // its own callback decide whether to close or report an error rather
+      // than closing here and abandoning that outcome.
+      if (isSavingRef.current) return;
+
       const trimmed = draft.trim();
       // Only emit if the value actually changed.
-      if (trimmed !== originalRef.current.trim() && connected && socket && taskId) {
-        socket.emit(
-          SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
-          JSON.stringify({
-            task_id: taskId,
-            description: trimmed || null,
-            parent_task: parentTaskId || null,
+      if (trimmed === originalRef.current.trim()) {
+        setIsEditing(false);
+        return;
+      }
+      if (!connected || !socket || !taskId) {
+        message.error(
+          t('descriptionSaveOffline', {
+            defaultValue: "You're offline — the description wasn't saved. Reconnect and try again.",
           })
         );
+        // Stay in edit mode so the draft isn't lost.
+        return;
       }
-      setIsEditing(false);
-    }, [draft, connected, socket, taskId, parentTaskId]);
+
+      isSavingRef.current = true;
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        isSavingRef.current = false;
+        message.error(
+          t('descriptionSaveTimeout', {
+            defaultValue: 'Saving the description timed out. Please try again.',
+          })
+        );
+      }, 10000);
+
+      socket.emit(
+        SocketEvents.TASK_DESCRIPTION_CHANGE.toString(),
+        JSON.stringify({
+          task_id: taskId,
+          description: trimmed || null,
+          parent_task: parentTaskId || null,
+        }),
+        (response?: { success: boolean; error?: string }) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          isSavingRef.current = false;
+          if (!response || response.success) {
+            originalRef.current = trimmed;
+            setIsEditing(false);
+          } else {
+            message.error(
+              response.error ||
+                t('descriptionSaveFailed', {
+                  defaultValue: 'Failed to save the description. Please try again.',
+                })
+            );
+            // Leave the input open with the draft intact so the edit isn't lost.
+          }
+        }
+      );
+    }, [draft, connected, socket, taskId, parentTaskId, t]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -284,7 +343,9 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
     return (
       <Tooltip
         title={
-          isRich
+          disabled
+            ? t('descriptionDisabledTooltip', { defaultValue: 'View only - cannot edit' })
+            : isRich
             ? t('descriptionRichTooltip', { defaultValue: 'Contains rich formatting — click to edit in task drawer' })
             : undefined
         }
@@ -292,7 +353,9 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
         mouseEnterDelay={0.5}
       >
         <div
-          className="flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className={`flex items-center px-2 border-r border-gray-200 dark:border-gray-700 overflow-x-auto overflow-y-hidden single-line-scroll ${
+            disabled ? 'cursor-not-allowed' : 'cursor-text hover:bg-gray-50 dark:hover:bg-gray-800'
+          } transition-colors`}
           style={{
             width,
             height: '40px',
@@ -303,6 +366,7 @@ export const DescriptionColumn: React.FC<DescriptionColumnProps> = memo(
             flexShrink: 0,
           }}
           onClick={e => {
+            if (disabled) return;
             e.stopPropagation();
             openEditor();
           }}
@@ -333,15 +397,21 @@ interface StatusColumnProps {
   task: Task;
   projectId: string;
   isDarkMode: boolean;
+  disabled?: boolean;
 }
 
 export const StatusColumn: React.FC<StatusColumnProps> = memo(
-  ({ width, task, projectId, isDarkMode }) => (
+  ({ width, task, projectId, isDarkMode, disabled = false }) => (
     <div
       className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
       style={{ width }}
     >
-      <TaskStatusDropdown task={task} projectId={projectId} isDarkMode={isDarkMode} />
+      <TaskStatusDropdown 
+        task={task} 
+        projectId={projectId} 
+        isDarkMode={isDarkMode}
+        disabled={disabled}
+      />
     </div>
   )
 );
@@ -354,10 +424,11 @@ interface AssigneesColumnProps {
   convertedTask: any;
   isDarkMode: boolean;
   canCreateTask?: boolean;
+  isGuest?: boolean;
 }
 
 export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
-  ({ width, task, convertedTask, isDarkMode, canCreateTask = true }) => {
+  ({ width, task, convertedTask, isDarkMode, canCreateTask = true, isGuest = false }) => {
     const hasAssignees = (task.assignee_names || []).length > 0;
 
     return (
@@ -379,7 +450,7 @@ export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
               task={convertedTask}
               groupId={null}
               isDarkMode={isDarkMode}
-              disabled={!canCreateTask}
+              disabled={isGuest || !canCreateTask}
               triggerElement={
                 <AvatarGroup
                   members={task.assignee_names || []}
@@ -391,7 +462,7 @@ export const AssigneesColumn: React.FC<AssigneesColumnProps> = memo(
             />
           ) : (
             // When no assignees: show only the plus button
-            canCreateTask && <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
+            !isGuest && canCreateTask && <AssigneeSelector task={convertedTask} groupId={null} isDarkMode={isDarkMode} />
           )}
         </div>
       </div>
@@ -406,15 +477,21 @@ interface PriorityColumnProps {
   task: Task;
   projectId: string;
   isDarkMode: boolean;
+  disabled?: boolean;
 }
 
 export const PriorityColumn: React.FC<PriorityColumnProps> = memo(
-  ({ width, task, projectId, isDarkMode }) => (
+  ({ width, task, projectId, isDarkMode, disabled = false }) => (
     <div
       className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
       style={{ width }}
     >
-      <TaskPriorityDropdown task={task} projectId={projectId} isDarkMode={isDarkMode} />
+      <TaskPriorityDropdown 
+        task={task} 
+        projectId={projectId} 
+        isDarkMode={isDarkMode}
+        disabled={disabled}
+      />
     </div>
   )
 );
@@ -427,13 +504,7 @@ interface ProgressColumnProps {
 }
 
 export const ProgressColumn: React.FC<ProgressColumnProps> = memo(({ width, task }) => {
-  // Add defensive fallback like TaskProgressCircle to handle both complete_ratio and progress fields
-  const progress =
-    typeof task.complete_ratio === 'number'
-      ? task.complete_ratio
-      : typeof task.progress === 'number'
-        ? task.progress
-        : 0;
+  const progress = resolveTaskProgress(task);
 
   return (
     <div
@@ -505,15 +576,21 @@ interface PhaseColumnProps {
   task: Task;
   projectId: string;
   isDarkMode: boolean;
+  disabled?: boolean;
 }
 
 export const PhaseColumn: React.FC<PhaseColumnProps> = memo(
-  ({ width, task, projectId, isDarkMode }) => (
+  ({ width, task, projectId, isDarkMode, disabled = false }) => (
     <div
       className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
-      style={{ width }}
+      style={{ width, minWidth: 0, overflow: 'hidden' }}
     >
-      <TaskPhaseDropdown task={task} projectId={projectId} isDarkMode={isDarkMode} />
+      <TaskPhaseDropdown 
+        task={task} 
+        projectId={projectId} 
+        isDarkMode={isDarkMode}
+        disabled={disabled}
+      />
     </div>
   )
 );
@@ -524,15 +601,16 @@ interface TimeTrackingColumnProps {
   width: string;
   taskId: string;
   isDarkMode: boolean;
+  disabled?: boolean;
 }
 
 export const TimeTrackingColumn: React.FC<TimeTrackingColumnProps> = memo(
-  ({ width, taskId, isDarkMode }) => (
+  ({ width, taskId, isDarkMode, disabled = false }) => (
     <div
       className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700"
       style={{ width }}
     >
-      <TaskTimeTracking taskId={taskId} isDarkMode={isDarkMode} />
+      <TaskTimeTracking taskId={taskId} isDarkMode={isDarkMode} disabled={disabled} />
     </div>
   )
 );
@@ -542,9 +620,10 @@ TimeTrackingColumn.displayName = 'TimeTrackingColumn';
 interface EstimationColumnProps {
   width: string;
   task: Task;
+  disabled?: boolean;
 }
 
-export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, task }) => {
+export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, task, disabled = false }) => {
   const { socket, connected } = useSocket();
   const { t } = useTranslation(['task-drawer/task-drawer', 'common']);
   
@@ -644,16 +723,16 @@ export const EstimationColumn: React.FC<EstimationColumnProps> = memo(({ width, 
 
   return (
     <div
-      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-[#2a2a2a] cursor-pointer transition-colors"
+      className="flex items-center justify-center px-2 border-r border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-50 dark:hover:bg-[#2a2a2a]"
       style={{ width }}
     >
       <Popover
         content={popoverContent}
-        trigger="click"
-        open={isOpen}
-        onOpenChange={setIsOpen}
+        trigger={disabled ? [] : 'click'}
+        open={disabled ? false : isOpen}
+        onOpenChange={disabled ? undefined : setIsOpen}
         placement="bottom"
-        destroyTooltipOnHide
+        destroyOnHidden
       >
         <div className="w-full h-full flex items-center justify-center min-h-[24px]">
           {estimationDisplay ? (
@@ -733,11 +812,12 @@ interface CustomColumnProps {
   width: string;
   column: any;
   task: Task;
+  disabled?: boolean;
   updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string| number | boolean | string[] | null) => void;
 }
 
 export const CustomColumn: React.FC<CustomColumnProps> = memo(
-  ({ width, column, task, updateTaskCustomColumnValue }) => {
+  ({ width, column, task, disabled = false, updateTaskCustomColumnValue }) => {
     if (!updateTaskCustomColumnValue) return null;
 
     return (
@@ -756,6 +836,7 @@ export const CustomColumn: React.FC<CustomColumnProps> = memo(
           <CustomColumnCell
             column={column}
             task={task}
+            disabled={disabled}
             updateTaskCustomColumnValue={updateTaskCustomColumnValue}
           />
         </div>

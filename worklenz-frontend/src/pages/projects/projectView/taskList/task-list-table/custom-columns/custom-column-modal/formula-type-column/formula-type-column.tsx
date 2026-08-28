@@ -1,18 +1,16 @@
-import { Flex, Form, Select, Typography } from '@/shared/antd-imports';
+import { Flex, Form, Select } from '@/shared/antd-imports';
 import React from 'react';
-import { themeWiseColor } from '../../../../../../../../utils/themeWiseColor';
-import { useAppSelector } from '../../../../../../../../hooks/useAppSelector';
-import { useAppDispatch } from '../../../../../../../../hooks/useAppDispatch';
+import { useTranslation } from 'react-i18next';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   setExpression,
   setFirstNumericColumn,
   setSecondNumericColumn,
-} from '../../../../../../../../features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 
 const FormulaTypeColumn = () => {
-  // get theme details from the theme reducer
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
 
   // get initial data from task list custom column slice
@@ -30,19 +28,31 @@ const FormulaTypeColumn = () => {
 
   // expression types options
   const expressionTypesOptions = [
-    { key: 'add', value: 'add', label: '+ Add' },
-    { key: 'substract', value: 'substract', label: '- Substract' },
-    { key: 'divide', value: 'divide', label: '/ Divide' },
-    { key: 'multiply', value: 'multiply', label: 'x Multiply' },
+    { key: 'add', value: 'add', label: t('customColumns.fieldTypeForms.expressionOptions.add') },
+    {
+      key: 'substract',
+      value: 'substract',
+      label: t('customColumns.fieldTypeForms.expressionOptions.subtract'),
+    },
+    {
+      key: 'divide',
+      value: 'divide',
+      label: t('customColumns.fieldTypeForms.expressionOptions.divide'),
+    },
+    {
+      key: 'multiply',
+      value: 'multiply',
+      label: t('customColumns.fieldTypeForms.expressionOptions.multiply'),
+    },
   ];
 
   return (
-    <Flex gap={8} align="center" justify="space-between">
+    <Flex gap={16}>
       <Form.Item
         name={'firstNumericColumn'}
-        label={<Typography.Text>First Column</Typography.Text>}
+        label={t('customColumns.fieldTypeForms.firstColumn')}
+        style={{ flex: 1, minWidth: 0 }}
       >
-        {/* first numeric column */}
         <Select
           options={numericColumns.map(col => ({
             key: col.key,
@@ -50,36 +60,27 @@ const FormulaTypeColumn = () => {
             label: col.name,
           }))}
           onChange={value => dispatch(setFirstNumericColumn(value))}
-          placeholder="Select first column"
-          style={{
-            minWidth: '100%',
-            width: 150,
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
-            borderRadius: 4,
-          }}
+          placeholder={t('customColumns.fieldTypeForms.selectFirstColumn')}
         />
       </Form.Item>
 
-      <Form.Item name={'expression'} label={<Typography.Text>Expression</Typography.Text>}>
-        {/* expression type */}
+      <Form.Item
+        name={'expression'}
+        label={t('customColumns.fieldTypeForms.expression')}
+        style={{ flex: 1, minWidth: 0 }}
+      >
         <Select
           options={expressionTypesOptions}
           value={expression}
           onChange={value => dispatch(setExpression(value))}
-          style={{
-            minWidth: '100%',
-            width: 150,
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
-            borderRadius: 4,
-          }}
         />
       </Form.Item>
 
       <Form.Item
         name={'secondNumericColumn'}
-        label={<Typography.Text>Second Column</Typography.Text>}
+        label={t('customColumns.fieldTypeForms.secondColumn')}
+        style={{ flex: 1, minWidth: 0 }}
       >
-        {/* second numeric column */}
         <Select
           options={numericColumns.map(col => ({
             key: col.key,
@@ -87,13 +88,7 @@ const FormulaTypeColumn = () => {
             label: col.name,
           }))}
           onChange={value => dispatch(setSecondNumericColumn(value))}
-          placeholder="Select second column"
-          style={{
-            minWidth: '100%',
-            width: 150,
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
-            borderRadius: 4,
-          }}
+          placeholder={t('customColumns.fieldTypeForms.selectSecondColumn')}
         />
       </Form.Item>
     </Flex>

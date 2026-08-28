@@ -1,5 +1,7 @@
 export type GanttViewMode = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
+export type GanttGroupingMode = 'phase' | 'status' | 'priority';
+
 export type DependencyType =
   | 'blocked_by'
   | 'finish_to_start'
@@ -14,6 +16,7 @@ export interface GanttTask {
   end_date: Date | null;
   progress: number;
   dependencies?: string[];
+  dependencyRecords?: GanttDependency[];
   dependencyType?: DependencyType;
   parent_id?: string;
   children?: GanttTask[];
@@ -35,6 +38,10 @@ export interface GanttTask {
   type?: 'task' | 'milestone' | 'phase' | 'add-task-button';
   // Add task row specific properties
   parent_phase_id?: string;
+  // Subtasks support
+  sub_tasks?: GanttTask[];
+  sub_tasks_count?: number;
+  show_sub_tasks?: boolean;
   // Optional aggregates for phase milestones (from backend)
   todo_progress?: number;
   doing_progress?: number;
@@ -69,8 +76,15 @@ export interface GanttContextType {
   tasks: GanttTask[];
   phases: GanttPhase[];
   viewMode: GanttViewMode;
+  groupingMode: GanttGroupingMode;
   projectId: string;
   dateRange: { start: Date; end: Date };
   onRefresh: () => void;
   timelineCalculator?: any; // UnifiedTimelineCalculator instance
+  highlightedDateRange?: { start: Date; end: Date }; // Date range to highlight in timeline
+  setHighlightedDateRange?: (range: { start: Date; end: Date } | null) => void;
+  // Whether the timeline's total width exceeds the available container width — computed
+  // once alongside timelineCalculator so the header and grid can't independently disagree
+  // on whether to scroll (see ProjectViewGantt.tsx's shouldScroll memo).
+  shouldScroll?: boolean;
 }

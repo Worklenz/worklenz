@@ -10,11 +10,6 @@ export default defineConfig(({ command, mode }) => {
 
   const env = loadEnv(mode, process.cwd(), '');
 
-  // Open-core edition seam: `ee` resolves business features to their real implementations,
-  // `ce` (default, open-source build) resolves them to stubs. Set via VITE_EDITION.
-  const edition = (env.VITE_EDITION ?? 'ce') === 'ee' ? 'ee' : 'ce';
-  const editionDir = edition === 'ee' ? './worklenz-ee' : './worklenz-ce';
-
   return {
     // **Plugins**
     plugins: [
@@ -97,11 +92,6 @@ export default defineConfig(({ command, mode }) => {
     // **Resolve**
     resolve: {
       alias: [
-        // Edition seam — MUST precede the '@' catch-all so it wins for these paths.
-        {
-          find: /^@\/worklenz-ee\/(.*)/,
-          replacement: path.resolve(__dirname, `${editionDir}/$1`),
-        },
         // Using an array with objects for clarity and easier management
         { find: '@', replacement: path.resolve(__dirname, './src') },
         { find: '@components', replacement: path.resolve(__dirname, './src/components') },

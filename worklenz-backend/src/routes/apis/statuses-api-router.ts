@@ -15,6 +15,7 @@ const statusesApiRouter = express.Router();
 statusesApiRouter.post("/", projectManagerValidator, taskStatusBodyValidator, safeControllerFunction(TaskStatusesController.getCreated));
 statusesApiRouter.get("/", safeControllerFunction(TaskStatusesController.get));
 statusesApiRouter.put("/order", statusOrderValidator, safeControllerFunction(TaskStatusesController.updateStatusOrder));
+statusesApiRouter.put("/color/:id", projectManagerValidator, idParamValidator, safeControllerFunction(TaskStatusesController.updateColor));
 statusesApiRouter.get("/categories", safeControllerFunction(TaskStatusesController.getCategories));
 statusesApiRouter.get("/:id", idParamValidator, safeControllerFunction(TaskStatusesController.getById));
 statusesApiRouter.put("/name/:id", projectManagerValidator, idParamValidator, taskStatusBodyValidator, safeControllerFunction(TaskStatusesController.updateName));

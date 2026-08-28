@@ -2,6 +2,9 @@
   "keyColumn": "Çelësi",
   "taskColumn": "Detyra",
   "descriptionColumn": "Përshkrimi",
+  "descriptionSaveOffline": "Jeni jashtë linje — përshkrimi nuk u ruajt. Rilidhuni dhe provoni përsëri.",
+  "descriptionSaveTimeout": "Ruajtja e përshkrimit skadoi. Ju lutemi provoni përsëri.",
+  "descriptionSaveFailed": "Ruajtja e përshkrimit dështoi. Ju lutemi provoni përsëri.",
   "progressColumn": "Progresi",
   "membersColumn": "Anëtarët",
   "assigneesColumn": "Përgjegjësit",
@@ -31,24 +34,19 @@
   "todoSelectorText": "Për të Bërë",
   "doingSelectorText": "Duke bërë",
   "doneSelectorText": "E Përfunduar",
-
   "lowSelectorText": "I ulët",
   "mediumSelectorText": "I mesëm",
   "highSelectorText": "I lartë",
-
   "selectText": "Zgjidh",
   "labelsSelectorInputTip": "Shtyp Enter për të krijuar!",
-
   "addTaskText": "Shto Detyrë",
   "addSubTaskText": "+ Shto Nën-Detyrë",
   "addSubTaskInputPlaceholder": "Shkruaj emrin e nën-detyrës dhe shtyp Enter për ta ruajtur",
   "noTasksInGroup": "Nuk ka detyra në këtë grup",
   "dropTaskHere": "Lëshoje detyrën këtu",
   "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
-
   "openButton": "Hap",
   "okButton": "Në rregull",
-
   "noLabelsFound": "Nuk u gjetën etiketa",
   "searchInputPlaceholder": "Kërko ose krijo",
   "assigneeSelectorInviteButton": "Fto një anëtar të ri me email",
@@ -56,9 +54,7 @@
   "searchLabelsPlaceholder": "Kërko etiketa...",
   "createLabelButton": "Krijo \"{{name}}\"",
   "manageLabelsPath": "Cilësimet → Etiketat",
-
   "pendingInvitation": "Ftesë në Pritje",
-
   "contextMenu": {
     "duplicateTask": "Detyrë dublikatë",
     "assignToMe": "Cakto mua",
@@ -79,21 +75,18 @@
   "clearStartDate": "Pastro datën e fillimit",
   "dueDatePlaceholder": "Data e afatit",
   "startDatePlaceholder": "Data e fillimit",
-
   "exampleTasks": {
     "prefix": "p.sh.",
     "task1": "Përcaktoni qëllimin dhe objektivat e projektit",
     "task2": "Rishikoni dhe harmonizoni me palët e interesuara",
     "task3": "Planifikoni takimin fillestar"
   },
-
   "emptyStates": {
     "noTaskGroups": "Nuk u gjetën grupe detyrash",
     "noTaskGroupsDescription": "Detyrat do të shfaqen këtu kur krijohen ose kur aplikohen filtra.",
     "errorPrefix": "Gabim:",
     "dragTaskFallback": "Detyrë"
   },
-
   "customColumns": {
     "addCustomColumn": "Shto një kolonë të personalizuar",
     "customColumnHeader": "Kolona e Personalizuar",
@@ -115,7 +108,13 @@
       "noMembersFound": "Nuk u gjetën anëtarë",
       "inviteMember": "Fto anëtar"
     },
-
+    "limitPopover": {
+      "title": "Limiti i Fushave të Personalizuara u Arrit",
+      "body": "Keni përdorur të gjitha {{limit}} fushat e personalizuara të disponueshme në planin tuaj. Kaloni në një plan më të lartë për fusha të pakufizuara.",
+      "appSumoTitle": "Kërkohet Përmirësim i Planit",
+      "appSumoBody": "Shtimi i fushave të personalizuara përtej limitit të planit tuaj aktual kërkon një plan Business.",
+      "cta": "Përmirëso Tani"
+    },
     "modal": {
       "addFieldTitle": "Shto fushë",
       "editFieldTitle": "Redakto fushën",
@@ -136,7 +135,6 @@
       "createErrorMessage": "Dështoi në krijimin e kolonës së personalizuar",
       "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar"
     },
-
     "fieldTypes": {
       "people": "Njerëz",
       "text": "Tekst",
@@ -147,9 +145,39 @@
       "labels": "Etiketat",
       "key": "Çelësi",
       "formula": "Formula"
+    },
+    "fieldTypeForms": {
+      "numberType": "Lloji i numrit",
+      "numberTypeOptions": {
+        "unformatted": "Pa formatuar",
+        "percentage": "Përqindje",
+        "withLabel": "Me etiketë",
+        "formatted": "Të formatuar"
+      },
+      "decimals": "Decimale",
+      "preview": "Pamje paraprake",
+      "label": "Etiketë",
+      "position": "Pozicioni",
+      "left": "Majtas",
+      "right": "Djathtas",
+      "firstColumn": "Kolona e parë",
+      "secondColumn": "Kolona e dytë",
+      "expression": "Shprehje",
+      "selectFirstColumn": "Zgjidh kolonën e parë",
+      "selectSecondColumn": "Zgjidh kolonën e dytë",
+      "expressionOptions": {
+        "add": "+ Shto",
+        "subtract": "- Zbrit",
+        "divide": "/ Pjesëto",
+        "multiply": "x Shumëzo"
+      },
+      "selections": "Zgjedhjet",
+      "addSelection": "+ Shto një zgjedhje",
+      "labels": "Etiketat",
+      "addLabel": "+ Shto një etiketë",
+      "keyLabelPlaceholder": "p.sh.: MK"
     }
   },
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} nën-detyrë",
@@ -163,7 +191,6 @@
       "recurring": "Detyrë përsëritëse"
     }
   },
-
   "timer": {
     "conflictTitle": "Kronómetr Tashë Në Ecuri",
     "conflictMessage": "Ju keni një kronómetr në ecuri për \"{{taskName}}\" në projektin \"{{projectName}}\". Dëshironi ta ndaloni atë kronómetr dhe të filloni një të ri për këtë detyrë?",

@@ -25,7 +25,7 @@ import {
   IGroupBy,
   toggleGroupCollapse,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { Modal, Dropdown, Badge } from '@/shared/antd-imports';
+import { Modal, Dropdown, Badge, Tooltip } from '@/shared/antd-imports';
 // @ts-ignore: Heroicons module types
 import {
   EllipsisHorizontalIcon,
@@ -548,9 +548,10 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
             onDrop={e => onGroupDrop(e, group.id)}
             onDragEnd={handleHeaderDragEnd}
           >
-            <div className="flex items-center justify-between w-full font-semibold rounded-md">
+            <div className="flex items-center justify-between w-full font-semibold rounded-md" style={{ minWidth: 0 }}>
               <div
                 className="flex items-center gap-2 cursor-pointer flex-1"
+                style={{ minWidth: 0 }}
                 onClick={handleHeaderClick}
                 onMouseDown={e => {
                   e.stopPropagation();
@@ -574,7 +575,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                   <input
                     ref={inputRef}
                     value={name}
-                    className="bg-transparent border-none outline-none text-sm font-semibold capitalize min-w-[185px]"
+                    className="bg-transparent border-none outline-none text-sm font-semibold min-w-[185px]"
                     style={{ color: headerTextColor }}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -587,24 +588,31 @@ const KanbanGroup: React.FC<KanbanGroupProps> = memo(
                     }}
                   />
                 ) : (
-                  <div
-                    className="text-sm font-semibold capitalize truncate"
-                    style={{ 
-                      color: headerTextColor,
-                    }}
-                    onMouseDown={e => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                    }}
-                    onMouseUp={e => {
-                      e.stopPropagation();
-                    }}
-                    onClick={e => {
-                      e.stopPropagation();
-                    }}
-                  >
-                    {name} ({group.tasks.length})
-                  </div>
+                  <Tooltip title={name} placement="top">
+                    <div
+                      className="text-sm font-semibold"
+                      style={{ 
+                        color: headerTextColor,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        minWidth: 0,
+                        flex: 1,
+                      }}
+                      onMouseDown={e => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                      }}
+                      onMouseUp={e => {
+                        e.stopPropagation();
+                      }}
+                      onClick={e => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      {name} ({group.tasks.length})
+                    </div>
+                  </Tooltip>
                 )}
               </div>
 

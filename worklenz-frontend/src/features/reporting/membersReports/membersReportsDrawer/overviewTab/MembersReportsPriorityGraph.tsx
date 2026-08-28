@@ -1,6 +1,5 @@
-import React from 'react';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart, ArcElement, Tooltip } from 'chart.js';
+import { Chart, ArcElement, Tooltip, ChartOptions } from 'chart.js';
 import { Badge, Card, Flex, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { IRPTOverviewMemberChartData } from '@/types/reporting/reporting.types';
@@ -17,7 +16,7 @@ const MembersReportsPriorityGraph = ({ model, loading }: MembersReportsPriorityG
   const { t } = useTranslation('reporting-members-drawer');
 
   const chartData = {
-    labels: model?.chart.map(item => t(`${item.name}Text`)),
+    labels: model?.chart.map(item => t(`${item.name.toLowerCase()}Text`)),
     datasets: [
       {
         label: t('tasksText'),
@@ -27,8 +26,9 @@ const MembersReportsPriorityGraph = ({ model, loading }: MembersReportsPriorityG
     ],
   };
 
-  const options = {
+  const options: ChartOptions<'doughnut'> = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         display: false,
@@ -36,6 +36,14 @@ const MembersReportsPriorityGraph = ({ model, loading }: MembersReportsPriorityG
       },
       datalabels: {
         display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: context => {
+            const value = context.raw as number;
+            return `${context.label}: ${value} task${value !== 1 ? 's' : ''}`;
+          },
+        },
       },
     },
   };
@@ -49,31 +57,37 @@ const MembersReportsPriorityGraph = ({ model, loading }: MembersReportsPriorityG
         </Typography.Text>
       }
     >
-      <div className="flex flex-wrap items-center justify-center gap-6 xl:flex-nowrap">
-        <Doughnut
-          data={chartData}
-          options={options}
-          className="max-h-[200px] w-full max-w-[200px]"
-        />
+      <div className="flex items-start gap-6">
+        <div className="shrink-0" style={{ width: 160, height: 160 }}>
+          <Doughnut
+            data={chartData}
+            options={options}
+            style={{ width: 160, height: 160 }}
+          />
+        </div>
 
-        <div className="flex flex-row flex-wrap gap-3 xl:flex-col">
+        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
           {/* total tasks */}
-          <Flex gap={4} align="center">
-            <Badge color="#000" />
-            <Typography.Text ellipsis>
+          <Flex gap={4} align="center" className="min-w-0">
+            <Badge color="#a9a9a9" className="shrink-0" />
+            <Typography.Text ellipsis={{ tooltip: `${t('allText')} (${model?.total})` }} className="min-w-0 flex-1">
               {t('allText')} ({model?.total})
             </Typography.Text>
           </Flex>
 
-          {/* priority-specific tasks */}
-          {model?.chart.map(item => (
-            <Flex key={item.name} gap={4} align="center">
-              <Badge color={item.color} />
-              <Typography.Text ellipsis>
-                {t(`${item.name}`)}({item.y})
-              </Typography.Text>
-            </Flex>
-          ))}
+          {/* priority-specific tasks — scrollable after 10 items */}
+          <div className="overflow-y-auto" style={{ maxHeight: 280 }}>
+            <div className="flex flex-col gap-2">
+              {model?.chart.map(item => (
+                <Flex key={item.name} gap={4} align="center" className="min-w-0">
+                  <Badge color={item.color} className="shrink-0" />
+                  <Typography.Text ellipsis={{ tooltip: `${t(`${item.name.toLowerCase()}Text`)} (${item.y})` }} className="min-w-0 flex-1">
+                    {t(`${item.name.toLowerCase()}Text`)} ({item.y})
+                  </Typography.Text>
+                </Flex>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </Card>

@@ -70,6 +70,8 @@
       "noComments": "还没有评论。成为第一个评论的人！",
       "delete": "删除",
       "confirmDeleteComment": "您确定要删除此评论吗？",
+      "edited": "（已编辑）",
+      "messageDeleted": "此消息已被删除",
       "addCommentPlaceholder": "添加评论...",
       "cancel": "取消",
       "commentButton": "评论",

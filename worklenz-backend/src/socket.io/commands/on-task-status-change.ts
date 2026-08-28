@@ -4,19 +4,21 @@ import db from "../../config/db";
 import {NotificationsService} from "../../services/notifications/notifications.service";
 import {TASK_STATUS_COLOR_ALPHA} from "../../shared/constants";
 import {SocketEvents} from "../events";
-import {getLoggedInUserIdFromSocket, log, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import {getTaskDetails, logProgressChange, logStatusChange} from "../../services/activity-logs/activity-logs.service";
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
-import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import { checkPhaseCompletionGuard } from "../../shared/phase-completion-guard";
+import { autoAdvanceToNextPhase } from "../../shared/phase-auto-advance";
 
 export async function on_task_status_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
     
-    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    const hasAccess = await verifyNonGuestTaskAccessSocket(socket, body.task_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, 'TASK_STATUS_CHANGE', 'task', body.task_id);
       return;
@@ -39,12 +41,27 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
         completed_deps: canContinue
       });
     }
+
+    // Phase completion guard: only the phase assignee (or admin) can move to "done"
+    const phaseGuard = await checkPhaseCompletionGuard(userId, body.task_id, body.status_id);
+    if (phaseGuard.blocked) {
+      const {color_code, color_code_dark} = await TasksControllerV2.getTaskStatusColor(taskData.status_id);
+
+      return socket.emit(SocketEvents.TASK_STATUS_CHANGE.toString(), {
+        id: body.task_id,
+        parent_task: body.parent_task,
+        status_id: taskData.status_id,       // revert to previous status
+        color_code: color_code + TASK_STATUS_COLOR_ALPHA,
+        color_code_dark,
+        completed_deps: true,                // not a dependency issue
+        phase_guard_blocked: true,           // signals the phase guard fired
+        phase_assignee_name: phaseGuard.blockerName,
+      });
+    }
     const q2 = "SELECT handle_on_task_status_change($1, $2, $3) AS res;";
     const results1 = await db.query(q2, [userId, body.task_id, body.status_id]);
     const [d] = results1.rows;
     const changeResponse = d.res;
-
-    log(`Task status change response - completed_at: ${changeResponse.completed_at}, status_category: ${JSON.stringify(changeResponse.status_category)}`, null);
 
     changeResponse.color_code = changeResponse.color_code + TASK_STATUS_COLOR_ALPHA;
 
@@ -82,8 +99,6 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
           WHERE id = $1
         `, [body.task_id]);
 
-        log(`Task ${body.task_id} moved to done status - progress automatically set to 100%`, null);
-
         // Log the progress change to activity logs
         await logProgressChange({
           task_id: body.task_id,
@@ -99,6 +114,10 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
           }, 100);
         }
       }
+
+      // Auto-advance to the next phase (phase_assignees_enabled feature)
+      // NOTE: called AFTER the main TASK_STATUS_CHANGE emit below so the
+      // Done confirmation reaches the client first, then the To Do reset arrives.
     } else {
       // Task is moving from "done" to "todo" or "doing" - reset manual_progress to FALSE
       // and clear progress_value so progress can be recalculated based on subtasks
@@ -107,8 +126,6 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
         SET manual_progress = FALSE, progress_value = NULL
         WHERE id = $1
       `, [body.task_id]);
-
-      log(`Task ${body.task_id} moved from done status - manual_progress reset to FALSE and progress_value cleared`, null);
 
       // If this is a subtask, update parent task progress
       if (body.parent_task) {
@@ -133,6 +150,12 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       statusCategory: changeResponse.status_category,
       completed_deps: canContinue
     });
+
+    // Auto-advance to next phase AFTER Done is confirmed to client
+    // This ensures phase_auto_advanced To Do reset arrives after Done, not before
+    if (changeResponse.status_category?.is_done) {
+      await autoAdvanceToNextPhase(_io, socket, body.task_id);
+    }
 
     socket.emit(SocketEvents.GET_TASK_PROGRESS.toString(), {
       id: body.task_id,

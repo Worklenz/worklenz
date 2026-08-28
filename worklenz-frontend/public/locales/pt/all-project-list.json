@@ -7,12 +7,14 @@
   "tasksProgress": "Progresso das Tarefas",
   "updated_at": "Última Atualização",
   "setting": "Configurações",
+  "settingsDisabledForGuest": "Configurações desabilitadas para convidado",
+  "settingsTooltip": "Abrir configurações do projeto",
   "projects": "Projetos",
   "refreshProjects": "Atualizar projetos",
   "all": "Todos",
   "favorites": "Favoritos",
   "archived": "Arquivados",
-  "placeholder": "Pesquisar por nome",
+  "placeholder": "Pesquisar por nome do projeto",
   "archive": "Arquivar",
   "unarchive": "Desarquivar",
   "archiveConfirm": "Tem certeza de que deseja arquivar este projeto?",
@@ -34,5 +36,17 @@
     "categories": "categorias",
     "clients": "clientes"
   },
-  "noPermission": "Você não tem permissão para realizar esta ação"
+  "noPermission": "Você não tem permissão para realizar esta ação",
+  "favorite": "Favorito",
+  "fieldsText": "Campos",
+  "fieldsWithCount": "Campos: {{count}}",
+  "projectFields": "Campos do Projeto",
+  "noOptionsFound": "Nenhuma opção encontrada",
+  "required": "Obrigatório",
+  "activeFiltersCount": "Filtros: {{count}}",
+  "filter": {
+    "noClient": "Sem Cliente",
+    "noPriority": "Sem Prioridade",
+    "noCategory": "Sem Categoria"
+  }
 }

@@ -3,6 +3,8 @@
   "pageDescription": "View all tasks across your organization",
 
   "searchPlaceholder": "Search by task name, key, or description",
+  "searchProjectsPlaceholder": "Search projects...",
+  "searchMembersPlaceholder": "Search members...",
 
   "filtersTitle": "Filters",
   "teamsFilter": "Teams",
@@ -157,5 +159,18 @@
   "collapseAllGroups": "Collapse all groups",
   "openTaskDetails": "Open task details",
   "moreFilters": "More filters",
-  "lessFilters": "Less filters"
+  "lessFilters": "Less filters",
+
+  "quickFilters": "Quick filters",
+  "filterButton": "Filter",
+  "searchClients": "Search clients...",
+  "noClients": "No clients found",
+  "clientColumn": "Client",
+  "searchPhases": "Search phases...",
+  "selectProjectFirst": "Select a project to see phases",
+  "noPhases": "No phases found",
+
+  "todoStatus": "To Do",
+  "doingStatus": "Doing",
+  "doneStatus": "Done"
 }

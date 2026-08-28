@@ -7,19 +7,25 @@ import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logNameChange} from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error, sanitizePlainText } from "../../shared/utils";
-import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {isTaskCreationRestrictedForTask} from "../../shared/task-creation-restriction";
 
 export async function on_task_name_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
-    
-    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+
+    const hasAccess = await verifyNonGuestTaskAccessSocket(socket, body.task_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, 'TASK_NAME_CHANGE', 'task', body.task_id);
       return;
     }
-    
+
     const userId = getLoggedInUserIdFromSocket(socket);
+
+    // Enforce restrict_task_creation: restricted users cannot modify tasks.
+    if (await isTaskCreationRestrictedForTask(userId, body.task_id)) {
+      return;
+    }
     const name = sanitizePlainText(body.name || "");
     const task_data = await getTaskDetails(body.task_id, "name");
     const q = `SELECT handle_task_name_change($1, $2, $3) AS response;`;

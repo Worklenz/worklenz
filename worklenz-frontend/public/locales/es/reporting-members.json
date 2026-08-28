@@ -9,9 +9,13 @@
   "customRangeText": "Rango personalizado",
   "startDateInputPlaceholder": "Fecha de inicio",
   "EndDateInputPlaceholder": "Fecha final",
+  "quickRanges": "Rangos Rápidos",
+  "readyToApplyCustomRange": "Listo para aplicar rango personalizado",
+  "selectStartEndDates": "Seleccione fechas de inicio y fin",
   "filterButton": "Filtrar",
 
   "membersTitle": "Miembros",
+  "membersHeaderTitle": "Miembros ({{count}})",
   "includeArchivedButton": "Incluir Proyectos Archivados",
   "exportButton": "Exportar",
   "excelButton": "Excel",
@@ -31,5 +35,6 @@
 
   "todoText": "Por Hacer",
   "doingText": "Haciendo",
-  "doneText": "Hecho"
+  "doneText": "Hecho",
+  "customDateRangeInvalidError": "La fecha de finalización no puede ser anterior a la fecha de inicio. Selecciona un rango válido."
 }

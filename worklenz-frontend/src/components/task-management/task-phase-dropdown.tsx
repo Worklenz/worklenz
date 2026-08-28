@@ -4,12 +4,22 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { Task } from '@/types/task-management.types';
-import { ClearOutlined } from '@/shared/antd-imports';
+import { ClearOutlined, CheckOutlined, Tooltip } from '@/shared/antd-imports';
+import { Avatar, Checkbox } from '@/components';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/app/store';
+import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
+import { sortTeamMembers } from '@/utils/sort-team-members';
 
 interface TaskPhaseDropdownProps {
   task: Task;
   projectId: string;
   isDarkMode?: boolean;
+  disabled?: boolean;
+}
+
+interface PhaseTab {
+  type: 'phases' | 'assignee';
 }
 
 // Fallback constants - should match CSS max-height/max-width
@@ -21,6 +31,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   task,
   projectId,
   isDarkMode = false,
+  disabled = false,
 }) => {
   const { socket, connected } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
@@ -30,16 +41,37 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
     width: DROPDOWN_WIDTH,
     height: DROPDOWN_HEIGHT,
   });
+  const [activeTab, setActiveTab] = useState<'phases' | 'assignee'>('phases');
+  const [teamMembers, setTeamMembers] = useState<ITeamMembersViewModel>({ data: [], total: 0 });
+  const [searchQuery, setSearchQuery] = useState('');
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const { phaseList } = useAppSelector(state => state.phaseReducer);
+  const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
 
-  // Find current phase details
+  // Find current phase details - task.phase can be phase ID or phase name
   const currentPhase = useMemo(() => {
-    return phaseList.find(phase => phase.name === task.phase);
+    if (!task.phase) return null;
+
+    // First try to find by ID (most common case)
+    let found = phaseList.find(phase => phase.id === task.phase);
+
+    // If not found and looks like a name (not UUID), try by name
+    if (!found && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(task.phase)) {
+      found = phaseList.find(phase => phase.name === task.phase);
+    }
+
+    return found || null;
   }, [phaseList, task.phase]);
+
+  const filteredMembers = useMemo(() => {
+    return teamMembers?.data?.filter(member =>
+      member.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [teamMembers, searchQuery]);
 
   // Measure actual dropdown dimensions when it opens
   useLayoutEffect(() => {
@@ -230,49 +262,65 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
 
   return (
     <>
-      {/* Phase Button */}
-      <button
-        ref={buttonRef}
-        onClick={e => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className={`
-          inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
-          transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] max-w-full justify-center
-          whitespace-nowrap
-        `}
-        style={{
-          backgroundColor:
-            hasPhase && currentPhase
-              ? getPhaseColor(currentPhase)
-              : isDarkMode
-                ? '#4b5563'
-                : '#9ca3af',
-          color: 'white',
-        }}
-      >
-        <span className="truncate">
-          {hasPhase && currentPhase ? formatPhaseName(currentPhase.name || '') : 'Select'}
-        </span>
-        <svg
-          className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+      {/* Phase Container */}
+      <div className="inline-flex items-center gap-1 w-full justify-center">
+        {/* Phase Button */}
+        <Tooltip title={hasPhase && currentPhase ? currentPhase.name : ''} placement="top">
+          <button
+            ref={buttonRef}
+            onClick={e => {
+              if (disabled) return;
+              e.preventDefault();
+              e.stopPropagation();
+              setIsOpen(!isOpen);
+            }}
+            disabled={disabled}
+            className={`
+              inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium
+              transition-all duration-200 hover:opacity-80 border-0 min-w-[70px] justify-center
+              ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
+            `}
+            style={{
+              backgroundColor:
+                hasPhase && currentPhase
+                  ? getPhaseColor(currentPhase)
+                  : isDarkMode
+                    ? '#4b5563'
+                    : '#9ca3af',
+              color: 'white',
+              maxWidth: '100%',
+            }}
+          >
+            <span 
+              style={{ 
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxWidth: '100%',
+              }}
+            >
+              {hasPhase && currentPhase ? formatPhaseName(currentPhase.name || '') : 'Select'}
+            </span>
+            <svg
+              className={`w-3 h-3 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </Tooltip>
+
+      </div>
 
       {/* Dropdown Menu */}
-      {isOpen &&
+      {isOpen && !disabled &&
         createPortal(
           <div
             ref={dropdownRef}
             className={`
-            fixed min-w-[160px] max-w-[220px] 
+            fixed min-w-[160px] max-w-[280px] 
             rounded border backdrop-blur-xs z-9999
             ${
               isDarkMode

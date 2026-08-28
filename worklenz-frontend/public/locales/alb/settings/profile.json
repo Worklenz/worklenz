@@ -15,5 +15,9 @@
   "removeAvatarConfirmTitle": "Të hiqet fotografia e profilit?",
   "removeAvatarConfirmDescription": "Avatari juaj do të hiqet dhe në vend të tij do të shfaqen inicialet tuaja.",
   "cancel": "Anulo",
-  "title": "Cilësimet e Profilit"
+  "justNow": "Sapo",
+  "cropProfilePicture": "Prisni Foton e Profilit",
+  "title": "Cilësimet e Profilit",
+  "nameMinLengthError": "Emri duhet të ketë të paktën 2 karaktere",
+  "nameMaxLengthError": "Emri nuk mund të tejkalojë 50 karaktere"
 }

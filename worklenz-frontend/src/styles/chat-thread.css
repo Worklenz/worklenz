@@ -1,0 +1,411 @@
+/* Shared chat-bubble thread styling - used by both the project "Updates" tab
+   (project-view-updates.tsx) and the client-portal chat box (chat-box.tsx),
+   so both surfaces render an identical message-bubble UI. */
+
+/* Time separator between message groups on different days */
+.comment-time-separator {
+  text-align: center;
+  margin: 8px 0;
+  position: relative;
+}
+
+.comment-time-separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background-color: #e6e6e6;
+  z-index: 0;
+}
+
+.theme-dark .comment-time-separator::before {
+  background-color: #333;
+}
+
+.comment-time-separator span {
+  position: relative;
+  padding: 0 10px;
+  font-size: 11px;
+  z-index: 1;
+}
+
+.theme-light .comment-time-separator span {
+  background-color: #fff;
+  color: #707070;
+}
+
+.theme-dark .comment-time-separator span {
+  background-color: #1e1e1e;
+  color: #d1d0d3;
+}
+
+/* Scrollable message list area */
+.updates-list-container {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.updates-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.updates-list-container::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.updates-list-container>div {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Composer / input area - sticky at bottom */
+.updates-input-container {
+  padding: 10px 16px;
+  border-top: 1px solid transparent;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 10;
+  overflow: visible !important;
+}
+
+/* ========== CHAT BUBBLE MESSAGE LAYOUT ========== */
+
+.chat-msg-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.chat-msg-row.grouped {
+  margin-top: -6px;
+}
+
+.chat-msg-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-msg-wrapper:hover {
+  z-index: 200;
+}
+
+.chat-msg-author {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 2px;
+  padding-left: 2px;
+}
+
+.theme-light .chat-msg-author {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.theme-dark .chat-msg-author {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.chat-msg-bubble {
+  display: inline-block;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.chat-msg-bubble.mine {
+  background: #1677ff;
+  color: #fff;
+  border-radius: 10px 10px 2px 10px;
+}
+
+.theme-light .chat-msg-bubble.theirs {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.88);
+  border-radius: 10px 10px 10px 2px;
+}
+
+.theme-dark .chat-msg-bubble.theirs {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 10px 10px 10px 2px;
+}
+
+.chat-msg-bubble.mine .mentions {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.chat-msg-time {
+  font-size: 10px;
+  opacity: 0.45;
+  margin-top: 3px;
+}
+
+.chat-msg-row.mine .chat-msg-time {
+  text-align: right;
+}
+
+/* Hover toolbar - floating popup above the message bubble */
+.chat-msg-toolbar {
+  position: absolute;
+  top: 0px;
+  transform: translateY(-100%);
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s 0.3s,
+    visibility 0.2s 0.3s;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.chat-msg-row.mine .chat-msg-toolbar {
+  right: 0;
+}
+
+.chat-msg-row.theirs .chat-msg-toolbar {
+  left: 0;
+}
+
+.chat-msg-wrapper:hover .chat-msg-toolbar {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.5s;
+  pointer-events: auto;
+}
+
+.chat-msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.theme-light .chat-msg-actions {
+  background-color: #ffffff;
+  border: 1px solid #e6e6e6;
+}
+
+.theme-dark .chat-msg-actions {
+  background-color: #2a2a2a;
+  border: 1px solid #3a3a3a;
+}
+
+.quick-reactions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.quick-emoji {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+}
+
+.quick-emoji:hover {
+  transform: scale(1.2);
+}
+
+.theme-light .quick-emoji:hover {
+  background-color: #f5f5f5;
+}
+
+.theme-dark .quick-emoji:hover {
+  background-color: #3a3a3a;
+}
+
+.hover-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+}
+
+.theme-light .hover-divider {
+  background-color: #e6e6e6;
+}
+
+.theme-dark .hover-divider {
+  background-color: #3a3a3a;
+}
+
+.hover-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  opacity: 0.75;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hover-icon-btn:hover {
+  opacity: 1;
+}
+
+.theme-light .hover-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.theme-dark .hover-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hover-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Attach button in the input row */
+.chat-attach-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.75;
+  display: flex;
+  align-items: center;
+}
+
+.chat-attach-btn:hover {
+  opacity: 1;
+}
+
+.chat-attach-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Reply quote inside a bubble */
+.chat-msg-reply-quote {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  border-left: 3px solid rgba(22, 119, 255, 0.9);
+}
+
+.theme-light .chat-msg-bubble.theirs .chat-msg-reply-quote {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.theme-dark .chat-msg-bubble.theirs .chat-msg-reply-quote {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.chat-msg-bubble.mine .chat-msg-reply-quote {
+  background: rgba(255, 255, 255, 0.18);
+  border-left-color: rgba(255, 255, 255, 0.7);
+}
+
+.chat-msg-reply-author {
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.chat-msg-reply-snippet {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+}
+
+/* Pinned message indicator */
+.chat-msg-pin-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  opacity: 0.75;
+  margin-bottom: 4px;
+}
+
+/* Deleted message placeholder */
+.chat-msg-bubble.deleted {
+  opacity: 0.8;
+}
+
+/* Attachment pill inside a bubble */
+.chat-msg-attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 12px;
+  border-radius: 12px 12px 12px 4px;
+  font-size: 13px;
+  text-decoration: none;
+  max-width: 250px;
+  word-break: break-all;
+}
+
+.theme-light .chat-msg-attachment {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: #1677ff;
+}
+
+.theme-dark .chat-msg-attachment {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #4096ff;
+}
+
+.chat-msg-bubble.mine .chat-msg-attachment {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.chat-msg-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Send button theme-aware disabled state */
+.theme-light .updates-input-container .send-button.ant-btn-primary[disabled],
+.theme-light .updates-input-container .send-button.ant-btn-primary.ant-btn-disabled,
+.theme-light .updates-input-container button.send-button.ant-btn-primary[disabled],
+.theme-light .updates-input-container button.send-button.ant-btn-primary.ant-btn-disabled {
+  background-color: #d9d9d9 !important;
+  border-color: #d9d9d9 !important;
+  color: rgba(0, 0, 0, 0.25) !important;
+  opacity: 1 !important;
+}
+
+.theme-dark .updates-input-container .send-button.ant-btn-primary[disabled],
+.theme-dark .updates-input-container .send-button.ant-btn-primary.ant-btn-disabled,
+.theme-dark .updates-input-container button.send-button.ant-btn-primary[disabled],
+.theme-dark .updates-input-container button.send-button.ant-btn-primary.ant-btn-disabled {
+  background-color: #434343 !important;
+  border-color: #434343 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}

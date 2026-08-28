@@ -1,5 +1,7 @@
 {
   "title": "Cilësimet e Njoftimeve",
+  "generalSectionTitle": "Njoftime të përgjithshme",
+  "generalSectionDescription": "Aplikohet menjëherë kur ndryshohet — nuk kërkohet ruajtje e veçantë.",
   "emailTitle": "Më dërgo njoftime me email",
   "emailDescription": "Kjo përfshin caktimet e reja të detyrave",
   "dailyDigestTitle": "Më dërgo një përmbledhje ditore",
@@ -7,5 +9,17 @@
   "popupTitle": "Shfaq njoftimet në kompjuterin tim kur Worklenz është i hapur",
   "popupDescription": "Njoftimet e shfaqura mund të çaktivizohen nga shfletuesi juaj. Ndryshoni cilësimet e shfletuesit për t'i lejuar ato.",
   "unreadItemsTitle": "Shfaq numrin e artikujve të palexuar",
-  "unreadItemsDescription": "Do të shihni numërimin për çdo njoftim."
+  "unreadItemsDescription": "Do të shihni numërimin për çdo njoftim.",
+  "taskDigestSectionTitle": "Email-et e planifikuara të përmbledhjes së detyrave",
+  "taskDigestSectionDescription": "Merrni një përmbledhje të personalizuar të detyrave sipas orarit tuaj. Seksionet e administratorit dhe PM shfaqen automatikisht bazuar në rolin tuaj.",
+  "dailyReminderTitle": "Kujtues ditor i detyrave",
+  "dailyReminderDescription": "Dërgohet çdo ditë në kohën tuaj të zgjedhur. Përfshin detyrat që duhen sot, nesër dhe të vonuara.",
+  "weeklyStartTitle": "Përmbledhja e fillimit të javës",
+  "weeklyStartDescription": "Dërgohet çdo të hënë. Tregon të gjithë javën tuaj me detyrat që duhen këtë javë dhe të vonuara.",
+  "weeklyEndTitle": "Përmbledhja e fundit të javës",
+  "weeklyEndDescription": "Dërgohet çdo të premte. Rishikim i detyrave të përfunduara, të vonuara dhe pamje e javës së ardhshme.",
+  "channelLabel": "Kanali",
+  "timeLabel": "Dërgo në",
+  "saveDigestPreferences": "Ruaj preferencat e njoftimeve",
+  "digestPreferencesSaved": "Preferencat tuaja të njoftimeve janë ruajtur"
 }

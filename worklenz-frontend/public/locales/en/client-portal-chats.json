@@ -58,5 +58,11 @@
   "emojiPicker": "Add emoji",
   "noChatsWithClient": "No conversations with this client yet",
   "startConversationWithClient": "Start a conversation to discuss this request with the client.",
-  "messageUnavailable": "Message unavailable"
+  "messageUnavailable": "Message unavailable",
+  "convertToTask": "Convert to task",
+  "convertToTaskEmpty": "Message has no text to use as a task name",
+  "convertToTaskError": "Failed to create task",
+  "convertToTaskSuccess": "Task created from message",
+  "noClientProject": "This client has no assigned project",
+  "createTask": "Create task"
 }

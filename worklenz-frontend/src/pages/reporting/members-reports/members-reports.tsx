@@ -62,7 +62,8 @@ const MembersReports = () => {
   return (
     <Flex vertical>
       <CustomPageHeader
-        title={`Members (${total})`}
+        title={t('membersHeaderTitle', { count: total })}
+        style={{ padding: 0, marginBottom: 16 }}
         children={
           <Space>
             <Button>

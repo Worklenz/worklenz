@@ -11,6 +11,8 @@ import {
   SettingOutlined,
   TagOutlined,
   TeamOutlined,
+  CheckCircleOutlined,
+  AppstoreOutlined,
 } from '@/shared/antd-imports';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -29,7 +31,7 @@ import {
   selectCurrentGrouping,
   setCurrentGrouping,
 } from '@/features/task-management/grouping.slice';
-import { setLabels, setMembers, setPriorities, setFields } from '@/features/tasks/tasks.slice';
+import { setLabels, setMembers, setPriorities, setFields, setStatuses, setPhases, persistFilters, setSearch as setTasksSearch } from '@/features/tasks/tasks.slice';
 import {
   fetchEnhancedKanbanGroups,
   setArchived as setKanbanArchived,
@@ -38,6 +40,8 @@ import {
   setPriorities as setKanbanPriorities,
   setSearch as setKanbanSearch,
   setTaskAssigneeSelection,
+  setKanbanStatuses,
+  setKanbanPhases,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import ManageStatusModal from '@/components/task-management/ManageStatusModal';
 import ManagePhaseModal from '@/components/task-management/ManagePhaseModal';
@@ -66,6 +70,12 @@ const selectFilterData = createSelector(
     (state: any) => state.enhancedKanbanReducer.originalTaskAssignees,
     (state: any) => state.enhancedKanbanReducer.originalLabels,
     (state: any) => state.enhancedKanbanReducer.priorities,
+    (state: any) => state.taskReducer.statuses,
+    (state: any) => state.taskReducer.phases,
+    (state: any) => state.taskStatusReducer.status,
+    (state: any) => state.phaseReducer.phaseList,
+    (state: any) => state.enhancedKanbanReducer.statuses,
+    (state: any) => state.enhancedKanbanReducer.phases,
   ],
   (
     priorities,
@@ -78,7 +88,13 @@ const selectFilterData = createSelector(
     project,
     kanbanOriginalTaskAssignees,
     kanbanOriginalLabels,
-    kanbanPriorities
+    kanbanPriorities,
+    taskStatuses,
+    taskPhases,
+    allStatuses,
+    allPhases,
+    kanbanStatuses,
+    kanbanPhases
   ) => ({
     priorities: priorities || [],
     taskPriorities: taskPriorities || [],
@@ -89,9 +105,15 @@ const selectFilterData = createSelector(
     boardAssignees: boardAssignees || [],
     project,
     selectedPriorities: taskPriorities || [],
+    selectedStatuses: taskStatuses || [],
+    selectedPhases: taskPhases || [],
+    allStatuses: allStatuses || [],
+    allPhases: allPhases || [],
     kanbanTaskAssignees: kanbanOriginalTaskAssignees || [],
     kanbanLabels: kanbanOriginalLabels || [],
     kanbanPriorities: kanbanPriorities || [],
+    kanbanStatuses: kanbanStatuses || [],
+    kanbanPhases: kanbanPhases || [],
   })
 );
 
@@ -155,6 +177,34 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           icon: FlagOutlined,
         },
         {
+          id: 'status',
+          label: t('statusText', { defaultValue: 'Status' }),
+          options: filterData.allStatuses.map((s: any) => ({
+            id: s.id,
+            value: s.id,
+            label: s.name,
+            color: s.color_code,
+          })),
+          selectedValues: filterData.kanbanStatuses.map((s: any) => s.id || '').filter(Boolean),
+          multiSelect: true,
+          searchable: false,
+          icon: CheckCircleOutlined,
+        },
+        {
+          id: 'phase',
+          label: t('phaseText', { defaultValue: 'Phase' }),
+          options: filterData.allPhases.map((p: any) => ({
+            id: p.id,
+            value: p.id,
+            label: p.name,
+            color: p.color_code,
+          })),
+          selectedValues: filterData.kanbanPhases,
+          multiSelect: true,
+          searchable: false,
+          icon: AppstoreOutlined,
+        },
+        {
           id: 'assignees',
           label: t('membersText', { defaultValue: 'Members' }),
           icon: TeamOutlined,
@@ -204,8 +254,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
             },
             {
               id: 'phase',
-              label:
-                (kanbanProject as any)?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
+              label: t('phaseText', { defaultValue: 'Phase' }),
               value: 'phase',
             },
           ],
@@ -233,6 +282,34 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
         multiSelect: true,
         searchable: false,
         icon: FlagOutlined,
+      },
+      {
+        id: 'status',
+        label: t('statusText', { defaultValue: 'Status' }),
+        options: filterData.allStatuses.map((s: any) => ({
+          id: s.id,
+          value: s.id,
+          label: s.name,
+          color: s.color_code,
+        })),
+        selectedValues: filterData.selectedStatuses.map((s: any) => s.id || '').filter(Boolean),
+        multiSelect: true,
+        searchable: false,
+        icon: CheckCircleOutlined,
+      },
+      {
+        id: 'phase',
+        label: t('phaseText', { defaultValue: 'Phase' }),
+        options: filterData.allPhases.map((p: any) => ({
+          id: p.id,
+          value: p.id,
+          label: p.name,
+          color: p.color_code,
+        })),
+        selectedValues: filterData.selectedPhases,
+        multiSelect: true,
+        searchable: false,
+        icon: AppstoreOutlined,
       },
       {
         id: 'assignees',
@@ -284,7 +361,7 @@ const useFilterData = (position: 'board' | 'list'): FilterSection[] => {
           },
           {
             id: 'phase',
-            label: filterData.project?.phase_label || t('phaseText', { defaultValue: 'Phase' }),
+            label: t('phaseText', { defaultValue: 'Phase' }),
             value: 'phase',
           },
         ],
@@ -301,6 +378,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const dispatch = useAppDispatch();
   const currentTaskAssignees = useAppSelector(state => state.taskReducer.taskAssignees);
   const currentTaskLabels = useAppSelector(state => state.taskReducer.labels);
+  const allStatuses = useAppSelector((state: RootState) => (state as any).taskStatusReducer?.status || []);
   const kanbanState = useAppSelector((state: RootState) => state.enhancedKanbanReducer);
   const taskManagementArchived = useAppSelector(selectArchived);
   const enhancedKanbanArchived = useAppSelector(state => state.enhancedKanbanReducer.archived);
@@ -329,8 +407,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
   const isDataLoaded = useMemo(() => filterSectionsData.length > 0, [filterSectionsData]);
   const memoizedFilterSections = useMemo(() => filterSectionsData, [filterSectionsData]);
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
+  const isRestoringFilters = useAppSelector((state: RootState) => state.taskReducer.isRestoringFilters);
   const { projectId } = useAppSelector(state => state.projectReducer);
-  const projectPhaseLabel = useAppSelector(state => state.projectReducer.project?.phase_label);
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const isProjectManager = useIsProjectManager();
   const canConfigure = isOwnerOrAdmin || isProjectManager;
@@ -392,7 +470,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
             key: 'group-by-phase',
             label: (
               <div className="flex items-center justify-between w-full">
-                <span>{projectPhaseLabel || t('phaseText', { defaultValue: 'Phase' })}</span>
+                <span>{t('phaseText', { defaultValue: 'Phase' })}</span>
                 {currentGroupByValue === 'phase' && (
                   <CheckOutlined className="text-blue-500 ml-2" />
                 )}
@@ -416,13 +494,13 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         items.push({
           key: 'manage-phases',
           icon: <SettingOutlined />,
-          label: `${t('manage', { defaultValue: 'Manage' })} ${projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}`,
+          label: `${t('manage', { defaultValue: 'Manage' })} ${t('phasesText', { defaultValue: 'Phases' })}`,
         });
       }
     }
 
     return items;
-  }, [currentGroupByValue, projectPhaseLabel, t, canConfigure]);
+  }, [currentGroupByValue, t, canConfigure]);
 
   const themeClasses = useMemo(
     () => ({
@@ -456,6 +534,10 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     debouncedSearchChangeRef.current = createDebouncedFunction(
       (nextProjectId: string, value: string) => {
         dispatch(setTaskManagementSearch(value));
+        dispatch(setTasksSearch(value));
+        if (!isRestoringFilters) {
+          dispatch(persistFilters());
+        }
         dispatch(fetchTasksV3(nextProjectId));
       },
       SEARCH_DEBOUNCE_DELAY
@@ -479,7 +561,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       debouncedSearchChangeRef.current?.cancel();
       debouncedGroupBySaveRef.current?.cancel();
     };
-  }, [dispatch]);
+  }, [dispatch, isRestoringFilters]);
 
   const calculatedActiveFiltersCount = useMemo(() => {
     const count = filterSections.reduce(
@@ -515,6 +597,19 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         }
         if (sectionId === 'priority') {
           dispatch(setKanbanPriorities(values));
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+          return;
+        }
+        if (sectionId === 'status') {
+          const updatedStatuses = allStatuses
+            .filter((s: any) => values.includes(s.id))
+            .map((s: any) => ({ id: s.id, name: s.name, color_code: s.color_code }));
+          dispatch(setKanbanStatuses(updatedStatuses as any));
+          dispatch(fetchEnhancedKanbanGroups(projectId));
+          return;
+        }
+        if (sectionId === 'phase') {
+          dispatch(setKanbanPhases(values));
           dispatch(fetchEnhancedKanbanGroups(projectId));
           return;
         }
@@ -555,6 +650,28 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       }
       if (sectionId === 'priority') {
         dispatch(setPriorities(values));
+        if (!isRestoringFilters) {
+          dispatch(persistFilters());
+        }
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
+      if (sectionId === 'status') {
+        const updatedStatuses = allStatuses
+          .filter((s: any) => values.includes(s.id))
+          .map((s: any) => ({ id: s.id, name: s.name, color_code: s.color_code }));
+        dispatch(setStatuses(updatedStatuses as any));
+        if (!isRestoringFilters) {
+          dispatch(persistFilters());
+        }
+        dispatch(fetchTasksV3(projectId));
+        return;
+      }
+      if (sectionId === 'phase') {
+        dispatch(setPhases(values));
+        if (!isRestoringFilters) {
+          dispatch(persistFilters());
+        }
         dispatch(fetchTasksV3(projectId));
         return;
       }
@@ -564,6 +681,9 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           selected: values.includes(member.id || ''),
         }));
         dispatch(setMembers(updatedAssignees));
+        if (!isRestoringFilters) {
+          dispatch(persistFilters());
+        }
         dispatch(fetchTasksV3(projectId));
         return;
       }
@@ -573,10 +693,13 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
           selected: values.includes(label.id || ''),
         }));
         dispatch(setLabels(updatedLabels));
+        if (!isRestoringFilters) {
+          dispatch(persistFilters());
+        }
         dispatch(fetchTasksV3(projectId));
       }
     },
-    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState]
+    [dispatch, projectId, position, currentTaskAssignees, currentTaskLabels, kanbanState, allStatuses, isRestoringFilters]
   );
 
   const handleSearchChange = useCallback(
@@ -612,6 +735,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       );
 
       dispatch(setTaskManagementSearch(''));
+      dispatch(setTasksSearch(''));
       const clearedLabels = currentTaskLabels.map(label => ({
         ...label,
         selected: false,
@@ -624,6 +748,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       }));
       dispatch(setMembers(clearedAssignees));
       dispatch(setPriorities([]));
+      dispatch(setStatuses([]));
+      dispatch(setPhases([]));
       dispatch(setFields([]));
       dispatch(setSort({ field: '', order: 'ASC' }));
 
@@ -631,6 +757,15 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         dispatch(setTaskManagementArchived(false));
       } else {
         dispatch(setKanbanArchived(false));
+        // Clear board-specific filter state
+        dispatch(setKanbanStatuses([]));
+        dispatch(setKanbanPhases([]));
+        dispatch(setKanbanPriorities([]));
+      }
+
+      // Persist cleared filters only after restoration completes.
+      if (!isRestoringFilters) {
+        dispatch(persistFilters());
       }
 
       setTimeout(() => {
@@ -641,7 +776,7 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
       console.error('Error clearing filters:', error);
       setClearingFilters(false);
     }
-  }, [projectId, dispatch, currentTaskLabels, currentTaskAssignees, clearingFilters, position]);
+  }, [projectId, dispatch, currentTaskLabels, currentTaskAssignees, clearingFilters, position, isRestoringFilters]);
 
   const toggleArchived = useCallback(() => {
     if (position === 'board') {
@@ -653,10 +788,13 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     }
 
     dispatch(toggleTaskManagementArchived());
+    if (!isRestoringFilters) {
+      dispatch(persistFilters());
+    }
     if (projectId) {
       dispatch(fetchTasksV3(projectId));
     }
-  }, [dispatch, projectId, position, showArchived]);
+  }, [dispatch, projectId, position, showArchived, isRestoringFilters]);
 
   const handleOverflowMenuClick = (info: { key: string }) => {
     const { key } = info;
@@ -737,7 +875,6 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
                   isDarkMode={isDarkMode}
                   onManageStatus={() => setShowManageStatusModal(true)}
                   onManagePhase={() => setShowManagePhaseModal(true)}
-                  projectPhaseLabel={projectPhaseLabel}
                 />
               )
             )

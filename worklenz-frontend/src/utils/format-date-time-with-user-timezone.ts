@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
-import { enUS, es, pt } from 'date-fns/locale';
-import { getLanguageFromLocalStorage } from './language-utils';
+import { enUS, es, pt, de, zhCN, sq } from 'date-fns/locale';
+import i18n from '@/i18n';
 
 /**
  * Formats a date/time string using the user's profile timezone
@@ -33,21 +33,36 @@ export const formatDateTimeWithUserTimezone = (
         hour12: true,
       };
 
-      // Get the appropriate locale
-      const localeString = getLanguageFromLocalStorage();
-      const localeMap = {
+      const lng = (i18n.language || 'en').split('-')[0];
+      const localeMap: Record<string, string> = {
         en: 'en-US',
         es: 'es-ES',
         pt: 'pt-PT',
+        de: 'de-DE',
+        zh: 'zh-CN',
+        alb: 'sq-AL',
       };
-      const locale = localeMap[localeString as keyof typeof localeMap] || 'en-US';
+      const locale = localeMap[lng] || 'en-US';
 
       return date.toLocaleString(locale, options);
     }
 
     // Fallback to date-fns formatting for UTC or when no timezone
-    const localeString = getLanguageFromLocalStorage();
-    const locale = localeString === 'en' ? enUS : localeString === 'es' ? es : pt;
+    const lng = (i18n.language || 'en').split('-')[0];
+    const locale =
+      lng === 'en'
+        ? enUS
+        : lng === 'es'
+          ? es
+          : lng === 'pt'
+            ? pt
+            : lng === 'de'
+              ? de
+              : lng === 'zh'
+                ? zhCN
+                : lng === 'alb'
+                  ? sq
+                  : enUS;
     return format(date, 'MMM d, yyyy, h:mm:ss a', { locale });
   } catch (error) {
     console.error('Error formatting date with user timezone:', error);

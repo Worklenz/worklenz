@@ -22,5 +22,7 @@
   "seatRemainingText": "{{remaining}} assentos restantes.",
   "seatLimitPopoverCta": "Fazer upgrade agora",
   "addMoreSeats": "Adicionar mais assentos",
-  "closePopover": "Fechar popover"
+  "closePopover": "Fechar popover",
+  "invite": "Convidar",
+  "Invite": "Convidar"
 }

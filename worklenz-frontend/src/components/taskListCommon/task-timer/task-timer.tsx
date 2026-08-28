@@ -15,10 +15,11 @@ import { TimerEventProps } from '@/types/mixpanel-events.types';
 
 interface TaskTimerProps {
   started: boolean;
-  handleStartTimer: () => void;
-  handleStopTimer: () => void;
+  handleStartTimer?: () => void;
+  handleStopTimer?: () => void;
   timeString: string;
   taskId: string;
+  disabled?: boolean;
 }
 
 const TaskTimer = ({
@@ -27,6 +28,7 @@ const TaskTimer = ({
   handleStopTimer,
   timeString,
   taskId,
+  disabled = false,
 }: TaskTimerProps) => {
   const [timeLogs, setTimeLogs] = useState<ITaskLogViewModel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,7 @@ const TaskTimer = ({
       setLoading(true);
       const response = await taskTimeLogsApiService.getByTask(taskId);
       if (response.done) {
-        setTimeLogs(response.body || []);
+        setTimeLogs(response.body?.logs || []);
       }
     } catch (error) {
       logger.error('Error fetching task logs', error);
@@ -125,18 +127,25 @@ const TaskTimer = ({
   };
 
   return (
-    <Flex gap={4} align="center">
+    <Flex gap={4} align="center" style={{ pointerEvents: disabled ? 'none' : 'auto' }}>
       {started ? (
-        <Button type="text" icon={renderStopIcon()} onClick={handleStopTimer} />
+        <Button 
+          type="text" 
+          icon={renderStopIcon()} 
+          onClick={handleStopTimer}
+          disabled={disabled}
+        />
       ) : (
         <Button
           type="text"
           icon={<PlayCircleFilled style={{ color: colors.skyBlue, fontSize: 16 }} />}
           onClick={() => {
+            if (disabled || !handleStartTimer) return;
             const props: TimerEventProps = { task_id: taskId, project_id: '' };
             trackMixpanelEvent(evt_timer_started, props);
             handleStartTimer();
           }}
+          disabled={disabled}
         />
       )}
       <Popover
@@ -147,13 +156,13 @@ const TaskTimer = ({
           </Typography.Text>
         }
         content={timeTrackingLogCard}
-        trigger="click"
+        trigger={disabled ? [] : "click"}
         placement="bottomRight"
         onOpenChange={handleOpenChange}
         zIndex={1100}
         getPopupContainer={() => document.body}
       >
-        <Typography.Text style={{ cursor: 'pointer' }}>{timeString}</Typography.Text>
+        <Typography.Text style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}>{timeString}</Typography.Text>
       </Popover>
     </Flex>
   );

@@ -18,6 +18,7 @@ import {
   setConvertToSubtaskDrawerOpen,
   updateTaskStatus,
 } from '@/features/tasks/tasks.slice';
+import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { RightOutlined } from '@/shared/antd-imports';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { ITaskListConfigV2, tasksApiService } from '@/api/tasks/tasks.api.service';
@@ -127,7 +128,11 @@ const ConvertToSubtaskDrawer = () => {
       );
       if (res.done) {
         dispatch(deselectAll());
+        // Refresh the legacy tasks slice (still used by some views/reports)
         dispatch(fetchTaskGroups(projectId));
+        // Refresh the task-management slice — this is the one TaskListV2Section
+        // actually reads from, so without this the UI stays stale until refresh.
+        dispatch(fetchTasksV3(projectId));
         fetchTasks();
         dispatch(setConvertToSubtaskDrawerOpen(false));
       }

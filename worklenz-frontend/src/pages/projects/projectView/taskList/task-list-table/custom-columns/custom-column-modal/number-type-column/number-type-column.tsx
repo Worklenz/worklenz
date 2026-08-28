@@ -1,7 +1,7 @@
-import { Form, Select, Typography } from '@/shared/antd-imports';
+import { Flex, Form, Select } from '@/shared/antd-imports';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { themeWiseColor } from '@/utils/themeWiseColor';
 import FormattedTypeNumberColumn from './formatted-type-number-column';
 import UnformattedTypeNumberColumn from './unformatted-type-number-column';
 import PercentageTypeNumberColumn from './percentage-type-number-column';
@@ -13,9 +13,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 
 const NumberTypeColumn = () => {
-  //   get theme details from theme reducer
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
-
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
 
   // get initial data from task list custom column slice
@@ -24,29 +22,23 @@ const NumberTypeColumn = () => {
   );
 
   const numberTypesOptions = [
-    { key: 'unformatted', value: 'unformatted', label: 'Unformatted' },
-    { key: 'percentage', value: 'percentage', label: 'Percentage' },
-    { key: 'withLabel', value: 'withLabel', label: 'With Label' },
-    { key: 'formatted', value: 'formatted', label: 'Formatted' },
+    { key: 'unformatted', value: 'unformatted', label: t('customColumns.fieldTypeForms.numberTypeOptions.unformatted') },
+    { key: 'percentage', value: 'percentage', label: t('customColumns.fieldTypeForms.numberTypeOptions.percentage') },
+    { key: 'withLabel', value: 'withLabel', label: t('customColumns.fieldTypeForms.numberTypeOptions.withLabel') },
+    { key: 'formatted', value: 'formatted', label: t('customColumns.fieldTypeForms.numberTypeOptions.formatted') },
   ];
 
   return (
-    <div className={numberType === 'withLabel' ? 'grid grid-cols-5 gap-x-4' : 'flex gap-4'}>
+    <Flex gap={16} wrap="wrap">
       <Form.Item
         name="numberType"
-        label={<Typography.Text>Number Type</Typography.Text>}
-        className={numberType === 'withLabel' ? 'col-span-2' : ''}
+        label={t('customColumns.fieldTypeForms.numberType')}
+        style={{ width: 180, flexShrink: 0 }}
       >
         <Select
           options={numberTypesOptions}
           value={numberType}
           onChange={value => dispatch(setCustomFieldNumberType(value))}
-          style={{
-            minWidth: '100%',
-            width: 150,
-            border: `1px solid ${themeWiseColor('#d9d9d9', '#424242', themeMode)}`,
-            borderRadius: 4,
-          }}
         />
       </Form.Item>
 
@@ -54,7 +46,7 @@ const NumberTypeColumn = () => {
       {numberType === 'unformatted' && <UnformattedTypeNumberColumn />}
       {numberType === 'percentage' && <PercentageTypeNumberColumn />}
       {numberType === 'withLabel' && <WithLabelTypeNumberColumn />}
-    </div>
+    </Flex>
   );
 };
 

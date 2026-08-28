@@ -1,0 +1,35 @@
+.expense-row-action {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.finance-expenses-card .ant-table-row:hover .expense-row-action {
+  opacity: 1;
+}
+
+/* Matches the 12px muted-header convention used by the Home > Overview
+   Priority table (TasksList.tsx / tasks-list.css) so the two tables read
+   as one system. */
+.finance-expenses-card .ant-table {
+  font-size: 12px;
+}
+
+.finance-expenses-card .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ant-color-text-secondary);
+}
+
+.finance-expenses-card .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+}
+
+.finance-expenses-card .ant-table-tbody .ant-typography {
+  font-size: 12px !important;
+}
+
+@media (max-width: 576px) {
+  .expense-row-action {
+    opacity: 1;
+  }
+}

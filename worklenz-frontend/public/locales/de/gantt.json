@@ -5,6 +5,9 @@
     "clickNavigateTimeline": "Klicken Sie, um zur Aufgabe in der Zeitleiste zu navigieren",
     "clickTimelineSetDates": "Klicken Sie auf die Zeitleiste, um Daten für diese Aufgabe festzulegen",
     "clickTimelineAddDates": "Zeitleiste klicken, um Daten hinzuzufügen",
+    "setTaskDate": "Aufgabendaten festlegen",
+    "setTaskDateHint": "Klicken Sie auf die Zeitleiste, um einen {{duration}}-Tage-Zeitraum für diese Aufgabe festzulegen",
+    "addTask": "Aufgabe hinzufügen",
     "resizeStartDate": "Startdatum ändern",
     "resizeEndDate": "Enddatum ändern",
     "dragToMove": "Ziehen, um Aufgabe zu verschieben",
@@ -14,11 +17,53 @@
     "phaseTitle": "Phase: {{name}} - {{startDate}} bis {{endDate}}",
     "taskTitle": "{{name}} - {{startDate}} bis {{endDate}}",
     "datesUpdatedSuccessfully": "Aufgabendaten erfolgreich aktualisiert",
-    "failedToUpdateDates": "Aktualisierung der Aufgabendaten fehlgeschlagen"
+    "failedToUpdateDates": "Aktualisierung der Aufgabendaten fehlgeschlagen",
+    "addSubtask": "Unteraufgabe hinzufügen",
+    "addTaskInputPlaceholder": "Aufgabennamen eingeben und Enter zum Speichern drücken",
+    "writeTaskName": "Aufgabennamen eingeben",
+    "writeSubtaskName": "Unteraufgabennamen eingeben",
+    "expandSubtasks": "Unteraufgaben erweitern",
+    "collapseSubtasks": "Unteraufgaben reduzieren",
+    "finishToStartDependency": "Ende-Anfang-Abhängigkeit",
+    "startToFinishDependency": "Anfang-Ende-Abhängigkeit",
+    "dependencyType": "Abhängigkeitstyp",
+    "removeDependency": "Entfernen",
+    "circularDependencyError": "Dies würde eine zirkuläre Abhängigkeit erzeugen.",
+    "dependencyCreatedSuccessfully": "Abhängigkeit erfolgreich erstellt.",
+    "dependencyRemovedSuccessfully": "Abhängigkeit erfolgreich entfernt.",
+    "failedToCreateDependency": "Fehler beim Erstellen der Abhängigkeit.",
+    "failedToRemoveDependency": "Fehler beim Entfernen der Abhängigkeit.",
+    "taskAddedToRoadmap": "Aufgabe wurde für die nächsten 5 Tage zur Roadmap hinzugefügt.",
+    "failedToAddTaskToRoadmap": "Fehler beim Hinzufügen der Aufgabe zur Roadmap.",
+    "unscheduledTaskNotFound": "Ausgewählte Aufgabe konnte nicht gefunden werden."
   },
   "common": {
     "noStart": "Kein Start",
     "noEnd": "Kein Ende"
+  },
+  "sections": {
+    "unmapped": "Nicht zugeordnet"
+  },
+  "grouping": {
+    "phase": "Phase",
+    "status": "Status",
+    "priority": "Priorität"
+  },
+  "toolbar": {
+    "zoomIn": "Vergrößern",
+    "zoomOut": "Verkleinern",
+    "expandAll": "Alle erweitern",
+    "collapseAll": "Alle reduzieren",
+    "today": "Heute",
+    "fullscreen": "Vollbild",
+    "noDate": "Kein Datum"
+  },
+  "viewMode": {
+    "day": "Tag",
+    "week": "Woche",
+    "month": "Monat",
+    "quarter": "Quartal",
+    "year": "Jahr"
   },
   "businessPlan": {
     "phaseCreationRestricted": "Phasenerstellung ist nur für Business-Plan-Nutzer verfügbar",
@@ -26,5 +71,18 @@
     "phaseEditingRestricted": "Phasenbearbeitung ist nur für Business-Plan-Nutzer verfügbar",
     "taskEditingRestricted": "Aufgabenbearbeitung ist nur für Business-Plan-Nutzer verfügbar",
     "phaseReorderingRestricted": "Phasenumordnung ist nur für Business-Plan-Nutzer verfügbar"
-  }
+  },
+  "list": {
+    "taskNameColumn": "Aufgabenname",
+    "addNewPhase": "Neue Phase hinzufügen",
+    "addNewStatus": "Neuen Status hinzufügen",
+    "noTasksAvailable": "Keine Aufgaben verfügbar"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Phasen & Aufgaben",
+    "tasksCount": "Aufgaben",
+    "complete": "abgeschlossen"
+  },
+  "unscheduledTasksTitle": "Ungeplante Aufgaben",
+  "noUnscheduledTasks": "Keine ungeplanten Aufgaben verfügbar."
 }

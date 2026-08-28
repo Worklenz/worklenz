@@ -13,7 +13,6 @@
   "createError": "No se pudo crear la rate card",
   "deleteSuccess": "Rate card eliminada con éxito",
   "deleteError": "No se pudo eliminar la rate card",
-
   "jobTitleColumn": "Título del trabajo",
   "ratePerHourColumn": "Tarifa por hora",
   "ratePerDayColumn": "Tarifa por día",
@@ -51,5 +50,6 @@
   "cancelButton": "Cancelar",
   "discardButton": "Descartar",
   "manDaysCalculationMessage": "La organización utiliza cálculo por días-hombre ({{hours}}h/día). Las tarifas anteriores representan tarifas diarias.",
-  "hourlyCalculationMessage": "La organización utiliza cálculo por horas. Las tarifas anteriores representan tarifas por hora."
+  "hourlyCalculationMessage": "La organización utiliza cálculo por horas. Las tarifas anteriores representan tarifas por hora.",
+  "createSuccess": "Tarjeta de tarifa creada con éxito"
 }

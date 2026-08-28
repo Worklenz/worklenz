@@ -14,6 +14,7 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   toggleInviteMemberDrawer,
   triggerTeamMembersRefresh,
+  setInviteMemberPrefillEmail,
 } from '../../../features/settings/member/memberSlice';
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
@@ -27,7 +28,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { RolePermissionsPopover } from '@/components/settings/role-permissions-popover';
 import { SeatLimitModal } from '@/components/common/seat-limit-modal';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useNavigate } from 'react-router-dom';
 
 interface FormValues {
@@ -61,8 +62,8 @@ const InviteTeamMembers = () => {
 
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.memberReducer.isInviteMemberDrawerOpen);
+  const prefillEmail = useAppSelector(state => state.memberReducer.inviteMemberPrefillEmail);
   const dispatch = useAppDispatch();
-  const { promptUpgrade } = useUpgradePrompt();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -96,6 +97,17 @@ const InviteTeamMembers = () => {
       checkExistingInvitationLink();
     }
   }, [isDrawerOpen, activeTab]);
+
+  // prefillEmail is deliberately excluded from the deps below — callers always dispatch
+  // setInviteMemberPrefillEmail before toggling isDrawerOpen, so it's already current by
+  // the time this fires; it's meant to be captured once when the drawer opens, not kept
+  // in sync afterward.
+  useEffect(() => {
+    if (isDrawerOpen && prefillEmail) {
+      form.setFieldsValue({ emails: [prefillEmail] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDrawerOpen]);
 
   // Check if link is expired based on expires_at date
   const isLinkExpired = (expiresAt: string): boolean => {
@@ -189,18 +201,14 @@ const InviteTeamMembers = () => {
 
         setLinkCopied(true);
         message.success(
-          t('Invitation link copied to clipboard', {
-            defaultValue: 'Invitation link copied to clipboard',
-          })
+          t('inviteLinkCopied', { defaultValue: 'Invitation link copied to clipboard' })
         );
         
         setTimeout(() => setLinkCopied(false), 2000);
       }
     } catch (error) {
       message.error(
-        t('Failed to generate invitation link', {
-          defaultValue: 'Failed to generate invitation link',
-        })
+        t('inviteLinkGenerateError', { defaultValue: 'Failed to generate invitation link' })
       );
     } finally {
       setLinkLoading(false);
@@ -220,17 +228,13 @@ const InviteTeamMembers = () => {
         setHasActiveLink(false);
         setInvitationLink('');
         setLinkExpiry('');
-        message.success(
-          t('Invitation link deactivated', {
-            defaultValue: 'Invitation link deactivated',
-          })
-        );
+          message.success(
+            t('inviteLinkDeactivated', { defaultValue: 'Invitation link deactivated' })
+          );
       }
     } catch (error) {
       message.error(
-        t('Failed to deactivate link', {
-          defaultValue: 'Failed to deactivate link',
-        })
+        t('inviteLinkDeactivateError', { defaultValue: 'Failed to deactivate link' })
       );
     } finally {
       setLinkLoading(false);
@@ -280,10 +284,11 @@ const InviteTeamMembers = () => {
         form.resetFields();
         setSelectedJobTitle(null);
         dispatch(triggerTeamMembersRefresh()); // Trigger refresh in TeamMembersSettings
+        dispatch(setInviteMemberPrefillEmail(''));
         dispatch(toggleInviteMemberDrawer());
       }
     } catch (error) {
-      message.error(t('createMemberErrorMessage'));
+      message.error(t('createMemberErrorMessage', { defaultValue: 'Failed to create team member' }));
     } finally {
       setLoading(false);
     }
@@ -294,12 +299,13 @@ const InviteTeamMembers = () => {
     setSelectedJobTitle(null);
     setActiveTab('email');
     setLinkCopied(false);
+    dispatch(setInviteMemberPrefillEmail(''));
     dispatch(toggleInviteMemberDrawer());
   };
 
   const handleSeatLimitUpgrade = () => {
     setSeatLimitModalOpen(false);
-    promptUpgrade();
+    dispatch(toggleUpgradeModal());
   };
 
   const handleSeatLimitDeactivate = () => {
@@ -332,21 +338,19 @@ const InviteTeamMembers = () => {
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       if (diffDays > 0) {
-        return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+        return t('linkExpiryDaysCount', { count: diffDays, defaultValue: '{{count}} day(s)' });
       } else {
-        return 'Expired';
+        return t('expired', { defaultValue: 'Expired' });
       }
     } catch {
-      return 'Unknown';
+      return t('unknown', { defaultValue: 'Unknown' });
     }
   };
 
   const tabItems = [
     {
       key: 'email',
-      label: t('Invite with Email', {
-        defaultValue: 'Invite with Email',
-      }),
+      label: t('inviteWithEmailTab', { defaultValue: 'Invite with Email' }),
       children: (
         <Form
           form={form}
@@ -361,7 +365,7 @@ const InviteTeamMembers = () => {
           )}
           <Form.Item
             name="emails"
-            label={t('memberEmailLabel')}
+             label={t('memberEmailLabel', { defaultValue: 'Email Address' })}
             rules={[
               {
                 validator: (_, value) => {
@@ -371,12 +375,12 @@ const InviteTeamMembers = () => {
                       ? [value]
                       : [];
                   if (!normalizedEmails.length) {
-                    return Promise.reject(t('memberEmailRequiredError'));
+                    return Promise.reject(t('memberEmailRequiredError', { defaultValue: 'Please enter at least one valid email address' }));
                   }
                   const hasInvalidEmail = normalizedEmails.some(
                     (email: string) => !EMAIL_REGEX.test(String(email).trim())
                   );
-                  if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError'));
+                    if (hasInvalidEmail) return Promise.reject(t('memberEmailRequiredError', { defaultValue: 'Please enter at least one valid email address' }));
                   return Promise.resolve();
                 },
               },
@@ -386,16 +390,16 @@ const InviteTeamMembers = () => {
               <Select
                 mode="tags"
                 style={{ width: '100%' }}
-                placeholder={t('memberEmailPlaceholder')}
+                placeholder={t('memberEmailPlaceholder', { defaultValue: 'Enter email addresses' })}
                 onChange={handleEmailChange}
                 disabled={isInviteRestricted}
                 notFoundContent={
-                  <Typography.Text type="secondary">{t('noResultFound')}</Typography.Text>
+                  <Typography.Text type="secondary">{t('noResultFound', { defaultValue: 'No results found' })}</Typography.Text>
                 }
                 tokenSeparators={[',', ' ', ';']}
               />
               <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                {t('addMemberEmailHint')}
+                {t('addMemberEmailHint', { defaultValue: 'Enter email addresses separated by commas or spaces' })}
               </Typography.Text>
             </Flex>
           </Form.Item>
@@ -432,31 +436,23 @@ const InviteTeamMembers = () => {
     },
     {
       key: 'link',
-      label: t('Invite with Link', {
-        defaultValue: 'Invite with Link',
-      }),
+      label: t('inviteWithLinkTab', { defaultValue: 'Invite with Link' }),
       children: (
         <Flex vertical gap={16}>
           {isInviteRestricted && (
             <Typography.Text type="danger">{inviteRestrictedMessage}</Typography.Text>
           )}
           <div>
-            <Typography.Text strong>
-              {t('Your Invite Link', {
-                defaultValue: 'Your Invite Link',
-              })}
-            </Typography.Text>
+              <Typography.Text strong>
+                {t('yourInviteLink', { defaultValue: 'Your Invite Link' })}
+              </Typography.Text>
             <Input
               value={invitationLink}
               disabled
               placeholder={
                 hasActiveLink && isLinkExpired(linkExpiry)
-                  ? t('Link expired - click Copy Link to generate new', {
-                      defaultValue: 'Link expired - click Copy Link to generate new',
-                    })
-                  : t('No active invitation link', {
-                      defaultValue: 'No active invitation link',
-                    })
+                  ? t('linkExpiredPlaceholder', { defaultValue: 'Link expired' })
+                  : t('noActiveInviteLink', { defaultValue: 'No active invite link' })
               }
               style={{ marginTop: 8 }}
               suffix={
@@ -477,7 +473,7 @@ const InviteTeamMembers = () => {
                 type="secondary"
                 style={{ fontSize: 12, marginTop: 4, display: 'block' }}
               >
-                {t('This link will automatically expire in')} {formatExpiryDate(linkExpiry)}.
+                 {t('linkExpiryText', { defaultValue: 'This link will automatically expire in {{days}}.', days: formatExpiryDate(linkExpiry) })}
               </Typography.Text>
             )}
           </div>
@@ -491,16 +487,10 @@ const InviteTeamMembers = () => {
               disabled={isInviteRestricted}
             >
               {linkCopied
-                ? t('Copied!', {
-                    defaultValue: 'Copied!',
-                  })
+                ? t('copied', { defaultValue: 'Copied' })
                 : hasActiveLink && !isLinkExpired(linkExpiry)
-                  ? t('Copy Link', {
-                      defaultValue: 'Copy Link',
-                    })
-                  : t('Generate & Copy Link', {
-                      defaultValue: 'Copy Link',
-                    })}
+                  ? t('copyLink', { defaultValue: 'Copy Link' })
+                  : t('generateAndCopyLink', { defaultValue: 'Generate and Copy Link' })}
             </Button>
             {isAdmin && hasActiveLink && (
               <Button
@@ -509,9 +499,7 @@ const InviteTeamMembers = () => {
                 disabled={isInviteRestricted}
                 danger
               >
-                {t('Deactivate Link', {
-                  defaultValue: 'Deactivate Link',
-                })}
+                  {t('deactivateLink', { defaultValue: 'Deactivate Link' })}
               </Button>
             )}
           </Flex>

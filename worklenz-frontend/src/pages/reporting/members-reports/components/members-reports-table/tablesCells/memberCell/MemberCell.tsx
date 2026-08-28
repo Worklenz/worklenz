@@ -1,4 +1,4 @@
-import { Avatar, Flex, Typography } from '@/shared/antd-imports';
+import { Avatar, Flex, Typography, Tooltip } from '@/shared/antd-imports';
 import CustomAvatar from '@components/CustomAvatar';
 
 type ProjectMangerCellProps = {
@@ -10,11 +10,15 @@ const MemberCell = ({ member }: ProjectMangerCellProps) => {
     <div>
       {member ? (
         <Flex gap={8} align="center">
-          {member?.avatar_url ? (
-            <Avatar src={member.avatar_url} />
-          ) : (
-            <CustomAvatar avatarName={member.name} />
-          )}
+          <Tooltip title={member.name} getPopupContainer={() => document.body}>
+            <span style={{ display: 'inline-flex' }}>
+              {member?.avatar_url ? (
+                <Avatar src={member.avatar_url} />
+              ) : (
+                <CustomAvatar avatarName={member.name} />
+              )}
+            </span>
+          </Tooltip>
 
           <Typography.Text className="group-hover:text-[#1890ff]">{member.name}</Typography.Text>
         </Flex>

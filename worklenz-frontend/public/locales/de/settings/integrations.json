@@ -1,4 +1,6 @@
 {
+  "connect": "Verbinden",
+  "comingSoon": "Demnächst verfügbar",
   "availableSoon": "Demnächst verfügbar",
   "slack": {
     "title": "Slack",
@@ -19,5 +21,7 @@
   "googleCalendar": {
     "title": "Google Kalender",
     "description": "Synchronisieren Sie Ihre Aufgaben und Fristen mit Google Kalender, um Ihren Zeitplan zu verwalten, Erinnerungen einzustellen und wichtige Projektmeilensteine nicht zu verpassen."
-  }
+  },
+  "connect": "Verbinden",
+  "comingSoon": "Demnächst"
 }

@@ -16,6 +16,7 @@ const getInitialState = () => {
     savedState || {
       name: true,
       projectHealth: true,
+      priority: true,
       category: true,
       projectUpdate: true,
       client: true,

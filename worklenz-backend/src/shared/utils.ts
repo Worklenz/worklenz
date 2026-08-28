@@ -5,7 +5,7 @@ import sanitizeHtml from "sanitize-html";
 
 import { customAlphabet } from "nanoid";
 import { AvatarNamesMap, NumbersColorMap, WorklenzColorCodes } from "./constants";
-import { send_to_slack } from "./slack";
+import { send_to_slack } from "../ee/shared/slack";
 import { IActivityLogChangeType } from "../services/activity-logs/interfaces";
 import { IRecurringSchedule } from "../interfaces/recurring-tasks";
 
@@ -168,35 +168,71 @@ export function sanitize(value: string) {
   return sanitizeHtml(escapedString);
 }
 
+// Quill 2 emits both bullet and ordered lists as <ol>, distinguished only by
+// li[data-list="bullet|ordered"] (see description-editor.tsx's SANITIZE_CONFIG,
+// which allows the same attribute client-side). sanitize-html's default
+// allowedAttributes has no entry for `li`, so passing the default config here
+// would silently turn every bullet list into a numbered one on the next reload.
+//
+// Deliberately NOT allowing `style`: the configured Quill toolbar (header,
+// bold/italic/underline/strike, list, link, clean) has no control that emits
+// inline styles — alignment uses ql-align-* classes, already covered by
+// `class` — so there is nothing legitimate to preserve, only an open door for
+// a pasted or hand-crafted `style="position:fixed;..."` to overlay every
+// viewer's screen when the task is opened.
+const RICH_TEXT_SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
+  allowedAttributes: {
+    ...sanitizeHtml.defaults.allowedAttributes,
+    a: [...sanitizeHtml.defaults.allowedAttributes.a, "rel"],
+    "*": ["class", "data-list"],
+  },
+};
+
+/** Sanitizes a Quill-authored task/description HTML body while preserving the
+ * markup the editor actually relies on (list type, alignment/color classes). */
+export function sanitizeRichTextDescription(value: string | null): string {
+  if (!value) return "";
+  return sanitizeHtml(value, RICH_TEXT_SANITIZE_OPTIONS);
+}
+
+/**
+ * Escapes HTML special characters using the exact entity mapping applied by
+ * sanitizePlainText() (i.e. sanitize-html's text-node escaping: &, <, > only —
+ * it does not escape quotes/apostrophes in plain text). Kept separate so any
+ * code that needs to match against already-sanitized text (e.g. building a
+ * search pattern) encodes characters identically to how they were encoded at
+ * save time.
+ *
+ * @param value - Raw text to escape
+ * @returns Text with HTML special characters replaced by their entities
+ */
+export function escapeHtmlEntities(value: string): string {
+  if (!value) return "";
+
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 /**
  * Sanitizes plain text fields (like user names) to prevent XSS attacks
  * Strips all HTML tags while preserving the text content, then escapes special characters
  * Use this for fields that should never contain HTML markup
- * 
+ *
  * @param value - The plain text to sanitize
  * @returns Sanitized plain text with HTML removed and entities escaped
  */
 export function sanitizePlainText(value: string): string {
   if (!value) return "";
 
-  // First strip all HTML tags using sanitize-html
-  // This converts "<script>alert(1)</script>Hello" to "alert(1)Hello"
-  // and "><img src=x onerror=alert()>" to ""
-  const stripped = sanitizeHtml(value, {
+  // sanitize-html strips all tags and already HTML-escapes the remaining
+  // text when serializing it, so no separate escaping pass is needed here
+  // (calling escapeHtmlEntities afterwards would double-encode entities).
+  return sanitizeHtml(value, {
     allowedTags: [],        // No HTML tags allowed
     allowedAttributes: {},  // No attributes allowed
-  });
-
-  // Then escape HTML special characters for extra safety
-  // This prevents any remaining special chars from being interpreted as HTML
-  // Note: We trim after escaping to preserve intentional spaces
-  return stripped
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;")
-    .trim();
+  }).trim();
 }
 
 /**

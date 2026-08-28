@@ -507,6 +507,10 @@ export default abstract class ReportingControllerBase extends WorklenzController
                            ps.color_code AS status_color,
                            ps.icon AS status_icon,
 
+                           p.priority_id,
+                           (SELECT name FROM sys_project_priorities WHERE id = p.priority_id) AS priority_name,
+                           (SELECT color_code FROM sys_project_priorities WHERE id = p.priority_id) AS priority_color,
+
                            TO_CHAR(p.start_date::DATE, 'YYYY-MM-DD') AS start_date,
                            TO_CHAR(p.end_date::DATE, 'YYYY-MM-DD') AS end_date,
 

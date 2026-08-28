@@ -6,6 +6,7 @@ import verifyProjectAccess from "../../middlewares/verify-project-access";
 import projectFilesValidator, {
   MAX_PROJECT_FILE_SIZE_BYTES,
 } from "../../middlewares/validators/project-files-validator";
+import { presignRateLimiter } from "../../middlewares/project-files-presign-rate-limiter";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { ServerResponse } from "../../models/server-response";
 
@@ -60,12 +61,28 @@ projectFilesApiRouter.get(
   safeControllerFunction(ProjectFilesController.storage),
 );
 
+// Legacy synchronous upload (kept for backward compatibility with small files)
 projectFilesApiRouter.post(
   "/",
   verifyProjectAccess("params", "projectId"),
   handleUpload,
   projectFilesValidator,
   safeControllerFunction(ProjectFilesController.upload),
+);
+
+// Async presigned-URL upload — Step 1: get a presigned PUT URL
+projectFilesApiRouter.post(
+  "/presign",
+  presignRateLimiter,
+  verifyProjectAccess("params", "projectId"),
+  safeControllerFunction(ProjectFilesController.presign),
+);
+
+// Async presigned-URL upload — Step 2: confirm the upload completed
+projectFilesApiRouter.post(
+  "/confirm",
+  verifyProjectAccess("params", "projectId"),
+  safeControllerFunction(ProjectFilesController.confirm),
 );
 
 projectFilesApiRouter.get(
