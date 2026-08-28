@@ -21,5 +21,14 @@
   "selectColor": "Selecionar cor",
   "managePhases": "Gerenciar Fases",
   "close": "Fechar",
-  "apply": "Aplicar"
+  "apply": "Aplicar",
+  "selectDefaultAssignee": "Responsável padrão",
+  "phaseAssigneesInfo": "Responsáveis por Fase está habilitado. Defina um responsável padrão para cada fase abaixo — eles serão atribuídos automaticamente quando uma tarefa entrar nessa fase.",
+  "phasesText": "Fases",
+  "phaseText": "Fase",
+  "searchMembers": "Pesquisar membros...",
+  "noMembersFound": "Nenhum membro encontrado",
+  "continue": "Continuar",
+  "pendingMemberLabel": "(Pendente)",
+  "inviteMember": "Convidar membro"
 }

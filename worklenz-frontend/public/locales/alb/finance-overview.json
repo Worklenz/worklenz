@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Pasqyra Financiare",
+  "pageSubTitle": "Buxheti, kostoja reale dhe varianca e grumbulluar në të gjitha projektet. Klikoni në një projekt për të parë skedën e plotë financiare.",
+  "noBudgetSet": "Nuk është vendosur buxhet",
+  "emptyValue": "—",
+  "viewFinanceButton": "Shiko financat",
+  "viewButton": "Shiko",
+  "exportButton": "Eksporto si Excel",
+  "exportSuccess": "Eksportuar me sukses.",
+  "exportFailed": "Eksportimi dështoi.",
+  "kpiCard": {
+    "totalManualBudget": "Buxheti Manual Total",
+    "totalActualCost": "Kostoja Reale Totale",
+    "totalVariance": "Varianca Totale",
+    "budgetUtilization": "Përdorimi i Buxhetit",
+    "estimatedHours": "Orët e Vlerësuara",
+    "mixedCurrencyWarning": "Projektet përdorin monedha të ndryshme. Ky total nuk është konvertuar në monedhë.",
+    "mixedCurrencyNote": "Duke shfaqur {{dominant}} për {{count}} nga {{total}} projekte. Përfshin gjithashtu: {{others}}.",
+    "prevCurrency": "Monedha e mëparshme",
+    "nextCurrency": "Monedha tjetër"
+  },
+  "attention": {
+    "title": "Projektet që Kërkojnë Vëmendje",
+    "emptyState": "Të gjitha projektet janë brenda buxhetit.",
+    "overBudget": "Mbi buxhet",
+    "watch": "Vëzhgo",
+    "ofBudgetSpent": "e buxhetit i shpenzuar"
+  },
+  "distribution": {
+    "title": "Shpërndarja e Statusit të Buxhetit",
+    "onTrack": "Në rrugë të mbarë (≤65% i shpenzuar)",
+    "watch": "Vëzhgo (65–100% i shpenzuar)",
+    "overBudget": "Mbi buxhet (>100% i shpenzuar)",
+    "projects": "projekte",
+    "total": "Gjithsej",
+    "breakdown": "Zbërthimi i kostos: {{fixed}} fikse · {{timeBased}} bazuar në kohë"
+  },
+  "tableCard": {
+    "title": "Shëndeti Financiar i Projektit"
+  },
+  "currencyNote": {
+    "convertedPrefix": "Totalet e KPI te konvertuara ne",
+    "convertedSuffix": "duke perdorur kurset e kembimit ne kohe reale. Kurset e perditesuar {{time}}.",
+    "changeCurrency": "Ndrysho monedhën",
+    "unavailable": "Kurset e kembimit nuk jane te disponueshme - totalet e KPI nuk mund te konvertohen.",
+    "checkSettings": "Kontrollo cilesimet e monedhes",
+    "fetchUnavailable": "Sherbimi i kurseve te kembimit nuk eshte i disponueshem.",
+    "fetchFailed": "Deshtoi marrja e kurseve te kembimit."
+  },
+  "table": {
+    "project": "Projekti",
+    "client": "Klienti",
+    "manualBudget": "Buxheti Manual",
+    "actualCost": "Kostoja Reale",
+    "variance": "Varianca",
+    "budgetUtilization": "Përdorimi i Buxhetit",
+    "estHours": "Orë të vlerës.",
+    "searchPlaceholder": "Kërko projekte"
+  }
+}

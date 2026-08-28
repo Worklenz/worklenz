@@ -16,9 +16,10 @@ import { useAuthService } from '@/hooks/useAuth';
 type TimeLogItemProps = {
   log: ITaskLogViewModel;
   onDelete?: () => void;
+  isGuest?: boolean;
 };
 
-const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
+const TimeLogItem = ({ log, onDelete, isGuest = false }: TimeLogItemProps) => {
   const {
     user_name,
     avatar_url,
@@ -64,7 +65,7 @@ const TimeLogItem = ({ log, onDelete }: TimeLogItemProps) => {
   };
 
   const renderActionButtons = () => {
-    if (!canDelete) return null;
+    if (!canDelete || isGuest) return null;
 
     return (
       <Space size={8}>

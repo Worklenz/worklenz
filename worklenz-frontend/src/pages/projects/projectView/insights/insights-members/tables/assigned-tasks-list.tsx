@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Flex, Tooltip, Typography } from '@/shared/antd-imports';
 
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
@@ -7,22 +7,13 @@ import { IInsightTasks } from '@/types/project/projectInsights.types';
 import { colors } from '@/styles/colors';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { useTranslation } from 'react-i18next';
 
 interface AssignedTasksListTableProps {
   memberId: string;
   projectId: string;
   archived: boolean;
 }
-
-const columnsList = [
-  { key: 'name', columnHeader: 'Name', width: 280 },
-  { key: 'status', columnHeader: 'Status', width: 100 },
-  { key: 'dueDate', columnHeader: 'Due Date', width: 150 },
-  { key: 'overdue', columnHeader: 'Days Overdue', width: 150 },
-  { key: 'completedDate', columnHeader: 'Completed Date', width: 150 },
-  { key: 'totalAllocation', columnHeader: 'Total Allocation', width: 150 },
-  { key: 'overLoggedTime', columnHeader: 'Over Logged Time', width: 150 },
-];
 
 const AssignedTasksListTable: React.FC<AssignedTasksListTableProps> = ({
   memberId,
@@ -31,8 +22,22 @@ const AssignedTasksListTable: React.FC<AssignedTasksListTableProps> = ({
 }) => {
   const [memberTasks, setMemberTasks] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation('project-view-insights');
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+
+  const columnsList = useMemo(
+    () => [
+      { key: 'name', columnHeader: t('common.name', { defaultValue: 'Name' }), width: 280 },
+      { key: 'status', columnHeader: t('common.status', { defaultValue: 'Status' }), width: 100 },
+      { key: 'dueDate', columnHeader: t('common.dueDate', { defaultValue: 'Due Date' }), width: 150 },
+      { key: 'overdue', columnHeader: t('tasksTable.daysOverdue', { defaultValue: 'Days Overdue' }), width: 150 },
+      { key: 'completedDate', columnHeader: t('tasksTable.completedAt', { defaultValue: 'Completed Date' }), width: 150 },
+      { key: 'totalAllocation', columnHeader: t('tasksTable.totalAllocation', { defaultValue: 'Total Allocation' }), width: 150 },
+      { key: 'overLoggedTime', columnHeader: t('tasksTable.overLoggedTime', { defaultValue: 'Over Logged Time' }), width: 150 },
+    ],
+    [t]
+  );
 
   useEffect(() => {
     const getTasksByMemberId = async () => {
@@ -89,15 +94,15 @@ const AssignedTasksListTable: React.FC<AssignedTasksListTableProps> = ({
           </Flex>
         );
       case 'dueDate':
-        return task.end_date ? simpleDateFormat(task.end_date) : 'N/A';
+        return task.end_date ? simpleDateFormat(task.end_date) : t('common.na', { defaultValue: 'N/A' });
       case 'overdue':
-        return task.days_overdue ?? 'N/A';
+        return task.days_overdue ?? t('common.na', { defaultValue: 'N/A' });
       case 'completedDate':
-        return task.completed_at ? simpleDateFormat(task.completed_at) : 'N/A';
+        return task.completed_at ? simpleDateFormat(task.completed_at) : t('common.na', { defaultValue: 'N/A' });
       case 'totalAllocation':
-        return task.total_minutes ?? 'N/A';
+        return task.total_minutes ?? t('common.na', { defaultValue: 'N/A' });
       case 'overLoggedTime':
-        return task.overlogged_time ?? 'N/A';
+        return task.overlogged_time ?? t('common.na', { defaultValue: 'N/A' });
       default:
         return null;
     }

@@ -1,8 +1,10 @@
 import { Server, Socket } from "socket.io";
-import { log_error } from "../util";
+import { getLoggedInUserIdFromSocket, log_error } from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { body } from "express-validator";
+import { isRestrictedFromProPlanFeatures } from "../../ee/middlewares/subscription-middleware";
+import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
 
 export async function on_task_billable_change(_io: Server, socket: Socket, data?: {task_id?: string, billable?: boolean}) {
     if (typeof data == "string") {
@@ -11,6 +13,11 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
     if (!data?.task_id || (typeof data.billable != "boolean")) return;
     
     try {
+        // Enforce restrict_task_creation: restricted users cannot modify tasks.
+        if (await isTaskCreationRestrictedForTask(getLoggedInUserIdFromSocket(socket), data.task_id)) {
+            return;
+        }
+
         // Get team_id from the task's project
         const taskQuery = `SELECT p.team_id FROM tasks t INNER JOIN projects p ON t.project_id = p.id WHERE t.id = $1`;
         const taskResult = await db.query(taskQuery, [data.task_id]);

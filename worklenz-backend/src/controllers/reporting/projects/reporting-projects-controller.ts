@@ -10,6 +10,8 @@ import { getColor, int, formatDuration, formatLogText } from "../../../shared/ut
 import { SqlHelper } from "../../../shared/sql-helpers";
 import db from "../../../config/db";
 
+const GROUPED_REPORT_STATEMENT_TIMEOUT_MS = 25_000;
+
 export default class ReportingProjectsController extends ReportingProjectsBase {
 
   @HandleExceptions()
@@ -45,10 +47,22 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     let categoriesClause = "";
     if (req.query.categories) {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
-      categoriesClause = `AND p.category_id IN (${clause})`;
-      filterParams.push(...categoryIds);
-      paramOffset += categoryIds.length;
+      const realIds = categoryIds.filter(id => id !== "__no_category__");
+      const includeNoCategory = categoryIds.includes("__no_category__");
+      
+      if (includeNoCategory && realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        categoriesClause = `AND (p.category_id IS NULL OR p.category_id IN (${clause}))`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      } else if (includeNoCategory) {
+        categoriesClause = `AND p.category_id IS NULL`;
+      } else if (realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        categoriesClause = `AND p.category_id IN (${clause})`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      }
     }
 
     let projectManagersClause = "";
@@ -69,6 +83,48 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       paramOffset += teamIds.length;
     }
 
+    // Client filter (new)
+    let clientsClause = "";
+    if (req.query.clients) {
+      const clientIds = (req.query.clients as string).split(",").filter(id => id.trim());
+      const realIds = clientIds.filter(id => id !== "__no_client__");
+      const includeNoClient = clientIds.includes("__no_client__");
+      if (includeNoClient && realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        clientsClause = `AND (p.client_id IS NULL OR p.client_id IN (${clause}))`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      } else if (includeNoClient) {
+        clientsClause = `AND p.client_id IS NULL`;
+      } else if (realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        clientsClause = `AND p.client_id IN (${clause})`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      }
+    }
+
+    // Priority filter (new)
+    let prioritiesClause = "";
+    if (req.query.priorities) {
+      const priorityIds = (req.query.priorities as string).split(",").filter(id => id.trim());
+      const realIds = priorityIds.filter(id => id !== "__no_priority__");
+      const includeNoPriority = priorityIds.includes("__no_priority__");
+      if (includeNoPriority && realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        prioritiesClause = `AND (p.priority_id IS NULL OR p.priority_id IN (${clause}))`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      } else if (includeNoPriority) {
+        prioritiesClause = `AND p.priority_id IS NULL`;
+      } else if (realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        prioritiesClause = `AND p.priority_id IN (${clause})`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      }
+    }
+
     let archivedClause = "";
     if (!archived) {
       archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
@@ -78,7 +134,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     // Add project filtering for Team Leads
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
-    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
+    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause} ${clientsClause} ${prioritiesClause}`;
 
     const result = await ReportingControllerBase.getProjectsByTeam(teamId as string, size, offset, searchQuery, sortField, sortOrder, statusesClause, healthsClause, categoriesClause, archivedClause, teamFilterClause, projectManagersClause, filterParams);
 
@@ -298,10 +354,22 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
     let categoriesClause = "";
     if (req.query.categories) {
       const categoryIds = (req.query.categories as string).split(",").filter(id => id.trim());
-      const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
-      categoriesClause = `AND p.category_id IN (${clause})`;
-      filterParams.push(...categoryIds);
-      paramOffset += categoryIds.length;
+      const realIds = categoryIds.filter(id => id !== "__no_category__");
+      const includeNoCategory = categoryIds.includes("__no_category__");
+      
+      if (includeNoCategory && realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        categoriesClause = `AND (p.category_id IS NULL OR p.category_id IN (${clause}))`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      } else if (includeNoCategory) {
+        categoriesClause = `AND p.category_id IS NULL`;
+      } else if (realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        categoriesClause = `AND p.category_id IN (${clause})`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      }
     }
 
     let projectManagersClause = "";
@@ -322,6 +390,48 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       paramOffset += teamIds.length;
     }
 
+    // Client filter (new)
+    let clientsClause = "";
+    if (req.query.clients) {
+      const clientIds = (req.query.clients as string).split(",").filter(id => id.trim());
+      const realIds = clientIds.filter(id => id !== "__no_client__");
+      const includeNoClient = clientIds.includes("__no_client__");
+      if (includeNoClient && realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        clientsClause = `AND (p.client_id IS NULL OR p.client_id IN (${clause}))`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      } else if (includeNoClient) {
+        clientsClause = `AND p.client_id IS NULL`;
+      } else if (realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        clientsClause = `AND p.client_id IN (${clause})`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      }
+    }
+
+    // Priority filter (new)
+    let prioritiesClause = "";
+    if (req.query.priorities) {
+      const priorityIds = (req.query.priorities as string).split(",").filter(id => id.trim());
+      const realIds = priorityIds.filter(id => id !== "__no_priority__");
+      const includeNoPriority = priorityIds.includes("__no_priority__");
+      if (includeNoPriority && realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        prioritiesClause = `AND (p.priority_id IS NULL OR p.priority_id IN (${clause}))`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      } else if (includeNoPriority) {
+        prioritiesClause = `AND p.priority_id IS NULL`;
+      } else if (realIds.length > 0) {
+        const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+        prioritiesClause = `AND p.priority_id IN (${clause})`;
+        filterParams.push(...realIds);
+        paramOffset += realIds.length;
+      }
+    }
+
     let archivedClause = "";
     if (!archived) {
       archivedClause = `AND p.id NOT IN (SELECT project_id FROM archived_projects WHERE project_id = p.id AND user_id = $${paramOffset})`;
@@ -331,9 +441,7 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     // Add project filtering for Team Leads
     const projectFilterClause = await this.buildProjectFilterForTeamLead(req);
-    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause}`;
-
-    // Determine grouping fields based on groupBy parameter
+    const teamFilterClause = `in_organization(p.team_id, $1) ${projectFilterClause} ${teamsClause} ${clientsClause} ${prioritiesClause}`;
     let groupField = "";
     let groupName = "";
     let groupColor = "";
@@ -422,10 +530,15 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
       paramOffset
     );
 
-    // Build optimized query with group-level task aggregations and pagination
-    // OPTIMIZATION: Replace function calls with direct category_id comparisons
+    // Filter visible projects before aggregating tasks. Aggregating the complete
+    // tasks table here can saturate the pool for organizations with little data.
     const q = `
-      WITH project_tasks AS (
+      WITH filtered_projects AS MATERIALIZED (
+        SELECT p.id
+        FROM projects p
+        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+      ),
+      project_tasks AS (
         SELECT
           t.project_id,
           COUNT(t.id) AS total_tasks,
@@ -433,18 +546,14 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
           COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 1} THEN 1 END) AS doing_tasks,
           COUNT(CASE WHEN ts.category_id = $${categoryParamStart + 2} THEN 1 END) AS todo_tasks
         FROM tasks t
+        INNER JOIN filtered_projects fp ON fp.id = t.project_id
         INNER JOIN task_statuses ts ON t.status_id = ts.id
         WHERE t.archived IS FALSE
         GROUP BY t.project_id
       ),
       total_projects AS (
-        SELECT COUNT(DISTINCT p.id) AS total_project_count
-        FROM projects p
-        LEFT JOIN project_categories pc ON p.category_id = pc.id
-        LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
-        ${healthJoin}
-        ${groupJoin}
-        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
+        SELECT COUNT(*) AS total_project_count
+        FROM filtered_projects
       ),
       all_groups AS (
         SELECT
@@ -482,13 +591,13 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
               )
             ) ORDER BY p.name
           )), '[]'::JSON) AS projects
-        FROM projects p
+        FROM filtered_projects fp
+        INNER JOIN projects p ON p.id = fp.id
         LEFT JOIN project_categories pc ON p.category_id = pc.id
         LEFT JOIN sys_project_statuses ps ON p.status_id = ps.id
         ${healthJoin}
         LEFT JOIN project_tasks pt ON p.id = pt.project_id
         ${groupJoin}
-        WHERE ${teamFilterClause} ${searchQuery} ${healthsClause} ${statusesClause} ${categoriesClause} ${projectManagersClause} ${archivedClause}
         GROUP BY ${groupByFields}
       ),
       total_count AS (
@@ -507,7 +616,23 @@ export default class ReportingProjectsController extends ReportingProjectsBase {
 
     // Build final params: teamId ($1), searchParams ($2+), filter params, category IDs, then LIMIT and OFFSET
     const finalParams = [teamId, ...filterParams, ...paginationParams];
-    const result = await db.query(q, finalParams);
+    const result = await (async () => {
+      const client = await db.pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SELECT set_config('statement_timeout', $1, true);", [
+          `${GROUPED_REPORT_STATEMENT_TIMEOUT_MS}ms`,
+        ]);
+        const queryResult = await client.query(q, finalParams);
+        await client.query("COMMIT");
+        return queryResult;
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => void 0);
+        throw error;
+      } finally {
+        client.release();
+      }
+    })();
 
     const groups = result.rows.map(row => ({
       group_id: row.group_id,

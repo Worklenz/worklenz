@@ -24,6 +24,9 @@ interface scheduleState {
   isScheduleDrawerOpen: boolean;
   workingDays: string[];
   workingHours: number;
+  // Default estimate (hours) Workload uses for tasks with no estimate — client-side
+  // only, no workspace-settings field backs this yet.
+  defaultEstimateHours: number;
   teamData: any[];
   dateList: any;
   loading: boolean;
@@ -45,6 +48,7 @@ const initialState: scheduleState = {
   isScheduleDrawerOpen: false,
   workingDays: [],
   workingHours: 8,
+  defaultEstimateHours: 2,
   teamData: [],
   dateList: {},
   loading: false,
@@ -256,6 +260,9 @@ const scheduleSlice = createSlice({
     toggleScheduleDrawer: state => {
       state.isScheduleDrawerOpen = !state.isScheduleDrawerOpen;
     },
+    setDefaultEstimateHours(state, action) {
+      state.defaultEstimateHours = action.payload;
+    },
     getWorkingSettings(state, action) {
       state.workingDays = action.payload.workingDays;
       state.workingHours = action.payload.workingHours;
@@ -450,6 +457,7 @@ export const {
   toggleSettingsDrawer,
   updateSettings,
   toggleScheduleDrawer,
+  setDefaultEstimateHours,
   getWorkingSettings,
   setDate,
   setType,

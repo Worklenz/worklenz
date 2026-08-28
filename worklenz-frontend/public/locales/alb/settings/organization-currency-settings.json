@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Monedha e Organizates",
+  "pageSubtitle": "Cakto monedhën baze per organizaten tende. Totalet financiare do te konvertohen ne kete monedhë duke perdorur kurset e kembimit ne kohe reale.",
+  "save": "Ruaj",
+  "saveChanges": "Ruaj ndryshimet",
+  "adminOnly": "Vetem pronarit dhe administratoret mund te ndryshojne kete cilesim.",
+  "successMessage": "Monedha baze u caktua ne {{currency}}",
+  "errorMessage": "Deshtoi ruajtja e cilесimit te monedhes",
+  "selectAriaLabel": "Monedha baze e organizates",
+  "ratesCardTitle": "Kurset e kembimit ne kohe reale - 1 {{currency}} =",
+  "ratesUpdated": "Perditesuar: {{time}}",
+  "refreshRatesTooltip": "Perditeso kurset",
+  "refreshRatesAriaLabel": "Perditeso kurset e kembimit",
+  "noRateData": "Nuk ka te dhena kursi te disponueshme."
+}

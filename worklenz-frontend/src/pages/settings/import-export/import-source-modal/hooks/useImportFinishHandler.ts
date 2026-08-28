@@ -9,8 +9,17 @@ import {
   updateImportSource,
 } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
-import { createAndAttachTargetProject, ensureFieldMappingsAreSaved } from '../import-finish-utils';
+import {
+  createAndAttachTargetProject,
+  deleteImportTargetProject,
+  ensureFieldMappingsAreSaved,
+} from '../import-finish-utils';
 import { enqueuePendingImportJob } from '@/components/imports/ImportProgressNotifier';
+import { CREATE_NEW_STATUS_PREFIX } from '../components/CsvMappingStepsContent';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { createStatus } from '@/features/taskAttributes/taskStatusSlice';
+import { stepErrorSet } from '@/features/imports/importWizardSlice';
+import logger from '@/utils/errorLogger';
 
 interface UseImportFinishHandlerArgs {
   integrationType: 'direct' | 'csv';
@@ -29,8 +38,17 @@ interface UseImportFinishHandlerArgs {
   selectedProject: string;
   selectedWorkspace: string;
   asanaProjects: Array<{ id: string; name: string; workspaceId?: string }>;
-  persistAsanaSelection: (projectId: string, workspaceId?: string, projectName?: string) => Promise<void>;
-  fieldMappingRows: Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>;
+  persistAsanaSelection: (
+    projectId: string,
+    workspaceId?: string,
+    projectName?: string
+  ) => Promise<void>;
+  fieldMappingRows: Array<{
+    source_field: string;
+    target_field: string;
+    required?: boolean;
+    include?: boolean;
+  }>;
   hierarchyRows: Array<{ source_level: string; target_level: string; position?: number }>;
   runAutoMapping: (suppressToast?: boolean) => Promise<void>;
   selectedJiraProject: string;
@@ -48,6 +66,7 @@ interface UseImportFinishHandlerArgs {
   includeInImport: Record<string, boolean>;
   fieldMappings: Record<string, string>;
   statusValueMapping: Record<string, string>;
+  pendingNewStatuses: Record<string, { name: string; categoryId: string }>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   ensureImportJob: () => Promise<ImportJob>;
@@ -56,6 +75,10 @@ interface UseImportFinishHandlerArgs {
     jobId: string,
     overrides?: { importMembers?: boolean; importAttachments?: boolean }
   ) => Promise<void>;
+  createTargetProject?: () => Promise<string>;
+  onImportStarted?: (projectId: string) => void;
+  setStep: React.Dispatch<React.SetStateAction<number>>;
+  projectSetupStep: number;
 }
 
 export const useImportFinishHandler = ({
@@ -94,16 +117,26 @@ export const useImportFinishHandler = ({
   includeInImport,
   fieldMappings,
   statusValueMapping,
+  pendingNewStatuses,
   csvUserRows,
   userEmails,
   ensureImportJob,
   ensureDefaultProjectStatusId,
   persistImportOptions,
-}: UseImportFinishHandlerArgs) =>
-  React.useCallback(async () => {
+  createTargetProject,
+  onImportStarted,
+  setStep,
+  projectSetupStep,
+}: UseImportFinishHandlerArgs) => {
+  const targetProjectRef = React.useRef<{ jobId: string; projectId: string } | null>(null);
+  const dispatch = useAppDispatch();
+
+  return React.useCallback(async () => {
     if (integrationType === 'direct') {
       if (!spaceName.trim()) {
-        message.error(t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' }));
+        message.error(
+          t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' })
+        );
         return;
       }
 
@@ -156,10 +189,13 @@ export const useImportFinishHandler = ({
           enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
-          message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(
+            err?.response?.data?.message ||
+              err?.message ||
+              t('importStep.importError', 'Import failed. Please try again.')
+          );
         } finally {
           setIsImporting(false);
         }
@@ -221,10 +257,13 @@ export const useImportFinishHandler = ({
           enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
-          message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(
+            err?.response?.data?.message ||
+              err?.message ||
+              t('importStep.importError', 'Import failed. Please try again.')
+          );
         } finally {
           setIsImporting(false);
         }
@@ -297,10 +336,13 @@ export const useImportFinishHandler = ({
           enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
-          message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(
+            err?.response?.data?.message ||
+              err?.message ||
+              t('importStep.importError', 'Import failed. Please try again.')
+          );
         } finally {
           setIsImporting(false);
         }
@@ -373,10 +415,13 @@ export const useImportFinishHandler = ({
           enqueuePendingImportJob(job.id);
 
           setShowCompletion(false);
-          message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
           onClose();
         } catch (err: any) {
-          message.error(err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.'));
+          message.error(
+            err?.response?.data?.message ||
+              err?.message ||
+              t('importStep.importError', 'Import failed. Please try again.')
+          );
         } finally {
           setIsImporting(false);
         }
@@ -395,14 +440,18 @@ export const useImportFinishHandler = ({
     }
 
     if (!spaceName.trim()) {
-      message.error(t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' }));
+      message.error(
+        t('importStep.projectNameRequired', { defaultValue: 'Please enter a project name.' })
+      );
       return;
     }
 
     setIsImporting(true);
+    let createdProjectId: string | null = null;
+    let hasStartedIngestionRequest = false;
     try {
       const activeJob = await ensureImportJob();
-      await createAndAttachTargetProject({
+      const targetProjectId = await createAndAttachTargetProject({
         jobId: activeJob.id,
         spaceName,
         spaceType,
@@ -411,7 +460,37 @@ export const useImportFinishHandler = ({
         persistImportOptions,
         t: tt,
         importOptionOverrides: { importMembers: addUsers },
+        createTargetProject,
+        targetProjectId:
+          targetProjectRef.current?.jobId === activeJob.id
+            ? targetProjectRef.current.projectId
+            : undefined,
+        onTargetProjectCreated: projectId => {
+          targetProjectRef.current = { jobId: activeJob.id, projectId };
+          createdProjectId = projectId;
+        },
       });
+
+      // Any status the user chose to create during "Map statuses" doesn't exist yet —
+      // the target project was only just created above. Create each one now, before
+      // ingestion, and resolve its placeholder mapping to the created status's real
+      // name: the backend matches target_worktype by name against whatever statuses
+      // actually exist on the project at commit time (see lookupStatusId), so sending
+      // the name is all ingestion needs — no separate ID plumbing required.
+      const resolvedStatusValueMapping = { ...statusValueMapping };
+      for (const [sourceValue, pending] of Object.entries(pendingNewStatuses)) {
+        if (resolvedStatusValueMapping[sourceValue] !== `${CREATE_NEW_STATUS_PREFIX}${pending.name}`) {
+          continue;
+        }
+        const created = await dispatch(
+          createStatus({
+            body: { name: pending.name, category_id: pending.categoryId } as any,
+            currentProjectId: targetProjectId,
+          })
+        ).unwrap();
+        const createdName = created?.body?.name || pending.name;
+        resolvedStatusValueMapping[sourceValue] = createdName;
+      }
 
       // Build all mappings upfront and send them with the ingest call so the
       // background worker has everything it needs without a race condition.
@@ -423,7 +502,7 @@ export const useImportFinishHandler = ({
           include: includeInImport[col] !== false,
         }));
 
-      const mappedValues = Object.entries(statusValueMapping)
+      const mappedValues = Object.entries(resolvedStatusValueMapping)
         .filter(([, target]) => !!target)
         .map(([sourceValue, targetWorktype]) => ({
           source_value: sourceValue,
@@ -445,6 +524,7 @@ export const useImportFinishHandler = ({
 
       // Single request — server stores everything in source_reference and marks
       // the job ready; the background worker parses + stages + commits.
+      hasStartedIngestionRequest = true;
       await ingestImportJob(activeJob.id, {
         csvText,
         sourceReference: { provider: lowerKey },
@@ -456,11 +536,35 @@ export const useImportFinishHandler = ({
       enqueuePendingImportJob(activeJob.id);
 
       setShowCompletion(false);
-      message.success(t('importStep.importStarted', 'Import started. We will notify once ready.'));
+      onImportStarted?.(targetProjectId);
       onClose();
     } catch (err: any) {
-      const errorMessage = err?.response?.data?.message || err?.response?.data?.message || err?.message || t('importStep.importError', 'Import failed. Please try again.');
+      const status = err?.response?.status;
+      const wasRejectedBeforeIngestion =
+        hasStartedIngestionRequest && typeof status === 'number' && status >= 400 && status < 500;
+
+      if (createdProjectId && (!hasStartedIngestionRequest || wasRejectedBeforeIngestion)) {
+        try {
+          await deleteImportTargetProject(createdProjectId);
+          targetProjectRef.current = null;
+        } catch (rollbackError) {
+          logger.error('Failed to roll back import target project', rollbackError);
+        }
+      }
+
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
+        t('importStep.importError', 'Import failed. Please try again.');
       message.error(errorMessage);
+
+      // The project name conflict is only fixable back on the "Set up project" step —
+      // without this, the user is left stuck on Review with no obvious way to fix it.
+      if (!createdProjectId && /already exists/i.test(errorMessage)) {
+        setStep(projectSetupStep);
+        dispatch(stepErrorSet({ step: projectSetupStep, error: errorMessage }));
+      }
     } finally {
       setIsImporting(false);
     }
@@ -486,6 +590,10 @@ export const useImportFinishHandler = ({
     onClose,
     persistAsanaSelection,
     persistImportOptions,
+    createTargetProject,
+    onImportStarted,
+    setStep,
+    projectSetupStep,
     runAutoMapping,
     selectedBoard,
     selectedJiraProject,
@@ -505,4 +613,7 @@ export const useImportFinishHandler = ({
     tt,
     userEmails,
     statusValueMapping,
+    pendingNewStatuses,
+    dispatch,
   ]);
+};

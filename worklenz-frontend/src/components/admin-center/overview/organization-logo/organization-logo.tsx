@@ -20,12 +20,11 @@ import { getBase64 } from '@/utils/file-utils';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
+import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface OrganizationLogoProps {
@@ -42,8 +41,6 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   refetch,
 }) => {
   const dispatch = useAppDispatch();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const currentSession = useAuthService().getCurrentSession();
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -57,7 +54,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const [fileSize, setFileSize] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const hasLogoFeatureAccess = hasBusinessAccess;
+  const hasLogoFeatureAccess = hasBusinessFeatureAccess(currentSession);
 
   useEffect(() => {
     if (organization?.logo_url) {
@@ -234,7 +231,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
     if (isAppSumoUser) {
       trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'org_logo' });
     }
-    promptUpgrade('customOrganizationLogo');
+    dispatch(openUpgradeModal('customOrganizationLogo'));
   };
 
   const changeLogoUpgradePopoverContent = (

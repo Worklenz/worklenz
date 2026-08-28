@@ -60,12 +60,12 @@ export const ProjectRateCell: React.FC<{
           className="borderless-icon-btn"
           style={{
             backgroundColor: colors.transparent,
-            width: 28,
-            minWidth: 28,
+            width: 20,
+            minWidth: 20,
             paddingInline: 0,
           }}
           shape="circle"
-          icon={<StarFilled style={{ color: starColor, fontSize: '20px' }} />}
+          icon={<StarFilled style={{ color: starColor, fontSize: '12px' }} />}
           onClick={handleFavorite}
         />
       </Tooltip>

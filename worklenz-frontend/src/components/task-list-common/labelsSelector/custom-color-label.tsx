@@ -1,6 +1,5 @@
 import { Tag, Typography } from '@/shared/antd-imports';
 import { ITaskLabel } from '@/types/tasks/taskLabel.types';
-import { ALPHA_CHANNEL } from '@/shared/constants';
 
 const CustomColorLabel = ({ label }: { label: ITaskLabel | null }) => {
   const getContrastColor = (hexColor: string): string => {
@@ -17,7 +16,7 @@ const CustomColorLabel = ({ label }: { label: ITaskLabel | null }) => {
   return (
     <Tag
       key={label?.id}
-      color={label?.color_code + ALPHA_CHANNEL}
+      color={label?.color_code}
       style={{
         display: 'flex',
         alignItems: 'center',

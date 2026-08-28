@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Modal, Input, Form, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface ProjectTemplateRenameModalProps {
   visible: boolean;
@@ -17,11 +18,11 @@ export const ProjectTemplateRenameModal: React.FC<ProjectTemplateRenameModalProp
   onClose,
 }) => {
   const { t } = useTranslation('settings/project-templates');
-  const [name, setName] = useState(currentName);
+  const [name, setName] = useState(decodeHtmlEntities(currentName));
   const [loading, setLoading] = useState(false);
 
   React.useEffect(() => {
-    setName(currentName);
+    setName(decodeHtmlEntities(currentName));
   }, [currentName, visible]);
 
   const handleOk = async () => {

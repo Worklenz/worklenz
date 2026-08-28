@@ -1,7 +1,7 @@
 {
   "title": "Project Updates",
   "inputPlaceholder": "Type your update here... Use @ to mention team members",
-  "addButton": "Post Update",
+  "addButton": "Send",
   "cancelButton": "Cancel",
   "deleteButton": "Delete",
   "deleteConfirmTitle": "Delete this update?",
@@ -9,11 +9,14 @@
   "yes": "Yes",
   "no": "No",
   "emptyState": "No updates yet. Start the conversation!",
+  "today": "Today",
+  "yesterday": "Yesterday",
   "historyLockedBoundary": "Chat history is limited to the last 90 days on this plan",
   "historyLockedTitle": "Chat History Locked",
   "historyLockedBody": "Chat history beyond 90 days is available on the Business plan.",
   "viewFullHistory": "View chat history",
   "upgradeNow": "Upgrade Now",
+  "inputHint": "Enter to send · Shift+Enter for new line",
   "reactions": {
     "like": "Like",
     "love": "Love",
@@ -28,6 +31,20 @@
   },
   "actions": {
     "edit": "Edit",
-    "save": "Save"
-  }
+    "save": "Save",
+    "reply": "Reply",
+    "convertToTask": "Convert to task",
+    "pin": "Pin message",
+    "unpin": "Unpin message"
+  },
+  "messageDeleted": "This message was deleted",
+  "replyingTo": "Replying to",
+  "pinned": "Pinned",
+  "pinnedBy": "Pinned by",
+  "pinError": "Failed to update pin",
+  "convertToTaskSuccess": "Task created from message",
+  "convertToTaskError": "Failed to create task",
+  "convertToTaskEmpty": "Message has no text to use as a task name",
+  "attachFile": "Attach a file",
+  "attachmentUploadError": "Failed to upload attachment"
 }

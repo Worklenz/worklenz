@@ -1,0 +1,17 @@
+{
+  "configurationTitle": "Konfiguration",
+  "configurationDescription": "Verwalten Sie organisationsweite Einstellungen, die für alle Projekte gelten.",
+  "businessPlanRequired": "Business-Plan erforderlich",
+  "businessPlanRequiredDescription": "Einstellungen zur Aufgabenbeschränkung auf Organisationsebene sind in den Business- und Enterprise-Plänen verfügbar.",
+  "upgradePlan": "Plan upgraden",
+  "taskManagementSection": "Aufgabenverwaltung",
+  "restrictTaskCreation": "Aufgabenzuweisung auf Administratoren und Teamleiter beschränken",
+  "restrictTaskCreationTooltip": "Wenn aktiviert, können nur Administratoren und Teamleiter in allen Projekten Aufgaben erstellen und zuweisen. Teammitglieder sehen nur die ihnen zugewiesenen Aufgaben. Einstellungen auf Projektebene überschreiben diese Einstellung auf Organisationsebene.",
+  "restrictTaskCreationNote": "Hinweis: Einstellungen auf Projektebene haben Vorrang vor dieser Einstellung auf Organisationsebene. Änderungen werden sofort wirksam.",
+  "timeTrackingSection": "Zeiterfassung",
+  "limitTimelogBackdating": "Begrenzen, wie weit rückwirkend Zeit erfasst werden kann",
+  "limitTimelogBackdatingTooltip": "Wenn aktiviert, können Mitglieder keine Zeiterfassung mit einem Datum vor der zulässigen Anzahl von Tagen anlegen. Gilt für alle, einschließlich Eigentümer und Administratoren. Laufende Timer und importierte Einträge sind nicht betroffen.",
+  "timelogBackdateLimitDays": "Maximale Anzahl Tage, um die eine Zeiterfassung zurückdatiert werden darf",
+  "timelogBackdateLimitNote": "Hinweis: Bestehende Zeiterfassungen werden nie verändert. Das Bearbeiten eines bereits alten Eintrags bleibt möglich, solange dessen Datum nicht geändert wird.",
+  "days": "Tage"
+}

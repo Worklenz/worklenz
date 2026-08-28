@@ -10,5 +10,8 @@ export interface IProjectGroup {
 
 export interface IGroupedProjectsViewModel {
   total_groups: number;
+  /** Total projects matching the current filters, independent of pagination —
+   * summing `project_count` across `data` only covers the current page of groups. */
+  total_projects: number;
   data: IProjectGroup[];
 }

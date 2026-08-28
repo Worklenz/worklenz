@@ -3,10 +3,16 @@ export type NavRoutesType = {
   path: string;
   adminOnly: boolean;
   freePlanFeature?: boolean;
-  businessPlanRequired?: boolean;
   selfHostedExcluded?: boolean;
   teamLeadOnly?: boolean;
+  guestExcluded?: boolean; // Hide for guest-only users
 };
+
+// Shared by desktop (navbar.tsx) and mobile (MobileMenuButton.tsx) so both
+// surfaces gate the exact same routes for free-plan users instead of each
+// re-deriving the rule independently.
+export const isRouteGatedForFreePlan = (route: NavRoutesType, isFreePlan: boolean): boolean =>
+  !route.freePlanFeature && isFreePlan;
 
 export const navRoutes: NavRoutesType[] = [
   {
@@ -14,6 +20,7 @@ export const navRoutes: NavRoutesType[] = [
     path: '/worklenz/home',
     adminOnly: false,
     freePlanFeature: true,
+    guestExcluded: true, // Hide Home for guest-only users
   },
   {
     name: 'projects',
@@ -22,14 +29,31 @@ export const navRoutes: NavRoutesType[] = [
     freePlanFeature: true,
   },
   {
-    name: 'schedule',
-    path: '/worklenz/schedule',
+    name: 'planner',
+    path: '/worklenz/planner',
+    adminOnly: true,
+    freePlanFeature: false,
+  },
+  {
+    name: 'client-portal',
+    // Bare surface root — resolves to whichever item is pinned as default
+    // (or 'clients' if nothing is pinned) via the client-portal index route.
+    path: '/worklenz/client-portal',
+    adminOnly: true,
+    freePlanFeature: false,
+    selfHostedExcluded: true,
+  },
+  {
+    name: 'finance',
+    path: '/worklenz/finance',
     adminOnly: true,
     freePlanFeature: false,
   },
   {
     name: 'reporting',
-    path: '/worklenz/reporting/overview',
+    // Bare surface root — resolves to whichever item is pinned as default
+    // (or 'overview' if nothing is pinned) via the reporting index route.
+    path: '/worklenz/reporting',
     adminOnly: true,
     freePlanFeature: false,
   },
@@ -39,13 +63,5 @@ export const navRoutes: NavRoutesType[] = [
     adminOnly: false,
     freePlanFeature: true,
     teamLeadOnly: true,
-  },
-  {
-    name: 'client-portal',
-    path: '/worklenz/client-portal/clients',
-    adminOnly: true,
-    freePlanFeature: false,
-    businessPlanRequired: true,
-    selfHostedExcluded: true,
   },
 ];

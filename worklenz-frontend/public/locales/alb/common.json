@@ -110,12 +110,13 @@
   "customFieldLimitReached": "Limiti i fushave të personalizuara u arrit. Bëni upgrade për të shtuar më shumë.",
   "projectFinanceUpgradeBody": "Ndiqni buxhetet, kostot dhe kohën e faturueshme nëpër projektet tuaja. Kërkon planin Business.",
   "upgrade-now": "Përditëso tani",
-  "seeSpends": "Shiko Shpenzimet",
+  "seeSpends": "Gjurmo Shpenzimet",
   "closePopover": "Mbyll dritaren",
   "or-switch-team": "OR SWITCH TEAM",
   "trial-expired": "Trial Expired",
   "switch-to-another-team": "Switch to another team",
   "need-help": "Need help?",
   "contact-support": "Contact support",
-  "view-pricing": "view pricing"
+  "view-pricing": "view pricing",
+  "justNow": "Sapo"
 }

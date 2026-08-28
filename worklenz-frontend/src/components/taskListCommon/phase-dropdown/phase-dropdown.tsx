@@ -9,7 +9,7 @@ import { ALPHA_CHANNEL } from '@/shared/constants';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import logger from '@/utils/errorLogger';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface PhaseDropdownProps {
   task: IProjectTask;
@@ -20,6 +20,11 @@ const PhaseDropdown = ({ task }: PhaseDropdownProps) => {
   const { socket, connected } = useSocket();
   const [currentPhase, setCurrentPhase] = useState<string | null>(task.phase_id || null);
   const { phaseList } = useAppSelector(state => state.phaseReducer);
+
+  // Sync local state with task prop when it changes (e.g., after refresh)
+  useEffect(() => {
+    setCurrentPhase(task.phase_id || null);
+  }, [task.phase_id]);
 
   // Handle phase select
   const handlePhaseOptionSelect = (value: string) => {

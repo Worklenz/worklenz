@@ -25,6 +25,17 @@ const getLocaleFromLanguage = (language: string): string => {
 };
 
 /**
+ * Returns the English weekday name (e.g. "Monday") for a date, independent of the
+ * app's currently active dayjs GLOBAL locale (see ThemeWrapper.tsx, which calls
+ * dayjs.locale(lng) app-wide on every language change). Use this whenever a
+ * formatted weekday string is compared against English day-name data (e.g. org
+ * "working days" settings) — never use bare date.format('dddd') for that comparison,
+ * since it silently breaks under any non-English locale. See issue #1994.
+ */
+export const getEnglishWeekdayName = (date: dayjs.Dayjs): string =>
+  date.locale('en').format('dddd');
+
+/**
  * Formats a date to a relative time string (e.g., "2 hours ago", "a day ago")
  * This mimics the Angular fromNow pipe functionality with locale support
  *

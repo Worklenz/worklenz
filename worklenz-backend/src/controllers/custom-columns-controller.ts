@@ -5,10 +5,35 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import business from "../business";
+import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
 import { LICENSING_SETTINGS } from "../shared/licensing_settings";
 
 const CUSTOM_FIELD_LIMIT = LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
+
+/**
+ * Determines whether the user has business-level access based on subscription data.
+ * Mirrors the frontend hasBusinessFeatureAccess() logic.
+ */
+function hasBusinessAccess(subscriptionData: any): boolean {
+  if (!subscriptionData) return false;
+
+  const isTruthy = (v: unknown) =>
+    v === true || v === 1 || v === "true" || v === "t";
+
+  if (isTruthy(subscriptionData.business_plan_override)) return true;
+
+  const subType: string = (subscriptionData.subscription_type || "").toUpperCase();
+
+  if (subType === "BUSINESS_TRIAL" || subType === "ENTERPRISE_TRIAL") return true;
+  if (subType === "ANNUAL_BUSINESS" || subType === "SELF_HOSTED") return true;
+
+  if (subType === "PADDLE") {
+    const planName = (subscriptionData.plan_name || "").toLowerCase();
+    return planName.includes("business") || planName.includes("enterprise");
+  }
+
+  return false;
+}
 
 /**
  * Returns the current number of custom columns for a project.
@@ -40,8 +65,8 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
     // --- Subscription limit check ---
     const teamId = req.user?.team_id;
     if (teamId) {
-      const hasBusiness = await business.featureGate.teamHasBusinessAccess(teamId);
-      if (!hasBusiness) {
+      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+      if (subscriptionData && !hasBusinessAccess(subscriptionData)) {
         const currentCount = await getCustomColumnCount(project_id);
         if (currentCount >= CUSTOM_FIELD_LIMIT) {
           return res.status(200).send(

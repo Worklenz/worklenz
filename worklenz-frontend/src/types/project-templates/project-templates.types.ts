@@ -1,6 +1,9 @@
 export interface IWorklenzTemplate {
   id?: string;
   name?: string;
+  image_url?: string;
+  task_count?: number;
+  phase_count?: number;
 }
 
 interface IPhase {
@@ -25,6 +28,10 @@ interface ILabel {
 
 interface ITemplateTask {
   name?: string;
+  status_name?: string;
+  priority_name?: string;
+  phases?: { name?: string }[];
+  labels?: { name?: string }[];
 }
 
 export interface IProjectTemplate {
@@ -45,6 +52,7 @@ export interface ICustomTemplate {
   name?: string;
   color_code?: string;
   selected?: boolean;
+  created_at?: string;
 }
 
 export interface IAccountSetupRequest {

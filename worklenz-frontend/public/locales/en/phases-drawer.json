@@ -21,5 +21,14 @@
   "selectColor": "Select color",
   "managePhases": "Manage Phases",
   "close": "Close",
-  "apply": "Apply"
+  "apply": "Apply",
+  "selectDefaultAssignee": "Default assignee",
+  "phaseAssigneesInfo": "Phase Assignees is enabled. Set a default assignee for each phase below — they will be auto-assigned when a task enters that phase.",
+  "phasesText": "Phases",
+  "phaseText": "Phase",
+  "searchMembers": "Search members...",
+  "noMembersFound": "No members found",
+  "continue": "Continue",
+  "pendingMemberLabel": "(Pending)",
+  "inviteMember": "Invite member"
 }

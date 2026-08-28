@@ -6,6 +6,8 @@ import {
   PaginationProps,
   Table,
   TableColumnsType,
+  Tag,
+  Typography,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
@@ -74,9 +76,6 @@ const ProjectsReportsTable = () => {
 
   const columnsVisibility = useAppSelector(state => state.projectReportsTableColumnsReducer);
 
-  // ✅ Single socket listener at table level instead of one per row
-  // Having a listener in every ProjectHealthCell means N rows = N listeners
-  // all firing simultaneously, causing re-render cascade that locks the dropdown
   const handleHealthChangeResponse = useCallback(
     (data: { id: string; health_id: string; color_code: string; name: string }) => {
       dispatch(setProjectHealth(data));
@@ -176,6 +175,25 @@ const ProjectsReportsTable = () => {
         sorter: true,
       },
       {
+        key: 'priority',
+        dataIndex: 'priority_name',
+        title: <CustomTableTitle title={t('priorityColumn', { defaultValue: 'Priority' })} />,
+        render: (_, record: IRPTProject) =>
+          record.priority_name ? (
+            <Tag
+              color={record.priority_color || undefined}
+              style={{ margin: 0 }}
+            >
+              {record.priority_name}
+            </Tag>
+          ) : (
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              —
+            </Typography.Text>
+          ),
+        width: 130,
+      },
+      {
         key: 'dates',
         title: <CustomTableTitle title={t('datesColumn')} />,
         render: record => (
@@ -220,6 +238,8 @@ const ProjectsReportsTable = () => {
         title: <CustomTableTitle title={t('categoryColumn')} />,
         dataIndex: 'category_name',
         sorter: true,
+        // ← Add className on the <td> so our CSS can target it
+        onCell: () => ({ className: 'category-cell' }),
         render: (_, record: IRPTProject) => (
           <ProjectCategoryCell
             projectId={record.id}
@@ -233,6 +253,7 @@ const ProjectsReportsTable = () => {
       {
         key: 'projectUpdate',
         title: <CustomTableTitle title={t('projectUpdateColumn')} />,
+        onCell: () => ({ className: 'project-update-cell' }),
         render: (_, record: IRPTProject) =>
           record.comment ? <ProjectUpdateCell updates={record.comment} /> : '-',
         width: 200,
@@ -309,7 +330,7 @@ const ProjectsReportsTable = () => {
   const tableRowProps = useMemo(
     () => ({
       style: { height: 56, cursor: 'pointer' },
-      className: 'group even:bg-[#4e4e4e10]',
+      className: 'group',
     }),
     []
   );
@@ -345,7 +366,9 @@ const ProjectsReportsTable = () => {
 
   return (
     <ConfigProvider {...tableConfig}>
+      {/* ← className enables our CSS to scope to this table */}
       <Table
+        className="projects-reports-table"
         columns={visibleColumns}
         dataSource={projectList}
         pagination={paginationConfig}

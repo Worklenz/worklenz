@@ -1,0 +1,51 @@
+/* Mirrors the Home > Overview priority table's sticky-header technique
+   (see src/pages/home/task-list/tasks-list.css) — plain CSS `position: sticky`
+   on the header cells rather than antd's own `sticky` prop, which loses track
+   of a custom scroll container. */
+.recent-logs-card .ant-table {
+  font-size: 12px;
+}
+
+.recent-logs-card .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ant-color-text-secondary);
+  padding: 8px !important;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sticky-header-bg, #fff);
+}
+
+.recent-logs-card .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 8px !important;
+}
+
+/* Table container must stay `visible` or it becomes the header cells' nearest
+   scroll ancestor, breaking `position: sticky` (see tasks-list.css for the
+   full explanation of this antd quirk). */
+.recent-logs-card .ant-table-container {
+  overflow: visible;
+}
+
+/* Below the same 1024px breakpoint the page's isDesktop switch uses
+   (HomeLogTime.tsx), the 7 fixed-width columns get crushed instead of the
+   table scrolling horizontally — same fix as tasks-list.css's identical
+   table. Matching 1024px here (rather than an independent 768px) avoids a
+   769–1023px gap where the JS layout has already gone "mobile" but this
+   scroll safety net hasn't kicked in yet. This goes on `.recent-logs-scroll`
+   (the actual scrolling ancestor set up above it) rather than
+   `.ant-table-wrapper` — setting overflow-x without overflow-y on that inner
+   antd wrapper would force its overflow-y to `auto` too (CSS overflow
+   computed-value rule), turning it into a second scroll container that
+   intercepts the sticky header. */
+@media (max-width: 1023px) {
+  .recent-logs-scroll {
+    overflow-x: auto;
+  }
+
+  .recent-logs-card .ant-table {
+    min-width: 600px;
+  }
+}

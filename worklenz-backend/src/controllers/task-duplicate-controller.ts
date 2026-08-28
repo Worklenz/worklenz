@@ -5,6 +5,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { copyObject, getKey } from "../shared/storage";
+import { PoolClient } from "pg";
 
 interface DuplicateOptions {
   dates?: boolean;
@@ -19,9 +20,10 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
   /**
    * Helper function to copy attachment files from original task to duplicated task
    */
-  private static async copyAttachmentFiles(originalTaskId: string, newTaskId: string): Promise<void> {
+  private static async copyAttachmentFiles(originalTaskId: string, newTaskId: string, client?: PoolClient): Promise<void> {
+    const query = client?.query.bind(client) || db.query;
     // Fetch original attachments with their IDs
-    const originalAttachments = await db.query(
+    const originalAttachments = await query(
       `SELECT id, name, size, type, team_id, project_id, uploaded_by
       FROM task_attachments
       WHERE task_id = $1`,
@@ -29,7 +31,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
     );
 
     // Get new attachments that were just created (they should match by name, size, type, and order)
-    const newAttachments = await db.query(
+    const newAttachments = await query(
       `SELECT id, name, size, type, team_id, project_id
       FROM task_attachments
       WHERE task_id = $1
@@ -99,19 +101,20 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       // copyNamePrefix = "Copy - ",
     } = options;
 
+    const client = await db.pool.connect();
     try {
       // Start transaction
-      await db.query("BEGIN");
+      await client.query("BEGIN");
 
       // 1. Fetch original task
-      const { rows } = await db.query(
+      const { rows } = await client.query(
         `SELECT * FROM tasks WHERE id = $1 AND project_id = $2`,
         [taskId, projectId]
       );
 
       const originalTask = rows[0];
       if (!originalTask) {
-        await db.query("ROLLBACK");
+        await client.query("ROLLBACK");
         return res.status(404).send(new ServerResponse(false, null, "Task not found"));
       }
 
@@ -138,7 +141,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       }
 
       // Fix sort_order conflict
-      const maxSort = await db.query(
+      const maxSort = await client.query(
         `SELECT COALESCE(MAX(sort_order), 0) as max_sort FROM tasks WHERE project_id = $1`,
         [projectId]
       );
@@ -149,13 +152,17 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       newTask.priority_sort_order = 0;
       newTask.phase_sort_order = 0;
       newTask.member_sort_order = 0;
+      // Also reset roadmap_sort_order — otherwise the duplicate is left tied with
+      // the original task's position in the Roadmap view (this column isn't part
+      // of the general sort_order/created_at fallback the other columns share).
+      newTask.roadmap_sort_order = 0;
 
       // 3. Insert new task
       const keys = Object.keys(newTask);
       const values = Object.values(newTask);
       const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
 
-      const insertResult = await db.query(
+      const insertResult = await client.query(
         `INSERT INTO tasks (${keys.join(", ")})
        VALUES (${placeholders})
        RETURNING id, task_no, name`,
@@ -165,10 +172,10 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       const newTaskId = insertResult.rows[0].id;
       const newTaskNo = insertResult.rows[0].task_no;
 
-      // 4. Copy relations (all using db.query — no client needed)
+      // 4. Copy relations on the same transaction client.
 
       if (assignees) {
-        await db.query(
+        await client.query(
           `INSERT INTO tasks_assignees (task_id, team_member_id, project_member_id, assigned_by)
           SELECT $1, team_member_id, project_member_id, assigned_by
           FROM tasks_assignees WHERE task_id = $2`,
@@ -177,7 +184,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       }
 
       if (labels) {
-        await db.query(
+        await client.query(
           `INSERT INTO task_labels (task_id, label_id)
          SELECT $1, label_id FROM task_labels WHERE task_id = $2
          ON CONFLICT (task_id, label_id) DO NOTHING`,
@@ -186,7 +193,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       }
 
       if (dependencies) {
-        await db.query(
+        await client.query(
           `INSERT INTO task_dependencies (task_id, related_task_id, dependency_type)
          SELECT $1, related_task_id, dependency_type
          FROM task_dependencies WHERE task_id = $2
@@ -196,7 +203,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       }
 
       if (subscribers) {
-        await db.query(
+        await client.query(
           `INSERT INTO task_subscribers (user_id, task_id, team_member_id, action)
          SELECT user_id, $1, team_member_id, action
          FROM task_subscribers WHERE task_id = $2
@@ -206,7 +213,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
       }
 
       if (customFields) {
-        await db.query(
+        await client.query(
           `INSERT INTO cc_column_values (task_id, column_id, text_value, number_value, date_value, boolean_value, json_value)
          SELECT $1, column_id, text_value, number_value, date_value, boolean_value, json_value
          FROM cc_column_values
@@ -218,7 +225,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
       if (attachments) {
         // Fetch original attachments with their IDs
-        const originalAttachments = await db.query(
+        const originalAttachments = await client.query(
           `SELECT id, name, size, type, team_id, project_id, uploaded_by
           FROM task_attachments
           WHERE task_id = $1
@@ -229,7 +236,7 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
         // Copy each attachment with file duplication
         for (const originalAttachment of originalAttachments.rows) {
           // Insert new attachment record and get the new ID
-          const newAttachmentResult = await db.query(
+          const newAttachmentResult = await client.query(
             `INSERT INTO task_attachments (name, size, type, task_id, team_id, project_id, uploaded_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id`,
@@ -267,14 +274,14 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
       // Subtasks: recursively duplicate all nested subtasks
       if (subtasks) {
-        const subtasksRes = await db.query(
+        const subtasksRes = await client.query(
           `SELECT id FROM tasks WHERE parent_task_id = $1 AND archived = false ORDER BY sort_order`,
           [taskId]
         );
 
         for (const sub of subtasksRes.rows) {
           // duplicate_task_shallow will recursively handle nested subtasks when subtasks option is enabled
-          const subtaskResult = await db.query(
+          const subtaskResult = await client.query(
             `SELECT duplicate_task_shallow($1, $2, $3) AS new_task_id`,
             [sub.id, newTaskId, JSON.stringify(options)]
           );
@@ -283,16 +290,16 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
           
           // If attachments were included, copy the files for subtask attachments
           if (attachments && newSubtaskId) {
-            await this.copyAttachmentFiles(sub.id, newSubtaskId);
+            await this.copyAttachmentFiles(sub.id, newSubtaskId, client);
           }
         }
       }
 
       // Commit transaction
-      await db.query("COMMIT");
+      await client.query("COMMIT");
 
       // Manually count subtasks to ensure accurate count after duplication
-      const subtaskCountResult = await db.query(
+      const subtaskCountResult = await client.query(
         `SELECT COUNT(*)::INT as count FROM tasks WHERE parent_task_id = $1 AND archived IS FALSE`,
         [newTaskId]
       );
@@ -324,36 +331,36 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
         ) AS custom_cols
         WHERE custom_cols.value IS NOT NULL
       `;
-      const customColumnsResult = await db.query(customColumnsQuery, [newTaskId]);
+      const customColumnsResult = await client.query(customColumnsQuery, [newTaskId]);
       const customColumnValues = customColumnsResult.rows[0]?.custom_column_values || {};
 
       // Fetch attachment, dependency, subscriber and comment counts for icons
-      const attachmentsResult = await db.query(
+      const attachmentsResult = await client.query(
         `SELECT COUNT(*)::INT as count FROM task_attachments WHERE task_id = $1`,
         [newTaskId]
       );
       const attachmentsCount = attachmentsResult.rows[0]?.count || 0;
 
-      const dependenciesResult = await db.query(
+      const dependenciesResult = await client.query(
         `SELECT EXISTS(SELECT 1 FROM task_dependencies WHERE task_id = $1) AS has_dependencies`,
         [newTaskId]
       );
       const hasDependencies = !!dependenciesResult.rows[0]?.has_dependencies;
 
-      const subscribersResult = await db.query(
+      const subscribersResult = await client.query(
         `SELECT EXISTS(SELECT 1 FROM task_subscribers WHERE task_id = $1) AS has_subscribers`,
         [newTaskId]
       );
       const hasSubscribers = !!subscribersResult.rows[0]?.has_subscribers;
 
-      const commentsResult = await db.query(
+      const commentsResult = await client.query(
         `SELECT COUNT(*)::INT as count FROM task_comments WHERE task_id = $1`,
         [newTaskId]
       );
       const commentsCount = commentsResult.rows[0]?.count || 0;
 
       const q = `SELECT get_single_task($1) AS task;`;
-      const result = await db.query(q, [newTaskId]);
+      const result = await client.query(q, [newTaskId]);
 
       const [singleTask] = result.rows;
       
@@ -371,9 +378,11 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
 
     } catch (error) {
       // This will auto-rollback if transaction is active
-      await db.query("ROLLBACK").catch(() => { });
+      await client.query("ROLLBACK").catch(() => { });
       console.error("Task duplication failed:", error);
       throw error;
+    } finally {
+      client.release();
     }
   }
 }

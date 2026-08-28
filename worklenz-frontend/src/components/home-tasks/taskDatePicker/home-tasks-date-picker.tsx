@@ -7,9 +7,6 @@ import { SocketEvents } from '@/shared/socket-events';
 import type { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
-import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 import { getUserSession } from '@/utils/session-helper';
 import { getDueDateStatus, getDueDateColor, getDueDateAriaLabel } from '@/utils/dueDateColorHelper';
 import './home-tasks-date-picker.css';
@@ -22,13 +19,8 @@ type HomeTasksDatePickerProps = {
 };
 
 const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
-  const { socket, connected } = useSocket();
-  const dispatch = useAppDispatch();
+  const { socket } = useSocket();
   const { t } = useTranslation('home');
-  const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
-  const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
-    skip: false,
-  });
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -44,21 +36,6 @@ const HomeTasksDatePicker = ({ record }: HomeTasksDatePickerProps) => {
   useEffect(() => {
     setSelectedDate(initialDate);
   }, [initialDate]);
-
-  const handleChangeReceived = (value: any) => {
-    refetch();
-    // Invalidate task counts cache to refresh calendar badges
-    dispatch(homePageApi.util.invalidateTags(['taskCounts']));
-  };
-
-  useEffect(() => {
-    socket?.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleChangeReceived);
-    socket?.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleChangeReceived);
-    return () => {
-      socket?.removeListener(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleChangeReceived);
-      socket?.removeListener(SocketEvents.TASK_STATUS_CHANGE.toString(), handleChangeReceived);
-    };
-  }, [connected]);
 
   const handleEndDateChanged = (value: Dayjs | null, task: IProjectTask) => {
     setSelectedDate(value);

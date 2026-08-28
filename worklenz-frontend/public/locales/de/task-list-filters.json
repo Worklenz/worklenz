@@ -2,7 +2,6 @@
   "searchButton": "Suchen",
   "resetButton": "Zurücksetzen",
   "searchInputPlaceholder": "Nach Namen suchen",
-
   "sortText": "Sortieren",
   "statusText": "Status",
   "phaseText": "Phase",
@@ -37,18 +36,14 @@
   "reporterText": "Berichterstatter",
   "dueTimeText": "Fälligkeitszeit",
   "duetimeText": "Fälligkeitszeit",
-
   "lowText": "Niedrig",
   "mediumText": "Mittel",
   "highText": "Hoch",
-
   "createStatusButtonTooltip": "Status-Einstellungen",
   "configPhaseButtonTooltip": "Phasen-Einstellungen",
   "noLabelsFound": "Keine Labels gefunden",
-
   "addStatusButton": "Status hinzufügen",
   "addPhaseButton": "Phase hinzufügen",
-
   "createStatus": "Status erstellen",
   "name": "Name",
   "category": "Kategorie",
@@ -56,7 +51,6 @@
   "pleaseEnterAName": "Bitte geben Sie einen Namen ein",
   "pleaseSelectACategory": "Bitte wählen Sie eine Kategorie",
   "create": "Erstellen",
-
   "searchTasks": "Aufgaben suchen...",
   "searchPlaceholder": "Suchen",
   "fieldsText": "Felder",
@@ -84,6 +78,7 @@
   "close": "Schließen",
   "cannotMoveStatus": "Status kann nicht verschoben werden",
   "cannotMoveStatusMessage": "Dieser Status kann nicht verschoben werden, da die Kategorie '{{categoryName}}' leer bleiben würde. Jede Kategorie muss mindestens einen Status haben.",
+  "dropToMoveToCategory": "Hier ablegen, um zu {{categoryName}} zu verschieben",
   "ok": "OK",
   "clearSort": "Sortierung löschen",
   "sortAscending": "Aufsteigend sortieren",
@@ -91,5 +86,6 @@
   "sortByField": "Sortieren nach {{field}}",
   "ascendingOrder": "Aufsteigend",
   "descendingOrder": "Absteigend",
-  "currentSort": "Aktuelle Sortierung: {{field}} {{order}}"
+  "currentSort": "Aktuelle Sortierung: {{field}} {{order}}",
+  "apply": "Anwenden"
 }

@@ -22,8 +22,9 @@ import {
   BUSINESS_PLAN_LIMIT,
   APPSUMO_PLAN_LIMIT,
 } from "../shared/constants";
-import business from "../business";
-import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
+import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
+import { updateUsers } from "../ee/shared/paddle-requests";
+import { getTeamMemberSeatLimit } from "../ee/shared/subscription-limits";
 import {
   canAssignRole,
   canManageTargetRole,
@@ -36,8 +37,23 @@ export default class TeamMembersController extends WorklenzControllerBase {
   private static async ensureAssignableRole(
     req: IWorkLenzRequest,
     roleName?: string | null,
+    teamMemberId?: string,
   ): Promise<IWorkLenzResponse | null> {
-    if (roleName && !canAssignRole(req.user, roleName)) {
+    if (!roleName) {
+      return null;
+    }
+
+    // Allow team owner to maintain their own role (Owner)
+    if (
+      req.user?.owner &&
+      roleName === TEAM_ROLE_NAMES.OWNER &&
+      teamMemberId &&
+      teamMemberId === req.user.team_member_id
+    ) {
+      return null; // Allow owner to keep their own role
+    }
+
+    if (!canAssignRole(req.user, roleName)) {
       return new ServerResponse(
         false,
         null,
@@ -64,6 +80,11 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     if (!targetRoleName) {
       return new ServerResponse(false, null, "Team member not found.") as unknown as IWorkLenzResponse;
+    }
+
+    // If team owner is viewing/managing their own details, allow it
+    if (req.user.owner && teamMemberId === req.user.team_member_id) {
+      return null;
     }
 
     if (!canManageTargetRole(req.user, targetRoleName)) {
@@ -174,7 +195,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
      * Checks the subscription status of the team.
      * @type {Object} subscriptionData - Object containing subscription information
      */
-    const subscriptionData = await business.featureGate.getTeamSubscription(
+    const subscriptionData = await checkTeamSubscriptionStatus(
       req.user?.team_id,
     );
 
@@ -445,18 +466,6 @@ export default class TeamMembersController extends WorklenzControllerBase {
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
   ): Promise<IWorkLenzResponse> {
-    // Helper function to check for encoded components
-    function containsEncodedComponents(x: string) {
-      return decodeURI(x) !== decodeURIComponent(x);
-    }
-
-    // Decode search parameter if it contains encoded components
-    if (req.query.search && typeof req.query.search === "string") {
-      if (containsEncodedComponents(req.query.search)) {
-        req.query.search = decodeURIComponent(req.query.search);
-      }
-    }
-
     // team_id is $1, search params start at $2 (isMemberFilter=true puts search before team_id condition)
     const { searchQuery, searchParams, sortField, sortOrder, size, offset } =
       this.toPaginationOptions(req.query, ["u.name", "u.email"], true, 2);
@@ -497,7 +506,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     const paginate =
-      req.query.all === "false" ? `LIMIT ${size} OFFSET ${offset}` : "";
+      req.query.all !== "true" ? `LIMIT ${size} OFFSET ${offset}` : "";
 
     const q = `
       SELECT COUNT(*) AS total,
@@ -528,16 +537,48 @@ export default class TeamMembersController extends WorklenzControllerBase {
                                   WHERE team_member_id = team_members.id
                                     AND email_invitations.team_id = team_members.team_id) AS pending_invitation,
                            team_members.reports_to_member_id,
-                           (SELECT name FROM team_member_info_view 
+                           (SELECT name FROM team_member_info_view
                             WHERE team_member_info_view.team_member_id = team_members.reports_to_member_id) AS current_team_lead_name,
                             active
                     FROM team_members
                            LEFT JOIN users u ON team_members.user_id = u.id
                     WHERE ${searchQuery} team_id = $1
+                      AND NOT EXISTS(
+                            SELECT 1
+                            FROM project_members pm_guest
+                            WHERE pm_guest.team_member_id = team_members.id
+                              AND pm_guest.project_access_level_id = (
+                                  SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                              )
+                              AND NOT EXISTS(
+                                  SELECT 1
+                                  FROM project_members pm_non_guest
+                                  WHERE pm_non_guest.team_member_id = team_members.id
+                                    AND pm_non_guest.project_access_level_id != (
+                                        SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                                    )
+                              )
+                        )
                     ORDER BY ${mappedSortField} ${sortOrder} ${paginate}) t) AS data
       FROM team_members
              LEFT JOIN users u ON team_members.user_id = u.id
       WHERE ${searchQuery} team_id = $1
+        AND NOT EXISTS(
+              SELECT 1
+              FROM project_members pm_guest
+              WHERE pm_guest.team_member_id = team_members.id
+                AND pm_guest.project_access_level_id = (
+                    SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                )
+                AND NOT EXISTS(
+                    SELECT 1
+                    FROM project_members pm_non_guest
+                    WHERE pm_non_guest.team_member_id = team_members.id
+                      AND pm_non_guest.project_access_level_id != (
+                          SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                      )
+                )
+        )
     `;
     const result = await db.query(q, [
       req.user?.team_id || null,
@@ -613,7 +654,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
                   AND email_invitations.team_id = team_members.team_id
                 LIMIT 1)
               ) AS email,
-            EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin
+            EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) AS is_admin,
+            reports_to_member_id,
+            active
       FROM team_members
       WHERE id = $1
         AND team_id = $2;
@@ -673,6 +716,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const roleAssignmentError = await this.ensureAssignableRole(
       req,
       requestedRoleName,
+      req.params.id,
     );
 
     if (roleAssignmentError) {
@@ -831,13 +875,41 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(targetManagementError);
     }
 
+    // Prevent deletion of team owners
+    const targetRoleName = await getTeamMemberRoleName(id, req.user?.team_id || '');
+    if (targetRoleName === TEAM_ROLE_NAMES.OWNER) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You are not authorized to delete the team owner.",
+          ),
+        );
+    }
+
     if (!id || !req.user?.team_id)
       return res
         .status(200)
         .send(new ServerResponse(false, "Required fields are missing."));
 
+    // Prevent self-removal using the current session identity already resolved on the request.
+    const isSelfRemoval = !!req.user?.team_member_id && id === req.user.team_member_id;
+    if (isSelfRemoval) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You cannot remove yourself from the team.",
+          ),
+        );
+    }
+
     // check subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(
+    const subscriptionData = await checkTeamSubscriptionStatus(
       req.user?.team_id,
     );
     if (statusExclude.includes(subscriptionData.subscription_status)) {
@@ -871,20 +943,24 @@ export default class TeamMembersController extends WorklenzControllerBase {
     //   }
     // }
 
-    NotificationsService.sendNotification({
-      receiver_socket_id: data.member.socket_id,
+    const actorUserId = req.user?.id ?? null;
+
+    NotificationsService.sendNotificationToUser(
+      data.member.id,
+      actorUserId,
+      data.member.team,
+      req.user?.team_id as string,
       message,
-      team: data.member.team,
-      team_id: req.user?.team_id,
-    });
+    );
 
     IO.emitByUserId(
       data.member.id,
-      req.user?.id || null,
+      actorUserId,
       SocketEvents.TEAM_MEMBER_REMOVED,
       {
         teamId: req.user?.team_id,
         message,
+        removedUserId: data.member.id,
       },
     );
     return res.status(200).send(new ServerResponse(true, result.rows));
@@ -1612,13 +1688,27 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(targetManagementError);
     }
 
+    // Prevent deactivation of team owners
+    const targetRoleName = await getTeamMemberRoleName(req.params.id, req.user?.team_id || '');
+    if (targetRoleName === TEAM_ROLE_NAMES.OWNER) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You are not authorized to deactivate the team owner.",
+          ),
+        );
+    }
+
     if (!req.user?.team_id)
       return res
         .status(200)
         .send(new ServerResponse(false, "Required fields are missing."));
 
     // check subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(
+    const subscriptionData = await checkTeamSubscriptionStatus(
       req.user?.team_id,
     );
     if (statusExclude.includes(subscriptionData.subscription_status)) {
@@ -1885,7 +1975,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         .send(new ServerResponse(false, "Required fields are missing."));
 
     // check the subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(
+    const subscriptionData = await checkTeamSubscriptionStatus(
       req.body.team_id,
     );
 
@@ -1920,7 +2010,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     // if (subscriptionData.status === "trialing") break;
     if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
       if (subscriptionData.subscription_status === "active") {
-        const response: any = await business.featureGate.syncSeatCount(
+        const response = await updateUsers(
           subscriptionData.subscription_id,
           subscriptionData.quantity + (req.body.emails.length || 1),
         );
@@ -1971,7 +2061,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     }
 
     // Check subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(teamId);
+    const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
     // Handle self-hosted subscriptions - allow link generation
     if (subscriptionData.subscription_type === "SELF_HOSTED") {
@@ -2160,7 +2250,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         if (inactiveResult.rows.length > 0) {
           // Update existing inactive link
           const updateQuery = `
-            UPDATE team_invitation_links 
+            UPDATE team_invitation_links
             SET token = $2, created_by = $3, expires_at = $4, job_title_id = $5,
                 role_name = $6, is_admin = $7, max_usage = $8, status = 'active',
                 usage_count = 0, updated_at = NOW()
@@ -2185,9 +2275,9 @@ export default class TeamMembersController extends WorklenzControllerBase {
           // Create new invitation link
           const insertQuery = `
             INSERT INTO team_invitation_links (
-              team_id, token, created_by, expires_at, job_title_id, 
+              team_id, token, created_by, expires_at, job_title_id,
               role_name, is_admin, max_usage
-            ) 
+            )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id, token, expires_at, created_at
           `;
@@ -2351,7 +2441,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       }
 
       // Check subscription status for the target team
-      const subscriptionData = await business.featureGate.getTeamSubscription(teamId);
+      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
       // Handle self-hosted subscriptions
       if (subscriptionData.subscription_type === "SELF_HOSTED") {
@@ -2466,7 +2556,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       // Check if user already exists in the team
       if (userId) {
         const existingMemberQuery = `
-          SELECT id FROM team_members 
+          SELECT id FROM team_members
           WHERE user_id = $1 AND team_id = $2
         `;
         const existingResult = await db.query(existingMemberQuery, [
@@ -2494,7 +2584,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       // Check if email already exists in the team
       const emailExistsQuery = `
         SELECT EXISTS(
-          SELECT 1 FROM team_member_info_view 
+          SELECT 1 FROM team_member_info_view
           WHERE email = $1 AND team_id = $2
         )
       `;
@@ -2544,7 +2634,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         const member = newMembers[0];
         const usageQuery = `
           INSERT INTO invitation_link_usage (
-            team_invitation_link_id, user_id, team_member_id, 
+            team_invitation_link_id, user_id, team_member_id,
             email, name, ip_address, user_agent
           ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         `;
@@ -2608,7 +2698,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     try {
       const q = `
-        UPDATE team_invitation_links 
+        UPDATE team_invitation_links
         SET status = 'revoked', updated_at = NOW()
         WHERE team_id = $1 AND status = 'active'
         RETURNING id

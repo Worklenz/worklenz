@@ -9,6 +9,7 @@ import {
   Member,
   Project,
   Settings,
+  ProjectTimelineItem,
 } from '@/types/schedule/schedule-v2.types';
 import { IServerResponse } from '@/types/common.types';
 
@@ -85,6 +86,7 @@ interface TaskTimelineFilters {
   projectId?: string;
   statusId?: string;
   priorityId?: string;
+  clientName?: string;
 }
 
 interface TaskTimelineItem {
@@ -103,6 +105,8 @@ interface TaskTimelineItem {
   priority_id: string;
   priority_name: string;
   priority_color: string;
+  phase_name: string | null;
+  phase_color: string | null;
   done: boolean;
   total_minutes: number;
   assignees: Array<{
@@ -185,8 +189,12 @@ export const scheduleApi = createApi({
       headers.set('Content-Type', 'application/json');
       headers.set('Accept', 'application/json');
 
-      // Add CSRF token for state-changing requests
-      const isStateChanging = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(type || '');
+      // Add CSRF token for state-changing requests. `type` here is RTK Query's own
+      // 'query' | 'mutation' discriminator, not the HTTP verb — comparing it against
+      // HTTP method strings was always false, so the CSRF header was never attached
+      // and every mutation in this API slice was silently rejected (403) by the
+      // backend's global CSRF check.
+      const isStateChanging = type === 'mutation';
       if (isStateChanging) {
         // Ensure CSRF token is available
         await ensureCsrfToken();
@@ -211,6 +219,7 @@ export const scheduleApi = createApi({
     'TaskTimeline',
     'TimeOff',
     'Capacity',
+    'ProjectsTimeline',
   ],
   endpoints: builder => ({
     // Settings endpoints
@@ -280,9 +289,30 @@ export const scheduleApi = createApi({
         if (filters.projectId) params.append('projectId', filters.projectId);
         if (filters.statusId) params.append('statusId', filters.statusId);
         if (filters.priorityId) params.append('priorityId', filters.priorityId);
+        if (filters.clientName) params.append('clientName', filters.clientName);
         return `/tasks?${params.toString()}`;
       },
       providesTags: ['TaskTimeline'],
+    }),
+
+    // ============================================
+    // Project Timeline Endpoints (Portfolio View, NEW)
+    // ============================================
+    fetchProjectsTimeline: builder.query<IServerResponse<ProjectTimelineItem[]>, void>({
+      query: () => '/timeline/projects',
+      providesTags: ['ProjectsTimeline'],
+    }),
+
+    updateProjectTimelineDates: builder.mutation<
+      IServerResponse<any>,
+      { projectId: string; start_date: string; end_date: string }
+    >({
+      query: ({ projectId, start_date, end_date }) => ({
+        url: `/timeline/projects/${projectId}/dates`,
+        method: 'PUT',
+        body: { start_date, end_date },
+      }),
+      invalidatesTags: ['ProjectsTimeline'],
     }),
 
     updateTaskDates: builder.mutation<IServerResponse<any>, UpdateTaskDatesRequest>({
@@ -557,6 +587,10 @@ export const {
   useFetchTaskTimelineQuery,
   useLazyFetchTaskTimelineQuery,
   useUpdateTaskDatesMutation,
+
+  // Project Timeline hooks (Portfolio View, NEW)
+  useFetchProjectsTimelineQuery,
+  useUpdateProjectTimelineDatesMutation,
   useFetchTaskConflictsQuery,
   useLazyFetchTaskConflictsQuery,
 

@@ -3,6 +3,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { IRPTTeam } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { allTasksReportsApiService } from '@/api/reporting/all-tasks-reports.api.service';
+import { toArray } from '@/utils/to-array';
 
 // Types
 export type AllTasksGroupBy =
@@ -156,7 +157,7 @@ const getSelectedTeamIds = (state: AllTasksReportsState): string[] => {
 
 export const fetchAllTasksTeams = createAsyncThunk('allTasksReports/fetchTeams', async () => {
   const res = await reportingApiService.getOverviewTeams();
-  return res.body;
+  return res.body ?? [];
 });
 
 export const fetchAllTasks = createAsyncThunk(
@@ -264,6 +265,19 @@ const allTasksReportsSlice = createSlice({
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
       state.index = 1;
+    },
+
+    // Applies a single task's updated assignees/names locally instead of
+    // refetching the whole (potentially filtered/paginated) list on every
+    // assign/unassign toggle.
+    updateTaskAssignees: (
+      state,
+      action: PayloadAction<{ id: string; assignees?: IProjectTask['assignees']; names?: IProjectTask['names'] }>
+    ) => {
+      const task = state.tasksList.find(t => t.id === action.payload.id);
+      if (!task) return;
+      task.assignees = action.payload.assignees;
+      task.names = action.payload.names;
     },
 
     // Used internally by setTeamsAndFetch only.
@@ -445,7 +459,7 @@ const allTasksReportsSlice = createSlice({
         state.teamsLoaded = false;
       })
       .addCase(fetchAllTasksTeams.fulfilled, (state, action) => {
-        state.teams = action.payload.map(team => ({
+        state.teams = toArray(action.payload).map(team => ({
           ...team,
           selected: true,
         }));
@@ -489,6 +503,7 @@ export const {
   setSortOrder,
   setSort,
   setSearchQuery,
+  updateTaskAssignees,
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
   setSelectedProjects,

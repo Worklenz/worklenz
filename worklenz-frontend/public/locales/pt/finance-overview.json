@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Visão geral financeira",
+  "pageSubTitle": "Orçamento, custo real e variação resumidos em todos os projetos. Clique em um projeto para ver sua aba financeira completa.",
+  "noBudgetSet": "Sem orçamento definido",
+  "emptyValue": "—",
+  "viewFinanceButton": "Ver finanças",
+  "viewButton": "Ver",
+  "exportButton": "Exportar como Excel",
+  "exportSuccess": "Exportado com sucesso.",
+  "exportFailed": "Falha ao exportar.",
+  "kpiCard": {
+    "totalManualBudget": "Orçamento manual total",
+    "totalActualCost": "Custo real total",
+    "totalVariance": "Variação total",
+    "budgetUtilization": "Utilização do orçamento",
+    "estimatedHours": "Horas estimadas",
+    "mixedCurrencyWarning": "Os projetos usam moedas diferentes. Este total não foi convertido entre moedas.",
+    "mixedCurrencyNote": "Exibindo {{dominant}} para {{count}} de {{total}} projetos. Também inclui: {{others}}.",
+    "prevCurrency": "Moeda anterior",
+    "nextCurrency": "Próxima moeda"
+  },
+  "attention": {
+    "title": "Projetos que precisam de atenção",
+    "emptyState": "Todos os projetos estão dentro do orçamento.",
+    "overBudget": "Acima do orçamento",
+    "watch": "Monitorar",
+    "ofBudgetSpent": "do orçamento gasto"
+  },
+  "distribution": {
+    "title": "Distribuição do status do orçamento",
+    "onTrack": "No prazo (≤65% gasto)",
+    "watch": "Monitorar (65–100% gasto)",
+    "overBudget": "Acima do orçamento (>100% gasto)",
+    "projects": "projetos",
+    "total": "Total",
+    "breakdown": "Detalhamento de custos: {{fixed}} fixo · {{timeBased}} baseado em tempo"
+  },
+  "tableCard": {
+    "title": "Saúde financeira do projeto"
+  },
+  "currencyNote": {
+    "convertedPrefix": "Totais de KPI convertidos para",
+    "convertedSuffix": "usando taxas de cambio em tempo real. Taxas atualizadas {{time}}.",
+    "changeCurrency": "Alterar moeda",
+    "unavailable": "Taxas de cambio indisponiveis - os totais de KPI nao podem ser convertidos.",
+    "checkSettings": "Verificar configuracoes de moeda",
+    "fetchUnavailable": "Servico de taxas de cambio indisponivel.",
+    "fetchFailed": "Falha ao obter as taxas de cambio."
+  },
+  "table": {
+    "project": "Projeto",
+    "client": "Cliente",
+    "manualBudget": "Orçamento manual",
+    "actualCost": "Custo real",
+    "variance": "Variação",
+    "budgetUtilization": "Utilização do orçamento",
+    "estHours": "Horas est.",
+    "searchPlaceholder": "Pesquisar projetos"
+  }
+}

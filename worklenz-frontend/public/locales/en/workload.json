@@ -10,12 +10,37 @@
 
   "overview": {
     "teamMembers": "Team Members",
+    "teamMembersTooltip": {
+      "title": "Team composition and allocation status",
+      "memberStatusLabel": "Member Status:",
+      "totalMembersLabel": "Total Members:",
+      "overallocatedLabel": "Overallocated:",
+      "underutilizedLabel": "Underutilized:",
+      "optimalLabel": "Optimal:"
+    },
     "totalWorkload": "Total Workload",
+    "totalWorkloadTooltip": {
+      "title": "Total estimated workload across all team members",
+      "includesLabel": "Includes:",
+      "estimatedHoursLabel": "Estimated Hours:",
+      "actualHoursLoggedLabel": "Actual Hours Logged:",
+      "progressLabel": "Progress:"
+    },
     "hours": "hours",
     "averageUtilization": "Average Utilization",
+    "averageUtilizationTooltip": {
+      "averageLabel": "Average:",
+      "membersLabel": "Members:",
+      "totalAssignedLabel": "Total Assigned:",
+      "totalCapacityLabel": "Total Capacity:"
+    },
     "criticalTasks": "Critical Tasks",
-    "totalTasks": "{{count}} Total Tasks",
-    "criticalTasksTooltip": "High priority tasks requiring immediate attention.\n\nTask Breakdown:\n• Critical Tasks: {{criticalTasks}}\n• Total Tasks: {{totalTasks}}\n• Critical Percentage: {{criticalPercentage}}%"
+    "criticalTasksTooltip": {
+      "criticalTasksLabel": "Critical Tasks:",
+      "totalTasksLabel": "Total Tasks:",
+      "criticalPercentageLabel": "Critical Percentage:"
+    },
+    "totalTasks": "{{count}} Total Tasks"
   },
 
   "chart": {
@@ -60,6 +85,7 @@
   "table": {
     "member": "Member",
     "capacity": "Capacity",
+    "dailyCapacityLabel": "Daily Capacity (hours)",
     "allocated": "Allocated",
     "utilization": "Utilization",
     "status": "Status",
@@ -79,7 +105,26 @@
     "unknown": "Unknown",
     "defaultPriority": "Medium",
     "defaultStatus": "To Do",
-    "hours": "hours"
+    "hours": "hours",
+    "currentCapacityLabel": "Current capacity:",
+    "allocatedLabel": "Allocated:",
+    "utilizationLabel": "Utilization:",
+    "statusLabel": "Status:"
+  },
+
+  "export": {
+    "taskName": "Task Name",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "priority": "Priority",
+    "status": "Status",
+    "progress": "Progress (%)",
+    "memberLabel": "Member:",
+    "emailLabel": "Email:",
+    "capacityLabel": "Capacity:",
+    "allocatedLabel": "Allocated:",
+    "utilizationLabel": "Utilization:",
+    "statusLabel": "Status:"
   },
 
   "status": {
@@ -142,20 +187,22 @@
   "common": {
     "cancel": "Cancel",
     "save": "Save",
-    "close": "Close"
+    "close": "Close",
+    "enterCapacityValue": "Please enter a capacity value",
+    "capacityRangeError": "Must be between 1 and 24 hours"
   },
 
   "calculations": {
-    "utilizationFormula": "Utilization = (Assigned Hours ÷ Weekly Capacity) × 100",
-    "weeklyCapacityFormula": "Weekly Capacity = Daily Hours × Working Days per Week",
-    "utilizationTooltip": "{{utilization}}% utilization\n\nCalculation:\n• Assigned Hours: {{assignedHours}}h\n• Weekly Capacity: {{weeklyCapacity}}h ({{dailyHours}}h × {{workingDays}} days)\n• Formula: ({{assignedHours}} ÷ {{weeklyCapacity}}) × 100 = {{utilization}}%",
-    "capacityTooltip": "Weekly Capacity: {{weeklyCapacity}} hours\n\nBased on organization settings:\n• Daily Hours: {{dailyHours}}h\n• Working Days: {{workingDays}} per week\n• Formula: {{dailyHours}}h × {{workingDays}} days = {{weeklyCapacity}}h",
+    "utilizationFormula": "Utilization = (Assigned Hours \u00f7 Weekly Capacity) \u00d7 100",
+    "weeklyCapacityFormula": "Weekly Capacity = Daily Hours \u00d7 Working Days per Week",
+    "utilizationTooltip": "{{utilization}}% utilization\n\nCalculation:\n\u2022 Assigned Hours: {{assignedHours}}h\n\u2022 Weekly Capacity: {{weeklyCapacity}}h ({{dailyHours}}h \u00d7 {{workingDays}} days)\n\u2022 Formula: ({{assignedHours}} \u00f7 {{weeklyCapacity}}) \u00d7 100 = {{utilization}}%",
+    "capacityTooltip": "Weekly Capacity: {{weeklyCapacity}} hours\n\nBased on organization settings:\n\u2022 Daily Hours: {{dailyHours}}h\n\u2022 Working Days: {{workingDays}} per week\n\u2022 Formula: {{dailyHours}}h \u00d7 {{workingDays}} days = {{weeklyCapacity}}h",
     "statusTooltip": {
       "overallocated": "Overallocated (>100% utilization)\n\nThis member has more assigned work than their available capacity. Consider redistributing tasks or adjusting capacity.",
       "underutilized": "Underutilized (<{{threshold}}% utilization)\n\nThis member has capacity for additional work. Consider assigning more tasks to optimize resource utilization.",
       "optimal": "Optimal utilization ({{threshold}}-100%)\n\nThis member has a healthy workload balance between assigned tasks and available capacity."
     },
     "workingDaysInfo": "Working days based on organization schedule:\n{{workingDaysList}}",
-    "averageUtilizationTooltip": "Team Average: {{average}}%\n\nCalculated from {{memberCount}} team members:\n• Total Assigned Hours: {{totalAssigned}}h\n• Total Team Capacity: {{totalCapacity}}h\n• Formula: ({{totalAssigned}} ÷ {{totalCapacity}}) × 100 = {{average}}%"
+    "averageUtilizationTooltip": "Team Average: {{average}}%\n\nCalculated from {{memberCount}} team members:\n\u2022 Total Assigned Hours: {{totalAssigned}}h\n\u2022 Total Team Capacity: {{totalCapacity}}h\n\u2022 Formula: ({{totalAssigned}} \u00f7 {{totalCapacity}}) \u00d7 100 = {{average}}%"
   }
 }

@@ -84,6 +84,7 @@
   "close": "Close",
   "cannotMoveStatus": "Cannot Move Status",
   "cannotMoveStatusMessage": "Cannot move this status because it would leave the '{{categoryName}}' category empty. Each category must have at least one status.",
+  "dropToMoveToCategory": "Drop here to move to {{categoryName}}",
   "ok": "OK",
   "clearSort": "Clear Sort",
   "sortAscending": "Sort Ascending",
@@ -91,5 +92,6 @@
   "sortByField": "Sort by {{field}}",
   "ascendingOrder": "Ascending",
   "descendingOrder": "Descending",
-  "currentSort": "Current sort: {{field}} {{order}}"
+  "currentSort": "Current sort: {{field}} {{order}}",
+  "apply": "Apply"
 }

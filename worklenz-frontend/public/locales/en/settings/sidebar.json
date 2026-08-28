@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Settings",
   "searchSettings": "Search settings...",
   "account-personal": "Account & Personal",
   "workspace-setup": "Workspace Setup",
@@ -36,10 +37,16 @@
   "appearance-search": "theme dark mode light mode display look interface",
   "ratecard": "Rate Card",
   "ratecard-search": "billing finance pricing rates hourly cost charge rate card",
+  "organization-currency": "Currency",
+  "organization-currency-search": "currency exchange rate base currency finance conversion organization",
   "integrations": "Integrations",
   "integrations-search": "apps connections slack api system integrations connected tools",
+  "configuration": "Configuration",
+  "configuration-search": "configuration settings general settings organization config",
   "account-deletion": "Delete Account",
   "account-deletion-search": "remove account delete profile danger zone close account",
   "mobile-app": "Mobile App",
-  "mobile-app-search": "ios android phone mobile download qr code app store google play"
+  "mobile-app-search": "ios android phone mobile download qr code app store google play",
+  "configuration": "Configuration",
+  "configuration-search": "settings workspace organization configuration settings management"
 }

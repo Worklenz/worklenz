@@ -10,7 +10,8 @@ import { getAssignees, ITaskAssignee, runAssignOrRemove } from "./on-quick-assig
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
-import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {isTaskCreationRestricted} from "../../shared/task-creation-restriction";
 
 interface TaskAssigneesChangeData {
   task_id: string;
@@ -19,18 +20,6 @@ interface TaskAssigneesChangeData {
   project_id: string;
   reporter_id: string;
   mode: number; // 0 for assign, 1 for unassign
-}
-
-async function isTaskCreationRestricted(userId: string, projectId: string): Promise<boolean> {
-  try {
-    const result = await db.query(
-      "SELECT is_task_creation_restricted($1, $2) AS restricted;",
-      [userId, projectId]
-    );
-    return result.rows[0]?.restricted === true;
-  } catch {
-    return false;
-  }
 }
 
 export async function on_task_assignees_change(
@@ -45,7 +34,7 @@ export async function on_task_assignees_change(
 
     const body: TaskAssigneesChangeData = JSON.parse(rawData);
     
-    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    const hasAccess = await verifyNonGuestTaskAccessSocket(socket, body.task_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, 'TASK_ASSIGNEES_CHANGE', 'task', body.task_id);
       return;
@@ -151,6 +140,11 @@ export async function on_task_assignees_change(
     // Notify project updates once after all changes
     notifyProjectUpdates(socket, body.task_id);
 
+    // Bump updated_at so the "Last Updated" column reflects the assignment change
+    // (on-quick-assign-or-remove already does this for inline row clicks; we must
+    //  mirror it here for the full assignee picker path)
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [body.task_id]);
+
     // Send external notifications (Slack, Teams) if there were assignments
     if (addedAssignees.length > 0) {
       try {
@@ -170,8 +164,8 @@ export async function on_task_assignees_change(
       }
     }
 
-    // Emit updated assignee list
-    socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), { assigneeIds: newAssignees });
+    // Emit updated assignee list (include task_id so the frontend can update the correct task)
+    socket.emit(SocketEvents.TASK_ASSIGNEES_CHANGE.toString(), { task_id: body.task_id, assigneeIds: newAssignees });
   } catch (error) {
     log_error(error);
   }

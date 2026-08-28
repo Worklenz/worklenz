@@ -39,6 +39,11 @@ projectTemplatesApiRouter.get(
   safeControllerFunction(ProjectTemplatesController.getCustomTemplates)
 );
 
+projectTemplatesApiRouter.get(
+  "/custom-template/:id",
+  safeControllerFunction(ProjectTemplatesController.getCustomTemplateById)
+);
+
 projectTemplatesApiRouter.post(
   "/import-custom-template",
   safeControllerFunction(ProjectTemplatesController.importCustomTemplate)

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { isBusinessPlan } from '@/ee/utils/subscription-utils';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const AdminCenterSidebar: React.FC = () => {
@@ -15,14 +15,13 @@ const AdminCenterSidebar: React.FC = () => {
   const location = useLocation();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const { isBusinessPlan } = useBusinessFeatures();
 
   type MenuItem = Required<MenuProps>['items'][number];
   const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
 
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
-      return isBusinessPlan;
+      return isBusinessPlan(currentSession);
     }
     if (item.selfHostedExcluded && isSelfHosted) {
       return false;

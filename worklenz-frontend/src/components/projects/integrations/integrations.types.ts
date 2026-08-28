@@ -36,5 +36,7 @@ export interface IntegrationItemProps {
   badge?: number;
   channels?: string[];
   comingSoon?: boolean;
+  /** Shown with a "Business" lock badge; still clickable (onClick should prompt an upgrade). */
+  locked?: boolean;
   onClick?: () => void;
 }

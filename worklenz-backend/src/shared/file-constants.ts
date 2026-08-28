@@ -54,6 +54,9 @@ class FileConstants {
     FileConstants.getEmailTemplate(IEmailTemplateType.TaskComment);
     FileConstants.getEmailTemplate(IEmailTemplateType.ProjectComment);
     FileConstants.getEmailTemplate(IEmailTemplateType.ClientInvitation);
+    FileConstants.getEmailTemplate(IEmailTemplateType.DailyTaskReminder);
+    FileConstants.getEmailTemplate(IEmailTemplateType.WeeklyStartSummary);
+    FileConstants.getEmailTemplate(IEmailTemplateType.WeeklyEndSummary);
   }
 
   static getEmailTemplate(type: IEmailTemplateType) {
@@ -92,6 +95,12 @@ class FileConstants {
         return FileConstants.readPugEmailTemplate("client-portal-new-request");
       case IEmailTemplateType.ClientPortalRequestComment:
         return FileConstants.readPugEmailTemplate("client-portal-request-comment");
+      case IEmailTemplateType.DailyTaskReminder:
+        return FileConstants.readPugEmailTemplate("daily-task-reminder");
+      case IEmailTemplateType.WeeklyStartSummary:
+        return FileConstants.readPugEmailTemplate("weekly-start-summary");
+      case IEmailTemplateType.WeeklyEndSummary:
+        return FileConstants.readPugEmailTemplate("weekly-end-summary");
       default:
         return null;
     }

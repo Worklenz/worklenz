@@ -22,7 +22,6 @@ interface FilterDropdownProps {
   className?: string;
   onManageStatus?: () => void;
   onManagePhase?: () => void;
-  projectPhaseLabel?: string;
 }
 
 export const FilterDropdown: React.FC<FilterDropdownProps> = ({
@@ -35,7 +34,6 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   className = '',
   onManageStatus,
   onManagePhase,
-  projectPhaseLabel,
 }) => {
   const { t } = useTranslation('task-list-filters');
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
@@ -170,7 +168,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
             >
               <SettingOutlined className="w-3.5 h-3.5" />
               {t('manage', { defaultValue: 'Manage' })}{' '}
-              {projectPhaseLabel || t('phasesText', { defaultValue: 'Phases' })}
+              {t('phasesText', { defaultValue: 'Phases' })}
             </button>
           )}
           {section.selectedValues[0] === 'status' && (

@@ -5,6 +5,9 @@
     "clickNavigateTimeline": "Click to navigate to task in timeline",
     "clickTimelineSetDates": "Click on timeline to set dates for this task",
     "clickTimelineAddDates": "Click timeline to add dates",
+    "setTaskDate": "Set Task Dates",
+    "setTaskDateHint": "Click on timeline to set a {{duration}} date range for this task",
+    "addTask": "Add Task",
     "resizeStartDate": "Resize start date",
     "resizeEndDate": "Resize end date",
     "dragToMove": "Drag to move task",
@@ -14,11 +17,53 @@
     "phaseTitle": "Phase: {{name}} - {{startDate}} to {{endDate}}",
     "taskTitle": "{{name}} - {{startDate}} to {{endDate}}",
     "datesUpdatedSuccessfully": "Task dates updated successfully",
-    "failedToUpdateDates": "Failed to update task dates"
+    "failedToUpdateDates": "Failed to update task dates",
+    "addSubtask": "Add Subtask",
+    "addTaskInputPlaceholder": "Type task name and press Enter to save",
+    "writeTaskName": "Write a task name",
+    "writeSubtaskName": "Write a subtask name",
+    "expandSubtasks": "Expand subtasks",
+    "collapseSubtasks": "Collapse subtasks",
+    "finishToStartDependency": "Finish-to-Start dependency",
+    "startToFinishDependency": "Start-to-Finish dependency",
+    "dependencyType": "Dependency type",
+    "removeDependency": "Remove",
+    "circularDependencyError": "This would create a circular dependency.",
+    "dependencyCreatedSuccessfully": "Dependency created successfully.",
+    "dependencyRemovedSuccessfully": "Dependency removed successfully.",
+    "failedToCreateDependency": "Failed to create dependency.",
+    "failedToRemoveDependency": "Failed to remove dependency.",
+    "taskAddedToRoadmap": "Task added to the roadmap for the next 5 days.",
+    "failedToAddTaskToRoadmap": "Failed to add the task to the roadmap.",
+    "unscheduledTaskNotFound": "Unable to find the selected task."
   },
   "common": {
     "noStart": "No start",
     "noEnd": "No end"
+  },
+  "sections": {
+    "unmapped": "Unmapped"
+  },
+  "grouping": {
+    "phase": "Phase",
+    "status": "Status",
+    "priority": "Priority"
+  },
+  "toolbar": {
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "today": "Today",
+    "fullscreen": "Fullscreen",
+    "noDate": "No Date"
+  },
+  "viewMode": {
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter",
+    "year": "Year"
   },
   "businessPlan": {
     "phaseCreationRestricted": "Phase creation is available for Business plan users only",
@@ -26,5 +71,18 @@
     "phaseEditingRestricted": "Phase editing is available for Business plan users only",
     "taskEditingRestricted": "Task editing is available for Business plan users only",
     "phaseReorderingRestricted": "Phase reordering is available for Business plan users only"
-  }
+  },
+  "list": {
+    "taskNameColumn": "Task Name",
+    "addNewPhase": "Add New Phase",
+    "addNewStatus": "Add New Status",
+    "noTasksAvailable": "No tasks available"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Phases & Tasks",
+    "tasksCount": "tasks",
+    "complete": "complete"
+  },
+  "unscheduledTasksTitle": "Unscheduled tasks",
+  "noUnscheduledTasks": "No unscheduled tasks available."
 }

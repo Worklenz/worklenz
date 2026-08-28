@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import { useAuthService } from '../../../../hooks/useAuth';
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 type ProjectReportsDrawerProps = {
   selectedProject: IRPTProject | null;
@@ -102,7 +103,7 @@ const ProjectReportsDrawer = ({ selectedProject }: ProjectReportsDrawerProps) =>
           <Flex gap={8} align="center" style={{ fontWeight: 500 }}>
             <BankOutlined style={{ color: colors.lightGray }} />
             <Typography.Text>/</Typography.Text>
-            <Typography.Text>{selectedProject?.name}</Typography.Text>
+            <Typography.Text>{decodeHtmlEntities(selectedProject?.name)}</Typography.Text>
           </Flex>
 
           <Dropdown

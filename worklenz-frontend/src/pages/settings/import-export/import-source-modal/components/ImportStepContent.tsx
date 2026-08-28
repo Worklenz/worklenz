@@ -2,9 +2,11 @@ import React from 'react';
 import { message as antdMessage } from '@/shared/antd-imports';
 import { updateImportSource } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
+import type { ITaskStatusCategory } from '@/types/status.types';
 import { CsvMappingStepsContent } from './CsvMappingStepsContent';
 import { CsvReviewStepContent } from './CsvReviewStepContent';
 import { CsvSetupStepsContent } from './CsvSetupStepsContent';
+import { CsvPreviewStepContent } from './CsvPreviewStepContent';
 import { DirectIntegrationStepContent } from './DirectIntegrationStepContent';
 
 interface ImportStepContentProps {
@@ -42,7 +44,11 @@ interface ImportStepContentProps {
   selectedClickupSpace: string;
   selectedJiraProject: string;
   setSelectedJiraProject: React.Dispatch<React.SetStateAction<string>>;
-  persistAsanaSelection: (projectId: string, workspaceId?: string, projectName?: string) => Promise<void>;
+  persistAsanaSelection: (
+    projectId: string,
+    workspaceId?: string,
+    projectName?: string
+  ) => Promise<void>;
   selectedProject: string;
   spaceName: string;
   setSpaceName: React.Dispatch<React.SetStateAction<string>>;
@@ -50,7 +56,12 @@ interface ImportStepContentProps {
   setReviewSubScreen: React.Dispatch<React.SetStateAction<'main' | 'hierarchy' | 'fieldMapping'>>;
   hierarchyCount: number;
   mappedFieldCount: number;
-  fieldMappingRows: Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>;
+  fieldMappingRows: Array<{
+    source_field: string;
+    target_field: string;
+    required?: boolean;
+    include?: boolean;
+  }>;
   importMembers: boolean;
   setImportMembers: React.Dispatch<React.SetStateAction<boolean>>;
   importAttachments: boolean;
@@ -87,12 +98,19 @@ interface ImportStepContentProps {
   statusOptions: Array<{ key: string; label: string; icon: React.ReactNode; level: number }>;
   statusValueMapping: Record<string, string>;
   setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  pendingNewStatuses: Record<string, { name: string; categoryId: string }>;
+  setPendingNewStatuses: React.Dispatch<
+    React.SetStateAction<Record<string, { name: string; categoryId: string }>>
+  >;
+  statusCategories: ITaskStatusCategory[];
   csvUserRows: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   addUsers: boolean;
   setAddUsers: React.Dispatch<React.SetStateAction<boolean>>;
   csvRows: Record<string, any>[];
+  hideProjectSetup?: boolean;
+  onCsvUploaded?: () => void;
 }
 
 export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
@@ -166,12 +184,17 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     statusOptions,
     statusValueMapping,
     setStatusValueMapping,
+    pendingNewStatuses,
+    setPendingNewStatuses,
+    statusCategories,
     csvUserRows,
     userEmails,
     setUserEmails,
     addUsers,
     setAddUsers,
     csvRows,
+    hideProjectSetup = false,
+    onCsvUploaded,
   } = props;
 
   if (integrationType === 'direct') {
@@ -228,33 +251,74 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
     );
   }
 
+  // CSV step layout: 0 Upload, 1 Preview, [2 Set up project — only if !hideProjectSetup],
+  // then Map fields / Map statuses / Move users / Review. mapFieldsStep marks where that
+  // second block starts so the rest of the offsets fall out of it.
+  const mapFieldsStep = hideProjectSetup ? 2 : 3;
+
+  if (step === 0) {
+    return (
+      <CsvSetupStepsContent
+        step={0}
+        t={t}
+        themeToken={themeToken}
+        uploadedCsvFileRef={uploadedCsvFileRef}
+        parseCsvData={parseCsvData}
+        encoding={encoding}
+        setEncoding={setEncoding}
+        delimiter={delimiter}
+        setDelimiter={setDelimiter}
+        csvSettingsOpen={csvSettingsOpen}
+        setCsvSettingsOpen={setCsvSettingsOpen}
+        sourceLabel={sourceLabel || t('importStep.yourApp', { defaultValue: 'your app' })}
+        spaceName={spaceName}
+        setSpaceName={setSpaceName}
+        onCsvUploaded={onCsvUploaded}
+      />
+    );
+  }
+
+  if (step === 1) {
+    return (
+      <CsvPreviewStepContent
+        t={t}
+        themeToken={themeToken}
+        uploadedCsvFileRef={uploadedCsvFileRef}
+        csvColumns={csvColumns}
+        csvRows={csvRows}
+      />
+    );
+  }
+
+  if (!hideProjectSetup && step === 2) {
+    return (
+      <CsvSetupStepsContent
+        step={1}
+        t={t}
+        themeToken={themeToken}
+        uploadedCsvFileRef={uploadedCsvFileRef}
+        parseCsvData={parseCsvData}
+        encoding={encoding}
+        setEncoding={setEncoding}
+        delimiter={delimiter}
+        setDelimiter={setDelimiter}
+        csvSettingsOpen={csvSettingsOpen}
+        setCsvSettingsOpen={setCsvSettingsOpen}
+        sourceLabel={sourceLabel || t('importStep.yourApp', { defaultValue: 'your app' })}
+        spaceName={spaceName}
+        setSpaceName={setSpaceName}
+        onCsvUploaded={onCsvUploaded}
+      />
+    );
+  }
+
   switch (step) {
-    case 0:
-    case 1:
-      return (
-        <CsvSetupStepsContent
-          step={step}
-          t={t}
-          themeToken={themeToken}
-          uploadedCsvFileRef={uploadedCsvFileRef}
-          parseCsvData={parseCsvData}
-          encoding={encoding}
-          setEncoding={setEncoding}
-          delimiter={delimiter}
-          setDelimiter={setDelimiter}
-          csvSettingsOpen={csvSettingsOpen}
-          setCsvSettingsOpen={setCsvSettingsOpen}
-          sourceLabel={sourceLabel || t('importStep.yourApp', { defaultValue: 'your app' })}
-          spaceName={spaceName}
-          setSpaceName={setSpaceName}
-        />
-      );
-    case 2:
-    case 3:
-    case 4:
+    case mapFieldsStep:
+    case mapFieldsStep + 1:
+    case mapFieldsStep + 2:
       return (
         <CsvMappingStepsContent
-          step={step}
+          step={step - mapFieldsStep + 2}
           t={t}
           themeToken={themeToken}
           csvColumns={csvColumns}
@@ -272,6 +336,9 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           statusOptions={statusOptions}
           statusValueMapping={statusValueMapping}
           setStatusValueMapping={setStatusValueMapping}
+          pendingNewStatuses={pendingNewStatuses}
+          setPendingNewStatuses={setPendingNewStatuses}
+          statusCategories={statusCategories}
           csvUserRows={csvUserRows}
           userEmails={userEmails}
           setUserEmails={setUserEmails}
@@ -279,7 +346,7 @@ export const ImportStepContent: React.FC<ImportStepContentProps> = props => {
           setAddUsers={setAddUsers}
         />
       );
-    case 5:
+    case mapFieldsStep + 3:
       return (
         <CsvReviewStepContent
           t={t}

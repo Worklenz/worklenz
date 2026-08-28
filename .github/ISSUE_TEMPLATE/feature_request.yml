@@ -3,6 +3,18 @@ description: Suggest a new idea or improvement by staff.
 title: "[Feature]: "
 labels: ["feature-request"]
 body:
+  - type: dropdown
+    id: plan
+    attributes:
+      label: Target Plan
+      description: Select which plan this feature belongs to
+      options:
+        - Free
+        - Pro
+        - Business
+    validations:
+      required: true
+
   - type: textarea
     id: problem
     attributes:
@@ -10,17 +22,20 @@ body:
       placeholder: What problem does this solve?
     validations:
       required: true
+
   - type: textarea
     id: solution
     attributes:
       label: Proposed Solution
     validations:
       required: true
+
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives Considered
       placeholder: Any other approaches?
+
   - type: textarea
     id: context
     attributes:

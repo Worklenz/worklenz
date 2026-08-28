@@ -1,14 +1,21 @@
-import {IWorkLenzRequest} from "../interfaces/worklenz-request";
-import {IWorkLenzResponse} from "../interfaces/worklenz-response";
+import { IWorkLenzRequest } from "../interfaces/worklenz-request";
+import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 
 import db from "../config/db";
-import {ServerResponse} from "../models/server-response";
+import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
 
 const existsErrorMessage = "At least one status should exists under each category.";
 
 export default class TaskStatusesController extends WorklenzControllerBase {
+
+  private static notifyProjectStatusUpdate(projectId: string) {
+    if (!projectId) return;
+    IO.getInstance()?.to(projectId).emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+  }
 
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -18,6 +25,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     `;
     const result = await db.query(q, [req.body.name, req.body.project_id, req.user?.team_id, req.body.category_id]);
     const [data] = result.rows;
+    TaskStatusesController.notifyProjectStatusUpdate(req.body.project_id);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -27,6 +35,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     const q = `SELECT create_task_status($1, $2)`;
     const result = await db.query(q, [JSON.stringify(req.body), team_id]);
     const data = result.rows[0].create_task_status[0];
+    TaskStatusesController.notifyProjectStatusUpdate(req.body.project_id);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -36,18 +45,21 @@ export default class TaskStatusesController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, null));
 
     const q = `
-      SELECT task_statuses.id,
-             task_statuses.name,
-             stsc.color_code,
-             stsc.name AS category_name,
-             task_statuses.category_id,
-             stsc.description
-      FROM task_statuses
-             INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
-      WHERE project_id = $1
-        AND team_id = $2
-      ORDER BY task_statuses.sort_order;
-    `;
+  SELECT task_statuses.id,
+         task_statuses.name,
+         COALESCE(task_statuses.color_code, stsc.color_code) AS color_code,
+         stsc.color_code                                      AS category_color_code,
+         stsc.color_code_dark                                 AS color_code_dark,
+         stsc.name                                            AS category_name,
+         task_statuses.category_id,
+         stsc.description
+  FROM task_statuses
+         INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
+  WHERE project_id = $1
+    AND team_id = $2
+  ORDER BY task_statuses.sort_order;
+`;
+
     const result = await db.query(q, [req.query.project, req.user?.team_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -117,6 +129,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     `;
     const result = await db.query(q, [req.params.id, req.body.name, req.body.project_id, req.body.category_id]);
     const [data] = result.rows;
+    TaskStatusesController.notifyProjectStatusUpdate(req.body.project_id);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -131,6 +144,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     `;
     const result = await db.query(q, [req.params.id, req.body.name, req.body.project_id]);
     const [data] = result.rows;
+    TaskStatusesController.notifyProjectStatusUpdate(req.body.project_id);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -150,6 +164,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     `;
     const result = await db.query(q, [req.params.id, req.body.category_id, req.query.current_project_id]);
     const [data] = result.rows;
+    TaskStatusesController.notifyProjectStatusUpdate(req.query.current_project_id as string);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
@@ -157,8 +172,43 @@ export default class TaskStatusesController extends WorklenzControllerBase {
   public static async updateStatusOrder(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const q = `SELECT update_status_order($1);`;
     const result = await db.query(q, [JSON.stringify(req.body.status_order)]);
+    TaskStatusesController.notifyProjectStatusUpdate(req.query.current_project_id as string);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
+
+  @HandleExceptions()
+  public static async updateColor(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    let colorCode = req.body.color_code || null;
+
+    if (colorCode) {
+      // Strip alpha channel — keep only #RRGGBB
+      if (colorCode.startsWith('#')) {
+        colorCode = colorCode.substring(0, 7);
+      }
+
+      // Validate hex format
+      const hexColorRegex = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+      if (!hexColorRegex.test(colorCode)) {
+        colorCode = null; // fall back to category default
+      } else {
+        colorCode = colorCode.toLowerCase();
+      }
+    }
+
+    const q = `
+    UPDATE task_statuses
+    SET color_code = $3
+    WHERE id = $1
+      AND project_id = $2
+    RETURNING id, name, color_code;
+  `;
+
+    const result = await db.query(q, [req.params.id, req.query.current_project_id, colorCode]);
+    const [data] = result.rows;
+    TaskStatusesController.notifyProjectStatusUpdate(req.query.current_project_id as string);
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
 
   @HandleExceptions({
     raisedExceptions: {
@@ -175,6 +225,7 @@ export default class TaskStatusesController extends WorklenzControllerBase {
     };
 
     const result = await db.query(q, [JSON.stringify(body)]);
+    TaskStatusesController.notifyProjectStatusUpdate(req.query.project as string);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 }

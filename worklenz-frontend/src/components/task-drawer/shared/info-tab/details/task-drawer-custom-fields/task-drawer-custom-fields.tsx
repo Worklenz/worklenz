@@ -31,6 +31,8 @@ interface TaskDrawerCustomFieldsProps {
   projectId: string | null;
   task: ITaskViewModel | null;
   teamMembers: ITaskTeamMember[];
+  isGuest?: boolean;
+  canCreateTask?: boolean;
 }
 
 const getSelectionOptions = (column: ITaskCustomColumn): ITaskCustomColumnSelectionOption[] =>
@@ -53,6 +55,7 @@ interface DrawerPeopleCustomFieldProps {
   column: ITaskCustomColumn;
   rawValue: ITaskCustomColumnValue;
   teamMembers: ITaskTeamMember[];
+  disabled?: boolean;
   onValueChange: (column: ITaskCustomColumn, value: string[]) => Promise<void>;
 }
 
@@ -60,6 +63,7 @@ const DrawerPeopleCustomField = ({
   column,
   rawValue,
   teamMembers,
+  disabled = false,
   onValueChange,
 }: DrawerPeopleCustomFieldProps) => {
   const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
@@ -108,6 +112,23 @@ const DrawerPeopleCustomField = ({
     }
   };
 
+  if (disabled) {
+    return (
+      <AvatarGroup
+        members={selectedMembers.map(member => ({
+          id: member.id,
+          team_member_id: member.id,
+          name: member.name,
+          avatar_url: member.avatar_url,
+          color_code: member.color_code,
+        }))}
+        maxCount={3}
+        size={24}
+        isDarkMode={isDarkMode}
+      />
+    );
+  }
+
   return (
     <div className="flex items-center gap-1 relative">
       {selectedMembers.length > 0 && (
@@ -141,12 +162,15 @@ const TaskDrawerCustomFields = ({
   projectId,
   task,
   teamMembers,
+  isGuest = false,
+  canCreateTask = true,
 }: TaskDrawerCustomFieldsProps) => {
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
   const { t } = useTranslation('task-drawer/task-drawer');
   const [numberDraftValues, setNumberDraftValues] = useState<Record<string, number | null>>({});
   const [textDraftValues, setTextDraftValues] = useState<Record<string, string>>({});
+  const isReadOnly = isGuest || !canCreateTask;
 
   const visibleSupportedColumns = getDrawerSupportedCustomFields(customColumns);
 
@@ -154,7 +178,7 @@ const TaskDrawerCustomFields = ({
     column: ITaskCustomColumn,
     value: string | number | boolean | string[] | null
   ) => {
-    if (!task?.id || !projectId) return;
+    if (isReadOnly || !task?.id || !projectId) return;
 
     const previousValue = task.custom_column_values?.[column.key] ?? null;
 
@@ -300,6 +324,7 @@ const TaskDrawerCustomFields = ({
           <DatePicker
             value={dateValue}
             allowClear
+            disabled={isReadOnly}
             className="w-full"
             placeholder={t('taskInfoTab.details.customFields.selectDate', {
               defaultValue: 'Select date',
@@ -322,6 +347,7 @@ const TaskDrawerCustomFields = ({
             }
             className="w-full"
             controls={false}
+            disabled={isReadOnly}
             addonBefore={addonBefore}
             addonAfter={addonAfter}
             precision={typeof decimals === 'number' ? decimals : 0}
@@ -346,6 +372,7 @@ const TaskDrawerCustomFields = ({
         return (
           <Select
             allowClear
+            disabled={isReadOnly}
             value={typeof rawValue === 'string' ? rawValue : undefined}
             className="w-full"
             placeholder={t('taskInfoTab.details.customFields.selectOption', {
@@ -371,6 +398,7 @@ const TaskDrawerCustomFields = ({
             column={column}
             rawValue={rawValue}
             teamMembers={teamMembers}
+            disabled={isReadOnly}
             onValueChange={async (currentColumn, value) => handleValueChange(currentColumn, value)}
           />
         );
@@ -387,6 +415,7 @@ const TaskDrawerCustomFields = ({
                   : String(rawValue)
             }
             className="w-full"
+            disabled={isReadOnly}
             placeholder={t('taskInfoTab.details.customFields.enterText', {
               defaultValue: 'Enter text',
             })}

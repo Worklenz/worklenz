@@ -7,7 +7,7 @@
   "emailLabel": "Correo electrónico",
   "emailRequiredError": "El correo electrónico es obligatorio",
   "saveChanges": "Guardar cambios",
-   "save": "Guardar",
+  "save": "Guardar",
   "profileJoinedText": "Se unió el {{date}}",
   "profileLastUpdatedText": "Última actualización el {{date}}",
   "avatarTooltip": "Haz clic para subir un avatar",
@@ -15,5 +15,9 @@
   "removeAvatarConfirmTitle": "¿Eliminar foto de perfil?",
   "removeAvatarConfirmDescription": "Tu avatar se eliminará y se mostrarán tus iniciales en su lugar.",
   "cancel": "Cancelar",
-  "title": "Configuración del Perfil"
+  "justNow": "Justo ahora",
+  "cropProfilePicture": "Recortar foto de perfil",
+  "title": "Configuración del Perfil",
+  "nameMinLengthError": "El nombre debe tener al menos 2 caracteres",
+  "nameMaxLengthError": "El nombre no puede superar los 50 caracteres"
 }

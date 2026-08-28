@@ -19,15 +19,17 @@ BEGIN
         -- Force any parent task with subtasks to NOT use manual progress
         UPDATE tasks
         SET manual_progress = FALSE
-        WHERE id = _parent_task_id;
+        WHERE id = _parent_task_id
+        AND manual_progress = TRUE;  -- Only update if currently TRUE to avoid unnecessary triggers
         
-        -- Calculate and update the parent's progress value
+        -- Calculate the parent's new progress value
         SELECT (get_task_complete_ratio(_parent_task_id)->>'ratio')::FLOAT INTO _ratio;
         
-        -- Update the parent's progress value
+        -- Update the parent's progress value (this won't trigger the trigger since we removed progress_value from trigger conditions)
         UPDATE tasks
         SET progress_value = _ratio
-        WHERE id = _parent_task_id;
+        WHERE id = _parent_task_id
+        AND progress_value IS DISTINCT FROM _ratio;  -- Only update if value actually changed
         
         -- Recursively propagate changes up the hierarchy by using a recursive CTE
         WITH RECURSIVE task_hierarchy AS (
@@ -55,35 +57,24 @@ BEGIN
             progress_value = (SELECT (get_task_complete_ratio(task_hierarchy.id)->>'ratio')::FLOAT)
         FROM task_hierarchy
         WHERE tasks.id = task_hierarchy.id
-        AND task_hierarchy.parent_task_id IS NOT NULL;
+        AND task_hierarchy.parent_task_id IS NOT NULL
+        AND (
+            tasks.manual_progress = TRUE 
+            OR tasks.progress_value IS DISTINCT FROM (SELECT (get_task_complete_ratio(task_hierarchy.id)->>'ratio')::FLOAT)
+        );
         
         -- Log the recalculation for debugging
         RAISE NOTICE 'Updated progress for task % to %', _parent_task_id, _ratio;
-    END IF;
-    
-    -- If this task has progress value of 100 and doesn't have subtasks, we might want to prompt the user
-    -- to mark it as done. We'll annotate this in a way that the socket handler can detect.
-    IF NEW.progress_value = 100 OR NEW.weight = 100 OR NEW.total_minutes > 0 THEN
-        -- Check if task has status in "done" category
-        SELECT project_id FROM tasks WHERE id = NEW.id INTO _project_id;
-        
-        -- Get the progress ratio for this task
-        SELECT (get_task_complete_ratio(NEW.id)->>'ratio')::FLOAT INTO _ratio;
-        
-        IF _ratio >= 100 THEN
-            -- Log that this task is at 100% progress
-            RAISE NOTICE 'Task % progress is at 100%%, may need status update', NEW.id;
-        END IF;
     END IF;
     
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Update existing trigger or create a new one to handle more changes
+-- Update the trigger to NOT trigger on progress_value changes to avoid infinite recursion
 DROP TRIGGER IF EXISTS update_parent_task_progress_trigger ON tasks;
 CREATE TRIGGER update_parent_task_progress_trigger
-AFTER UPDATE OF progress_value, weight, total_minutes, parent_task_id, manual_progress ON tasks
+AFTER UPDATE OF status_id, weight, total_minutes, parent_task_id ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION update_parent_task_progress();
 

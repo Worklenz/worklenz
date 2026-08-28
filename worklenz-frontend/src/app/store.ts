@@ -16,6 +16,7 @@ import accountSetupReducer from '@features/account-setup/account-setup.slice';
 import themeReducer from '@features/theme/themeSlice';
 import localesReducer from '@features/i18n/localesSlice';
 import alertsReducer from '@/services/alerts/alertSlice';
+import navPreferencesReducer from '@features/navigation/navPreferences.slice';
 
 // Projects
 import projectReducer from '@features/project/project.slice';
@@ -31,6 +32,8 @@ import projectInsightsReducer from '@features/projects/insights/project-insights
 import taskListCustomColumnsReducer from '@features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import boardReducer from '@features/board/board-slice';
 import projectDrawerReducer from '@features/project/project-drawer.slice';
+import projectSettingsModalReducer from '@features/project/project-settings-modal.slice';
+import projectListFieldsReducer from '@features/projects/projectListFields.slice';
 
 // Project Lookups
 import projectCategoriesReducer from '@features/projects/lookups/projectCategories/projectCategoriesSlice';
@@ -44,6 +47,7 @@ import priorityReducer from '@features/taskAttributes/taskPrioritySlice';
 import projectPriorityReducer from '@features/projects/priority/projectPrioritySlice';
 import taskLabelsReducer from '@features/taskAttributes/taskLabelSlice';
 import taskStatusReducer, { deleteStatus } from '@features/taskAttributes/taskStatusSlice';
+import importWizardReducer from '@features/imports/importWizardSlice';
 import taskDrawerReducer from '@features/task-drawer/task-drawer.slice';
 import enhancedKanbanReducer from '@features/enhanced-kanban/enhanced-kanban.slice';
 
@@ -52,7 +56,7 @@ import memberReducer from '@features/settings/member/memberSlice';
 import clientReducer from '@features/settings/client/clientSlice';
 import jobReducer from '@features/settings/job/jobSlice';
 import teamReducer from '@features/teams/teamSlice';
-import billingReducer from '@/features/admin-center/billing/billing.slice';
+import billingReducer from '@/ee/features/admin-center/billing/billing.slice';
 import categoriesReducer from '@features/settings/categories/categoriesSlice';
 import labelReducer from '@features/settings/label/labelSlice';
 
@@ -96,20 +100,21 @@ import taskManagementFieldsReducer from '@features/task-management/taskListField
 import projectWorkloadReducer from '@features/project-workload/projectWorkloadSlice';
 
 //clients portal
-import clientsPortalReducer from '../features/clients-portal';
+import clientsPortalReducer from '../ee/features/clients-portal';
 
 //client view
-import clientViewReducer from '../features/client-view';
+import clientViewReducer from '../ee/features/client-view';
 
 // Client Portal API
-import { clientPortalApi } from '@/api/client-portal/client-portal-api';
+import { clientPortalApi } from '@/ee/api/client-portal/client-portal-api';
 
 // Schedule API
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 
-import projectFinanceRateCardReducer from '@/features/finance/project-finance-slice';
-import projectFinancesReducer from '@/features/projects/finance/project-finance.slice';
+import projectFinanceRateCardReducer from '@/ee/features/finance/project-finance-slice';
+import projectFinancesReducer from '@/ee/features/projects/finance/project-finance.slice';
 import financeReducer from '@/features/projects/finance/finance-slice';
+import financeOverviewReducer from '@/features/finance-overview/finance-overview.slice';
 
 // Seat Limit
 import seatLimitReducer from '@/features/seat-limit/seatLimitSlice';
@@ -155,6 +160,7 @@ export const store = configureStore({
     themeReducer: themeReducer,
     localesReducer: localesReducer,
     alertsReducer: alertsReducer,
+    navPreferencesReducer: navPreferencesReducer,
 
     // Projects
     projectReducer: projectReducer,
@@ -171,6 +177,8 @@ export const store = configureStore({
     taskListCustomColumnsReducer: taskListCustomColumnsReducer,
     boardReducer: boardReducer,
     projectDrawerReducer: projectDrawerReducer,
+    projectSettingsModalReducer: projectSettingsModalReducer,
+    projectListFieldsReducer: projectListFieldsReducer,
 
     projectViewReducer: projectViewReducer,
     projectWorkload: projectWorkloadReducer,
@@ -187,6 +195,7 @@ export const store = configureStore({
     projectPriorityReducer: projectPriorityReducer,
     taskLabelsReducer: taskLabelsReducer,
     taskStatusReducer: taskStatusReducer,
+    importWizardReducer: importWizardReducer,
     taskDrawerReducer: taskDrawerReducer,
     enhancedKanbanReducer: enhancedKanbanReducer,
 
@@ -236,6 +245,7 @@ export const store = configureStore({
     projectFinanceRateCardReducer: projectFinanceRateCardReducer,
     projectFinancesReducer: projectFinancesReducer,
     financeReducer: financeReducer,
+    financeOverviewReducer: financeOverviewReducer,
 
     // Seat Limit
     seatLimitReducer: seatLimitReducer,

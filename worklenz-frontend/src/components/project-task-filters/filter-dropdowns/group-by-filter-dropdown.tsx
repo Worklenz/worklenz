@@ -32,7 +32,7 @@ const GroupByFilterDropdown = () => {
     const baseItems = [
       { key: IGroupBy.STATUS, label: t('statusText') },
       { key: IGroupBy.PRIORITY, label: t('priorityText') },
-      { key: IGroupBy.PHASE, label: project?.phase_label || t('phaseText') },
+      { key: IGroupBy.PHASE, label: t('phaseText') },
     ];
 
     // if (projectView === 'kanban') {

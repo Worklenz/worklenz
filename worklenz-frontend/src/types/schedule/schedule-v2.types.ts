@@ -65,3 +65,29 @@ export interface ScheduleData {
 }
 
 export type PickerType = 'week' | 'month';
+
+export interface ProjectTimelineItem {
+  id: string;
+  name: string;
+  color_code: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status_id: string | null;
+  status_name: string | null;
+  status_color: string | null;
+  priority_id: string | null;
+  priority_name: string | null;
+  priority_color: string | null;
+  category_id: string | null;
+  category_name: string | null;
+  category_color: string | null;
+  client_id: string | null;
+  client_name: string | null;
+  todo_progress: number;
+  doing_progress: number;
+  done_progress: number;
+  todo_count: number;
+  doing_count: number;
+  done_count: number;
+  total_tasks: number;
+}

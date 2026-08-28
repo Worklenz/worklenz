@@ -1,5 +1,5 @@
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { Tooltip, Tag } from '@/shared/antd-imports';
+import { Tag } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setFilteredCategories, setRequestParams } from '@/features/projects/projectsSlice';
@@ -27,22 +27,32 @@ export const CategoryCell: React.FC<{
   const textColor = getContrastColor(bgColor);
 
   return (
-    <Tooltip
-      title={`${t('clickToFilter', { defaultValue: 'Click to filter' })} "${record.category_name}"`}
+    <Tag
+      style={{
+        backgroundColor: bgColor,
+        border: 'none',
+        cursor: 'pointer',
+        maxWidth: 150,          // ← cap the tag width
+        display: 'inline-flex',
+        alignItems: 'center',
+        overflow: 'hidden',
+      }}
+      onClick={e => {
+        e.stopPropagation();
+        filterByCategory(record.category_id);
+      }}
     >
-      <Tag
+      <span
         style={{
-          backgroundColor: bgColor,
-          border: 'none',
-          cursor: 'pointer',
-        }}
-        onClick={e => {
-          e.stopPropagation();
-          filterByCategory(record.category_id);
+          fontSize: 12,
+          color: textColor,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}
       >
-        <span style={{ fontSize: 12, color: textColor }}>{record.category_name}</span>
-      </Tag>
-    </Tooltip>
+        {record.category_name}
+      </span>
+    </Tag>
   );
 };

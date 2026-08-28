@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Organisationswahrung",
+  "pageSubtitle": "Legen Sie die Basiswahrung fur Ihre Organisation fest. Finanzsummen werden mit aktuellen Wechselkursen in diese Wahrung umgerechnet.",
+  "save": "Speichern",
+  "saveChanges": "Anderungen speichern",
+  "adminOnly": "Nur Organisationseigentumer und Admins konnen diese Einstellung andern.",
+  "successMessage": "Basiswahrung auf {{currency}} gesetzt",
+  "errorMessage": "Fehler beim Speichern der Wahrungseinstellung",
+  "selectAriaLabel": "Basiswahrung der Organisation",
+  "ratesCardTitle": "Aktuelle Wechselkurse - 1 {{currency}} =",
+  "ratesUpdated": "Aktualisiert: {{time}}",
+  "refreshRatesTooltip": "Kurse aktualisieren",
+  "refreshRatesAriaLabel": "Wechselkurse aktualisieren",
+  "noRateData": "Keine Kursdaten verfugbar."
+}

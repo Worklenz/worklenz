@@ -1,5 +1,14 @@
 {
   "upgradeNow": "立即升级",
+  "description": {
+    "loadingEditor": "正在加载编辑器...",
+    "wordCount": "{{count}} 字",
+    "save": "保存",
+    "discard": "放弃",
+    "offline": "您已离线 — 描述未保存。请重新连接后再试。",
+    "saveTimeout": "保存描述超时,请重试。",
+    "saveFailed": "保存描述失败,请重试。"
+  },
   "taskHeader": {
     "taskNamePlaceholder": "输入您的任务",
     "deleteTask": "删除任务",
@@ -59,6 +68,8 @@
       "edit": "编辑",
       "delete": "删除",
       "confirmDeleteSubTask": "您确定要删除此子任务吗？",
+      "confirmDeleteYes": "是",
+      "confirmDeleteNo": "否",
       "deleteSubTask": "删除子任务"
     },
     "dependencies": {
@@ -83,6 +94,8 @@
       "edit": "编辑",
       "delete": "删除",
       "confirmDeleteComment": "您确定要删除此评论吗？",
+      "edited": "（已编辑）",
+      "messageDeleted": "此消息已被删除",
       "addCommentPlaceholder": "添加评论...",
       "cancel": "取消",
       "commentButton": "评论",
@@ -92,6 +105,7 @@
       "maxFilesError": "您最多只能上传 {{count}} 个文件",
       "processFilesError": "处理文件失败",
       "addCommentError": "请添加评论或附加文件",
+      "enterHint": "Enter 发送  ·  Shift+Enter 换行",
       "fileTooLargeToSend": "评论中的文件超过 25MB 需要 Business 方案。请移除此文件或升级后继续。",
       "historyLockedBoundary": "评论记录在此方案中仅限最近 90 天",
       "historyLockedTitle": "评论历史已锁定",
@@ -107,6 +121,7 @@
     "title": "时间日志",
     "addTimeLog": "添加新时间日志",
     "totalLogged": "总计记录",
+    "subtasksLogged": "子任务已记录",
     "exportToExcel": "导出到 Excel",
     "noTimeLogsFound": "未找到时间日志",
     "historyLockedBoundary": "时间日志记录在此方案中仅限最近 90 天",
@@ -125,8 +140,7 @@
       "workDescription": "工作描述",
       "descriptionPlaceholder": "添加描述",
       "logTime": "记录时间",
-      "updateTime": "更新时间",
-      "cancel": "取消",
+      "updateTime": "更新",
       "durationHelper": "使用小时和分钟记录总时长。",
       "timeRangeHelper": "通过选择开始和结束时间来记录时长。",
       "selectDateError": "请选择日期",
@@ -135,7 +149,13 @@
       "hoursMinError": "小时必须为 0 或更大",
       "minutesRangeError": "分钟必须在 0 到 59 之间",
       "durationGreaterThanZeroError": "时长必须大于 0 分钟",
-      "endTimeAfterStartError": "结束时间必须晚于开始时间"
+      "endTimeAfterStartError": "结束时间必须晚于开始时间",
+      "moveToProject": "移至项目",
+      "moveToProjectTooltip": "将此工时记录重新分配到其他项目",
+      "moveToTask": "移至任务",
+      "moveToTaskTooltip": "将此工时记录重新分配到其他任务",
+      "backdateLimitError": "工时记录的补录不能超过 {{days}} 天。可记录的最早日期为 {{earliestDate}}。",
+      "saveError": "无法保存工时记录，请重试。"
     }
   },
   "taskActivityLogTab": {

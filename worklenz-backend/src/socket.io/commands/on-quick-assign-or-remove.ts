@@ -9,6 +9,7 @@ import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {logMemberAssignment} from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
+import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
 
 export interface ITaskAssignee {
   team_member_id?: string;
@@ -62,26 +63,33 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
     const userId = getLoggedInUserIdFromSocket(socket);
 
     // Check restrict_task_creation before allowing assignment changes
-    if (isAssign && userId) {
-      // Resolve project_id from task if not provided
-      let projectId = body.project_id;
-      if (!projectId && body.task_id) {
-        const pResult = await db.query("SELECT project_id FROM tasks WHERE id = $1", [body.task_id]);
-        projectId = pResult.rows[0]?.project_id;
+    if (isAssign && await isTaskCreationRestrictedForTask(userId, body.task_id)) {
+      socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
+        error: true,
+        message: "Task assignment is restricted to Admins and Team Leads only."
+      });
+      return;
+    }
+
+    // Ensure we have a project_id — some clients may omit it. Try to infer
+    // the project from the task if missing, otherwise return a clear error
+    // to avoid DB not-null violations when creating project members.
+    if (!body.project_id) {
+      try {
+        const projRes = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [body.task_id]);
+        body.project_id = projRes.rows[0]?.project_id || null;
+      } catch (err) {
+        log_error('Error resolving project_id for quick assign:', err);
       }
-      if (projectId) {
-        const restrictResult = await db.query(
-          "SELECT is_task_creation_restricted($1, $2) AS restricted;",
-          [userId, projectId]
-        );
-        if (restrictResult.rows[0]?.restricted === true) {
-          socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
-            error: true,
-            message: "Task assignment is restricted to Admins and Team Leads only."
-          });
-          return;
-        }
-      }
+    }
+
+    if (!body.project_id) {
+      log_error('QUICK_ASSIGNEES_UPDATE called without project_id', body);
+      socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
+        error: true,
+        message: 'Missing project_id for task assignment',
+      });
+      return;
     }
 
     const assignment = await runAssignOrRemove(body, isAssign);
@@ -141,7 +149,16 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
       }
     }
 
-    const res = {id: body.task_id, parent_task: body.parent_task, members, assignees, names, mode: body.mode, team_member_id: body.team_member_id};
+    const res = {
+      id: body.task_id,
+      parent_task: body.parent_task,
+      members,
+      assignees,
+      names,
+      assignee_names: names,
+      mode: body.mode,
+      team_member_id: body.team_member_id,
+    };
     socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), res);
     return;
   } catch (error) {

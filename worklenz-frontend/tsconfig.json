@@ -17,7 +17,6 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/worklenz-ee/*": ["worklenz-ee/*"],
       "@/*": ["src/*"],
       "@components/*": ["src/components/*"],
       "@features/*": ["src/features/*"],
@@ -28,5 +27,5 @@
     },
     "types": ["vitest"]
   },
-  "include": ["src", "worklenz-ee"]
+  "include": ["src"]
 }

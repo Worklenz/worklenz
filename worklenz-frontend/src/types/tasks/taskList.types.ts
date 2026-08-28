@@ -18,6 +18,7 @@ export interface ITaskListConfigV2 {
   projects: string | null;
   labels?: string | null;
   priorities?: string | null;
+  phases?: string | null;
   archived?: boolean;
   count?: boolean;
   parent_task?: string;

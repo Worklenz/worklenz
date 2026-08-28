@@ -1,4 +1,7 @@
 {
+  "overviewTab": "Overview",
+  "membersTab": "Members",
+  "tasksTab": "Tasks",
   "overview": {
     "title": "Overview",
     "statusOverview": "Status Overview",
@@ -26,6 +29,29 @@
     "overLoggedTasksTooltip": "Tasks that has time logged past their estimated time",
     "overdueTasksTooltip": "Tasks that are past their due date"
   },
+  "projectDeadline": {
+    "title": "Project Deadline",
+    "overdueTasksHours": "Overdue tasks (hours)",
+    "overdueTasksHoursTooltip": "Tasks that has time logged past the end date of the project",
+    "overdueTasks": "Overdue tasks",
+    "overdueTasksTooltip": "Tasks that are past the end date of the project"
+  },
+  "priorityChart": {
+    "priorityAxis": "Priority",
+    "taskCountAxis": "Task Count",
+    "tasks": "Tasks",
+    "taskCount": "task",
+    "noPriority": "No Priority",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "memberStats": {
+    "projectMembers": "Project Members",
+    "assigneesWithOverdueTasks": "Assignees with overdue tasks",
+    "unassignedMembers": "Unassigned Members"
+  },
   "common": {
     "seeAll": "See all",
     "totalLoggedHours": "Total logged hours",
@@ -36,6 +62,20 @@
     "overdueTasksTooltip": "Tasks that are past their due date",
     "totalLoggedHoursTooltip": "Task estimation and logged time for tasks.",
     "includeArchivedTasks": "Include Archived Tasks",
-    "export": "Export"
+    "export": "Export",
+    "name": "Name",
+    "status": "Status",
+    "dueDate": "Due Date",
+    "lastUpdated": "Last Updated",
+    "na": "N/A"
+  },
+  "justNow": "Just now",
+  "tasksTable": {
+    "daysOverdue": "Days Overdue",
+    "completedAt": "Completed At",
+    "members": "Members",
+    "overLoggedTime": "Over Logged Time",
+    "completedDate": "Completed Date",
+    "totalAllocation": "Total Allocation"
   }
 }

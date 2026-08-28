@@ -12,6 +12,7 @@ import CustomAvatar from '@/components/CustomAvatar';
 import { Member } from '@/types/schedule/schedule-v2.types';
 import { setProjectId } from '@/features/project/project.slice';
 import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 const ScheduleDrawer = () => {
   const isScheduleDrawerOpen = useAppSelector(state => state.schedule?.isScheduleDrawerOpen);
@@ -105,12 +106,13 @@ const ScheduleDrawer = () => {
       title={
         selectedMember ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CustomAvatar avatarName={selectedMember.name || ''} size={32} />
+            <CustomAvatar avatarName={selectedMember.name || ''} avatarUrl={selectedMember.avatar_url}
+              size={32} />
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '14px', fontWeight: 600 }}>{selectedMember.name}</span>
               {selectedProject && (
                 <span style={{ fontSize: '12px', color: '#999', fontWeight: 'normal' }}>
-                  {selectedProject.name}
+                  {decodeHtmlEntities(selectedProject.name)}
                 </span>
               )}
             </div>

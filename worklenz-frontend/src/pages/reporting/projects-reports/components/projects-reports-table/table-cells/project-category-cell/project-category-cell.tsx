@@ -15,17 +15,16 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { colors } from '@/styles/colors';
 import './project-category-cell.css';
-import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { addCategory } from '@features/settings/categories/categoriesSlice';
+import { addCategory } from '@/features/projects/lookups/projectCategories/projectCategoriesSlice';
 import { themeWiseColor } from '@utils/themeWiseColor';
-import { IProjectCategory, IProjectCategoryViewModel } from '@/types/project/projectCategory.types';
+import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { useTranslation } from 'react-i18next';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import { setSelectedProjectCategory } from '@/features/reporting/projectReports/project-reports-slice';
+import { categoriesApiService } from '@/api/settings/categories/categories.api.service';
+import logger from '@/utils/errorLogger';
 
-// Update the props interface to include projectId
 interface ProjectCategoryCellProps {
   id: string;
   name: string;
@@ -44,24 +43,20 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     color_code,
   });
 
-  // get categories list from the categories reducer
-  const { projectCategories, loading: projectCategoriesLoading } = useAppSelector(
-    state => state.projectCategoriesReducer
-  );
+  const { projectCategories } = useAppSelector(state => state.projectCategoriesReducer);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false);
 
-  // filter categories based on search query
   const filteredCategoriesData = useMemo(() => {
     return projectCategories.filter(category =>
       category.name?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [projectCategories, searchQuery]);
 
-  // category selection options
   const categoryOptions = filteredCategoriesData.map(category => ({
-    key: category.id,
+    key: category.id as string,
     label: (
       <Typography.Text style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <Badge color={category.color_code} /> {category.name}
@@ -69,14 +64,10 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
     ),
   }));
 
-  // handle category select
   const onClick: MenuProps['onClick'] = e => {
     const newCategory = filteredCategoriesData.find(category => category.id === e.key);
     if (newCategory && connected && socket) {
-      // Update local state immediately
       setSelectedCategory(newCategory);
-
-      // Emit socket event
       socket.emit(
         SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
         JSON.stringify({
@@ -85,72 +76,91 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
         })
       );
     }
+    setDropdownOpen(false);
   };
 
-  //   function to handle add a new category
-  const handleCreateCategory = (name: string) => {
-    if (name.length > 0) {
-      const newCategory: IProjectCategory = {
-        id: nanoid(),
-        name,
-        color_code: '#1E90FF',
-      };
+  const handleCreateCategory = async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
 
-      dispatch(addCategory(newCategory));
+    const exists = projectCategories.some(
+      c => c.name?.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (exists) return;
+
+    try {
+      const res = await categoriesApiService.createCategory({
+        name: trimmed,
+        color_code: '#1E90FF',
+      });
+      if (res.done) {
+        dispatch(addCategory(res.body));
+        setSelectedCategory(res.body);
+        if (connected && socket) {
+          socket.emit(
+            SocketEvents.PROJECT_CATEGORY_CHANGE.toString(),
+            JSON.stringify({
+              project_id: projectId,
+              category_id: res.body.id,
+            })
+          );
+        }
+        setDropdownOpen(false);
+      }
+    } catch (error) {
+      logger.error('handleCreateCategory', error);
+    } finally {
       setSearchQuery('');
     }
   };
 
-  // dropdown items
   const projectCategoryCellItems: MenuProps['items'] = [
     {
       key: '1',
       label: (
         <Card className="project-category-dropdown-card" variant="borderless">
           <Flex vertical gap={4}>
-            <Input
-              ref={categoryInputRef}
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('searchByNameInputPlaceholder')}
+            <div
               onKeyDown={e => {
-                const isCategory = filteredCategoriesData.findIndex(
-                  category => category.name?.toLowerCase() === searchQuery.toLowerCase()
-                );
-                if (isCategory === -1 && e.key === 'Enter') {
-                  // handle category creation logic
-                  handleCreateCategory(searchQuery);
-                }
+                if (e.key === 'Enter') e.stopPropagation();
               }}
-            />
+            >
+              <Input
+                ref={categoryInputRef}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.currentTarget.value)}
+                placeholder={t('searchByNameInputPlaceholder')}
+                onKeyDown={e => {
+                  const isCategory = filteredCategoriesData.findIndex(
+                    category => category.name?.toLowerCase() === searchQuery.toLowerCase()
+                  );
+                  if (isCategory === -1 && e.key === 'Enter') {
+                    handleCreateCategory(searchQuery);
+                  }
+                }}
+              />
+            </div>
             {filteredCategoriesData.length === 0 && (
               <Typography.Text style={{ color: colors.lightGray }}>
                 Hit enter to create!
               </Typography.Text>
             )}
           </Flex>
-
           <Menu className="project-category-menu" items={categoryOptions} onClick={onClick} />
         </Card>
       ),
     },
   ];
 
-  // Update the socket response handler
   const handleCategoryChangeResponse = (data: any) => {
     try {
       const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
       if (parsedData && parsedData.project_id === projectId) {
-        // Update local state
-        setSelectedCategory(parsedData.category);
-
-        // Update redux store
-        dispatch(
-          updateProjectCategory({
-            projectId: parsedData.project_id,
-            category: parsedData.category,
-          })
-        );
+        const socketCategory = parsedData.category;
+        const fullCategory =
+          projectCategories.find(c => c.id === socketCategory?.id) || socketCategory;
+        setSelectedCategory(fullCategory);
+        dispatch(updateProjectCategory({ projectId: parsedData.project_id, category: fullCategory }));
       }
     } catch (error) {
       console.error('Error handling category change response:', error);
@@ -159,21 +169,25 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
 
   const handleCategoryDropdownOpen = (open: boolean) => {
     if (open) {
-      setTimeout(() => {
-        categoryInputRef.current?.focus();
-      }, 0);
+      setTimeout(() => categoryInputRef.current?.focus(), 0);
     }
   };
 
   useEffect(() => {
     if (connected && socket) {
       socket.on(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
-
       return () => {
         socket.off(SocketEvents.PROJECT_CATEGORY_CHANGE.toString(), handleCategoryChangeResponse);
       };
     }
-  }, [connected, socket]);
+  }, [connected, socket, projectCategories]);
+
+  // Compute pill colors
+  const bgColor = selectedCategory.id
+    ? themeWiseColor(`${selectedCategory.color_code}33`, `${selectedCategory.color_code}55`, themeMode)
+    : colors.transparent;
+  const textColor = themeWiseColor(colors.darkGray, colors.white, themeMode);
+  const borderStyle = selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`;
 
   return (
     <Dropdown
@@ -181,37 +195,30 @@ const ProjectCategoryCell = ({ id, name, color_code, projectId }: ProjectCategor
       menu={{ items: projectCategoryCellItems }}
       placement="bottomRight"
       trigger={['click']}
-      onOpenChange={handleCategoryDropdownOpen}
+      open={dropdownOpen}
+      onOpenChange={open => {
+        setDropdownOpen(open);
+        handleCategoryDropdownOpen(open);
+      }}
     >
-      <Flex
-        gap={6}
-        align="center"
+      {/* CSS classes do the truncation — inline styles only handle dynamic colors */}
+      <div
+        className="category-pill-wrapper"
         style={{
-          width: 'fit-content',
-          borderRadius: 24,
-          paddingInline: 8,
-          textTransform: 'capitalize',
-          fontSize: 13,
-          height: 22,
-          backgroundColor: selectedCategory.id
-            ? `${selectedCategory.color_code}33`
-            : colors.transparent,
-          color: selectedCategory.id
-            ? colors.darkGray
-            : themeWiseColor(colors.darkGray, colors.white, themeMode),
-          border: selectedCategory.id ? 'none' : `1px solid ${colors.deepLightGray}`,
-          cursor: 'pointer',
+          backgroundColor: bgColor,
+          color: textColor,
+          border: borderStyle,
         }}
       >
-        {selectedCategory.id ? selectedCategory.name : t('setCategoryText')}
-
-        <DownOutlined />
-      </Flex>
+        <span className="category-pill-text">
+          {selectedCategory.id ? selectedCategory.name : t('setCategoryText')}
+        </span>
+        <DownOutlined className="category-pill-icon" />
+      </div>
     </Dropdown>
   );
 };
 
-// Action creator for updating project category
 const updateProjectCategory = (payload: { projectId: string; category: IProjectCategory }) => ({
   type: 'projects/updateCategory',
   payload,

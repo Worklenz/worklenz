@@ -15,5 +15,9 @@
   "removeAvatarConfirmTitle": "Remover foto de perfil?",
   "removeAvatarConfirmDescription": "Seu avatar será removido e suas iniciais serão exibidas no lugar.",
   "cancel": "Cancelar",
-  "title": "Configurações do Perfil"
+  "justNow": "Agora mesmo",
+  "cropProfilePicture": "Recortar foto de perfil",
+  "title": "Configurações do Perfil",
+  "nameMinLengthError": "O nome deve ter pelo menos 2 caracteres",
+  "nameMaxLengthError": "O nome não pode exceder 50 caracteres"
 }

@@ -2,6 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '@/shared/constants';
 import { getCsrfToken } from '../api-client';
 import { IUserRecentTask, IUserTimeLoggedTask } from '@/types/home/user-activity.types';
+import { IServerResponse } from '@/types/common.types';
 import config from '@/config/env';
 
 const rootUrl = '/logs';
@@ -29,11 +30,22 @@ export const userActivityApiService = createApi({
     }),
     getUserTimeLoggedTasks: builder.query<
       IUserTimeLoggedTask[],
-      { limit?: number; offset?: number }
+      { limit?: number; offset?: number; period?: 'today' | 'week'; time_zone?: string }
     >({
-      query: ({ limit = 10, offset = 0 }) => ({
+      query: ({ limit = 10, offset = 0, period, time_zone }) => ({
         url: `${rootUrl}/user-time-logged-tasks`,
-        params: { limit, offset },
+        params: { limit, offset, period, time_zone },
+        method: 'GET',
+      }),
+      providesTags: ['UserTimeLoggedTasks'],
+    }),
+    getUserTimeLoggedSummary: builder.query<
+      IServerResponse<{ billable_seconds: number; non_billable_seconds: number }>,
+      { period?: 'today' | 'week'; time_zone?: string }
+    >({
+      query: ({ period, time_zone }) => ({
+        url: `${rootUrl}/user-time-logged-summary`,
+        params: { period, time_zone },
         method: 'GET',
       }),
       providesTags: ['UserTimeLoggedTasks'],
@@ -41,5 +53,5 @@ export const userActivityApiService = createApi({
   }),
 });
 
-export const { useGetUserRecentTasksQuery, useGetUserTimeLoggedTasksQuery } =
+export const { useGetUserRecentTasksQuery, useGetUserTimeLoggedTasksQuery, useGetUserTimeLoggedSummaryQuery } =
   userActivityApiService;

@@ -1,4 +1,6 @@
 {
+  "connect": "Conectar",
+  "comingSoon": "Próximamente",
   "availableSoon": "Próximamente",
   "slack": {
     "title": "Slack",
@@ -19,5 +21,7 @@
   "googleCalendar": {
     "title": "Google Calendar",
     "description": "Sincronice sus tareas y plazos con Google Calendar para administrar su agenda, establecer recordatorios y nunca perder hitos importantes del proyecto."
-  }
+  },
+  "connect": "Conectar",
+  "comingSoon": "Próximamente"
 }

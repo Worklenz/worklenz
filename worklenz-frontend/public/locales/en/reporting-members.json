@@ -9,9 +9,13 @@
   "customRangeText": "Custom range",
   "startDateInputPlaceholder": "Start date",
   "EndDateInputPlaceholder": "End date",
+  "quickRanges": "Quick Ranges",
+  "readyToApplyCustomRange": "Ready to apply custom range",
+  "selectStartEndDates": "Select start and end dates",
   "filterButton": "Filter",
 
   "membersTitle": "Members",
+  "membersHeaderTitle": "Members ({{count}})",
   "includeArchivedButton": "Include Archived Projects",
   "exportButton": "Export",
   "excelButton": "Excel",
@@ -31,5 +35,6 @@
 
   "todoText": "To Do",
   "doingText": "Doing",
-  "doneText": "Done"
+  "doneText": "Done",
+  "customDateRangeInvalidError": "End date cannot be before the start date. Please select a valid range."
 }

@@ -31,21 +31,22 @@ import {
   updateProjectFinanceCurrency,
   fetchProjectFinancesSilent,
   setBillableFilter,
-} from '@/features/projects/finance/project-finance.slice';
+} from '@/ee/features/projects/finance/project-finance.slice';
 import { changeCurrency, toggleImportRatecardsDrawer } from '@/features/finance/finance-slice';
 import { updateProjectCurrency, getProject } from '@/features/project/project.slice';
-import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
+import { projectFinanceApiService } from '@/ee/api/project-finance-ratecard/project-finance.api.service';
 import { RootState } from '@/app/store';
-import FinanceTableWrapper from '@/components/projects/project-finance/finance-table-wrapper/FinanceTableWrapper';
-import ImportRatecardsDrawer from '@/components/projects/import-ratecards-drawer/ImportRateCardsDrawer';
+import FinanceTableWrapper from '@/ee/components/projects/project-finance/finance-table-wrapper/FinanceTableWrapper';
+import ImportRatecardsDrawer from '@/ee/components/projects/import-ratecards-drawer/ImportRateCardsDrawer';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasFinanceEditPermission } from '@/utils/finance-permissions';
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from '@/shared/currencies';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
-import RateCardTable from '@/components/projects/project-finance/ratecard-table/RateCardTable';
+import RateCardTable from '@/ee/components/projects/project-finance/ratecard-table/RateCardTable';
 import ProjectBudgetSettingsDrawer from '@/components/projects/project-budget-settings-drawer/ProjectBudgetSettingsDrawer';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { UpgradeOverlayCard, useUpgradeMaskBackground } from '@/components/upgrade/FeatureUpgradePreview';
 
 const ProjectViewFinance = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -74,7 +75,8 @@ const ProjectViewFinance = () => {
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
   const hasEditPermission = hasFinanceEditPermission(currentSession, project);
-  const { hasBusinessAccess } = useBusinessFeatures();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const maskBackground = useUpgradeMaskBackground();
 
   // Get project-specific currency from finance API response, fallback to project reducer, then default
   const projectCurrency = (
@@ -437,10 +439,7 @@ const ProjectViewFinance = () => {
     {
       key: 'phases',
       value: 'phases',
-      label:
-        phaseList.length > 0
-          ? project?.phase_label || t('phaseText', { defaultValue: 'Phase' })
-          : t('phaseText', { defaultValue: 'Phase' }),
+      label: t('phaseText', { defaultValue: 'Phase' }),
     },
   ];
 
@@ -460,70 +459,41 @@ const ProjectViewFinance = () => {
 
   return (
     <Flex vertical gap={16} style={{ overflowX: 'hidden' }}>
-      {!hasBusinessAccess && (
-        <Alert
-          message={t('alerts.businessPlanRequired.message', {
-            defaultValue: 'Business Plan Required',
-          })}
-          description={t('alerts.businessPlanRequired.description', {
-            defaultValue:
-              'Project finance features are available only on Business and Enterprise plans. Upgrade your plan to access these features.',
-          })}
-          type="warning"
-          showIcon
-          style={{ marginBottom: 16 }}
-        />
-      )}
-
       {/* Finance Header */}
       <ConfigProvider wave={{ disabled: true }}>
         <Flex gap={16} align="center" justify="space-between">
           <Flex gap={16} align="center">
-            <Flex>
-              <Tooltip
-                title={
-                  !hasBusinessAccess
-                    ? t('tooltips.availableOnlyOnBusinessPlan', {
-                        defaultValue: 'Available only on Business plan',
-                      })
-                    : ''
-                }
+            <Flex style={!hasBusinessAccess ? { filter: 'blur(2px)' } : undefined}>
+              <Button
+                className={`${activeTab === 'finance' && 'border-[#1890ff] text-[#1890ff]'} rounded-r-none`}
+                onClick={() => hasBusinessAccess && dispatch(setActiveTab('finance'))}
               >
-                <Button
-                  className={`${activeTab === 'finance' && 'border-[#1890ff] text-[#1890ff]'} rounded-r-none`}
-                  onClick={() => hasBusinessAccess && dispatch(setActiveTab('finance'))}
-                  disabled={!hasBusinessAccess}
-                >
-                  {t('financeText', { defaultValue: 'Finance' })}
-                </Button>
-              </Tooltip>
-              <Tooltip
-                title={
-                  !hasBusinessAccess
-                    ? t('tooltips.availableOnlyOnBusinessPlan', {
-                        defaultValue: 'Available only on Business plan',
-                      })
-                    : ''
-                }
+                {t('financeText', { defaultValue: 'Finance' })}
+              </Button>
+              <Button
+                className={`${activeTab === 'ratecard' && 'border-[#1890ff] text-[#1890ff]'} rounded-l-none`}
+                onClick={() => hasBusinessAccess && dispatch(setActiveTab('ratecard'))}
               >
-                <Button
-                  className={`${activeTab === 'ratecard' && 'border-[#1890ff] text-[#1890ff]'} rounded-l-none`}
-                  onClick={() => hasBusinessAccess && dispatch(setActiveTab('ratecard'))}
-                  disabled={!hasBusinessAccess}
-                >
-                  {t('ratecardSingularText', { defaultValue: 'Rate Card' })}
-                </Button>
-              </Tooltip>
+                {t('ratecardSingularText', { defaultValue: 'Rate Card' })}
+              </Button>
             </Flex>
 
-            {activeTab === 'finance' && hasBusinessAccess && (
-              <Flex align="center" gap={16} style={{ marginInlineStart: 12 }}>
+            {activeTab === 'finance' && (
+              <Flex
+                align="center"
+                gap={16}
+                style={{
+                  marginInlineStart: 12,
+                  ...(!hasBusinessAccess ? { filter: 'blur(2px)' } : undefined),
+                }}
+              >
                 <Flex align="center" gap={4}>
                   {t('groupByText', { defaultValue: 'Group by' })}:
                   <Select
                     value={activeGroup}
                     options={groupDropdownMenuItems}
                     onChange={value =>
+                      hasBusinessAccess &&
                       dispatch(setActiveGroup(value as 'status' | 'priority' | 'phases'))
                     }
                     suffixIcon={<CaretDownFilled />}
@@ -535,6 +505,7 @@ const ProjectViewFinance = () => {
                     value={billableFilter}
                     options={billableFilterOptions}
                     onChange={value =>
+                      hasBusinessAccess &&
                       dispatch(setBillableFilter(value as 'all' | 'billable' | 'non-billable'))
                     }
                     suffixIcon={<CaretDownFilled />}
@@ -546,7 +517,7 @@ const ProjectViewFinance = () => {
           </Flex>
 
           {activeTab === 'finance' ? (
-            <Flex gap={8} align="center">
+            <Flex gap={8} align="center" style={!hasBusinessAccess ? { filter: 'blur(2px)' } : undefined}>
               {hasEditPermission && (
                 <Tooltip
                   title={t('tooltips.budgetCalculationSettings', {
@@ -555,42 +526,30 @@ const ProjectViewFinance = () => {
                 >
                   <Button
                     icon={<SettingOutlined />}
-                    onClick={() => setBudgetSettingsDrawerVisible(true)}
-                    disabled={!hasBusinessAccess}
+                    onClick={() => hasBusinessAccess && setBudgetSettingsDrawerVisible(true)}
                     aria-label={t('budgetSettingsDrawer.title', {
                       defaultValue: 'Project Budget Settings',
                     })}
                   />
                 </Tooltip>
               )}
-              <Tooltip
-                title={
-                  !hasBusinessAccess
-                    ? t('tooltips.availableOnlyOnBusinessPlan', {
-                        defaultValue: 'Available only on Business plan',
-                      })
-                    : ''
-                }
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                loading={exporting}
+                onClick={() => hasBusinessAccess && handleExport()}
               >
-                <Button
-                  type="primary"
-                  icon={<DownloadOutlined />}
-                  loading={exporting}
-                  onClick={handleExport}
-                  disabled={!hasBusinessAccess}
-                >
-                  {t('exportAsExcelButton', { defaultValue: 'Export as Excel' })}
-                </Button>
-              </Tooltip>
+                {t('exportAsExcelButton', { defaultValue: 'Export as Excel' })}
+              </Button>
             </Flex>
           ) : (
-            <Flex gap={8} align="center">
+            <Flex gap={8} align="center" style={!hasBusinessAccess ? { filter: 'blur(2px)' } : undefined}>
               <Flex gap={8} align="center">
                 <Typography.Text>{t('currencyText', { defaultValue: 'Currency' })}</Typography.Text>
                 <Select
                   value={projectCurrency}
                   loading={currencyLoading}
-                  disabled={!hasEditPermission || !hasBusinessAccess}
+                  disabled={!hasEditPermission}
                   options={CURRENCY_OPTIONS}
                   showSearch
                   optionFilterProp="label"
@@ -598,38 +557,29 @@ const ProjectViewFinance = () => {
                     (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                   }
                   notFoundContent={t('noCurrenciesFound', { defaultValue: 'No currencies found' })}
-                  onChange={handleCurrencyChange}
+                  onChange={value => hasBusinessAccess && handleCurrencyChange(value)}
                 />
               </Flex>
-              <Tooltip
-                title={
-                  !hasBusinessAccess
-                    ? t('tooltips.availableOnlyOnBusinessPlan', {
-                        defaultValue: 'Available only on Business plan',
-                      })
-                    : ''
-                }
+              <Button
+                type="primary"
+                onClick={() => hasBusinessAccess && dispatch(toggleImportRatecardsDrawer())}
               >
-                <Button
-                  type="primary"
-                  onClick={() => dispatch(toggleImportRatecardsDrawer())}
-                  disabled={!hasBusinessAccess}
-                >
-                  {t('importButton', { defaultValue: 'Import' })}
-                </Button>
-              </Tooltip>
+                {t('importButton', { defaultValue: 'Import' })}
+              </Button>
             </Flex>
           )}
         </Flex>
       </ConfigProvider>
 
       {/* Tab Content */}
-      <div
-        style={{
-          opacity: hasBusinessAccess ? 1 : 0.6,
-          pointerEvents: hasBusinessAccess ? 'auto' : 'none',
-        }}
-      >
+      <div style={{ position: 'relative' }}>
+        <div
+          style={
+            !hasBusinessAccess
+              ? { filter: 'blur(2px)', pointerEvents: 'none', userSelect: 'none' }
+              : undefined
+          }
+        >
         {activeTab === 'finance' ? (
           <div>
             {!hasEditPermission && hasBusinessAccess && (
@@ -882,6 +832,32 @@ const ProjectViewFinance = () => {
             </Typography.Text>
             <ImportRatecardsDrawer />
           </Flex>
+        )}
+        </div>
+
+        {!hasBusinessAccess && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: maskBackground,
+              padding: 24,
+            }}
+          >
+            <UpgradeOverlayCard
+              title="Project Finance"
+              description="Track budgets, rate cards, and profitability for this project. Available on the Business plan."
+              features={[
+                'Project profitability tracking',
+                'Budgets & fixed-cost tracking',
+                'Rate cards & billable time',
+                'Finance data export',
+              ]}
+            />
+          </div>
         )}
       </div>
 

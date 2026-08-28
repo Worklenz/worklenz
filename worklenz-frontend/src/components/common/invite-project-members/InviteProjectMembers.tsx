@@ -12,20 +12,25 @@ import { ROLE_NAMES } from '@/types/roles/role.types';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { SeatLimitModal } from '@/components/common/seat-limit-modal';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useNavigate } from 'react-router-dom';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 interface FormValues {
   emails: string[];
-  access: 'member' | 'team-lead' | 'admin';
+  access: 'member' | 'team-lead' | 'admin' | 'guest';
 }
 
 interface InviteProjectMembersProps {
   projectId: string;
   projectName: string;
+  /** Pre-fills the email tags field when the modal opens — used by callers (e.g. the
+   * Planner "New Task" assignee search) that already know the email/name the user
+   * typed before triggering the invite flow. */
+  prefillEmail?: string;
 }
 
-const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersProps) => {
+const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InviteProjectMembersProps) => {
   // Email invitation states
   const [loading, setLoading] = useState(false);
 
@@ -44,6 +49,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
   // Seat limit modal states
   const [seatLimitModalOpen, setSeatLimitModalOpen] = useState(false);
   const [seatLimitData, setSeatLimitData] = useState<any>(null);
+  const [guestLimitData, setGuestLimitData] = useState<any>(null);
   const [pendingInvite, setPendingInvite] = useState<any>(null);
 
   const [form] = Form.useForm<FormValues>();
@@ -52,14 +58,20 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
   const { t } = useTranslation('settings/team-members');
   const isDrawerOpen = useAppSelector(state => state.projectMemberReducer.isDrawerOpen);
   const dispatch = useAppDispatch();
-  const { promptUpgrade } = useUpgradePrompt();
 
-  // Fetch team members when modal opens
+  // Fetch team members when modal opens. prefillEmail is deliberately excluded from the
+  // deps below — it's meant to be captured once, at the moment the drawer opens (it's
+  // already current by then, since callers set it before dispatching the open action),
+  // not re-applied on every keystroke of the live search field it's sourced from.
   useEffect(() => {
     if (isDrawerOpen && projectId) {
       fetchTeamMembers();
       checkExistingInvitationLink();
+      if (prefillEmail?.trim()) {
+        form.setFieldsValue({ emails: [prefillEmail.trim()] });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDrawerOpen, projectId]);
 
   // Check if link is expired based on expires_at date
@@ -140,12 +152,18 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                   ? ROLE_NAMES.ADMIN
                   : ROLE_NAMES.MEMBER,
             is_admin: values.access === 'admin',
+            access_level: values.access === 'guest' ? 'GUEST' : undefined,
           };
           const result = await projectMembersApiService.inviteByEmail(body);
           
           // Check for seat limit exceeded error
           if (!result.done && result.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
             return { email, success: false, error: result.message, seatLimitError: result.body };
+          }
+
+          // Check for guest limit exceeded error
+          if (!result.done && result.body?.error_code === 'GUEST_LIMIT_EXCEEDED') {
+            return { email, success: false, error: result.message, guestLimitError: result.body };
           }
           
           return { email, success: result.done, error: result.message };
@@ -162,6 +180,20 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
         setSeatLimitData((seatLimitError as any).seatLimitError);
         setPendingInvite({ emails: emailList, access: values.access, projectId, projectName });
         setSeatLimitModalOpen(true);
+        setLoading(false);
+        return;
+      }
+
+      // Check if any result has a guest limit error
+      const guestLimitError = results.find(r => (r as any).guestLimitError);
+      if (guestLimitError) {
+        setGuestLimitData((guestLimitError as any).guestLimitError);
+        setPendingInvite({ emails: emailList, access: values.access, projectId, projectName });
+        message.error(
+          t('projectInvite_guestLimitExceeded', { 
+            defaultValue: 'Guest limit exceeded for this plan. Please upgrade to add more guests.' 
+          })
+        );
         setLoading(false);
         return;
       }
@@ -260,7 +292,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
 
   const handleSeatLimitUpgrade = () => {
     setSeatLimitModalOpen(false);
-    promptUpgrade();
+    dispatch(toggleUpgradeModal());
   };
 
   const handleSeatLimitDeactivate = () => {
@@ -284,7 +316,8 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
       <Modal
         title={
           <Typography.Text strong style={{ fontSize: 16 }}>
-            Share "{projectName}"
+            {t('projectInvite_shareTitle', { defaultValue: 'Share' })}{' '}
+            "{decodeHtmlEntities(projectName)}"
           </Typography.Text>
         }
         open={isDrawerOpen}
@@ -390,6 +423,7 @@ const InviteProjectMembers = ({ projectId, projectName }: InviteProjectMembersPr
                   { value: 'member', label: t('memberText') },
                   { value: 'team-lead', label: 'Team Lead' },
                   { value: 'admin', label: t('adminText') },
+                  { value: 'guest', label: t('guestText', { defaultValue: 'Guest' }) },
                 ]}
               />
             </Form.Item>

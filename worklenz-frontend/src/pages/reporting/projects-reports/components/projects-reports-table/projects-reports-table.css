@@ -1,75 +1,39 @@
-:root {
-  --table-cell-bg: #f7f7f7;
-  --hover-bg: #edebf0;
-  --base-bg: #ffffff;
+/* Category column: constrain cell so long names truncate inside the pill */
+.projects-reports-table td.category-cell {
+  max-width: 200px !important;
+  overflow: hidden !important;
 }
 
-.dark {
-  --table-cell-bg: #181818;
-  --hover-bg: #000;
-  --base-bg: #181818;
+.category-pill-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  height: 22px;
+  padding-inline: 8px;
+  border-radius: 24px;
+  font-size: 13px;
+  text-transform: capitalize;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-.light {
-  --table-cell-bg: #f7f7f7;
-  --hover-bg: #edebf0;
-  --base-bg: #ffffff;
+.category-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
-/* change the scroll bar in the table  */
-:where(.css-dev-only-do-not-override-ifo476).ant-table-wrapper .ant-table {
-  scrollbar-color: unset;
+.category-pill-icon {
+  flex-shrink: 0;
+  font-size: 10px;
 }
 
-/* Fix sticky column background */
-.ant-table-wrapper .ant-table-cell-fix-left,
-.ant-table-wrapper .ant-table-cell-fix-left-last,
-.ant-table-wrapper td.ant-table-cell-fix-left,
-.ant-table-wrapper th.ant-table-cell-fix-left {
-  background-color: var(--base-bg) !important;
-  z-index: 2 !important;
-  position: sticky !important;
-}
-
-.ant-table-wrapper .ant-table-tbody > tr > td.ant-table-cell-fix-left {
-  background-color: var(--base-bg) !important;
-}
-
-.ant-table-wrapper .ant-table-tbody > tr:nth-child(even) > td.ant-table-cell-fix-left {
-  background-color: var(--table-cell-bg) !important;
-}
-
-.ant-table-wrapper .ant-table-tbody > tr:hover > td.ant-table-cell-fix-left {
-  background-color: var(--hover-bg) !important;
-}
-
-.ant-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-left {
-  background-color: var(--base-bg) !important;
-}
-
-/* Shadow for sticky columns */
-:where(.css-dev-only-do-not-override-aw0rds).ant-table-wrapper
-  .ant-table-ping-left
-  .ant-table-cell-fix-left-first::after {
-  box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.15);
-  right: -1px;
-}
-
-:where(.css-dev-only-do-not-override-aw0rds).ant-table-wrapper
-  .ant-table-ping-right:not(.ant-table-has-fix-right)
-  .ant-table-container::after {
-  box-shadow: inset -10px 0 8px -8px rgba(0, 0, 0, 0.15);
-}
-
-/* remove select border  */
-:where(.css-dev-only-do-not-override-tmno9t).ant-select-outlined:not(.ant-select-customize-input)
-  .ant-select-selector {
-  border: none;
-}
-
-.ant-select-focused:where(.css-dev-only-do-not-override-tmno9t).ant-select-outlined:not(
-    .ant-select-disabled
-  ):not(.ant-select-customize-input):not(.ant-pagination-size-changer)
-  .ant-select-selector {
-  box-shadow: none;
+/* Project Update column: constrain cell to prevent row expansion */
+.projects-reports-table td.project-update-cell {
+  max-width: 200px !important;
+  overflow: hidden !important;
 }

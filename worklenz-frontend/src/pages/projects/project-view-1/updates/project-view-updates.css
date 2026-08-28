@@ -92,7 +92,7 @@
 }
 
 /* Make sure the textarea is positioned correctly */
-.ant-mentions > textarea {
+.ant-mentions>textarea {
   position: relative;
   z-index: 2;
   background: transparent !important;
@@ -125,15 +125,18 @@
   position: relative;
 }
 
-/* ========== END MENTION INPUT HIGHLIGHTING ========== */
-
-/* ========== CUSTOM MENTIONS INPUT STYLES ========== */
 
 /* Custom mentions wrapper */
 .custom-mentions-wrapper {
   position: relative;
   width: 100%;
 }
+
+/* Fix cursor position on new line after Shift+Enter */
+.custom-mentions-editable br {
+  display: block;
+}
+
 
 /* Custom mentions editable div */
 .custom-mentions-editable {
@@ -162,7 +165,7 @@
   font-weight: 500;
   border: 1px solid #91caff;
   margin: 0 2px;
-  display: inline-block;
+  /* display: inline-block; */
 }
 
 /* Mention highlights in the contenteditable - Dark theme */
@@ -174,7 +177,7 @@
   font-weight: 500;
   border: 1px solid #2a4a6d;
   margin: 0 2px;
-  display: inline-block;
+  /* display: inline-block; */
 }
 
 /* Mentions dropdown - FIXED FOR BUG - APPEARS ABOVE INPUT */
@@ -292,11 +295,17 @@
 .theme-light .current-user-comment .mentions {
   background: #d1e9ff;
   border-color: #b3d8ff;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 .theme-dark .current-user-comment .mentions {
   background: #2a4a6d;
   border-color: #3a5a7d;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 .current-user-comment .ant-comment-actions {
@@ -329,6 +338,8 @@
   margin-bottom: 0;
   white-space: pre-wrap;
   word-break: break-word;
+  position: relative;
+  z-index: 1;
 }
 
 .comment-content-dark {
@@ -336,67 +347,43 @@
   margin-bottom: 0;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-/* Comment actions styling */
-.theme-light .ant-comment-actions > li > span {
-  color: #707070;
-  transition: color 0.3s;
-  font-size: 11px;
-}
-
-.theme-dark .ant-comment-actions > li > span {
-  color: #d1d0d3;
-  transition: color 0.3s;
-  font-size: 11px;
-}
-
-.theme-light .ant-comment-actions > li > span:hover {
-  color: #1890ff;
-}
-
-.theme-dark .ant-comment-actions > li > span:hover {
-  color: #1890ff;
-}
-
-/* Time separator */
-.comment-time-separator {
-  text-align: center;
-  margin: 8px 0;
   position: relative;
-}
-
-.comment-time-separator::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 100%;
-  height: 1px;
-  background-color: #e6e6e6;
-  z-index: 0;
-}
-
-.theme-dark .comment-time-separator::before {
-  background-color: #333;
-}
-
-.comment-time-separator span {
-  position: relative;
-  padding: 0 10px;
-  font-size: 11px;
   z-index: 1;
 }
 
-.theme-light .comment-time-separator span {
-  background-color: #fff;
-  color: #707070;
+/* Auto-detected links should read as links, not inherit the bubble text color */
+.comment-content-light a,
+.comment-content-dark a {
+  color: #1890ff;
+  text-decoration: none;
+  word-break: break-all;
 }
 
-.theme-dark .comment-time-separator span {
-  background-color: #1e1e1e;
-  /* Match main layout bg if possible, or assume card bg */
+.comment-content-light a:hover,
+.comment-content-dark a:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* Comment actions styling */
+.theme-light .ant-comment-actions>li>span {
+  color: #707070;
+  transition: color 0.3s;
+  font-size: 11px;
+}
+
+.theme-dark .ant-comment-actions>li>span {
   color: #d1d0d3;
+  transition: color 0.3s;
+  font-size: 11px;
+}
+
+.theme-light .ant-comment-actions>li>span:hover {
+  color: #1890ff;
+}
+
+.theme-dark .ant-comment-actions>li>span:hover {
+  color: #1890ff;
 }
 
 /* Adjust avatar size for more compact look */
@@ -405,56 +392,25 @@
   height: 24px;
 }
 
-/* Scrollable area */
-.updates-list-container {
-  overflow-y: auto;
-  flex: 1 1 auto;
-  padding: 8px 12px;
-  min-height: 0;
-  max-height: 100%;
-  /* Important for flex children to scroll properly */
-}
-
-.updates-list-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.updates-list-container::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
-}
-
-/* Input area - sticky at bottom - FIXED FOR BUG */
-.updates-input-container {
-  padding: 10px 16px;
-  border-top: 1px solid transparent;
-  /* controlled by theme */
-  flex: 0 0 auto;
-  /* Prevent input from shrinking or growing */
-  position: relative;
-  z-index: 10;
-  overflow: visible !important;
-}
-
 /* Action buttons hover */
-.ant-comment .ant-comment-actions > li {
+.ant-comment .ant-comment-actions>li {
   visibility: hidden;
   opacity: 0;
   transition: opacity 0.2s;
 }
 
-.ant-comment:hover .ant-comment-actions > li {
+.ant-comment:hover .ant-comment-actions>li {
   visibility: visible;
   opacity: 1;
 }
 
 /* Always show emoji picker */
-.ant-comment .ant-comment-actions > li:last-child {
+.ant-comment .ant-comment-actions>li:last-child {
   visibility: visible;
   opacity: 1;
 }
 
-.current-user-comment .ant-comment-actions > li {
+.current-user-comment .ant-comment-actions>li {
   float: right;
 }
 
@@ -536,11 +492,6 @@
 }
 
 /* Constrain width for better readability */
-.updates-list-container > div {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
 /* Tighter spacing between all messages */
 .theme-light .ant-comment,
 .theme-dark .ant-comment {
@@ -555,13 +506,21 @@
 /* Comment wrapper for hover actions */
 .comment-wrapper {
   position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+
+
+.comment-wrapper:hover {
+  z-index: 200;
 }
 
 /* Hover bar - appears above message */
 .comment-hover-bar {
   position: absolute;
-  top: -64px;
-  right: 10px;
+  top: 0px;
+  right: 0px;
+   transform: translateY(-100%);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -574,6 +533,7 @@
     visibility 0.2s 0.3s;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
 }
 
 .theme-light .comment-hover-bar {
@@ -586,10 +546,11 @@
   border: 1px solid #3a3a3a;
 }
 
-.ant-comment:hover .comment-hover-bar {
+.comment-wrapper:hover .comment-hover-bar {
   opacity: 1;
   visibility: visible;
   transition-delay: 0.5s;
+  pointer-events: auto;
 }
 
 /* Quick reactions container */
@@ -681,3 +642,4 @@
 .ant-comment-actions {
   display: none !important;
 }
+

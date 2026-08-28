@@ -1,0 +1,60 @@
+{
+  "pageTitle": "财务概览",
+  "pageSubTitle": "跨所有项目汇总的预算、实际成本和差异。点击项目查看完整财务标签页。",
+  "noBudgetSet": "未设置预算",
+  "emptyValue": "—",
+  "viewFinanceButton": "查看财务",
+  "viewButton": "查看",
+  "exportButton": "导出为 Excel",
+  "exportSuccess": "导出成功。",
+  "exportFailed": "导出失败。",
+  "kpiCard": {
+    "totalManualBudget": "总手动预算",
+    "totalActualCost": "总实际成本",
+    "totalVariance": "总差异",
+    "budgetUtilization": "预算利用率",
+    "estimatedHours": "估计工时",
+    "mixedCurrencyWarning": "项目使用不同的货币。此总计未进行货币换算。",
+    "mixedCurrencyNote": "显示 {{count}} 个（共 {{total}} 个）项目的 {{dominant}} 数据，还包括：{{others}}。",
+    "prevCurrency": "上一种货币",
+    "nextCurrency": "下一种货币"
+  },
+  "attention": {
+    "title": "需要关注的项目",
+    "emptyState": "所有项目均在预算内。",
+    "overBudget": "超出预算",
+    "watch": "关注",
+    "ofBudgetSpent": "的预算已使用"
+  },
+  "distribution": {
+    "title": "预算状态分布",
+    "onTrack": "正常（≤65%已使用）",
+    "watch": "关注（65–100%已使用）",
+    "overBudget": "超出预算（>100%已使用）",
+    "projects": "个项目",
+    "total": "总计",
+    "breakdown": "实际成本明细：{{fixed}} 固定 · {{timeBased}} 基于时间"
+  },
+  "tableCard": {
+    "title": "项目财务健康状况"
+  },
+  "currencyNote": {
+    "convertedPrefix": "KPI 总计已使用实时汇率转换为",
+    "convertedSuffix": "汇率更新时间：{{time}}。",
+    "changeCurrency": "更改货币",
+    "unavailable": "汇率不可用 - 无法转换 KPI 总计。",
+    "checkSettings": "检查货币设置",
+    "fetchUnavailable": "汇率服务不可用。",
+    "fetchFailed": "获取汇率失败。"
+  },
+  "table": {
+    "project": "项目",
+    "client": "客户",
+    "manualBudget": "手动预算",
+    "actualCost": "实际成本",
+    "variance": "差异",
+    "budgetUtilization": "预算利用率",
+    "estHours": "估计工时",
+    "searchPlaceholder": "搜索项目"
+  }
+}

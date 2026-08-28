@@ -52,7 +52,7 @@ const OverviewReports = () => {
 
   return (
     <Flex vertical gap={24}>
-      <CustomPageHeader title={t('overviewTitle')} children={headerChildren} />
+      <CustomPageHeader title={t('overviewTitle')} children={headerChildren} style={{ padding: 0 }} />
 
       <OverviewStats />
 

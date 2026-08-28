@@ -7,18 +7,24 @@ import {getTaskDetails, logEndDateChange} from "../../services/activity-logs/act
 import momentTime from "moment-timezone";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
-import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {isTaskCreationRestrictedForTask} from "../../shared/task-creation-restriction";
 
 export async function on_task_end_date_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
-    
-    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+
+    const hasAccess = await verifyNonGuestTaskAccessSocket(socket, body.task_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, 'TASK_END_DATE_CHANGE', 'task', body.task_id);
       return;
     }
-    
+
+    // Enforce restrict_task_creation: restricted users cannot modify tasks.
+    if (await isTaskCreationRestrictedForTask(getLoggedInUserIdFromSocket(socket), body.task_id)) {
+      return;
+    }
+
     const q = `UPDATE tasks SET end_date = $2 WHERE id = $1 RETURNING end_date, start_date;`;
     const task_data = await getTaskDetails(body.task_id, "end_date");
 

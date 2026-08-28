@@ -1,0 +1,35 @@
+.recurring-tasks-table .ant-table {
+  font-size: 12px;
+}
+
+.recurring-tasks-table .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 8px !important;
+}
+
+.recurring-tasks-table .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 8px !important;
+}
+
+/* Task-name expand icon only shows on row hover, matching Home > Overview's
+   priority table (src/pages/home/task-list/tasks-list.css). */
+.row-action-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.recurring-tasks-table .ant-table-row:hover .row-action-button {
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .recurring-tasks-table .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .recurring-tasks-table .ant-table {
+    min-width: 1100px;
+  }
+}

@@ -2,6 +2,9 @@
   "keyColumn": "Key",
   "taskColumn": "Task",
   "descriptionColumn": "Description",
+  "descriptionSaveOffline": "You're offline — the description wasn't saved. Reconnect and try again.",
+  "descriptionSaveTimeout": "Saving the description timed out. Please try again.",
+  "descriptionSaveFailed": "Failed to save the description. Please try again.",
   "progressColumn": "Progress",
   "membersColumn": "Members",
   "assigneesColumn": "Assignees",
@@ -123,7 +126,7 @@
 
     "limitPopover": {
       "title": "Custom Field Limit Reached",
-      "body": "You have used all 10 custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.",
+      "body": "You have used all {{limit}} custom fields available on your plan. Upgrade to add unlimited custom fields to your projects.",
       "appSumoTitle": "Plan Upgrade Required",
       "appSumoBody": "Adding custom fields beyond your current plan limit requires a Business plan.",
       "cta": "Upgrade Now"
@@ -163,6 +166,38 @@
       "labels": "Labels",
       "key": "Key",
       "formula": "Formula"
+    },
+
+    "fieldTypeForms": {
+      "numberType": "Number Type",
+      "numberTypeOptions": {
+        "unformatted": "Unformatted",
+        "percentage": "Percentage",
+        "withLabel": "With Label",
+        "formatted": "Formatted"
+      },
+      "decimals": "Decimals",
+      "preview": "Preview",
+      "label": "Label",
+      "position": "Position",
+      "left": "Left",
+      "right": "Right",
+      "firstColumn": "First Column",
+      "secondColumn": "Second Column",
+      "expression": "Expression",
+      "selectFirstColumn": "Select first column",
+      "selectSecondColumn": "Select second column",
+      "expressionOptions": {
+        "add": "+ Add",
+        "subtract": "- Subtract",
+        "divide": "/ Divide",
+        "multiply": "x Multiply"
+      },
+      "selections": "Selections",
+      "addSelection": "+ Add a selection",
+      "labels": "Labels",
+      "addLabel": "+ Add a label",
+      "keyLabelPlaceholder": "ex: MK"
     }
   },
 

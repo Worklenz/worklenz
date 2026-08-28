@@ -25,6 +25,7 @@ import { createPortal, flushSync } from 'react-dom';
 
 import { colors } from '@/styles/colors';
 import { getContrastColor } from '@/utils/colorUtils';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { SocketEvents } from '@/shared/socket-events';
@@ -36,6 +37,7 @@ import {
   setRefreshTimestamp,
   getProject,
 } from '@features/project/project.slice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import {
   addTask,
   fetchTaskGroups,
@@ -44,13 +46,10 @@ import {
 } from '@features/tasks/tasks.slice';
 import ProjectStatusIcon from '@/components/common/project-status-icon/project-status-icon';
 import { formatDate } from '@/utils/timeUtils';
-import { toggleSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
+import { toggleSaveAsTemplateDrawer, openSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
 import SaveProjectAsTemplate from '@/components/save-project-as-template/save-project-as-template';
-import {
-  fetchProjectData,
-  toggleProjectDrawer,
-  setProjectId,
-} from '@/features/project/project-drawer.slice';
+import { fetchProjectData, setProjectId } from '@/features/project/project-drawer.slice';
+import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
 import { DEFAULT_TASK_NAME, UNMAPPED } from '@/shared/constants';
@@ -58,7 +57,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
-import { ProjectDrawer } from '@/components/projects/project-drawer/project-drawer';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
@@ -67,10 +66,11 @@ import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3, setLoading } from '@/features/task-management/task-management.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
+import { isUserGuest } from '@/lib/project/project-view-constants';
+import styles from './project-view-header.module.css';
 
 const ProjectViewHeader = memo(() => {
   const navigate = useNavigate();
@@ -80,8 +80,6 @@ const ProjectViewHeader = memo(() => {
   const { canCreateTask } = useTaskCreationPermission();
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const { isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
   const isProjectManager = useIsProjectManager();
 
@@ -91,6 +89,8 @@ const ProjectViewHeader = memo(() => {
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const loadingGroups = useAppSelector(state => state.taskReducer.loadingGroups);
   const groupBy = useAppSelector(state => state.taskReducer.groupBy);
+
+  const isGuest = useMemo(() => isUserGuest(selectedProject), [selectedProject]);
 
   const [creatingTask, setCreatingTask] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
@@ -193,17 +193,15 @@ const ProjectViewHeader = memo(() => {
 
   const handleSettingsClick = useCallback(() => {
     if (selectedProject?.id) {
-      console.log('Opening project drawer from project view for project:', selectedProject.id);
       dispatch(setProjectId(selectedProject.id));
       dispatch(fetchProjectData(selectedProject.id))
         .unwrap()
-        .then(projectData => {
-          console.log('Project data fetched successfully from project view:', projectData);
-          dispatch(toggleProjectDrawer());
+        .then(() => {
+          dispatch(openProjectSettingsModal());
         })
         .catch(error => {
-          console.error('Failed to fetch project data from project view:', error);
-          dispatch(toggleProjectDrawer());
+          logger.error('Failed to fetch project data from project view:', error);
+          dispatch(openProjectSettingsModal());
         });
     }
   }, [dispatch, selectedProject?.id]);
@@ -248,8 +246,8 @@ const ProjectViewHeader = memo(() => {
   }, [selectedProject?.id, currentSession, socket, dispatch, groupBy, tab, t]);
 
   const handleImportTaskTemplate = useCallback(() => {
-    if (isFree) {
-      promptUpgrade();
+    if (isFreeUser(currentSession)) {
+      dispatch(toggleUpgradeModal());
     } else {
       dispatch(setImportTaskTemplateDrawerOpen(true));
     }
@@ -260,10 +258,10 @@ const ProjectViewHeader = memo(() => {
   }, [navigate]);
 
   const handleSaveAsTemplate = useCallback(() => {
-    if (isFree) {
-      promptUpgrade();
+    if (isFreeUser(currentSession)) {
+      dispatch(toggleUpgradeModal());
     } else {
-      dispatch(toggleSaveAsTemplateDrawer());
+      dispatch(openSaveAsTemplateDrawer());
     }
   }, [dispatch, currentSession]);
 
@@ -365,13 +363,18 @@ const ProjectViewHeader = memo(() => {
   const headerActions = useMemo(() => {
     const actions = [];
 
-    if (isOwnerOrAdmin) {
+    if (isOwnerOrAdmin && !isGuest) {
       actions.push(
         <Tooltip
           key="template"
           title={t('saveAsTemplateTooltip', { defaultValue: 'Save this project as a template' })}
         >
-          <Button shape="circle" icon={<SaveOutlined />} onClick={handleSaveAsTemplate} />
+          <Button
+            className={styles.actionButton}
+            shape="circle"
+            icon={<SaveOutlined />}
+            onClick={handleSaveAsTemplate}
+          />
         </Tooltip>
       );
     }
@@ -379,19 +382,30 @@ const ProjectViewHeader = memo(() => {
     actions.push(
       <Tooltip
         key="settings"
-        title={t('settingsTooltip', { defaultValue: 'Open project settings' })}
+        title={
+          isGuest
+            ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
+            : t('settingsTooltip', { defaultValue: 'Open project settings' })
+        }
       >
-        <Button shape="circle" icon={<SettingOutlined />} onClick={handleSettingsClick} />
+        <Button
+          className={styles.actionButton}
+          shape="circle"
+          icon={<SettingOutlined />}
+          onClick={handleSettingsClick}
+          disabled={isGuest}
+        />
       </Tooltip>
     );
 
     if (isOwnerOrAdmin || isProjectManager) {
       actions.push(
-        <ProjectIntegrationsButton
-          key="integrations"
-          projectId={selectedProject?.id || ''}
-          projectName={selectedProject?.name}
-        />
+        <div key="integrations" className={styles.actionButton}>
+          <ProjectIntegrationsButton
+            projectId={selectedProject?.id || ''}
+            projectName={selectedProject?.name}
+          />
+        </div>
       );
     }
 
@@ -405,14 +419,17 @@ const ProjectViewHeader = memo(() => {
         }
       >
         <Button
+          className={styles.subscribeButton}
           shape="round"
           loading={subscriptionLoading}
           icon={selectedProject?.subscribed ? <BellFilled /> : <BellOutlined />}
           onClick={handleSubscribe}
         >
-          {selectedProject?.subscribed
-            ? t('unsubscribe', { defaultValue: 'Unsubscribe' })
-            : t('subscribe', { defaultValue: 'Subscribe' })}
+          <span className={styles.buttonLabel}>
+            {selectedProject?.subscribed
+              ? t('unsubscribe', { defaultValue: 'Unsubscribe' })
+              : t('subscribe', { defaultValue: 'Subscribe' })}
+          </span>
         </Button>
       </Tooltip>
     );
@@ -425,11 +442,12 @@ const ProjectViewHeader = memo(() => {
         >
           <Button
             key="invite"
+            className={styles.inviteButton}
             type="primary"
             icon={<UsergroupAddOutlined />}
             onClick={handleInvite}
           >
-            {t('invite', { defaultValue: 'Invite' })}
+            <span className={styles.buttonLabel}>{t('invite', { defaultValue: 'Invite' })}</span>
           </Button>
         </Tooltip>
       );
@@ -443,6 +461,7 @@ const ProjectViewHeader = memo(() => {
         >
           <Dropdown.Button
             key="create-task-dropdown"
+            className={styles.createTaskButton}
             loading={creatingTask}
             type="primary"
             icon={<DownOutlined />}
@@ -450,11 +469,11 @@ const ProjectViewHeader = memo(() => {
             trigger={['click']}
             onClick={handleCreateTask}
           >
-            <EditOutlined /> {t('createTask', { defaultValue: 'Create task' })}
+            <EditOutlined /> <span className={styles.buttonLabel}>{t('createTask', { defaultValue: 'Create task' })}</span>
           </Dropdown.Button>
         </Tooltip>
       );
-    } else if (canCreateTask) {
+    } else if (canCreateTask && !isGuest) {
       actions.push(
         <Tooltip
           key="create-task-tooltip"
@@ -462,19 +481,20 @@ const ProjectViewHeader = memo(() => {
         >
           <Button
             key="create-task"
+            className={styles.createTaskButton}
             loading={creatingTask}
             type="primary"
             icon={<EditOutlined />}
             onClick={handleCreateTask}
           >
-            {t('createTask', { defaultValue: 'Create task' })}
+            <span className={styles.buttonLabel}>{t('createTask', { defaultValue: 'Create task' })}</span>
           </Button>
         </Tooltip>
       );
     }
 
     return (
-      <Flex gap={4} align="center">
+      <Flex gap={4} align="center" className={styles.actionsContainer}>
         {actions}
       </Flex>
     );
@@ -487,19 +507,24 @@ const ProjectViewHeader = memo(() => {
     t,
     subscriptionLoading,
     selectedProject?.subscribed,
+    selectedProject?.id,
+    selectedProject?.name,
     handleSubscribe,
     isProjectManager,
     handleInvite,
     creatingTask,
     dropdownItems,
     handleCreateTask,
+    canCreateTask,
+    isGuest,
   ]);
 
   const pageHeaderTitle = useMemo(
     () => (
-      <Flex gap={4} align="center">
+      <Flex gap={4} align="center" wrap className={styles.titleContainer}>
         <Tooltip title={t('navigateBackTooltip', { defaultValue: 'Go back to projects list' })}>
           <ArrowLeftOutlined
+            className={styles.backButton}
             style={{
               fontSize: 16,
               cursor: 'pointer',
@@ -511,10 +536,10 @@ const ProjectViewHeader = memo(() => {
             onClick={handleNavigateToProjects}
           />
         </Tooltip>
-        <Typography.Title level={4} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
-          {selectedProject?.name}
+        <Typography.Title level={4} className={styles.projectTitle} style={{ marginBlockEnd: 0, marginInlineStart: 8 }}>
+          {decodeHtmlEntities(selectedProject?.name)}
         </Typography.Title>
-        {projectAttributes}
+        <div className={styles.projectAttributes}>{projectAttributes}</div>
       </Flex>
     ),
     [handleNavigateToProjects, selectedProject?.name, projectAttributes, t, isBackButtonHovered]
@@ -531,28 +556,30 @@ const ProjectViewHeader = memo(() => {
   return (
     <>
       <div
-        className="site-page-header"
+        className={`site-page-header ${styles.headerContainer}`}
         style={{
           paddingInline: 0,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '16px 0',
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>{pageHeaderTitle}</div>
-        <Flex gap={4} align="center" style={{ marginLeft: '16px', flexShrink: 0 }}>
-          <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
-            <Button
-              shape="circle"
-              icon={<SyncOutlined spin={projectTasksFetching} />}
-              onClick={handleRefresh}
-            />
-          </Tooltip>
-          {headerActions}
-        </Flex>
+        <div className={styles.headerContent}>
+          <div className={styles.titleSection}>{pageHeaderTitle}</div>
+          <Flex gap={4} align="center" className={styles.actionsSection}>
+            <Tooltip title={t('refreshTooltip', { defaultValue: 'Refresh project data' })}>
+              <Button
+                shape="circle"
+                icon={<SyncOutlined spin={projectTasksFetching} />}
+                onClick={handleRefresh}
+              />
+            </Tooltip>
+            {headerActions}
+          </Flex>
+        </div>
       </div>
-      {createPortal(<ProjectDrawer onClose={() => { }} />, document.body, 'project-drawer')}
+      {createPortal(
+        <ProjectSettingsModal onClose={() => {}} />,
+        document.body,
+        'project-settings-modal'
+      )}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
     </>

@@ -15,6 +15,7 @@ import {
 } from '@/features/tasks/tasks.slice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
 import useTabSearchParam from '@/hooks/useTabSearchParam';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 // Import filter components synchronously for better performance
 import SearchDropdown from '@components/project-task-filters/filter-dropdowns/search-dropdown';
@@ -25,6 +26,15 @@ import GroupByFilterDropdown from '@components/project-task-filters/filter-dropd
 import ShowFieldsFilterDropdown from '@components/project-task-filters/filter-dropdowns/show-fields-filter-dropdown';
 import PriorityFilterDropdown from '@components/project-task-filters/filter-dropdowns/priority-filter-dropdown';
 
+import StatusFilterDropdown from '@components/project-task-filters/filter-dropdowns/status-filter-dropdown';
+import PhaseFilterDropdown from '@components/project-task-filters/filter-dropdowns/phase-filter-dropdown';
+import { statusApiService } from '@/api/taskAttributes/status/status.api.service';
+import { phasesApiService } from '@/api/taskAttributes/phases/phases.api.service';
+import { useState } from 'react';
+import { ITaskStatus } from '@/types/tasks/taskStatus.types';
+import { ITaskPhase } from '@/types/tasks/taskPhase.types';
+
+
 interface TaskListFiltersProps {
   position: 'board' | 'list';
 }
@@ -34,9 +44,15 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
   const dispatch = useAppDispatch();
   const { projectView } = useTabSearchParam();
 
+  // Enable automatic filter persistence
+  useFilterPersistence();
+
   const priorities = useAppSelector(state => state.priorityReducer.priorities);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
   const archived = useAppSelector(state => state.taskReducer.archived);
+  const [statuses, setStatusList] = useState<ITaskStatus[]>([]);
+const [phases, setPhaseList] = useState<ITaskPhase[]>([]);
+
 
   const handleShowArchivedChange = () => dispatch(toggleArchived());
 
@@ -59,6 +75,18 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
           setTimeout(() => {
             dispatch(fetchTaskAssignees(projectId));
           }, 200);
+
+          setTimeout(() => {
+            statusApiService.getStatuses(projectId).then(res => {
+              if (res.body) setStatusList(res.body);
+            });
+          }, 150);
+
+          setTimeout(() => {
+            phasesApiService.getPhasesByProjectId(projectId).then(res => {
+              if (res.body) setPhaseList(res.body);
+            });
+          }, 250);
 
           // Load team members last (heaviest query)
           setTimeout(() => {
@@ -90,6 +118,8 @@ const TaskListFilters: React.FC<TaskListFiltersProps> = ({ position }) => {
         <SearchDropdown />
         {projectView === 'list' && <SortFilterDropdown />}
         <PriorityFilterDropdown priorities={priorities} />
+        <StatusFilterDropdown statuses={statuses} />
+        <PhaseFilterDropdown phases={phases} />
         <LabelsFilterDropdown />
         <MembersFilterDropdown />
       </Flex>

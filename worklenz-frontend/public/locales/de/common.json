@@ -110,12 +110,13 @@
   "projectFinanceTitle": "Projektfinanzen",
   "projectFinanceUpgradeBody": "Verfolgen Sie Budgets, Kosten und abrechenbare Zeiten in Ihren Projekten. Erfordert den Business-Plan.",
   "upgrade-now": "Jetzt upgraden",
-  "seeSpends": "Ausgaben anzeigen",
+  "seeSpends": "Ausgaben verfolgen",
   "closePopover": "Popover schließen",
   "or-switch-team": "OR SWITCH TEAM",
   "trial-expired": "Trial Expired",
   "switch-to-another-team": "Switch to another team",
   "need-help": "Need help?",
   "contact-support": "Contact support",
-  "view-pricing": "view pricing"
+  "view-pricing": "view pricing",
+  "justNow": "Gerade eben"
 }

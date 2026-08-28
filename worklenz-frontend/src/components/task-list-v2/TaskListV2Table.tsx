@@ -3,12 +3,15 @@ import { GroupedVirtuoso } from 'react-virtuoso';
 import {
   DndContext,
   DragOverlay,
+  DragStartEvent,
+  DragEndEvent,
   PointerSensor,
   useSensor,
   useSensors,
   KeyboardSensor,
   TouchSensor,
   closestCenter,
+  useDroppable,
 } from '@dnd-kit/core';
 import { restrictToVerticalAxis, restrictToHorizontalAxis } from '@dnd-kit/modifiers';
 import {
@@ -226,6 +229,33 @@ const EmptyGroupMessage: React.FC<{ visibleColumns: any[]; isDarkMode?: boolean 
   );
 };
 
+const GroupDropZone: React.FC<{
+  groupId: string;
+  isActive: boolean;
+  children: React.ReactNode;
+}> = ({ groupId, isActive, children }) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `group-drop-${groupId}`,
+    data: {
+      type: 'group',
+      groupId,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`transition-colors ${
+        isActive || isOver
+          ? 'ring-2 ring-blue-400 dark:ring-blue-500 bg-blue-50/60 dark:bg-blue-900/20'
+          : ''
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const ExampleTaskRows: React.FC<{
   visibleColumns: any[];
   isDarkMode?: boolean;
@@ -235,17 +265,34 @@ const ExampleTaskRows: React.FC<{
   groupName: string;
   groupColor: string;
   projectId: string;
-  onTaskCreated: (task: any, options?: { openDrawer: boolean; insertAfterTaskId?: string | null }) => void;
-}> = ({ visibleColumns, isDarkMode = false, groupId, groupType, groupValue, groupName, groupColor, projectId, onTaskCreated }) => {
+  canCreateTask?: boolean;
+  onTaskCreated: (
+    task: any,
+    options?: { openDrawer: boolean; insertAfterTaskId?: string | null }
+  ) => void;
+}> = ({
+  visibleColumns,
+  isDarkMode = false,
+  groupId,
+  groupType,
+  groupValue,
+  groupName,
+  groupColor,
+  projectId,
+  canCreateTask = true,
+  onTaskCreated,
+}) => {
   const { t } = useTranslation('task-list-table');
   const { socket, connected } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
   const priorities = useAppSelector((state: any) => state.priorityReducer?.priorities || []);
-  const mediumPriority = priorities.find((p: any) => p.value === '1' || p.value === 1) || priorities[0];
+  const mediumPriority =
+    priorities.find((p: any) => p.value === '1' || p.value === 1) || priorities[0];
 
   const [showPlaceholders, setShowPlaceholders] = React.useState(false);
   const [activeRowIndex, setActiveRowIndex] = React.useState<number | null>(null);
   const [taskName, setTaskName] = React.useState('');
+  const [creatingTask, setCreatingTask] = React.useState(false);
   const inputRef = React.useRef<any>(null);
 
   const exampleTaskNames = [
@@ -268,7 +315,7 @@ const ExampleTaskRows: React.FC<{
 
   const handleCreateTask = React.useCallback(
     (openDrawer: boolean = false) => {
-      if (!currentSession || !taskName.trim() || !socket || !connected) return;
+      if (creatingTask || !currentSession || !taskName.trim() || !socket || !connected) return;
 
       const body: any = {
         name: taskName.trim(),
@@ -278,14 +325,24 @@ const ExampleTaskRows: React.FC<{
       };
 
       switch (groupType) {
-        case 'status': body.status_id = groupValue; break;
-        case 'priority': body.priority_id = groupValue; break;
-        case 'phase': body.phase_id = groupValue; break;
-        default: body[groupType] = groupValue; break;
+        case 'status':
+          body.status_id = groupValue;
+          break;
+        case 'priority':
+          body.priority_id = groupValue;
+          break;
+        case 'phase':
+          body.phase_id = groupValue;
+          break;
+        default:
+          body[groupType] = groupValue;
+          break;
       }
 
+      setCreatingTask(true);
       socket.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
       socket.once(SocketEvents.QUICK_TASK.toString(), (task: any) => {
+        setCreatingTask(false);
         if (task?.id) {
           onTaskCreated(task, { openDrawer, insertAfterTaskId: null });
         }
@@ -294,13 +351,29 @@ const ExampleTaskRows: React.FC<{
       setTaskName('');
       setActiveRowIndex(null);
     },
-    [taskName, projectId, groupType, groupValue, socket, connected, currentSession, onTaskCreated]
+    [
+      creatingTask,
+      taskName,
+      projectId,
+      groupType,
+      groupValue,
+      socket,
+      connected,
+      currentSession,
+      onTaskCreated,
+    ]
   );
 
   const handleKeyDown = React.useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') { e.preventDefault(); handleCreateTask(false); }
-      else if (e.key === 'Escape') { e.preventDefault(); setTaskName(''); setActiveRowIndex(null); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleCreateTask(false);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setTaskName('');
+        setActiveRowIndex(null);
+      }
     },
     [handleCreateTask]
   );
@@ -320,15 +393,18 @@ const ExampleTaskRows: React.FC<{
           name,
           title: name,
           // Status — pass display fields so StatusColumn renders the badge
-          status_id:  groupType === 'status' ? groupValue : undefined,
-          status:     groupType === 'status' ? groupName  : undefined,
+          status_id: groupType === 'status' ? groupValue : undefined,
+          status: groupType === 'status' ? groupName : undefined,
           color_code: groupType === 'status' ? groupColor : undefined,
           // Priority — use group data when grouped by priority, otherwise default to Medium
-          priority_id:         groupType === 'priority' ? groupValue            : mediumPriority?.id,
-          priority:            groupType === 'priority' ? groupName             : mediumPriority?.name,
-          priority_color:      groupType === 'priority' ? groupColor            : mediumPriority?.color_code,
-          priority_color_dark: groupType === 'priority' ? groupColor            : (mediumPriority?.color_code_dark || mediumPriority?.color_code),
-          priority_value:      groupType === 'priority' ? undefined             : mediumPriority?.value,
+          priority_id: groupType === 'priority' ? groupValue : mediumPriority?.id,
+          priority: groupType === 'priority' ? groupName : mediumPriority?.name,
+          priority_color: groupType === 'priority' ? groupColor : mediumPriority?.color_code,
+          priority_color_dark:
+            groupType === 'priority'
+              ? groupColor
+              : mediumPriority?.color_code_dark || mediumPriority?.color_code,
+          priority_value: groupType === 'priority' ? undefined : mediumPriority?.value,
           // Phase
           phase_id: groupType === 'phase' ? groupValue : undefined,
           names: [],
@@ -348,8 +424,10 @@ const ExampleTaskRows: React.FC<{
           <div
             key={rowIndex}
             className="flex items-center min-w-max px-1 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/30"
-            style={{ height: '40px', cursor: 'text' }}
-            onClick={() => { if (activeRowIndex === null) setActiveRowIndex(rowIndex); }}
+            style={{ height: '40px', cursor: canCreateTask ? 'text' : 'default' }}
+            onClick={() => {
+              if (canCreateTask && activeRowIndex === null) setActiveRowIndex(rowIndex);
+            }}
           >
             {visibleColumns.map((column, colIndex) => {
               let leftPosition = 0;
@@ -387,15 +465,21 @@ const ExampleTaskRows: React.FC<{
                         onChange={e => setTaskName(e.target.value)}
                         onKeyDown={handleKeyDown}
                         onBlur={handleBlur}
-                        placeholder={t('addTaskInputPlaceholder', { defaultValue: 'Type task name and press Enter to save' })}
+                        placeholder={t('addTaskInputPlaceholder', {
+                          defaultValue: 'Type task name and press Enter to save',
+                        })}
                         className="w-full border-none shadow-none bg-transparent"
                         style={{ height: '100%', padding: '4px 8px', fontSize: '14px' }}
+                        disabled={creatingTask}
                         autoFocus
                       />
                     ) : (
                       <span
                         className="text-sm text-gray-400 dark:text-gray-500 truncate"
-                        style={{ opacity: showPlaceholders ? 1 : 0, transition: 'opacity 0.25s ease-in' }}
+                        style={{
+                          opacity: showPlaceholders ? 1 : 0,
+                          transition: 'opacity 0.25s ease-in',
+                        }}
                       >
                         {egPrefix} {name}
                       </span>
@@ -408,31 +492,111 @@ const ExampleTaskRows: React.FC<{
               const renderContent = () => {
                 switch (column.id) {
                   case 'dragHandle':
-                    return <DragHandleColumn width={column.width} isSubtask={false} attributes={{}} listeners={{}} />;
+                    return (
+                      <DragHandleColumn
+                        width={column.width}
+                        isSubtask={false}
+                        attributes={{}}
+                        listeners={{}}
+                      />
+                    );
                   case 'checkbox':
-                    return <CheckboxColumn width={column.width} isSelected={false} onCheckboxChange={() => {}} />;
+                    return (
+                      <CheckboxColumn
+                        width={column.width}
+                        isSelected={false}
+                        onCheckboxChange={() => {}}
+                      />
+                    );
                   case 'taskKey':
                     return <TaskKeyColumn width={column.width} taskKey="" />;
                   case 'description':
-                    return <DescriptionColumn width={column.width} description="" taskId={mockTask.id} />;
+                    return (
+                      <DescriptionColumn width={column.width} description="" taskId={mockTask.id} />
+                    );
                   case 'status':
-                    return <StatusColumn width={column.width} task={mockTask} projectId={projectId} isDarkMode={isDarkMode} />;
+                    return (
+                      <StatusColumn
+                        width={column.width}
+                        task={mockTask}
+                        projectId={projectId}
+                        isDarkMode={isDarkMode}
+                      />
+                    );
                   case 'assignees':
-                    return <AssigneesColumn width={column.width} task={mockTask} convertedTask={mockTask} isDarkMode={isDarkMode} canCreateTask={true} />;
+                    return (
+                      <AssigneesColumn
+                        width={column.width}
+                        task={mockTask}
+                        convertedTask={mockTask}
+                        isDarkMode={isDarkMode}
+                        canCreateTask={true}
+                      />
+                    );
                   case 'priority':
-                    return <PriorityColumn width={column.width} task={mockTask} projectId={projectId} isDarkMode={isDarkMode} />;
+                    return (
+                      <PriorityColumn
+                        width={column.width}
+                        task={mockTask}
+                        projectId={projectId}
+                        isDarkMode={isDarkMode}
+                      />
+                    );
                   case 'dueDate':
-                    return <DatePickerColumn width={column.width} task={mockTask} field="dueDate" formattedDate={null} dateValue={undefined} isDarkMode={isDarkMode} activeDatePicker={null} onActiveDatePickerChange={() => {}} />;
+                    return (
+                      <DatePickerColumn
+                        width={column.width}
+                        task={mockTask}
+                        field="dueDate"
+                        formattedDate={null}
+                        dateValue={undefined}
+                        isDarkMode={isDarkMode}
+                        activeDatePicker={null}
+                        onActiveDatePickerChange={() => {}}
+                      />
+                    );
                   case 'startDate':
-                    return <DatePickerColumn width={column.width} task={mockTask} field="startDate" formattedDate={null} dateValue={undefined} isDarkMode={isDarkMode} activeDatePicker={null} onActiveDatePickerChange={() => {}} />;
+                    return (
+                      <DatePickerColumn
+                        width={column.width}
+                        task={mockTask}
+                        field="startDate"
+                        formattedDate={null}
+                        dateValue={undefined}
+                        isDarkMode={isDarkMode}
+                        activeDatePicker={null}
+                        onActiveDatePickerChange={() => {}}
+                      />
+                    );
                   case 'progress':
                     return <ProgressColumn width={column.width} task={mockTask} />;
                   case 'labels':
-                    return <LabelsColumnWithOverflow width={column.width} task={mockTask} labelsAdapter={[]} isDarkMode={isDarkMode} columnId={column.id} />;
+                    return (
+                      <LabelsColumnWithOverflow
+                        width={column.width}
+                        task={mockTask}
+                        labelsAdapter={[]}
+                        isDarkMode={isDarkMode}
+                        columnId={column.id}
+                      />
+                    );
                   case 'phase':
-                    return <PhaseColumn width={column.width} task={mockTask} projectId={projectId} isDarkMode={isDarkMode} />;
+                    return (
+                      <PhaseColumn
+                        width={column.width}
+                        task={mockTask}
+                        projectId={projectId}
+                        isDarkMode={isDarkMode}
+                      />
+                    );
                   case 'timeTracking':
-                    return <TimeTrackingColumn width={column.width} taskId={mockTask.id} isDarkMode={isDarkMode} />;
+                    return (
+                      <TimeTrackingColumn
+                        width={column.width}
+                        taskId={mockTask.id}
+                        isDarkMode={isDarkMode}
+                      />
+                    );
                   case 'estimation':
                     return <EstimationColumn width={column.width} task={mockTask} />;
                   case 'completedDate':
@@ -444,7 +608,12 @@ const ExampleTaskRows: React.FC<{
                   case 'reporter':
                     return <ReporterColumn width={column.width} reporter="" />;
                   default:
-                    return <div className="border-r border-gray-200 dark:border-gray-700" style={{ width: column.width }} />;
+                    return (
+                      <div
+                        className="border-r border-gray-200 dark:border-gray-700"
+                        style={{ width: column.width }}
+                      />
+                    );
                 }
               };
 
@@ -472,9 +641,13 @@ const ExampleTaskRows: React.FC<{
 const InsertTaskDivider: React.FC<{
   onInsert: () => void;
   title: string;
-}> = ({ onInsert, title }) => {
+  isVisible: boolean;
+  isNearGroupHeader: boolean;
+}> = ({ onInsert, title, isVisible, isNearGroupHeader }) => {
+  if (!isVisible || isNearGroupHeader) return null;
+
   return (
-    <div className="group absolute inset-x-0 top-0 h-2 -translate-y-1/2 z-20">
+    <div className="group absolute inset-x-0 top-0 h-3 -translate-y-1/2" style={{ zIndex: 5 }}>
       <div className="relative h-full w-full">
         <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t border-blue-400 dark:border-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
         <button
@@ -515,7 +688,7 @@ const SortableHeader: React.FC<{
     transform,
     transition,
     isDragging,
-  } = useSortable({ 
+  } = useSortable({
     id: column.id,
     // Disable the automatic scaling that dnd-kit applies during drag
     animateLayoutChanges: () => false,
@@ -525,11 +698,13 @@ const SortableHeader: React.FC<{
   const explicitWidth = column.width; // This is already a string like "120px"
 
   // Remove scale from transform to prevent width changes during drag
-  const transformWithoutScale = transform ? {
-    ...transform,
-    scaleX: 1,
-    scaleY: 1,
-  } : null;
+  const transformWithoutScale = transform
+    ? {
+        ...transform,
+        scaleX: 1,
+        scaleY: 1,
+      }
+    : null;
 
   const style = {
     transform: transformWithoutScale ? CSS.Transform.toString(transformWithoutScale) : undefined,
@@ -562,14 +737,18 @@ import { useDragAndDrop } from './hooks/useDragAndDrop';
 import { useBulkActions } from './hooks/useBulkActions';
 
 // Constants and types
-import { BASE_COLUMNS, ColumnStyle } from './constants/columns';
+import { BASE_COLUMNS, ColumnStyle, AddTaskRowItem } from './constants/columns';
 import { validateColumnWidths, validateColumnWidth } from '@/utils/column-width-validation';
 import { Task } from '@/types/task-management.types';
 import { SocketEvents } from '@/shared/socket-events';
 import { evt_project_task_list_visit } from '@/shared/worklenz-analytics-events';
 import DuplicateTaskModal from './components/DuplicateTaskModal';
 
-const TaskListV2Section: React.FC = () => {
+interface TaskListV2SectionProps {
+  isGuest?: boolean;
+}
+
+const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }) => {
   const dispatch = useAppDispatch();
   const { projectId: urlProjectId } = useParams();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -604,12 +783,18 @@ const TaskListV2Section: React.FC = () => {
   const customColumns = useAppSelector(selectCustomColumns);
   const loadingColumns = useAppSelector(selectLoadingColumns);
 
+  useEffect(() => {
+    if (isGuest && selectedTaskIds.length > 0) {
+      dispatch(clearSelection());
+    }
+  }, [dispatch, isGuest, selectedTaskIds.length]);
+
   // Refs for scroll synchronization
   const headerScrollRef = useRef<HTMLDivElement>(null);
-  const outerScrollRef = useRef<HTMLDivElement>(null);  // handles horizontal scroll
+  const outerScrollRef = useRef<HTMLDivElement>(null); // handles horizontal scroll
   const contentScrollRef = useRef<HTMLDivElement>(null); // handles vertical scroll (customScrollParent for virtuoso)
   // State for GroupedVirtuoso customScrollParent (updated after mount via useEffect)
-  const [scrollContainer, setScrollContainer] = useState<Element | null>(null);
+  const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
 
   // Ref to store cleanup function for column resize drag operation
   const resizeCleanupRef = useRef<(() => void) | null>(null);
@@ -667,8 +852,32 @@ const TaskListV2Section: React.FC = () => {
   );
 
   // Custom hooks
-  const { activeId, overId, dropPosition, handleDragStart, handleDragOver, handleDragEnd } =
-    useDragAndDrop(allTasks, groups);
+  const {
+    activeId,
+    overId,
+    overGroupId,
+    dropPosition,
+    handleDragStart: originalHandleDragStart,
+    handleDragOver: originalHandleDragOver,
+    handleDragEnd,
+  } = useDragAndDrop(allTasks, groups);
+
+  // Wrap drag handlers to prevent dragging for guests
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    if (isGuest) return;
+    originalHandleDragStart(event);
+  }, [isGuest, originalHandleDragStart]);
+
+  const handleDragOver = useCallback((event: any) => {
+    if (isGuest) return;
+    originalHandleDragOver(event);
+  }, [isGuest, originalHandleDragOver]);
+
+  const handleDragEndWrapper = useCallback((event: DragEndEvent) => {
+    if (isGuest) return;
+    handleDragEnd(event);
+  }, [isGuest, handleDragEnd]);
+
   const bulkActions = useBulkActions();
 
   // Enable real-time updates via socket handlers
@@ -797,6 +1006,9 @@ const TaskListV2Section: React.FC = () => {
             label: column.name || t('customColumns.customColumnHeader'),
             width: columnWidths[columnId] || `${(column as any).width || defaultWidth}px`,
             key: column.key || column.id || 'unknown',
+            isSticky: false,
+            minWidth: '100px',
+            maxWidth: '400px',
             custom_column: true,
             custom_column_obj: transformedColumnObj,
             isCustom: true,
@@ -871,7 +1083,7 @@ const TaskListV2Section: React.FC = () => {
       // Also set on document root for global access
       document.documentElement.style.setProperty(`--col-width-${col.id}`, col.width);
     });
-    
+
     return style;
   }, [visibleColumns]);
 
@@ -893,9 +1105,29 @@ const TaskListV2Section: React.FC = () => {
     return !!urlProjectId && shouldFetchInitialData && groups.length === 0;
   }, [urlProjectId, shouldFetchInitialData, groups.length]);
 
-  // Show example rows only when the project has zero tasks across all groups.
-  // Once any task exists anywhere, all example rows disappear.
-  const hasNoTasks = useMemo(() => allTasks.length === 0, [allTasks]);
+  // Show example rows only when the project has zero tasks across all groups
+  // AND no filters are currently active. With filters on, an empty group means
+  // "no matching tasks" — not an empty project — so placeholders should not show.
+  const activePhases = useAppSelector((state: any) => state.taskReducer?.phases || []);
+  const activePriorities = useAppSelector((state: any) => state.taskReducer?.priorities || []);
+  const activeStatuses = useAppSelector((state: any) => state.taskReducer?.statuses || []);
+  const activeLabels = useAppSelector((state: any) =>
+    (state.taskReducer?.labels || []).filter((l: any) => l.selected)
+  );
+  const activeMembers = useAppSelector((state: any) =>
+    (state.taskReducer?.taskAssignees || []).filter((m: any) => m.selected)
+  );
+  const hasActiveFilters =
+    activePhases.length > 0 ||
+    activePriorities.length > 0 ||
+    activeStatuses.length > 0 ||
+    activeLabels.length > 0 ||
+    activeMembers.length > 0;
+
+  const hasNoTasks = useMemo(
+    () => allTasks.length === 0 && !hasActiveFilters,
+    [allTasks, hasActiveFilters]
+  );
 
   useEffect(() => {
     if (!urlProjectId || !shouldFetchInitialData) {
@@ -990,7 +1222,10 @@ const TaskListV2Section: React.FC = () => {
       container.querySelectorAll<HTMLElement>('*').forEach(el => {
         if (window.getComputedStyle(el).position !== 'sticky') return;
         const child = el.firstElementChild as HTMLElement | null;
-        if (child && (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))) {
+        if (
+          child &&
+          (child.classList.contains('mt-2') || child.querySelector('[data-group-header]'))
+        ) {
           el.classList.add('virtuoso-group-header-wrapper');
           // Use Ant Design's colorBgContainer token — matches the actual page background
           // in both light (#ffffff) and dark (#141414) modes.
@@ -1241,7 +1476,7 @@ const TaskListV2Section: React.FC = () => {
   const handleColumnDragOver = useCallback((event: any) => {
     // Throttle state updates during drag to reduce re-renders
     const newOverId = event?.over?.id || null;
-    setOverColumnId(prev => prev === newOverId ? prev : newOverId);
+    setOverColumnId(prev => (prev === newOverId ? prev : newOverId));
   }, []);
 
   const handleColumnDragEnd = useCallback(
@@ -1282,7 +1517,7 @@ const TaskListV2Section: React.FC = () => {
         originalIndex: allTasks.indexOf(task),
       }));
 
-      const addTaskItem = {
+      const addTaskItem: AddTaskRowItem = {
         id: `add-task-${group.id}-0`,
         isAddTaskRow: true,
         groupId: group.id,
@@ -1299,7 +1534,9 @@ const TaskListV2Section: React.FC = () => {
       let itemsWithAddTask = tasksForVirtuoso;
       if (!isCurrentGroupCollapsed) {
         if (insertAnchor?.groupId === group.id && insertAnchor.afterTaskId) {
-          const anchorIndex = tasksForVirtuoso.findIndex(task => task.id === insertAnchor.afterTaskId);
+          const anchorIndex = tasksForVirtuoso.findIndex(
+            task => task.id === insertAnchor.afterTaskId
+          );
           if (anchorIndex >= 0) {
             itemsWithAddTask = [...tasksForVirtuoso];
             itemsWithAddTask.splice(anchorIndex + 1, 0, addTaskItem as any);
@@ -1341,36 +1578,55 @@ const TaskListV2Section: React.FC = () => {
 
       return (
         <div className={groupIndex > 0 ? 'mt-2' : ''} data-group-header="true">
-          <TaskGroupHeader
-            group={{
-              id: group.id,
-              name: group.title,
-              count: group.actualCount,
-              color: isDarkMode ? group.color_code_dark : group.color,
-            }}
-            isCollapsed={isGroupCollapsed}
-            onToggle={() => handleGroupCollapse(group.id)}
-            projectId={urlProjectId || ''}
-          />
-          {isGroupEmpty && !isGroupCollapsed && hasNoTasks && (
-            <ExampleTaskRows
-              visibleColumns={visibleColumns}
-              isDarkMode={isDarkMode}
-              groupId={group.id}
-              groupType={currentGrouping || 'status'}
-              groupValue={group.id}
-              groupName={group.title || group.name || ''}
-              groupColor={isDarkMode ? (group.color_code_dark || group.color) : group.color}
+          <GroupDropZone
+            groupId={group.id}
+            isActive={activeId !== null && overGroupId === group.id}
+          >
+            <TaskGroupHeader
+              group={{
+                id: group.id,
+                name: group.title,
+                count: group.actualCount,
+                color: isDarkMode ? group.color_code_dark : group.color,
+              }}
+              isCollapsed={isGroupCollapsed}
+              onToggle={() => handleGroupCollapse(group.id)}
               projectId={urlProjectId || ''}
-              onTaskCreated={(task, options) =>
-                handleTaskCreated(task, group.id, !!options?.openDrawer, null)
-              }
             />
-          )}
+            {isGroupEmpty && !isGroupCollapsed && hasNoTasks && !isGuest && (
+              <ExampleTaskRows
+                visibleColumns={visibleColumns}
+                isDarkMode={isDarkMode}
+                groupId={group.id}
+                groupType={currentGrouping || 'status'}
+                groupValue={group.id}
+                groupName={group.title || ''}
+                groupColor={(isDarkMode ? group.color_code_dark || group.color : group.color) || ''}
+                projectId={urlProjectId || ''}
+                canCreateTask={canCreateTask}
+                onTaskCreated={(task, options) =>
+                  handleTaskCreated(task, group.id, !!options?.openDrawer, null)
+                }
+              />
+            )}
+          </GroupDropZone>
         </div>
       );
     },
-    [virtuosoGroups, collapsedGroups, handleGroupCollapse, visibleColumns, t, isDarkMode, currentGrouping, urlProjectId, handleTaskCreated, hasNoTasks]
+    [
+      virtuosoGroups,
+      collapsedGroups,
+      handleGroupCollapse,
+      visibleColumns,
+      isDarkMode,
+      currentGrouping,
+      urlProjectId,
+      handleTaskCreated,
+      hasNoTasks,
+      activeId,
+      overGroupId,
+      canCreateTask,
+    ]
   );
 
   const renderTask = useCallback(
@@ -1380,8 +1636,8 @@ const TaskListV2Section: React.FC = () => {
       if (!item || !urlProjectId) return null;
 
       if ('isAddTaskRow' in item && item.isAddTaskRow) {
-        // Hide the add-task row entirely when task creation is restricted
-        if (!canCreateTask) return null;
+        // Hide the add-task row entirely when task creation is restricted or user is guest
+        if (!canCreateTask || isGuest) return null;
         return (
           <AddTaskRow
             groupId={item.groupId}
@@ -1416,6 +1672,7 @@ const TaskListV2Section: React.FC = () => {
           isFirstInGroup={isFirstInGroup}
           updateTaskCustomColumnValue={updateTaskCustomColumnValue}
           canCreateTask={canCreateTask}
+          isGuest={isGuest}
         />
       );
     },
@@ -1429,6 +1686,7 @@ const TaskListV2Section: React.FC = () => {
       handleDeactivateAddRow,
       handleTaskCreated,
       canCreateTask,
+      isGuest,
     ]
   );
 
@@ -1448,10 +1706,7 @@ const TaskListV2Section: React.FC = () => {
         onDragOver={handleColumnDragOver}
         onDragEnd={handleColumnDragEnd}
       >
-        <SortableContext
-          items={reorderableColumnIds}
-          strategy={horizontalListSortingStrategy}
-        >
+        <SortableContext items={reorderableColumnIds} strategy={horizontalListSortingStrategy}>
           <div
             className="border-b border-gray-200 dark:border-gray-700 tasklist-v2-column-headers"
             style={{
@@ -1536,7 +1791,10 @@ const TaskListV2Section: React.FC = () => {
                         onSettingsClick={handleCustomColumnSettings}
                         dragListeners={!column.isSticky ? dragParams?.listeners : undefined}
                         dragAttributes={!column.isSticky ? dragParams?.attributes : undefined}
-                        setDragActivatorRef={!column.isSticky ? dragParams?.setActivatorNodeRef : undefined}
+                        setDragActivatorRef={
+                          !column.isSticky ? dragParams?.setActivatorNodeRef : undefined
+                        }
+                        isGuest={isGuest}
                       />
                     ) : (
                       <span
@@ -1591,19 +1849,27 @@ const TaskListV2Section: React.FC = () => {
                           let headerText: string;
                           if (column.isCustom) {
                             // Use the same logic as CustomColumnHeader component
-                            headerText = column.name || column.custom_column_obj?.fieldTitle || column.key || column.label || '';
+                            headerText =
+                              column.name ||
+                              column.custom_column_obj?.fieldTitle ||
+                              column.key ||
+                              column.label ||
+                              '';
                           } else {
                             headerText = t(column.label || '');
                           }
                           // Approximate: 8px per character + padding for icons/spacing
                           // Custom columns need more padding for settings icon + drag handle
-                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) + 
-                          //            drag handle padding (12px) + drag handle icon (14px) + 
+                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) +
+                          //            drag handle padding (12px) + drag handle icon (14px) +
                           //            container padding (16px) + buffer (24px) = 100px
                           // Regular columns need padding for drag handle (40px)
                           const paddingForIcons = column.isCustom ? 100 : 40;
-                          const calculatedMinWidth = Math.max(100, (headerText.length * 8) + paddingForIcons);
-                          
+                          const calculatedMinWidth = Math.max(
+                            100,
+                            headerText.length * 8 + paddingForIcons
+                          );
+
                           // Get min/max widths from column config or use calculated minimum
                           const minWidth = (column as any).minWidth
                             ? parseInt((column as any).minWidth.replace('px', ''), 10)
@@ -1665,19 +1931,27 @@ const TaskListV2Section: React.FC = () => {
                           let headerText: string;
                           if (column.isCustom) {
                             // Use the same logic as CustomColumnHeader component
-                            headerText = column.name || column.custom_column_obj?.fieldTitle || column.key || column.label || '';
+                            headerText =
+                              column.name ||
+                              column.custom_column_obj?.fieldTitle ||
+                              column.key ||
+                              column.label ||
+                              '';
                           } else {
                             headerText = t(column.label || '');
                           }
                           // Approximate: 8px per character + padding for icons/spacing
                           // Custom columns need more padding for settings icon + drag handle
-                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) + 
-                          //            drag handle padding (12px) + drag handle icon (14px) + 
+                          // Breakdown: text margin (4px) + gap (16px) + settings icon (14px) +
+                          //            drag handle padding (12px) + drag handle icon (14px) +
                           //            container padding (16px) + buffer (24px) = 100px
                           // Regular columns need padding for drag handle (40px)
                           const paddingForIcons = column.isCustom ? 60 : 50;
-                          const calculatedMinWidth = Math.max(60, (headerText.length * 8) + paddingForIcons);
-                          
+                          const calculatedMinWidth = Math.max(
+                            60,
+                            headerText.length * 8 + paddingForIcons
+                          );
+
                           // Get min/max widths from column config or use calculated minimum
                           const minWidth = column.minWidth
                             ? parseInt(column.minWidth.replace('px', ''), 10)
@@ -1911,7 +2185,7 @@ const TaskListV2Section: React.FC = () => {
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
+          onDragEnd={handleDragEndWrapper}
         >
           <div className="flex flex-col bg-white dark:bg-gray-900 h-full overflow-hidden">
             <div
@@ -1954,7 +2228,7 @@ const TaskListV2Section: React.FC = () => {
                         projectId={urlProjectId || ''}
                       />
                       {/* Single add task row - reused for all tasks */}
-                      {canCreateTask && (
+                      {canCreateTask && !isGuest && (
                         <AddTaskRow
                           groupId={unmappedGroupId}
                           groupType="phase"
@@ -2041,7 +2315,7 @@ const TaskListV2Section: React.FC = () => {
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
+        onDragEnd={handleDragEndWrapper}
         modifiers={[restrictToVerticalAxis]}
       >
         <div
@@ -2110,12 +2384,18 @@ const TaskListV2Section: React.FC = () => {
                         .reduce((sum, c) => sum + c, 0);
                       const indexInGroup = index - groupOffset;
                       const isFirstInGroup = indexInGroup === 0 && !('isAddTaskRow' in item);
-                      const previousItem = indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
-                      const showInsertDivider =
-                        indexInGroup > 0 &&
-                        !('isAddTaskRow' in item) &&
-                        previousItem &&
-                        !('isAddTaskRow' in previousItem);
+                      const previousItem =
+                        indexInGroup > 0 ? group?.tasks?.[indexInGroup - 1] : null;
+                       const showInsertDivider =
+                         indexInGroup > 0 &&
+                         !('isAddTaskRow' in item) &&
+                         previousItem &&
+                         !('isAddTaskRow' in previousItem);
+                       // Check if this is the last real task in the group
+                      const isLastInGroup = !('isAddTaskRow' in item) && 
+                        indexInGroup === group.tasks.length - 1 &&
+                        group.tasks.filter(t => !('isAddTaskRow' in t)).length > 0 &&
+                        item.id !== `add-task-${group.id}-0`;
 
                       const isOverThisTask =
                         activeId && overId === item.id && !('isAddTaskRow' in item);
@@ -2130,9 +2410,9 @@ const TaskListV2Section: React.FC = () => {
                             // Find the InsertTaskDivider button inside this row and update
                             // its left position to follow the cursor — direct DOM update,
                             // no React state, no re-render.
-                            const btn = (e.currentTarget as HTMLElement).querySelector<HTMLButtonElement>(
-                              '[data-insert-btn]'
-                            );
+                            const btn = (
+                              e.currentTarget as HTMLElement
+                            ).querySelector<HTMLButtonElement>('[data-insert-btn]');
                             if (!btn) return;
                             const rect = e.currentTarget.getBoundingClientRect();
                             // clientX relative to the row's left edge
@@ -2140,27 +2420,43 @@ const TaskListV2Section: React.FC = () => {
                             btn.style.left = `${x}px`;
                           }}
                         >
-                          {showBefore && !activeId && (
+                          {showBefore && activeId && (
                             <DropSpacer
                               isVisible={true}
                               visibleColumns={visibleColumns}
                               isDarkMode={isDarkMode}
                             />
                           )}
-                          {showInsertDivider && previousItem && canCreateTask && (
+                           {showInsertDivider && previousItem && canCreateTask && !isGuest && (
+                             <InsertTaskDivider
+                               isVisible={true}
+                               isNearGroupHeader={false}
+                               title={t('insertTaskText', { defaultValue: 'Insert Task' })}
+                               onInsert={() => {
+                                 setInsertAnchor({
+                                   groupId: group.id,
+                                   afterTaskId: previousItem.id,
+                                 });
+                                 setActiveAddRowsByGroup(prev => ({ ...prev, [group.id]: true }));
+                               }}
+                             />
+                           )}
+                          {renderTask(index, isFirstInGroup)}
+                          {isLastInGroup && canCreateTask && !isGuest && (
                             <InsertTaskDivider
-                              title={t('insertTaskText', { defaultValue: 'Insert Task' })}
+                              isVisible={true}
+                              isNearGroupHeader={false}
+                              title={t('insertTaskText', { defaultValue: 'Insert Task at Bottom' })}
                               onInsert={() => {
                                 setInsertAnchor({
                                   groupId: group.id,
-                                  afterTaskId: previousItem.id,
+                                  afterTaskId: item.id,
                                 });
                                 setActiveAddRowsByGroup(prev => ({ ...prev, [group.id]: true }));
                               }}
                             />
                           )}
-                          {renderTask(index, isFirstInGroup)}
-                          {showAfter && !activeId && (
+                          {showAfter && activeId && (
                             <DropSpacer
                               isVisible={true}
                               visibleColumns={visibleColumns}
@@ -2201,7 +2497,7 @@ const TaskListV2Section: React.FC = () => {
           </DragOverlay>
 
           {/* Bulk Action Bar */}
-          {selectedTaskIds.length > 0 && urlProjectId && (
+          {selectedTaskIds.length > 0 && urlProjectId && !isGuest && (
             <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
               <OptimizedBulkActionBar
                 selectedTaskIds={selectedTaskIds}
@@ -2230,7 +2526,9 @@ const TaskListV2Section: React.FC = () => {
                 onBulkDuplicate={() => bulkActions.handleBulkDuplicate(selectedTaskIds)}
                 onBulkExport={() => bulkActions.handleBulkExport(selectedTaskIds)}
                 onBulkSetDueDate={date => bulkActions.handleBulkSetDueDate(date, selectedTaskIds)}
-                onBulkSetStartDate={date => bulkActions.handleBulkSetStartDate(date, selectedTaskIds)}
+                onBulkSetStartDate={date =>
+                  bulkActions.handleBulkSetStartDate(date, selectedTaskIds)
+                }
               />
             </div>
           )}

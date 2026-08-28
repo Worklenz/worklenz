@@ -21,14 +21,25 @@
   padding: 10px 15px;
 }
 
+/* Setting color on the <a> itself doesn't reach the label: Typography.Text
+   renders its own .ant-typography color rule, which — being an explicit
+   match on the descendant — wins over an inherited value regardless of
+   !important on the ancestor <a>. So the hover color is targeted at
+   .ant-typography directly instead. */
 .mobile-menu-card .ant-card-body a:hover {
-  color: #1890ff !important;
   background-color: #edebf0 !important;
   box-sizing: border-box;
 }
 
+.mobile-menu-card .ant-card-body a:hover .ant-typography {
+  color: #1890ff !important;
+}
+
 html[data-theme="dark"] .mobile-menu-card .ant-card-body a:hover {
   background-color: #333 !important;
+}
+
+html[data-theme="dark"] .mobile-menu-card .ant-card-body a:hover .ant-typography {
   color: #1890ff !important;
 }
 

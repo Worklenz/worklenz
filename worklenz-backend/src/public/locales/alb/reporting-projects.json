@@ -10,6 +10,7 @@
   "tasksProgressColumn": "Progresi i Detyrave",
   "lastActivityColumn": "Aktiviteti i Fundit",
   "statusColumn": "Statusi",
+  "priorityColumn": "Prioriteti",
   "datesColumn": "Data e Fillimit/Përfundimit",
   "daysLeftColumn": "Ditë të Mbetura/Vonuar",
   "projectHealthColumn": "Gjendja e Projektit",

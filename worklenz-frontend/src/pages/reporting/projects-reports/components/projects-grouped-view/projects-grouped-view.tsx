@@ -13,6 +13,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useTooltipTheme } from '@/hooks/useTooltipTheme';
 import { IRPTProject } from '@/types/reporting/reporting.types';
 import { fetchGroupedProjects } from '@/features/reporting/projectReports/project-reports-slice';
 import ProjectTasksModal from './project-tasks-modal';
@@ -41,7 +42,7 @@ const ProjectsGroupedView = () => {
   const dispatch = useAppDispatch();
   const [selectedProject, setSelectedProject] = useState<IRPTProject | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { tooltipProps, isDark, token } = useTooltipTheme();
 
   // Track visible items per group for client-side pagination
   const [groupPagination, setGroupPagination] = useState<Record<string, number>>({});
@@ -151,8 +152,8 @@ const ProjectsGroupedView = () => {
 
       // Enhanced tooltip with improved UI design
       // Ant Design Tooltip has dark background in both themes, so white text works
-      const tooltipTextColor = colors.white;
-      const dividerColor = 'rgba(255, 255, 255, 0.2)';
+      const tooltipTextColor = isDark ? colors.white : token.colorText;
+      const dividerColor = isDark ? 'rgba(255, 255, 255, 0.2)' : token.colorBorderSecondary;
 
       const progressTooltipTitle = (
         <Flex vertical gap={10} style={{ minWidth: 220, padding: '2px 0' }}>
@@ -277,7 +278,7 @@ const ProjectsGroupedView = () => {
               </Typography.Text>
             </Flex>
             <Flex align="center" gap={16} style={{ flexShrink: 0 }}>
-              <Tooltip title={progressTooltipTitle}>
+              <Tooltip title={progressTooltipTitle} {...tooltipProps}>
                 <Progress
                   percent={percentDone}
                   size="small"
@@ -293,7 +294,7 @@ const ProjectsGroupedView = () => {
         </div>
       );
     },
-    [handleProjectClick, t, themeMode]
+    [handleProjectClick, isDark, t, token, tooltipProps]
   );
 
   const collapseItems = useMemo(
@@ -320,6 +321,7 @@ const ProjectsGroupedView = () => {
                   {group.completedTasks}/{group.totalTasks} {t('tasksText')}
                 </Typography.Text>
                 <Tooltip
+                  {...tooltipProps}
                   title={
                     <Flex vertical gap={10} style={{ minWidth: 220, padding: '2px 0' }}>
                       {/* Top section: Total tasks with emphasis */}
@@ -327,7 +329,7 @@ const ProjectsGroupedView = () => {
                         <Typography.Text
                           strong
                           style={{
-                            color: colors.white,
+                            color: isDark ? colors.white : token.colorText,
                             fontSize: 14,
                             fontWeight: 600,
                             lineHeight: 1.4,
@@ -341,7 +343,7 @@ const ProjectsGroupedView = () => {
                       <div
                         style={{
                           height: 1,
-                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : token.colorBorderSecondary,
                           width: '100%',
                           margin: '2px 0',
                         }}
@@ -351,39 +353,39 @@ const ProjectsGroupedView = () => {
                       <Flex vertical gap={6}>
                         <Flex justify="space-between" align="center">
                           <Typography.Text
-                            style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}
+                            style={{ color: isDark ? colors.white : token.colorText, fontSize: 12, opacity: 0.9 }}
                           >
                             {t('todoText')}:
                           </Typography.Text>
                           <Typography.Text
                             strong
-                            style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
+                            style={{ color: isDark ? colors.white : token.colorText, fontSize: 12, fontWeight: 500 }}
                           >
                             {group.todoTasks}
                           </Typography.Text>
                         </Flex>
                         <Flex justify="space-between" align="center">
                           <Typography.Text
-                            style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}
+                            style={{ color: isDark ? colors.white : token.colorText, fontSize: 12, opacity: 0.9 }}
                           >
                             {t('doingText')}:
                           </Typography.Text>
                           <Typography.Text
                             strong
-                            style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
+                            style={{ color: isDark ? colors.white : token.colorText, fontSize: 12, fontWeight: 500 }}
                           >
                             {group.doingTasks}
                           </Typography.Text>
                         </Flex>
                         <Flex justify="space-between" align="center">
                           <Typography.Text
-                            style={{ color: colors.white, fontSize: 12, opacity: 0.9 }}
+                            style={{ color: isDark ? colors.white : token.colorText, fontSize: 12, opacity: 0.9 }}
                           >
                             {t('doneText')}:
                           </Typography.Text>
                           <Typography.Text
                             strong
-                            style={{ color: colors.white, fontSize: 12, fontWeight: 500 }}
+                            style={{ color: isDark ? colors.white : token.colorText, fontSize: 12, fontWeight: 500 }}
                           >
                             {group.doneTasks}
                           </Typography.Text>
@@ -414,7 +416,7 @@ const ProjectsGroupedView = () => {
                           <Typography.Text
                             strong
                             style={{
-                              color: colors.white,
+                              color: isDark ? colors.white : token.colorText,
                               fontSize: 13,
                               fontWeight: 600,
                               minWidth: 40,

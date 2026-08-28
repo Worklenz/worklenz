@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { billingApiService } from '@/api/admin-center/billing.api.service';
+import { billingApiService } from '@/ee/api/admin-center/billing.api.service';
 import logger from '@/utils/errorLogger';
 
 const CACHE_KEY = 'worklenz_user_region_check';

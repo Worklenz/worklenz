@@ -9,17 +9,14 @@ import { projectInsightsApiService } from '@/api/projects/insights/project-insig
 import logger from '@/utils/errorLogger';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
+import { useTranslation } from 'react-i18next';
 
 const LastUpdatedTasks = () => {
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const [data, setData] = useState<IInsightTasks[]>([]);
-  // const [loading, setLoading] = useState(false);
-  // const [pageSize, setPageSize] = useState(20);
-  // const [currentPage, setCurrentPage] = useState(1);
-
-  //change 1
   const [loading, setLoading] = useState(false);
   const [pageSize, setPageSize] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
@@ -141,13 +138,13 @@ const LastUpdatedTasks = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('common.name', { defaultValue: 'Name' }),
       dataIndex: 'name',
       render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('common.status', { defaultValue: 'Status' }),
       dataIndex: 'status',
       render: (_: any, record: IInsightTasks) => (
         <Flex
@@ -175,22 +172,24 @@ const LastUpdatedTasks = () => {
     },
     {
       key: 'dueDate',
-      title: 'Due Date',
+      title: t('common.dueDate', { defaultValue: 'Due Date' }),
       dataIndex: 'end_date',
       render: (_: any, record: IInsightTasks) => (
         <Typography.Text>
-          {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
+          {record.end_date ? simpleDateFormat(record.end_date) : t('common.na', { defaultValue: 'N/A' })}
         </Typography.Text>
       ),
     },
     {
       key: 'lastUpdated',
-      title: 'Last Updated',
+      title: t('common.lastUpdated', { defaultValue: 'Last Updated' }),
       dataIndex: 'updated_at',
       render: (_: any, record: IInsightTasks) => (
-        <Tooltip title={record.updated_at ? formatDateTimeWithLocale(record.updated_at) : 'N/A'}>
+        <Tooltip title={record.updated_at ? formatDateTimeWithLocale(record.updated_at) : t('common.na', { defaultValue: 'N/A' })}>
           <Typography.Text>
-            {record.updated_at ? calculateTimeDifference(record.updated_at) : 'N/A'}
+            {record.updated_at
+              ? calculateTimeDifference(record.updated_at, t('justNow', { defaultValue: 'Just now' }))
+              : t('common.na', { defaultValue: 'N/A' })}
           </Typography.Text>
         </Tooltip>
       ),
@@ -204,7 +203,7 @@ const LastUpdatedTasks = () => {
 
   return (
     <Table
-      className="custom-two-colors-row-table"
+      className="custom-two-colors-row-table insights-overview-table"
       dataSource={dataSource}
       columns={columns}
       rowKey={record => record.id}
@@ -231,7 +230,6 @@ const LastUpdatedTasks = () => {
         return {
           style: {
             cursor: 'pointer',
-            height: 36,
           },
         };
       }}

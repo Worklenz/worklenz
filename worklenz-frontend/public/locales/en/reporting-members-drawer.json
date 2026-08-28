@@ -31,6 +31,7 @@
   "lowText": "Low",
   "mediumText": "Medium",
   "highText": "High",
+  "criticalText": "Critical",
 
   "billableButton": "Billable",
   "billableText": "Billable",

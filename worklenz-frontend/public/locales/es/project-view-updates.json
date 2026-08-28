@@ -1,7 +1,7 @@
 {
   "title": "Actualizaciones del proyecto",
   "inputPlaceholder": "Escribe tu actualización aquí... Usa @ para mencionar a los miembros del equipo",
-  "addButton": "Publicar actualización",
+  "addButton": "Enviar",
   "cancelButton": "Cancelar",
   "deleteButton": "Eliminar",
   "deleteConfirmTitle": "¿Eliminar esta actualización?",
@@ -9,11 +9,14 @@
   "yes": "Sí",
   "no": "No",
   "emptyState": "Aún no hay actualizaciones. ¡Inicia la conversación!",
+  "today": "Hoy",
+  "yesterday": "Ayer",
   "historyLockedBoundary": "El historial de chat está limitado a los últimos 90 días en este plan",
   "historyLockedTitle": "Historial de chat bloqueado",
   "historyLockedBody": "El historial de chat de más de 90 días está disponible en el plan Business.",
   "viewFullHistory": "Ver historial de chat",
   "upgradeNow": "Actualizar ahora",
+  "inputHint": "Enter para enviar · Shift+Enter para nueva línea",
   "reactions": {
     "like": "Me gusta",
     "love": "Amor",
@@ -28,6 +31,20 @@
   },
   "actions": {
     "edit": "Editar",
-    "save": "Guardar"
-  }
+    "save": "Guardar",
+    "reply": "Responder",
+    "convertToTask": "Convertir en tarea",
+    "pin": "Fijar mensaje",
+    "unpin": "Desfijar mensaje"
+  },
+  "messageDeleted": "Este mensaje fue eliminado",
+  "replyingTo": "Respondiendo a",
+  "pinned": "Fijado",
+  "pinnedBy": "Fijado por",
+  "pinError": "No se pudo actualizar el pin",
+  "convertToTaskSuccess": "Tarea creada a partir del mensaje",
+  "convertToTaskError": "No se pudo crear la tarea",
+  "convertToTaskEmpty": "El mensaje no tiene texto para usar como nombre de tarea",
+  "attachFile": "Adjuntar archivo",
+  "attachmentUploadError": "Error al subir el adjunto"
 }

@@ -1,12 +1,11 @@
-import { useEffect, useState, useMemo, useCallback, memo } from 'react';
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Col, ConfigProvider, Flex, Menu, Tooltip, Button, Popover, Typography } from '@/shared/antd-imports';
+import { Col, ConfigProvider, Flex, Menu, Tooltip } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 
 import InviteTeamMembers from '../../components/common/invite-team-members/InviteTeamMembers';
-import InviteButton from './invite/InviteButton';
 import MobileMenuButton from './mobile-menu/MobileMenuButton';
 import NavbarLogo from './NavbarLogo';
 import NotificationButton from '../../components/navbar/notifications/notifications-drawer/notification/notification-button';
@@ -14,36 +13,37 @@ import ProfileButton from './user-profile/ProfileButton';
 import SwitchTeamButton from './switch-team/SwitchTeamButton';
 import UpgradePlanButton from './upgrade-plan/UpgradePlanButton';
 import NotificationDrawer from '../../components/navbar/notifications/notifications-drawer/notification/notfication-drawer';
+import AddClientDrawer from '@/ee/components/client-portal/AddClientDrawer';
+import UpgradePromptModal from '@/components/upgrade/UpgradePromptModal';
 import { TrialDaysBadge } from './trial-badge/TrialDaysBadge';
 
 import { useResponsive } from '@/hooks/useResponsive';
 import { getJSONFromLocalStorage } from '@/utils/localStorageFunctions';
-import { navRoutes, NavRoutesType } from './navRoutes';
+import { navRoutes, NavRoutesType, isRouteGatedForFreePlan } from './navRoutes';
 import { useAuthService } from '@/hooks/useAuth';
 import { authApiService } from '@/api/auth/auth.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import TimerButton from './timers/TimerButton';
+import QuickActionButton from './quick-actions/QuickActionButton';
+import GlobalSearchButton from './global-search/GlobalSearchButton';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
-import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
-import { fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
-import { isTeamLeadRole, ROLE_DEFINITIONS } from '@/types/roles/role.types';
+import { selectCurrentProject } from '@/app/selectors';
+import {
+  toggleUpgradeModal,
+  fetchOrganizationDetails,
+} from '@/features/admin-center/admin-center.slice';
+import { isTeamLeadRole, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
-import { useAuthStatus } from '@/hooks/useAuthStatus';
-import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
   const [current, setCurrent] = useState<string>('home');
   const [daysUntilExpiry, setDaysUntilExpiry] = useState<number | null>(null);
-  const [isClientPortalPopoverOpen, setIsClientPortalPopoverOpen] = useState(false);
 
   const location = useLocation();
   const { isDesktop, isMobile, isTablet } = useResponsive();
@@ -53,23 +53,24 @@ const Navbar = () => {
   // Get auth service and memoize derived values
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const isOwnerOrAdmin = useMemo(() => authService.isOwnerOrAdmin(), [authService]);
   const currentRole = useMemo(() => getSessionRoleName(currentSession), [currentSession]);
+  const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
   const canInviteMembers = ROLE_DEFINITIONS[currentRole].canInviteMembers;
 
-  const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
-  const { trackAppSumoEvent } = useAppSumoTracking();
-  const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
-  const { isLicenseExpired } = useAuthStatus();
+  const { setIdentity } = useMixpanelTracking();
   const [navRoutesList, setNavRoutesList] = useState<NavRoutesType[]>(navRoutes);
   const showUpgradeTypes = useMemo(() => [ISUBSCRIPTION_TYPE.TRIAL], []);
   const organization = useAppSelector((state: RootState) => state.adminCenterReducer.organization);
+  const currentProject = useAppSelector(selectCurrentProject);
+  const guestProjectStateRef = useRef<{ projectId: string | null; isGuest: boolean }>({
+    projectId: null,
+    isGuest: false,
+  });
 
   useEffect(() => {
     authApiService
-      .verify()
+      .verify(true)
       .then(authorizeResponse => {
         if (authorizeResponse.authenticated) {
           authService.setCurrentSession(authorizeResponse.user);
@@ -91,8 +92,19 @@ const Navbar = () => {
   useEffect(() => {
     // Shared loader — used by all event sources below
     const loadNavRoutes = () => {
-      const updated: NavRoutesType[] = getJSONFromLocalStorage('navRoutes') || navRoutes;
-      setNavRoutesList(updated);
+      // Load user customizations (names of routes user wants visible)
+      const pinnedRouteNames: string[] = getJSONFromLocalStorage('navRoutesPinned') || [];
+
+      // Start with all default routes
+      let routes = [...navRoutes];
+
+      // If user has customizations, show only pinned routes + custom routes
+      // Otherwise show all defaults
+      if (pinnedRouteNames.length > 0) {
+        routes = routes.filter(route => pinnedRouteNames.includes(route.name));
+      }
+
+      setNavRoutesList(routes);
     };
 
     // Initial load
@@ -107,7 +119,7 @@ const Navbar = () => {
     // It does NOT fire in the same tab that wrote — that's covered by the custom
     // event above — so together these two cover every possible scenario.
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'navRoutes') loadNavRoutes();
+      if (e.key === 'navRoutesPinned') loadNavRoutes();
     };
     window.addEventListener('storage', handleStorageChange);
 
@@ -127,112 +139,88 @@ const Navbar = () => {
     }
   }, [currentSession?.trial_expire_date]);
 
-  const navlinkItems = useMemo(() => {
-    const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
-    const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+  // Guest status is a per-project access level (project_members.access_level = GUEST).
+  const routeProjectId = location.pathname.match(/\/projects\/([^/]+)/)?.[1] || null;
+  const projectId = currentProject?.projectId || currentProject?.project?.id || routeProjectId;
+  // currentProject.projectId updates synchronously on navigation, but
+  // currentProject.project (and its is_guest flag) only updates once the async
+  // fetch resolves — until then project still holds the PREVIOUS project's data,
+  // so it must not be trusted just because it's truthy.
+  const projectDataMatchesId = Boolean(projectId) && currentProject?.project?.id === projectId;
+  const projectIsGuest = projectDataMatchesId ? Boolean(currentProject?.project?.is_guest) : false;
+  const guestStatusStorageKey = projectId ? `worklenz.guestProject.${projectId}` : null;
+  const storedProjectIsGuest = guestStatusStorageKey
+    ? sessionStorage.getItem(guestStatusStorageKey) === 'true'
+    : false;
 
+  if (projectId && guestProjectStateRef.current.projectId !== projectId) {
+    guestProjectStateRef.current = {
+      projectId,
+      isGuest: projectDataMatchesId ? projectIsGuest : storedProjectIsGuest,
+    };
+  } else if (projectId && projectDataMatchesId) {
+    guestProjectStateRef.current.isGuest = projectIsGuest;
+  }
+
+  useEffect(() => {
+    if (!guestStatusStorageKey || !projectDataMatchesId) return;
+
+    if (projectIsGuest) {
+      sessionStorage.setItem(guestStatusStorageKey, 'true');
+    } else {
+      sessionStorage.removeItem(guestStatusStorageKey);
+    }
+  }, [projectDataMatchesId, guestStatusStorageKey, projectIsGuest]);
+
+  const isGuest = guestProjectStateRef.current.isGuest;
+  const shouldHideGuestHome = isGuest;
+
+  // Filtered NavRoutesType[] — shared by the desktop Menu (mapped below into
+  // antd's {key, label} item shape) and MobileMenuButton, which needs the
+  // original route objects (route.name, route.path, ...) rather than the
+  // mapped-down menu items.
+  const filteredRoutes = useMemo(() => {
+    const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
     const isTeamLead = currentSession?.role_name ? isTeamLeadRole(currentSession.role_name) : false;
 
-    return navRoutesList
-      .filter(route => {
-        if (route.adminOnly && !isOwnerOrAdmin) return false;
-        if (route.selfHostedExcluded && isSelfHosted) return false;
-        if (route.teamLeadOnly && !isTeamLead) return false;
-        return true;
-      })
+    return navRoutesList.filter(route => {
+      if (route.adminOnly && !isOwnerOrAdmin) return false;
+      if (route.selfHostedExcluded && isSelfHosted) return false;
+      if (route.teamLeadOnly && !isTeamLead) return false;
+      if (route.guestExcluded && shouldHideGuestHome) return false; // Hide Home for guest-only users
+      return true;
+    });
+  }, [navRoutesList, isOwnerOrAdmin, currentSession, shouldHideGuestHome]);
+
+  const visibleRoutes = useMemo(() => {
+    return filteredRoutes
       .map((route, index) => {
-        const isBusinessRoute = route.businessPlanRequired;
-        const isFreePlanRoute = !route.freePlanFeature;
-        const shouldDisable =
-          (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
+        // Free-plan users are blocked from paid features at the nav level.
+        // Business-plan-only sections (Clients, Finance) are no longer
+        // blocked here — they navigate normally and show an in-page blurred
+        // preview with an upgrade prompt for non-business users instead.
+        const shouldDisable = isRouteGatedForFreePlan(route, isFreePlan);
 
         const defaultLabel = t(route.name);
-
-        const clientPortalPopoverContent = (
-          <Flex vertical gap={12} style={{ maxWidth: 280 }}>
-            <Typography.Text>
-              {t('clientPortalUpgradePopoverBody', {
-                defaultValue: t('clientPortalUpgradePopoverBody'),
-              })}
-            </Typography.Text>
-            <Button
-              type="primary"
-              onClick={event => {
-                event.preventDefault();
-                event.stopPropagation();
-                setIsClientPortalPopoverOpen(false);
-                if (isAppSumoUser) {
-                  trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'client_portal' });
-                }
-                setTimeout(() => {
-                  promptUpgrade();
-                }, 0);
-              }}
-            >
-              {t('clientPortalUpgradePopoverCta', { defaultValue: t('clientPortalUpgradePopoverCta') })}
-            </Button>
-          </Flex>
-        );
 
         return {
           key: route.path.split('/').pop() || route.name,
           disabled: false,
           label: shouldDisable ? (
-            route.name === 'client-portal' ? (
-              <Popover
-                trigger="click"
-                open={isClientPortalPopoverOpen}
-                onOpenChange={open => {
-                  setIsClientPortalPopoverOpen(open);
-                  if (isAppSumoUser) {
-                    trackAppSumoEvent(
-                      open ? AppSumoUpsellEvents.UPGRADE_PROMPT_SHOWN : AppSumoUpsellEvents.UPGRADE_PROMPT_DISMISSED,
-                      { feature: 'client_portal' }
-                    );
-                  }
-                }}
-                placement="bottom"
-                title={
-                  <Typography.Text strong>
-                    {t('clientPortalUpgradePopoverTitle', {
-                      defaultValue: t('clientPortalUpgradePopoverTitle'),
-                    })}
-                  </Typography.Text>
-                }
-                content={clientPortalPopoverContent}
-              >
-                <span style={{ cursor: 'pointer', fontWeight: 600 }}>
-                  {defaultLabel}
-                  <CrownOutlined
-                    style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }}
-                  />
-                </span>
-              </Popover>
-            ) : (
-              <Tooltip
-                title={
-                  isFreePlanRoute && isFreePlan
-                    ? tCommon('upgrade-plan')
-                    : tCommon('business-plan-upgrade')
-                }
-                placement="bottom"
-              >
-                <span style={{ cursor: 'pointer', fontWeight: 600 }}>
-                  {defaultLabel}
-                  <CrownOutlined
-                    style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }}
-                  />
-                </span>
-              </Tooltip>
-            )
+            <Tooltip title={tCommon('upgrade-plan')} placement="bottom">
+              <span style={{ cursor: 'pointer', fontWeight: 500 }}>
+                {defaultLabel}
+                <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
+              </span>
+            </Tooltip>
           ) : (
-            <Link to={route.path} style={{ fontWeight: 600 }}>
+            <Link to={route.path} style={{ fontWeight: 500 }}>
               {defaultLabel}
             </Link>
           ),
         };
       });
-  }, [navRoutesList, t, isOwnerOrAdmin, currentSession, tCommon, dispatch, isClientPortalPopoverOpen]);
+  }, [filteredRoutes, t, tCommon, isFreePlan]);
 
   const currentRoute = useMemo(() => {
     const afterWorklenzString = location.pathname.split('/worklenz/')[1];
@@ -249,7 +237,6 @@ const Navbar = () => {
   const handleMenuClick = useCallback(
     (menuInfo: { key: string }) => {
       const { key } = menuInfo;
-      const isFreePlan = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.FREE;
 
       const clickedRoute = navRoutesList.find(r => {
         const routeKey = r.path.split('/').pop() || r.name;
@@ -257,43 +244,14 @@ const Navbar = () => {
       });
 
       if (clickedRoute) {
-        if (clickedRoute.name === 'client-portal') {
-          trackMixpanelEvent('client_portal_nav_clicked', {
-            source: 'navbar',
-            user_type: isFreePlan ? 'free' : currentSession?.subscription_type?.toLowerCase(),
-            is_admin: isOwnerOrAdmin,
-          });
-        }
-
-        const isBusinessRoute = clickedRoute.businessPlanRequired;
-        const isFreePlanRoute = !clickedRoute.freePlanFeature;
-        const shouldOpenModal =
-          (isBusinessRoute && !hasBusinessAccess) || (isFreePlanRoute && isFreePlan);
-
-        if (clickedRoute.name === 'client-portal' && shouldOpenModal) {
-          setIsClientPortalPopoverOpen(true);
-          if (isAppSumoUser) {
-            trackAppSumoEvent(AppSumoUpsellEvents.CLIENT_PORTAL_GATED_CLICK, { feature: 'client_portal' });
-          }
-          return;
-        }
-
-        setIsClientPortalPopoverOpen(false);
+        const shouldOpenModal = isRouteGatedForFreePlan(clickedRoute, isFreePlan);
 
         if (shouldOpenModal) {
-          if (isLicenseExpired && clickedRoute.name === 'client-portal') {
-            trackMixpanelEvent(evt_paywall_hit, {
-              feature_blocked: 'client_portal',
-              user_type: currentSession?.subscription_type?.toLowerCase(),
-              trial_expired: true,
-              source: 'navbar',
-            });
-          }
-          promptUpgrade();
+          dispatch(toggleUpgradeModal());
         }
       }
     },
-    [currentSession, navRoutesList, trackMixpanelEvent, isOwnerOrAdmin, dispatch]
+    [isFreePlan, navRoutesList, dispatch]
   );
 
   return (
@@ -302,8 +260,8 @@ const Navbar = () => {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        paddingInline: isDesktop ? 48 : 24,
-        gap: 12,
+        paddingInline: isDesktop ? 24 : 16,
+        gap: 8,
         alignItems: 'center',
         justifyContent: 'space-between',
       }}
@@ -312,7 +270,7 @@ const Navbar = () => {
         style={{
           width: '100%',
           display: 'flex',
-          gap: 12,
+          gap: 8,
           alignItems: 'center',
           justifyContent: 'space-between',
         }}
@@ -326,31 +284,50 @@ const Navbar = () => {
           style={{ width: '100%' }}
         >
           {isDesktop && (
-            <Menu
-              selectedKeys={[current]}
-              mode="horizontal"
-              style={{ flex: 10, maxWidth: 720, minWidth: 0, border: 'none' }}
-              items={navlinkItems}
-              onClick={handleMenuClick}
-            />
+            <ConfigProvider
+              theme={{
+                components: {
+                  Menu: {
+                    fontSize: 13.5,
+                    itemHeight: 32,
+                    itemPaddingInline: 12,
+                    itemMarginInline: 1,
+                    itemBorderRadius: 6,
+                  },
+                },
+              }}
+            >
+              <Menu
+                selectedKeys={[current]}
+                mode="horizontal"
+                style={{ flex: 10, maxWidth: 720, minWidth: 0, border: 'none', lineHeight: '32px' }}
+                items={visibleRoutes}
+                onClick={handleMenuClick}
+              />
+            </ConfigProvider>
           )}
 
-          <Flex gap={20} align="center">
+          <Flex gap={12} align="center">
             <ConfigProvider wave={{ disabled: true }}>
               {isDesktop && (
                 <Flex>
-                  <Flex gap={20} align="center">
+                  <Flex gap={12} align="center">
                     <TrialDaysBadge />
                     {isOwnerOrAdmin &&
                       showUpgradeTypes.includes(
                         currentSession?.subscription_type as ISUBSCRIPTION_TYPE
                       ) && <UpgradePlanButton showModal redirectToBilling={false} />}
-                    {canInviteMembers && <InviteButton />}
-                    <Flex align="center">
-                      <ConnectionStatusIndicator />
-                      <SwitchTeamButton />
+                    <ConnectionStatusIndicator />
+                    <Flex align="center" gap={6}>
+                      <QuickActionButton
+                        canInviteMembers={canInviteMembers}
+                        isInviteRestricted={Boolean(currentSession?.is_expired)}
+                        isGuest={isGuest}
+                      />
+                      {!isGuest && <TimerButton />}
                       <NotificationButton />
-                      <TimerButton />
+                      <GlobalSearchButton />
+                      <SwitchTeamButton />
                       {/* <HelpButton /> */}
                       <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
                     </Flex>
@@ -363,7 +340,7 @@ const Navbar = () => {
                   <SwitchTeamButton />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
-                  <MobileMenuButton />
+                  <MobileMenuButton routes={filteredRoutes} isFreePlan={isFreePlan} />
                 </Flex>
               )}
               {isMobile && (
@@ -371,7 +348,7 @@ const Navbar = () => {
                   <TrialDaysBadge />
                   <NotificationButton />
                   <ProfileButton isOwnerOrAdmin={isOwnerOrAdmin} />
-                  <MobileMenuButton />
+                  <MobileMenuButton routes={filteredRoutes} isFreePlan={isFreePlan} />
                 </Flex>
               )}
             </ConfigProvider>
@@ -381,6 +358,8 @@ const Navbar = () => {
 
       {canInviteMembers && createPortal(<InviteTeamMembers />, document.body, 'invite-team-members')}
       {createPortal(<NotificationDrawer />, document.body, 'notification-drawer')}
+      {createPortal(<AddClientDrawer />, document.body, 'add-client-drawer')}
+      {createPortal(<UpgradePromptModal />, document.body, 'upgrade-prompt-modal')}
     </Col>
   );
 };

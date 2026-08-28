@@ -70,4 +70,17 @@ export const phasesApiService = {
     );
     return response.data;
   },
+
+  updateDefaultAssignee: async (
+    phaseId: string,
+    projectId: string,
+    defaultAssigneeId: string | null
+  ) => {
+    const q = toQueryString({ id: projectId, current_project_id: projectId });
+    const response = await apiClient.patch<IServerResponse<ITaskPhase>>(
+      `${rootUrl}/${phaseId}/default-assignee${q}`,
+      { default_assignee_id: defaultAssigneeId }
+    );
+    return response.data;
+  },
 };

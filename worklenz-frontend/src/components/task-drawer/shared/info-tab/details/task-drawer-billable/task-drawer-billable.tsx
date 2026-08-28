@@ -5,31 +5,30 @@ import logger from '@/utils/errorLogger';
 import { Switch, Tooltip, Button, Popover, Flex, Typography } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { shouldRestrictBillableFeature } from '@/ee/utils/subscription-utils';
 import { useTranslation } from 'react-i18next';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useEffect, useState } from 'react';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
-import { useNavigate } from 'react-router-dom';
 
 interface TaskDrawerBillableProps {
   task?: ITaskViewModel | null;
+  disabled?: boolean;
 }
 
-const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
+const TaskDrawerBillable = ({ task = null, disabled = false }: TaskDrawerBillableProps) => {
   const { socket, connected } = useSocket();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
   const { t } = useTranslation('common');
-  const { shouldRestrictBillable: isRestricted } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
-  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const isRestricted = shouldRestrictBillableFeature(currentSession);
   const [isSpendPopoverOpen, setIsSpendPopoverOpen] = useState(false);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
-  const projectId = useAppSelector(state => state.projectReducer.projectId);
 
   // Read billable status directly from Redux to ensure real-time updates
   const billableFromRedux = useAppSelector(
@@ -49,7 +48,7 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
 
   const handleBillableChange = (checked: boolean) => {
     if (isRestricted) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
       return;
     }
 
@@ -76,7 +75,7 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
         <Tooltip title={t('upgrade-plan')} placement="top">
           <div
             style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
-            onClick={() => promptUpgrade()}
+            onClick={() => dispatch(toggleUpgradeModal())}
           >
             <Switch defaultChecked={false} disabled />
             <CrownOutlined style={{ fontSize: '14px', color: '#faad14' }} />
@@ -130,7 +129,7 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
                   if (isAppSumoUser) {
                     trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'project_finance' });
                   }
-                  promptUpgrade();
+                  dispatch(toggleUpgradeModal());
                 }}
               >
                 {t('upgrade-now', { defaultValue: "Upgrade Now" })}
@@ -148,18 +147,7 @@ const TaskDrawerBillable = ({ task = null }: TaskDrawerBillableProps) => {
 
   return (
     <Flex gap={8} align="center">
-      <Switch checked={localBillable} onChange={handleBillableChange} />
-      <Button
-        size="small"
-        type="default"
-        onClick={() => {
-          if (projectId) {
-            navigate(`/worklenz/projects/${projectId}?tab=finance`);
-          }
-        }}
-      >
-        {t('seeSpends', { defaultValue: t('seeSpends') })}
-      </Button>
+      <Switch checked={localBillable} onChange={handleBillableChange} disabled={disabled} />
     </Flex>
   );
 };

@@ -1,7 +1,7 @@
 {
   "title": "Projekt-Updates",
   "inputPlaceholder": "Geben Sie hier Ihr Update ein... Verwenden Sie @, um Teammitglieder zu erwähnen",
-  "addButton": "Update posten",
+  "addButton": "Senden",
   "cancelButton": "Abbrechen",
   "deleteButton": "Löschen",
   "deleteConfirmTitle": "Dieses Update löschen?",
@@ -9,11 +9,14 @@
   "yes": "Ja",
   "no": "Nein",
   "emptyState": "Noch keine Updates. Starten Sie die Unterhaltung!",
+  "today": "Heute",
+  "yesterday": "Gestern",
   "historyLockedBoundary": "Der Chatverlauf ist in diesem Plan auf die letzten 90 Tage begrenzt",
   "historyLockedTitle": "Chatverlauf gesperrt",
   "historyLockedBody": "Chatverlauf älter als 90 Tage ist im Business-Plan verfügbar.",
   "viewFullHistory": "Chatverlauf anzeigen",
   "upgradeNow": "Jetzt upgraden",
+  "inputHint": "Enter zum Senden · Shift+Enter für neue Zeile",
   "reactions": {
     "like": "Gefällt mir",
     "love": "Liebe",
@@ -28,6 +31,20 @@
   },
   "actions": {
     "edit": "Bearbeiten",
-    "save": "Speichern"
-  }
+    "save": "Speichern",
+    "reply": "Antworten",
+    "convertToTask": "In Aufgabe umwandeln",
+    "pin": "Nachricht anheften",
+    "unpin": "Nachricht lösen"
+  },
+  "messageDeleted": "Diese Nachricht wurde gelöscht",
+  "replyingTo": "Antwort an",
+  "pinned": "Angeheftet",
+  "pinnedBy": "Angeheftet von",
+  "pinError": "Anheften fehlgeschlagen",
+  "convertToTaskSuccess": "Aufgabe aus Nachricht erstellt",
+  "convertToTaskError": "Aufgabe konnte nicht erstellt werden",
+  "convertToTaskEmpty": "Die Nachricht enthält keinen Text für einen Aufgabennamen",
+  "attachFile": "Datei anhängen",
+  "attachmentUploadError": "Anhang konnte nicht hochgeladen werden"
 }

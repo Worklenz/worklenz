@@ -60,6 +60,7 @@ export enum SocketEvents {
   TASK_ASSIGNEES_CHANGE,
   TASK_CUSTOM_COLUMN_UPDATE,
   CUSTOM_COLUMN_PINNED_CHANGE,
+  CUSTOM_COLUMN_CREATED,
   TEAM_MEMBER_ROLE_CHANGE,
 
   // Task progress events
@@ -99,4 +100,15 @@ export enum SocketEvents {
 
   // Due time event
   TASK_DUE_TIME_CHANGE,
+
+  // Project chat / inbox events (append-only — numeric enum, positions must match frontend/backend)
+  PROJECT_COMMENT_DELETED,
+  PROJECT_COMMENT_PIN_CHANGED,
+
+  // Subtask reordering
+  SUBTASK_SORT_ORDER_CHANGE,
+
+  // Personal task events
+  PERSONAL_TASK_CREATED,
+  PERSONAL_TASK_UPDATED,
 }

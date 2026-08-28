@@ -3,7 +3,7 @@ import { store } from '../store';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 
 export const authLoader = async () => {
-  const session = await store.dispatch(verifyAuthentication()).unwrap();
+  const session = await store.dispatch(verifyAuthentication(true)).unwrap();
 
   if (!session.user) {
     return redirect('/auth/login');

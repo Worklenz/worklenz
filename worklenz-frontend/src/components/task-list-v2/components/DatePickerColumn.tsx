@@ -16,6 +16,7 @@ interface DatePickerColumnProps {
   isDarkMode: boolean;
   activeDatePicker: string | null;
   onActiveDatePickerChange: (field: string | null) => void;
+  disabled?: boolean;
 }
 
 export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
@@ -28,6 +29,7 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
     isDarkMode,
     activeDatePicker,
     onActiveDatePickerChange,
+    disabled = false,
   }) => {
     const { socket, connected } = useSocket();
     const { t } = useTranslation('task-list-table');
@@ -39,6 +41,36 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
     useEffect(() => {
       setLocalDate(dateValue ?? null);
     }, [dateValue]);
+
+    // Date validation - parse task dates
+    const startDayjs = task?.startDate ? dayjs(task.startDate, 'YYYY-MM-DD') : null;
+    const dueDayjs = task?.dueDate ? dayjs(task.dueDate, 'YYYY-MM-DD') : null;
+    const isValidStartDate = startDayjs?.isValid();
+    const isValidDueDate = dueDayjs?.isValid();
+
+    // Date validation functions - prevent invalid date combinations.
+    // Comparisons are normalized to startOf('day') so that a same-day
+    // start/end selection is never rejected due to a stray time component
+    // on either side of the comparison.
+    const disabledStartDate = (current: dayjs.Dayjs) => {
+      // Start date cannot be after due date
+      if (isValidDueDate && current && dueDayjs) {
+        return current.startOf('day').isAfter(dueDayjs.startOf('day'));
+      }
+      return false;
+    };
+
+    const disabledEndDate = (current: dayjs.Dayjs) => {
+      // Due date cannot be before start date.
+      // If there is no valid start date, this component does not impose
+      // any additional constraint (e.g. no "no past due date" restriction) —
+      // that would be a different product rule than the invariant being
+      // enforced here (end date >= start date).
+      if (isValidStartDate && current && startDayjs) {
+        return current.startOf('day').isBefore(startDayjs.startOf('day'));
+      }
+      return false;
+    };
 
     // Handle date change (called by DatePicker onChange)
     const handleDateChange = useCallback(
@@ -104,6 +136,9 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
               value={localDate}
               onChange={handleDateChange}
               placeholder={placeholder}
+              disabledDate={(current: dayjs.Dayjs) => 
+                field === 'startDate' ? disabledStartDate(current) : disabledEndDate(current)
+              }
               allowClear={false}
               suffixIcon={null}
               open={true}
@@ -132,8 +167,13 @@ export const DatePickerColumn: React.FC<DatePickerColumnProps> = memo(
           </div>
         ) : (
           <div
-            className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded px-2 py-1 transition-colors text-center"
+            className={`rounded px-2 py-1 transition-colors text-center ${
+              disabled
+                ? 'opacity-40 cursor-not-allowed'
+                : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
             onClick={e => {
+              if (disabled) return;
               e.stopPropagation();
               handleOpenDatePicker();
             }}
