@@ -27,7 +27,7 @@ import { colors } from '@/styles/colors';
 import AttachmentsGrid from '../attachments/attachments-grid';
 import { TFunction } from 'i18next';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { sanitizeCommentContent } from '@/utils/sanitizeInput';
+import { sanitizeCommentContent, stripHtmlTags } from '@/utils/sanitizeInput';
 import { REACTION_CONFIGS } from '@/shared/reaction-config';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
@@ -150,7 +150,7 @@ const prepareContentForEditing = (content: string): string => {
   const withRawUrls = withoutMentionSpans.replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1');
 
   // Strip any remaining HTML tags, then trim leading/trailing whitespace
-  return withRawUrls.replace(/<[^>]*>/g, '').trim();
+  return stripHtmlTags(withRawUrls);
 };
 
 const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFunction; isGuest?: boolean }) => {

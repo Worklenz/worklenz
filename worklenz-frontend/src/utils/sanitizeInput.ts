@@ -20,6 +20,27 @@ export const sanitizeInput = (input: string, options?: DOMPurify.Config): string
 };
 
 /**
+ * Strips every HTML tag from a string, returning plain text.
+ *
+ * Prefer this over a one-pass regex such as `str.replace(/<[^>]*>/g, '')`,
+ * which is an incomplete sanitizer: input like `<<script>script>` leaves a
+ * live `<script>` tag behind. DOMPurify parses the markup and removes tags
+ * completely.
+ *
+ * @param input - The string to strip
+ * @returns Plain text with all tags removed
+ */
+export const stripHtmlTags = (input: string): string => {
+  if (!input) return '';
+
+  return DOMPurify.sanitize(input, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true,
+  }).trim();
+};
+
+/**
  * Sanitizes a string for use in HTML contexts (allows some basic tags)
  * Enhanced configuration to prevent XSS attacks while allowing safe formatting
  *

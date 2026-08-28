@@ -1594,7 +1594,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(
-            `Failed to send password reset email for linked Worklenz user: ${normalizedEmail}`,
+            "Failed to send password reset email for linked Worklenz user:",
+            normalizedEmail,
             error,
           );
         }
@@ -1641,7 +1642,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(
-            `Failed to send password reset email for: ${normalizedEmail}`,
+            "Failed to send password reset email for:",
+            normalizedEmail,
             error,
           );
         }

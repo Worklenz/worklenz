@@ -11,6 +11,7 @@ import { generatePayLinkRequest, updateUsers } from "../shared/paddle-requests";
 import axios from "axios";
 
 import crypto from "crypto";
+import { isIP } from "net";
 import { log_error } from "../../shared/utils";
 import { sendEmail } from "../../shared/email";
 
@@ -1291,6 +1292,15 @@ export default class BillingController extends WorklenzControllerBase {
         ip = ip.substring(7);
       }
 
+      // Only accept well-formed IP addresses. The value originates from
+      // client-controlled headers (x-forwarded-for / x-real-ip), so reject
+      // anything that is not a valid IPv4/IPv6 address before it is used to
+      // build the outbound geolocation request URL (prevents SSRF / URL
+      // injection via a crafted header).
+      if (ip && !isIP(ip)) {
+        ip = undefined;
+      }
+
       // Skip geolocation for localhost/private IPs (development environment)
       if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
         return res.status(200).send(new ServerResponse(true, {
@@ -1302,7 +1312,7 @@ export default class BillingController extends WorklenzControllerBase {
       }
 
       // Use free IP geolocation service (ip-api.com - no API key required, 45 requests/minute)
-      const response = await axios.get(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`, {
+      const response = await axios.get(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode`, {
         timeout: 3000 // 3 second timeout
       });
 

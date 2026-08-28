@@ -19,3 +19,21 @@ export const escapeHtml = (value: string | undefined | null): string => {
   return div.innerHTML;
 };
 
+/**
+ * Strips every HTML tag from a string, returning plain text.
+ *
+ * Uses the browser's HTML parser rather than a one-pass regex such as
+ * `value.replace(/<[^>]+>/g, "")`, which is an incomplete sanitizer:
+ * input like `<<script>script>` would leave a live `<script>` tag behind.
+ *
+ * @param value - The value to strip (string, undefined, or null)
+ * @returns Plain text with all tags removed (empty string if value is nullish)
+ */
+export const stripHtml = (value: string | undefined | null): string => {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  const doc = new DOMParser().parseFromString(String(value), "text/html");
+  return (doc.body.textContent || "").trim();
+};
+
