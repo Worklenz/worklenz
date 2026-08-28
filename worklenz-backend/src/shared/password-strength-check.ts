@@ -30,7 +30,7 @@ export class PasswordStrengthChecker {
   private static readonly defaultAllowedSymbols = "!\"#\$%&'\(\)\*\+,-\./:;<=>\?@\[\\\\\\]\^_`\{|\}~";
 
   public static validate(password: string, options = this.defaultOptions, allowedSymbols = this.defaultAllowedSymbols): IPasswordValidityResult {
-    const passwordCopy = password || "";
+    const passwordCopy = typeof password === "string" ? password : "";
 
     options[0].minDiversity = 0;
     options[0].minLength = 0;

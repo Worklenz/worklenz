@@ -41,11 +41,22 @@ function stripHtml(html: string): string {
   return result;
 }
 
+// Trailing punctuation that is almost always sentence structure rather than
+// part of the URL. Trimmed with a linear scan — an anchored regex like
+// /[.,;:!?)]+$/ backtracks polynomially on a URL ending in many such chars.
+const TRAILING_PUNCTUATION = new Set([".", ",", ";", ":", "!", "?", ")"]);
+
+function trimTrailingPunctuation(url: string): string {
+  let end = url.length;
+  while (end > 0 && TRAILING_PUNCTUATION.has(url[end - 1])) end--;
+  return url.slice(0, end);
+}
+
 export function extractUrls(html: string): string[] {
   const text = stripHtml(html);
   const matches = text.match(URL_REGEX);
   if (!matches) return [];
-  return [...new Set(matches.map(url => url.replace(/[.,;:!?)]+$/, '')))];
+  return [...new Set(matches.map(trimTrailingPunctuation))];
 }
 
 export async function syncTaskDescriptionLinks(

@@ -46,8 +46,7 @@ import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { APPSUMO_DRAWER_IMAGE_URL } from '@/config/appsumo-promo.config';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { MixpanelBillingEvents } from '@/types/mixpanel-events.types';
-
-const HTML_TAG_REGEXP = /<[^>]*>/g;
+import { stripHtmlTags } from '@/utils/sanitizeInput';
 
 const NotificationDrawer = () => {
   const { token } = theme.useToken();
@@ -83,7 +82,7 @@ const NotificationDrawer = () => {
     if (Notification.permission === 'granted' && showBrowserPush) {
       const img = 'https://worklenz.com/assets/icons/icon-128x128.png';
       const notification = new Notification(title, {
-        body: message.replace(HTML_TAG_REGEXP, ''),
+        body: stripHtmlTags(message),
         icon: img,
         badge: img,
       });

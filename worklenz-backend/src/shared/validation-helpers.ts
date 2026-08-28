@@ -3,6 +3,8 @@
  * injection attacks and ensure data integrity.
  */
 
+import sanitizeHtmlLib from "sanitize-html";
+
 /**
  * UUID v4 validator
  * Validates that a string is a valid UUID v4 format
@@ -85,12 +87,22 @@ export const sanitizeHtml = (html: string): string => {
     return '';
   }
   
-  // Basic HTML sanitization - remove script tags and dangerous attributes
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
-    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/data:text\/html/gi, ''); // Remove data URIs with HTML
+  // Delegate to the well-vetted sanitize-html library. Hand-rolled regex
+  // stripping is bypassable (nested tags, mixed schemes) — CodeQL flags it as
+  // incomplete multi-character sanitization / bad tag filter.
+  return sanitizeHtmlLib(html, {
+    allowedTags: [
+      'p', 'br', 'b', 'i', 'em', 'strong', 'u', 's', 'a', 'ul', 'ol', 'li',
+      'blockquote', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div',
+    ],
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+      span: ['class'],
+      div: ['class'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    disallowedTagsMode: 'discard',
+  });
 };
 
 /**

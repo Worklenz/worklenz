@@ -4,6 +4,7 @@ import { NextFunction } from "express";
 import { IWorkLenzRequest } from "../../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
+import sanitizeHtmlLib from "sanitize-html";
 import { sanitizeSVG } from "../../shared/utils";
 
 export const MAX_PROJECT_FILE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
@@ -44,10 +45,26 @@ const sanitizeFileName = (fileName: string, extension: string): string => {
 };
 
 const sanitizeXmlContent = (content: string): string => {
-  return content
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-    .replace(/on\w+\s*=\s*"[^"]*"/gi, "")
-    .replace(/on\w+\s*=\s*'[^']*'/gi, "");
+  // Regex stripping is bypassable (CodeQL: bad tag filter / incomplete
+  // sanitization). Delegate to sanitize-html: drop <script>/<style> and their
+  // contents, strip every event-handler attribute, and neutralise dangerous
+  // URL schemes, while otherwise preserving the document's tag structure.
+  return sanitizeHtmlLib(content, {
+    allowedTags: false,
+    allowedAttributes: false,
+    disallowedTagsMode: "discard",
+    exclusiveFilter: frame => frame.tag === "script" || frame.tag === "style",
+    allowedSchemes: ["http", "https", "mailto"],
+    transformTags: {
+      "*": (tagName, attribs) => {
+        const clean: Record<string, string> = {};
+        for (const key of Object.keys(attribs)) {
+          if (!/^on/i.test(key)) clean[key] = attribs[key];
+        }
+        return { tagName, attribs: clean };
+      },
+    },
+  });
 };
 
 export default function projectFilesValidator(
