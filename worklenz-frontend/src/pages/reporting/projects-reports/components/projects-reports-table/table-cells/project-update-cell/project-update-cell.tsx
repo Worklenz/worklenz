@@ -1,5 +1,5 @@
 import { Tooltip } from '@/shared/antd-imports';
-import { sanitizeHtml } from '@/utils/sanitizeInput';
+import { sanitizeHtml, stripHtmlTags } from '@/utils/sanitizeInput';
 
 type ProjectUpdateCellProps = {
   updates: string;
@@ -10,7 +10,7 @@ const ProjectUpdateCell = ({ updates }: ProjectUpdateCellProps) => {
   const sanitizedContent = sanitizeHtml(updates || '');
 
   // Strip HTML tags for the plain text version (for tooltip and display)
-  const plainText = sanitizedContent.replace(/<[^>]*>/g, '').trim();
+  const plainText = stripHtmlTags(sanitizedContent);
 
   return (
     <Tooltip title={plainText} placement="topLeft">

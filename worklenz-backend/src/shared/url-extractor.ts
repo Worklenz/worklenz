@@ -3,8 +3,42 @@ import { log_error } from "./utils";
 
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
 
+// Upper bound on the input we will scan. Task descriptions / comments are far
+// smaller than this in practice; the cap keeps the single pass below from
+// being driven by an attacker-controlled length.
+const MAX_HTML_LENGTH = 100_000;
+
+// Linear-time HTML tag stripper. A regex such as /<[^>]+>/g exhibits
+// polynomial backtracking on input with many unclosed '<' characters, so we
+// scan the string once instead.
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ');
+  let result = "";
+  let inTag = false;
+  let tagStart = -1;
+  const len = Math.min(html.length, MAX_HTML_LENGTH);
+  for (let i = 0; i < len; i++) {
+    const ch = html[i];
+    if (ch === "<" && !inTag) {
+      inTag = true;
+      tagStart = i;
+    } else if (ch === ">") {
+      if (inTag) {
+        result += " ";
+        inTag = false;
+        tagStart = -1;
+      } else {
+        // Literal '>' outside a tag (e.g. "https://example.com>docs") — keep it
+        // so the URL match terminates at the right place.
+        result += ch;
+      }
+    } else if (!inTag) {
+      result += ch;
+    }
+  }
+  // Unterminated '<' (no closing '>'): keep the trailing text so URLs after it
+  // are still extracted.
+  if (inTag && tagStart !== -1) result += html.slice(tagStart, len);
+  return result;
 }
 
 export function extractUrls(html: string): string[] {
