@@ -1525,6 +1525,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       // Normalize email to lowercase for case-insensitive comparison
       const normalizedEmail = email ? email.toLowerCase().trim() : null;
+      // CR/LF-safe copy for log statements (prevents log-forging via crafted email)
+      const emailForLog = normalizedEmail ? normalizedEmail.replace(/[\r\n]+/g, " ") : normalizedEmail;
 
       // Security: Always return the same generic message to prevent email enumeration
       const GENERIC_SUCCESS_MESSAGE =
@@ -1594,7 +1596,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(
-            `Failed to send password reset email for linked Worklenz user: ${normalizedEmail}`,
+            "Failed to send password reset email for linked Worklenz user:",
+            emailForLog,
             error,
           );
         }
@@ -1641,7 +1644,8 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         } catch (error) {
           // Log error internally but don't expose to client
           console.error(
-            `Failed to send password reset email for: ${normalizedEmail}`,
+            "Failed to send password reset email for:",
+            emailForLog,
             error,
           );
         }

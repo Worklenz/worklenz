@@ -11,6 +11,7 @@ import { generatePayLinkRequest, updateUsers } from "../shared/paddle-requests";
 import axios from "axios";
 
 import crypto from "crypto";
+import { isIP } from "net";
 import { log_error } from "../../shared/utils";
 import { sendEmail } from "../../shared/email";
 
@@ -915,13 +916,30 @@ export default class BillingController extends WorklenzControllerBase {
    */
   @HandleExceptions()
   public static async payWithCard(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { wallet_id, card_id, order_id, amount, currency, plan } = req.body;
-    console.log("[payWithCard] Request — wallet_id:", wallet_id, "card_id:", card_id, "order_id:", order_id, "amount:", amount, "plan:", plan);
+    const { wallet_id, card_id, order_id, plan } = req.body;
+    console.log("[payWithCard] Request — wallet_id:", wallet_id, "card_id:", card_id, "order_id:", order_id, "plan:", plan);
 
-    if (!wallet_id || !card_id || !order_id || !amount) {
+    if (!wallet_id || !card_id || !order_id) {
       console.error("[payWithCard] Missing required fields");
       return res.status(400).send(new ServerResponse(false, null,
-        "wallet_id, card_id, order_id, and amount are required"));
+        "wallet_id, card_id, and order_id are required"));
+    }
+
+    // Never trust the client-supplied amount/currency. Derive the charge from
+    // server-side pricing for the requested plan and reject unsupported
+    // plans/currencies before charging or activating a subscription.
+    let charge: { tierName: string; amount: number; currency: string };
+    try {
+      charge = await this.resolveLkrPlanCharge(plan, req.body.currency);
+    } catch (err: any) {
+      console.warn("[payWithCard] Rejected — invalid plan/currency:", err?.message);
+      return res.status(400).send(new ServerResponse(false, null,
+        err?.message || "Unsupported plan or currency"));
+    }
+    const amount = charge.amount;
+    const currency = charge.currency;
+    if (req.body.amount !== undefined && Number(req.body.amount) !== amount) {
+      console.warn(`[payWithCard] Client amount ${JSON.stringify(req.body.amount)} != server amount ${amount} for plan ${JSON.stringify(plan)} — using server amount`);
     }
 
     const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;
@@ -931,7 +949,7 @@ export default class BillingController extends WorklenzControllerBase {
       wallet_id: String(wallet_id),
       card_id: String(card_id),
       order_id: String(order_id),
-      currency: currency || "LKR",
+      currency,
       amount: String(amount),
     };
 
@@ -1015,6 +1033,42 @@ export default class BillingController extends WorklenzControllerBase {
       return res.status(500).send(new ServerResponse(false, null,
         error?.response?.data?.message || "Failed to process payment"));
     }
+  }
+
+  /**
+   * Resolves the authoritative monthly charge for an LKR plan from server-side
+   * pricing. Rejects unsupported plans/currencies so the client cannot dictate
+   * the amount it is billed.
+   */
+  private static async resolveLkrPlanCharge(
+    planKey: string | undefined,
+    currency: string | undefined
+  ): Promise<{ tierName: string; amount: number; currency: string }> {
+    const normalizedCurrency = (currency || "LKR").toUpperCase();
+    if (normalizedCurrency !== "LKR") {
+      throw new Error(`Unsupported currency: ${normalizedCurrency}`);
+    }
+
+    // 'startup' is the legacy UI key for the business tier.
+    const allowedPlans = ["pro", "business", "startup"];
+    if (planKey !== undefined && !allowedPlans.includes(planKey)) {
+      throw new Error(`Unsupported plan: ${planKey}`);
+    }
+    const tierName = planKey === "pro" ? "pro" : "business";
+
+    const pricingResult = await db.query(
+      `SELECT monthly_base_price
+         FROM licensing_custom_plan_pricing
+        WHERE tier_name = $1 AND currency = 'LKR' AND is_active = TRUE
+        LIMIT 1`,
+      [tierName]
+    );
+    const price = Number(pricingResult.rows[0]?.monthly_base_price);
+    if (!Number.isFinite(price) || price <= 0) {
+      throw new Error(`No active LKR pricing found for plan: ${tierName}`);
+    }
+
+    return { tierName, amount: price, currency: "LKR" };
   }
 
   private static async activateLkrSubscription(
@@ -1291,6 +1345,15 @@ export default class BillingController extends WorklenzControllerBase {
         ip = ip.substring(7);
       }
 
+      // Only accept well-formed IP addresses. The value originates from
+      // client-controlled headers (x-forwarded-for / x-real-ip), so reject
+      // anything that is not a valid IPv4/IPv6 address before it is used to
+      // build the outbound geolocation request URL (prevents SSRF / URL
+      // injection via a crafted header).
+      if (ip && !isIP(ip)) {
+        ip = undefined;
+      }
+
       // Skip geolocation for localhost/private IPs (development environment)
       if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
         return res.status(200).send(new ServerResponse(true, {
@@ -1302,7 +1365,7 @@ export default class BillingController extends WorklenzControllerBase {
       }
 
       // Use free IP geolocation service (ip-api.com - no API key required, 45 requests/minute)
-      const response = await axios.get(`http://ip-api.com/json/${ip}?fields=status,country,countryCode`, {
+      const response = await axios.get(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,country,countryCode`, {
         timeout: 3000 // 3 second timeout
       });
 
