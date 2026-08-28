@@ -939,7 +939,7 @@ export default class BillingController extends WorklenzControllerBase {
     const amount = charge.amount;
     const currency = charge.currency;
     if (req.body.amount !== undefined && Number(req.body.amount) !== amount) {
-      console.warn(`[payWithCard] Client amount ${req.body.amount} != server amount ${amount} for plan ${plan} — using server amount`);
+      console.warn(`[payWithCard] Client amount ${JSON.stringify(req.body.amount)} != server amount ${amount} for plan ${JSON.stringify(plan)} — using server amount`);
     }
 
     const { DP_MERCHANT_ID, DP_SECRET_KEY, DP_STAGE } = process.env;

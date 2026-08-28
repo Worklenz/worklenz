@@ -34,11 +34,16 @@ export const sanitizeInput = (input: string, options?: DOMPurify.Config): string
 export const stripHtmlTags = (input: string): string => {
   if (!input) return '';
 
-  return DOMPurify.sanitize(input, {
+  // Return a DOM fragment so we can read decoded text (`R&D`) instead of the
+  // serialized form (`R&amp;D`) that would otherwise be rendered verbatim.
+  const fragment = DOMPurify.sanitize(input, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true,
-  }).trim();
+    RETURN_DOM_FRAGMENT: true,
+  });
+
+  return fragment.textContent?.trim() ?? '';
 };
 
 /**

@@ -22,9 +22,15 @@ function stripHtml(html: string): string {
       inTag = true;
       tagStart = i;
     } else if (ch === ">") {
-      if (inTag) result += " ";
-      inTag = false;
-      tagStart = -1;
+      if (inTag) {
+        result += " ";
+        inTag = false;
+        tagStart = -1;
+      } else {
+        // Literal '>' outside a tag (e.g. "https://example.com>docs") — keep it
+        // so the URL match terminates at the right place.
+        result += ch;
+      }
     } else if (!inTag) {
       result += ch;
     }
