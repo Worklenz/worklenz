@@ -7,6 +7,9 @@ export interface ITaskStatus {
   order_index?: number;
   color_code?: string;
   color_code_dark?: string;
+  category_id?: string;
+  category_name?: string;
+  category_color_code?: string;
   team_id?: string;
   default_status?: boolean;
   date_created?: string;

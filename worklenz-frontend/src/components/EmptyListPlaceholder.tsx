@@ -8,6 +8,7 @@ type EmptyListPlaceholderProps = {
   text?: string;
   textKey?: string;
   i18nNs?: string;
+  action?: React.ReactNode;
 };
 
 const EmptyListPlaceholder = ({
@@ -16,6 +17,7 @@ const EmptyListPlaceholder = ({
   text,
   textKey,
   i18nNs = 'task-list-table',
+  action,
 }: EmptyListPlaceholderProps) => {
   const { t } = useTranslation(i18nNs);
   const description = textKey ? t(textKey) : text;
@@ -30,7 +32,9 @@ const EmptyListPlaceholder = ({
         marginBlockStart: 24,
       }}
       description={<Typography.Text type="secondary">{description}</Typography.Text>}
-    />
+    >
+      {action}
+    </Empty>
   );
 };
 

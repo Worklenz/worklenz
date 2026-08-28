@@ -4,6 +4,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { fetchTask, setSelectedTaskId } from '@/features/task-drawer/task-drawer.slice';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { TFunction } from 'i18next';
 import './task-hierarchy-breadcrumb.css';
 
@@ -102,10 +103,11 @@ const TaskHierarchyBreadcrumb: React.FC<TaskHierarchyBreadcrumbProps> = ({
 
   // 1. Project name — always plain muted text, no icon, no link
   if (projectName) {
+    const decodedProjectName = decodeHtmlEntities(projectName);
     parts.push(
-      <Tooltip key="project" title={projectName.length > 30 ? projectName : ''} trigger="hover">
+      <Tooltip key="project" title={decodedProjectName.length > 30 ? decodedProjectName : ''} trigger="hover">
         <Typography.Text style={{ color: mutedColor, fontSize: '12px', fontWeight: 400 }}>
-          {truncateText(projectName, 30)}
+          {truncateText(decodedProjectName, 30)}
         </Typography.Text>
       </Tooltip>
     );

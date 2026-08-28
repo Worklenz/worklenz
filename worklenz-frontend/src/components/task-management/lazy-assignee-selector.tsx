@@ -11,7 +11,8 @@ interface LazyAssigneeSelectorProps {
   task: IProjectTask;
   groupId?: string | null;
   isDarkMode?: boolean;
-  kanbanMode?: boolean; // <-- Add this prop
+  kanbanMode?: boolean;
+  disabled?: boolean;
 }
 
 // Lightweight loading placeholder
@@ -35,20 +36,21 @@ const LazyAssigneeSelectorWrapper: React.FC<LazyAssigneeSelectorProps> = ({
   task,
   groupId = null,
   isDarkMode = false,
-  kanbanMode = false, // <-- Default to false
+  kanbanMode = false,
+  disabled = false,
 }) => {
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [showComponent, setShowComponent] = useState(false);
 
   const handleInteraction = useCallback(
     (e: React.MouseEvent) => {
-      // Don't prevent the event from bubbling, just mark as loaded
+      if (disabled) return;
       if (!hasLoadedOnce) {
         setHasLoadedOnce(true);
         setShowComponent(true);
       }
     },
-    [hasLoadedOnce]
+    [hasLoadedOnce, disabled]
   );
 
   // If not loaded yet, show a simple placeholder button
@@ -56,17 +58,23 @@ const LazyAssigneeSelectorWrapper: React.FC<LazyAssigneeSelectorProps> = ({
     return (
       <button
         onClick={handleInteraction}
-        onMouseEnter={handleInteraction} // Preload on hover for better UX
+        onMouseEnter={handleInteraction}
+        disabled={disabled}
         className={`
           w-5 h-5 rounded-full border border-dashed flex items-center justify-center
           transition-colors duration-200
+          ${disabled ? 'opacity-40 cursor-not-allowed' : ''}
           ${
-            isDarkMode
-              ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
-              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+            !disabled
+              ? isDarkMode
+                ? 'border-gray-600 hover:border-gray-500 hover:bg-gray-800 text-gray-400'
+                : 'border-gray-300 hover:border-gray-400 hover:bg-gray-100 text-gray-600'
+              : isDarkMode
+                ? 'border-gray-600 text-gray-400'
+                : 'border-gray-300 text-gray-600'
           }
         `}
-        title="Add assignee"
+        title={disabled ? undefined : 'Add assignee'}
       >
         <PlusOutlined className="text-xs" />
       </button>

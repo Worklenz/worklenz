@@ -17,10 +17,17 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export type UpgradeModalVariant = 'default' | 'customOrganizationLogo' | 'fileSizeLimit' | 'customFields';
 
+interface UpgradePromptState {
+  open: boolean;
+  title: string;
+  description: string;
+}
+
 interface adminCenterState {
   isRedeemCodeDrawerOpen: boolean;
   isUpgradeModalOpen: boolean;
   upgradeModalVariant: UpgradeModalVariant;
+  upgradePrompt: UpgradePromptState;
   loadingBillingInfo: boolean;
   billingInfo: IBillingAccountInfo | null;
   freePlanSettings: IFreePlanSettings | null;
@@ -43,6 +50,7 @@ const initialState: adminCenterState = {
   isRedeemCodeDrawerOpen: false,
   isUpgradeModalOpen: false,
   upgradeModalVariant: 'default',
+  upgradePrompt: { open: false, title: '', description: '' },
   loadingBillingInfo: false,
   billingInfo: null,
   freePlanSettings: null,
@@ -183,6 +191,16 @@ const adminCenterSlice = createSlice({
       state.isUpgradeModalOpen = true;
       state.upgradeModalVariant = action.payload || 'default';
     },
+    // A lightweight "short description + Upgrade Now" prompt shown for gated
+    // actions that don't have a full page to show a blurred preview on
+    // (quick actions, project integrations, etc.) — its Upgrade button opens
+    // the full pricing modal above.
+    showUpgradePrompt: (state, action: PayloadAction<{ title: string; description: string }>) => {
+      state.upgradePrompt = { open: true, ...action.payload };
+    },
+    hideUpgradePrompt: state => {
+      state.upgradePrompt.open = false;
+    },
     clearHolidaysCache: state => {
       state.holidays = [];
       state.holidaysDateRange = null;
@@ -307,6 +325,8 @@ export const {
   toggleRedeemCodeDrawer,
   toggleUpgradeModal,
   openUpgradeModal,
+  showUpgradePrompt,
+  hideUpgradePrompt,
   clearHolidaysCache,
   setOrganizationLogo,
 } =

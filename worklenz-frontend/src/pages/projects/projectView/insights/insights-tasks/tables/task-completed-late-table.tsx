@@ -7,6 +7,7 @@ import { IInsightTasks } from '@/types/project/projectInsights.types';
 import logger from '@/utils/errorLogger';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useTranslation } from 'react-i18next';
 
 const TaskCompletedLateTable = ({
   projectId,
@@ -18,6 +19,7 @@ const TaskCompletedLateTable = ({
   const [lateCompletedTaskList, setLateCompletedTaskList] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const getLateCompletedTasks = async () => {
     try {
@@ -44,12 +46,12 @@ const TaskCompletedLateTable = ({
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
+      title: t('common.name', { defaultValue: 'Name' }),
       render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
+      title: t('common.status', { defaultValue: 'Status' }),
       render: (record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -76,14 +78,14 @@ const TaskCompletedLateTable = ({
     },
     {
       key: 'dueDate',
-      title: 'End Date',
+      title: t('common.dueDate', { defaultValue: 'End Date' }),
       render: (record: IInsightTasks) => (
         <Typography.Text>{simpleDateFormat(record.end_date || null)}</Typography.Text>
       ),
     },
     {
       key: 'completedDate',
-      title: 'Completed At',
+      title: t('tasksTable.completedAt', { defaultValue: 'Completed At' }),
       render: (record: IInsightTasks) => (
         <Typography.Text>{simpleDateFormat(record.completed_at || null)}</Typography.Text>
       ),

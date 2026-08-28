@@ -2,15 +2,16 @@ import { fetchProjectHealth } from '@/features/projects/lookups/projectHealth/pr
 import {
   fetchProjectDataForCurrentView,
   setSelectedProjectHealths,
+  setProjectHealths,
 } from '@/features/reporting/projectReports/project-reports-slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectHealth } from '@/types/project/projectHealth.types';
 import { CaretDownFilled } from '@/shared/antd-imports';
 import { Button, Card, Checkbox, Dropdown, List, Space } from '@/shared/antd-imports';
-import React, { useEffect, useState, useCallback } from 'react';
+import debounce from 'lodash/debounce';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import debounce from 'lodash/debounce'; // Install lodash if not already present
 
 const ProjectHealthFilterDropdown = () => {
   const dispatch = useAppDispatch();
@@ -22,9 +23,7 @@ const ProjectHealthFilterDropdown = () => {
     state => state.projectHealthReducer
   );
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
-  const { selectedProjectHealths, isLoading: projectLoading } = useAppSelector(
-    state => state.projectReportsReducer
-  );
+  const { selectedProjectHealths } = useAppSelector(state => state.projectReportsReducer);
 
   useEffect(() => {
     setSelectedHealths(selectedProjectHealths);
@@ -33,6 +32,13 @@ const ProjectHealthFilterDropdown = () => {
   useEffect(() => {
     if (!projectHealthsLoading) dispatch(fetchProjectHealth());
   }, [dispatch]);
+
+  // Store all available healths in Redux for "all selected" check
+  useEffect(() => {
+    if (projectHealths.length > 0) {
+      dispatch(setProjectHealths(projectHealths));
+    }
+  }, [projectHealths, dispatch]);
 
   const debouncedUpdate = useCallback(
     debounce((healths: IProjectHealth[]) => {
@@ -71,11 +77,10 @@ const ProjectHealthFilterDropdown = () => {
             }}
           >
             <Space>
-              <Checkbox
-                id={item.id}
+              <Checkbox 
+                id={item.id} 
                 checked={selectedHealths.some(h => h.id === item.id)}
                 onChange={() => handleHealthChange(item)}
-                disabled={projectLoading}
               >
                 {item.name}
               </Checkbox>

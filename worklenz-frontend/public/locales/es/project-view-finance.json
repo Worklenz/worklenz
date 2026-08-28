@@ -6,6 +6,7 @@
   "phaseText": "Phase",
   "priorityText": "Priority",
   "exportButton": "Export",
+  "exportAsExcelButton": "Exportar como Excel",
   "currencyText": "Currency",
   "importButton": "Import",
   "filterText": "Filter",

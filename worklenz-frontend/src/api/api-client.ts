@@ -57,8 +57,11 @@ export const initializeCsrfToken = async (): Promise<void> => {
 
     // Start initialization
     tokenInitializationPromise = refreshCsrfToken();
-    await tokenInitializationPromise;
-    tokenInitializationPromise = null;
+    try {
+      await tokenInitializationPromise;
+    } finally {
+      tokenInitializationPromise = null;
+    }
   }
 };
 
@@ -79,11 +82,11 @@ export const ensureCsrfToken = async (): Promise<string | null> => {
   try {
     tokenInitializationPromise = refreshCsrfToken();
     const token = await tokenInitializationPromise;
-    tokenInitializationPromise = null;
     return token;
   } catch (error) {
-    tokenInitializationPromise = null;
     throw error;
+  } finally {
+    tokenInitializationPromise = null;
   }
 };
 
@@ -137,38 +140,11 @@ apiClient.interceptors.request.use(
       // Skip token check for retries - they already have the token in headers
       const isRetry = (config as any)?._retryCount > 0;
 
-      if (!isRetry) {
-        // Ensure we have a CSRF token before making state-changing requests
-        if (!csrfToken) {
-          // If initialization is in progress, wait for it
-          if (tokenInitializationPromise) {
-            const token = await tokenInitializationPromise;
-            // Verify we got a token after waiting
-            if (!token && !csrfToken) {
-              console.warn('[CSRF] Token refresh returned null, attempting to refresh again');
-              tokenInitializationPromise = refreshCsrfToken();
-              const refreshedToken = await tokenInitializationPromise;
-              tokenInitializationPromise = null;
-              if (!refreshedToken) {
-                console.error('[CSRF] Failed to obtain CSRF token after retry');
-              }
-            }
-          } else {
-            // Otherwise, refresh now
-            tokenInitializationPromise = refreshCsrfToken();
-            const token = await tokenInitializationPromise;
-            tokenInitializationPromise = null;
-            // Verify we got a token
-            if (!token) {
-              console.error('[CSRF] Failed to obtain CSRF token - request may fail');
-            }
-          }
-        }
-      }
-
-      // For retries, use the token from headers (already set in error handler)
-      // For new requests, use the stored token
-      const tokenToUse = isRetry ? config.headers?.['X-CSRF-Token'] : csrfToken;
+      // For retries, use the refreshed token already attached by the error handler.
+      // Every new state-changing request must wait for a valid token before sending.
+      const tokenToUse = isRetry
+        ? config.headers?.['X-CSRF-Token']
+        : await ensureCsrfToken();
 
       if (tokenToUse) {
         config.headers = config.headers || {};
@@ -224,6 +200,14 @@ apiClient.interceptors.response.use(
 
       // Don't show error alerts for successful retries (they were already handled)
       const isRetry = (response.config as any)?._retryCount > 0;
+
+      // Passive/background requests (e.g. session verification on route load) opt out
+      // of toasts entirely via this header — they aren't user-initiated actions.
+      const isSilentRequest = response.config?.headers?.['X-Silent-Request'] === '1';
+
+      if (isSilentRequest) {
+        return response;
+      }
 
       if (!isCsrfTokenResponse && message && message.charAt(0) !== '$') {
         // For retried requests, only show success messages, not errors

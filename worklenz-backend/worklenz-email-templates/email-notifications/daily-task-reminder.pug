@@ -1,0 +1,185 @@
+-
+  function taskRow(task, showWorkspace) {
+    return task;
+  }
+  function overflowLine(section, label, baseUrl) {
+    const extra = section.totalCount - section.tasks.length;
+    return extra > 0 ? `+ ${extra} more tasks. <a href="${baseUrl}" style="color:#1890ff">View all in Worklenz.</a>` : null;
+  }
+  function daysOverdueLabel(n) {
+    return n === 1 ? '1 day overdue' : n + ' days overdue';
+  }
+
+doctype html
+html(lang='en')
+  head
+    meta(charset='UTF-8')
+    meta(http-equiv='X-UA-Compatible' content='IE=edge')
+    meta(name='viewport' content='width=device-width, initial-scale=1.0')
+    title Your tasks for today
+  body
+    style.
+      td { font-family: 'Helvetica Neue', helvetica, arial, sans-serif; background: #fff; margin: 0; padding: 0; border: 0; border-collapse: collapse; border-spacing: 0; }
+      a { color: #1890ff; }
+      .section-header { font-size: 1em; font-weight: 600; margin-top: 24px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #d8d8d8; color: #2b2b2b; }
+      .task-name { color: #1890ff; text-decoration: underline; }
+      .task-meta { color: #6d6e6f; font-size: 13px; }
+      .footer { color: #6d6d6d; font-size: 12px; }
+    div(style="margin:0;padding:0;background:#fff;text-align:left;font-size:15px;line-height:1.4;font-family:'Helvetica Neue',helvetica,'Segoe UI',arial,sans-serif;font-weight:400;")
+      div(style='padding:15px 25px')
+        table(style='width:100%;max-width:40em;')
+          tbody
+            tr
+              td
+                table(width='100%')
+                  tbody
+                    tr: td: img(width='50' height='50' src='https://s3.us-west-2.amazonaws.com/worklenz.com/assets/icon-96x96.png')
+                    tr: td(style='height:0.625em')
+                table(width='100%')
+                  tbody
+                    tr
+                      td
+                        h3(style='margin:0;line-height:1.2;font-size:1.3em') Hi #{userName},
+                        p(style='color:#555;margin-top:8px;') Here is your task summary for today.
+
+                    //- Assigned to me — Due Today
+                    if dueToday && dueToday.tasks && dueToday.tasks.length
+                      tr
+                        td
+                          h4.section-header ASSIGNED TO ME — DUE TODAY
+                          each task in dueToday.tasks
+                            table(width='100%' style='margin-bottom:8px')
+                              tr
+                                td
+                                  a(href=task.taskUrl style='color:#1890ff;text-decoration:underline;')= task.name
+                                  br
+                                  span.task-meta
+                                    if workspaceCount > 1 && task.workspaceName
+                                      | #{task.workspaceName} ·
+                                    | #{task.projectName}
+                                    if task.priorityName
+                                      |  · #{task.priorityName} Priority
+                          if dueToday.totalCount > dueToday.tasks.length
+                            p(style='color:#6d6e6f;font-size:13px;')
+                              | + #{dueToday.totalCount - dueToday.tasks.length} more tasks.&nbsp;
+                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+
+                    //- Assigned to me — Upcoming Tomorrow
+                    if upcoming && upcoming.tasks && upcoming.tasks.length
+                      tr
+                        td
+                          h4.section-header ASSIGNED TO ME — UPCOMING TOMORROW
+                          each task in upcoming.tasks
+                            table(width='100%' style='margin-bottom:8px')
+                              tr
+                                td
+                                  a(href=task.taskUrl style='color:#1890ff;text-decoration:underline;')= task.name
+                                  br
+                                  span.task-meta
+                                    if workspaceCount > 1 && task.workspaceName
+                                      | #{task.workspaceName} ·
+                                    | #{task.projectName}
+                                    if task.dueDate
+                                      |  · Due #{task.dueDate}
+                          if upcoming.totalCount > upcoming.tasks.length
+                            p(style='color:#6d6e6f;font-size:13px;')
+                              | + #{upcoming.totalCount - upcoming.tasks.length} more tasks.&nbsp;
+                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+
+                    //- Assigned to me — Overdue
+                    if overdue && overdue.tasks && overdue.tasks.length
+                      tr
+                        td
+                          h4.section-header ASSIGNED TO ME — OVERDUE
+                          each task in overdue.tasks
+                            table(width='100%' style='margin-bottom:8px')
+                              tr
+                                td
+                                  a(href=task.taskUrl style='color:#1890ff;text-decoration:underline;')= task.name
+                                  br
+                                  span.task-meta
+                                    if workspaceCount > 1 && task.workspaceName
+                                      | #{task.workspaceName} ·
+                                    | #{task.projectName}
+                                    if task.daysOverdue
+                                      |  · #{task.daysOverdue === 1 ? '1 day overdue' : task.daysOverdue + ' days overdue'}
+                          if overdue.totalCount > overdue.tasks.length
+                            p(style='color:#6d6e6f;font-size:13px;')
+                              | + #{overdue.totalCount - overdue.tasks.length} more tasks.&nbsp;
+                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+
+                    //- Assigned by me — Due Today
+                    if assignedByMeDueToday && assignedByMeDueToday.tasks && assignedByMeDueToday.tasks.length
+                      tr
+                        td
+                          h4.section-header ASSIGNED BY ME — DUE TODAY
+                          each task in assignedByMeDueToday.tasks
+                            table(width='100%' style='margin-bottom:8px')
+                              tr
+                                td
+                                  a(href=task.taskUrl style='color:#1890ff;text-decoration:underline;')= task.name
+                                  br
+                                  span.task-meta
+                                    if task.assigneeName
+                                      | Assigned to: #{task.assigneeName} ·
+                                    if workspaceCount > 1 && task.workspaceName
+                                      | #{task.workspaceName} ·
+                                    | #{task.projectName}
+                          if assignedByMeDueToday.totalCount > assignedByMeDueToday.tasks.length
+                            p(style='color:#6d6e6f;font-size:13px;')
+                              | + #{assignedByMeDueToday.totalCount - assignedByMeDueToday.tasks.length} more tasks.&nbsp;
+                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+
+                    //- Assigned by me — Overdue
+                    if assignedByMeOverdue && assignedByMeOverdue.tasks && assignedByMeOverdue.tasks.length
+                      tr
+                        td
+                          h4.section-header ASSIGNED BY ME — OVERDUE
+                          each task in assignedByMeOverdue.tasks
+                            table(width='100%' style='margin-bottom:8px')
+                              tr
+                                td
+                                  a(href=task.taskUrl style='color:#1890ff;text-decoration:underline;')= task.name
+                                  br
+                                  span.task-meta
+                                    if task.assigneeName
+                                      | Assigned to: #{task.assigneeName} ·
+                                    if workspaceCount > 1 && task.workspaceName
+                                      | #{task.workspaceName} ·
+                                    | #{task.projectName}
+                                    if task.daysOverdue
+                                      |  · #{task.daysOverdue === 1 ? '1 day overdue' : task.daysOverdue + ' days overdue'}
+                          if assignedByMeOverdue.totalCount > assignedByMeOverdue.tasks.length
+                            p(style='color:#6d6e6f;font-size:13px;')
+                              | + #{assignedByMeOverdue.totalCount - assignedByMeOverdue.tasks.length} more tasks.&nbsp;
+                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+
+                    //- Admin team overview
+                    if adminOverview && adminOverview.length
+                      tr
+                        td
+                          h4.section-header TEAM OVERVIEW
+                          each ws in adminOverview
+                            p(style='font-weight:600;margin-bottom:4px;') #{ws.workspaceName}
+                            p(style='color:#555;margin:2px 0;') Due today across all projects: #{ws.totals.dueToday}
+                            p(style='color:#555;margin:2px 0;') Overdue across all projects: #{ws.totals.overdue}
+
+                    tr
+                      td(style='padding-top:20px')
+                        a(href=managePreferencesUrl style='display:inline-block;background:#1890ff;color:#fff;padding:8px 20px;border-radius:4px;text-decoration:none;font-size:14px;') View all my tasks in Worklenz
+
+            tr
+              td
+                table(width='100%')
+                  tbody
+                    tr
+                      td(style='padding-top:20px')
+                        hr(style='border:0;border-bottom:1px solid #d8d8d8;')
+                    tr
+                      td(style='padding-top:10px;padding-bottom:10px')
+                        p.footer
+                          | You're receiving this because you have task notifications enabled in Worklenz.
+                          br
+                          a(href=managePreferencesUrl style='color:#6d6d6d;text-decoration:underline;') Manage preferences
+                          |  ·
+                          a(href=unsubscribeUrl style='color:#6d6d6d;text-decoration:underline;') Unsubscribe from all task emails

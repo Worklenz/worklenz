@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   DeleteObjectCommandInput,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   PutObjectCommandInput,
@@ -155,6 +156,28 @@ export function getTaskAttachmentKey(
       projectId,
       taskId,
       commentId,
+      `${attachmentId}.${type}`,
+    )
+    .replace(/\\/g, "/");
+
+  return keyPath;
+}
+
+export function getProjectCommentAttachmentKey(
+  teamId: string,
+  projectId: string,
+  attachmentId: string,
+  type: string,
+) {
+  // Comment attachments are uploaded before the comment row exists (the
+  // frontend uploads first, then sends the message with the resulting URL),
+  // so this is keyed by a generated attachment id rather than a comment id.
+  const keyPath = path
+    .join(
+      getRootDir(),
+      teamId,
+      projectId,
+      "comments",
       `${attachmentId}.${type}`,
     )
     .replace(/\\/g, "/");
@@ -358,6 +381,26 @@ export async function uploadBuffer(
     return uploadBufferToAzure(buffer, type, location);
   }
   return uploadBufferToS3(buffer, type, location);
+}
+
+/**
+ * Resolves a stored object key to a public URL, mirroring the URL shape
+ * uploadBufferToS3/uploadBufferToAzure already produce at upload time. Lets
+ * callers persist only the key and reconstruct the URL on read, so a
+ * bucket/endpoint/provider change doesn't strand previously stored rows.
+ */
+export function getPublicUrl(key: string): string {
+  if (STORAGE_PROVIDER === "azure") {
+    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    return `${AZURE_STORAGE_URL}/${containerName}/${key}`;
+  }
+
+  const endpointUrl = getEndpointFromUrl();
+  if (endpointUrl) {
+    return `${endpointUrl}/${BUCKET}/${key}`;
+  }
+
+  return `${S3_URL}/${key}`;
 }
 
 export async function uploadBase64(base64Data: string, location: string) {
@@ -581,4 +624,121 @@ export async function createPresignedUrlWithClient(key: string, file: string) {
     return createPresignedUrlWithAzureClient(key, file);
   }
   return createPresignedUrlWithS3Client(key, file);
+}
+
+// ---------------------------------------------------------------------------
+// Presigned upload URL — browser uploads directly to storage (no Node proxy)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a presigned PUT URL for S3/MinIO so the browser can upload directly.
+ * Expires in 15 minutes — enough for large files on slow connections.
+ * ContentType is intentionally NOT signed — S3 would reject the PUT if the
+ * browser sends a slightly different Content-Type header (e.g. "application/pdf"
+ * vs "application/pdf; charset=utf-8"), causing a silent 403 that looks like
+ * a successful upload from the XHR perspective.
+ */
+async function createPresignedUploadUrlS3(
+  key: string,
+): Promise<string> {
+  const command = new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+  });
+  return getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 min
+}
+
+/**
+ * Generate a write-SAS URL for Azure Blob Storage so the browser can upload directly.
+ * Expires in 15 minutes.
+ */
+async function createPresignedUploadUrlAzure(
+  key: string,
+): Promise<string | null> {
+  try {
+    if (
+      !azureContainerClient ||
+      !AZURE_STORAGE_ACCOUNT_NAME ||
+      !AZURE_STORAGE_ACCOUNT_KEY
+    ) {
+      throw new Error("Azure Blob Storage not configured properly");
+    }
+
+    const sharedKeyCredential = new StorageSharedKeyCredential(
+      AZURE_STORAGE_ACCOUNT_NAME,
+      AZURE_STORAGE_ACCOUNT_KEY,
+    );
+
+    const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
+    const expiresOn = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+
+    const sasOptions = {
+      containerName,
+      blobName: key,
+      permissions: BlobSASPermissions.parse("cw"), // create + write
+      startsOn: new Date(),
+      expiresOn,
+    };
+
+    const sasToken = generateBlobSASQueryParameters(
+      sasOptions,
+      sharedKeyCredential,
+    ).toString();
+
+    return `${AZURE_STORAGE_URL}/${containerName}/${key}?${sasToken}`;
+  } catch (error) {
+    log_error(error);
+    return null;
+  }
+}
+
+/**
+ * Returns a presigned URL the browser can use to PUT a file directly to storage.
+ * Works for both S3/MinIO and Azure Blob Storage.
+ */
+export async function createPresignedUploadUrl(
+  key: string,
+): Promise<string | null> {
+  try {
+    if (STORAGE_PROVIDER === "azure") {
+      return createPresignedUploadUrlAzure(key);
+    }
+    return createPresignedUploadUrlS3(key);
+  } catch (error) {
+    log_error(error);
+    return null;
+  }
+}
+
+/**
+ * Verify that an object actually exists in storage after a direct upload.
+ * Used by the confirm endpoint to prevent phantom DB records.
+ */
+export async function objectExists(key: string): Promise<boolean> {
+  return (await getObjectSize(key)) !== null;
+}
+
+/**
+ * Return the actual size (in bytes) of an object in storage, or null if it
+ * doesn't exist. Used by the confirm endpoint to validate the real uploaded
+ * size against the client-reported size from presign — the browser PUTs
+ * directly to storage, so this is the only trustworthy size check.
+ */
+export async function getObjectSize(key: string): Promise<number | null> {
+  try {
+    if (STORAGE_PROVIDER === "azure") {
+      if (!azureContainerClient) return null;
+      const blobClient = azureContainerClient.getBlockBlobClient(key);
+      const props = await blobClient.getProperties();
+      return props.contentLength ?? null;
+    }
+
+    // S3 / MinIO — HeadObject throws if the key doesn't exist
+    const head = await s3Client.send(
+      new HeadObjectCommand({ Bucket: BUCKET, Key: key }),
+    );
+    return head.ContentLength ?? null;
+  } catch {
+    return null;
+  }
 }

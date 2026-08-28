@@ -1,26 +1,19 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback } from 'react';
 import { Flex } from '@/shared/antd-imports';
-import AllTasksTeamFilter from './all-tasks-team-filter';
-import AllTasksProjectFilter from './all-tasks-project-filter';
-import AllTasksStatusFilter from './all-tasks-status-filter';
-import AllTasksPriorityFilter from './all-tasks-priority-filter';
-import AllTasksAssigneeFilter from './all-tasks-assignee-filter';
-// TODO: Implement group by functionality with backend support
-// import AllTasksGroupByDropdown from './all-tasks-group-by-dropdown';
+import AllTasksFilterPanel from './all-tasks-filter-panel';
 import AllTasksShowFieldsDropdown from './all-tasks-show-fields-dropdown';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useTranslation } from 'react-i18next';
 import {
   fetchAllTasks,
   setSearchQuery,
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
-import './all-tasks-reports-filters.css';
-import AllTasksPhaseFilter from './all-tasks-phase-filter';
-import AllTasksClientFilter from './all-tasks-client-filter';
 
 const AllTasksReportsFilters = () => {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation('reporting-all-tasks');
   const { searchQuery } = useAppSelector(state => state.allTasksReportsReducer);
 
   const handleSearchQueryChange = useCallback(
@@ -31,41 +24,15 @@ const AllTasksReportsFilters = () => {
     [dispatch]
   );
 
-  const filterDropdowns = useMemo(
-    () => (
-      <Flex gap={8} wrap="wrap" align="center" className="all-tasks-filters-left">
-        <AllTasksTeamFilter />
-        <AllTasksProjectFilter />
-        <AllTasksStatusFilter />
-        <AllTasksPriorityFilter />
-        <AllTasksAssigneeFilter />
-        <AllTasksPhaseFilter />
-        <AllTasksClientFilter />
-      </Flex>
-    ),
-    []
-  );
-
-  const rightControls = useMemo(
-    () => (
-      <Flex gap={12} align="center" className="all-tasks-filters-right">
-        {/* TODO: Implement group by functionality with backend support */}
-        {/* <AllTasksGroupByDropdown /> */}
-        <AllTasksShowFieldsDropdown />
-        <CustomSearchbar
-          placeholderText="Search by task name, key, or description"
-          searchQuery={searchQuery}
-          setSearchQuery={handleSearchQueryChange}
-        />
-      </Flex>
-    ),
-    [searchQuery, handleSearchQueryChange]
-  );
-
   return (
-    <Flex gap={24} align="center" justify="space-between" wrap="wrap" className="all-tasks-filters">
-      {filterDropdowns}
-      {rightControls}
+    <Flex gap={8} align="center" justify="flex-end" wrap="wrap" style={{ width: '100%' }}>
+      <AllTasksFilterPanel />
+      <AllTasksShowFieldsDropdown />
+      <CustomSearchbar
+        placeholderText={t('searchPlaceholder', { defaultValue: 'Search by task name, key, or description' })}
+        searchQuery={searchQuery}
+        setSearchQuery={handleSearchQueryChange}
+      />
     </Flex>
   );
 };

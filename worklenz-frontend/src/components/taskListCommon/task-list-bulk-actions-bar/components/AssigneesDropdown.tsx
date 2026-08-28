@@ -10,10 +10,23 @@ interface AssigneesDropdownProps {
   onApply: (selectedAssignees: ITeamMemberViewModel[]) => void;
   onClose: () => void;
   t: (key: string) => string;
+  preSelectedMemberIds?: string[];
+
 }
 
-const AssigneesDropdown = ({ members, themeMode, onApply, onClose, t }: AssigneesDropdownProps) => {
-  const [selectedAssignees, setSelectedAssignees] = useState<ITeamMemberViewModel[]>([]);
+const AssigneesDropdown = ({ members, themeMode, onApply, onClose, t, preSelectedMemberIds = [] }: AssigneesDropdownProps) => {
+  const [selectedAssignees, setSelectedAssignees] = useState<ITeamMemberViewModel[]>(() =>
+    members.filter(m => m.id && preSelectedMemberIds.includes(m.id))
+  );
+
+  // Re-sync when dropdown is re-opened with updated preSelectedMemberIds
+  useEffect(() => {
+    if (members.length > 0) {
+      setSelectedAssignees(members.filter(m => m.id && preSelectedMemberIds.includes(m.id)));
+    }
+  }, [preSelectedMemberIds.join(','), members.length]);
+
+
 
   const handleAssigneeChange = (e: CheckboxChangeEvent, member: ITeamMemberViewModel) => {
     if (e.target.checked) {
@@ -24,7 +37,7 @@ const AssigneesDropdown = ({ members, themeMode, onApply, onClose, t }: Assignee
   };
 
   const handleClose = () => {
-    setSelectedAssignees([]);
+    setSelectedAssignees(members.filter(m => m.id && preSelectedMemberIds.includes(m.id)));
     onClose();
   };
 

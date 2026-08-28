@@ -28,6 +28,7 @@ import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { resolveTaskProgress } from './task-progress';
 
 // Helper function to safely convert time values
 const convertTimeValue = (value: any): number => {
@@ -56,6 +57,29 @@ export enum IGroupBy {
 
 // Entity adapter for normalized state
 const tasksAdapter = createEntityAdapter<Task>();
+
+const applyTaskGroupingValue = (
+  task: Task | undefined,
+  grouping: string | undefined,
+  groupId: string
+) => {
+  if (!task) return;
+
+  switch (grouping) {
+    case IGroupBy.STATUS:
+      task.status = groupId;
+      break;
+    case IGroupBy.PRIORITY:
+      task.priority = groupId;
+      break;
+    case IGroupBy.PHASE:
+      task.phase = groupId;
+      break;
+    default:
+      break;
+  }
+};
+
 
 // Get the initial state from the adapter
 const initialState: TaskManagementState = {
@@ -229,8 +253,8 @@ export const fetchTasks = createAsyncThunk(
 // New V3 fetch that minimizes frontend processing
 export const fetchTasksV3 = createAsyncThunk(
   'taskManagement/fetchTasksV3',
-  async (projectId: string, { rejectWithValue, getState }) => {
-    try {
+  async (arg: string | { projectId: string; silent?: boolean }, { rejectWithValue, getState }) => {
+    const projectId = typeof arg === 'string' ? arg : arg.projectId; try {
       const state = getState() as RootState;
       const currentGrouping = state.grouping.currentGrouping;
 
@@ -249,6 +273,12 @@ export const fetchTasksV3 = createAsyncThunk(
       // Get selected priorities from taskReducer
       const selectedPriorities = state.taskReducer.priorities.join(' ');
 
+      // Get selected statuses from taskReducer
+      const selectedStatuses = state.taskReducer.statuses.map((s: any) => s.id || '').join(' ');
+
+      // Get selected phases from taskReducer
+      const selectedPhases = state.taskReducer.phases.join(' ');
+
       // Get search value from taskManagement slice
       const searchValue = state.taskManagement.search || '';
 
@@ -266,7 +296,8 @@ export const fetchTasksV3 = createAsyncThunk(
         field: sortField,
         order: sortOrder,
         search: searchValue,
-        statuses: '',
+        statuses: selectedStatuses,
+        phases: selectedPhases,
         members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
@@ -280,6 +311,7 @@ export const fetchTasksV3 = createAsyncThunk(
       const normalizeTask = (task: any): Task => {
         const now = new Date().toISOString();
         const taskTitle = decodeHtmlEntities(task.title || task.name).trim();
+        const calculatedProgress = resolveTaskProgress(task);
 
         const transformedTask: Task = {
           id: task.id,
@@ -287,12 +319,13 @@ export const fetchTasksV3 = createAsyncThunk(
           title: taskTitle || DEFAULT_TASK_NAME,
           name: taskTitle || DEFAULT_TASK_NAME,
           description: task.description || '',
-          status: task.status || 'todo',
+          // Handle status name from backend; status_id is a UUID and not a valid status name, so don't fall back to it
+          status: task.status || task.status_name || 'todo',
           priority: task.priority || 'medium',
-          phase: task.phase || 'Development',
-          progress: typeof task.complete_ratio === 'number' ? task.complete_ratio : 0,
-          complete_ratio: task.complete_ratio, // Keep original field
-          progress_value: task.progress_value, // Keep original field
+          phase: task.phase_id || task.phase || '', // Use phase_id if available, fall back to phase field
+          progress: calculatedProgress, // Use recalculated progress
+          complete_ratio: calculatedProgress, // Update complete_ratio as well
+          progress_value: calculatedProgress, // Update progress_value as well
           assignees: task.assignees?.map((a: { team_member_id: string }) => a.team_member_id) || [],
           assignee_names: task.assignee_names || task.names || [],
           labels:
@@ -343,6 +376,9 @@ export const fetchTasksV3 = createAsyncThunk(
           has_filtered_children: task.has_filtered_children || false,
           parent_task_id: task.parent_task_id || undefined,
           parent_task_container_id: task.parent_task_container_id || undefined,
+          parent_task_name: task.parent_task_name || null,
+          parent_task_key: task.parent_task_key || null,
+          parent_is_subtask: !!task.parent_is_subtask,
           is_parent_container: !!task.is_parent_container,
           parent_task_not_archived: !!task.parent_task_not_archived,
           weight: task.weight || 0,
@@ -412,6 +448,8 @@ export const fetchSubTasks = createAsyncThunk(
         .join(' ');
 
       const selectedPriorities = state.taskReducer.priorities.join(' ');
+      const selectedStatuses = state.taskReducer.statuses.map((s: any) => s.id || '').join(' ');
+      const selectedPhases = state.taskReducer.phases.join(' ');
 
       // Get search value from taskManagement slice
       const searchValue = state.taskManagement.search || '';
@@ -424,7 +462,8 @@ export const fetchSubTasks = createAsyncThunk(
         field: '',
         order: '',
         search: searchValue,
-        statuses: '', // Status filter not typically applied to subtasks
+        statuses: selectedStatuses,
+        phases: selectedPhases,
         members: selectedAssignees,
         projects: '',
         isSubtasksInclude: false,
@@ -472,7 +511,6 @@ export const duplicateTask = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      // console.log('Duplicate Task Thunk', projectId, taskId, duplicateOptions);
       const response = await duplicateTaskApiService.duplicate({
         task_id: taskId,
         project_id: projectId,
@@ -681,7 +719,7 @@ const taskManagementSlice = createSlice({
         // Add to new status group
         const newGroup = state.groups.find(group => group.id === updatedTask.status);
         if (newGroup) {
-          newGroup.taskIds.push(updatedTask.id);
+          newGroup.taskIds.unshift(updatedTask.id);
         }
       }
     },
@@ -765,6 +803,7 @@ const taskManagementSlice = createSlice({
             ? [...group.taskIds, taskId]
             : group.taskIds.filter(id => id !== taskId),
       }));
+      applyTaskGroupingValue(state.entities[taskId], state.grouping, groupId);
     },
     moveTaskBetweenGroups: (
       state,
@@ -779,11 +818,12 @@ const taskManagementSlice = createSlice({
         ...group,
         taskIds:
           group.id === targetGroupId
-            ? [...group.taskIds, taskId]
+            ? [taskId, ...group.taskIds]
             : group.id === sourceGroupId
               ? group.taskIds.filter(id => id !== taskId)
               : group.taskIds,
       }));
+      applyTaskGroupingValue(state.entities[taskId], state.grouping, targetGroupId);
     },
     optimisticTaskMove: (
       state,
@@ -798,11 +838,12 @@ const taskManagementSlice = createSlice({
         ...group,
         taskIds:
           group.id === targetGroupId
-            ? [...group.taskIds, taskId]
+            ? [taskId, ...group.taskIds]
             : group.id === sourceGroupId
               ? group.taskIds.filter(id => id !== taskId)
               : group.taskIds,
       }));
+      applyTaskGroupingValue(state.entities[taskId], state.grouping, targetGroupId);
     },
     reorderTasksInGroup: (
       state,
@@ -872,8 +913,7 @@ const taskManagementSlice = createSlice({
             destinationGroup.taskIds.push(sourceTaskId); // Add to end if destination task not found
           }
 
-          // Do NOT update the task's grouping field (priority, phase, status) here.
-          // This will be handled by the socket event handler after backend confirmation.
+          applyTaskGroupingValue(newEntities[sourceTaskId], state.grouping, destinationGroupId);
 
           // Update order for affected tasks in both groups using the appropriate sort field
           const sortField = getSortOrderField(state.grouping);
@@ -888,6 +928,61 @@ const taskManagementSlice = createSlice({
 
       // Update the state's entities after all modifications
       state.entities = newEntities;
+    },
+    // Optimistically convert an existing top-level task into a subtask of another task,
+    // without waiting for a refetch. Used by ConvertToSubtaskDrawer so the UI updates
+    // instantly instead of only reflecting the change after a page refresh.
+    convertTaskToSubtask: (
+      state,
+      action: PayloadAction<{
+        taskId: string;
+        parentTaskId: string;
+      }>
+    ) => {
+      const { taskId, parentTaskId } = action.payload;
+      if (!taskId || !parentTaskId || taskId === parentTaskId) return;
+
+      const task = state.entities[taskId];
+      const parent = state.entities[parentTaskId];
+      if (!task || !parent) return;
+
+      // Remove the task from whichever group's top-level taskIds currently holds it
+      // (this is what makes it disappear from the flat/top-level list immediately).
+      state.groups.forEach(group => {
+        if (group.taskIds.includes(taskId)) {
+          group.taskIds = group.taskIds.filter(id => id !== taskId);
+        }
+      });
+
+      // If the task was already a subtask of a different parent, detach it from that
+      // parent's sub_tasks array first to avoid it appearing in two places.
+      if (task.parent_task_id && task.parent_task_id !== parentTaskId) {
+        const oldParent = state.entities[task.parent_task_id];
+        if (oldParent?.sub_tasks) {
+          const beforeLength = oldParent.sub_tasks.length;
+          oldParent.sub_tasks = oldParent.sub_tasks.filter(st => st.id !== taskId);
+          if (oldParent.sub_tasks.length !== beforeLength) {
+            oldParent.sub_tasks_count = Math.max((oldParent.sub_tasks_count || 0) - 1, 0);
+          }
+        }
+      }
+
+      // Update the task's own parent linkage
+      task.parent_task_id = parentTaskId;
+      task.is_sub_task = true;
+
+      // Attach (or refresh) the task inside the new parent's sub_tasks array
+      if (!parent.sub_tasks) parent.sub_tasks = [];
+      const existingIndex = parent.sub_tasks.findIndex(st => st.id === taskId);
+      if (existingIndex !== -1) {
+        parent.sub_tasks[existingIndex] = task;
+      } else {
+        parent.sub_tasks.push(task);
+        parent.sub_tasks_count = (parent.sub_tasks_count || 0) + 1;
+      }
+
+      // Auto-expand the parent so the newly attached subtask is visible right away
+      parent.show_sub_tasks = true;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -1025,6 +1120,28 @@ const taskManagementSlice = createSlice({
         state.ids = state.ids.filter(id => id !== tempId);
       }
     },
+    /**
+     * Reorder subtasks within a parent task.
+     * Receives the parent task ID and the new ordered array of subtask objects.
+     * Updates both the parent entity's sub_tasks array and each subtask entity's order field.
+     */
+    reorderSubtasks: (
+      state,
+      action: PayloadAction<{ parentTaskId: string; orderedSubtasks: Task[] }>
+    ) => {
+      const { parentTaskId, orderedSubtasks } = action.payload;
+      const parent = state.entities[parentTaskId];
+      if (!parent) return;
+      // Replace the sub_tasks array with the reordered version
+      parent.sub_tasks = orderedSubtasks;
+      // Update each entity's order field to match the new position
+      orderedSubtasks.forEach((subtask, index) => {
+        const entity = state.entities[subtask.id];
+        if (entity) {
+          entity.order = index;
+        }
+      });
+    },
     updateTaskAssignees: (
       state,
       action: PayloadAction<{
@@ -1142,30 +1259,47 @@ const taskManagementSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      .addCase(fetchTasksV3.pending, state => {
-        state.loading = true;
+      .addCase(fetchTasksV3.pending, (state, action) => {
+        const isSilent = typeof action.meta.arg === 'object' && (action.meta.arg as any).silent === true;
+        if (!isSilent) {
+          state.loading = true;
+        }
         state.error = null;
       })
+
       .addCase(fetchTasksV3.fulfilled, (state, action) => {
         state.loading = false;
-        state.loadedProjectId = action.meta.arg;
+        state.loadedProjectId = typeof action.meta.arg === 'string' ? action.meta.arg : action.meta.arg.projectId;
         const { allTasks, groups, grouping } = action.payload;
 
         // Preserve existing timer state from old tasks before replacing
         const oldTasks = state.entities;
         const tasksWithTimers = (allTasks || []).map(task => {
           const oldTask = oldTasks[task.id];
-          if (oldTask?.timeTracking?.activeTimer) {
+          
+          let fixedTask = task;
+          
+          // When grouped by phase, populate phase from group membership
+          if ((!fixedTask.phase || fixedTask.phase.trim() === '') && grouping === 'phase' && groups && groups.length > 0) {
+            // Find which group this task belongs to
+            const taskGroup = groups.find(g => g.taskIds && g.taskIds.includes(task.id));
+            if (taskGroup && taskGroup.id) {
+              // Set the phase to the group ID
+              fixedTask = { ...fixedTask, phase: taskGroup.id };
+            }
+          }
+          
+          if (fixedTask.timeTracking?.activeTimer || oldTask?.timeTracking?.activeTimer) {
             // Preserve the timer state from the old task
             return {
-              ...task,
+              ...fixedTask,
               timeTracking: {
-                ...task.timeTracking,
-                activeTimer: oldTask.timeTracking.activeTimer,
+                ...fixedTask.timeTracking,
+                activeTimer: oldTask?.timeTracking?.activeTimer || fixedTask.timeTracking?.activeTimer,
               },
             };
           }
-          return task;
+          return fixedTask;
         });
 
         tasksAdapter.setAll(state as EntityState<Task, string>, tasksWithTimers); // Ensure allTasks is an array
@@ -1196,6 +1330,7 @@ const taskManagementSlice = createSlice({
           // Convert subtasks to the proper format
           const convertedSubtasks = subtasks.map(subtask => {
             const subtaskTitle = decodeHtmlEntities(subtask.name || subtask.title).trim();
+            const progress = resolveTaskProgress(subtask);
 
             return {
               id: subtask.id || '',
@@ -1206,7 +1341,9 @@ const taskManagementSlice = createSlice({
               status: subtask.status || 'todo',
               priority: subtask.priority || 'low',
               phase: subtask.phase_name || subtask.phase || 'Development',
-              progress: subtask.complete_ratio || subtask.progress || 0,
+              progress,
+              complete_ratio: progress,
+              progress_value: progress,
               assignees: subtask.assignees || [],
               assignee_names: subtask.assignee_names || subtask.names || [],
               labels: subtask.labels || [],
@@ -1298,9 +1435,9 @@ const taskManagementSlice = createSlice({
         const customPayload = action.payload.custom;
         const customColumns = Array.isArray(customPayload)
           ? customPayload.map((col: any) => ({
-              ...col,
-              isCustom: true,
-            }))
+            ...col,
+            isCustom: true,
+          }))
           : [];
 
         // Merge columns
@@ -1361,6 +1498,7 @@ export const {
   moveTaskBetweenGroups,
   optimisticTaskMove,
   reorderTasksInGroup,
+  convertTaskToSubtask,
   setLoading,
   setError,
   setSelectedPriorities,
@@ -1378,6 +1516,7 @@ export const {
   updateTaskAssignees,
   createSubtask,
   removeTemporarySubtask,
+  reorderSubtasks,
   // Add column-related actions
   toggleColumnVisibility,
   addCustomColumn,

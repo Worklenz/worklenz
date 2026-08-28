@@ -16,5 +16,8 @@
   "createJobTitleSuccessMessage": "Create job title success!",
   "createJobTitleErrorMessage": "Create job title failed!",
   "updateJobTitleSuccessMessage": "Update job title success!",
-  "updateJobTitleErrorMessage": "Update job title failed!"
+  "updateJobTitleErrorMessage": "Update job title failed!",
+  "paginationTotal": "{{start}}-{{end}} of {{total}} items",
+  "editTooltip": "Edit",
+  "deleteTooltip": "Delete"
 }

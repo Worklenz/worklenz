@@ -9,8 +9,12 @@ interface ThemeState {
 
 const isBrowser = typeof window !== 'undefined';
 
-const getPreloadedTheme = (): ThemeType =>
-  !isBrowser ? 'light' : (window as any).__THEME_STATE__ || 'light';
+const getPreloadedTheme = (): ThemeType => {
+  if (!isBrowser) return 'light';
+  const storedTheme = (window as any).__THEME_STATE__;
+  if (storedTheme === 'light' || storedTheme === 'dark') return storedTheme;
+  return getThemeModeFromLocalStorage();
+};
 
 const getSystemTheme = (): ThemeType =>
   !isBrowser

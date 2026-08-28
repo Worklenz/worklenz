@@ -4,6 +4,7 @@ import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 import {ServerResponse} from "../models/server-response";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
+import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
 
 /**
  * Middleware to verify user has access to a project
@@ -163,6 +164,61 @@ export default function verifyProjectAccess(
       
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this project")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying project access")
+      );
+    }
+  };
+}
+
+/**
+ * Middleware to verify a user has non-guest access to a project — i.e. they can
+ * create/mutate data in it, not just view it. Denies only users explicitly given
+ * GUEST-level project_members access; owners/admins and implicit team members pass.
+ *
+ * Usage:
+ * - For project ID in request body: verifyNonGuestProjectAccess('body', 'project_id')
+ */
+export function verifyNonGuestProjectAccess(
+  location: 'params' | 'body' | 'query' = 'params',
+  fieldName: string = 'id'
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const userId = req.user?.id;
+    const projectId = req[location]?.[fieldName];
+
+    if (!projectId) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Project ID is required")
+      );
+    }
+
+    if (!userId) {
+      return res.status(401).send(
+        new ServerResponse(false, null, "Authentication required")
+      );
+    }
+
+    try {
+      const q = `
+        SELECT 1
+        FROM projects p
+        ${NON_GUEST_ACCESS_JOIN('$2')}
+        WHERE p.id = $1
+          AND ${NON_GUEST_ACCESS_PREDICATE}
+        LIMIT 1;
+      `;
+      const result = await db.query(q, [projectId, userId]);
+
+      if (result.rowCount && result.rowCount > 0) {
+        return next();
+      }
+
+      return res.status(403).send(
+        new ServerResponse(false, null, "Guests do not have permission to perform this action")
       );
     } catch (error) {
       log_error(error);

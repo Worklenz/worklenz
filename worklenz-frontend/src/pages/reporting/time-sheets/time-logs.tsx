@@ -45,6 +45,7 @@ const TimeLogsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [search, setSearch] = useState<string>('');
+  const [pageSize, setPageSize] = useState(20);
   const [billableFilter, setBillableFilter] = useState<{ billable: boolean; nonBillable: boolean }>(
     { billable: true, nonBillable: true }
   );
@@ -273,12 +274,13 @@ const TimeLogsPage: React.FC = () => {
     <Flex vertical>
       <CustomPageHeader
         title={t('Time Logs')}
+        style={{ padding: 0, marginBottom: 16 }}
         children={
-          <Space>
+          <Space wrap style={{ rowGap: 8 }}>
             <TimeWiseFilter />
             <Select
               placeholder={t('Select member')}
-              style={{ width: 220 }}
+              style={{ width: 220, maxWidth: '100%' }}
               allowClear
               value={selectedMemberId}
               onChange={setSelectedMemberId}
@@ -287,7 +289,7 @@ const TimeLogsPage: React.FC = () => {
             <Input.Search
               placeholder={t('Search logs')}
               allowClear
-              style={{ width: 220 }}
+              style={{ width: 220, maxWidth: '100%' }}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -297,7 +299,7 @@ const TimeLogsPage: React.FC = () => {
             <Button onClick={fetchLogs}>{t('Refresh')}</Button>
             <Dropdown menu={exportMenu}>
               <Button type="primary" icon={<DownOutlined />} iconPosition="end">
-                {t('Export')}
+                {t('export')}
               </Button>
             </Dropdown>
           </Space>
@@ -310,7 +312,12 @@ const TimeLogsPage: React.FC = () => {
           loading={loading}
           dataSource={filteredLogs}
           columns={columns}
-          pagination={{ pageSize: 20 }}
+          scroll={{ x: 'max-content' }}
+          locale={{ emptyText: t('noData') }}
+          pagination={{ pageSize,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['20', '50', '100'],
+                        onShowSizeChange: (_current, size) => setPageSize(size), }}
         />
       </Card>
     </Flex>

@@ -7,6 +7,7 @@ export interface ITaskAssigneesUpdateResponse {
   parent_task: string;
   assignees: ITaskAssignee[];
   names: InlineMember[];
+  assignee_names?: InlineMember[];
   members: ITeamMemberViewModel[];
   mode: any;
   team_member_id: string;

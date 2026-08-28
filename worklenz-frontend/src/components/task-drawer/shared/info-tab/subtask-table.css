@@ -8,6 +8,45 @@
   opacity: 1;
 }
 
+/* Sortable subtask row */
+.subtask-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.subtask-row {
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.subtask-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:global(.dark) .subtask-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Show drag handle always */
+.subtask-row .subtask-drag-handle {
+  cursor: grab;
+}
+
+.subtask-row:active .subtask-drag-handle {
+  cursor: grabbing;
+}
+
+/* Show action buttons on hover */
+.subtask-row .action-buttons {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.subtask-row:hover .action-buttons {
+  opacity: 1;
+}
+
 /* Add these styles for task dependency action buttons */
 .task-dependency-actions {
   opacity: 0;

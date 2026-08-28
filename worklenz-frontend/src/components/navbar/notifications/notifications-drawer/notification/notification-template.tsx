@@ -4,6 +4,7 @@ import { IWorklenzNotification } from '@/types/notifications/notifications.types
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleDrawer } from '../../../../../features/navbar/notificationSlice';
+import { useTranslation } from 'react-i18next';
 import { teamsApiService } from '@/api/teams/teams.api.service';
 import { formatDistanceToNow } from 'date-fns';
 import { tagBackground } from '@/utils/colorUtils';
@@ -23,6 +24,7 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
   loadersMap,
 }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation('navbar');
   const dispatch = useAppDispatch();
 
   const goToUrl = async (event: React.MouseEvent) => {
@@ -92,7 +94,7 @@ const NotificationTemplate: React.FC<NotificationTemplateProps> = ({
               loading={loadersMap[item.id]}
               onClick={handleMarkAsRead}
             >
-              <u>Mark as read</u>
+              <u>{t('notificationsDrawer.markAsRead', { defaultValue: 'Mark as read' })}</u>
             </Button>
           )}
           <Typography.Text type="secondary" className="small">

@@ -6,6 +6,7 @@ import {
 } from '@/types/tasks/taskList.types';
 import { tasksApiService, ITaskListConfigV2 } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
+import { toArray } from '@/utils/to-array';
 import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
@@ -91,6 +92,7 @@ interface EnhancedKanbanState {
   labels: ITaskLabelFilter[];
   loadingLabels: boolean;
   priorities: string[];
+  phases: string[];
   members: string[];
 
   // Performance optimizations
@@ -143,6 +145,7 @@ const initialState: EnhancedKanbanState = {
   labels: [],
   loadingLabels: false,
   priorities: [],
+  phases: [],
   members: [],
   virtualizedRendering: true,
   taskCache: {},
@@ -294,7 +297,8 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
           .join(','),
         order: '',
         search: enhancedKanbanReducer.search || '',
-        statuses: '',
+        statuses: enhancedKanbanReducer.statuses.map((s: ITaskStatusViewModel) => s.id || '').join(' '),
+        phases: enhancedKanbanReducer.phases.join(' '),
         members: selectedMembers,
         projects: '',
         isSubtasksInclude: enhancedKanbanReducer.isSubtasksInclude,
@@ -306,7 +310,7 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
       const response = await tasksApiService.getTaskListV3(config);
 
       // Transform V3 response to ITaskListGroup[] format expected by the kanban board
-      const transformedGroups: ITaskListGroup[] = response.body.groups.map((group: any) =>
+      const transformedGroups: ITaskListGroup[] = (response.body?.groups ?? []).map((group: any) =>
         transformV3GroupToTaskListGroup(group, projectId)
       );
 
@@ -442,7 +446,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
       };
 
       const response = await tasksApiService.getTaskListV3(config);
-      const tasks = response.body.allTasks || [];
+      const tasks = response.body?.allTasks ?? [];
 
       // Transform V3 API response back to IProjectTask format expected by BoardSubTaskCard
       const transformedTasks: IProjectTask[] = tasks.map((task: any) => ({
@@ -492,7 +496,7 @@ export const fetchEnhancedKanbanTaskAssignees = createAsyncThunk(
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await tasksApiService.fetchTaskAssignees(projectId);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Enhanced Kanban Task Assignees', error);
       if (error instanceof Error) {
@@ -509,7 +513,7 @@ export const fetchEnhancedKanbanLabels = createAsyncThunk(
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await labelsApiService.getPriorityByProject(projectId);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Enhanced Kanban Labels', error);
       if (error instanceof Error) {
@@ -630,6 +634,18 @@ const enhancedKanbanSlice = createSlice({
       // Clear caches when grouping changes
       state.taskCache = {};
       state.groupCache = {};
+    },
+
+    updateGroupColor: (
+      state,
+      action: PayloadAction<{ groupId: string; colorCode: string }>
+    ) => {
+      const { groupId, colorCode } = action.payload;
+      const group = state.taskGroups.find(g => g.id === groupId);
+      if (group) {
+        group.color_code = colorCode;
+        group.color_code_dark = colorCode;
+      }
     },
 
     setSearch: (state, action: PayloadAction<string | null>) => {
@@ -754,6 +770,14 @@ const enhancedKanbanSlice = createSlice({
     // Add missing actions for filter compatibility
     setSelectedPriorities: (state, action: PayloadAction<string[]>) => {
       state.priorities = action.payload;
+    },
+
+    setKanbanStatuses: (state, action: PayloadAction<ITaskStatusViewModel[]>) => {
+      state.statuses = action.payload;
+    },
+
+    setKanbanPhases: (state, action: PayloadAction<string[]>) => {
+      state.phases = action.payload;
     },
 
     setBoardSearch: (state, action: PayloadAction<string | null>) => {
@@ -1281,14 +1305,15 @@ const enhancedKanbanSlice = createSlice({
       })
       .addCase(fetchEnhancedKanbanGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload;
+        const groups = toArray(action.payload);
+        state.taskGroups = groups;
         state.loadedProjectId = action.meta.arg;
 
         // Update performance metrics
-        state.performanceMetrics = calculatePerformanceMetrics(action.payload);
+        state.performanceMetrics = calculatePerformanceMetrics(groups);
 
         // Update caches and initialize subtask properties
-        action.payload.forEach(group => {
+        groups.forEach(group => {
           state.groupCache[group.id] = group;
           group.tasks.forEach(task => {
             // Initialize subtask-related properties if they don't exist
@@ -1311,7 +1336,7 @@ const enhancedKanbanSlice = createSlice({
 
         // Initialize column order if not set
         if (state.columnOrder.length === 0) {
-          state.columnOrder = action.payload.map(group => group.id);
+          state.columnOrder = groups.map(group => group.id);
         }
       })
       .addCase(fetchEnhancedKanbanGroups.rejected, (state, action) => {
@@ -1375,7 +1400,7 @@ const enhancedKanbanSlice = createSlice({
       .addCase(fetchEnhancedKanbanLabels.fulfilled, (state, action) => {
         state.loadingLabels = false;
         // Transform labels to include selected property
-        const newLabels = action.payload.map((label: any) => ({ ...label, selected: false }));
+        const newLabels = toArray<any>(action.payload).map(label => ({ ...label, selected: false }));
         // Store original data and current data
         state.originalLabels = newLabels;
         state.labels = newLabels;
@@ -1399,14 +1424,15 @@ const enhancedKanbanSlice = createSlice({
         const result = findTaskInAllGroups(state.taskGroups, taskId);
 
         if (result) {
+          const subTasks = toArray(action.payload);
           result.task.sub_tasks_loading = false;
-          result.task.sub_tasks = action.payload;
+          result.task.sub_tasks = subTasks;
           result.task.show_sub_tasks = true;
 
           // Only update the count if we don't have a count yet or if the API returned a different count
           // This preserves the original count from the initial data load
           if (!result.task.sub_tasks_count || result.task.sub_tasks_count === 0) {
-            result.task.sub_tasks_count = action.payload.length;
+            result.task.sub_tasks_count = subTasks.length;
           }
 
           // Update cache
@@ -1454,6 +1480,8 @@ export const {
   setSelectedPriorities,
   setBoardSearch,
   setBoardArchived,
+  setKanbanStatuses,
+  setKanbanPhases,
   updateTaskStatus,
   updateTaskPriority,
   deleteTask,
@@ -1473,6 +1501,7 @@ export const {
   toggleTaskExpansion,
   setEditableSection,
   deleteSection,
+  updateGroupColor
 } = enhancedKanbanSlice.actions;
 
 export const selectKanbanLoadedProjectId = (state: { enhancedKanbanReducer: EnhancedKanbanState }) =>

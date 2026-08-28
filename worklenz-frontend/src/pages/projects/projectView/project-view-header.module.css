@@ -1,0 +1,264 @@
+/* Container and Layout */
+.headerContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.titleSection {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.actionsSection {
+  margin-left: 16px;
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Title Container */
+.titleContainer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.backButton {
+  flex-shrink: 0;
+}
+
+.projectTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-block-end: 0 !important;
+  margin-inline-start: 8px !important;
+}
+
+.projectAttributes {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Button Styles */
+.actionButton {
+  display: flex;
+  align-items: center;
+}
+
+.subscribeButton {
+  display: flex;
+  align-items: center;
+}
+
+.inviteButton {
+  display: flex;
+  align-items: center;
+}
+
+.createTaskButton {
+  display: flex;
+  align-items: center;
+}
+
+.buttonLabel {
+  display: inline;
+}
+
+.actionsContainer {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Tablet View (768px and below) */
+@media (max-width: 768px) {
+  .headerContainer {
+    padding: 10px 0;
+    gap: 6px;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .titleSection {
+    width: 100%;
+  }
+
+  .actionsSection {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  .projectTitle {
+    font-size: 14px !important;
+    max-width: 250px;
+  }
+
+  .projectAttributes {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  .subscribeButton {
+    flex-shrink: 1;
+  }
+
+  .inviteButton {
+    flex-shrink: 1;
+  }
+
+  .createTaskButton {
+    flex-shrink: 1;
+  }
+
+  .buttonLabel {
+    display: none;
+  }
+
+  .titleContainer {
+    gap: 2px;
+  }
+}
+
+/* Mobile View (480px and below) */
+@media (max-width: 480px) {
+  .headerContainer {
+    padding: 8px 0;
+    gap: 4px;
+  }
+
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .titleSection {
+    width: 100%;
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  .actionsSection {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: flex-start;
+  }
+
+  .projectTitle {
+    font-size: 13px !important;
+    max-width: 150px;
+    margin-inline-start: 4px !important;
+  }
+
+  .projectAttributes {
+    display: none;
+  }
+
+  .backButton {
+    font-size: 14px !important;
+  }
+
+  .actionButton {
+    min-width: 32px;
+  }
+
+  .subscribeButton {
+    flex-shrink: 1;
+  }
+
+  .inviteButton {
+    flex-shrink: 1;
+  }
+
+  .createTaskButton {
+    flex-shrink: 1;
+  }
+
+  .buttonLabel {
+    display: none;
+  }
+
+  .titleContainer {
+    gap: 1px;
+  }
+
+  .actionsContainer {
+    gap: 3px;
+  }
+}
+
+/* Small Mobile View (360px and below) */
+@media (max-width: 360px) {
+  .headerContainer {
+    padding: 6px 0;
+  }
+
+  .headerContent {
+    gap: 4px;
+  }
+
+  .projectTitle {
+    font-size: 12px !important;
+    max-width: 120px;
+  }
+
+  .actionsSection {
+    gap: 3px;
+  }
+
+  .backButton {
+    font-size: 12px !important;
+  }
+}
+
+/* Desktop View (1024px and above) - Show all text labels */
+@media (min-width: 1024px) {
+  .buttonLabel {
+    display: inline;
+  }
+
+  .headerContent {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .actionsSection {
+    margin-left: 16px;
+  }
+
+  .projectTitle {
+    white-space: nowrap;
+  }
+}

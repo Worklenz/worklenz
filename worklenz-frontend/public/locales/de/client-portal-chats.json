@@ -58,5 +58,11 @@
   "emojiPicker": "Emoji hinzufügen",
   "noChatsWithClient": "Noch keine Konversationen mit diesem Kunden",
   "startConversationWithClient": "Starten Sie eine Konversation, um diese Anfrage mit dem Kunden zu besprechen.",
-  "messageUnavailable": "Nachricht nicht verfügbar"
+  "messageUnavailable": "Nachricht nicht verfügbar",
+  "convertToTask": "In Aufgabe umwandeln",
+  "convertToTaskEmpty": "Die Nachricht enthält keinen Text für einen Aufgabennamen",
+  "convertToTaskError": "Aufgabe konnte nicht erstellt werden",
+  "convertToTaskSuccess": "Aufgabe aus Nachricht erstellt",
+  "noClientProject": "Diesem Kunden ist kein Projekt zugewiesen",
+  "createTask": "Aufgabe erstellen"
 }

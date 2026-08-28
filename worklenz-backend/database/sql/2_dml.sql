@@ -27,6 +27,8 @@ BEGIN
     VALUES ('Member', 'MEMBER');
     INSERT INTO project_access_levels (name, key)
     VALUES ('Project Manager', 'PROJECT_MANAGER');
+    INSERT INTO project_access_levels (name, key)
+    VALUES ('Guest', 'GUEST');
 END;
 $$ LANGUAGE plpgsql;
 

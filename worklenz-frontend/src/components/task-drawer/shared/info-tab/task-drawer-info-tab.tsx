@@ -5,7 +5,7 @@ import {
   Skeleton,
   Typography,
 } from '@/shared/antd-imports';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { InboxOutlined } from '@ant-design/icons';
 import DescriptionEditor from './description-editor';
 import SubTaskTable from './subtask-table';
@@ -14,6 +14,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import TaskDetailsForm from './task-details-form';
 import { fetchTask } from '@/features/tasks/tasks.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { updateTaskCounts } from '@/features/task-management/task-management.slice';
 import { TFunction } from 'i18next';
 import { subTasksApiService } from '@/api/tasks/subtasks.api.service';
@@ -25,33 +26,37 @@ import { getBase64 } from '@/utils/file-utils';
 import {
   ITaskAttachment,
   ITaskAttachmentViewModel,
+  IFileUploadState,
 } from '@/types/tasks/task-attachment-view-model';
 import taskAttachmentsApiService from '@/api/tasks/task-attachments.api.service';
 import AttachmentsGrid from './attachments/attachments-grid';
 import TaskComments from './comments/task-comments';
+import { TaskAttachmentUploadItem } from './attachments/upload-progress';
 import { ITaskCommentViewModel } from '@/types/tasks/task-comments.types';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import TaskDrawerCustomFields from './details/task-drawer-custom-fields/task-drawer-custom-fields';
 import { hasDrawerSupportedCustomFields } from '@/utils/task-custom-columns';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
   canCreateTask?: boolean;
+  isGuest?: boolean;
 }
 
-const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
+const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps) => {
   const FREE_ATTACHMENT_SIZE_LIMIT_MB = 25;
   const BUSINESS_ATTACHMENT_SIZE_LIMIT_MB = 250;
   const dispatch = useAppDispatch();
+  const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
   const attachmentSizeLimitMb = hasBusinessAccess
@@ -71,6 +76,10 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
 
   const [processingUpload, setProcessingUpload] = useState(false);
   const selectedFilesRef = useRef<File[]>([]);
+
+  // Track individual file upload progress
+  const [pendingFiles, setPendingFiles] = useState<IFileUploadState[]>([]);
+  const [uploadProgressItems, setUploadProgressItems] = useState<TaskAttachmentUploadItem[]>([]);
 
   const [taskAttachments, setTaskAttachments] = useState<ITaskAttachmentViewModel[]>([]);
   const [loadingTaskAttachments, setLoadingTaskAttachments] = useState<boolean>(false);
@@ -96,6 +105,10 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
   // and leaving taskFormViewModel empty when the drawer reopens.
   const prevTaskIdRef = useRef<string | null>(null);
 
+  const updatePendingFile = (uid: string, updater: (file: IFileUploadState) => IFileUploadState) => {
+    setPendingFiles(prev => prev.map(file => (file.uid === uid ? updater(file) : file)));
+  };
+
   const handleFilesSelected = async (files: File[]) => {
     if (!taskFormViewModel?.task?.id || !projectId) return;
 
@@ -108,7 +121,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
             file_count: oversizedFiles.length,
           });
         }
-        promptUpgrade();
+        dispatch(toggleUpgradeModal());
       }
       return;
     }
@@ -120,23 +133,90 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
         const filesToUpload = [...files];
         selectedFilesRef.current = filesToUpload;
 
+        // Create pending file records with unique IDs
+        const newPendingFiles: IFileUploadState[] = filesToUpload.map((file, idx) => ({
+          uid: `${Date.now()}-${idx}`,
+          name: file.name,
+          size: file.size,
+          status: 'ready' as const,
+          percent: 0,
+        }));
+        setPendingFiles(newPendingFiles);
+        setUploadProgressItems(
+          newPendingFiles.map(file => ({
+            uid: file.uid,
+            name: file.name,
+            size: file.size,
+            percent: file.percent,
+            status: file.status,
+          }))
+        );
+
+        // Upload each file using presigned URL flow (like project files)
         await Promise.all(
-          filesToUpload.map(async file => {
-            const base64 = await getBase64(file);
-            const body: ITaskAttachment = {
-              file: base64 as string,
-              file_name: file.name,
-              task_id: taskFormViewModel?.task?.id || '',
-              project_id: projectId,
-              size: file.size,
-            };
-            await taskAttachmentsApiService.createTaskAttachment(body);
+          filesToUpload.map(async (file, idx) => {
+            const fileUid = newPendingFiles[idx].uid;
+            try {
+              updatePendingFile(fileUid, current => ({ ...current, status: 'uploading', percent: 0 }));
+              setUploadProgressItems(prev => prev.map(item => item.uid === fileUid ? { ...item, status: 'uploading', percent: 0 } : item));
+
+              // Step 1: Request presigned URL
+              const presignResponse = await taskAttachmentsApiService.presignTaskAttachment(
+                taskFormViewModel?.task?.id || '',
+                projectId,
+                file.name,
+                file.size,
+                file.type || 'application/octet-stream'
+              );
+
+              if (!presignResponse.done || !presignResponse.body) {
+                throw new Error(presignResponse.message || 'Failed to initiate upload');
+              }
+
+              const { file_id, upload_url } = presignResponse.body;
+
+              // Step 2: Upload file directly to storage with real progress tracking
+              await taskAttachmentsApiService.uploadDirect(
+                upload_url,
+                file,
+                percent => {
+                  updatePendingFile(fileUid, current => ({ ...current, percent }));
+                  setUploadProgressItems(prev => prev.map(item => item.uid === fileUid ? { ...item, percent, status: 'uploading' } : item));
+                }
+              );
+
+              // Step 3: Confirm upload completion
+              await taskAttachmentsApiService.confirmTaskAttachment(file_id, taskFormViewModel?.task?.id || '');
+
+              updatePendingFile(fileUid, current => ({ ...current, status: 'done', percent: 100 }));
+              setUploadProgressItems(prev => prev.map(item => item.uid === fileUid ? { ...item, status: 'done', percent: 100 } : item));
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : t('taskInfoTab.attachments.uploadFailed', { defaultValue: 'Upload failed' });
+              updatePendingFile(fileUid, current => ({
+                ...current,
+                status: 'error',
+                percent: undefined,
+                errorMessage,
+              }));
+              setUploadProgressItems(prev => prev.map(item => item.uid === fileUid ? { ...item, status: 'error', percent: undefined, errorMessage } : item));
+              logger.error('Error uploading file', error);
+            }
           })
         );
-      } finally {
+
+        // Clear pending files after a short delay to show completion
+        setTimeout(() => {
+          setPendingFiles([]);
+          setUploadProgressItems([]);
+          setProcessingUpload(false);
+          selectedFilesRef.current = [];
+          fetchTaskAttachments();
+        }, 1000);
+      } catch (error) {
+        logger.error('Error in handleFilesSelected:', error);
         setProcessingUpload(false);
-        selectedFilesRef.current = [];
-        fetchTaskAttachments();
+        setPendingFiles([]);
+        setUploadProgressItems([]);
       }
     }
   };
@@ -186,6 +266,112 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     }
   };
 
+  const fetchSubTasks = useCallback(async () => {
+    if (!selectedTaskId) return;
+    try {
+      setLoadingSubTasks(true);
+      const res = await subTasksApiService.getSubTasks(selectedTaskId);
+      if (res.done) {
+        setSubTasks(res.body);
+      }
+    } catch (error) {
+      logger.error('Error fetching sub tasks:', error);
+    } finally {
+      setLoadingSubTasks(false);
+    }
+  }, [selectedTaskId]);
+
+  // ── Socket listener: keep drawer subtasks in sync with task list ──────────
+  useEffect(() => {
+    if (!socket || !selectedTaskId) return;
+
+    // Subtask reorder completed — re-fetch to show the new order.
+    const handleSubtaskReorderAck = (response: { done: boolean; parent_task_id?: string }) => {
+      if (!response.done || !response.parent_task_id) return;
+      if (response.parent_task_id !== selectedTaskId) return;
+      fetchSubTasks();
+    };
+
+    // New subtask created from the task list — re-fetch so it appears
+    // immediately in the drawer without requiring a page refresh.
+    const handleQuickTask = (task: { id?: string; parent_task_id?: string }) => {
+      if (!task?.parent_task_id) return;
+      if (task.parent_task_id !== selectedTaskId) return;
+      fetchSubTasks();
+    };
+
+    // Project updates (e.g., status renamed) — re-fetch subtasks to sync status names
+    const handleProjectUpdatesAvailable = () => {
+      fetchSubTasks();
+    };
+
+    socket.on(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), handleSubtaskReorderAck);
+    socket.on(SocketEvents.QUICK_TASK.toString(), handleQuickTask);
+    socket.on(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(), handleProjectUpdatesAvailable);
+    return () => {
+      socket.off(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), handleSubtaskReorderAck);
+      socket.off(SocketEvents.QUICK_TASK.toString(), handleQuickTask);
+      socket.off(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(), handleProjectUpdatesAvailable);
+    };
+  }, [socket, selectedTaskId, fetchSubTasks]);
+
+  const fetchTaskDependencies = useCallback(async () => {
+    if (!selectedTaskId) return;
+    try {
+      setLoadingTaskDependencies(true);
+      const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
+      if (res.done) {
+        setTaskDependencies(res.body);
+        dispatch(
+          updateTaskCounts({
+            taskId: selectedTaskId,
+            counts: { has_dependencies: res.body.length > 0 },
+          })
+        );
+      }
+    } catch (error) {
+      logger.error('Error fetching task dependencies:', error);
+    } finally {
+      setLoadingTaskDependencies(false);
+    }
+  }, [selectedTaskId, dispatch]);
+
+  const fetchTaskAttachments = useCallback(async () => {
+    if (!selectedTaskId) return;
+    try {
+      setLoadingTaskAttachments(true);
+      const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
+      if (res.done) {
+        setTaskAttachments(res.body);
+        dispatch(
+          updateTaskCounts({
+            taskId: selectedTaskId,
+            counts: { attachments_count: res.body.length },
+          })
+        );
+      }
+    } catch (error) {
+      logger.error('Error fetching task attachments:', error);
+    } finally {
+      setLoadingTaskAttachments(false);
+    }
+  }, [selectedTaskId, dispatch]);
+
+  const fetchTaskComments = useCallback(async () => {
+    if (!selectedTaskId) return;
+    try {
+      setLoadingTaskComments(true);
+      const res = await taskCommentsApiService.getByTaskId(selectedTaskId);
+      if (res.done) {
+        setTaskComments(res.body);
+      }
+    } catch (error) {
+      logger.error('Error fetching task comments:', error);
+    } finally {
+      setLoadingTaskComments(false);
+    }
+  }, [selectedTaskId]);
+
   const panelStyle: React.CSSProperties = {
     border: 'none',
     paddingBlock: 0,
@@ -199,7 +385,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     {
       key: 'details',
       label: <Typography.Text strong>{t('taskInfoTab.details.title')}</Typography.Text>,
-      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} />,
+      children: <TaskDetailsForm taskFormViewModel={taskFormViewModel} canCreateTask={canCreateTask} isGuest={isGuest} />,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
     },
@@ -214,6 +400,8 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
                 projectId={projectId || null}
                 task={(taskFormViewModel?.task as ITaskViewModel) || null}
                 teamMembers={taskFormViewModel?.team_members || []}
+                isGuest={isGuest}
+                canCreateTask={canCreateTask}
               />
             ),
             style: panelStyle,
@@ -229,6 +417,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
           description={taskFormViewModel?.task?.description || null}
           taskId={taskFormViewModel?.task?.id || ''}
           parentTaskId={taskFormViewModel?.task?.parent_task_id || ''}
+          isGuest={isGuest}
         />
       ),
       style: panelStyle,
@@ -241,8 +430,9 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
         <SubTaskTable
           subTasks={subTasks}
           loadingSubTasks={loadingSubTasks}
-          refreshSubTasks={() => fetchSubTasks()}
+          refreshSubTasks={fetchSubTasks}
           canCreateTask={canCreateTask}
+          isGuest={isGuest}
           t={t}
         />
       ),
@@ -259,6 +449,8 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
           taskDependencies={taskDependencies}
           loadingTaskDependencies={loadingTaskDependencies}
           refreshTaskDependencies={() => fetchTaskDependencies()}
+          canCreateTask={canCreateTask}
+          isGuest={isGuest}
         />
       ),
       style: panelStyle,
@@ -267,7 +459,30 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     {
       key: 'attachments',
       label: <Typography.Text strong>{t('taskInfoTab.attachments.title')}</Typography.Text>,
-      children: (
+      children: isGuest ? (
+        // For guests, show attachments in read-only mode (no upload controls)
+        <Flex vertical gap={16}>
+          <AttachmentsGrid
+            attachments={taskAttachments}
+            onUpload={() => fetchTaskAttachments()}
+            onUpgradeRequested={() => {
+              if (isAppSumoUser) {
+                trackAppSumoEvent(AppSumoUpsellEvents.TASK_ATTACHMENT_UPGRADE_CLICKED, { feature: 'task_attachments' });
+              }
+              dispatch(toggleUpgradeModal());
+            }}
+            t={t}
+            loadingTask={loadingTask}
+            uploading={false}
+            handleFilesSelected={() => {}} // Noop for guests
+            maxFileSizeMb={attachmentSizeLimitMb}
+            showUpgradeLink={false}
+            uploadProgressItems={[]}
+            isGuest={true}
+          />
+        </Flex>
+      ) : (
+        // For non-guests, show full upload functionality
         <Flex vertical gap={16}>
           <AttachmentsGrid
             attachments={taskAttachments}
@@ -277,7 +492,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
               if (isAppSumoUser) {
                 trackAppSumoEvent(AppSumoUpsellEvents.TASK_ATTACHMENT_UPGRADE_CLICKED, { feature: 'task_attachments' });
               }
-              promptUpgrade();
+              dispatch(toggleUpgradeModal());
             }}
             t={t}
             loadingTask={loadingTask}
@@ -285,6 +500,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
             handleFilesSelected={handleFilesSelected}
             maxFileSizeMb={attachmentSizeLimitMb}
             showUpgradeLink={!hasBusinessAccess}
+            uploadProgressItems={uploadProgressItems}
           />
         </Flex>
       ),
@@ -296,7 +512,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
       label: <Typography.Text strong>{t('taskInfoTab.comments.title')}</Typography.Text>,
       style: panelStyle,
       className: 'custom-task-drawer-info-collapse',
-      children: <TaskComments taskId={selectedTaskId || ''} t={t} />,
+      children: <TaskComments taskId={selectedTaskId || ''} t={t} isGuest={isGuest} />,
     },
   ];
 
@@ -304,82 +520,6 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     (taskFormViewModel?.task?.task_level ?? 0) >= 2
       ? allInfoItems.filter(item => item.key !== 'subTasks')
       : allInfoItems;
-
-  const fetchSubTasks = async () => {
-    if (!selectedTaskId || loadingSubTasks) return;
-    try {
-      setLoadingSubTasks(true);
-      const res = await subTasksApiService.getSubTasks(selectedTaskId);
-      if (res.done) {
-        setSubTasks(res.body);
-      }
-    } catch (error) {
-      logger.error('Error fetching sub tasks:', error);
-    } finally {
-      setLoadingSubTasks(false);
-    }
-  };
-
-  const fetchTaskDependencies = async () => {
-    if (!selectedTaskId || loadingTaskDependencies) return;
-    try {
-      setLoadingTaskDependencies(true);
-      const res = await taskDependenciesApiService.getTaskDependencies(selectedTaskId);
-      if (res.done) {
-        setTaskDependencies(res.body);
-        dispatch(
-          updateTaskCounts({
-            taskId: selectedTaskId,
-            counts: {
-              has_dependencies: res.body.length > 0,
-            },
-          })
-        );
-      }
-    } catch (error) {
-      logger.error('Error fetching task dependencies:', error);
-    } finally {
-      setLoadingTaskDependencies(false);
-    }
-  };
-
-  const fetchTaskAttachments = async () => {
-    if (!selectedTaskId || loadingTaskAttachments) return;
-    try {
-      setLoadingTaskAttachments(true);
-      const res = await taskAttachmentsApiService.getTaskAttachments(selectedTaskId);
-      if (res.done) {
-        setTaskAttachments(res.body);
-        dispatch(
-          updateTaskCounts({
-            taskId: selectedTaskId,
-            counts: {
-              attachments_count: res.body.length,
-            },
-          })
-        );
-      }
-    } catch (error) {
-      logger.error('Error fetching task attachments:', error);
-    } finally {
-      setLoadingTaskAttachments(false);
-    }
-  };
-
-  const fetchTaskComments = async () => {
-    if (!selectedTaskId || loadingTaskComments) return;
-    try {
-      setLoadingTaskComments(true);
-      const res = await taskCommentsApiService.getByTaskId(selectedTaskId);
-      if (res.done) {
-        setTaskComments(res.body);
-      }
-    } catch (error) {
-      logger.error('Error fetching task comments:', error);
-    } finally {
-      setLoadingTaskComments(false);
-    }
-  };
 
   useEffect(() => {
     // FIX: Only fetch and reset data when selectedTaskId changes to a REAL
@@ -399,14 +539,22 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
     // Check if we need to fetch data:
     // 1. If it's a different task than before, OR
     // 2. If it's the same task but taskFormViewModel is empty (drawer was closed and reopened), OR
-    // 3. If it's the same task but local state is empty (cleanup ran when drawer closed)
+    // 3. If it's the same task but local state is incomplete (e.g., no assignee metadata yet)
     const isDifferentTask = selectedTaskId !== prevTaskIdRef.current;
-    const isDataMissing = !taskFormViewModel || !taskFormViewModel.task;
-    const isLocalStateMissing =
-      taskAttachments.length === 0 || subTasks.length === 0 || taskDependencies.length === 0;
+    const isDataMissing =
+      !taskFormViewModel?.task?.id ||
+      !taskFormViewModel.task?.name ||
+      (
+        !taskFormViewModel.task?.assignee_names?.length &&
+        !!taskFormViewModel.task?.assignees?.length
+      ) ||
+      (
+        !taskFormViewModel.task?.names?.length &&
+        !!taskFormViewModel.task?.assignees?.length
+      );
 
-    if (!isDifferentTask && !isDataMissing && !isLocalStateMissing) {
-      // Same task and data is already loaded, skip fetch
+    if (!isDifferentTask && !isDataMissing) {
+      // Same task and task details are already loaded, skip fetch.
       return;
     }
 
@@ -427,7 +575,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask }: TaskDrawerInfoTabProps) => {
       selectedFilesRef.current = [];
       setTaskComments([]);
     };
-  }, [selectedTaskId, projectId]);
+  }, [selectedTaskId, projectId, fetchSubTasks]);
 
   return (
     <Skeleton active loading={loadingTask}>

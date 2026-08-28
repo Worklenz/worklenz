@@ -2,6 +2,9 @@
   "keyColumn": "ID",
   "taskColumn": "任务",
   "descriptionColumn": "描述",
+  "descriptionSaveOffline": "您已离线 — 描述未保存。请重新连接后再试。",
+  "descriptionSaveTimeout": "保存描述超时,请重试。",
+  "descriptionSaveFailed": "保存描述失败,请重试。",
   "progressColumn": "进度",
   "membersColumn": "成员",
   "assigneesColumn": "受托人",
@@ -72,21 +75,18 @@
   "clearStartDate": "清除开始日期",
   "dueDatePlaceholder": "截止日期",
   "startDatePlaceholder": "开始日期",
-
   "exampleTasks": {
     "prefix": "例如",
     "task1": "定义项目范围和目标",
     "task2": "与利益相关者审查和对齐",
     "task3": "安排启动会议"
   },
-
   "emptyStates": {
     "noTaskGroups": "未找到任务组",
     "noTaskGroupsDescription": "创建任务或应用筛选器后，任务将显示在此处。",
     "errorPrefix": "错误：",
     "dragTaskFallback": "任务"
   },
-
   "customColumns": {
     "addCustomColumn": "添加自定义列",
     "customColumnHeader": "自定义列",
@@ -108,7 +108,13 @@
       "noMembersFound": "未找到成员",
       "inviteMember": "邀请成员"
     },
-
+    "limitPopover": {
+      "title": "已达到自定义字段限制",
+      "body": "您已用完方案中可用的 {{limit}} 个自定义字段。请升级方案以为项目添加无限自定义字段。",
+      "appSumoTitle": "需要升级方案",
+      "appSumoBody": "添加超出当前方案限制的自定义字段需要 Business 方案。",
+      "cta": "立即升级"
+    },
     "modal": {
       "addFieldTitle": "添加字段",
       "editFieldTitle": "编辑字段",
@@ -129,7 +135,6 @@
       "createErrorMessage": "创建自定义列失败",
       "updateErrorMessage": "更新自定义列失败"
     },
-
     "fieldTypes": {
       "people": "人员",
       "text": "文本",
@@ -140,9 +145,39 @@
       "labels": "标签",
       "key": "键",
       "formula": "公式"
+    },
+    "fieldTypeForms": {
+      "numberType": "数字类型",
+      "numberTypeOptions": {
+        "unformatted": "未格式化",
+        "percentage": "百分比",
+        "withLabel": "带标签",
+        "formatted": "已格式化"
+      },
+      "decimals": "小数位数",
+      "preview": "预览",
+      "label": "标签",
+      "position": "位置",
+      "left": "左",
+      "right": "右",
+      "firstColumn": "第一列",
+      "secondColumn": "第二列",
+      "expression": "表达式",
+      "selectFirstColumn": "选择第一列",
+      "selectSecondColumn": "选择第二列",
+      "expressionOptions": {
+        "add": "+ 加",
+        "subtract": "- 减",
+        "divide": "/ 除",
+        "multiply": "x 乘"
+      },
+      "selections": "选项",
+      "addSelection": "+ 添加选项",
+      "labels": "标签",
+      "addLabel": "+ 添加标签",
+      "keyLabelPlaceholder": "例如：MK"
     }
   },
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} 个子任务",
@@ -156,7 +191,6 @@
       "recurring": "重复任务"
     }
   },
-
   "timer": {
     "conflictTitle": "计时器已在运行",
     "conflictMessage": "您在项目\"{{projectName}}\"中的\"{{taskName}}\"任务正在运行计时器。您是否要停止该计时器并为此任务启动新的计时器？",

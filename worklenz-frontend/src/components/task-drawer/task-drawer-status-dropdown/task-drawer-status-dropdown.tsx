@@ -24,9 +24,10 @@ interface TaskDrawerStatusDropdownProps {
   statuses: ITaskStatus[];
   task: ITaskViewModel;
   teamId: string;
+  disabled?: boolean;
 }
 
-const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDropdownProps) => {
+const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: TaskDrawerStatusDropdownProps) => {
   const { socket } = useSocket();
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -139,12 +140,15 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId }: TaskDrawerStatusDr
           variant="borderless"
           value={task.status_id}
           onChange={handleStatusChange}
+          disabled={disabled}
           dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}
           style={
             {
               backgroundColor: resolvedStatusBackground,
               borderRadius: 16,
               '--task-drawer-status-bg': resolvedStatusBackground,
+              opacity: disabled ? 0.6 : 1,
+              cursor: disabled ? 'not-allowed' : 'pointer',
             } as CSSProperties
           }
           labelRender={status => {

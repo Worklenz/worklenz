@@ -1,0 +1,68 @@
+/* Mirrors Home > Overview's stat-card grid (HomeStatCards.tsx) but with six
+   tiles instead of four — one row on desktop, collapsing on narrower
+   viewports so the tiles never get too cramped to read. */
+.time-entries-stat-cards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .time-entries-stat-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .time-entries-stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Filters + view toggle row — stacks on mobile like the Overview task list's
+   own header controls (see tasks-list.css .task-list-mobile-controls). */
+.time-entries-filters-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .time-entries-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Font/spacing parity with Home > Log Time's Recently Logged table
+   (home-log-time.css .recent-logs-card) — same 12px cells and 8px padding
+   so both tables read as one consistent style across the app. */
+.time-entries-log-table .ant-table {
+  font-size: 12px;
+}
+
+.time-entries-log-table .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 8px !important;
+}
+
+.time-entries-log-table .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 8px !important;
+}
+
+/* Flat log table — same responsive-scroll pattern as the Overview priority
+   table (tasks-list.css): a horizontally-scrolling wrapper below the
+   breakpoint instead of squeezing seven columns into a narrow screen. */
+@media (max-width: 900px) {
+  .time-entries-log-table .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .time-entries-log-table .ant-table {
+    min-width: 720px;
+  }
+}

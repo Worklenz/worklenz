@@ -1,6 +1,6 @@
 import { PriorityColorCodes, TASK_PRIORITY_COLOR_ALPHA, TASK_STATUS_COLOR_ALPHA } from "../../shared/constants";
 import { getColor } from "../../shared/utils";
-import WorklenzControllerBase from ".././worklenz-controller-base";
+import WorklenzControllerBase from "../worklenz-controller-base";
 
 export const GroupBy = {
   STATUS: "status",

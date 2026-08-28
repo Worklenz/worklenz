@@ -28,6 +28,7 @@ import CustomAvatar from '@/components/CustomAvatar';
 import { colors } from '@/styles/colors';
 import './switchTeam.css';
 import { useEffect, memo } from 'react';
+import { useTooltipTheme } from '@/hooks/useTooltipTheme';
 
 const SwitchTeamButton = () => {
   const dispatch = useAppDispatch();
@@ -37,6 +38,7 @@ const SwitchTeamButton = () => {
   const session = getCurrentSession();
   const { t } = useTranslation('navbar');
   const { setIdentity, trackMixpanelEvent } = useMixpanelTracking();
+  const { tooltipProps } = useTooltipTheme();
 
   // Selectors
   const teamsList = useAppSelector(state => state.teamReducer.teamsList);
@@ -63,13 +65,28 @@ const SwitchTeamButton = () => {
   const handleTeamSelect = async (id: string) => {
     if (!id) return;
 
-    trackMixpanelEvent(evt_common_switch_team);
-    await dispatch(setActiveTeam(id));
-    await handleVerifyAuth();
-    // Redirect to home page after switching teams
-    navigate('/worklenz/home');
-    // Force a full reload to ensure the new team session is properly loaded
-    window.location.href = '/worklenz/home';
+    try {
+      trackMixpanelEvent(evt_common_switch_team);
+      
+      // Switch team and wait for backend to complete the activation
+      await dispatch(setActiveTeam(id)).unwrap();
+      
+      // Add a small delay to ensure database transaction is committed
+      // and session is properly updated before verifying
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verify authentication to get the updated user session with new team
+      await handleVerifyAuth();
+      
+      // Reload the current page so the new team's session/data loads while
+      // keeping the user where they were. Pages/routes that aren't valid for
+      // the new team already redirect away via their own guards (e.g.
+      // AdminGuard, LicenseExpiryGuard, project-view.tsx's 403 handling).
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to switch team:', error);
+      // Optionally show error message to user
+    }
   };
 
   const renderTeamCard = (team: any, index: number) => (
@@ -116,7 +133,7 @@ const SwitchTeamButton = () => {
       trigger={['click']}
       placement="bottomRight"
     >
-      <Tooltip title={t('switchTeamTooltip')} trigger={'hover'}>
+      <Tooltip title={t('switchTeamTooltip')} trigger={'hover'} {...tooltipProps}>
         <Flex
           gap={12}
           align="center"

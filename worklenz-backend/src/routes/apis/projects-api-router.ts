@@ -10,6 +10,7 @@ import projectManagerValidator from "../../middlewares/validators/project-manage
 import projectMemberValidator from "../../middlewares/validators/project-member-validator";
 import verifyProjectAccess from "../../middlewares/verify-project-access";
 import projectFilesApiRouter from "./project-files-api-router";
+import projectLinksApiRouter from "./project-links-api-router";
 
 const projectsApiRouter = express.Router();
 
@@ -112,5 +113,6 @@ projectsApiRouter.get(
 );
 
 projectsApiRouter.use("/:projectId/files", projectFilesApiRouter);
+projectsApiRouter.use("/:projectId/links", projectLinksApiRouter);
 
 export default projectsApiRouter;

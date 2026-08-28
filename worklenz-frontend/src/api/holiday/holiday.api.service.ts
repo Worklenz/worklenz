@@ -701,69 +701,42 @@ export const holidayApiService = {
       const year = new Date(params.from_date).getFullYear();
       let allHolidays: IHolidayCalendarEvent[] = [];
 
-      // Get official holidays - handle Sri Lanka specially, others from API
+      // Get official holidays from API for all countries including Sri Lanka
       if (params.country_code) {
         console.log(
           `🌐 Fetching official holidays for country: ${params.country_code}, year: ${year}`
         );
 
-        // Handle Sri Lankan holidays from static data
-        if (params.country_code === 'LK' && year === 2025) {
-          try {
-            console.log('🇱🇰 Loading Sri Lankan holidays from static data...');
-            const { sriLankanHolidays2025 } = await import('@/data/sri-lanka-holidays-2025');
+        try {
+          // Fetch from backend API - this includes Poya days stored in the database
+          const countryHolidaysRes = await holidayApiService.getCountryHolidays(
+            params.country_code,
+            year
+          );
+          console.log('📅 Country holidays response:', countryHolidaysRes);
 
-            const sriLankanHolidays = sriLankanHolidays2025
-              .filter(h => h.date >= params.from_date && h.date <= params.to_date)
-              .map(h => ({
-                id: `lk-${h.date}-${h.name.replace(/\\s+/g, '-').toLowerCase()}`,
+          if (countryHolidaysRes.done && countryHolidaysRes.body) {
+            const officialHolidays = countryHolidaysRes.body
+              .filter((h: any) => h.date >= params.from_date && h.date <= params.to_date)
+              .map((h: any) => ({
+                id: `${params.country_code}-${h.id}`,
                 name: h.name,
                 description: h.description,
                 date: h.date,
                 is_recurring: h.is_recurring,
-                holiday_type_name: h.type,
-                color_code: h.color_code,
+                holiday_type_name: 'Official Holiday',
+                color_code: h.color_code || '#1890ff',
                 source: 'official' as const,
                 is_editable: false,
               }));
 
-            console.log(`✅ Found ${sriLankanHolidays.length} Sri Lankan holidays`);
-            allHolidays.push(...sriLankanHolidays);
-          } catch (error) {
-            console.error('❌ Error loading Sri Lankan holidays:', error);
+            console.log(`✅ Found ${officialHolidays.length} official holidays from API`);
+            allHolidays.push(...officialHolidays);
+          } else {
+            console.log('⚠️ No official holidays returned from API');
           }
-        } else {
-          // Handle other countries from API
-          try {
-            const countryHolidaysRes = await holidayApiService.getCountryHolidays(
-              params.country_code,
-              year
-            );
-            console.log('📅 Country holidays response:', countryHolidaysRes);
-
-            if (countryHolidaysRes.done && countryHolidaysRes.body) {
-              const officialHolidays = countryHolidaysRes.body
-                .filter((h: any) => h.date >= params.from_date && h.date <= params.to_date)
-                .map((h: any) => ({
-                  id: `${params.country_code}-${h.id}`,
-                  name: h.name,
-                  description: h.description,
-                  date: h.date,
-                  is_recurring: h.is_recurring,
-                  holiday_type_name: 'Official Holiday',
-                  color_code: h.color_code || '#1890ff',
-                  source: 'official' as const,
-                  is_editable: false,
-                }));
-
-              console.log(`✅ Found ${officialHolidays.length} official holidays from API`);
-              allHolidays.push(...officialHolidays);
-            } else {
-              console.log('⚠️ No official holidays returned from API');
-            }
-          } catch (error) {
-            console.error('❌ Error fetching official holidays from API:', error);
-          }
+        } catch (error) {
+          console.error('❌ Error fetching official holidays from API:', error);
         }
       } else {
         console.log('⚠️ No country code provided, skipping official holidays');
@@ -794,6 +767,7 @@ export const holidayApiService = {
 
         allHolidays.push(...uniqueCustomHolidays);
       }
+
       return {
         done: true,
         body: allHolidays,

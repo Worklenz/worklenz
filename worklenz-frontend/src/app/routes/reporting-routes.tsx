@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import ReportingLayout from '@/layouts/ReportingLayout';
 import { ReportingMenuItems, reportingsItems } from '@/lib/reporting/reporting-constants';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
+import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
 
 //  function to flatten nested menu items
 const flattenItems = (items: ReportingMenuItems[]): ReportingMenuItems[] => {
@@ -20,10 +21,13 @@ const reportingRoutes: RouteObject[] = [
   {
     path: 'worklenz/reporting',
     element: <ReportingLayout />,
-    children: flattenedItems.map(item => ({
-      path: item.endpoint,
-      element: <Suspense fallback={<SuspenseFallback />}>{item.element}</Suspense>,
-    })),
+    children: [
+      { index: true, element: <NavSurfaceIndexRedirect surfaceKey="reporting" /> },
+      ...flattenedItems.map(item => ({
+        path: item.endpoint,
+        element: <Suspense fallback={<SuspenseFallback />}>{item.element}</Suspense>,
+      })),
+    ],
   },
 ];
 

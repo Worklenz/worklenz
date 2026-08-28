@@ -62,7 +62,7 @@ const AllTasksShowFieldsDropdown = () => {
       trigger={['click']}
       placement="bottomRight"
     >
-      <Button>
+      <Button style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}>
         <Flex align="center" gap={4}>
           {t('showFields', { defaultValue: 'Show Fields' })}
           <CaretDownFilled />

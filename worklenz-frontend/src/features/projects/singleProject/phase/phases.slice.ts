@@ -117,6 +117,29 @@ export const updatePhaseName = createAsyncThunk(
     }
   }
 );
+
+export const updatePhaseDefaultAssignee = createAsyncThunk(
+  'phase/updatePhaseDefaultAssignee',
+  async (
+    {
+      phaseId,
+      projectId,
+      defaultAssigneeId,
+    }: { phaseId: string; projectId: string; defaultAssigneeId: string | null },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await phasesApiService.updateDefaultAssignee(
+        phaseId,
+        projectId,
+        defaultAssigneeId
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
 const phaseSlice = createSlice({
   name: 'phaseReducer',
   initialState,
@@ -144,14 +167,66 @@ const phaseSlice = createSlice({
     builder.addCase(fetchPhasesByProjectId.rejected, state => {
       state.loadingPhases = false;
     });
-    builder.addCase(updatePhaseOrder.pending, state => {
-      state.loadingPhases = true;
+    builder.addCase(updatePhaseDefaultAssignee.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const updated = action.payload.body;
+        const idx = state.phaseList.findIndex(p => p.id === updated.id);
+        if (idx !== -1) {
+          state.phaseList[idx] = {
+            ...state.phaseList[idx],
+            default_assignee_id: updated.default_assignee_id,
+            default_assignee_name: updated.default_assignee_name,
+            default_assignee_avatar_url: updated.default_assignee_avatar_url,
+          };
+        }
+      }
     });
-    builder.addCase(updatePhaseOrder.fulfilled, (state, action) => {
-      state.loadingPhases = false;
+
+    // Optimistic updates — patch only the affected item so the popup never remounts.
+    builder.addCase(addPhaseOption.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const newPhase = action.payload.body;
+        state.phaseList.push({
+          ...newPhase,
+          color_code:
+            newPhase.color_code?.length === 9
+              ? newPhase.color_code.slice(0, 7)
+              : newPhase.color_code,
+        });
+      }
     });
-    builder.addCase(updatePhaseOrder.rejected, state => {
-      state.loadingPhases = false;
+
+    builder.addCase(updatePhaseColor.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const updated = action.payload.body;
+        const idx = state.phaseList.findIndex(p => p.id === updated.id);
+        if (idx !== -1) {
+          state.phaseList[idx] = {
+            ...state.phaseList[idx],
+            color_code:
+              updated.color_code?.length === 9
+                ? updated.color_code.slice(0, 7)
+                : updated.color_code,
+          };
+        }
+      }
+    });
+
+    builder.addCase(updatePhaseName.fulfilled, (state, action) => {
+      if (action.payload?.body) {
+        const updated = action.payload.body;
+        const idx = state.phaseList.findIndex(p => p.id === updated.id);
+        if (idx !== -1) {
+          state.phaseList[idx] = { ...state.phaseList[idx], name: updated.name };
+        }
+      }
+    });
+
+    builder.addCase(deletePhaseOption.fulfilled, (state, action) => {
+      // Backend returns RETURNING id, so body is { id } of the deleted phase.
+      if (action.payload?.body?.id) {
+        state.phaseList = state.phaseList.filter(p => p.id !== action.payload.body.id);
+      }
     });
   },
 });

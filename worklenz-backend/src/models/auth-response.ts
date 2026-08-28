@@ -6,6 +6,9 @@ export class AuthResponse {
   private title: string | null = null;
   private auth_error: string | null = null;
   private message: string | null = null;
+  // Mirrors ServerResponse's `done` semantics so the frontend's global response
+  // interceptor renders `message` as a success toast rather than an error toast.
+  private done = false;
 
   constructor(title: string | null, authenticated: boolean, user: IPassportSession | null, auth_error: string | null, message: string | null) {
     this.title = title;
@@ -13,5 +16,6 @@ export class AuthResponse {
     this.user = user;
     this.auth_error = auth_error;
     this.message = message;
+    this.done = !auth_error;
   }
 }

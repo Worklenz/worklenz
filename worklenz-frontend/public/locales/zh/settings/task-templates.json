@@ -1,9 +1,15 @@
 {
+  "pageTitle": "任务模板",
   "nameColumn": "名称",
   "createdColumn": "创建时间",
   "editToolTip": "编辑",
   "deleteToolTip": "删除",
   "confirmText": "您确定吗？",
   "okText": "是",
-  "cancelText": "取消"
+  "cancelText": "取消",
+  "noTemplatesYet": "暂无任务模板",
+  "step1": "导航到一个项目并打开它。",
+  "step2": "使用批量编辑选项选择任务。",
+  "step3": "在批量操作栏中点击更多选项，然后选择创建任务模板。",
+  "totalItems": "总项目数"
 }

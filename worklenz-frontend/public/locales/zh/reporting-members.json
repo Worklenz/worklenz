@@ -9,8 +9,12 @@
   "customRangeText": "自定义范围",
   "startDateInputPlaceholder": "开始日期",
   "EndDateInputPlaceholder": "结束日期",
+  "quickRanges": "快速范围",
+  "readyToApplyCustomRange": "准备应用自定义范围",
+  "selectStartEndDates": "选择开始和结束日期",
   "filterButton": "筛选",
   "membersTitle": "成员",
+  "membersHeaderTitle": "成员 ({{count}})",
   "includeArchivedButton": "包含已归档项目",
   "exportButton": "导出",
   "excelButton": "Excel",
@@ -27,5 +31,6 @@
   "ongoingTasksColumnTooltip": "已开始但尚未完成的任务",
   "todoText": "待办",
   "doingText": "进行中",
-  "doneText": "已完成"
+  "doneText": "已完成",
+  "customDateRangeInvalidError": "结束日期不能早于开始日期。请选择有效的日期范围。"
 }

@@ -10,6 +10,7 @@
   "tasksProgressColumn": "Progreso de Tareas",
   "lastActivityColumn": "Última Actividad",
   "statusColumn": "Estado",
+  "priorityColumn": "Prioridad",
   "datesColumn": "Fechas Inicio/Fin",
   "daysLeftColumn": "Días Restantes/Atrasados",
   "projectHealthColumn": "Salud del Proyecto",

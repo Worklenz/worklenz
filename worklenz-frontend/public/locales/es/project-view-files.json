@@ -46,5 +46,22 @@
   "taskColumn": "Tarea",
   "taskAttachmentsEmptyText": "No se encontraron archivos adjuntos de tareas.",
   "taskAttachmentDeleteSuccess": "Archivo adjunto eliminado exitosamente.",
-  "taskAttachmentDeleteFailed": "No se pudo eliminar el archivo adjunto."
+  "taskAttachmentDeleteFailed": "No se pudo eliminar el archivo adjunto.",
+  "linksTab": "Enlaces",
+  "addLink": "Agregar Enlace",
+  "editLink": "Editar Enlace",
+  "linkTitle": "Título",
+  "linkTitleRequired": "El título es obligatorio",
+  "linkUrl": "URL",
+  "linkDescription": "Descripción",
+  "linkDescriptionPlaceholder": "Descripción opcional",
+  "linkSource": "Origen",
+  "linkAddedBy": "Agregado por",
+  "linkAddedOn": "Agregado el",
+  "linkLastModified": "Última modificación",
+  "invalidUrl": "Por favor ingrese una URL válida",
+  "deleteLink": "Eliminar enlace",
+  "openTask": "Abrir tarea",
+  "fromTask": "De: {{taskName}}",
+  "noLinks": "Aún no hay enlaces. Haga clic en \"Agregar Enlace\" para agregar su primer enlace."
 }

@@ -20,8 +20,10 @@ export const authApiService = {
     return response.data;
   },
 
-  async verify(): Promise<IAuthorizeResponse> {
-    const response = await apiClient.get<IAuthorizeResponse>(`${rootUrl}/verify`);
+  async verify(silent = false): Promise<IAuthorizeResponse> {
+    const response = await apiClient.get<IAuthorizeResponse>(`${rootUrl}/verify`, {
+      headers: silent ? { 'X-Silent-Request': '1' } : undefined,
+    });
     return response.data;
   },
 

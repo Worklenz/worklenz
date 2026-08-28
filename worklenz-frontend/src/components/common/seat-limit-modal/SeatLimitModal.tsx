@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Button, Divider, Flex, Modal, theme, Typography, Steps } from '@/shared/antd-imports';
 import { TeamOutlined, RightOutlined, UserDeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface SeatLimitModalProps {

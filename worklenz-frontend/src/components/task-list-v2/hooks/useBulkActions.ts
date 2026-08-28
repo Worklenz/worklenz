@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { clearSelection } from '@/features/task-management/selection.slice';
-import { fetchTasksV3 } from '@/features/task-management/task-management.slice';
+import { fetchTasksV3, bulkDeleteTasks } from '@/features/task-management/task-management.slice';
+
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
@@ -317,8 +318,8 @@ export const useBulkActions = () => {
         const res = await taskListBulkActionsApiService.deleteTasks(body, projectId);
         if (res.done) {
           trackMixpanelEvent(evt_project_task_list_bulk_delete);
+          dispatch(bulkDeleteTasks(selectedTaskIds));
           dispatch(clearSelection());
-          refetchTasks();
         }
       } catch (error) {
         logger.error('Error deleting tasks:', error);
@@ -326,8 +327,9 @@ export const useBulkActions = () => {
         updateLoadingState('delete', false);
       }
     },
-    [projectId, trackMixpanelEvent, dispatch, refetchTasks, updateLoadingState]
+    [projectId, trackMixpanelEvent, dispatch, updateLoadingState]
   );
+
 
   const handleBulkDuplicate = useCallback(
     async (selectedTaskIds: string[]) => {
@@ -409,13 +411,11 @@ export const useBulkActions = () => {
         };
 
         const res = await taskListBulkActionsApiService.changeStartDate(body, projectId);
-        console.log('START DATE RESPONSE:', res); // temporary log
         if (res.done) {
           trackMixpanelEvent(evt_project_task_list_bulk_change_due_date);
           dispatch(clearSelection());
           await dispatch(fetchTasksV3(projectId)); // wait for refetch to complete
         } else {
-          console.log('res.done is false — API did not return done:true');
           alertService.error('Error', 'Failed to update start date');
         }
       } catch (error) {

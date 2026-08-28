@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Cilësimet",
   "searchSettings": "Kërko cilësimet...",
   "account-personal": "Llogaria dhe personale",
   "workspace-setup": "Konfigurimi i hapësirës së punës",
@@ -34,12 +35,18 @@
   "appearance-search": "temë modalitet i errët modalitet i ndritshëm pamje ndërfaqe",
   "ratecard": "Karta e tarifave",
   "ratecard-search": "financa faturim çmime tarifa kosto kartë tarifash",
+  "organization-currency": "Monedha",
+  "organization-currency-search": "monedhë këmbim valutor kurs organizatë financa konvertim",
   "integrations": "Integrimet",
   "integrations-search": "aplikacione lidhje slack api integrime mjete",
+  "configuration": "Konfigurim",
+  "configuration-search": "konfigurim cilësimet cilësime të përgjithshëm konfigurim organizate",
   "account-deletion": "Fshij Llogarinë",
   "account-deletion-search": "fshij llogarinë hiq profilin zonë rreziku mbyll llogarinë",
   "team-hierarchy": "Hierarkia e Ekipit",
   "team-hierarchy-search": "hierarki organigramë strukturë menaxherë pemë organizative",
   "mobile-app": "Aplikacioni Mobil",
-  "mobile-app-search": "ios android telefon mobil shkarko kod qr dyqan aplikacioni google play"
+  "mobile-app-search": "ios android telefon mobil shkarko kod qr dyqan aplikacioni google play",
+  "configuration": "Konfigurimi",
+  "configuration-search": "konfigurim cilësime hapësirë pune organizatë menaxhim konfigurimi"
 }

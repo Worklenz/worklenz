@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Menaxho Klientët",
   "nameColumn": "Emri",
   "projectColumn": "Projekti",
   "noProjectsAvailable": "Nuk ka projekte të disponueshme",
@@ -18,5 +19,7 @@
   "createClientSuccessMessage": "Klienti u krijua me sukses!",
   "createClientErrorMessage": "Krijimi i klientit dështoi!",
   "updateClientSuccessMessage": "Klienti u përditësua me sukses!",
-  "updateClientErrorMessage": "Përditësimi i klientit dështoi!"
+  "updateClientErrorMessage": "Përditësimi i klientit dështoi!",
+  "editTooltip": "Redakto",
+  "deleteTooltip": "Fshi"
 }

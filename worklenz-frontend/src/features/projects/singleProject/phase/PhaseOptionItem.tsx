@@ -1,10 +1,8 @@
 import { Button, ColorPicker, ConfigProvider, Flex, Input } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
-import { nanoid } from '@reduxjs/toolkit';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   deletePhaseOption,
-  fetchPhasesByProjectId,
   updatePhaseColor,
   updatePhaseName,
 } from './phases.slice';
@@ -58,18 +56,15 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
 
     try {
       const updatedPhase = { ...option, name: phaseName.trim() };
-      const response = await dispatch(
+      await dispatch(
         updatePhaseName({
           phaseId: option.id,
           phase: updatedPhase,
           projectId,
         })
       ).unwrap();
-
-      if (response.done) {
-        dispatch(fetchPhasesByProjectId(projectId));
-        refreshTasks();
-      }
+      // Slice patches the list in-place; no full re-fetch needed.
+      refreshTasks();
     } catch (error) {
       logger.error('Error updating phase name', error);
       setPhaseName(option.name);
@@ -80,14 +75,11 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
     if (!option?.id || !projectId) return;
 
     try {
-      const response = await dispatch(
+      await dispatch(
         deletePhaseOption({ phaseOptionId: option.id, projectId })
       ).unwrap();
-
-      if (response.done) {
-        dispatch(fetchPhasesByProjectId(projectId));
-        refreshTasks();
-      }
+      // Slice removes the item; no full re-fetch needed.
+      refreshTasks();
     } catch (error) {
       logger.error('Error deleting phase option', error);
     }
@@ -98,12 +90,9 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
 
     try {
       const updatedPhase = { ...option, color_code: color };
-      const response = await dispatch(updatePhaseColor({ projectId, body: updatedPhase })).unwrap();
-
-      if (response.done) {
-        dispatch(fetchPhasesByProjectId(projectId));
-        refreshTasks();
-      }
+      await dispatch(updatePhaseColor({ projectId, body: updatedPhase })).unwrap();
+      // Slice patches the color in-place; no full re-fetch needed.
+      refreshTasks();
     } catch (error) {
       logger.error('Error changing phase color', error);
     }
@@ -112,7 +101,7 @@ const PhaseOptionItem = ({ option, projectId, t }: PhaseOptionItemProps) => {
   return (
     <ConfigProvider wave={{ disabled: true }}>
       <div ref={setNodeRef} style={style} {...attributes}>
-        <Flex key={option?.id || nanoid()} align="center" gap={8}>
+        <Flex align="center" gap={8}>
           <div {...listeners} style={{ cursor: 'grab' }}>
             <HolderOutlined />
           </div>

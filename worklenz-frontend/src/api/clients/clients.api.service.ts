@@ -7,6 +7,19 @@ import { toQueryString } from '@/utils/toQueryString';
 const rootUrl = `${API_BASE_URL}/clients`;
 
 export const clientsApiService = {
+  // Lightweight lookup for filter dropdowns — returns {id, name} for all clients
+  // in the current team. Supports server-side search via the optional `search` param
+  // so the result is never capped to an arbitrary page size.
+  async getClientsLookup(search?: string): Promise<IServerResponse<IClient[]>> {
+    const params: Record<string, string> = {};
+    if (search && search.trim()) params['search'] = search.trim();
+    const queryString = Object.keys(params).length ? toQueryString(params) : '';
+    const response = await apiClient.get<IServerResponse<IClient[]>>(
+      `${rootUrl}/lookup${queryString}`
+    );
+    return response.data;
+  },
+
   // Get all clients
   async getClients(
     index: number,
@@ -15,8 +28,7 @@ export const clientsApiService = {
     order: string | null,
     search?: string | null
   ): Promise<IServerResponse<IClientsViewModel>> {
-    const s = encodeURIComponent(search || '');
-    const queryString = toQueryString({ index, size, field, order, search: s });
+    const queryString = toQueryString({ index, size, field, order, search: search || '' });
     const response = await apiClient.get<IServerResponse<IClientsViewModel>>(
       `${rootUrl}${queryString}`
     );

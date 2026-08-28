@@ -6,6 +6,7 @@
   "phaseText": "阶段",
   "priorityText": "优先级",
   "exportButton": "导出",
+  "exportAsExcelButton": "导出为Excel",
   "currencyText": "货币",
   "importButton": "导入",
   "filterText": "筛选",

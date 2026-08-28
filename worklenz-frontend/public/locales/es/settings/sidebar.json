@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Ajustes",
   "searchSettings": "Buscar configuraciones...",
   "account-personal": "Cuenta y personal",
   "workspace-setup": "Configuración del espacio de trabajo",
@@ -34,12 +35,18 @@
   "appearance-search": "tema modo oscuro modo claro interfaz apariencia",
   "ratecard": "Tarifa",
   "ratecard-search": "facturación finanzas precios tarifas costo tarifa",
+  "organization-currency": "Moneda",
+  "organization-currency-search": "moneda divisa tipo de cambio tasa conversión finanzas organización",
   "integrations": "Integraciones",
-  "integrations-search": "aplicaciones conexiones slack api integraciones herramientas",
+  "integrations-search": "apps conexiones slack api system integrations connected tools",
+  "configuration": "Configuración",
+  "configuration-search": "configuración ajustes configuración general configuración de organización",
   "account-deletion": "Eliminar cuenta",
   "account-deletion-search": "eliminar cuenta borrar perfil zona de peligro cerrar cuenta",
   "team-hierarchy": "Jerarquía del equipo",
   "team-hierarchy-search": "jerarquía organigrama estructura gerentes árbol organizacional",
   "mobile-app": "Aplicación móvil",
-  "mobile-app-search": "ios android teléfono móvil descargar código qr app store google play"
+  "mobile-app-search": "ios android teléfono móvil descargar código qr app store google play",
+  "configuration": "Configuración",
+  "configuration-search": "configuración ajustes workspace organización administración de configuración"
 }

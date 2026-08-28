@@ -46,5 +46,22 @@
   "taskColumn": "Task",
   "taskAttachmentsEmptyText": "No task attachments found.",
   "taskAttachmentDeleteSuccess": "Attachment deleted successfully.",
-  "taskAttachmentDeleteFailed": "Unable to delete attachment."
+  "taskAttachmentDeleteFailed": "Unable to delete attachment.",
+  "linksTab": "Links",
+  "addLink": "Add Link",
+  "editLink": "Edit Link",
+  "linkTitle": "Title",
+  "linkTitleRequired": "Title is required",
+  "linkUrl": "URL",
+  "linkDescription": "Description",
+  "linkDescriptionPlaceholder": "Optional description",
+  "linkSource": "Source",
+  "linkAddedBy": "Added By",
+  "linkAddedOn": "Added On",
+  "linkLastModified": "Last Modified",
+  "invalidUrl": "Please enter a valid URL",
+  "deleteLink": "Delete link",
+  "openTask": "Open task",
+  "fromTask": "From: {{taskName}}",
+  "noLinks": "No links yet. Click \"Add Link\" to add your first link."
 }

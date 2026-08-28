@@ -2,6 +2,7 @@
 -- Date: 2025-12-16
 -- Description: Maps TEAM-LEAD access level to PROJECT_MANAGER since Team Lead is a team-wide role, not a project access level.
 --              Also adds fallback to MEMBER for NULL or invalid access levels to prevent constraint violations.
+--              UPDATED 2026-08-19: Added bidirectional validation to prevent Guest users from being added as Members and vice versa.
 
 CREATE OR REPLACE FUNCTION create_project_member(_body json) RETURNS json
     LANGUAGE plpgsql
@@ -16,6 +17,7 @@ DECLARE
     _member_user_id UUID;
     _notification   TEXT;
     _access_level   TEXT;
+    _existing_access_level TEXT;
 BEGIN
     _team_member_id = (_body ->> 'team_member_id')::UUID;
     _team_id = (_body ->> 'team_id')::UUID;
@@ -26,6 +28,41 @@ BEGIN
     -- Map team-lead access level to PROJECT_MANAGER since Team Lead is a role, not a project access level
     IF UPPER(_access_level) IN ('TEAM-LEAD', 'TEAM_LEAD') THEN
         _access_level = 'PROJECT_MANAGER';
+    END IF;
+
+    -- Enforce guest uniqueness across the team: a user cannot have both GUEST and non-GUEST access levels
+    -- Check 1: If adding as GUEST, ensure they don't have a non-GUEST role in the team
+    IF UPPER(_access_level) = 'GUEST' THEN
+        SELECT DISTINCT pal.key
+        INTO _existing_access_level
+        FROM project_members pm
+        JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+        JOIN projects p ON pm.project_id = p.id
+        WHERE pm.team_member_id = _team_member_id
+          AND p.team_id = _team_id
+          AND pal.key != 'GUEST'
+        LIMIT 1;
+
+        IF _existing_access_level IS NOT NULL THEN
+            RAISE 'MEMBER_DIFFERENT_ACCESS_LEVEL:%', _existing_access_level;
+        END IF;
+    END IF;
+
+    -- Check 2: If adding as non-GUEST, ensure they don't have a GUEST role in the team
+    IF UPPER(_access_level) != 'GUEST' THEN
+        SELECT DISTINCT pal.key
+        INTO _existing_access_level
+        FROM project_members pm
+        JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+        JOIN projects p ON pm.project_id = p.id
+        WHERE pm.team_member_id = _team_member_id
+          AND p.team_id = _team_id
+          AND pal.key = 'GUEST'
+        LIMIT 1;
+
+        IF _existing_access_level IS NOT NULL THEN
+            RAISE 'MEMBER_DIFFERENT_ACCESS_LEVEL:GUEST';
+        END IF;
     END IF;
 
     SELECT user_id FROM team_members WHERE id = _team_member_id INTO _member_user_id;

@@ -8,7 +8,37 @@ import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priorit
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { ITaskLogViewModel } from '@/types/tasks/task-log-view.types';
+import { ITaskStatus } from '@/types/tasks/taskStatus.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+
+const normalizeAssigneeNames = (
+  assignees?: IProjectTask['assignees'],
+  names?: InlineMember[] | string[] | null
+): InlineMember[] => {
+  if (names?.length) {
+    if (typeof names[0] === 'string') {
+      return (names as string[]).map(name => ({
+        team_member_id: '',
+        name,
+        avatar_url: '',
+        email: '',
+      } as InlineMember));
+    }
+
+    return names as InlineMember[];
+  }
+
+  if (assignees?.length) {
+    return assignees.map(assignee => ({
+      team_member_id: assignee.team_member_id,
+      name: assignee.name || '',
+      avatar_url: (assignee as any).avatar_url || '',
+      email: (assignee as any).email || '',
+    } as InlineMember));
+  }
+
+  return [];
+};
 
 interface ITaskDrawerState {
   selectedTaskId: string | null;
@@ -16,11 +46,13 @@ interface ITaskDrawerState {
   taskFormViewModel: ITaskFormViewModel | null;
   subscribers: InlineMember[];
   loadingTask: boolean;
+  targetCommentId: string | null;
   timeLogEditing: {
     isEditing: boolean;
     logBeingEdited: ITaskLogViewModel | null;
   };
   navigationContext: {
+
     taskIds: string[];
     currentIndex: number;
     sourceView: 'task-list' | 'kanban' | 'board' | 'home' | 'gantt' | 'workload';
@@ -34,7 +66,9 @@ const initialState: ITaskDrawerState = {
   taskFormViewModel: null,
   subscribers: [],
   loadingTask: false,
+  targetCommentId: null,
   timeLogEditing: {
+
     isEditing: false,
     logBeingEdited: null,
   },
@@ -64,6 +98,33 @@ export const fetchTask = createAsyncThunk(
       response.body.task.name = decodeHtmlEntities(response.body.task.name);
     }
 
+    if (response.body.task) {
+      const currentTask = state.taskManagement.entities[taskId];
+      const normalizedNames = normalizeAssigneeNames(
+        response.body.task.assignees,
+        response.body.task.assignee_names || response.body.task.names
+      );
+
+      if (normalizedNames.length) {
+        response.body.task.assignee_names = normalizedNames;
+        response.body.task.names = normalizedNames as unknown as string[];
+      }
+
+      if (currentTask) {
+        if (!response.body.task.assignees?.length && currentTask.assignees?.length) {
+          response.body.task.assignees = currentTask.assignees as any;
+        }
+
+        if (!response.body.task.assignee_names?.length && currentTask.assignee_names?.length) {
+          response.body.task.assignee_names = currentTask.assignee_names as InlineMember[];
+        }
+
+        if (!response.body.task.names?.length && currentTask.assignee_names?.length) {
+          response.body.task.names = currentTask.assignee_names as unknown as string[];
+        }
+      }
+    }
+
     return response.body;
   }
 );
@@ -80,6 +141,19 @@ const taskDrawerSlice = createSlice({
     setSelectedTaskId: (state, action) => {
       state.selectedTaskId = action.payload;
       state.timeLogEditing = resetTimeLogEditing; // ← reset when switching tasks
+
+      if (action.payload) {
+        state.taskFormViewModel = state.taskFormViewModel?.task?.id === action.payload
+          ? state.taskFormViewModel
+          : {
+              task: {
+                id: action.payload,
+                assignees: [],
+                names: [],
+                assignee_names: [],
+              } as any,
+            };
+      }
     },
     setShowTaskDrawer: (state, action) => {
       state.showTaskDrawer = action.payload;
@@ -90,42 +164,50 @@ const taskDrawerSlice = createSlice({
     setLoadingTask: (state, action) => {
       state.loadingTask = action.payload;
     },
+    setTargetCommentId: (state, action: PayloadAction<string | null>) => {
+      state.targetCommentId = action.payload;
+    },
+
     setTaskStatus: (state, action: PayloadAction<ITaskListStatusChangeResponse>) => {
       if (!action.payload) return;
       const { status_id, color_code, id: taskId, color_code_dark } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.status_id = status_id;
-        state.taskFormViewModel.task.status_color = color_code;
-        state.taskFormViewModel.task.status_color_dark = color_code_dark;
+        state.taskFormViewModel.task.status_id = status_id ?? state.taskFormViewModel.task.status_id;
+        state.taskFormViewModel.task.status_color = color_code ?? state.taskFormViewModel.task.status_color;
+        state.taskFormViewModel.task.status_color_dark = color_code_dark ?? state.taskFormViewModel.task.status_color_dark;
       }
     },
     setStartDate: (state, action: PayloadAction<IProjectTask>) => {
       if (!action.payload) return;
       const { start_date, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.start_date = start_date;
+        if (start_date !== undefined) state.taskFormViewModel.task.start_date = start_date;
       }
     },
     setTaskEndDate: (state, action: PayloadAction<IProjectTask>) => {
       if (!action.payload) return;
       const { end_date, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.end_date = end_date;
+        if (end_date !== undefined) state.taskFormViewModel.task.end_date = end_date;
       }
     },
     setTaskDueTime: (state, action: PayloadAction<{ id: string; due_time: string | null }>) => {
       if (!action.payload) return;
       const { due_time, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.due_time = due_time;
+        (state.taskFormViewModel.task as any).due_time = due_time;
       }
     },
     setTaskAssignee: (state, action: PayloadAction<IProjectTask>) => {
       if (!action.payload) return;
-      const { assignees, id: taskId, names } = action.payload;
+      const { assignees, id: taskId, names, assignee_names } = action.payload as IProjectTask & {
+        assignee_names?: InlineMember[];
+      };
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
         state.taskFormViewModel.task.assignees = (assignees || []).map(m => m.team_member_id);
-        state.taskFormViewModel.task.names = names;
+        const assigneeNames = normalizeAssigneeNames(assignees, assignee_names || names);
+        (state.taskFormViewModel.task as any).names = assigneeNames;
+        (state.taskFormViewModel.task as any).assignee_names = assigneeNames;
       }
     },
     setTaskPriority: (state, action: PayloadAction<ITaskListPriorityChangeResponse>) => {
@@ -138,12 +220,9 @@ const taskDrawerSlice = createSlice({
         priority_value,
       } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.priority_id = priority_id;
+        (state.taskFormViewModel.task as any).priority_id = priority_id;
         // Update priority_value if available (for icon rendering)
-        if (
-          priority_value !== undefined &&
-          state.taskFormViewModel.task.priority_value !== undefined
-        ) {
+        if (priority_value !== undefined) {
           (state.taskFormViewModel.task as any).priority_value = priority_value;
         }
       }
@@ -151,14 +230,14 @@ const taskDrawerSlice = createSlice({
     setTaskPhase: (state, action: PayloadAction<{ phase_id: string | null; id: string }>) => {
       const { phase_id, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.phase_id = phase_id;
+        (state.taskFormViewModel.task as any).phase_id = phase_id;
       }
     },
     setTaskLabels: (state, action: PayloadAction<ILabelsChangeResponse>) => {
       if (!action.payload) return;
       const { all_labels, id: taskId } = action.payload;
       if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
-        state.taskFormViewModel.task.labels = all_labels || [];
+        (state.taskFormViewModel.task as any).labels = all_labels || [];
       }
     },
     setTaskSubscribers: (state, action: PayloadAction<InlineMember[]>) => {
@@ -226,6 +305,20 @@ const taskDrawerSlice = createSlice({
         state.taskFormViewModel.task.description = description ?? '';
       }
     },
+    setTaskEstimation: (
+      state,
+      action: PayloadAction<{ id: string; total_hours: number; total_minutes: number }>
+    ) => {
+      if (!action.payload) return;
+      const { id: taskId, total_hours, total_minutes } = action.payload;
+      if (state.taskFormViewModel?.task && state.taskFormViewModel.task.id === taskId) {
+        // The backend returns total_minutes as the combined value (hours * 60 + minutes).
+        // Decompose it so the form fields show the correct hours and remainder minutes.
+        const combinedMinutes = total_minutes || 0;
+        state.taskFormViewModel.task.total_hours = total_hours || ~~(combinedMinutes / 60);
+        state.taskFormViewModel.task.total_minutes = combinedMinutes % 60;
+      }
+    },
     updateSelectedTaskName: (
       state,
       action: PayloadAction<{
@@ -282,6 +375,11 @@ const taskDrawerSlice = createSlice({
         state.navigationContext.currentIndex = actualIndex;
       }
     },
+    setTaskDrawerStatuses: (state, action: PayloadAction<ITaskStatus[]>) => {
+      if (state.taskFormViewModel) {
+        state.taskFormViewModel.statuses = action.payload;
+      }
+    },
     resetTaskDrawer: state => {
       return initialState;
     },
@@ -294,18 +392,45 @@ const taskDrawerSlice = createSlice({
         state.loadingTask = false;
         if (!action.payload) return;
 
-        // Preserve due_time if already set in current state and API returns null/undefined
-        // This prevents the optimistic update from being wiped by a stale API response
-        const existingDueTime = state.taskFormViewModel?.task?.due_time;
+        const existingTask = state.taskFormViewModel?.task;
+        const existingDueTime = existingTask?.due_time;
+        const existingAssignees = existingTask?.assignees;
+        const existingNames = existingTask?.assignee_names || (existingTask?.names as unknown as InlineMember[]);
+
         state.taskFormViewModel = action.payload;
 
         if (
-          existingDueTime &&
+          existingTask &&
           state.taskFormViewModel?.task &&
-          state.taskFormViewModel.task.id === action.payload.task?.id &&
-          !action.payload.task?.due_time
+          state.taskFormViewModel.task.id === existingTask.id
         ) {
-          state.taskFormViewModel.task.due_time = existingDueTime;
+          if (
+            existingDueTime &&
+            !state.taskFormViewModel.task.due_time
+          ) {
+            state.taskFormViewModel.task.due_time = existingDueTime;
+          }
+
+          if (
+            !state.taskFormViewModel.task?.assignees?.length &&
+            existingAssignees?.length
+          ) {
+            state.taskFormViewModel.task.assignees = existingAssignees;
+          }
+
+          if (
+            !state.taskFormViewModel.task?.assignee_names?.length &&
+            existingNames?.length
+          ) {
+            state.taskFormViewModel.task.assignee_names = normalizeAssigneeNames(undefined, existingNames);
+          }
+
+          if (
+            !state.taskFormViewModel.task?.names?.length &&
+            existingNames?.length
+          ) {
+            (state.taskFormViewModel.task as any).names = normalizeAssigneeNames(undefined, existingNames);
+          }
         }
       }),
       builder.addCase(fetchTask.rejected, (state, action) => {
@@ -319,6 +444,7 @@ export const {
   setShowTaskDrawer,
   setTaskFormViewModel,
   setLoadingTask,
+  setTargetCommentId,
   setTaskStatus,
   setStartDate,
   setTaskEndDate,
@@ -333,11 +459,13 @@ export const {
   setTaskBillable,
   setTaskCustomColumnValue,
   setTaskDescription,
+  setTaskEstimation,
   updateSelectedTaskName,
   setNavigationContext,
   navigateToNextTask,
   navigateToPreviousTask,
   syncNavigationIndex,
+  setTaskDrawerStatuses,
   resetTaskDrawer,
 } = taskDrawerSlice.actions;
 export default taskDrawerSlice.reducer;

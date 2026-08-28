@@ -93,7 +93,7 @@ const TimeSheetTable: React.FC = () => {
   }, [themeMode]);
 
   return (
-    <Spin spinning={loading} tip="Loading...">
+    <Spin spinning={loading} tip={t('loadingText')}>
       <div
         style={{
           overflow: 'auto',
@@ -102,8 +102,8 @@ const TimeSheetTable: React.FC = () => {
         }}
       >
         {members.length == 0 && projects.length == 0 && (
-          <div className="no-data">
-            <Empty description="No data" />
+           <div className="no-data">
+            <Empty description={t('noData')} />
           </div>
         )}
         {/* Columns */}
@@ -115,7 +115,7 @@ const TimeSheetTable: React.FC = () => {
                 {item.name}
               </div>
             ))}
-            <div className="total-time text-center">Total</div>
+            <div className="total-time text-center">{t('total')}</div>
           </div>
         ) : null}
 
@@ -148,7 +148,7 @@ const TimeSheetTable: React.FC = () => {
             {/* total row */}
             {members.length > 0 && (
               <div className="table-row_ d-flex bottom-row">
-                <div className="project-name bg-bold">Total</div>
+                 <div className="project-name bg-bold">{t('total')}</div>
                 {members.map(item => (
                   <div
                     key={item.id}

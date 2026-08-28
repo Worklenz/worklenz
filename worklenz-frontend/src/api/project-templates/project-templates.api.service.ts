@@ -32,6 +32,12 @@ export const projectTemplatesApiService = {
     return response.data;
   },
 
+  getCustomTemplateById: async (templateId: string): Promise<IServerResponse<IProjectTemplate>> => {
+  const response = await apiClient.get(`${rootUrl}/custom-template/${templateId}`);
+  return response.data;
+},
+
+
   setupAccount: async (
     model: IAccountSetupRequest
   ): Promise<IServerResponse<IAccountSetupResponse>> => {
@@ -53,15 +59,23 @@ export const projectTemplatesApiService = {
 
   createFromWorklenzTemplate: async (body: {
     template_id: string;
+    project_name?: string;
+    color_code?: string;
   }): Promise<IServerResponse<IProjectTemplate>> => {
-    const response = await apiClient.post(`${rootUrl}/import-template`, body);
+    const response = await apiClient.post(`${rootUrl}/import-template`, body, {
+      headers: { 'X-Silent-Request': '1' },
+    });
     return response.data;
   },
 
   createFromCustomTemplate: async (body: {
     template_id: string;
+    project_name?: string;
+    color_code?: string;
   }): Promise<IServerResponse<IProjectTemplate>> => {
-    const response = await apiClient.post(`${rootUrl}/import-custom-template`, body);
+    const response = await apiClient.post(`${rootUrl}/import-custom-template`, body, {
+      headers: { 'X-Silent-Request': '1' },
+    });
     return response.data;
   },
 };

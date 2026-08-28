@@ -5,7 +5,6 @@ import {
   Divider,
   Dropdown,
   Input,
-  theme,
   Space,
   CaretDownFilled,
   FilterOutlined,
@@ -25,7 +24,7 @@ const ProjectTeamFilterDropdown: React.FC = () => {
   const dispatch = useAppDispatch();
   const [searchText, setSearchText] = useState('');
   const { t } = useTranslation('reporting-projects-filters');
-  const { token } = theme.useToken();
+  const isDarkMode = useAppSelector(state => state.themeReducer.mode === 'dark');
 
   const { teams, loadingTeams } = useAppSelector(state => state.projectReportsReducer);
 
@@ -43,7 +42,7 @@ const ProjectTeamFilterDropdown: React.FC = () => {
   );
 
   // Theme-aware colors
-  const isDark = token.colorBgContainer !== '#ffffff';
+  const isDark = isDarkMode;
   const colors = {
     headerText: isDark ? '#8c8c8c' : '#595959',
     borderColor: isDark ? '#404040' : '#f0f0f0',

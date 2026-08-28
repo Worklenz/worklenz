@@ -30,8 +30,8 @@ import InfoTabFooter from './shared/info-tab/info-tab-footer';
 import { Flex, Tooltip } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
@@ -54,11 +54,13 @@ const TaskDrawer = () => {
 
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const { isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const isFree = isFreeUser(currentSession);
   const taskNameInputRef = useRef<InputRef>(null);
   const isClosingManually = useRef(false);
   const hydratedProjectIdRef = useRef<string | null>(null);
+
+  // Check if user is a guest in this project
+  const isGuest = project?.is_guest === true;
 
   const { clearTaskFromUrl } = useTaskDrawerUrlSync();
   useTaskDrawerNavigation();
@@ -98,7 +100,13 @@ const TaskDrawer = () => {
         dispatch(getProject(projectId));
       }
 
-      if (selectedTaskId && taskFormViewModel?.task?.id !== selectedTaskId) {
+      if (
+        selectedTaskId &&
+        (
+          taskFormViewModel?.task?.id !== selectedTaskId ||
+          !taskFormViewModel?.task?.name
+        )
+      ) {
         dispatch(fetchTask({ taskId: selectedTaskId, projectId }));
       }
     }
@@ -152,7 +160,7 @@ const TaskDrawer = () => {
 
   const handleTabChange = (key: string) => {
     if (isFree && (key === 'timeLog' || key === 'activityLog')) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
       return;
     }
     setActiveTab(key);
@@ -163,6 +171,7 @@ const TaskDrawer = () => {
   };
 
   const handleAddTimeLog = () => {
+    if (isGuest) return;
     dispatch(setTimeLogEditing({ isEditing: true, logBeingEdited: null }));
   };
 
@@ -173,13 +182,13 @@ const TaskDrawer = () => {
     refreshTimeLogs();
   };
 
-  const handlePremiumTabClick = () => promptUpgrade();
+  const handlePremiumTabClick = () => dispatch(toggleUpgradeModal());
 
   const tabItems: TabsProps['items'] = [
     {
       key: 'info',
       label: t('taskInfoTab.title', { defaultValue: 'Info' }),
-      children: <TaskDrawerInfoTab t={t} canCreateTask={canCreateTask} />,
+      children: <TaskDrawerInfoTab t={t} canCreateTask={canCreateTask} isGuest={isGuest} />,
     },
     {
       key: 'timeLog',
@@ -196,7 +205,7 @@ const TaskDrawer = () => {
       ) : (
         t('taskTimeLogTab.title', { defaultValue: 'Time Log' })
       ),
-      children: <TaskDrawerTimeLog t={t} refreshTrigger={refreshTimeLogTrigger} />,
+      children: <TaskDrawerTimeLog t={t} refreshTrigger={refreshTimeLogTrigger} isGuest={isGuest} />,
       disabled: isFree,
     },
     {
@@ -222,6 +231,7 @@ const TaskDrawer = () => {
   const renderFooter = () => {
     if (activeTab === 'info') return <InfoTabFooter />;
     if (activeTab === 'timeLog') {
+      if (isGuest) return null;
       if (timeLogEditing.isEditing) {
         return (
           <TimeLogForm
@@ -229,6 +239,8 @@ const TaskDrawer = () => {
             onSubmitSuccess={handleTimeLogSubmitSuccess}
             initialValues={timeLogEditing.logBeingEdited || undefined}
             mode={timeLogEditing.logBeingEdited ? 'edit' : 'create'}
+            allowReassign={!!timeLogEditing.logBeingEdited}
+
           />
         );
       }
@@ -239,6 +251,7 @@ const TaskDrawer = () => {
             icon={<PlusOutlined />}
             onClick={handleAddTimeLog}
             style={{ width: '100%' }}
+            disabled={isGuest}
           >
             {t('taskTimeLogTab.addTimeLog', { defaultValue: 'Add Time Log' })}
           </Button>
@@ -259,7 +272,7 @@ const TaskDrawer = () => {
     afterOpenChange: handleAfterOpenChange,
     width: 720,
     destroyOnClose: false,
-    title: <TaskDrawerHeader t={t} canCreateTask={canCreateTask} />,
+    title: <TaskDrawerHeader t={t} canCreateTask={canCreateTask} isGuest={isGuest} />,
     closeIcon: isSubTask ? <ArrowLeftOutlined /> : <CloseOutlined />,
     footer: renderFooter(),
     styles: {
@@ -284,7 +297,7 @@ const TaskDrawer = () => {
   return (
     <Drawer {...drawerProps}>
       {/* Project name + task name — below the header, above the tabs */}
-      <TaskDrawerTitleSection inputRef={taskNameInputRef} t={t} />
+      <TaskDrawerTitleSection inputRef={taskNameInputRef} t={t} canCreateTask={canCreateTask && !isGuest} />
 
       {/* Tabs */}
       <div style={{ padding: '0 24px' }}>

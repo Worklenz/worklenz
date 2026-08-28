@@ -7,21 +7,71 @@
   opacity: 1;
 }
 
+/* Typography alignment — match the 12px muted-header convention used by the
+   other home page cards (Today's Progress, Continue where you left off,
+   Projects) instead of antd's default 14px, and keep the data rows at the
+   same 12px so header and body read as one table. */
+.task-list-card .ant-table {
+  font-size: 12px;
+}
+
+/* antd's own selectors for `size="middle"` cells (e.g. `.ant-table.ant-table-middle
+   .ant-table-tbody > tr > td`) are MORE specific than a single extra class
+   like `.task-list-card`, so font-size/padding rules below need `!important`
+   to actually win instead of silently losing the cascade. */
+.task-list-card .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ant-color-text-secondary);
+  padding: 4px 8px !important;
+  /* Plain CSS sticky header — antd's own `sticky` prop (which tracks a
+     custom scroll container via JS) kept losing track of the panel it was
+     supposed to stick to. Sticking each `th` directly is simpler and works
+     off normal DOM/scroll-ancestor rules, no container tracking needed. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* Needs its own opaque background or scrolled-past rows show through it.
+     `--sticky-header-bg` is set inline on the Card in TasksList.tsx from the
+     real antd token (colorBgContainer) so this tracks light/dark mode. */
+  background: var(--sticky-header-bg, #fff);
+}
+
+.task-list-card .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+/* antd Typography (Text/Paragraph) and form controls (DatePicker, Select)
+   set their own explicit font-size (14px) rather than inheriting the cell's
+   12px, so row data ends up mismatched with the header — pin them all to the
+   same size as the rest of the row. */
+.task-list-card .ant-table-tbody .ant-typography,
+.task-list-card .ant-table-tbody .ant-picker-input input,
+.task-list-card .ant-table-tbody .ant-select-selection-item,
+.task-list-card .ant-table-tbody .ant-select-selector {
+  font-size: 12px !important;
+}
+
+.task-list-card .ant-tabs-nav {
+  margin-bottom: 12px;
+}
+
+.task-list-card .ant-tabs-tab {
+  font-size: 12px;
+  padding: 6px 0;
+}
+
+.task-list-card .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 20px;
+}
+
 /* Responsive styles for task list */
 @media (max-width: 768px) {
-  .task-list-card .ant-card-head {
+  .task-list-card .task-list-header {
     flex-direction: column;
+    align-items: stretch !important;
     gap: 12px;
-  }
-
-  .task-list-card .ant-card-head-title {
-    flex: 1;
-    width: 100%;
-  }
-
-  .task-list-card .ant-card-extra {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .task-list-mobile-header {
@@ -51,12 +101,12 @@
   }
 
   .task-list-card .ant-table-thead > tr > th {
-    padding: 8px 4px;
-    font-size: 12px;
+    padding: 4px 6px !important;
+    font-size: 12px !important;
   }
 
   .task-list-card .ant-table-tbody > tr > td {
-    padding: 8px 4px;
+    padding: 4px 6px !important;
   }
 
   .row-action-button {
@@ -70,12 +120,23 @@
   }
 }
 
-/* Table responsive container */
+/* Table container must be fully `visible` for the sticky header to work.
+   Any non-visible overflow here (even just overflow-x: auto — the spec then
+   force-computes overflow-y to auto as well, visible+auto is not a valid
+   pair) turns this element into the header cells' nearest scroll container,
+   so `position: sticky; top: 0` pins them to THIS box (which never scrolls
+   vertically) instead of the scrollable panel one level up — the header
+   then just scrolls out of view with the rows. Horizontal overflow safety
+   on small screens is handled by the wrapper rule in the media query below. */
 .task-list-card .ant-table-container {
-  overflow-x: auto;
+  overflow: visible;
 }
 
 @media (max-width: 768px) {
+  /* The 600px min-width table needs x-scroll on narrow screens. This does
+     make the wrapper the sticky header's containing scroll box on mobile
+     (so the header scrolls with the rows there) — accepted tradeoff, the
+     sticky header is a desktop affordance. */
   .task-list-card .ant-table-wrapper {
     overflow-x: auto;
   }

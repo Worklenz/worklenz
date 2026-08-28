@@ -19,7 +19,7 @@
 
 .description-editor-shell .description-editor-preview {
   min-height: 120px;
-  padding:12px;
+  padding: 12px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
   cursor: text;
@@ -40,7 +40,7 @@
 .description-editor-shell .description-editor-active {
   position: relative;
   border-radius: 8px;
-  overflow:visible;
+  overflow: visible;
 }
 
 .description-editor-shell .description-editor-loading {
@@ -64,8 +64,8 @@
   border: 1px solid #d9d9d9;
   border-radius: 0 0 8px 8px;
   min-height: 200px;
-  max-height:400px;
-  overflow-y:visible;
+  max-height: 400px;
+  overflow-y: visible;
   background: #ffffff;
   color: #141414;
 }
@@ -73,16 +73,30 @@
 .description-editor-shell .ql-editor {
   min-height: 160px;
   max-height: 400px;
-  overflow-y:auto;
+  overflow-y: auto;
   font-size: 14px;
   line-height: 1.6;
-  padding:12px;
+  padding: 12px;
 }
 
 .description-editor-shell .description-editor-footer {
   margin-top: 6px;
   font-size: 12px;
   color: #8c8c8c;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.description-editor-shell .description-editor-save-error {
+  color: #ff4d4f;
+  flex: 1;
+}
+
+.description-editor-shell .description-editor-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
 }
 
 .description-editor-shell.is-dark .description-content a {
@@ -148,120 +162,117 @@
 .description-editor-shell.is-dark .description-editor-footer {
   color: #9f9f9f;
 }
+
+/* ── Text wrapping fix to prevent overflow ── */
+.description-editor-shell .description-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── Empty paragraph spacing in preview mode ──
+   Quill emits <p><br></p> for blank lines. Browsers collapse these to zero
+   height in plain HTML context, so the spacing visible in the editor
+   disappears in the preview. Give them the same line-height as normal text
+   so blank lines are preserved faithfully. */
+.description-editor-shell .description-content p {
+  margin: 0;
+  /* matches the editor's line-height: 1.6 — preserves blank lines in preview */
+  min-height: 1.6em;
+}
+
 /* ── List formatting fix for preview mode ── */
 .description-editor-shell .description-content ul,
 .description-editor-shell .description-content ol {
- list-style: revert !important;
- padding-left: 1.5em !important;
-margin-top: 0.4em !important;
- margin-bottom: 0.4em !important;
+  list-style: revert !important;
+  padding-left: 1.5em !important;
+  margin-top: 0.4em !important;
+  margin-bottom: 0.4em !important;
 }
 
 
 .description-editor-shell .description-content ul {
- list-style-type: disc !important;
+  list-style-type: disc !important;
 }
 
 
 .description-editor-shell .description-content ol {
- list-style-type: decimal !important;
+  list-style-type: decimal !important;
 }
 
 
 .description-editor-shell .description-content li {
- display: list-item !important;
- padding-left: 0 !important;
- margin: 0.15em 0 !important;
+  display: list-item !important;
+  padding-left: 0 !important;
+  margin: 0.15em 0 !important;
 }
+
+
+/* Quill 2 emits bullet lists as <ol> with li[data-list="bullet"], so the marker
+   has to come from the item rather than the parent tag. Setting list-style-type
+   on the li wins over the ol/ul rules above and works for mixed lists too.
+   Descriptions written before the Quill 2 upgrade have no data-list attribute
+   and keep falling through to the ul/ol rules. */
+.description-editor-shell .description-content li[data-list='bullet'] {
+  list-style-type: disc !important;
+}
+
+
+.description-editor-shell .description-content li[data-list='ordered'] {
+  list-style-type: decimal !important;
+}
+
 ul.ql-nested-list,
 ol.ql-nested-list {
- margin-left: 2.5em !important;
- margin-top: 0 !important;
- margin-bottom: 0 !important;
+  margin-left: 2.5em !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
+
 /* ── Fix list indentation inside editor mode ── */
-.description-editor-shell .ql-editor ol,
-.description-editor-shell .ql-editor ul {
- padding-left: 1.5em !important;
-}
-
-
-.description-editor-shell .ql-editor li {
- display: list-item !important;
-}
-
 
 /* Quill indent levels inside editor */
 .description-editor-shell .ql-editor .ql-indent-1 {
- padding-left: 3em !important;
+  padding-left: 3em !important;
 }
 
 
 .description-editor-shell .ql-editor .ql-indent-2 {
- padding-left: 4.5em !important;
+  padding-left: 4.5em !important;
 }
 
 
 .description-editor-shell .ql-editor .ql-indent-3 {
- padding-left: 6em !important;
+  padding-left: 6em !important;
 }
 
 
 .description-editor-shell .ql-editor .ql-indent-4 {
- padding-left: 7.5em !important;
+  padding-left: 7.5em !important;
 }
 
 
 .description-editor-shell .ql-editor .ql-indent-5 {
- padding-left: 9em !important;
+  padding-left: 9em !important;
 }
 
 
-.description-editor-shell .ql-editor ol + ul {
- margin-left: 2.5em !important;
- margin-top: 0 !important;
-}
-/* ── Fix ol counter continuation in editor mode ── */
-
-
-/* Reset counter on the editor container */
-.description-editor-shell .ql-editor {
- counter-reset: ol-counter;
+.description-editor-shell .ql-editor ol+ul {
+  margin-left: 2.5em !important;
+  margin-top: 0 !important;
 }
 
-
-/* Each ol increments but does NOT reset — so numbering continues */
-.description-editor-shell .ql-editor ol {
- counter-reset: none !important;
- list-style: none !important;
- padding-left: 1.5em !important;
-}
-
-
-/* Each li uses the running counter */
-.description-editor-shell .ql-editor ol li {
- counter-increment: ol-counter;
- list-style: none !important;
-}
-
-
-.description-editor-shell .ql-editor ol li::before {
- content: counter(ol-counter) ". ";
- font-variant-numeric: tabular-nums;
-}
-
-
-/* Reset counter when a non-list element appears between ol groups */
-.description-editor-shell .ql-editor p,
-.description-editor-shell .ql-editor h2,
-.description-editor-shell .ql-editor h3 {
- counter-reset: ol-counter;
-}
-
-
-/* ul between ol groups should NOT reset the counter */
+/* ── Ordered list in editor mode: let Quill handle numbering natively ──
+   Quill 2 renders both bullet and ordered lists as <ol> and uses
+   data-list="ordered|bullet" on each <li>. It manages the counters and
+   markers itself via its own CSS (quill.snow.css). We must NOT add a custom
+   counter or set list-style: none here — doing so produces a duplicate
+   bullet dot alongside the counter number. */
+.description-editor-shell .ql-editor ol,
 .description-editor-shell .ql-editor ul {
- counter-reset: none !important;
+  padding-left: 1.5em !important;
 }
 
 /* FIX: prevent tooltip from rendering off-screen to the left */

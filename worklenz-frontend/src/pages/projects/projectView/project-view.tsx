@@ -17,8 +17,10 @@ import { CrownOutlined } from '@ant-design/icons';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
 import { getProject, setProjectId, setProjectView } from '@/features/project/project.slice';
 import {
@@ -30,7 +32,7 @@ import { projectsApiService } from '@/api/projects/projects.api.service';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ProjectViewHeader from './project-view-header';
 import './project-view.css';
-import { resetTaskListData } from '@/features/tasks/tasks.slice';
+import { resetTaskListData, restoreFilters, setTaskListProjectId, fetchTaskAssignees, fetchLabelsByProject, startFilterRestoration, endFilterRestoration, restoreStatusFilters } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement, fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
@@ -53,12 +55,13 @@ import { resetState as resetEnhancedKanbanState, initKanbanGroupingFromServer, I
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ProjectViewSkeleton from './project-view-skeleton';
+import { ProjectSetupBanner } from '@/components/projects/project-setup-banner/project-setup-banner';
 import { useTranslation } from 'react-i18next';
+import alertService from '@/services/alerts/alertService';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { useAuthStatus } from '@/hooks/useAuthStatus';
-import { evt_paywall_hit } from '@/shared/worklenz-analytics-events';
+import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
 import { projectsApi } from '@/api/projects/projects.v1.api.service';
@@ -92,6 +95,7 @@ const ProjectView = React.memo(() => {
   // Memoized selectors to prevent unnecessary re-renders
   const selectedProject = useAppSelector(state => state.projectReducer.project);
   const projectLoading = useAppSelector(state => state.projectReducer.projectLoading);
+  const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
 
   // State to track translation loading
   const [translationsReady, setTranslationsReady] = useState(false);
@@ -102,20 +106,19 @@ const ProjectView = React.memo(() => {
   // Get auth service and current session
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
-  const { hasBusinessAccess, isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const { isLicenseExpired } = useAuthStatus();
+  const { canCreateTask } = useTaskCreationPermission();
+  const { socket } = useSocket();
 
   // Memoize URL params to prevent unnecessary state updates
   const urlParams = useMemo(() => {
-    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, { hasBusinessAccess, isFree });
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
     return {
       tab: searchParams.get('tab') || filteredTabItems[0]?.key || 'tasks-list',
       pinnedTab: searchParams.get('pinned_tab') || '',
       taskId: searchParams.get('task') || '',
     };
-  }, [searchParams, currentSession, selectedProject]);
+  }, [searchParams, currentSession, selectedProject, canCreateTask]);
 
   const [activeTab, setActiveTab] = useState<string>(urlParams.tab);
   const [pinnedTab, setPinnedTab] = useState<string>(urlParams.pinnedTab);
@@ -132,20 +135,80 @@ const ProjectView = React.memo(() => {
   // Initialize timer state from backend when project view loads
   useTimerInitialization();
 
+  useEffect(() => {
+    if (!socket || !projectId) {
+      return;
+    }
+
+    const joinPayload = {
+      type: 'join',
+      id: projectId,
+    };
+    const leavePayload = {
+      type: 'leave',
+      id: projectId,
+    };
+
+    socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), joinPayload);
+    const handleReconnect = () => {
+      socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), joinPayload);
+    };
+
+    socket.on('connect', handleReconnect);
+
+    return () => {
+      socket.off('connect', handleReconnect);
+      socket.emit(SocketEvents.JOIN_OR_LEAVE_PROJECT_ROOM.toString(), leavePayload);
+    };
+  }, [socket, projectId]);
+
+  useEffect(() => {
+    if (!socket || !projectId) return;
+
+    const notify = (descKey: string) => () =>
+      alertService.info(t('projectUpdated'), t(descKey));
+
+    const handlers: Record<string, () => void> = {
+      [SocketEvents.PROJECT_DATA_CHANGE.toString()]:       notify('projectDataUpdatedDesc'),
+      [SocketEvents.PROJECT_HEALTH_CHANGE.toString()]:     notify('projectHealthUpdatedDesc'),
+      [SocketEvents.PROJECT_STATUS_CHANGE.toString()]:     notify('projectStatusUpdatedDesc'),
+      [SocketEvents.PROJECT_START_DATE_CHANGE.toString()]: notify('projectDatesUpdatedDesc'),
+      [SocketEvents.PROJECT_END_DATE_CHANGE.toString()]:   notify('projectDatesUpdatedDesc'),
+      [SocketEvents.PROJECT_CATEGORY_CHANGE.toString()]:   notify('projectCategoryUpdatedDesc'),
+    };
+
+    Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));
+    return () => {
+      Object.entries(handlers).forEach(([event, handler]) => socket.off(event, handler));
+    };
+  }, [socket, projectId, t]);
+
   // Update local state when URL params change
   useEffect(() => {
     // Validate that the tab from URL is not disabled before setting it
-    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, { hasBusinessAccess, isFree });
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
     const requestedTab = filteredTabItems.find(item => item.key === urlParams.tab);
 
-    // If tab is disabled, redirect to first available tab and show upgrade modal
-    if (requestedTab?.disabled) {
+    // `canCreateTask` defaults to `true` until the project data loads, then may flip to
+    // `false` and drop permission-gated tabs (e.g. roadmap). Wait for the project to be
+    // loaded before redirecting away from an unavailable tab — otherwise the requested
+    // tab renders briefly and then jumps, producing a visible URL/tab flash on load.
+    const projectReady = !!selectedProject;
+
+    if (projectReady && !requestedTab) {
+      // Tab isn't available to this user at all — fall back to the first available tab.
+      const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
+      if (firstAvailableTab) {
+        setActiveTab(firstAvailableTab.key);
+      }
+    } else if (requestedTab?.disabled) {
+      // If tab is disabled, redirect to first available tab and show upgrade modal
       const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
       if (firstAvailableTab) {
         setActiveTab(firstAvailableTab.key);
         // Show upgrade modal after a brief delay to ensure component is mounted
         setTimeout(() => {
-          promptUpgrade();
+          dispatch(toggleUpgradeModal());
         }, 100);
       }
     } else {
@@ -244,6 +307,7 @@ const ProjectView = React.memo(() => {
 
           // Load new project data
           dispatch(setProjectId(projectId));
+          dispatch(setTaskListProjectId(projectId));
 
           // Set project context for field visibility
           dispatch(setProjectContext(projectId));
@@ -262,9 +326,53 @@ const ProjectView = React.memo(() => {
                   dispatch(fetchTaskListColumns(projectId)),
                   dispatch(fetchPhasesByProjectId(projectId)),
                   dispatch(fetchStatusesCategories()),
+                  dispatch(fetchTaskAssignees(projectId)),
+                  dispatch(fetchLabelsByProject(projectId)),
                 ]
               : []),
           ]);
+
+          // Restore persisted filters after loading project data
+          // CRITICAL: Restore filters AFTER all project data (statuses, members, labels) is loaded
+          // so we can match saved filter IDs to actual entities.
+          // This sequence prevents the race condition where useFilterPersistence reads stale
+          // old-project filter state while taskReducer hasn't been reset yet, then writes it
+          // under the new project's storage key, clobbering the new project's saved filters.
+          if (shouldPreloadTaskList) {
+            // Step 1: Signal that filter restoration is starting so persistence stays blocked
+            // until the new project's saved state has been restored.
+            dispatch(startFilterRestoration());
+
+            // Step 2: Restore basic filters from localStorage first.
+            // Step 3: Wait for the freshly loaded status list before restoring saved status filters,
+            // because the status store is populated asynchronously when the project loads.
+            const restoreSavedFilters = async () => {
+              dispatch(restoreFilters());
+
+              let allAvailableStatuses = store.getState().taskStatusReducer?.status || [];
+              let attempts = 0;
+
+              while (allAvailableStatuses.length === 0 && attempts < 20) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                allAvailableStatuses = store.getState().taskStatusReducer?.status || [];
+                attempts += 1;
+              }
+
+              if (allAvailableStatuses.length > 0) {
+                // restoreStatusFilters also calls endFilterRestoration() internally
+                dispatch(restoreStatusFilters(allAvailableStatuses));
+              } else {
+                // If no statuses are available, allow persistence to resume safely.
+                dispatch(endFilterRestoration());
+              }
+
+              // The initial task request runs before persisted filters are restored.
+              // Fetch again so the task list matches the restored filter state.
+              dispatch(fetchTasksV3(projectId));
+            };
+
+            void restoreSavedFilters();
+          }
 
           // Check if project fetch was rejected (access denied or not found)
           if (projectResult.status === 'rejected') {
@@ -286,7 +394,6 @@ const ProjectView = React.memo(() => {
                 // Access denied (user doesn't have access to the project)
                 // Note: Backend now handles team switching automatically, so if we get 403,
                 // it means the user truly doesn't have access
-                console.log('Access denied to project:', projectId);
                 if (!hasShownErrorRef.current) {
                   hasShownErrorRef.current = true;
                   message.error(
@@ -443,7 +550,7 @@ const ProjectView = React.memo(() => {
   const handleTabChange = useCallback(
     (key: string) => {
       // Find the tab item to check if it's disabled
-      const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, { hasBusinessAccess, isFree });
+      const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
       const tabItem = filteredTabItems.find(item => item.key === key);
 
       if (!tabItem) {
@@ -451,23 +558,16 @@ const ProjectView = React.memo(() => {
       }
 
       // If tab is disabled, open upgrade modal instead of navigating
+      // (Finance is never disabled here — its business-plan gating is
+      // handled in-page by ProjectViewFinance's blurred preview.)
       if (tabItem?.disabled) {
-        // Track paywall hit for trial expired users clicking Finance tab
-        if (isLicenseExpired && key === 'finance') {
-          trackMixpanelEvent(evt_paywall_hit, {
-            feature_blocked: 'finance',
-            user_type: currentSession?.subscription_type?.toLowerCase(),
-            trial_expired: true,
-            project_id: projectId,
-            source: 'project_finance_tab',
-          });
-        }
-        promptUpgrade();
+        dispatch(toggleUpgradeModal());
         return;
       }
 
       // Track finance tab clicks
       if (key === 'finance') {
+        const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
         const hasFinanceAccess = hasFinanceViewPermission(currentSession, selectedProject);
 
         trackMixpanelEvent('finance_tab_clicked', {
@@ -480,6 +580,14 @@ const ProjectView = React.memo(() => {
           is_admin: currentSession?.is_admin || currentSession?.owner,
           tab_disabled: tabItem?.disabled || false,
         });
+      }
+
+      // The task drawer is rendered via a portal outside the Tabs tree, so it
+      // never unmounts on tab switch — close it explicitly to keep it in sync
+      // with the tab/URL change below (mirrors closeTaskDrawerOnOutsideClick
+      // in PlannerScheduleView.tsx).
+      if (showTaskDrawer) {
+        dispatch(setShowTaskDrawer(false));
       }
 
       setActiveTab(key);
@@ -506,6 +614,8 @@ const ProjectView = React.memo(() => {
       selectedProject,
       projectId,
       trackMixpanelEvent,
+      canCreateTask,
+      showTaskDrawer,
     ]
   );
 
@@ -516,7 +626,7 @@ const ProjectView = React.memo(() => {
       return [];
     }
 
-    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, { hasBusinessAccess, isFree });
+    const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
 
     const menuItems = filteredTabItems.map(item => {
       const premiumTabs = ['finance', 'project-insights-member-overview', 'roadmap', 'workload'];
@@ -591,7 +701,7 @@ const ProjectView = React.memo(() => {
     });
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject]);
+  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject, canCreateTask]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
@@ -617,6 +727,12 @@ const ProjectView = React.memo(() => {
         {/* Non-critical components - load after delay with suspense fallback */}
         {shouldLoadSecondaryComponents && (
           <Suspense fallback={<SuspenseFallback />}>
+            {/* This drawer's open/close state is a single global flag
+                (state.projectMemberReducer.isDrawerOpen), not scoped to this instance.
+                Safe today only because this page and the other place InviteProjectMembers
+                is rendered inline (Planner/Home's "New Task" modals) sit on mutually
+                exclusive routes — if that ever changes, toggling the flag from one place
+                would also pop open this instance. */}
             {selectedProject &&
               createPortal(
                 <InviteProjectMembers
@@ -641,9 +757,17 @@ const ProjectView = React.memo(() => {
     return <ProjectViewSkeleton />;
   }
 
+  // Detect first-visit via `new_project=1` query param
+  const isNewProject = searchParams.get('new_project') === '1';
+
   return (
     <div style={{ marginBlockEnd: 12, minHeight: '80vh' }}>
       <ProjectViewHeader />
+
+      {/* One-time setup banner for newly created projects */}
+      {isNewProject && projectId && (
+        <ProjectSetupBanner projectId={projectId} />
+      )}
 
       <Tabs
         className="project-view-tabs"

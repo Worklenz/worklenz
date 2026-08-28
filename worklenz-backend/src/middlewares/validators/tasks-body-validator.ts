@@ -3,7 +3,7 @@ import {NextFunction} from "express";
 import {IWorkLenzRequest} from "../../interfaces/worklenz-request";
 import {IWorkLenzResponse} from "../../interfaces/worklenz-response";
 import {ServerResponse} from "../../models/server-response";
-import {getRandomColorCode, sanitize, sanitizePlainText, toMinutes, toRound} from "../../shared/utils";
+import {getRandomColorCode, sanitizePlainText, sanitizeRichTextDescription, toMinutes, toRound} from "../../shared/utils";
 
 export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction): IWorkLenzResponse | void {
   const {name, priority_id, status_id, assignees, project_id, labels} = req.body;
@@ -41,7 +41,7 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
   if (req.body.description) {
     if (req.body.description.length > 4000)
       return res.status(200).send(new ServerResponse(false, null, "Task description length exceeded!"));
-    req.body.description = sanitize(req.body.description);
+    req.body.description = sanitizeRichTextDescription(req.body.description);
   }
 
   if (req.body.name.length > 100)

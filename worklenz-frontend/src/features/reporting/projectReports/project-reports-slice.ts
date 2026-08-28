@@ -13,7 +13,7 @@ import {
   IRPTTeam,
 } from '@/types/reporting/reporting.types';
 import { getFromLocalStorage } from '@/utils/localStorageFunctions';
-import { createAsyncThunk, createSlice, createAction } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, createAction, PayloadAction } from '@reduxjs/toolkit';
 
 const filterIndex = () => {
   return +(getFromLocalStorage(FILTER_INDEX_KEY.toString()) || 0);
@@ -74,10 +74,14 @@ type ProjectReportsState = {
   archived: boolean;
   teams: IRPTTeam[];
   loadingTeams: boolean;
+  projectHealths: IProjectHealth[]; // All available health options
+  orgCategories: IProjectCategory[]; // All available category options
   selectedProjectStatuses: IProjectStatus[];
   selectedProjectHealths: IProjectHealth[];
   selectedProjectCategories: IProjectCategory[];
   selectedProjectManagers: IProjectManager[];
+  selectedClients: string[];
+  selectedProjectPriorities: string[];
   isLoadingMore: boolean; // For "Load More" button loading state
 };
 
@@ -101,6 +105,14 @@ export const fetchProjectData = createAsyncThunk(
       return { total: 0, projects: [] };
     }
 
+    // Check if all options are selected to avoid unnecessary filtering
+    const allHealthsSelected = state.selectedProjectHealths.length === state.projectHealths?.length;
+    // Total available = org categories + 1 (for "No Category")
+    // Only consider all categories selected if orgCategories has been populated (length > 0)
+    const allCategoriesSelected = 
+      state.orgCategories.length > 0 && 
+      state.selectedProjectCategories.length === state.orgCategories.length + 1;
+
     const body: IGetProjectsRequestBody = {
       index: state.index,
       size: state.pageSize,
@@ -109,11 +121,13 @@ export const fetchProjectData = createAsyncThunk(
       search: state.searchQuery,
       filter: state.filterIndex.toString(),
       statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || ''),
-      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || ''),
-      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
+      healths: allHealthsSelected ? [] : state.selectedProjectHealths.map((h: IProjectHealth) => h.id || ''),
+      categories: allCategoriesSelected ? [] : state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
       teams,
+      clients: state.selectedClients,
+      priorities: state.selectedProjectPriorities,
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -133,6 +147,14 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
       return { total: 0, projects: [] };
     }
 
+    // Check if all options are selected to avoid unnecessary filtering
+    const allHealthsSelected = state.selectedProjectHealths.length === state.projectHealths?.length;
+    // Total available = org categories + 1 (for "No Category")
+    // Only consider all categories selected if orgCategories has been populated (length > 0)
+    const allCategoriesSelected = 
+      state.orgCategories.length > 0 && 
+      state.selectedProjectCategories.length === state.orgCategories.length + 1;
+
     const body: IGetProjectsRequestBody = {
       index: state.index,
       size: state.pageSize,
@@ -141,11 +163,13 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
       search: state.searchQuery,
       filter: state.filterIndex.toString(),
       statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || ''),
-      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || ''),
-      categories: state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
+      healths: allHealthsSelected ? [] : state.selectedProjectHealths.map((h: IProjectHealth) => h.id || ''),
+      categories: allCategoriesSelected ? [] : state.selectedProjectCategories.map((c: IProjectCategory) => c.id || ''),
       project_managers: state.selectedProjectManagers.map((m: IProjectManager) => m.id || ''),
       archived: state.archived,
       teams,
+      clients: state.selectedClients,
+      priorities: state.selectedProjectPriorities,
     };
     const response = await reportingProjectsApiService.getProjects(body);
     return response.body;
@@ -170,15 +194,29 @@ export const fetchGroupedProjects = createAsyncThunk(
       field: state.field,
       order: state.order,
       statuses: state.selectedProjectStatuses.map((s: IProjectStatus) => s.id || '').join(','),
-      healths: state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
-      categories: state.selectedProjectCategories
-        .map((c: IProjectCategory) => c.id || '')
-        .join(','),
+      // For healths and categories: if all are selected (including special options like __no_category__),
+      // send empty string to avoid unnecessary filtering
+      healths: state.selectedProjectHealths.length === state.projectHealths?.length
+        ? ''
+        : state.selectedProjectHealths.map((h: IProjectHealth) => h.id || '').join(','),
+      categories: (() => {
+        // Check if all categories are selected (including __no_category__)
+        // Total available = org categories + 1 (for "No Category")
+        // Only consider all categories selected if orgCategories has been populated (length > 0)
+        const allCategoriesSelected = 
+          state.orgCategories.length > 0 && 
+          state.selectedProjectCategories.length === state.orgCategories.length + 1;
+        return allCategoriesSelected
+          ? ''
+          : state.selectedProjectCategories.map((c: IProjectCategory) => c.id || '').join(',');
+      })(),
       project_managers: state.selectedProjectManagers
         .map((m: IProjectManager) => m.id || '')
         .join(','),
       teams: teams.join(','),
       archived: state.archived,
+      clients: state.selectedClients.join(','),
+      priorities: state.selectedProjectPriorities.join(','),
       // Add pagination parameters (using large size to load all groups for now)
       // TODO: Implement proper "Load More" functionality in future iteration
       index: 1,
@@ -258,10 +296,14 @@ const initialState: ProjectReportsState = {
   archived: false,
   teams: [],
   loadingTeams: false,
+  projectHealths: [],
+  orgCategories: [],
   selectedProjectStatuses: [],
   selectedProjectHealths: [],
   selectedProjectCategories: [],
   selectedProjectManagers: [],
+  selectedClients: [],
+  selectedProjectPriorities: [],
   isLoadingMore: false,
 };
 
@@ -293,6 +335,12 @@ const projectReportsSlice = createSlice({
     setSelectedProjectStatuses: (state, action) => {
       state.selectedProjectStatuses = action.payload;
     },
+    setProjectHealths: (state, action) => {
+      state.projectHealths = action.payload;
+    },
+    setOrgCategories: (state, action) => {
+      state.orgCategories = action.payload;
+    },
     setSelectedProjectHealths: (state, action) => {
       state.selectedProjectHealths = action.payload;
     },
@@ -312,6 +360,28 @@ const projectReportsSlice = createSlice({
         state.selectedProjectManagers.splice(index, 1);
       } else {
         state.selectedProjectManagers.push(manager);
+      }
+    },
+    setSelectedClients: (state, action: PayloadAction<string[]>) => {
+      state.selectedClients = action.payload;
+    },
+    toggleClient: (state, action: PayloadAction<string>) => {
+      const index = state.selectedClients.indexOf(action.payload);
+      if (index >= 0) {
+        state.selectedClients.splice(index, 1);
+      } else {
+        state.selectedClients.push(action.payload);
+      }
+    },
+    setSelectedProjectPriorities: (state, action: PayloadAction<string[]>) => {
+      state.selectedProjectPriorities = action.payload;
+    },
+    toggleProjectPriority: (state, action: PayloadAction<string>) => {
+      const index = state.selectedProjectPriorities.indexOf(action.payload);
+      if (index >= 0) {
+        state.selectedProjectPriorities.splice(index, 1);
+      } else {
+        state.selectedProjectPriorities.push(action.payload);
       }
     },
     setArchived: (state, action) => {
@@ -434,6 +504,8 @@ const projectReportsSlice = createSlice({
       state.selectedProjectHealths = [];
       state.selectedProjectCategories = [];
       state.selectedProjectManagers = [];
+      state.selectedClients = [];
+      state.selectedProjectPriorities = [];
       // Note: archived state is preserved to maintain user preference across view changes
     },
   },
@@ -549,10 +621,16 @@ export const {
   setSearchQuery,
   setSelectOrDeselectAllTeams,
   setSelectOrDeselectTeam,
+  setProjectHealths,
+  setOrgCategories,
   setSelectedProjectStatuses,
   setSelectedProjectHealths,
   setSelectedProjectCategories,
   setSelectedProjectManagers,
+  setSelectedClients,
+  toggleClient,
+  setSelectedProjectPriorities,
+  toggleProjectPriority,
   setArchived,
   setProjectStartDate,
   setProjectEndDate,

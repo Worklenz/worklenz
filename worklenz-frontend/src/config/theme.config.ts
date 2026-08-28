@@ -71,6 +71,16 @@ export const getThemeConfig = (currentTheme: 'light' | 'dark'): ThemeConfig => (
     Statistic: {
       contentFontSize: 28,
     },
+    // AntD's Tooltip defaults to a fixed dark bubble (colorBgSpotlight is
+    // colorTextBase @ 85% alpha) in BOTH light and dark themes — scope an
+    // override to Tooltip alone so it follows the app's surface colors
+    // instead. (colorTextLightSolid is also a shared global token — Button,
+    // PillToggle, Badge, etc. rely on it staying white for solid-color
+    // contrast, so it can't be changed globally, only per-component here.)
+    Tooltip: {
+      colorBgSpotlight: currentTheme === 'dark' ? '#1f1f1f' : '#ffffff',
+      colorTextLightSolid: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)',
+    },
     Typography: {
       titleMarginBottom: 0,
       titleMarginTop: 0,

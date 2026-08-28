@@ -40,15 +40,14 @@ export const useImportDerivedData = ({
   }, [csvRows, statusColumnKey]);
 
   const statusOptions = React.useMemo(() => {
-    // For CSV import, a new project is created with default statuses — don't show
-    // existing workspace statuses (which may include "Cancelled", "Blocked", etc.)
-    const sourceStatuses =
-      integrationType === 'csv'
-        ? defaultWorkTypes
-        : worklenzStatuses.length
-          ? worklenzStatuses
-          : defaultWorkTypes;
-    return sourceStatuses.map(status => ({
+    // Every import (CSV or direct integration) always creates a brand-new
+    // project, which always starts out with the three default task statuses
+    // (To Do / Doing / Done). `worklenzStatuses` holds project-level lifecycle
+    // statuses (e.g. Cancelled, Blocked, On Hold) fetched for a different
+    // purpose (setting the new project's own status) — it must never be used
+    // here, or the Map Status step offers statuses that don't exist on the
+    // target project and every mapped value fails to match during import.
+    return defaultWorkTypes.map(status => ({
       key: status.id || status.name || 'status',
       label: status.name || t('importStep.statusFallback', 'Status'),
       icon: React.createElement('span', {
@@ -62,7 +61,7 @@ export const useImportDerivedData = ({
       }),
       level: typeof status.sort_order === 'number' ? status.sort_order : 0,
     }));
-  }, [defaultWorkTypes, integrationType, t, worklenzStatuses]);
+  }, [defaultWorkTypes, t]);
 
   const csvUserRows = React.useMemo(() => {
     if (!csvColumns.length || !csvRows.length) return [] as string[];
@@ -96,8 +95,8 @@ export const useImportDerivedData = ({
   const modalDims = React.useMemo(() => {
     if (integrationType === 'csv') {
       return {
-        width: 1180,
-        stepperMaxWidth: 1120,
+        width: 1320,
+        stepperMaxWidth: 1260,
       };
     }
 

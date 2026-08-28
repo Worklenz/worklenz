@@ -6,16 +6,38 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import {
+  calculateMonthDays,
   getColor,
   log_error,
+  megabytesToBytes,
   sanitizePlainText,
 } from "../shared/utils";
-import { getActiveTeamMemberCount } from "../shared/licensing-utils";
+import moment from "moment";
+import { calculateStorage } from "../shared/s3";
+import {
+  checkTeamSubscriptionStatus,
+  getActiveTeamMemberCount,
+  getCurrentProjectsCount,
+  getFreePlanSettings,
+  getOwnerIdByTeam,
+  getTeamMemberCount,
+  getUsedStorage,
+} from "../ee/shared/paddle-utils";
+import { appSumoService } from "../shared/private-extensions";
+import { PlanTrialService } from "../ee/services/plan-trial-service";
+import {
+  addModifier,
+  cancelSubscription,
+  changePlan,
+  generatePayLinkRequest,
+  pauseOrResumeSubscription,
+  updateUsers,
+} from "../ee/shared/paddle-requests";
 import { statusExclude } from "../shared/constants";
-import business from "../business";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
+import { uploadBase64, getOrganizationLogoKey, deleteObject, getRootDir } from "../shared/storage";
 
 export default class AdminCenterController extends WorklenzControllerBase {
   private static readonly TEAM_DELETE_BLOCKERS = {
@@ -30,6 +52,12 @@ export default class AdminCenterController extends WorklenzControllerBase {
         "This team cannot be deleted because it still has project folders associated with it. Please remove those folders and try again.",
     },
   } as const;
+
+  private static async getSubscriptionId(ownerId: string): Promise<string> {
+    const q = `SELECT subscription_id FROM licensing_user_subscriptions WHERE user_id = $1;`;
+    const result = await db.query(q, [ownerId]);
+    return result.rows[0]?.subscription_id?.toString();
+  }
 
   private static async checkIfUserActiveInOtherTeams(
     owner_id: string,
@@ -209,6 +237,175 @@ export default class AdminCenterController extends WorklenzControllerBase {
                WHERE user_id = $2;`;
     const result = await db.query(q, [contact_number, req.user?.owner_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async uploadOrganizationLogo(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const ownerId = req.user?.owner_id;
+    if (!ownerId) {
+      return res.status(400).send(new ServerResponse(false, null, "User not found"));
+    }
+
+    // Get organization ID
+    const orgQuery = `SELECT id FROM organizations WHERE user_id = $1`;
+    const orgResult = await db.query(orgQuery, [ownerId]);
+    if (orgResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+    }
+    const organizationId = orgResult.rows[0].id;
+
+    const { logoData } = req.body;
+    if (!logoData) {
+      return res.status(400).send(new ServerResponse(false, null, "Logo data is required"));
+    }
+
+    // Extract file type from base64 data
+    const mimeMatch = logoData.match(/^data:(image\/[a-z]+);base64,/);
+    if (!mimeMatch) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid image format"));
+    }
+
+    const mimeType = mimeMatch[1];
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(mimeType)) {
+      return res.status(400).send(new ServerResponse(false, null, "Only PNG, JPG, JPEG, and WEBP images are allowed"));
+    }
+
+    // Validate file size (assuming base64 data)
+    const fileSizeBytes = Math.floor((logoData.length * 3) / 4);
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB limit
+    if (fileSizeBytes > maxSizeBytes) {
+      return res.status(400).send(new ServerResponse(false, null, "Logo file size must be less than 5MB"));
+    }
+
+    const fileExtension = mimeType.split("/")[1];
+
+    // Get old logo URL to delete it
+    const oldLogoQuery = `SELECT logo_url FROM organizations WHERE id = $1`;
+    const oldLogoResult = await db.query(oldLogoQuery, [organizationId]);
+    const oldLogoUrl = oldLogoResult.rows[0]?.logo_url;
+
+    // Delete old logo from S3 if exists
+    if (oldLogoUrl) {
+      try {
+        // Extract the storage key from the old logo URL
+        // Logo URLs are typically in format: {S3_URL}/{env}/organization-logos/{orgId}.{ext}
+        const urlParts = oldLogoUrl.split("/organization-logos/");
+        if (urlParts.length > 1) {
+          const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
+          // Reconstruct the storage key using the same pattern as getOrganizationLogoKey
+          const oldStorageKey = `organization-logos/${getRootDir()}/${keyPart}`;
+          await deleteObject(oldStorageKey);
+        }
+      } catch (deleteError) {
+        // Log but don't fail if old logo deletion fails
+        log_error(deleteError);
+      }
+    }
+
+    // Generate storage key
+    const storageKey = getOrganizationLogoKey(organizationId, fileExtension);
+
+    // Upload to storage
+    const logoUrl = await uploadBase64(logoData, storageKey);
+    if (!logoUrl) {
+      return res.status(500).send(new ServerResponse(false, null, "Failed to upload logo"));
+    }
+
+    // Update database with logo URL
+    const updateQ = `
+      UPDATE organizations
+      SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING logo_url
+    `;
+    const updateResult = await db.query(updateQ, [logoUrl, organizationId]);
+
+    // Sync logo to all related client_portal_settings
+    // Find all teams belonging to this organization and update their client portal settings
+    const syncQuery = `
+      UPDATE client_portal_settings
+      SET logo_url = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE organization_team_id IN (
+        SELECT id FROM teams
+        WHERE user_id = $2 OR organization_id = $3
+      )
+    `;
+    await db.query(syncQuery, [logoUrl, ownerId, organizationId]);
+
+    return res.status(200).send(
+      new ServerResponse(
+        true,
+        { logo_url: updateResult.rows[0].logo_url },
+        "Logo uploaded successfully"
+      )
+    );
+  }
+
+  @HandleExceptions()
+  public static async deleteOrganizationLogo(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const ownerId = req.user?.owner_id;
+    if (!ownerId) {
+      return res.status(400).send(new ServerResponse(false, null, "User not found"));
+    }
+
+    // Get organization ID
+    const orgQuery = `SELECT id, logo_url FROM organizations WHERE user_id = $1`;
+    const orgResult = await db.query(orgQuery, [ownerId]);
+    if (orgResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Organization not found"));
+    }
+    const organizationId = orgResult.rows[0].id;
+    const logoUrl = orgResult.rows[0].logo_url;
+
+    if (!logoUrl) {
+      return res.status(404).send(new ServerResponse(false, null, "No logo to delete"));
+    }
+
+    // Delete logo from S3
+    try {
+      // Extract the storage key from the logo URL
+      const urlParts = logoUrl.split("/organization-logos/");
+      if (urlParts.length > 1) {
+        const keyPart = urlParts[1].split("?")[0]; // Remove query params if any
+        const storageKey = `organization-logos/${getRootDir()}/${keyPart}`;
+        await deleteObject(storageKey);
+      }
+    } catch (deleteError) {
+      // Log but don't fail if S3 deletion fails
+      log_error(deleteError);
+    }
+
+    // Update database to remove logo URL
+    const updateQ = `
+      UPDATE organizations
+      SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING logo_url
+    `;
+    await db.query(updateQ, [organizationId]);
+
+    // Clear logo from all related client_portal_settings
+    // Find all teams belonging to this organization and clear their client portal logo
+    const syncQuery = `
+      UPDATE client_portal_settings
+      SET logo_url = NULL, updated_at = CURRENT_TIMESTAMP
+      WHERE organization_team_id IN (
+        SELECT id FROM teams
+        WHERE user_id = $1 OR organization_id = $2
+      )
+    `;
+    await db.query(syncQuery, [ownerId, organizationId]);
+
+    return res.status(200).send(
+      new ServerResponse(true, { logo_url: null }, "Logo deleted successfully")
+    );
   }
 
   @HandleExceptions()
@@ -494,6 +691,602 @@ export default class AdminCenterController extends WorklenzControllerBase {
   }
  
   @HandleExceptions()
+  public static async getBillingInfo(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT get_billing_info($1) AS billing_info;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+    const [data] = result.rows;
+
+    // Validate that billing_info exists
+    if (!data || !data.billing_info) {
+      return res.status(200).send(
+        new ServerResponse(false, null, "Billing information not found")
+      );
+    }
+
+    if (data.billing_info.trial_expire_date) {
+      const validTillDate = moment(data.billing_info.trial_expire_date);
+      const daysDifference = validTillDate.diff(moment(), "days");
+      const dateString = calculateMonthDays(
+        moment().format("YYYY-MM-DD"),
+        data.billing_info.trial_expire_date
+      );
+
+      data.billing_info.expire_date_string = dateString;
+
+      if (daysDifference < 0) {
+        data.billing_info.expire_date_string = `Your trial plan expired ${dateString} ago`;
+      } else if (daysDifference === 0 && daysDifference < 7) {
+        data.billing_info.expire_date_string = `Your trial plan expires today`;
+      } else {
+        data.billing_info.expire_date_string = `Your trial plan expires in ${dateString}.`;
+      }
+    }
+
+    if (data.billing_info.billing_type === "year")
+      data.billing_info.unit_price_per_month =
+        data.billing_info.unit_price / 12;
+
+    const teamMemberData = await getActiveTeamMemberCount(req.user?.owner_id ?? "");
+    const subscriptionData = await checkTeamSubscriptionStatus(
+      req.user?.team_id ?? ""
+    );
+
+    const adjustedUsedCount = Number(teamMemberData?.user_count ?? 0);
+    const freeSeatCount = Number(teamMemberData?.free_count ?? 0);
+    const actualActiveMemberCount = adjustedUsedCount + freeSeatCount;
+
+    // total_used should reflect the actual active members shown in team settings.
+    data.billing_info.total_used = Math.max(actualActiveMemberCount, 0);
+    const isLtdUser = data.billing_info?.is_ltd_user === true;
+    const ltdSeatLimit = Number(subscriptionData?.ltd_users ?? 0);
+
+    data.billing_info.total_seats = isLtdUser
+      ? Math.max(ltdSeatLimit, 0)
+      : (subscriptionData?.quantity ?? null);
+    data.billing_info.redeemed_codes_count = subscriptionData?.redeemed_codes_count ?? 0;
+    data.billing_info.appsumo_business_eligible = subscriptionData?.appsumo_business_eligible === true;
+
+    return res.status(200).send(new ServerResponse(true, data.billing_info));
+  }
+
+  @HandleExceptions()
+  public static async getBillingTransactions(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT subscription_payment_id,
+                      event_time::date,
+                      (next_bill_date::DATE - INTERVAL '1 day')::DATE AS next_bill_date,
+                      currency,
+                      receipt_url,
+                      payment_method,
+                      status,
+                      payment_status
+               FROM licensing_payment_details
+               WHERE user_id = $1
+               ORDER BY created_at DESC;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async getBillingCharges(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT (SELECT name FROM licensing_pricing_plans lpp WHERE id = lus.plan_id),
+                      unit_price::numeric,
+                      currency,
+                      status,
+                      quantity,
+                      unit_price::numeric * quantity                  AS amount,
+                      (SELECT event_time
+                       FROM licensing_payment_details lpd
+                       WHERE lpd.user_id = lus.user_id
+                       ORDER BY created_at DESC
+                       LIMIT 1)::DATE                                 AS start_date,
+                      (next_bill_date::DATE - INTERVAL '1 day')::DATE AS end_date
+               FROM licensing_user_subscriptions lus
+               WHERE user_id = $1;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+
+    const countQ = `SELECT subscription_id
+                    FROM licensing_user_subscription_modifiers
+                    WHERE subscription_id = (SELECT subscription_id
+                                             FROM licensing_user_subscriptions
+                                             WHERE user_id = $1
+                                               AND status != 'deleted'
+                                             LIMIT 1)::INT;`;
+    const countResult = await db.query(countQ, [req.user?.owner_id]);
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        plan_charges: result.rows,
+        modifiers: countResult.rows,
+      })
+    );
+  }
+
+  @HandleExceptions()
+  public static async getBillingModifiers(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT created_at
+               FROM licensing_user_subscription_modifiers
+               WHERE subscription_id = (SELECT subscription_id
+                                        FROM licensing_user_subscriptions
+                                        WHERE user_id = $1
+                                          AND status != 'deleted'
+                                        LIMIT 1)::INT;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async getBillingConfiguration(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT name,
+                      email,
+                      organization_name AS company_name,
+                      contact_number    AS phone,
+                      address_line_1,
+                      address_line_2,
+                      city,
+                      state,
+                      postal_code,
+                      country
+               FROM organizations
+                      LEFT JOIN users u ON organizations.user_id = u.id
+               WHERE u.id = $1;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+    const [data] = result.rows;
+
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async updateBillingConfiguration(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const {
+      company_name,
+      phone,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
+      country,
+    } = req.body;
+    const q = `UPDATE organizations
+               SET organization_name = $1,
+                   contact_number    = $2,
+                   address_line_1    = $3,
+                   address_line_2    = $4,
+                   city              = $5,
+                   state             = $6,
+                   postal_code       = $7,
+                   country           = $8
+               WHERE user_id = $9;`;
+    const result = await db.query(q, [
+      company_name,
+      phone,
+      address_line_1,
+      address_line_2,
+      city,
+      state,
+      postal_code,
+      country,
+      req.user?.owner_id,
+    ]);
+    const [data] = result.rows;
+
+    return res
+      .status(200)
+      .send(new ServerResponse(true, data, "Configuration Updated"));
+  }
+
+  @HandleExceptions()
+  public static async upgradePlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { plan, seatCount } = req.query;
+
+    const obj = await getTeamMemberCount(req.user?.owner_id ?? "");
+    if (seatCount) {
+      obj.user_count = parseInt(seatCount as string, 10);
+    }
+    const axiosResponse = await generatePayLinkRequest(
+      obj,
+      plan as string,
+      req.user?.owner_id,
+      req.user?.id
+    );
+
+    return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  @HandleExceptions()
+  public static async getPlans(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT
+                  ls.default_monthly_plan AS monthly_plan_id,
+                  lp_monthly.name AS monthly_plan_name,
+                  ls.default_annual_plan AS annual_plan_id,
+                  lp_monthly.recurring_price AS monthly_price,
+                  lp_annual.name AS annual_plan_name,
+                  lp_annual.recurring_price AS annual_price,
+                  ls.team_member_limit,
+                  ls.projects_limit,
+                  ls.free_tier_storage
+              FROM
+                  licensing_settings ls
+              LEFT JOIN
+                  licensing_pricing_plans lp_monthly ON ls.default_monthly_plan = lp_monthly.id
+              LEFT JOIN
+                  licensing_pricing_plans lp_annual ON ls.default_annual_plan = lp_annual.id;`;
+    const result = await db.query(q, []);
+    const [data] = result.rows;
+
+    const obj = await getTeamMemberCount(req.user?.owner_id ?? "");
+
+    // If no data found, return default values
+    if (!data) {
+      const defaultData = {
+        monthly_plan_id: null,
+        monthly_plan_name: "Pro Monthly",
+        annual_plan_id: null,
+        annual_plan_name: "Pro Annual",
+        monthly_price: "69",
+        annual_price: "49",
+        team_member_limit: "3",
+        projects_limit: "3",
+        free_tier_storage: "100MB",
+        current_user_count: obj.user_count
+      };
+      
+      return res.status(200).send(new ServerResponse(true, defaultData));
+    }
+
+    // Safely handle data transformation with null checks
+    const responseData = {
+      ...data,
+      team_member_limit: data.team_member_limit === 0 ? "Unlimited" : (data.team_member_limit || "3"),
+      projects_limit: data.projects_limit === 0 ? "Unlimited" : (data.projects_limit || "3"),
+      free_tier_storage: data.free_tier_storage ? `${data.free_tier_storage}MB` : "100MB",
+      current_user_count: obj.user_count,
+      annual_price: data.annual_price ? (data.annual_price / 12).toFixed(2) : "49",
+      monthly_price: data.monthly_price || "69"
+    };
+
+    return res.status(200).send(new ServerResponse(true, responseData));
+  }
+
+  @HandleExceptions()
+  public static async purchaseStorage(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
+
+    await addModifier(subscriptionId);
+
+    return res.status(200).send(new ServerResponse(true, { subscription_id: subscriptionId }));
+  }
+
+  @HandleExceptions()
+  public static async changePlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { plan } = req.query;
+
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
+
+    const axiosResponse = await changePlan(
+      plan as string,
+      subscriptionId
+    );
+
+    return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  @HandleExceptions()
+  public static async cancelPlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    if (!req.user?.owner_id)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Invalid Request."));
+
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
+
+    const axiosResponse = await cancelSubscription(
+      subscriptionId,
+      req.user?.owner_id
+    );
+
+    return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  @HandleExceptions()
+  public static async pauseSubscription(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    if (!req.user?.owner_id)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Invalid Request."));
+
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
+
+    const axiosResponse = await pauseOrResumeSubscription(
+      subscriptionId,
+      req.user?.owner_id,
+      true
+    );
+
+    return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  @HandleExceptions()
+  public static async resumeSubscription(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    if (!req.user?.owner_id)
+      return res
+        .status(200)
+        .send(new ServerResponse(false, "Invalid Request."));
+
+    const subscriptionId = await this.getSubscriptionId(req.user?.owner_id ?? "");
+
+    const axiosResponse = await pauseOrResumeSubscription(
+      subscriptionId,
+      req.user?.owner_id,
+      false
+    );
+
+    return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  @HandleExceptions()
+  public static async getBillingStorageInfo(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT trial_in_progress,
+                      trial_expire_date,
+                      ud.storage,
+                      (SELECT name AS plan_name FROM licensing_pricing_plans WHERE id = lus.plan_id),
+                      (SELECT default_trial_storage FROM licensing_settings),
+                      (SELECT storage_addon_size FROM licensing_settings),
+                      (SELECT storage_addon_price FROM licensing_settings)
+               FROM organizations ud
+                      LEFT JOIN users u ON ud.user_id = u.id
+                      LEFT JOIN licensing_user_subscriptions lus ON u.id = lus.user_id
+               WHERE ud.user_id = $1;`;
+    const result = await db.query(q, [req.user?.owner_id]);
+    const [data] = result.rows;
+
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async getAccountStorage(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const teamsQ = `SELECT id
+                    FROM teams
+                    WHERE user_id = $1;`;
+    const teamsResponse = await db.query(teamsQ, [req.user?.owner_id]);
+
+    const storageQ = `SELECT storage
+                      FROM organizations
+                      WHERE user_id = $1;`;
+    const result = await db.query(storageQ, [req.user?.owner_id]);
+    const [data] = result.rows;
+
+    const storage: any = {};
+    storage.used = 0;
+    storage.total = data.storage;
+
+    for (const team of teamsResponse.rows) {
+      storage.used += await calculateStorage(team.id);
+    }
+
+    storage.remaining = storage.total * 1024 * 1024 * 1024 - storage.used;
+    storage.used_percent =
+      Math.ceil((storage.used / (storage.total * 1024 * 1024 * 1024)) * 10000) /
+      100;
+
+    return res.status(200).send(new ServerResponse(true, storage));
+  }
+
+  @HandleExceptions()
+  public static async getCountries(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const q = `SELECT id, name, code
+               FROM countries
+               ORDER BY name;`;
+    const result = await db.query(q, []);
+
+    return res.status(200).send(new ServerResponse(true, result.rows || []));
+  }
+
+  @HandleExceptions()
+  public static async switchToFreePlan(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id: teamId } = req.params;
+
+    const limits = await getFreePlanSettings();
+    const ownerId = await getOwnerIdByTeam(teamId);
+
+    if (limits && ownerId) {
+      if (parseInt(limits.team_member_limit) !== 0) {
+        const teamMemberCount = await getTeamMemberCount(ownerId);
+        if (parseInt(teamMemberCount) > parseInt(limits.team_member_limit)) {
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                [],
+                `Sorry, the free plan cannot have more than ${limits.team_member_limit} members.`
+              )
+            );
+        }
+      }
+
+      const projectsCount = await getCurrentProjectsCount(ownerId);
+      if (parseInt(projectsCount) > parseInt(limits.projects_limit)) {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              [],
+              `Sorry, the free plan cannot have more than ${limits.projects_limit} projects.`
+            )
+          );
+      }
+
+      const usedStorage = await getUsedStorage(ownerId);
+      if (
+        parseInt(usedStorage) >
+        megabytesToBytes(parseInt(limits.free_tier_storage))
+      ) {
+        return res
+          .status(200)
+          .send(
+            new ServerResponse(
+              false,
+              [],
+              `Sorry, the free plan cannot exceed ${limits.free_tier_storage}MB of storage.`
+            )
+          );
+      }
+
+      const update_q = `UPDATE organizations
+        SET license_type_id     = (SELECT id FROM sys_license_types WHERE key = 'FREE'),
+            trial_in_progress   = FALSE,
+            subscription_status = 'free',
+            storage             = (SELECT free_tier_storage FROM licensing_settings)
+        WHERE user_id = $1;`;
+      await db.query(update_q, [ownerId]);
+
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            true,
+            [],
+            "Your plan has been successfully switched to the Free Plan."
+          )
+        );
+    }
+    return res
+      .status(200)
+      .send(
+        new ServerResponse(
+          false,
+          [],
+          "Failed to switch to the Free Plan. Please try again later."
+        )
+      );
+  }
+
+  @HandleExceptions()
+  public static async redeem(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { code } = req.body;
+
+    const q = `SELECT * FROM licensing_coupon_codes WHERE coupon_code = $1 AND is_redeemed IS FALSE AND is_refunded IS FALSE;`;
+    const result = await db.query(q, [code]);
+    const [data] = result.rows;
+
+    if (!result.rows.length)
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            [],
+            "Redeem Code verification Failed! Please try again."
+          )
+        );
+
+    const checkQ = `SELECT  sum(team_members_limit) AS team_member_total FROM licensing_coupon_codes WHERE redeemed_by = $1 AND is_redeemed IS TRUE;`;
+    const checkResult = await db.query(checkQ, [req.user?.owner_id]);
+    const [total] = checkResult.rows;
+
+    if (parseInt(total.team_member_total) > 50)
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(false, [], "Maximum number of codes redeemed!")
+        );
+
+    const updateQ = `UPDATE licensing_coupon_codes
+                SET is_redeemed  = TRUE, redeemed_at = CURRENT_TIMESTAMP,
+                    redeemed_by = $1
+                WHERE id = $2;`;
+    await db.query(updateQ, [req.user?.owner_id, data.id]);
+
+    const updateQ2 = `UPDATE organizations
+        SET subscription_status = 'life_time_deal',
+            trial_in_progress   = FALSE,
+            storage = (SELECT sum(storage_limit) FROM licensing_coupon_codes WHERE redeemed_by = $1),
+            license_type_id = (SELECT id FROM sys_license_types WHERE key = 'LIFE_TIME_DEAL') 
+        WHERE user_id = $1;`;
+    await db.query(updateQ2, [req.user?.owner_id]);
+
+    // Check if user has redeemed 5 codes and upgrade to Business Plan
+    const redeemedCountQ = `SELECT COUNT(*)::INT AS redeemed_count 
+                           FROM licensing_coupon_codes 
+                           WHERE redeemed_by = $1 
+                             AND is_redeemed = TRUE 
+                             AND is_refunded = FALSE;`;
+    const redeemedResult = await db.query(redeemedCountQ, [req.user?.owner_id]);
+    const redeemedCount = redeemedResult.rows[0]?.redeemed_count || 0;
+
+	    if (redeemedCount >= 5) {
+	      // Upgrade to Business Plan
+	      const businessPlanQ = `UPDATE organizations
+	        SET business_plan_override = TRUE,
+	            team_member_limit_override = TRUE
+	        WHERE user_id = $1;`;
+	      await db.query(businessPlanQ, [req.user?.owner_id]);
+	    }
+
+    return res
+      .status(200)
+      .send(new ServerResponse(true, [], "Code redeemed successfully!"));
+  }
+
+  @HandleExceptions()
   public static async deleteTeam(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
@@ -554,8 +1347,22 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .status(200)
         .send(new ServerResponse(false, "Required fields are missing."));
 
+    // Prevent self-removal using the current session identity already resolved on the request.
+    const isSelfRemoval = !!req.user?.team_member_id && id === req.user.team_member_id;
+    if (isSelfRemoval) {
+      return res
+        .status(200)
+        .send(
+          new ServerResponse(
+            false,
+            null,
+            "You cannot remove yourself from the team.",
+          ),
+        );
+    }
+
     // check subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(teamId);
+    const subscriptionData = await checkTeamSubscriptionStatus(teamId);
     if (statusExclude.includes(subscriptionData.subscription_status)) {
       return res
         .status(200)
@@ -586,7 +1393,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         );
 
         if (!userActiveInOtherTeams) {
-          const response: any = await business.featureGate.syncSeatCount(
+          const response = await updateUsers(
             subscriptionData.subscription_id,
             obj.user_count
           );
@@ -603,23 +1410,37 @@ export default class AdminCenterController extends WorklenzControllerBase {
       }
     }
 
-    NotificationsService.sendNotification({
-      receiver_socket_id: data.member.socket_id,
+    const actorUserId = req.user?.id ?? null;
+
+    NotificationsService.sendNotificationToUser(
+      data.member.id,
+      actorUserId,
+      data.member.team,
+      teamId,
       message,
-      team: data.member.team,
-      team_id: teamId,
-    });
+    );
 
     IO.emitByUserId(
       data.member.id,
-      req.user?.id || null,
+      actorUserId,
       SocketEvents.TEAM_MEMBER_REMOVED,
       {
         teamId: teamId,
         message,
+        removedUserId: data.member.id,
       }
     );
     return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async getFreePlanLimits(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const limits = await getFreePlanSettings();
+
+    return res.status(200).send(new ServerResponse(true, limits || {}));
   }
 
   @HandleExceptions()
@@ -751,39 +1572,65 @@ export default class AdminCenterController extends WorklenzControllerBase {
     // If auto_sync_holidays is enabled and country is Sri Lanka, populate holidays
     if (auto_sync_holidays && country_code === "LK") {
       try {
-        // Import the holiday data provider
-        const {
-          HolidayDataProvider,
-        } = require("../services/holiday-data-provider");
+        // Get the default holiday type (Public Holiday)
+        const typeQ = `SELECT id FROM holiday_types WHERE name = 'Public Holiday' LIMIT 1`;
+        const typeResult = await db.query(typeQ);
+        const holidayTypeId = typeResult.rows[0]?.id;
 
-        // Get current year and next year to ensure we have recent data
-        const currentYear = new Date().getFullYear();
-        const years = [currentYear, currentYear + 1];
+        if (!holidayTypeId) {
+          console.warn("Default holiday type 'Public Holiday' not found");
+        } else {
+          // Import the holiday data provider
+          const {
+            HolidayDataProvider,
+          } = require("../services/holiday-data-provider");
 
-        for (const year of years) {
-          const sriLankanHolidays =
-            await HolidayDataProvider.getSriLankanHolidays(year);
+          // Get current year and next year to ensure we have recent data
+          const currentYear = new Date().getFullYear();
+          const years = [currentYear, currentYear + 1];
 
-          for (const holiday of sriLankanHolidays) {
-            const query = `
-              INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
-              VALUES ($1, $2, $3, $4, $5)
-              ON CONFLICT (country_code, name, date) DO NOTHING
-            `;
+          for (const year of years) {
+            const sriLankanHolidays =
+              await HolidayDataProvider.getSriLankanHolidays(year);
 
-            await db.query(query, [
-              "LK",
-              holiday.name,
-              holiday.description,
-              holiday.date,
-              holiday.is_recurring,
-            ]);
+            for (const holiday of sriLankanHolidays) {
+              // Insert into organization_holidays so they show in the calendar
+              const insertOrgQuery = `
+                INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (organization_id, date) DO NOTHING
+              `;
+
+              await db.query(insertOrgQuery, [
+                organizationId,
+                holidayTypeId,
+                holiday.name,
+                holiday.description,
+                holiday.date,
+                holiday.is_recurring,
+              ]);
+
+              // Also store in country_holidays for reference
+              const insertCountryQuery = `
+                INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (country_code, name, date) DO NOTHING
+              `;
+
+              await db.query(insertCountryQuery, [
+                "LK",
+                holiday.name,
+                holiday.description,
+                holiday.date,
+                holiday.is_recurring,
+              ]);
+            }
           }
         }
 
       } catch (error) {
         // Log error but don't fail the settings update
-        log_error(error);
+        console.error("Error syncing Sri Lankan holidays:", error);
       }
     }
 
@@ -807,29 +1654,119 @@ export default class AdminCenterController extends WorklenzControllerBase {
       states: [] as Array<{ code: string; name: string }>, // Would be populated from a states table
     }));
 
-    // Add some example states for US and Canada
+    // Add all US states, DC, and territories
     const usIndex = countriesWithStates.findIndex((c) => c.code === "US");
     if (usIndex !== -1) {
       countriesWithStates[usIndex].states = [
+        { code: "AL", name: "Alabama" },
+        { code: "AK", name: "Alaska" },
+        { code: "AZ", name: "Arizona" },
+        { code: "AR", name: "Arkansas" },
         { code: "CA", name: "California" },
-        { code: "NY", name: "New York" },
-        { code: "TX", name: "Texas" },
+        { code: "CO", name: "Colorado" },
+        { code: "CT", name: "Connecticut" },
+        { code: "DE", name: "Delaware" },
         { code: "FL", name: "Florida" },
+        { code: "GA", name: "Georgia" },
+        { code: "HI", name: "Hawaii" },
+        { code: "ID", name: "Idaho" },
+        { code: "IL", name: "Illinois" },
+        { code: "IN", name: "Indiana" },
+        { code: "IA", name: "Iowa" },
+        { code: "KS", name: "Kansas" },
+        { code: "KY", name: "Kentucky" },
+        { code: "LA", name: "Louisiana" },
+        { code: "ME", name: "Maine" },
+        { code: "MD", name: "Maryland" },
+        { code: "MA", name: "Massachusetts" },
+        { code: "MI", name: "Michigan" },
+        { code: "MN", name: "Minnesota" },
+        { code: "MS", name: "Mississippi" },
+        { code: "MO", name: "Missouri" },
+        { code: "MT", name: "Montana" },
+        { code: "NE", name: "Nebraska" },
+        { code: "NV", name: "Nevada" },
+        { code: "NH", name: "New Hampshire" },
+        { code: "NJ", name: "New Jersey" },
+        { code: "NM", name: "New Mexico" },
+        { code: "NY", name: "New York" },
+        { code: "NC", name: "North Carolina" },
+        { code: "ND", name: "North Dakota" },
+        { code: "OH", name: "Ohio" },
+        { code: "OK", name: "Oklahoma" },
+        { code: "OR", name: "Oregon" },
+        { code: "PA", name: "Pennsylvania" },
+        { code: "RI", name: "Rhode Island" },
+        { code: "SC", name: "South Carolina" },
+        { code: "SD", name: "South Dakota" },
+        { code: "TN", name: "Tennessee" },
+        { code: "TX", name: "Texas" },
+        { code: "UT", name: "Utah" },
+        { code: "VT", name: "Vermont" },
+        { code: "VA", name: "Virginia" },
         { code: "WA", name: "Washington" },
+        { code: "WV", name: "West Virginia" },
+        { code: "WI", name: "Wisconsin" },
+        { code: "WY", name: "Wyoming" },
+        { code: "DC", name: "District of Columbia" },
+        { code: "AS", name: "American Samoa" },
+        { code: "GU", name: "Guam" },
+        { code: "MP", name: "Northern Mariana Islands" },
+        { code: "PR", name: "Puerto Rico" },
+        { code: "VI", name: "U.S. Virgin Islands" },
       ];
     }
 
+    // Add all Canadian provinces and territories
     const caIndex = countriesWithStates.findIndex((c) => c.code === "CA");
     if (caIndex !== -1) {
       countriesWithStates[caIndex].states = [
-        { code: "ON", name: "Ontario" },
-        { code: "QC", name: "Quebec" },
-        { code: "BC", name: "British Columbia" },
         { code: "AB", name: "Alberta" },
+        { code: "BC", name: "British Columbia" },
+        { code: "MB", name: "Manitoba" },
+        { code: "NB", name: "New Brunswick" },
+        { code: "NL", name: "Newfoundland and Labrador" },
+        { code: "NS", name: "Nova Scotia" },
+        { code: "ON", name: "Ontario" },
+        { code: "PE", name: "Prince Edward Island" },
+        { code: "QC", name: "Quebec" },
+        { code: "SK", name: "Saskatchewan" },
+        { code: "NT", name: "Northwest Territories" },
+        { code: "NU", name: "Nunavut" },
+        { code: "YT", name: "Yukon" },
       ];
     }
 
     return res.status(200).send(new ServerResponse(true, countriesWithStates));
   }
 
+  /**
+   * Get AppSumo countdown widget data
+   * GET /api/admin-center/appsumo/countdown-widget
+   */
+  @HandleExceptions()
+  public static async getAppSumoCountdownWidget(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const organizationId = req.user?.organization_id;
+    
+    if (!organizationId) {
+      return res.status(400).send(new ServerResponse(false, null, "Organization ID is required"));
+    }
+
+    const countdownData = await appSumoService.getCountdownWidget(organizationId);
+
+    if (!countdownData) {
+      return res.status(200).send(new ServerResponse(true, {
+        isVisible: false,
+        remainingDays: 0,
+        remainingHours: 0,
+        remainingMinutes: 0,
+        urgencyLevel: 'normal',
+        message: 'Not an AppSumo user or discount period expired',
+        ctaText: 'View Plans',
+        ctaUrl: '/settings/billing'
+      }));
+    }
+
+    return res.status(200).send(new ServerResponse(true, countdownData));
+  }
 }

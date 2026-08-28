@@ -21,4 +21,5 @@ export interface IPassportSession extends IUser {
   owner_id?: string;
   subscription_status?: string;
   mobile_app_banner_dismissed?: boolean;
+  appsumo_popup_frequency_days?: number;
 }

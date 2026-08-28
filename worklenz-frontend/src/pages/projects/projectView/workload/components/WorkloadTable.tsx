@@ -132,25 +132,25 @@ const calculateWorkloadFromTasks = (tasks: any[], startDate?: string, endDate?: 
 
 // Export workload data as CSV
 const exportWorkloadAsCSV = (member: IWorkloadMember, tasks: any[], t: (key: string) => string) => {
-  const headers = ['Task Name', 'Start Date', 'End Date', 'Priority', 'Status', 'Progress (%)'];
+  const headers = [t('export.taskName'), t('export.startDate'), t('export.endDate'), t('export.priority'), t('export.status'), t('export.progress')];
 
   const rows = tasks.map(task => [
-    task.name || `Task ${task.id || ''}`,
+    task.name || `${t('calendar.task')} ${task.id || ''}`,
     task.start_date ? task.start_date.split('T')[0] : '',
     task.end_date ? task.end_date.split('T')[0] : '',
-    task.priority_value || 'Normal',
+    task.priority_value || t('table.defaultPriority'),
     task.status_name || '',
     task.complete_ratio || 0,
   ]);
 
   const csvContent = [
     // Member summary rows
-    [`Member: ${member.name}`],
-    [`Email: ${member.email}`],
-    [`Capacity: ${formatTime(member.expectedCapacity)}`],
-    [`Allocated: ${formatTime(member.currentWorkload)}`],
-    [`Utilization: ${member.utilizationPercentage}%`],
-    [`Status: ${member.isOverallocated ? 'Overallocated' : member.isUnderutilized ? 'Underutilized' : 'Optimal'}`],
+    [`${t('export.memberLabel')} ${member.name}`],
+    [`${t('export.emailLabel')} ${member.email}`],
+    [`${t('export.capacityLabel')} ${formatTime(member.expectedCapacity)}`],
+    [`${t('export.allocatedLabel')} ${formatTime(member.currentWorkload)}`],
+    [`${t('export.utilizationLabel')} ${member.utilizationPercentage}%`],
+    [`${t('export.statusLabel')} ${member.isOverallocated ? t('status.overallocated') : member.isUnderutilized ? t('status.underutilized') : t('status.optimal')}`],
     [],
     headers,
     ...rows,
@@ -769,19 +769,19 @@ const WorkloadTable = ({ data }: WorkloadTableProps) => {
             <Form form={capacityForm} layout="vertical">
               <Form.Item
                 name="dailyCapacity"
-                label={t('table.capacity', 'Daily Capacity (hours)')}
+                label={t('table.dailyCapacityLabel')}
                 rules={[
-                  { required: true, message: 'Please enter a capacity value' },
-                  { type: 'number', min: 1, max: 24, message: 'Must be between 1 and 24 hours' },
+                  { required: true, message: t('common.enterCapacityValue') },
+                  { type: 'number', min: 1, max: 24, message: t('common.capacityRangeError') },
                 ]}
               >
                 <InputNumber min={1} max={24} step={0.5} style={{ width: '100%' }} addonAfter="h" />
               </Form.Item>
             </Form>
 
-            <Typography.Text type="secondary">
-              Current capacity: {formatTime(adjustMember.expectedCapacity)}
-            </Typography.Text>
+              <Typography.Text type="secondary">
+                {t('table.currentCapacityLabel')} {formatTime(adjustMember.expectedCapacity)}
+              </Typography.Text>
           </Flex>
         )}
       </Modal>

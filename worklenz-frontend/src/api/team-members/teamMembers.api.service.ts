@@ -24,13 +24,12 @@ export const teamMembersApiService = {
     search: string | null,
     all = false
   ): Promise<IServerResponse<ITeamMembersViewModel>> => {
-    const s = encodeURIComponent(search || '');
     const params = new URLSearchParams({
       index: index.toString(),
       size: size.toString(),
       ...(field && { field }),
       ...(order && { order }),
-      ...(s && { search: s }),
+      ...(search && { search }),
       ...(all && { all: all.toString() }),
     });
     const response = await apiClient.get<IServerResponse<ITeamMembersViewModel>>(

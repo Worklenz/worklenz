@@ -5,11 +5,10 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
-import { formatDateRange } from '@/utils/project-list-utils';
-import { CalendarOutlined } from '@/shared/antd-imports';
-import { Badge, Tooltip } from '@/shared/antd-imports';
+import { Badge } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
 import { NavigateFunction } from 'react-router-dom';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 
 export const ProjectNameCell: React.FC<{
   record: IProjectViewModel;
@@ -55,21 +54,10 @@ export const ProjectNameCell: React.FC<{
         <span
           className="block truncate"
           onClick={() => selectProject(record)}
-          title={record.name || ''}
+          title={decodeHtmlEntities(record.name) || ''}
         >
-          {record.name}
+          {decodeHtmlEntities(record.name)}
         </span>
-        {(record.start_date || record.end_date) && (
-          <Tooltip
-            title={formatDateRange({
-              startDate: record.start_date || null,
-              endDate: record.end_date || null,
-            })}
-            overlayStyle={{ width: '200px' }}
-          >
-            <CalendarOutlined className="ml-2" />
-          </Tooltip>
-        )}
       </span>
     </div>
   );

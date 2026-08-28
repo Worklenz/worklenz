@@ -1,998 +1,66 @@
 import db from "../config/db";
 import { PoolClient } from "pg";
 import slugify from "slugify";
-import axios from "axios";
-import path from "path";
-import { getKey, uploadBuffer } from "../shared/storage";
 import { EncryptionService } from "./encryption.service";
-
-export type ImportFlowType = "direct" | "csv";
-export type ImportStatus =
-  | "pending"
-  | "ready"
-  | "running"
-  | "success"
-  | "failed";
-
-export interface CreateImportJobInput {
-  provider: string;
-  flowType: ImportFlowType;
-  createdBy: string;
-  targetProjectId?: string;
-  targetSpaceType?: string;
-  targetTemplate?: string;
-  sourceReference?: Record<string, unknown>;
-}
-
-export interface ImportJob {
-  id: string;
-  provider: string;
-  flow_type: ImportFlowType;
-  status: ImportStatus;
-  current_step: number;
-  created_by: string;
-  target_project_id: string | null;
-  target_space_type: string | null;
-  target_template: string | null;
-  source_reference: Record<string, unknown> | null;
-  stats: Record<string, unknown>;
-  error_message: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ValueMappingRow {
-  source_value: string;
-  target_worktype: string;
-  include?: boolean;
-}
-
-export interface UserMappingRow {
-  source_user_id?: string | null;
-  source_email?: string | null;
-  target_user_id?: string | null;
-  resolution?: string;
-  include?: boolean;
-}
-
-export interface AttachmentPlanRow {
-  source_url: string;
-  filename?: string | null;
-  content_type?: string | null;
-  size_bytes?: number | null;
-  status?: string;
-  storage_key?: string | null;
-}
-
-export interface StageTaskRow {
-  source_task_id?: string | null;
-  parent_source_task_id?: string | null;
-  title: string;
-  description?: string | null;
-  status?: string | null;
-  due_at?: string | null;
-  start_at?: string | null;
-  worktype?: string | null;
-  assignee_source_id?: string | null;
-  attachments_planned?: boolean;
-  raw?: unknown;
-}
-
-export interface FieldMappingRow {
-  source_field: string;
-  target_field: string;
-  required?: boolean;
-  include?: boolean;
-}
-
-export interface TaskFieldPatch {
-  title?: string;
-  description?: string | null;
-  status?: string | null;
-  start_at?: string | null;
-  due_at?: string | null;
-  assignee_source_id?: string | null;
-  labels?: string[] | null;
-  priority_label?: string | null;
-  completed_at?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-}
-
-export interface CustomFieldValuePlan {
-  columnKey: string;
-  columnName: string;
-  value: unknown;
-}
-
-interface ImportedJiraComment {
-  author?: string;
-  authorDisplayName?: string | null;
-  authorEmail?: string | null;
-  authorAccountId?: string | null;
-  created?: string | null;
-  body?: string;
-}
-
-interface ImportedJiraWorklog {
-  author?: string;
-  started?: string | null;
-  created?: string | null;
-  timeSpent?: string;
-  timeSpentSeconds?: number;
-  comment?: string;
-}
-
-interface ImportedJiraAttachment {
-  filename?: string;
-  url?: string;
-  mimeType?: string | null;
-  size?: number | null;
-  created?: string | null;
-  author?: string;
-}
-
-type SupportedCustomFieldType =
-  | "people"
-  | "text"
-  | "number"
-  | "date"
-  | "selection"
-  | "checkbox"
-  | "labels"
-  | "key"
-  | "formula";
-
-interface SelectionOptionPlan {
-  id: string;
-  name: string;
-  color: string;
-}
-
-interface ColumnPlanConfig {
-  fieldType: SupportedCustomFieldType;
-  numberType?: string | null;
-  decimals?: number | null;
-  selections?: SelectionOptionPlan[];
-  valueToSelectionId?: Map<string, string>;
-}
-
-interface CustomColumnPlan {
-  key: string;
-  name: string;
-  sourceField: string;
-  samples: Set<string>;
-}
-
-interface CustomColumnRef {
-  id: string;
-  key: string;
-  fieldType?: SupportedCustomFieldType;
-}
-
-const MAX_SELECTION_OPTIONS = 200;
-const SELECTION_COLORS = [
-  "#2563eb",
-  "#7c3aed",
-  "#14b8a6",
-  "#f97316",
-  "#f43f5e",
-  "#f59e0b",
-  "#0ea5e9",
-  "#10b981",
-];
-
-const sanitizeSampleValue = (value: unknown): string => {
-  if (value === null || value === undefined) return "";
-  return typeof value === "string" ? value.trim() : String(value);
-};
-
-const isNumericSample = (value: string): boolean => {
-  if (!value) return false;
-  return Number.isFinite(Number(value));
-};
-
-const countDecimalPlaces = (value: string): number => {
-  if (!value.includes(".")) return 0;
-  const decimals = value.split(".")[1] || "";
-  return Math.min(decimals.length, 6);
-};
-
-const isDateSample = (value: string): boolean => {
-  if (!value) return false;
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed);
-};
-
-const isBooleanSample = (value: string): boolean => {
-  if (!value) return false;
-  const normalized = value.toLowerCase();
-  return ["true", "false", "yes", "no", "1", "0"].includes(normalized);
-};
-
-const coerceBooleanValue = (value: string): boolean | null => {
-  const normalized = value.toLowerCase();
-  if (["true", "yes", "1"].includes(normalized)) return true;
-  if (["false", "no", "0"].includes(normalized)) return false;
-  return null;
-};
-
-const normalizeLabelName = (value: string): string => value.trim();
-
-const clampText = (value: string, maxLen: number): string =>
-  value.length <= maxLen ? value : value.slice(0, Math.max(0, maxLen - 3)) + "...";
-
-const parseImportedArray = <T>(
-  raw: unknown,
-  key: string
-): T[] => {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
-  const source = raw as Record<string, unknown>;
-  const value = source[key];
-  if (!Array.isArray(value)) return [];
-  return value.filter((item) => !!item && typeof item === "object") as T[];
-};
-
-const safeDate = (value?: string | null): Date | null => {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
-const normalizeFileExtension = (
-  filename?: string | null,
-  mimeType?: string | null,
-  sourceUrl?: string | null
-): string => {
-  const fromName = filename ? path.extname(filename).replace(".", "").toLowerCase() : "";
-  if (fromName) return fromName;
-  const fromMime = mimeType
-    ? mimeType
-        .split(";")[0]
-        .split("/")
-        .pop()
-        ?.trim()
-        .toLowerCase() || ""
-    : "";
-  if (fromMime) return fromMime;
-  const fromUrl = sourceUrl
-    ? path.extname(sourceUrl.split("?")[0]).replace(".", "").toLowerCase()
-    : "";
-  return fromUrl || "bin";
-};
-
-const parseLabelValues = (
-  value: unknown,
-  source: Record<string, unknown>,
-): string[] => {
-  const labels: string[] = [];
-
-  const pushValues = (candidate: unknown) => {
-    if (Array.isArray(candidate)) {
-      candidate.forEach((entry) => {
-        if (typeof entry === "string" && entry.trim()) {
-          labels.push(entry.trim());
-        }
-      });
-      return;
-    }
-    if (typeof candidate === "string" && candidate.trim()) {
-      candidate
-        .split(/[;,]/)
-        .map((v) => v.trim())
-        .filter(Boolean)
-        .forEach((part) => labels.push(part));
-    }
-  };
-
-  pushValues(value);
-  // Allow providers to pass richer metadata alongside display strings.
-  if (Array.isArray((source as any)?.__labels))
-    pushValues((source as any).__labels);
-  if (Array.isArray((source as any)?.__labelNames))
-    pushValues((source as any).__labelNames);
-
-  // Monday.com specific tag processing
-  const tagFields = [
-    "Tags_tag_ids",
-    "tags_tag_ids",
-    "Labels_tag_ids",
-    "labels_tag_ids",
-    "Tags",
-    "tags",
-    "Labels",
-    "labels",
-    "Label", // Monday.com label columns
-    "label",
-  ];
-
-  tagFields.forEach((fieldName) => {
-    const tagValue = source[fieldName];
-    pushValues(tagValue);
-  });
-
-  // Look for _raw tag data
-  Object.keys(source).forEach((key) => {
-    if (key.toLowerCase().includes("tag") && key.includes("_raw")) {
-      const tagData = source[key];
-      if (typeof tagData === "object" && tagData && (tagData as any).tags) {
-        const tags = (tagData as any).tags;
-        if (Array.isArray(tags)) {
-          tags.forEach((tag) => {
-            if (tag && tag.name) {
-              pushValues(tag.name);
-            }
-          });
-        }
-      }
-    }
-  });
-
-  // Monday.com status-based label processing
-  Object.keys(source).forEach((key) => {
-    if (
-      key.toLowerCase().includes("label") ||
-      (key.startsWith("color_") && source[key])
-    ) {
-      const labelValue = source[key];
-      pushValues(labelValue);
-    }
-  });
-
-  // Additional Monday.com label extraction
-  // Check for direct Label fields (Label, Label1, Label2, etc.)
-  Object.keys(source).forEach((key) => {
-    if (key.match(/^Label\d*$/i) && source[key]) {
-      pushValues(source[key]);
-    }
-  });
-
-  return Array.from(new Set(labels.map(normalizeLabelName))).filter(Boolean);
-};
-
-// Create custom columns from Monday.com custom fields
-const createCustomColumnFromMondayField = async (
-  projectId: string,
-  column: { id: string; title: string; type: string; settings_str?: string },
-  db: any,
-): Promise<string | null> => {
-  try {
-    // Map Monday.com column types to Worklenz custom field types
-    const typeMapping: Record<
-      string,
-      { fieldType: string; numberType?: string }
-    > = {
-      numbers: { fieldType: "number", numberType: "formatted" },
-      numeric: { fieldType: "number", numberType: "formatted" },
-      dropdown: { fieldType: "selection" },
-      text: { fieldType: "text" }, // Use text type for text fields instead of people
-      timeline: { fieldType: "date" },
-      date: { fieldType: "date" },
-      checkbox: { fieldType: "checkbox" },
-    };
-
-    const mapping = typeMapping[column.type];
-    if (!mapping) {
-      return null;
-    }
-
-    const columnKey = `monday_${column.id}_${column.type}`;
-    const columnName = column.title || `Monday ${column.type}`;
-
-    const client = await db.pool.connect();
-    try {
-      await client.query("BEGIN");
-
-      // 1. Insert the main custom column
-      const columnQuery = `
-        INSERT INTO cc_custom_columns (
-          project_id, name, key, field_type, width, is_visible, is_custom_column
-        ) VALUES ($1, $2, $3, $4, $5, $6, true)
-        RETURNING id;
-      `;
-      const columnResult = await client.query(columnQuery, [
-        projectId,
-        columnName,
-        columnKey,
-        mapping.fieldType,
-        150, // Default width
-        true, // Visible by default
-      ]);
-      const columnId = columnResult.rows[0].id;
-
-      // 2. Insert the column configuration
-      const configQuery = `
-        INSERT INTO cc_column_configurations (
-          column_id, field_title, field_type, number_type, 
-          decimals, label, label_position, preview_value
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id;
-      `;
-      await client.query(configQuery, [
-        columnId,
-        columnName,
-        mapping.fieldType,
-        mapping.numberType || null,
-        mapping.fieldType === "number" ? 2 : null, // Default 2 decimals for numbers
-        mapping.fieldType === "number" ? "" : null, // No label for now
-        mapping.fieldType === "number" ? "left" : null,
-        mapping.fieldType === "number" ? 0 : null,
-      ]);
-
-      // 3. For dropdown fields, create selection options
-      if (mapping.fieldType === "selection" && column.settings_str) {
-        try {
-          const settings = JSON.parse(column.settings_str);
-          if (settings.labels && Array.isArray(settings.labels)) {
-            const selectionQuery = `
-              INSERT INTO cc_selection_options (
-                column_id, selection_id, selection_name, selection_color, selection_order
-              ) VALUES ($1, $2, $3, $4, $5);
-            `;
-            for (const [index, label] of settings.labels.entries()) {
-              const labelId = typeof label === "object" ? label.id : index;
-              const labelName =
-                typeof label === "object" ? label.name : String(label);
-              const labelColor =
-                typeof label === "object" ? label.color : "#3498db";
-
-              await client.query(selectionQuery, [
-                columnId,
-                String(labelId),
-                labelName,
-                labelColor,
-                index,
-              ]);
-            }
-          }
-        } catch (parseError) {
-          console.log(
-            `[Monday Custom Column] Failed to parse settings for dropdown:`,
-            parseError,
-          );
-        }
-      }
-
-      await client.query("COMMIT");
-      return columnKey;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      console.error(`[Monday Custom Column] Failed to create column:`, error);
-      return null;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error(
-      `[Monday Custom Column] Error creating custom column:`,
-      error,
-    );
-    return null;
-  }
-};
-
-const collectAssigneeCandidates = (
-  value: unknown,
-  source: Record<string, unknown>,
-): string[] => {
-  const candidates: string[] = [];
-
-  const push = (candidate?: string | null) => {
-    if (candidate && candidate.trim()) {
-      candidates.push(candidate.trim());
-    }
-  };
-
-  const pushValue = (entry: unknown) => {
-    if (entry === null || entry === undefined) return;
-    if (typeof entry === "string") {
-      push(entry);
-      return;
-    }
-    const coerced = String(entry);
-    if (coerced) push(coerced);
-  };
-
-  if (Array.isArray(value)) {
-    value.forEach(pushValue);
-  } else if (typeof value === "string" && value.trim()) {
-    value
-      .split(/[,;]/)
-      .map((v) => v.trim())
-      .filter(Boolean)
-      .forEach(push);
-  }
-
-  const rawMembers = (source as any).__memberIds as unknown[] | undefined;
-  const rawNames = (source as any).__memberNames as unknown[] | undefined;
-  const rawEmails = (source as any).__memberEmails as unknown[] | undefined;
-
-  (rawEmails || []).forEach(pushValue);
-  (rawMembers || []).forEach(pushValue);
-  (rawNames || []).forEach(pushValue);
-
-  // Monday.com specific email extraction from enhanced fields
-  const mondayEmailFields = [
-    "Person_emails",
-    "Assignee_emails",
-    "person_emails",
-    "assignee_emails",
-    "People_emails",
-    "Owner_emails",
-  ];
-
-  mondayEmailFields.forEach((fieldName) => {
-    const emailValue = source[fieldName];
-    if (emailValue && typeof emailValue === "string" && emailValue.trim()) {
-      emailValue
-        .split(/[,;]/)
-        .map((email) => email.trim())
-        .filter(Boolean)
-        .forEach(push);
-    }
-  });
-
-  // Also check for name fields from Monday.com
-  const mondayNameFields = [
-    "Person_names",
-    "Assignee_names",
-    "person_names",
-    "assignee_names",
-    "People_names",
-    "Owner_names",
-  ];
-
-  mondayNameFields.forEach((fieldName) => {
-    const nameValue = source[fieldName];
-    if (nameValue && typeof nameValue === "string" && nameValue.trim()) {
-      nameValue
-        .split(/[,;]/)
-        .map((name) => name.trim())
-        .filter(Boolean)
-        .forEach(push);
-    }
-  });
-
-  return Array.from(new Set(candidates));
-};
-
-const pickBestAssignee = (
-  candidates: string[],
-  current?: string | null,
-): string | null => {
-  if (!candidates.length) return current || null;
-  const hasEmail = candidates.find((c) => c.includes("@"));
-  if (hasEmail) return hasEmail;
-  return candidates[0] || current || null;
-};
-
-const buildSelectionOptions = (
-  plan: CustomColumnPlan,
-  values: string[],
-): { selections: SelectionOptionPlan[]; map: Map<string, string> } => {
-  const uniqueValues = Array.from(new Set(values)).slice(
-    0,
-    MAX_SELECTION_OPTIONS,
-  );
-  const selections = uniqueValues.map((value, index) => {
-    const slug =
-      slugify(value, { lower: true, strict: true }).slice(0, 40) ||
-      `option-${index}`;
-    return {
-      id: `${plan.key}-${slug}-${index}`,
-      name: value,
-      color: SELECTION_COLORS[index % SELECTION_COLORS.length],
-    };
-  });
-  const map = new Map<string, string>();
-  selections.forEach((selection) => {
-    map.set(selection.name, selection.id);
-  });
-  return { selections, map };
-};
-
-const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
-  const values = Array.from(plan.samples).filter((value) => !!value);
-
-  // Special handling for location fields - create as labels type for text display
-  if (
-    plan.name.toLowerCase().includes("location") ||
-    plan.key.includes("location")
-  ) {
-    return { fieldType: "labels" };
-  }
-
-  if (values.length && values.every(isNumericSample)) {
-    const decimals = values.reduce(
-      (acc, value) => Math.max(acc, countDecimalPlaces(value)),
-      0,
-    );
-    return { fieldType: "number", numberType: "formatted", decimals };
-  }
-
-  if (values.length && values.every(isDateSample)) {
-    return { fieldType: "date" };
-  }
-
-  if (values.length && values.every(isBooleanSample)) {
-    return { fieldType: "checkbox" };
-  }
-
-  // Default to text type for general text data instead of selection
-  // Only use selection type when there are clear distinct options
-  if (values.length > 0 && values.length <= 50) {
-    const uniqueValues = [...new Set(values)];
-    // Only create selection if there are reasonable number of distinct options
-    // and the ratio suggests categorical data (not unique text)
-    if (
-      uniqueValues.length <= 10 &&
-      uniqueValues.length / values.length <= 0.5
-    ) {
-      const { selections, map } = buildSelectionOptions(plan, values);
-      return {
-        fieldType: "selection",
-        selections,
-        valueToSelectionId: map,
-      };
-    }
-  }
-
-  // Default to text type for most text data
-  return { fieldType: "text" };
-};
-
-const STANDARD_TARGET_FIELDS = new Set<string>([
-  "key",
-  "description",
-  "progress",
-  "status",
-  "assignees",
-  "labels",
-  "phase",
-  "priority",
-  "timeTracking",
-  "estimation",
-  "startDate",
-  "dueDate",
-  "completedDate",
-  "createdDate",
-  "lastUpdated",
-  "reporter",
-]);
-
-const TARGET_FIELD_ALIASES: Record<string, string> = {
-  key: "key",
-  title: "key",
-  name: "key",
-  task: "key",
-  taskname: "key",
-  tasktitle: "key",
-  summary: "key",
-  description: "description",
-  progress: "progress",
-  status: "status",
-  assignee: "assignees",
-  assignees: "assignees",
-  member: "assignees",
-  members: "assignees",
-  label: "labels",
-  labels: "labels",
-  phase: "phase",
-  priority: "priority",
-  timetracking: "timeTracking",
-  estimation: "estimation",
-  estimate: "estimation",
-  startdate: "startDate",
-  start: "startDate",
-  startat: "startDate",
-  startatdate: "startDate",
-  duedate: "dueDate",
-  due: "dueDate",
-  dueat: "dueDate",
-  completeddate: "completedDate",
-  completed: "completedDate",
-  completedat: "completedDate",
-  createddate: "createdDate",
-  created: "createdDate",
-  createdat: "createdDate",
-  lastupdated: "lastUpdated",
-  updated: "lastUpdated",
-  updatedat: "lastUpdated",
-  reporter: "reporter",
-  owner: "reporter",
-  location: "location",
-};
-
-const normalizeTargetField = (value: string) => {
-  const normalized = slugify(value || "", {
-    lower: true,
-    strict: true,
-  }).replace(/-/g, "");
-  return TARGET_FIELD_ALIASES[normalized] || value;
-};
-
-const toColumnKey = (value: string) =>
-  slugify(value || "custom-column", { lower: true, strict: true }) ||
-  "custom-column";
-
-const normalizeRawFieldName = (value?: string | null) =>
-  slugify(value || "", { lower: true, strict: true }).replace(/-/g, "");
-
-const getNormalizedFieldValue = (
-  source: Record<string, unknown>,
-  candidates: string[],
-) => {
-  if (!candidates?.length) return null;
-
-  for (const candidate of candidates) {
-    if (
-      Object.prototype.hasOwnProperty.call(source, candidate) &&
-      source[candidate] !== undefined &&
-      source[candidate] !== null &&
-      source[candidate] !== ""
-    ) {
-      return source[candidate];
-    }
-  }
-
-  const normalizedEntries = Object.entries(source).map(([key, value]) => ({
-    key: normalizeRawFieldName(key),
-    value,
-  }));
-
-  for (const candidate of candidates) {
-    const normalizedCandidate = normalizeRawFieldName(candidate);
-    const match = normalizedEntries.find(
-      (entry) => entry.key === normalizedCandidate,
-    );
-    if (
-      match &&
-      match.value !== undefined &&
-      match.value !== null &&
-      match.value !== ""
-    ) {
-      return match.value;
-    }
-  }
-
-  return null;
-};
-
-export const mapRawToTaskFields = (
-  raw: unknown,
-  mappings: FieldMappingRow[],
-): { patch: TaskFieldPatch; customValues: CustomFieldValuePlan[] } => {
-  const source =
-    raw && typeof raw === "object" && !Array.isArray(raw)
-      ? (raw as Record<string, unknown>)
-      : {};
-
-  const patch: TaskFieldPatch = {};
-  const customValues: CustomFieldValuePlan[] = [];
-
-  const pushCustomValue = (
-    columnKey: string,
-    columnName: string,
-    value: unknown,
-  ) => {
-    customValues.push({ columnKey, columnName, value });
-  };
-
-  mappings.forEach((mapping) => {
-    if (mapping.include === false) return;
-
-    // Skip standard custom field mappings for Monday imports when Monday-specific mappings exist
-    if (
-      mapping.target_field &&
-      mappings.some((m) => m.target_field?.startsWith("monday_"))
-    ) {
-      const standardCustomFieldTypes = [
-        "dropdown",
-        "text",
-        "cost",
-        "timeline",
-        "checkbox",
-      ];
-      if (
-        standardCustomFieldTypes.includes(mapping.target_field.toLowerCase())
-      ) {
-        return;
-      }
-    }
-
-    const value = getNormalizedFieldValue(source, [mapping.source_field]);
-
-    if (value === undefined || value === null || value === "") return;
-
-    const targetField = normalizeTargetField(mapping.target_field);
-
-    switch (targetField) {
-      case "key": {
-        const normalized = String(value).trim();
-        if (normalized) {
-          patch.title = normalized;
-        }
-        break;
-      }
-      case "description":
-        patch.description = String(value);
-        break;
-      case "status":
-        patch.status = String(value);
-        break;
-      case "startDate":
-        // Handle Monday.com timeline data - check for _start suffix first
-        if (mapping.source_field?.includes("_start")) {
-          patch.start_at = String(value);
-        } else if (source[`${mapping.source_field}_raw`]) {
-          const timelineData = source[`${mapping.source_field}_raw`];
-          if (
-            typeof timelineData === "object" &&
-            timelineData &&
-            (timelineData as any).from
-          ) {
-            patch.start_at = String((timelineData as any).from);
-          } else {
-            patch.start_at = String(value);
-          }
-        } else if (source[`${mapping.source_field}_start`]) {
-          patch.start_at = String(source[`${mapping.source_field}_start`]);
-        } else {
-          patch.start_at = String(value);
-        }
-        break;
-      case "dueDate":
-        // Handle Monday.com timeline data and regular dates - check for _end suffix first
-        if (mapping.source_field?.includes("_end")) {
-          patch.due_at = String(value);
-        } else if (source[`${mapping.source_field}_raw`]) {
-          const timelineData = source[`${mapping.source_field}_raw`];
-          if (
-            typeof timelineData === "object" &&
-            timelineData &&
-            (timelineData as any).to
-          ) {
-            patch.due_at = String((timelineData as any).to);
-          } else if (
-            typeof timelineData === "object" &&
-            timelineData &&
-            (timelineData as any).date
-          ) {
-            patch.due_at = String((timelineData as any).date);
-          } else {
-            patch.due_at = String(value);
-          }
-        } else if (source[`${mapping.source_field}_end`]) {
-          patch.due_at = String(source[`${mapping.source_field}_end`]);
-        } else {
-          patch.due_at = String(value);
-        }
-        break;
-      case "createdDate":
-        patch.created_at = String(value);
-        break;
-      case "lastUpdated":
-        patch.updated_at = String(value);
-        break;
-      case "assignees": {
-        const candidates = collectAssigneeCandidates(value, source);
-        const selected = pickBestAssignee(candidates, patch.assignee_source_id);
-        if (selected) {
-          patch.assignee_source_id = selected;
-        }
-        break;
-      }
-      case "priority":
-        patch.priority_label = String(value);
-        break;
-      case "completedDate":
-        patch.completed_at = String(value);
-        break;
-      case "labels": {
-        const parsedLabels = parseLabelValues(value, source);
-        if (parsedLabels.length) {
-          patch.labels = Array.from(
-            new Set([...(patch.labels || []), ...parsedLabels]),
-          );
-        }
-        break;
-      }
-      case "progress": {
-        pushCustomValue(
-          toColumnKey("progress"),
-          mapping.source_field || "Progress",
-          value,
-        );
-        break;
-      }
-      case "timetracking": {
-        pushCustomValue(
-          toColumnKey("timeTracking"),
-          mapping.source_field || "Time Tracking",
-          value,
-        );
-        break;
-      }
-      case "estimation": {
-        pushCustomValue(
-          toColumnKey("estimation"),
-          mapping.source_field || "Estimation",
-          value,
-        );
-        break;
-      }
-      case "reporter": {
-        pushCustomValue(
-          toColumnKey("reporter"),
-          mapping.source_field || "Reporter",
-          value,
-        );
-        break;
-      }
-      case "location": {
-        pushCustomValue(
-          toColumnKey("location"),
-          mapping.source_field || "Location",
-          value,
-        );
-        break;
-      }
-      default: {
-        const columnKey = toColumnKey(targetField);
-        const columnName = mapping.source_field || targetField;
-        pushCustomValue(columnKey, columnName, value);
-        break;
-      }
-    }
-  });
-
-  // Fallbacks: if mapping was missing but raw still carries common date fields
-  if (!patch.created_at) {
-    const rawCreated =
-      (source as any)?.Created ??
-      (source as any)?.created ??
-      (source as any)?.created_at ??
-      (source as any)?.createdDate ??
-      getNormalizedFieldValue(source, [
-        "Created at",
-        "created at",
-        "Created on",
-        "created on",
-        "Created date",
-        "created date",
-        "date created",
-      ]);
-    if (rawCreated) {
-      patch.created_at = String(rawCreated);
-    }
-  }
-
-  if (!patch.updated_at) {
-    const rawUpdated =
-      (source as any)?.Updated ??
-      (source as any)?.updated ??
-      (source as any)?.updated_at ??
-      (source as any)?.updatedDate ??
-      (source as any)?.lastUpdated ??
-      getNormalizedFieldValue(source, [
-        "Updated at",
-        "updated at",
-        "Updated on",
-        "updated on",
-        "Last updated",
-        "last updated",
-        "Modified",
-        "modified",
-        "modified at",
-        "modified on",
-      ]);
-    if (rawUpdated) {
-      patch.updated_at = String(rawUpdated);
-    }
-  }
-
-  return { patch, customValues };
-};
+import { sanitizeRichTextDescription } from "../shared/utils";
+import {
+  AssigneeResolutionContext,
+  ColumnPlanConfig,
+  CreateImportJobInput,
+  CustomColumnPlan,
+  CustomColumnRef,
+  CustomFieldValuePlan,
+  FieldMappingRow,
+  ImportedJiraComment,
+  ImportJob,
+  ImportStatus,
+  StageTaskRow,
+  TaskAttachmentImportContext,
+  TaskCommentImportContext,
+  UserMappingRow,
+  ValueMappingRow,
+  AttachmentPlanRow,
+} from "./imports/types";
+import {
+  coerceBooleanValue,
+  normalizeLabelName,
+  parseImportedArray,
+  sanitizeSampleValue,
+  SELECTION_COLORS,
+} from "./imports/value-utils";
+import {
+  getNormalizedFieldValue,
+  inferColumnConfig,
+  mapRawToTaskFields,
+  normalizeTargetField,
+  STANDARD_TARGET_FIELDS,
+  toColumnKey,
+} from "./imports/field-mapping";
+import {
+  getRawCompletedValue,
+  lookupStatusId,
+  parseDateValue,
+  resolveAssignees,
+  resolvePriorityId,
+} from "./imports/resolvers";
+import {
+  importTaskAttachments as importTaskAttachmentsHelper,
+  importTaskComments as importTaskCommentsHelper,
+  importTaskWorklogs as importTaskWorklogsHelper,
+} from "./imports/commit-helpers";
+
+// Re-exported for backward compatibility — other modules (controllers, the
+// ingestion service, tests) import these directly from "./imports-service"
+// rather than reaching into the "./imports/*" submodules.
+export * from "./imports/types";
+export {
+  resolvePriorityId,
+  lookupStatusId,
+  resolveAssignees,
+  PRIORITY_ALIASES,
+  normalizeAssigneeToken,
+} from "./imports/resolvers";
+export { mapRawToTaskFields } from "./imports/field-mapping";
 
 class ImportsService {
   async createJob(input: CreateImportJobInput): Promise<ImportJob> {
@@ -2104,46 +1172,6 @@ class ImportsService {
       const roots = staged.filter((task: any) => !task.parent_source_task_id);
       const deferred = staged.filter((task: any) => task.parent_source_task_id);
 
-      const lookupStatusId = (value?: string | null): string | null => {
-        if (!value) return defaultStatusId;
-        const key = value.toString().trim().toLowerCase();
-        // Apply value mapping (e.g. "Doing" → "In Progress") before status lookup
-        const mappedKey = sourcesToTargetStatus.get(key) || key;
-        const match = statusMap.get(mappedKey) || null;
-        return match || defaultStatusId;
-      };
-
-      const parseDateValue = (value?: string | null): Date | null => {
-        if (!value) return null;
-        const parsed = new Date(value);
-        return Number.isNaN(parsed.getTime()) ? null : parsed;
-      };
-
-      const getRawCompletedValue = (raw: unknown): string | null => {
-        if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-        const source = raw as Record<string, unknown>;
-        const normalizedEntries = Object.entries(source).map(
-          ([key, value]) => ({
-            key: key.trim().toLowerCase(),
-            value,
-          }),
-        );
-        const candidates = new Set([
-          "completed on",
-          "completed_on",
-          "completed date",
-          "completeddate",
-          "completed",
-        ]);
-        for (const entry of normalizedEntries) {
-          if (!candidates.has(entry.key)) continue;
-          if (typeof entry.value === "string" && entry.value.trim()) {
-            return entry.value;
-          }
-        }
-        return null;
-      };
-
       const finalizeTaskCompletion = async (
         taskId: string,
         statusId: string | null,
@@ -2161,206 +1189,57 @@ class ImportsService {
         );
       };
 
-      const PRIORITY_ALIASES: Record<string, string> = {
-        highest: "urgent",
-        critical: "urgent",
-        blocker: "urgent",
-        lowest: "low",
-        minor: "low",
-        trivial: "low",
-        normal: "medium",
-        moderate: "medium",
+      // Worklenz only has Low / Medium / High / Critical — there is no "Urgent"
+      // priority, so aliases must resolve to one of those four names or the
+      // value silently falls back to the default (Low) priority.
+      const assigneeContext: AssigneeResolutionContext = {
+        shouldImportMembers,
+        assigneeMap,
+        teamMemberEmailMap,
+        teamMemberNameMap,
       };
 
-      const resolvePriorityId = (value?: string | null) => {
-        if (!value) return defaultPriorityId;
-        const key = value.toString().trim().toLowerCase();
-        return (
-          priorityMap.get(key) ||
-          priorityMap.get(PRIORITY_ALIASES[key] || key) ||
-          defaultPriorityId
+      const commentContext: TaskCommentImportContext = {
+        creatorTeamMemberId,
+        createdByUserId: job.created_by,
+        assigneeMap,
+        teamMemberUserMap,
+        teamMemberEmailMap,
+        teamMemberUserIdByEmailMap,
+      };
+
+      const attachmentContext: TaskAttachmentImportContext = {
+        shouldImportAttachments,
+        targetTeamId,
+        targetProjectId: job.target_project_id as string,
+        createdByUserId: job.created_by,
+        jiraAuthHeader,
+      };
+
+      const importTaskComments = (taskId: string, raw: unknown) =>
+        importTaskCommentsHelper(client, taskId, raw, commentContext).then(
+          (count) => {
+            importStats.comments += count;
+          },
         );
-      };
 
-      const normalizeAssigneeToken = (token: string) =>
-        token.trim().toLowerCase().replace(/\s+/g, " ");
+      const importTaskWorklogs = (taskId: string, raw: unknown) =>
+        importTaskWorklogsHelper(client, taskId, raw, job.created_by).then(
+          (count) => {
+            importStats.worklogs += count;
+          },
+        );
 
-      const resolveAssignees = (value?: string | null) => {
-        if (!shouldImportMembers) return [] as string[];
-        if (!value) return [] as string[];
-        const normalized = value.toString().trim();
-        if (!normalized) return [] as string[];
-        const lower = normalized.toLowerCase();
-        const nameKey = normalizeAssigneeToken(normalized);
-        const direct = assigneeMap.get(normalized);
-        const emailMatch = assigneeMap.get(lower);
-        const teamMemberId =
-          direct ||
-          emailMatch ||
-          teamMemberEmailMap.get(lower) ||
-          teamMemberNameMap.get(nameKey);
-        return teamMemberId ? [teamMemberId] : [];
-      };
-
-      const importTaskComments = async (taskId: string, raw: unknown) => {
-        if (!creatorTeamMemberId) return;
-        const comments = parseImportedArray<ImportedJiraComment>(
+      const importTaskAttachments = (taskId: string, raw: unknown) =>
+        importTaskAttachmentsHelper(
+          client,
+          taskId,
           raw,
-          "__jira_comments"
-        );
-        for (const comment of comments) {
-          const body = (comment?.body || "").trim();
-          if (!body) continue;
-          const author = (comment?.author || "Unknown").trim();
-          const createdSuffix = comment?.created ? ` (${comment.created})` : "";
-          const content = clampText(
-            `${author}${createdSuffix}: ${body}`.trim(),
-            5000
-          );
-          if (!content) continue;
-          const createdAt = safeDate(comment?.created || null);
-          const sourceAccountId = (comment?.authorAccountId || "").trim();
-          const sourceEmail = (comment?.authorEmail || "").trim().toLowerCase();
-          const mappedUserId =
-            (sourceAccountId ? assigneeMap.get(sourceAccountId) : null) ||
-            (sourceAccountId ? assigneeMap.get(sourceAccountId.toLowerCase()) : null) ||
-            (sourceEmail ? assigneeMap.get(sourceEmail) : null) ||
-            null;
-          const mappedTeamMemberId = mappedUserId
-            ? teamMemberUserMap.get(mappedUserId) || null
-            : null;
-          const emailTeamMemberId = sourceEmail
-            ? teamMemberEmailMap.get(sourceEmail) || null
-            : null;
-
-          let commentUserId = job.created_by;
-          let commentTeamMemberId = creatorTeamMemberId;
-
-          if (mappedUserId && mappedTeamMemberId) {
-            commentUserId = mappedUserId;
-            commentTeamMemberId = mappedTeamMemberId;
-          } else if (sourceEmail && emailTeamMemberId) {
-            const resolvedUserId =
-              teamMemberUserIdByEmailMap.get(sourceEmail) || null;
-            if (resolvedUserId) {
-              commentUserId = resolvedUserId;
-              commentTeamMemberId = emailTeamMemberId;
-            }
-          }
-
-          const result = await client.query(
-            `INSERT INTO task_comments (user_id, team_member_id, task_id, created_at, updated_at)
-             VALUES ($1, $2, $3, COALESCE($4::timestamptz, NOW()), COALESCE($4::timestamptz, NOW()))
-             RETURNING id`,
-            [commentUserId, commentTeamMemberId, taskId, createdAt]
-          );
-          const commentId = result.rows?.[0]?.id || null;
-          if (!commentId) continue;
-          await client.query(
-            "INSERT INTO task_comment_contents (index, comment_id, text_content) VALUES ($1, $2, $3)",
-            [0, commentId, content]
-          );
-          importStats.comments += 1;
-        }
-      };
-
-      const importTaskWorklogs = async (taskId: string, raw: unknown) => {
-        const worklogs = parseImportedArray<ImportedJiraWorklog>(
-          raw,
-          "__jira_worklogs"
-        );
-        for (const worklog of worklogs) {
-          const seconds = Math.max(0, Number(worklog?.timeSpentSeconds || 0));
-          if (!seconds) continue;
-          const author = (worklog?.author || "Unknown").trim();
-          const startedSuffix = worklog?.started ? ` (${worklog.started})` : "";
-          const note = (worklog?.comment || "").trim();
-          const description = clampText(
-            `Imported from Jira by ${author}${startedSuffix}${note ? ` - ${note}` : ""}`.trim(),
-            500
-          );
-          const loggedAt = safeDate(worklog?.started || worklog?.created || null);
-          await client.query(
-            `INSERT INTO task_work_log (time_spent, description, task_id, user_id, created_at, updated_at, logged_by_timer)
-             VALUES ($1, $2, $3, $4, COALESCE($5::timestamptz, NOW()), COALESCE($5::timestamptz, NOW()), FALSE)`,
-            [seconds, description || null, taskId, job.created_by, loggedAt]
-          );
-          importStats.worklogs += 1;
-        }
-      };
-
-      const importTaskAttachments = async (taskId: string, raw: unknown) => {
-        if (!shouldImportAttachments || !targetTeamId) return;
-        const attachments = parseImportedArray<ImportedJiraAttachment>(
-          raw,
-          "__jira_attachments"
-        );
-        for (const attachment of attachments) {
-          const sourceUrl = (attachment?.url || "").trim();
-          if (!sourceUrl) continue;
-          const fileName = clampText(
-            (attachment?.filename || "jira-attachment").trim() || "jira-attachment",
-            110
-          );
-          const extension = normalizeFileExtension(
-            fileName,
-            attachment?.mimeType || null,
-            sourceUrl
-          );
-          const contentType =
-            attachment?.mimeType || "application/octet-stream";
-          try {
-            const response = await axios.get<ArrayBuffer>(sourceUrl, {
-              responseType: "arraybuffer",
-              timeout: 30000,
-              headers: jiraAuthHeader
-                ? { Authorization: jiraAuthHeader, Accept: "*/*" }
-                : { Accept: "*/*" },
-            });
-            const buffer = Buffer.from(response.data);
-            const sizeBytes =
-              attachment?.size && attachment.size > 0
-                ? attachment.size
-                : buffer.length;
-            const insert = await client.query(
-              `INSERT INTO task_attachments (name, task_id, team_id, project_id, uploaded_by, size, type)
-               VALUES ($1, $2, $3, $4, $5, $6, $7)
-               RETURNING id`,
-              [
-                fileName,
-                taskId,
-                targetTeamId,
-                job.target_project_id,
-                job.created_by,
-                sizeBytes,
-                extension,
-              ]
-            );
-            const attachmentId = insert.rows?.[0]?.id || null;
-            if (!attachmentId) {
-              importStats.attachmentFailures += 1;
-              continue;
-            }
-            const storageKey = getKey(
-              targetTeamId,
-              job.target_project_id as string,
-              attachmentId,
-              extension
-            );
-            const uploaded = await uploadBuffer(buffer, contentType, storageKey);
-            if (!uploaded) {
-              await client.query("DELETE FROM task_attachments WHERE id = $1", [
-                attachmentId,
-              ]);
-              importStats.attachmentFailures += 1;
-              continue;
-            }
-            importStats.attachments += 1;
-          } catch (err) {
-            importStats.attachmentFailures += 1;
-          }
-        }
-      };
+          attachmentContext,
+        ).then(({ attachments, attachmentFailures }) => {
+          importStats.attachments += attachments;
+          importStats.attachmentFailures += attachmentFailures;
+        });
 
       const createTask = async (task: any, parentId?: string | null) => {
         const { patch, customValues } = mapRawToTaskFields(
@@ -2375,7 +1254,12 @@ class ImportsService {
           (taskWithMappings as any).title || task.title || "",
         ).trim();
         const taskTitle = (rawTitle || "Untitled task").slice(0, 500);
-        let statusId = lookupStatusId(taskWithMappings.status);
+        let statusId = lookupStatusId(
+          taskWithMappings.status,
+          statusMap,
+          sourcesToTargetStatus,
+          defaultStatusId,
+        );
         const completedValue =
           typeof taskWithMappings.completed_at === "string" &&
           taskWithMappings.completed_at.trim()
@@ -2396,15 +1280,27 @@ class ImportsService {
           name: taskTitle,
           project_id: job.target_project_id,
           team_id: targetTeamId,
-          description: taskWithMappings.description,
+          // This call goes straight to create_task() via a service-level query,
+          // bypassing the Express body validators entirely — they only run as
+          // route middleware, so this is the only sanitization an imported
+          // (CSV/Jira/Monday) description ever gets before it's stored and, on
+          // every later view, rendered via dangerouslySetInnerHTML.
+          description: sanitizeRichTextDescription(taskWithMappings.description),
           start: taskWithMappings.start_at,
           end: taskWithMappings.due_at,
           total_minutes: 0,
           reporter_id: job.created_by,
           status_id: statusId,
-          priority_id: resolvePriorityId(taskWithMappings.priority_label),
+          priority_id: resolvePriorityId(
+            taskWithMappings.priority_label,
+            priorityMap,
+            defaultPriorityId,
+          ),
           parent_task_id: parentId || null,
-          assignees: resolveAssignees(taskWithMappings.assignee_source_id),
+          assignees: resolveAssignees(
+            taskWithMappings.assignee_source_id,
+            assigneeContext,
+          ),
         };
 
         const result = await client.query("SELECT create_task($1) AS task;", [

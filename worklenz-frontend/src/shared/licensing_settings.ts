@@ -6,5 +6,5 @@
 
 export const LICENSING_SETTINGS = {
   /** Maximum number of custom fields (columns) allowed per project on non-Business plans. */
-  CUSTOM_FIELDS_LIMIT: 10,
+  CUSTOM_FIELDS_LIMIT: 3,
 } as const;

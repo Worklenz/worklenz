@@ -1,0 +1,17 @@
+/* Guest Members Settings Styles */
+
+/* Match team-members-settings.css structure */
+.guest-member-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.guest-member-name-edit-button {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.guest-member-name-row:hover .guest-member-name-edit-button {
+  opacity: 1;
+}

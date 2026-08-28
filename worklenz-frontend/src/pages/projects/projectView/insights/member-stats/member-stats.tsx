@@ -8,9 +8,11 @@ import { projectInsightsApiService } from '@/api/projects/insights/project-insig
 import { IProjectMemberStats } from '@/types/project/project-insights.types';
 import logger from '@/utils/errorLogger';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useTranslation } from 'react-i18next';
 
 const MemberStats = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const [memberStats, setMemberStats] = useState<IProjectMemberStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -41,19 +43,19 @@ const MemberStats = () => {
     <Flex gap={24} className="grid sm:grid-cols-2 sm:grid-rows-2 lg:grid-cols-3 lg:grid-rows-1">
       <ProjectStatsCard
         icon={groupIcon}
-        title="Project Members"
+        title={t('memberStats.projectMembers', { defaultValue: 'Project Members' })}
         children={memberStats?.total_members_count}
         loading={loadingStats}
       />
       <ProjectStatsCard
         icon={warningIcon}
-        title="Assignees with overdue tasks"
+        title={t('memberStats.assigneesWithOverdueTasks', { defaultValue: 'Assignees with overdue tasks' })}
         children={memberStats?.overdue_members}
         loading={loadingStats}
       />
       <ProjectStatsCard
         icon={unassignedIcon}
-        title="Unassigned Members"
+        title={t('memberStats.unassignedMembers', { defaultValue: 'Unassigned Members' })}
         children={memberStats?.unassigned_members}
         loading={loadingStats}
       />

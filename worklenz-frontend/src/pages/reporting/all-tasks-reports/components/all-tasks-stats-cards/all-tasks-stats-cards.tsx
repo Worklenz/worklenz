@@ -10,37 +10,37 @@ const AllTasksStatsCards = () => {
   const statsConfig = [
     {
       key: 'total',
-      title: t('totalTasks'),
+      title: t('totalTasks', { defaultValue: 'Total Tasks' }),
       value: stats.totalTasks,
       className: 'stats-card',
     },
     {
       key: 'completed',
-      title: t('completedTasks'),
+      title: t('completedTasks', { defaultValue: 'Completed' }),
       value: stats.completedTasks,
       className: 'stats-card stats-card--completed',
     },
     {
       key: 'inProgress',
-      title: t('inProgressTasks'),
+      title: t('inProgressTasks', { defaultValue: 'In Progress' }),
       value: stats.inProgressTasks,
       className: 'stats-card stats-card--in-progress',
     },
     {
       key: 'overdue',
-      title: t('overdueTasks'),
+      title: t('overdueTasks', { defaultValue: 'Overdue' }),
       value: stats.overdueTasks,
       className: 'stats-card stats-card--overdue',
     },
     {
       key: 'unassigned',
-      title: t('unassignedTasks'),
+      title: t('unassignedTasks', { defaultValue: 'Unassigned' }),
       value: stats.unassignedTasks,
       className: 'stats-card stats-card--unassigned',
     },
     {
       key: 'dueThisWeek',
-      title: t('dueThisWeekTasks'),
+      title: t('dueThisWeekTasks', { defaultValue: 'Due This Week' }),
       value: stats.dueThisWeek,
       className: 'stats-card stats-card--due-week',
     },

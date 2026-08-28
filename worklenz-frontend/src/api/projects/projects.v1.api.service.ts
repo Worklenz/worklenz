@@ -5,6 +5,7 @@ import { IProjectCategory } from '@/types/project/projectCategory.types';
 import { IProjectsViewModel } from '@/types/project/projectsViewModel.types';
 import { IServerResponse } from '@/types/common.types';
 import { IProjectMembersViewModel } from '@/types/projectMember.types';
+import { IClient } from '@/types/client.types';
 import { getCsrfToken, ensureCsrfToken } from '../api-client';
 import config from '@/config/env';
 
@@ -31,7 +32,7 @@ export const projectsApi = createApi({
     },
     credentials: 'include',
   }),
-  tagTypes: ['Projects', 'ProjectCategories', 'ProjectMembers'],
+  tagTypes: ['Projects', 'ProjectCategories', 'ProjectMembers', 'ClientsLookup'],
   endpoints: builder => ({
     getProjects: builder.query<
       IServerResponse<IProjectsViewModel>,
@@ -45,9 +46,21 @@ export const projectsApi = createApi({
         statuses: string | null;
         categories: string | null;
         priorities: string | null;
+        clients: string | null;
       }
     >({
-      query: ({ index, size, field, order, search, filter, statuses, categories, priorities }) => {
+      query: ({
+        index,
+        size,
+        field,
+        order,
+        search,
+        filter,
+        statuses,
+        categories,
+        priorities,
+        clients,
+      }) => {
         const params = new URLSearchParams({
           index: index.toString(),
           size: size.toString(),
@@ -58,6 +71,7 @@ export const projectsApi = createApi({
           statuses: statuses || '',
           categories: categories || '',
           priorities: priorities || '',
+          clients: clients || '',
         });
         return `${rootUrl}?${params.toString()}`;
       },
@@ -139,6 +153,14 @@ export const projectsApi = createApi({
       providesTags: ['ProjectCategories'],
     }),
 
+    // Lightweight {id, name} lookup for the project list's Client column
+    // filter. Cached like every other filter lookup (statuses/categories/
+    // priorities) instead of being re-fetched into local state on every mount.
+    getClientsLookup: builder.query<IServerResponse<IClient[]>, void>({
+      query: () => '/clients/lookup',
+      providesTags: ['ClientsLookup'],
+    }),
+
     getProjectMembers: builder.query<
       IServerResponse<IProjectMembersViewModel>,
       {
@@ -176,4 +198,5 @@ export const {
   useToggleArchiveProjectForAllMutation,
   useGetProjectCategoriesQuery,
   useGetProjectMembersQuery,
+  useGetClientsLookupQuery,
 } = projectsApi;

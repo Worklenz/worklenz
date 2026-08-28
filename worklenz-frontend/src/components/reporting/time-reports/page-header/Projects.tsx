@@ -89,7 +89,7 @@ const Projects: React.FC = () => {
 
   const getButtonText = () => {
     if (isNoneSelected) return t('projects');
-    if (isAllSelected) return `All ${t('projects')}`;
+    if (isAllSelected) return t('allProjects');
     return `${t('projects')} (${activeFiltersCount})`;
   };
 

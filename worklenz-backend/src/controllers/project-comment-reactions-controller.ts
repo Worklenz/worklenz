@@ -18,8 +18,8 @@ export default class ProjectCommentReactionsController extends WorklenzControlle
       return res.status(400).send(new ServerResponse(false, null, "Missing required fields"));
     }
 
-    // Validate emoji (basic validation - only allow common emojis)
-    const validEmojis = ['👍', '❤️', '😄', '😮', '😢', '🎉', '🚀', '👀', '🔥', '💯'];
+    // Validate emoji — superset of the frontend quick-reaction bar
+    const validEmojis = ['👍', '❤️', '😄', '😂', '😮', '😢', '🙏', '🎉', '🚀', '👀', '🔥', '💯'];
     if (!validEmojis.includes(emoji)) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid emoji"));
     }

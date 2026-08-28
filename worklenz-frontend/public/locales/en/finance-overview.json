@@ -1,0 +1,60 @@
+{
+  "pageTitle": "Finance Overview",
+  "pageSubTitle": "Budget, actual cost, and variance rolled up across all projects. Click into a project for its full Finance tab.",
+  "noBudgetSet": "No budget set",
+  "emptyValue": "—",
+  "viewFinanceButton": "View Finance",
+  "viewButton": "View",
+  "exportButton": "Export as Excel",
+  "exportSuccess": "Exported Successfully.",
+  "exportFailed": "Export Failed.",
+  "kpiCard": {
+    "totalManualBudget": "Total Manual Budget",
+    "totalActualCost": "Total Actual Cost",
+    "totalVariance": "Total Variance",
+    "budgetUtilization": "Budget Utilization",
+    "estimatedHours": "Estimated Hours",
+    "mixedCurrencyWarning": "Projects use different currencies. This total is not currency-converted.",
+    "mixedCurrencyNote": "Showing {{dominant}} for {{count}} of {{total}} projects. Also includes: {{others}}.",
+    "prevCurrency": "Previous currency",
+    "nextCurrency": "Next currency"
+  },
+  "attention": {
+    "title": "Projects Needing Attention",
+    "emptyState": "All projects are within budget.",
+    "overBudget": "Over budget",
+    "watch": "Watch",
+    "ofBudgetSpent": "of budget spent"
+  },
+  "distribution": {
+    "title": "Budget Status Distribution",
+    "onTrack": "On track (≤65% spent)",
+    "watch": "Watch (65–100% spent)",
+    "overBudget": "Over budget (>100% spent)",
+    "projects": "projects",
+    "total": "Total",
+    "breakdown": "Actual cost breakdown: {{fixed}} fixed · {{timeBased}} time-based"
+  },
+  "tableCard": {
+    "title": "Project Financial Health"
+  },
+  "currencyNote": {
+    "convertedPrefix": "KPI totals converted to",
+    "convertedSuffix": "using live exchange rates. Rates updated {{time}}.",
+    "changeCurrency": "Change currency",
+    "unavailable": "Exchange rates unavailable - KPI totals cannot be converted.",
+    "checkSettings": "Check currency settings",
+    "fetchUnavailable": "Exchange rate service unavailable.",
+    "fetchFailed": "Failed to fetch exchange rates."
+  },
+  "table": {
+    "project": "Project",
+    "client": "Client",
+    "manualBudget": "Manual Budget",
+    "actualCost": "Actual Cost",
+    "variance": "Variance",
+    "budgetUtilization": "Budget Utilization",
+    "estHours": "Est. Hours",
+    "searchPlaceholder": "Search Projects"
+  }
+}

@@ -1,6 +1,10 @@
 {
-  "searchByNamePlaceholder": "Search by name",
+  "searchByNamePlaceholder": "Search by project name",
   "searchByCategoryPlaceholder": "Search by category",
+  "searchClientsPlaceholder": "Search clients...",
+  "noClient": "No client",
+  "noCategoryText": "No Category",
+  "showingFirstN": "Showing {{count}} of {{total}} — Type to search",
 
   "teams": "Teams",
   "allTeams": "All Teams",
@@ -38,6 +42,11 @@
   "projectUpdateText": "Project Update",
   "clientText": "Client",
   "teamText": "Team",
+  "priorityText": "Priority",
+  "noPriority": "No priority",
+  "filtersTitle": "Filters",
+  "quickFilters": "Quick filters",
+  "filterButton": "Filter",
 
   "tableViewText": "Table",
   "groupedViewText": "Grouped",

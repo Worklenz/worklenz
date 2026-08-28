@@ -10,6 +10,14 @@ export interface ImportSourceModalProps {
   open: boolean;
   onClose: () => void;
   source: ImportSource | null;
+  /**
+   * Allows another creation surface to own the target project's configuration.
+   * The import job is not attached until the user completes the CSV flow.
+   */
+  createTargetProject?: () => Promise<string>;
+  initialProjectName?: string;
+  hideProjectSetup?: boolean;
+  onImportStarted?: (projectId: string) => void;
 }
 
 export interface ClickupTeam {

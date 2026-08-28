@@ -9,9 +9,13 @@
   "customRangeText": "Custom range",
   "startDateInputPlaceholder": "Start date",
   "EndDateInputPlaceholder": "End date",
+  "quickRanges": "Intervalos Rápidos",
+  "readyToApplyCustomRange": "Pronto para aplicar intervalo personalizado",
+  "selectStartEndDates": "Selecione datas de início e fim",
   "filterButton": "Filter",
 
   "membersTitle": "Members",
+  "membersHeaderTitle": "Membros ({{count}})",
   "includeArchivedButton": "Include Archived Projects",
   "exportButton": "Export",
   "excelButton": "Excel",
@@ -31,5 +35,6 @@
 
   "todoText": "To Do",
   "doingText": "Doing",
-  "doneText": "Done"
+  "doneText": "Done",
+  "customDateRangeInvalidError": "A data de término não pode ser anterior à data de início. Selecione um intervalo válido."
 }

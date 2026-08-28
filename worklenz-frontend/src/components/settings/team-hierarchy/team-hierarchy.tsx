@@ -29,7 +29,7 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
-import { getRoleColor } from '@/types/roles/role.types';
+import { getRoleColor, RoleName } from '@/types/roles/role.types';
 
 const { Title, Text } = Typography;
 
@@ -72,6 +72,15 @@ interface SummaryCardProps {
 const LEADERSHIP_ROLES = new Set(['Owner', 'Admin']);
 const TEAM_LEAD_ROLE = 'Team Lead';
 
+// Record<RoleName, string> ensures this stays in sync with the role set;
+// TypeScript errors if a role is added without a matching translation key here.
+const ROLE_NAME_KEY: Record<RoleName, string> = {
+  Owner: 'ownerText',
+  Admin: 'adminText',
+  'Team Lead': 'teamLeadText',
+  Member: 'memberText',
+};
+
 const normalizeSearchValue = (value: string) =>
   value
     .toLocaleLowerCase()
@@ -85,6 +94,9 @@ const sortMembersByName = (members: TeamMember[]) =>
 const TeamHierarchy = () => {
   const { t } = useTranslation('settings/team-members');
   const { token } = theme.useToken();
+
+  const translateRoleName = (roleName: string): string =>
+    t(ROLE_NAME_KEY[roleName as RoleName] ?? roleName, { defaultValue: roleName });
   const [hierarchyData, setHierarchyData] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -387,7 +399,7 @@ const TeamHierarchy = () => {
                 </Tooltip>
               ) : null}
               <Tag color={getRoleColor(member.role_name)} style={{ marginInlineEnd: 0 }}>
-                {member.role_name}
+                {translateRoleName(member.role_name)}
               </Tag>
             </Flex>
 

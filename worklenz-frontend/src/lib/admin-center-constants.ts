@@ -11,7 +11,7 @@ import React, { ReactNode, lazy } from 'react';
 const Overview = lazy(() => import('../pages/admin-center/overview/overview'));
 const Users = lazy(() => import('../pages/admin-center/users/users'));
 const Teams = lazy(() => import('../pages/admin-center/teams/teams'));
-const Billing = lazy(() => import('../pages/admin-center/billing/BillingSection'));
+const Billing = lazy(() => import('../ee/pages/admin-center/billing/BillingSection'));
 const Projects = lazy(() => import('../pages/admin-center/projects/projects'));
 const Settings = lazy(() => import('../pages/admin-center/settings/settings'));
 

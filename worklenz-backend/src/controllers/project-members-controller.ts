@@ -9,11 +9,19 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
 import TeamMembersController from "./team-members-controller";
-import business from "../business";
+import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
+import { updateUsers } from "../ee/shared/paddle-requests";
 import { statusExclude, TRIAL_MEMBER_LIMIT, APPSUMO_PLAN_LIMIT, BUSINESS_PLAN_LIMIT } from "../shared/constants";
-import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
+import { getTeamMemberSeatLimit } from "../ee/shared/subscription-limits";
+import { getGuestSeatLimit } from "../shared/guest-seat-limits";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { sendInvitationEmail } from "../shared/email-templates";
+import { hasTeamAdminPrivileges } from "../shared/team-permissions";
+
+const normalizeProjectAccessLevel = (value: unknown): string => {
+  const accessLevel = String(value ?? '').trim().toUpperCase();
+  return accessLevel || 'MEMBER';
+};
 
 export default class ProjectMembersController extends WorklenzControllerBase {
 
@@ -55,32 +63,81 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     return data;
   }
 
-  @HandleExceptions()
+  private static async getGuestLimitError(teamId: string | undefined, accessLevel: string | undefined, subscriptionData?: any) {
+    const normalizedAccessLevel = String(accessLevel ?? '').toUpperCase();
+    if (!teamId || normalizedAccessLevel !== "GUEST") return null;
+
+    const guestLimitInfo = await getGuestSeatLimit(teamId);
+
+    if (!guestLimitInfo.can_add_guest) {
+      return new ServerResponse(false, {
+        error_code: 'GUEST_LIMIT_EXCEEDED',
+        guests_enough: false,
+        current_guests: guestLimitInfo.current_guest_count,
+        plan_guest_limit: guestLimitInfo.guest_limit,
+        plan_tier: guestLimitInfo.plan_tier,
+        subscription_type: subscriptionData?.subscription_type,
+        upgrade_required: true,
+        message: guestLimitInfo.error_message
+      }, guestLimitInfo.error_message);
+    }
+
+    return null;
+  }
+
+  @HandleExceptions({
+    raisedExceptions: {
+      "MEMBER_DIFFERENT_ACCESS_LEVEL": "Guest users cannot also be regular team members, and vice versa. This user already has a conflicting access level in another project. To change their role, first remove them from all projects within this team."
+    }
+  })
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    req.body.user_id = req.user?.id;
-    req.body.team_id = req.user?.team_id;
+    const sessionUser = req.user;
+    const teamId = sessionUser?.team_id;
+    if (!sessionUser || !teamId) {
+      return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    req.body.user_id = sessionUser.id;
+    req.body.team_id = teamId;
     // Default to MEMBER access level - can be changed later if needed
-    req.body.access_level = req.body.access_level || "MEMBER";
-    const data = await this.createOrInviteMembers(req.body);
+    req.body.access_level = normalizeProjectAccessLevel(req.body.access_level);
+
+    const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+    const guestLimitError = await ProjectMembersController.getGuestLimitError(teamId, req.body.access_level, subscriptionData);
+
+    if (guestLimitError) {
+      return res.status(200).send(guestLimitError);
+    }
+
+    const data = await ProjectMembersController.createOrInviteMembers(req.body);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions({
     raisedExceptions: {
-      "ERROR_EMAIL_INVITATION_EXISTS": "Member already have a pending invitation that has not been accepted."
+      "ERROR_EMAIL_INVITATION_EXISTS": "Member already have a pending invitation that has not been accepted.",
+      "MEMBER_DIFFERENT_ACCESS_LEVEL": "Guest users cannot also be regular team members, and vice versa. This user already has a conflicting access level in another project. To change their role, first remove them from all projects within this team."
     }
   })
   public static async createByEmail(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    req.body.user_id = req.user?.id;
-    req.body.team_id = req.user?.team_id;
+    const sessionUser = req.user;
+    const teamId = sessionUser?.team_id;
+    if (!sessionUser || !teamId) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
 
-    if (!req.user?.team_id) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
+    req.body.user_id = sessionUser.id;
+    req.body.team_id = teamId;
+    req.body.access_level = normalizeProjectAccessLevel(req.body.access_level);
 
     // check the subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(req.user?.team_id);
+    const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+
+    const guestLimitError = await ProjectMembersController.getGuestLimitError(teamId, req.body.access_level, subscriptionData);
+    if (guestLimitError) {
+      return res.status(200).send(guestLimitError);
+    }
 
     // Check if user already exists in the team
-    const userExists = await this.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
+    const userExists = await ProjectMembersController.checkIfUserAlreadyExists(req.user?.owner_id as string, req.body.email);
 
     // If user exists in the team, check if they're already in the project
     if (userExists && req.body.project_id) {
@@ -97,7 +154,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         const teamMemberId = teamMemberInfo.team_member_id;
 
         // Check if already a project member
-        const projectMemberExists = await this.checkIfMemberExists(req.body.project_id, teamMemberId);
+        const projectMemberExists = await ProjectMembersController.checkIfMemberExists(req.body.project_id, teamMemberId);
 
         if (projectMemberExists) {
           return res.status(200).send(new ServerResponse(false, null, "User already exists in the project."));
@@ -106,19 +163,19 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         // User exists in team but not in project - add them to the project
         const projectMemberReq = {
           team_member_id: teamMemberId,
-          team_id: req.user?.team_id,
+          team_id: teamId,
           project_id: req.body.project_id,
-          user_id: req.user?.id,
+          user_id: sessionUser.id,
           access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
         };
-        const data = await this.createOrInviteMembers(projectMemberReq);
+        const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq);
 
         // Send email invitation to existing team member for the project
         // This ensures they receive an email notification and can access the project
         if (teamMemberInfo.email && teamMemberInfo.name) {
           sendInvitationEmail(
             true, // isNewMember = true (existing team member, not a new user)
-            req.user as IPassportSession,
+            sessionUser as IPassportSession,
             teamMemberInfo.name, // userNameOrId = name for existing members
             teamMemberInfo.email,
             teamMemberInfo.user_id || teamMemberId, // userId - use team_member_id as fallback if user_id is null
@@ -140,7 +197,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     if (subscriptionData.subscription_type === 'SELF_HOSTED') {
       // Adding as a team member
       const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; role_name?: string; is_admin?: boolean; job_title_id?: string; } = {
-        team_id: req.user?.team_id,
+        team_id: teamId,
         emails: [req.body.email]
       };
 
@@ -155,21 +212,20 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       if (req.body.job_title_id)
         teamMemberReq.job_title_id = req.body.job_title_id;
 
-      const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
+      const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, sessionUser);
 
       if (!member)
         return res.status(200).send(new ServerResponse(false, null, "Failed to add the member to the project. Please try again."));
 
-      // Adding to the project - default to MEMBER access level
-      // Access level can be changed later if needed
+      // Adding to the project - use provided access_level or default to MEMBER
       const projectMemberReq = {
         team_member_id: member.team_member_id,
-        team_id: req.user?.team_id,
+        team_id: teamId,
         project_id: req.body.project_id,
-        user_id: req.user?.id,
-        access_level: "MEMBER" // Always default to MEMBER for new invitations
+        user_id: sessionUser.id,
+        access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
       };
-      const data = await this.createOrInviteMembers(projectMemberReq);
+      const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq);
       return res.status(200).send(new ServerResponse(true, data.member));
     }
 
@@ -177,124 +233,130 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, "Unable to add user! Please check your subscription status."));
     }
 
-    /**
-   * Checks trial user team member limit
-   */
-    if (subscriptionData.subscription_status === "trialing" && subscriptionData.team_member_limit_override !== true) {
-      const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+    // Skip team member seat limit checks for GUEST access level
+    // Guests are only counted against guest limits, not team member seat limits
+    const isGuest = req.body.access_level === "GUEST";
 
-      if (currentTrialMembers + 1 > TRIAL_MEMBER_LIMIT) {
-        const obj = {
-          error_code: 'SEAT_LIMIT_EXCEEDED',
-          seats_enough: false,
-          current_members: currentTrialMembers,
-          plan_seat_limit: TRIAL_MEMBER_LIMIT,
-          business_plan_limit: BUSINESS_PLAN_LIMIT,
-          is_appsumo_user: false,
-          subscription_type: subscriptionData.subscription_type,
-          current_seat_amount: TRIAL_MEMBER_LIMIT,
-        };
-        return res.status(200).send(new ServerResponse(false, 
-          obj, 
-          // `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`
-        )
-      );
-      }
-    }
+    if (!isGuest) {
+      /**
+     * Checks trial user team member limit
+     */
+      if (subscriptionData.subscription_status === "trialing" && subscriptionData.team_member_limit_override !== true) {
+        const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
 
-    /**
-           * Checks life_time_deal (AppSumo) user team member limit based on redeemed coupon codes
-           */
-    if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
-      const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
-      const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
-
-      if (currentLtdMembers + 1 > ltdLimit) {
-        const obj = {
-          error_code: 'SEAT_LIMIT_EXCEEDED',
-          seats_enough: false,
-          current_members: currentLtdMembers,
-          plan_seat_limit: ltdLimit,
-          business_plan_limit: APPSUMO_PLAN_LIMIT,
-          is_appsumo_user: true,
-          subscription_type: subscriptionData.subscription_type,
-          current_seat_amount: ltdLimit,
-        };
-        return res
-          .status(200)
-          .send(
-            new ServerResponse(
-              false,
-              obj,
-              // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`,
-            ),
-          );
-      }
-    }
-
-    // Skip limit checks if team_member_limit_override is enabled
-    if (subscriptionData.team_member_limit_override !== true) {
-      // Check Business plan limits first - Business plans override AppSumo lifetime limits
-      if (!userExists && !subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status !== "trialing") {
-        // if (subscriptionData.subscription_status === "active") {
-        //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + 1));
-        //   if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, null, response.message || "Unable to add user! Please check your subscription."));
-        // }
-        const updatedCount = parseInt(subscriptionData.current_count) + 1;
-        const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
-        const requiredSeats = updatedCount - effectiveUserLimit;
-        if (updatedCount > effectiveUserLimit) {
-          // Check if this is an AppSumo user for specialized modal
-          const isAppSumoUser = subscriptionData.is_ltd === true;
-
+        if (currentTrialMembers + 1 > TRIAL_MEMBER_LIMIT) {
           const obj = {
             error_code: 'SEAT_LIMIT_EXCEEDED',
             seats_enough: false,
-            required_count: requiredSeats,
-            current_members: parseInt(subscriptionData.current_count),
-            plan_seat_limit: effectiveUserLimit,
-            business_plan_limit: APPSUMO_PLAN_LIMIT,
-            is_appsumo_user: isAppSumoUser,
+            current_members: currentTrialMembers,
+            plan_seat_limit: TRIAL_MEMBER_LIMIT,
+            business_plan_limit: BUSINESS_PLAN_LIMIT,
+            is_appsumo_user: false,
             subscription_type: subscriptionData.subscription_type,
-            current_seat_amount: effectiveUserLimit,
+            current_seat_amount: TRIAL_MEMBER_LIMIT,
           };
-          return res.status(200).send(new ServerResponse(
-            false,
-            obj,
-            // isAppSumoUser
-            //   ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
-            //   : `Insufficient seats available. You need ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add this member. Please upgrade your subscription.`
-          ));
+          return res.status(200).send(new ServerResponse(false, 
+            obj, 
+            // `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`
+          )
+        );
         }
       }
 
-      // Check AppSumo lifetime limits - only applies if not on Business plan
-      const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
-        subscriptionData.plan_name?.toLowerCase().includes("business") ||
-        subscriptionData.business_plan_override === true ||
-        subscriptionData.appsumo_business_eligible === true;
-      if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
-        const ltdLimit = parseInt(subscriptionData.ltd_users);
-        const obj = {
-          error_code: 'SEAT_LIMIT_EXCEEDED',
-          seats_enough: false,
-          current_members: parseInt(subscriptionData.current_count),
-          plan_seat_limit: ltdLimit,
-          business_plan_limit: APPSUMO_PLAN_LIMIT,
-          is_appsumo_user: true,
-          subscription_type: subscriptionData.subscription_type,
-          current_seat_amount: ltdLimit,
-        };
-        return res.status(200).send(new ServerResponse(false, 
-          obj, 
-          // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
-        ));
+      /**
+             * Checks life_time_deal (AppSumo) user team member limit based on redeemed coupon codes
+             */
+      if (subscriptionData.subscription_status === "life_time_deal" && subscriptionData.is_ltd) {
+        const currentLtdMembers = parseInt(subscriptionData.current_count) || 0;
+        const ltdLimit = parseInt(subscriptionData.ltd_users) || 0;
+
+        if (currentLtdMembers + 1 > ltdLimit) {
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: currentLtdMembers,
+            plan_seat_limit: ltdLimit,
+            business_plan_limit: APPSUMO_PLAN_LIMIT,
+            is_appsumo_user: true,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: ltdLimit,
+          };
+          return res
+            .status(200)
+            .send(
+              new ServerResponse(
+                false,
+                obj,
+                // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`,
+              ),
+            );
+        }
+      }
+
+      // Skip limit checks if team_member_limit_override is enabled
+      if (subscriptionData.team_member_limit_override !== true) {
+        // Check Business plan limits first - Business plans override AppSumo lifetime limits
+        if (!userExists && !subscriptionData.is_credit && !subscriptionData.is_custom && subscriptionData.subscription_status !== "trialing") {
+          // if (subscriptionData.subscription_status === "active") {
+          //   const response = await updateUsers(subscriptionData.subscription_id, (subscriptionData.quantity + 1));
+          //   if (!response.body.subscription_id) return res.status(200).send(new ServerResponse(false, null, response.message || "Unable to add user! Please check your subscription."));
+          // }
+          const updatedCount = parseInt(subscriptionData.current_count) + 1;
+          const effectiveUserLimit = getTeamMemberSeatLimit(subscriptionData);
+          const requiredSeats = updatedCount - effectiveUserLimit;
+          if (updatedCount > effectiveUserLimit) {
+            // Check if this is an AppSumo user for specialized modal
+            const isAppSumoUser = subscriptionData.is_ltd === true;
+
+            const obj = {
+              error_code: 'SEAT_LIMIT_EXCEEDED',
+              seats_enough: false,
+              required_count: requiredSeats,
+              current_members: parseInt(subscriptionData.current_count),
+              plan_seat_limit: effectiveUserLimit,
+              business_plan_limit: APPSUMO_PLAN_LIMIT,
+              is_appsumo_user: isAppSumoUser,
+              subscription_type: subscriptionData.subscription_type,
+              current_seat_amount: effectiveUserLimit,
+            };
+            return res.status(200).send(new ServerResponse(
+              false,
+              obj,
+              // isAppSumoUser
+              //   ? `Your AppSumo plan includes ${effectiveUserLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
+              //   : `Insufficient seats available. You need ${requiredSeats} more seat${requiredSeats > 1 ? 's' : ''} to add this member. Please upgrade your subscription.`
+            ));
+          }
+        }
+
+        // Check AppSumo lifetime limits - only applies if not on Business plan
+        const isBusinessPlan = subscriptionData.subscription_type === 'ANNUAL_BUSINESS' ||
+          subscriptionData.plan_name?.toLowerCase().includes("business") ||
+          subscriptionData.business_plan_override === true ||
+          subscriptionData.appsumo_business_eligible === true;
+        if (!userExists && subscriptionData.is_ltd && subscriptionData.current_count && !isBusinessPlan && (parseInt(subscriptionData.current_count) + 1 > parseInt(subscriptionData.ltd_users))) {
+          const ltdLimit = parseInt(subscriptionData.ltd_users);
+          const obj = {
+            error_code: 'SEAT_LIMIT_EXCEEDED',
+            seats_enough: false,
+            current_members: parseInt(subscriptionData.current_count),
+            plan_seat_limit: ltdLimit,
+            business_plan_limit: APPSUMO_PLAN_LIMIT,
+            is_appsumo_user: true,
+            subscription_type: subscriptionData.subscription_type,
+            current_seat_amount: ltdLimit,
+          };
+          return res.status(200).send(new ServerResponse(false, 
+            obj, 
+            // `Your AppSumo plan includes ${ltdLimit} members. Deactivate an inactive member to invite someone new, or upgrade to Business for ${BUSINESS_PLAN_LIMIT} members.`
+          ));
+        }
       }
     }
 
     // Adding as a team member
     const teamMemberReq: { team_id?: string; emails: string[], project_id?: string; role_name?: string; is_admin?: boolean; job_title_id?: string; } = {
-      team_id: req.user?.team_id,
+      team_id: teamId,
       emails: [req.body.email]
     };
 
@@ -309,21 +371,21 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     if (req.body.job_title_id)
       teamMemberReq.job_title_id = req.body.job_title_id;
 
-    const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, req.user);
+    const [member] = await TeamMembersController.createOrInviteMembers(teamMemberReq, sessionUser);
 
     if (!member)
       return res.status(200).send(new ServerResponse(false, null, "Failed to add the member to the project. Please try again."));
 
     // Adding to the project - default to MEMBER access level
-    // Access level can be changed later if needed
+    // Adding to the project - respect provided access_level or default to MEMBER
     const projectMemberReq = {
       team_member_id: member.team_member_id,
-      team_id: req.user?.team_id,
+      team_id: teamId,
       project_id: req.body.project_id,
-      user_id: req.user?.id,
-      access_level: "MEMBER" // Always default to MEMBER for new invitations
+      user_id: sessionUser.id,
+      access_level: req.body.access_level || "MEMBER"
     };
-    const data = await this.createOrInviteMembers(projectMemberReq);
+    const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq);
     return res.status(200).send(new ServerResponse(true, data.member));
   }
 
@@ -385,7 +447,8 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async generateProjectInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { project_id, access_level = 'MEMBER', job_title_id, role_name = 'MEMBER', is_admin = false, max_usage = null } = req.body;
+    const { project_id, job_title_id, role_name = 'MEMBER', is_admin = false, max_usage = null } = req.body;
+    const accessLevel = normalizeProjectAccessLevel(req.body.access_level);
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
 
@@ -408,7 +471,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     const [project] = projectResult.rows;
 
     // Check subscription status
-    const subscriptionData = await business.featureGate.getTeamSubscription(teamId);
+    const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
     // Handle self-hosted subscriptions - allow link generation
     if (subscriptionData.subscription_type === 'SELF_HOSTED') {
@@ -531,7 +594,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     try {
       // Check if an active and non-expired link already exists for this project
       const checkQuery = `
-        SELECT id, token, expires_at, created_at, status
+        SELECT id, token, expires_at, created_at, status, access_level
         FROM project_invitation_links
         WHERE project_id = $1 AND status = 'active' AND expires_at > NOW()
         ORDER BY created_at DESC
@@ -542,11 +605,18 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       let invitationLink;
       let message = "Project invitation link generated successfully";
 
-      if (checkResult.rows.length > 0) {
-        // Active and non-expired link exists, return it
-        invitationLink = checkResult.rows[0];
+      const activeLink = checkResult.rows[0];
+      if (activeLink && normalizeProjectAccessLevel(activeLink.access_level) === accessLevel) {
+        invitationLink = activeLink;
         message = "Active invitation link already exists";
       } else {
+        if (activeLink) {
+          await db.query(
+            `UPDATE project_invitation_links SET status = 'revoked', updated_at = NOW() WHERE id = $1`,
+            [activeLink.id]
+          );
+        }
+
         // Check if there's an inactive or expired link we can reactivate
         const inactiveQuery = `
           SELECT id, token, expires_at, created_at, status
@@ -576,7 +646,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           `;
 
           const result = await db.query(updateQuery, [
-            inactiveResult.rows[0].id, token, userId, expiresAt, access_level,
+            inactiveResult.rows[0].id, token, userId, expiresAt, accessLevel,
             job_title_id, role_name, is_admin, max_usage
           ]);
 
@@ -595,7 +665,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
           const result = await db.query(insertQuery, [
             project_id, teamId, token, userId, expiresAt,
-            access_level, job_title_id, role_name, is_admin, max_usage
+            accessLevel, job_title_id, role_name, is_admin, max_usage
           ]);
 
           invitationLink = result.rows[0];
@@ -727,7 +797,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       }
 
       // Check if user already exists in any team owned by this owner
-      const userExists = await this.checkIfUserAlreadyExists(owner.owner_id, email);
+      const userExists = await ProjectMembersController.checkIfUserAlreadyExists(owner.owner_id, email);
 
       // Determine if this will increment the user count (only if creating new team member)
       let incrementBy = 0;
@@ -736,7 +806,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       }
 
       // Check subscription status for the target team
-      const subscriptionData = await business.featureGate.getTeamSubscription(teamId);
+      const subscriptionData = await checkTeamSubscriptionStatus(teamId);
 
       // Handle self-hosted subscriptions
       if (subscriptionData.subscription_type === 'SELF_HOSTED') {
@@ -861,7 +931,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         access_level: validation.access_level
       };
 
-      const projectMemberResult = await this.createOrInviteMembers(projectMemberData);
+      const projectMemberResult = await ProjectMembersController.createOrInviteMembers(projectMemberData);
 
       // Record the invitation link usage
       if (projectMemberResult) {
@@ -893,6 +963,319 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       console.error('Error accepting project invitation:', error);
       return res.status(200).send(new ServerResponse(false, null, "Failed to join project. Please try again."));
     }
+  }
+
+  // Guest Members Management Endpoints
+  public static async getGuestMembers(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const teamId = req.user?.team_id;
+      if (!teamId) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Team not found in session")
+        );
+      }
+
+      // Verify user is admin/owner
+      const isAuthorized = hasTeamAdminPrivileges(req.user);
+      if (!isAuthorized) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Unauthorized. Admin access required.")
+        );
+      }
+
+      // Get pagination parameters
+      const current = parseInt(req.query.current as string) || 1;
+      const pageSize = parseInt(req.query.page_size as string) || 20;
+      const rawField = (req.query.field as string) || 'name';
+      const rawOrder = ((req.query.order as string) || 'asc').toUpperCase();
+      const search = (req.query.search as string) || '';
+
+      // Validate pagination
+      if (current < 1 || pageSize < 1 || pageSize > 100) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Invalid pagination parameters")
+        );
+      }
+
+      const allowedFields = new Set(['name', 'email', 'projects_count', 'team_access']);
+      const field = allowedFields.has(rawField) ? rawField : 'name';
+      const order = rawOrder === 'DESC' ? 'DESC' : 'ASC';
+
+      const sortColumnMap: Record<string, string> = {
+        name: 'g.name',
+        email: 'g.email',
+        projects_count: 'projects_count',
+        team_access: 'team_access',
+      };
+
+      const sortColumn = sortColumnMap[field] || 'g.name';
+
+      // Calculate offset
+      const offset = (current - 1) * pageSize;
+      const searchTerm = `%${search}%`;
+
+      // Fetch guest members with aggregated project counts and project names.
+      // Use team_member_info_view so invited guests without a linked user row still appear.
+      // The guest_tms CTE resolves the filtered set of guest team members once; the
+      // outer query aggregates their projects for the current page, while total_count
+      // is a scalar subquery over the (un-paginated) CTE so it isn't affected by LIMIT/OFFSET.
+      const query = `
+        WITH guest_tms AS (
+          SELECT DISTINCT
+            tm.id AS team_member_id,
+            u.id AS user_id,
+            COALESCE(u.name, tmi.name) AS name,
+            COALESCE(u.email, tmi.email) AS email,
+            COALESCE(u.avatar_url, tmi.avatar_url) AS avatar_url,
+            u.last_active
+          FROM project_members pm
+          JOIN team_members tm ON pm.team_member_id = tm.id
+          LEFT JOIN users u ON tm.user_id = u.id
+          JOIN team_member_info_view tmi ON tm.id = tmi.team_member_id
+          JOIN projects p ON pm.project_id = p.id
+          JOIN teams t ON p.team_id = t.id
+          JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+          WHERE t.id = $1
+            AND pal.key = 'GUEST'
+            AND (
+              COALESCE(u.name, tmi.name) ILIKE $2
+              OR COALESCE(u.email, tmi.email) ILIKE $2
+            )
+        )
+        SELECT
+          g.team_member_id AS id,
+          g.user_id,
+          g.name,
+          g.email,
+          COUNT(DISTINCT p.id) AS projects_count,
+          STRING_AGG(DISTINCT p.name, ', ') AS project_names,
+          MIN(p.name) AS project_name,
+          MIN(pal.name) AS team_access,
+          g.avatar_url,
+          BOOL_OR(tm.active) AS active,
+          CASE WHEN g.last_active > NOW() - INTERVAL '5 minutes'
+            THEN true ELSE false END AS is_online,
+          MAX(pm.created_at) AS created_at,
+          (SELECT COUNT(*) FROM guest_tms) AS total_count
+        FROM guest_tms g
+        JOIN project_members pm ON pm.team_member_id = g.team_member_id
+        JOIN team_members tm ON tm.id = g.team_member_id
+        JOIN projects p ON pm.project_id = p.id
+        JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+        WHERE pal.key = 'GUEST'
+        GROUP BY g.team_member_id, g.user_id, g.name, g.email, g.avatar_url, g.last_active
+        ORDER BY ${sortColumn} ${order}, g.name ASC
+        LIMIT $3 OFFSET $4
+      `;
+
+      const result = await db.query(query, [teamId, searchTerm, pageSize, offset]);
+
+      const total = parseInt(result.rows[0]?.total_count, 10) || 0;
+      const data = result.rows.map(({ total_count, ...row }) => row);
+
+      return res.status(200).send(
+        new ServerResponse(true, {
+          total,
+          data
+        }, "Guest members retrieved successfully")
+      );
+    } catch (error) {
+      console.error('Error fetching guest members:', error);
+      return res.status(200).send(
+        new ServerResponse(false, null, "Failed to fetch guest members")
+      );
+    }
+  }
+
+  public static async toggleGuestStatus(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const guestMemberId = req.params.id;
+      const teamId = req.user?.team_id;
+
+      if (!teamId || !guestMemberId) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Invalid parameters")
+        );
+      }
+
+      const resolution = await ProjectMembersController.resolveAuthorizedGuestMemberId(
+        req.user?.id, teamId, guestMemberId
+      );
+      if (resolution.error) {
+        return res.status(200).send(new ServerResponse(false, null, resolution.error));
+      }
+      const resolvedTeamMemberId = resolution.teamMemberId;
+
+      const currentStatusQuery = `
+        SELECT active
+        FROM team_members
+        WHERE id = $1
+      `;
+      const currentStatusResult = await db.query(currentStatusQuery, [resolvedTeamMemberId]);
+      const currentStatus = currentStatusResult.rows[0]?.active;
+
+      if (currentStatus === false) {
+        const guestLimitInfo = await getGuestSeatLimit(teamId);
+        if (guestLimitInfo.guest_limit !== -1 && guestLimitInfo.current_guest_count + 1 > guestLimitInfo.guest_limit) {
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              {
+                error_code: 'GUEST_LIMIT_EXCEEDED',
+                guests_enough: false,
+                current_guests: guestLimitInfo.current_guest_count,
+                plan_guest_limit: guestLimitInfo.guest_limit,
+                plan_tier: guestLimitInfo.plan_tier,
+                upgrade_required: true,
+                message: guestLimitInfo.error_message,
+              },
+              guestLimitInfo.error_message || 'Guest limit reached. Deactivate an active guest before reactivating another one.'
+            )
+          );
+        }
+      }
+
+      const query = `
+        UPDATE team_members
+        SET active = NOT active, updated_at = NOW()
+        WHERE id = $1
+        RETURNING active
+      `;
+
+      const result = await db.query(query, [resolvedTeamMemberId]);
+      if (result.rows.length === 0) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Guest member not found")
+        );
+      }
+
+      const newStatus = result.rows[0].active;
+      return res.status(200).send(
+        new ServerResponse(true, { active: newStatus }, 
+          newStatus ? "Guest member activated successfully" : "Guest member deactivated successfully")
+      );
+    } catch (error) {
+      console.error('Error toggling guest status:', error);
+      return res.status(200).send(
+        new ServerResponse(false, null, "Failed to update guest member status")
+      );
+    }
+  }
+
+  public static async deleteGuest(req: IWorkLenzRequest, res: IWorkLenzResponse) {
+    try {
+      const guestMemberId = req.params.id;
+      const teamId = req.user?.team_id;
+
+      if (!teamId || !guestMemberId) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Invalid parameters")
+        );
+      }
+
+      const resolution = await ProjectMembersController.resolveAuthorizedGuestMemberId(
+        req.user?.id, teamId, guestMemberId
+      );
+      if (resolution.error) {
+        return res.status(200).send(new ServerResponse(false, null, resolution.error));
+      }
+      const resolvedTeamMemberId = resolution.teamMemberId;
+
+      const query = `
+        DELETE FROM project_members
+        WHERE team_member_id = $1
+          AND project_access_level_id = (
+            SELECT id FROM project_access_levels WHERE key = 'GUEST'
+          )
+        RETURNING id
+      `;
+
+      const result = await db.query(query, [resolvedTeamMemberId]);
+      if (result.rows.length === 0) {
+        return res.status(200).send(
+          new ServerResponse(false, null, "Guest member not found")
+        );
+      }
+
+      return res.status(200).send(
+        new ServerResponse(true, null, "Guest member deleted successfully")
+      );
+    } catch (error) {
+      console.error('Error deleting guest member:', error);
+      return res.status(200).send(
+        new ServerResponse(false, null, "Failed to delete guest member")
+      );
+    }
+  }
+
+  // Resolves a guest row id (either a project_members.id or a team_members.id) to its
+  // canonical team_members.id, and verifies the requesting user may act on it. Shared by
+  // toggleGuestStatus and deleteGuest so the id-resolution and authorization logic can't drift.
+  private static async resolveAuthorizedGuestMemberId(
+    userId: string | undefined,
+    teamId: string,
+    guestMemberId: string
+  ): Promise<{ teamMemberId: string; error?: undefined } | { teamMemberId?: undefined; error: string }> {
+    const teamMemberIdQuery = `
+      SELECT tm.id AS team_member_id
+      FROM team_members tm
+      WHERE tm.id = $1
+         OR EXISTS (
+           SELECT 1
+           FROM project_members pm
+           WHERE pm.id = $1
+             AND pm.team_member_id = tm.id
+             AND pm.project_access_level_id = (
+               SELECT id FROM project_access_levels WHERE key = 'GUEST'
+             )
+         )
+      LIMIT 1
+    `;
+    const teamMemberResult = await db.query(teamMemberIdQuery, [guestMemberId]);
+    const resolvedTeamMemberId = teamMemberResult.rows[0]?.team_member_id;
+
+    if (!resolvedTeamMemberId) {
+      return { error: "Guest member not found" };
+    }
+
+    const isAuthorized = await ProjectMembersController.verifyGuestMemberAccess(userId, teamId, resolvedTeamMemberId);
+    if (!isAuthorized) {
+      return { error: "Unauthorized" };
+    }
+
+    return { teamMemberId: resolvedTeamMemberId };
+  }
+
+  // Helper method to verify guest member access
+  private static async verifyGuestMemberAccess(userId: string | undefined, teamId: string, guestMemberId: string): Promise<boolean> {
+    if (!userId) return false;
+
+    const query = `
+      SELECT 1
+      FROM team_members actor_tm
+      JOIN roles actor_role ON actor_role.id = actor_tm.role_id
+      WHERE actor_tm.user_id = $1
+        AND actor_tm.team_id = $2
+        AND actor_tm.active = true
+        AND (actor_role.owner = TRUE OR actor_role.admin_role = TRUE)
+        AND EXISTS (
+          SELECT 1
+          FROM project_members pm
+          JOIN team_members target_tm ON target_tm.id = pm.team_member_id
+          WHERE (
+            pm.id = $3::UUID
+            OR target_tm.id = $3::UUID
+          )
+            AND pm.project_access_level_id = (
+              SELECT id FROM project_access_levels WHERE key = 'GUEST'
+            )
+            AND target_tm.team_id = $2
+        )
+      LIMIT 1
+    `;
+
+    const result = await db.query(query, [userId, teamId, guestMemberId]);
+    return result.rows.length > 0;
   }
 
   @HandleExceptions()

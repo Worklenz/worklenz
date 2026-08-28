@@ -84,9 +84,9 @@ export const fetchReportingUtilization = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const utilization = [
-        { id: 'under', name: 'Under-utilized (Under 90%)', selected: true },
-        { id: 'optimal', name: 'Optimal-utilized (90%-110%)', selected: true },
-        { id: 'over', name: 'Over-utilized (Over 110%)', selected: true },
+        { id: 'under', nameKey: 'underUtilized', selected: true },
+        { id: 'optimal', nameKey: 'optimalUtilized', selected: true },
+        { id: 'over', nameKey: 'overUtilized', selected: true },
       ];
       return utilization;
     } catch (error) {
