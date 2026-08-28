@@ -4,6 +4,7 @@ import { AppstoreOutlined, RightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useGetServicesQuery } from '../store/api';
+import { stripHtml } from '@/utils/escapeHtml';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -35,10 +36,7 @@ const ServicesPage: React.FC = () => {
 
   const stripHtmlAndTruncate = (html: string, maxLength: number = 120): string => {
     if (!html) return '';
-    const text = html.replace(/<[^>]*>/g, '');
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = text;
-    const decoded = textarea.value;
+    const decoded = stripHtml(html);
     return decoded.length > maxLength ? decoded.substring(0, maxLength) + '...' : decoded;
   };
 

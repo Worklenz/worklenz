@@ -19,6 +19,7 @@ import {
 } from "@/shared/antd-imports";
 import { useNavigate, useParams } from "react-router-dom";
 import clientPortalAPI from "@/services/api";
+import { stripHtml } from "@/utils/escapeHtml";
 import { InvoiceDetails } from "@/types";
 import type { UploadFile } from "antd/es/upload/interface";
 
@@ -405,7 +406,6 @@ const InvoiceDetailsPage: React.FC = () => {
   );
 };
 
-const stripHtmlTags = (value: string): string =>
-  value.replace(/<[^>]+>/g, "").trim();
+const stripHtmlTags = (value: string): string => stripHtml(value);
 
 export default InvoiceDetailsPage;

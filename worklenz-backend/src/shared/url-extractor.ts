@@ -3,8 +3,24 @@ import { log_error } from "./utils";
 
 const URL_REGEX = /https?:\/\/[^\s<>"{}|\\^`[\]]+/gi;
 
+// Linear-time HTML tag stripper. A regex such as /<[^>]+>/g exhibits
+// polynomial backtracking on input with many unclosed '<' characters, so we
+// scan the string once instead.
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ');
+  let result = "";
+  let inTag = false;
+  for (let i = 0; i < html.length; i++) {
+    const ch = html[i];
+    if (ch === "<") {
+      inTag = true;
+    } else if (ch === ">") {
+      if (inTag) result += " ";
+      inTag = false;
+    } else if (!inTag) {
+      result += ch;
+    }
+  }
+  return result;
 }
 
 export function extractUrls(html: string): string[] {
