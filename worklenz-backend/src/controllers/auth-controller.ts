@@ -26,7 +26,10 @@ export default class AuthController extends WorklenzControllerBase {
   }
 
   public static async checkPasswordStrength(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    const result = PasswordStrengthChecker.validate(req.query.password as string);
+    // Coerce to a scalar string — a repeated query param (?password=a&password=b) arrives as an array
+    const rawPassword = req.query.password;
+    const password = typeof rawPassword === "string" ? rawPassword : "";
+    const result = PasswordStrengthChecker.validate(password);
     return res.status(200).send(new ServerResponse(true, result));
   }
 
