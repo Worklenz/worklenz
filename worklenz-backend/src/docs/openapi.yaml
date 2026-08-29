@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Worklenz API
-  version: 2.2.3
+  version: 3.0.0
   description: |
     Worklenz project management platform API documentation.
 
