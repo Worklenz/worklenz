@@ -94,11 +94,11 @@ export const getClientPortalBaseUrl = (): string => {
   // For production/UST, derive from current hostname
   // If on app.worklenz.com, client portal might be on client.worklenz.com
   // Or use the same hostname with different subdomain
-  if (hostname.includes('worklenz.com')) {
-    // Replace 'app' with 'client' or use the same hostname
-    const clientHostname = hostname
-      .replace('app.', 'client.')
-      .replace('worklenz.com', 'worklenz.com');
+  if (hostname === 'worklenz.com' || hostname.endsWith('.worklenz.com')) {
+    // Swap the leading 'app.' subdomain for 'client.', otherwise keep the host as-is
+    const clientHostname = hostname.startsWith('app.')
+      ? `client.${hostname.slice('app.'.length)}`
+      : hostname;
     return `${protocol}//${clientHostname}`;
   }
 

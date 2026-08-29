@@ -41,7 +41,7 @@ export const fetchProjectData = createAsyncThunk(
       return response.body;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch project';
-      console.error(`Error fetching project data for ID ${projectId}:`, error);
+      console.error('Error fetching project data for ID', projectId, error);
       return rejectWithValue(errorMessage);
     }
   }

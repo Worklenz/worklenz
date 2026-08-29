@@ -8,6 +8,7 @@ import { themeWiseColor } from '@/utils/themeWiseColor';
 import { colors } from '@/styles/colors';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { stripHtmlTags } from '@/utils/sanitizeInput';
 
 interface TaskViewCommentEditProps {
   commentData: ITaskCommentViewModel;
@@ -37,8 +38,8 @@ const prepareContentForEditing = (content: string): string => {
   //    the original URL they typed, not the display label
   const withRawUrls = withoutMentionSpans.replace(/<a[^>]*href="([^"]*)"[^>]*>[^<]*<\/a>/gi, '$1');
 
-  // 3. Strip any remaining HTML tags
-  return withRawUrls.replace(/<[^>]*>/g, '');
+  // 3. Strip any remaining HTML tags (DOMPurify-based; a one-pass regex is bypassable)
+  return stripHtmlTags(withRawUrls);
 };
 
 const TaskViewCommentEdit = ({ commentData, onUpdated }: TaskViewCommentEditProps) => {

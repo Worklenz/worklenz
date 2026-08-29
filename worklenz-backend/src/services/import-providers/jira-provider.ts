@@ -7,6 +7,7 @@ import {
 } from "../imports-service";
 import { getWithRetries } from "./http-utils";
 import db from "../../config/db";
+import { assertSafeExternalHost } from "../../shared/ssrf-guard";
 
 interface JiraIssue {
   id: string;
@@ -234,7 +235,10 @@ export default class JiraProvider implements ImportProvider {
       );
     }
 
-    return { token, email, domain, projectKey, projectName };
+    // Reject internal/private hosts before any outbound request is made (SSRF guard)
+    const safeDomain = assertSafeExternalHost(domain as string);
+
+    return { token, email, domain: safeDomain, projectKey, projectName };
   }
 
   private buildAuthHeader(email: string, token: string): string {

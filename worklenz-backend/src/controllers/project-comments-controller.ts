@@ -6,7 +6,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { getColor, slugify, sanitizeCommentContent, megabytesToBytes } from "../shared/utils";
+import { escapeRegExp, getColor, slugify, sanitizeCommentContent, megabytesToBytes } from "../shared/utils";
 import { HTML_TAG_REGEXP } from "../shared/constants";
 import { IProjectCommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendProjectComment } from "../shared/email-notifications";
@@ -50,7 +50,7 @@ export default class ProjectCommentsController extends WorklenzControllerBase {
 
     const replacedContent = mentionNames.reduce(
       (content, mentionName, index) => {
-        const regex = new RegExp(`@${mentionName}`, "g");
+        const regex = new RegExp(`@${escapeRegExp(mentionName)}`, "g");
         return content.replace(regex, `{${index}}`);
       },
       messageContent
