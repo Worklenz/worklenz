@@ -219,6 +219,7 @@ export {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
+  FolderOutlined,
 } from '@ant-design/icons';
 
 // Re-export all components with React

@@ -2,9 +2,11 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import {
   IProjectUpdateCommentViewModel,
   IProjectUpdateComment,
+  IProjectCommentReplyPreview,
 } from '@/types/project/project.types';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { IProjectCommentsCreateRequest } from '@/types/project/projectComments.types';
+import { IProjectCommentPinChangedSocketPayload } from '@/types/home/inbox.types';
 
 interface UpdatesState {
   updatesList: IProjectUpdateCommentViewModel[];
@@ -38,13 +40,47 @@ export const getProjectComments = createAsyncThunk(
 
 export const createProjectComment = createAsyncThunk(
   'updates/createProjectComment',
-  async (data: IProjectCommentsCreateRequest, { rejectWithValue }) => {
+  async (
+    data: IProjectCommentsCreateRequest & { reply_to_preview?: IProjectCommentReplyPreview },
+    { rejectWithValue, getState }
+  ) => {
     try {
-      const response = await projectCommentsApiService.createProjectComment(data);
+      // reply_to_preview is client-only (parent snippet for the optimistic
+      // render); the API only needs reply_to_id.
+      const { reply_to_preview, ...payload } = data;
+      const response = await projectCommentsApiService.createProjectComment(payload);
       if (response.done) {
         // The API returns { comment: { ... } } in response.body
         const commentData = (response.body as any).comment;
-        return commentData as IProjectUpdateCommentViewModel;
+
+        // create_project_comment() only returns id/content/project_name/team_name,
+        // so the sender's optimistic render is missing the fields the comment list
+        // needs (date, owner, avatar). Enrich from the current user + a client
+        // timestamp; the socket-triggered refetch later replaces this with the
+        // authoritative server row.
+        const state = getState() as any;
+        const currentUser = state.userReducer || {};
+        const now = new Date().toISOString();
+        const enriched: IProjectUpdateCommentViewModel = {
+          ...commentData,
+          user_id: commentData.user_id || currentUser.id,
+          created_by: commentData.created_by || currentUser.name,
+          avatar_url: commentData.avatar_url || currentUser.avatar_url,
+          created_at: commentData.created_at || now,
+          updated_at: commentData.updated_at || now,
+          reactions: commentData.reactions || [],
+          mentions:
+            commentData.mentions ||
+            ((data.mentions || []).map((m: any) => ({
+              user_id: m.id || m.user_id,
+              user_name: m.name,
+              user_email: m.email,
+            })) as any),
+          reply_to_id: commentData.reply_to_id || payload.reply_to_id,
+          reply_to: reply_to_preview || null,
+          attachments: commentData.attachments || [],
+        };
+        return enriched;
       }
       return rejectWithValue(response.message);
     } catch (error: any) {
@@ -102,6 +138,37 @@ const updatesSlice = createSlice({
         comment.last_edited_by_name = action.payload.last_edited_by_name;
       }
     },
+    markCommentDeleted: (state, action: PayloadAction<string>) => {
+      const comment = state.updatesList.find(c => c.id === action.payload);
+      if (comment) {
+        comment.is_deleted = true;
+        comment.content = '';
+        comment.mentions = [] as any;
+        comment.reactions = [];
+        comment.pinned_at = null;
+        comment.pinned_by = null;
+        comment.pinned_by_name = null;
+        comment.attachments = [];
+      }
+      // Replies quoting the deleted message switch to the placeholder too
+      state.updatesList.forEach(c => {
+        if (c.reply_to && c.reply_to.id === action.payload) {
+          c.reply_to.is_deleted = true;
+          c.reply_to.content_snippet = '';
+        }
+      });
+    },
+    updateCommentPinState: (
+      state,
+      action: PayloadAction<IProjectCommentPinChangedSocketPayload>
+    ) => {
+      const comment = state.updatesList.find(c => c.id === action.payload.comment_id);
+      if (comment) {
+        comment.pinned_at = action.payload.pinned ? action.payload.pinned_at : null;
+        comment.pinned_by = action.payload.pinned ? action.payload.pinned_by : null;
+        comment.pinned_by_name = action.payload.pinned ? action.payload.pinned_by_name : null;
+      }
+    },
   },
   extraReducers: builder => {
     // Get Comments
@@ -135,14 +202,35 @@ const updatesSlice = createSlice({
       }
     });
 
-    // Delete Comment
+    // Delete Comment — soft delete: keep the bubble, show the placeholder
     builder.addCase(deleteProjectComment.fulfilled, (state, action) => {
-      state.updatesList = state.updatesList.filter(item => item.id !== action.payload);
-      state.count -= 1;
+      const comment = state.updatesList.find(item => item.id === action.payload);
+      if (comment) {
+        comment.is_deleted = true;
+        comment.content = '';
+        comment.mentions = [] as any;
+        comment.reactions = [];
+        comment.pinned_at = null;
+        comment.pinned_by = null;
+        comment.pinned_by_name = null;
+        comment.attachments = [];
+      }
+      state.updatesList.forEach(c => {
+        if (c.reply_to && c.reply_to.id === action.payload) {
+          c.reply_to.is_deleted = true;
+          c.reply_to.content_snippet = '';
+        }
+      });
     });
   },
 });
 
-export const { addCommentFromSocket, clearUpdates, addReactionToComment, updateCommentAfterEdit } =
-  updatesSlice.actions;
+export const {
+  addCommentFromSocket,
+  clearUpdates,
+  addReactionToComment,
+  updateCommentAfterEdit,
+  markCommentDeleted,
+  updateCommentPinState,
+} = updatesSlice.actions;
 export default updatesSlice.reducer;

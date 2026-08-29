@@ -46,5 +46,22 @@
   "taskColumn": "Aufgabe",
   "taskAttachmentsEmptyText": "Keine Aufgabenanhänge gefunden.",
   "taskAttachmentDeleteSuccess": "Anhang erfolgreich gelöscht.",
-  "taskAttachmentDeleteFailed": "Anhang konnte nicht gelöscht werden."
+  "taskAttachmentDeleteFailed": "Anhang konnte nicht gelöscht werden.",
+  "linksTab": "Links",
+  "addLink": "Link hinzufügen",
+  "editLink": "Link bearbeiten",
+  "linkTitle": "Titel",
+  "linkTitleRequired": "Titel ist erforderlich",
+  "linkUrl": "URL",
+  "linkDescription": "Beschreibung",
+  "linkDescriptionPlaceholder": "Optionale Beschreibung",
+  "linkSource": "Quelle",
+  "linkAddedBy": "Hinzugefügt von",
+  "linkAddedOn": "Hinzugefügt am",
+  "linkLastModified": "Zuletzt geändert",
+  "invalidUrl": "Bitte geben Sie eine gültige URL ein",
+  "deleteLink": "Link löschen",
+  "openTask": "Aufgabe öffnen",
+  "fromTask": "Von: {{taskName}}",
+  "noLinks": "Noch keine Links. Klicken Sie auf \"Link hinzufügen\", um Ihren ersten Link hinzuzufügen."
 }

@@ -58,5 +58,11 @@
   "emojiPicker": "添加表情",
   "noChatsWithClient": "与此客户还没有对话",
   "startConversationWithClient": "开始对话以与客户讨论此请求。",
-  "messageUnavailable": "消息不可用"
+  "messageUnavailable": "消息不可用",
+  "convertToTask": "转换为任务",
+  "convertToTaskEmpty": "消息没有可用作任务名称的文本",
+  "convertToTaskError": "创建任务失败",
+  "convertToTaskSuccess": "已根据消息创建任务",
+  "noClientProject": "该客户没有分配任何项目",
+  "createTask": "创建任务"
 }

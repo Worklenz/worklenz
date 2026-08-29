@@ -1,7 +1,7 @@
 {
   "title": "Përditësimet e Projektit",
   "inputPlaceholder": "Shkruani përditësimin tuaj këtu... Përdorni @ për të përmendur anëtarët e ekipit",
-  "addButton": "Posto Përditësimin",
+  "addButton": "Dërgo",
   "cancelButton": "Anulo",
   "deleteButton": "Fshi",
   "deleteConfirmTitle": "Fshi këtë përditësim?",
@@ -9,11 +9,14 @@
   "yes": "Po",
   "no": "Jo",
   "emptyState": "Ende nuk ka përditësime. Filloni bisedën!",
+  "today": "Sot",
+  "yesterday": "Dje",
   "historyLockedBoundary": "Historiku i bisedës është i kufizuar në 90 ditët e fundit në këtë plan",
   "historyLockedTitle": "Historiku i bisedës i bllokuar",
   "historyLockedBody": "Historiku i bisedës më i vjetër se 90 ditë është i disponueshëm në planin Business.",
   "viewFullHistory": "Shiko historikun e bisedës",
   "upgradeNow": "Bëj upgrade tani",
+  "inputHint": "Enter për të dërguar  ·  Shift+Enter për rresht të ri",
   "reactions": {
     "like": "Pëlqej",
     "love": "Dashuri",
@@ -28,6 +31,20 @@
   },
   "actions": {
     "edit": "Redakto",
-    "save": "Ruaj"
-  }
+    "save": "Ruaj",
+    "reply": "Përgjigju",
+    "convertToTask": "Konverto në detyrë",
+    "pin": "Ngjit mesazhin",
+    "unpin": "Hiq ngjitjen"
+  },
+  "messageDeleted": "Ky mesazh u fshi",
+  "replyingTo": "Duke iu përgjigjur",
+  "pinned": "I ngjitur",
+  "pinnedBy": "Ngjitur nga",
+  "pinError": "Dështoi përditësimi i ngjitjes",
+  "convertToTaskSuccess": "Detyra u krijua nga mesazhi",
+  "convertToTaskError": "Dështoi krijimi i detyrës",
+  "convertToTaskEmpty": "Mesazhi nuk ka tekst për t’u përdorur si emër detyre",
+  "attachFile": "Bashkëngjit skedar",
+  "attachmentUploadError": "Ngarkimi i bashkëngjitjes dështoi"
 }

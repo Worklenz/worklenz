@@ -3,14 +3,12 @@ import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 interface IProjectDrawerState {
-  isProjectDrawerOpen: boolean;
   projectId: string | null;
   projectLoading: boolean;
   project: IProjectViewModel | null;
 }
 
 const initialState: IProjectDrawerState = {
-  isProjectDrawerOpen: false,
   projectId: null,
   projectLoading: false,
   project: null,
@@ -43,7 +41,7 @@ export const fetchProjectData = createAsyncThunk(
       return response.body;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch project';
-      console.error(`Error fetching project data for ID ${projectId}:`, error);
+      console.error('Error fetching project data for ID', projectId, error);
       return rejectWithValue(errorMessage);
     }
   }
@@ -53,9 +51,6 @@ const projectDrawerSlice = createSlice({
   name: 'projectDrawer',
   initialState,
   reducers: {
-    toggleProjectDrawer: state => {
-      state.isProjectDrawerOpen = !state.isProjectDrawerOpen;
-    },
     setProjectId: (state, action) => {
       state.projectId = action.payload;
     },
@@ -84,5 +79,5 @@ const projectDrawerSlice = createSlice({
   },
 });
 
-export const { toggleProjectDrawer, setProjectId, setProjectData } = projectDrawerSlice.actions;
+export const { setProjectId, setProjectData } = projectDrawerSlice.actions;
 export default projectDrawerSlice.reducer;

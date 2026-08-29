@@ -99,7 +99,7 @@ const ProfileSettings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasAvatar = Boolean(imageUrl || currentSession?.avatar_url);
 
-  useDocumentTitle(t('title') || 'Profile Settings');
+  useDocumentTitle(t('title', { defaultValue: 'Profile Settings' }) || 'Profile Settings');
 
   useEffect(() => {
     trackMixpanelEvent(evt_settings_profile_visit);
@@ -258,7 +258,7 @@ const ProfileSettings = () => {
         <Flex align="center" justify="center" vertical gap={8} style={{ height: '100%' }}>
           <PlusOutlined />
           <Typography.Text style={{ color: token.colorTextSecondary }}>
-            {t('upload')}
+            {t('upload', { defaultValue: 'Upload' })}
           </Typography.Text>
         </Flex>
       )}
@@ -354,16 +354,16 @@ const ProfileSettings = () => {
 
             <Form.Item
               name="name"
-              label={t('nameLabel')}
+              label={t('nameLabel', { defaultValue: 'Name' })}
               rules={[
-                { required: true, message: t('nameRequiredError') },
+                { required: true, message: t('nameRequiredError', { defaultValue: 'Name is required' }) },
                 {
                   min: 2,
-                  message: t('nameMinLengthError') || 'Name must be at least 2 characters',
+                  message: t('nameMinLengthError', { defaultValue: 'Name must be at least 2 characters' }),
                 },
                 {
                   max: 50,
-                  message: t('nameMaxLengthError') || 'Name cannot exceed 50 characters',
+                  message: t('nameMaxLengthError', { defaultValue: 'Name cannot exceed 50 characters' }),
                 },
               ]}
             >
@@ -372,15 +372,15 @@ const ProfileSettings = () => {
 
             <Form.Item
               name="email"
-              label={t('emailLabel')}
-              rules={[{ required: true, message: t('emailRequiredError') }]}
+              label={t('emailLabel', { defaultValue: 'Email' })}
+              rules={[{ required: true, message: t('emailRequiredError', { defaultValue: 'Email is required' }) }]}
             >
               <Input style={{ borderRadius: 4 }} disabled />
             </Form.Item>
 
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={updating}>
-                {isDirty ? t('saveChanges') : t('save')}
+                {isDirty ? t('saveChanges', { defaultValue: 'Save Changes' }) : t('save', { defaultValue: 'Save' })}
               </Button>
             </Form.Item>
           </Form>
@@ -402,15 +402,18 @@ const ProfileSettings = () => {
                   currentSession?.joined_date || currentSession?.created_at
                     ? calculateTimeDifference(
                       currentSession?.joined_date || currentSession?.created_at || '',
+                      t('justNow', { defaultValue: 'Just now' }),
                     )
                     : '',
+                defaultValue: 'Joined {{date}} ago',
               })}
             </Typography.Text>
           </Tooltip>
           <Tooltip title={lastUpdatedAt ? formatDateTimeWithLocale(lastUpdatedAt) : ''}>
             <Typography.Text type="secondary" style={{ fontSize: 12, width: 'fit-content' }}>
               {t('profileLastUpdatedText', {
-                date: lastUpdatedAt ? calculateTimeDifference(lastUpdatedAt) : '',
+                date: lastUpdatedAt ? calculateTimeDifference(lastUpdatedAt, t('justNow', { defaultValue: 'Just now' })) : '',
+                defaultValue: 'Last updated {{date}} ago',
               })}
             </Typography.Text>
           </Tooltip>
@@ -419,7 +422,7 @@ const ProfileSettings = () => {
 
       {/* ── Crop Modal ──────────────────────────────────────────────────────── */}
       <Modal
-        title="Crop Profile Picture"
+        title={t('cropProfilePicture', { defaultValue: 'Crop Profile Picture' })}
         open={isCropModalVisible}
         onCancel={handleCancelCrop}
         width={520}
@@ -427,10 +430,10 @@ const ProfileSettings = () => {
         destroyOnClose
         footer={[
           <Button key="cancel" onClick={handleCancelCrop} disabled={uploading}>
-            Cancel
+            {t('cancel')}
           </Button>,
           <Button key="save" type="primary" onClick={handleSaveAvatar} loading={uploading}>
-            Save
+            {t('save')}
           </Button>,
         ]}
       >

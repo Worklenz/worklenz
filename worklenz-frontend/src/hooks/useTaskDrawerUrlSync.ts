@@ -6,6 +6,7 @@ import {
   fetchTask,
   setSelectedTaskId,
   setShowTaskDrawer,
+  setTargetCommentId,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
 
@@ -41,6 +42,7 @@ const useTaskDrawerUrlSync = () => {
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('task');
       newParams.delete('task_project');
+      newParams.delete('comment');
 
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
@@ -80,9 +82,14 @@ const useTaskDrawerUrlSync = () => {
       dispatch(setSelectedTaskId(taskIdFromUrl));
       dispatch(setShowTaskDrawer(true));
 
+      // If there's a comment ID in the URL, store it so TaskComments can scroll to it
+      const commentIdFromUrl = searchParams.get('comment');
+      dispatch(setTargetCommentId(commentIdFromUrl || null));
+
       // Fetch task data
       dispatch(fetchTask({ taskId: taskIdFromUrl, projectId: resolvedProjectId }));
     }
+
   }, [searchParams, showTaskDrawer, projectId, routeProjectId, selectedTaskId, dispatch]);
 
   // Update URL when task drawer state changes

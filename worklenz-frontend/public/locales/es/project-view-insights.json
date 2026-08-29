@@ -1,4 +1,7 @@
 {
+  "overviewTab": "Resumen",
+  "membersTab": "Miembros",
+  "tasksTab": "Tareas",
   "overview": {
     "title": "Resumen",
     "statusOverview": "Resumen de Estado",
@@ -26,6 +29,29 @@
     "overLoggedTasksTooltip": "Tareas que tienen tiempo registrado más allá de su tiempo estimado",
     "overdueTasksTooltip": "Tareas que están más allá de su fecha límite"
   },
+  "projectDeadline": {
+    "title": "Fecha Límite del Proyecto",
+    "overdueTasksHours": "Tareas atrasadas (horas)",
+    "overdueTasksHoursTooltip": "Tareas que tienen tiempo registrado más allá de la fecha de finalización del proyecto",
+    "overdueTasks": "Tareas atrasadas",
+    "overdueTasksTooltip": "Tareas que están más allá de la fecha de finalización del proyecto"
+  },
+  "priorityChart": {
+    "priorityAxis": "Prioridad",
+    "taskCountAxis": "Cantidad de Tareas",
+    "tasks": "Tareas",
+    "taskCount": "tarea",
+    "noPriority": "Sin prioridad",
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "critical": "Crítica"
+  },
+  "memberStats": {
+    "projectMembers": "Miembros del proyecto",
+    "assigneesWithOverdueTasks": "Asignados con tareas atrasadas",
+    "unassignedMembers": "Miembros sin asignar"
+  },
   "common": {
     "seeAll": "Ver todo",
     "totalLoggedHours": "Total de horas registradas",
@@ -36,6 +62,20 @@
     "overdueTasksTooltip": "Tareas que están más allá de su fecha límite",
     "totalLoggedHoursTooltip": "Estimación de tareas y tiempo registrado para las tareas.",
     "includeArchivedTasks": "Incluir Tareas Archivadas",
-    "export": "Exportar"
+    "export": "Exportar",
+    "name": "Nombre",
+    "status": "Estado",
+    "dueDate": "Fecha límite",
+    "lastUpdated": "Última actualización",
+    "na": "N/A"
+  },
+  "justNow": "Justo ahora",
+  "tasksTable": {
+    "daysOverdue": "Días de atraso",
+    "completedAt": "Completado el",
+    "members": "Miembros",
+    "overLoggedTime": "Tiempo registrado excesivo",
+    "completedDate": "Fecha de finalización",
+    "totalAllocation": "Asignación total"
   }
 }

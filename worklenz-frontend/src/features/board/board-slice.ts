@@ -9,6 +9,7 @@ import {
 } from '@/types/tasks/taskList.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import logger from '@/utils/errorLogger';
+import { toArray } from '@/utils/to-array';
 import { ITaskListMemberFilter } from '@/types/tasks/taskListFilters.types';
 import { IProjectTask, ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
 import { ITaskStatusViewModel } from '@/types/tasks/taskStatusGetResponse.types';
@@ -68,6 +69,7 @@ interface BoardState {
 
   taskAssignees: ITaskListMemberFilter[];
   loadingAssignees: boolean;
+  phases: string[];
 
   statuses: ITaskStatusViewModel[];
 
@@ -97,6 +99,7 @@ const initialState: BoardState = {
   taskAssignees: [],
   loadingAssignees: false,
   statuses: [],
+  phases: [],
   labels: [],
   loadingLabels: false,
   priorities: [],
@@ -185,7 +188,8 @@ export const fetchBoardTaskGroups = createAsyncThunk(
         field: boardReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
         order: '',
         search: boardReducer.search || '',
-        statuses: '',
+        statuses: boardReducer.statuses.map(s => s.id || '').join(' '),
+        phases: boardReducer.phases.join(' '),
         members: selectedMembers,
         projects: '',
         isSubtasksInclude: boardReducer.isSubtasksInclude,
@@ -240,7 +244,8 @@ export const fetchBoardSubTasks = createAsyncThunk(
         field: boardReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
         order: '',
         search: boardReducer.search || '',
-        statuses: '',
+        statuses: boardReducer.statuses.map(s => s.id || '').join(' '),
+        phases: boardReducer.phases.join(' '),
         members: selectedMembers,
         projects: '',
         isSubtasksInclude: false,
@@ -250,7 +255,7 @@ export const fetchBoardSubTasks = createAsyncThunk(
       };
 
       const response = await tasksApiService.getTaskList(config);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Sub Tasks', error);
       if (error instanceof Error) {
@@ -313,7 +318,8 @@ const getTaskListConfig = (
     field: state.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
     order: '',
     search: state.search || '',
-    statuses: '',
+    statuses: state.statuses.map(s => s.id || '').join(' '),
+    phases: state.phases.join(' '),
     members: selectedMembers,
     projects: '',
     isSubtasksInclude: state.isSubtasksInclude,
@@ -563,6 +569,11 @@ const boardSlice = createSlice({
     setBoardPriorities: (state, action: PayloadAction<string[]>) => {
       state.priorities = action.payload;
     },
+
+    setBoardPhases: (state, action: PayloadAction<string[]>) => {
+      state.phases = action.payload;
+    },
+
 
     setBoardStatuses: (state, action: PayloadAction<ITaskStatusViewModel[]>) => {
       state.statuses = action.payload;
@@ -830,7 +841,7 @@ const boardSlice = createSlice({
       })
       .addCase(fetchBoardTaskGroups.fulfilled, (state, action) => {
         state.loadingGroups = false;
-        state.taskGroups = action.payload && action.payload.groups ? action.payload.groups : [];
+        state.taskGroups = action.payload && action.payload.groups ? (action.payload.groups as any as ITaskListGroup[]) : [];
         state.allTasks = action.payload && action.payload.allTasks ? action.payload.allTasks : [];
         state.grouping = action.payload && action.payload.grouping ? action.payload.grouping : '';
         state.totalTasks =
@@ -849,16 +860,17 @@ const boardSlice = createSlice({
           result.task.sub_tasks_loading = true;
         }
       })
-      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<IProjectTask[]>) => {
-        if (action.payload.length > 0) {
-          const taskId = action.payload[0].parent_task_id;
+      .addCase(fetchBoardSubTasks.fulfilled, (state, action: PayloadAction<any>) => {
+        const subTasks = toArray(action.payload) as IProjectTask[];
+        if (subTasks.length > 0) {
+          const taskId = subTasks[0].parent_task_id;
           if (taskId) {
             const result = findTaskInAllGroups(state.taskGroups, taskId);
             if (result) {
-              result.task.sub_tasks = action.payload;
+              result.task.sub_tasks = subTasks;
               result.task.show_sub_tasks = true;
               result.task.sub_tasks_loading = false;
-              result.task.sub_tasks_count = action.payload.length;
+              result.task.sub_tasks_count = subTasks.length;
             }
           }
         } else {
@@ -900,6 +912,7 @@ export const {
   setBoardLabels,
   setBoardMembers,
   setBoardPriorities,
+  setBoardPhases,
   setBoardStatuses,
   setBoardSearch,
   setBoardGroupName,

@@ -344,6 +344,10 @@ export interface IRPTProject extends IRPTOverviewProject {
   estimated_time_string?: string;
   actual_time_string?: string;
   project_manager: ITeamMemberViewModel;
+  // Project-level priority fields
+  priority_id?: string | null;
+  priority_name?: string | null;
+  priority_color?: string | null;
 }
 
 export interface IDurationChangedEmitter {
@@ -452,4 +456,7 @@ export interface IGetProjectsRequestBody {
   project_managers: string[];
   archived: boolean;
   teams?: string[];
+  // New filters: client and project priority
+  clients?: string[];
+  priorities?: string[];
 }

@@ -37,7 +37,7 @@ const CategoriesSettings = () => {
   const { t } = useTranslation('settings/categories');
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  useDocumentTitle('Manage Categories');
+  useDocumentTitle(t('title', { defaultValue: 'Categories' }));
 
   const dispatch = useAppDispatch();
 
@@ -99,16 +99,16 @@ const CategoriesSettings = () => {
       const result = await dispatch(deleteProjectCategory(categoryId));
       if (deleteProjectCategory.fulfilled.match(result)) {
         getCategories();
-        message.success(t('deleteSuccessMessage'));
+        message.success(t('deleteSuccessMessage', { defaultValue: 'Category deleted successfully' }));
       } else if (deleteProjectCategory.rejected.match(result)) {
         // Show error message from the API
         const errorMessage = result.payload as string;
-        message.error(errorMessage || t('deleteErrorMessage'));
+        message.error(errorMessage || t('deleteErrorMessage', { defaultValue: 'Failed to delete category' }));
       }
     } catch (error) {
       // Fallback error handling
       logger.error('Failed to delete category:', error);
-      message.error(t('deleteErrorMessage'));
+      message.error(t('deleteErrorMessage', { defaultValue: 'Failed to delete category' }));
     }
   };
 
@@ -116,7 +116,7 @@ const CategoriesSettings = () => {
   const columns: TableProps['columns'] = [
     {
       key: 'category',
-      title: t('categoryColumn'),
+       title: t('categoryColumn', { defaultValue: 'Category' }),
       onCell: record => ({
         onClick: () => handleEditClick(record.id!),
       }),
@@ -124,7 +124,7 @@ const CategoriesSettings = () => {
     },
     {
       key: 'associatedTask',
-      title: t('associatedTaskColumn'),
+       title: t('associatedTaskColumn', { defaultValue: 'Associated Tasks' }),
       render: (record: IProjectCategoryViewModel) => (
         <Typography.Text>{record.usage}</Typography.Text>
       ),
@@ -149,10 +149,10 @@ const CategoriesSettings = () => {
           </Tooltip>
           {/* Delete Button */}
           <Popconfirm
-            title={t('deleteConfirmationTitle')}
+            title={t('deleteConfirmationTitle', { defaultValue: 'Delete Category' })}
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-            okText={t('deleteConfirmationOk')}
-            cancelText={t('deleteConfirmationCancel')}
+            okText={t('deleteConfirmationOk', { defaultValue: 'OK' })}
+            cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
             onConfirm={e => {
               e?.stopPropagation();
               if (record.id) {
@@ -225,7 +225,7 @@ const CategoriesSettings = () => {
       >
         <Table
           locale={{
-            emptyText: <Typography.Text>{t('emptyText')}</Typography.Text>,
+            emptyText: <Typography.Text>{t('emptyText', { defaultValue: 'No categories found' })}</Typography.Text>,
           }}
           className="custom-two-colors-row-table"
           dataSource={filteredData}

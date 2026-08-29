@@ -9,9 +9,8 @@ import {
   RocketOutlined,
 } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
-import { PlanTrialApiService } from '@/api/admin-center/plan-trial.api.service';
+import { isOnBusinessTrial, getPlanTrialDaysRemaining } from '@/ee/utils/subscription-utils';
+import { PlanTrialApiService } from '@/ee/api/admin-center/plan-trial.api.service';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
@@ -24,6 +23,7 @@ import { authApiService } from '@/api/auth/auth.api.service';
 import { setSession } from '@/utils/session-helper';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setUser } from '@/features/user/userSlice';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import logger from '@/utils/errorLogger';
 
 const DISMISS_KEY = 'business-trial-alert-dismissed';
@@ -33,9 +33,6 @@ export const BusinessPlanTrialAlert = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const authService = useAuthService();
-  const { isOnBusinessTrial: isOnTrial, planTrialDaysRemaining: trialDaysRemaining } =
-    useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,6 +41,8 @@ export const BusinessPlanTrialAlert = () => {
   const [eligibilityChecked, setEligibilityChecked] = useState(false);
 
   const currentSession = authService.getCurrentSession();
+  const isOnTrial = isOnBusinessTrial(currentSession);
+  const trialDaysRemaining = getPlanTrialDaysRemaining(currentSession);
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
   // Helper function to create base trial properties
@@ -85,11 +84,12 @@ export const BusinessPlanTrialAlert = () => {
       return;
     }
 
-    // Don't show for self-hosted or Annual Business license users
+    // Don't show for self-hosted or LKR license users (they have paid plans)
     const subscriptionType = currentSession?.subscription_type;
     if (
       subscriptionType === ISUBSCRIPTION_TYPE.SELF_HOSTED ||
-      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_BUSINESS ||
+      subscriptionType === ISUBSCRIPTION_TYPE.ANNUAL_PRO
     ) {
       setVisible(false);
       return;
@@ -250,7 +250,7 @@ export const BusinessPlanTrialAlert = () => {
     });
 
     // Open the upgrade plans modal directly
-    promptUpgrade();
+    dispatch(toggleUpgradeModal());
   };
 
   const handleDismiss = () => {
@@ -296,22 +296,30 @@ export const BusinessPlanTrialAlert = () => {
 
   // Active trial state - show countdown
   if (isOnTrial) {
+    const postTrialPlanName = currentSession?.post_trial_plan_name;
+
     const getMessage = () => {
-      if (trialDaysRemaining === 0) {
-        return t('business-trial-expires-today', {
-          defaultValue: 'Your Business trial expires today!',
-        });
-      } else if (trialDaysRemaining === 1) {
-        return t('business-trial-days-remaining', {
-          days: 1,
-          defaultValue: '1 day remaining in your Business trial',
-        });
-      } else {
-        return t('business-trial-days-remaining_plural', {
-          days: trialDaysRemaining,
-          defaultValue: `${trialDaysRemaining} days remaining in your Business trial`,
-        });
-      }
+      const base =
+        trialDaysRemaining === 0
+          ? t('business-trial-expires-today', {
+              defaultValue: 'Your Business trial expires today!',
+            })
+          : trialDaysRemaining === 1
+            ? t('business-trial-days-remaining', {
+                days: 1,
+                defaultValue: '1 day remaining in your Business trial',
+              })
+            : t('business-trial-days-remaining_plural', {
+                days: trialDaysRemaining,
+                defaultValue: `${trialDaysRemaining} days remaining in your Business trial`,
+              });
+
+      if (!postTrialPlanName) return base;
+
+      return `${base} — ${t('business-trial-then-plan', {
+        plan: postTrialPlanName,
+        defaultValue: `you'll continue on ${postTrialPlanName} after that`,
+      })}`;
     };
 
     return (

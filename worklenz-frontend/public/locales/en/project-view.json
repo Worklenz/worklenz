@@ -13,5 +13,11 @@
   "pinnedTab": "Pinned as default tab",
   "pinTab": "Pin as default tab",
   "unpinTab": "Unpin default tab",
-  "finance": "Finance"
+  "finance": "Finance",
+  "projectUpdated": "Project Updated",
+  "projectDataUpdatedDesc": "A team member has updated this project.",
+  "projectHealthUpdatedDesc": "The project health has been updated.",
+  "projectStatusUpdatedDesc": "The project status has been updated.",
+  "projectDatesUpdatedDesc": "The project dates have been updated.",
+  "projectCategoryUpdatedDesc": "The project category has been updated."
 }

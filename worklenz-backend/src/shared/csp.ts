@@ -57,7 +57,8 @@ const policies = {
     "data:",
     "ws:", // For WebSocket connections
     "wss:", // For secure WebSocket connections
-    "https://react.worklenz.com",
+    "https://uat.app.worklenz.com",
+    "https://uat.api.worklenz.com",
     "https://v2.worklenz.com",
     "https://dev.worklenz.com",
     "https://js.hs-analytics.net",

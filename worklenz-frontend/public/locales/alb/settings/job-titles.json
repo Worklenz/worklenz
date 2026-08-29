@@ -16,5 +16,8 @@
   "createJobTitleSuccessMessage": "Titulli i punës u krijua me sukses!",
   "createJobTitleErrorMessage": "Krijimi i titullit të punës dështoi!",
   "updateJobTitleSuccessMessage": "Titulli i punës u përditësua me sukses!",
-  "updateJobTitleErrorMessage": "Përditësimi i titullit të punës dështoi!"
+  "updateJobTitleErrorMessage": "Përditësimi i titullit të punës dështoi!",
+  "paginationTotal": "{{start}}-{{end}} nga {{total}} artikuj",
+  "editTooltip": "Modifiko",
+  "deleteTooltip": "Fshi"
 }

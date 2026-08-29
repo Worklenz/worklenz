@@ -46,5 +46,22 @@
   "taskColumn": "任务",
   "taskAttachmentsEmptyText": "未找到任务附件。",
   "taskAttachmentDeleteSuccess": "附件删除成功。",
-  "taskAttachmentDeleteFailed": "无法删除附件。"
+  "taskAttachmentDeleteFailed": "无法删除附件。",
+  "linksTab": "链接",
+  "addLink": "添加链接",
+  "editLink": "编辑链接",
+  "linkTitle": "标题",
+  "linkTitleRequired": "标题为必填项",
+  "linkUrl": "网址",
+  "linkDescription": "描述",
+  "linkDescriptionPlaceholder": "可选描述",
+  "linkSource": "来源",
+  "linkAddedBy": "添加者",
+  "linkAddedOn": "添加时间",
+  "linkLastModified": "最后修改",
+  "invalidUrl": "请输入有效的网址",
+  "deleteLink": "删除链接",
+  "openTask": "打开任务",
+  "fromTask": "来自：{{taskName}}",
+  "noLinks": "暂无链接。点击\"添加链接\"添加您的第一个链接。"
 }

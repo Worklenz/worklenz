@@ -2,28 +2,24 @@
   "pageTitle": "Kunden",
   "pageDescription": "Verwalten Sie Ihre Kunden und deren Zugang zum Portal",
   "addClientButton": "Kunde hinzufügen",
-
   "totalClientsLabel": "Gesamtkunden",
   "activeClientsLabel": "Aktive Kunden",
   "totalProjectsLabel": "Gesamtprojekte",
   "totalTeamMembersLabel": "Teammitglieder",
-
   "errorTitle": "Fehler",
   "loadingText": "Lädt...",
   "refreshButton": "Aktualisieren",
   "clearFiltersButton": "Filter löschen",
-
   "clientColumn": "Kunde",
+  "contactColumn": "Kontakt",
   "statusColumn": "Status",
   "assignedProjectsColumn": "Zugewiesene Projekte",
   "teamMembersColumn": "Teammitglieder",
   "actionBtnsColumn": "Aktionen",
-
   "statusAll": "Alle",
   "statusActive": "Aktiv",
   "statusInactive": "Inaktiv",
   "statusPending": "Ausstehend",
-
   "viewDetailsTooltip": "Details anzeigen",
   "editClientTooltip": "Kunde bearbeiten",
   "manageProjectsTooltip": "Projekte verwalten",
@@ -31,61 +27,49 @@
   "settingsTooltip": "Einstellungen",
   "shareTooltip": "Teilen",
   "deleteTooltip": "Löschen",
-
   "deleteConfirmationTitle": "Kunde löschen",
   "deleteConfirmationDescription": "Sind Sie sicher, dass Sie diesen Kunden löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleteConfirmationOk": "Löschen",
   "deleteConfirmationCancel": "Abbrechen",
-
   "searchClientsPlaceholder": "Kunden suchen...",
   "statusFilterPlaceholder": "Nach Status filtern",
-
   "paginationText": "Zeige",
   "ofText": "von",
   "clientsText": "Kunden",
-
   "addClientTitle": "Neuen Kunden hinzufügen",
   "createButton": "Kunde erstellen",
   "cancelButton": "Abbrechen",
-
-  "basicInformationSection": "Grundlegende Informationen",
+  "basicInformationSection": "Grundinformationen",
   "contactInformationSection": "Kontaktinformationen",
-
   "clientNameLabel": "Kundenname",
   "clientNamePlaceholder": "Kundenname eingeben",
   "clientNameRequired": "Bitte geben Sie den Kundennamen ein",
   "clientNameMinLength": "Der Name muss mindestens 2 Zeichen lang sein",
-
   "emailLabel": "E-Mail-Adresse",
   "emailPlaceholder": "E-Mail-Adresse eingeben",
   "emailRequired": "Bitte geben Sie die E-Mail-Adresse ein",
   "emailInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
-
   "companyNameLabel": "Firmenname",
   "companyNamePlaceholder": "Firmenname eingeben (optional)",
-
+  "clientCompanyLabel": "Kunde/Unternehmen",
   "phoneLabel": "Telefonnummer",
   "phonePlaceholder": "Telefonnummer eingeben (optional)",
   "phoneInvalid": "Bitte geben Sie eine gültige Telefonnummer ein",
-
   "addressLabel": "Adresse",
   "addressPlaceholder": "Adresse eingeben (optional)",
-  "addressLine1Label": "Straße",
-  "addressLine1Placeholder": "Straße eingeben (optional)",
+  "addressLine1Label": "Straßenadresse",
+  "addressLine1Placeholder": "Straßenadresse eingeben (optional)",
   "cityLabel": "Stadt",
   "cityPlaceholder": "Stadt",
-  "stateLabel": "Bundesland / Provinz",
-  "statePlaceholder": "Bundesland / Provinz",
-  "zipCodeLabel": "Postleitzahl",
+  "stateLabel": "Bundesland",
+  "statePlaceholder": "Bundesland",
+  "zipCodeLabel": "PLZ",
   "zipCodePlaceholder": "Postleitzahl",
   "countryLabel": "Land",
   "countryPlaceholder": "Land",
-
   "contactPersonLabel": "Kontaktperson",
   "contactPersonPlaceholder": "Namen der Kontaktperson eingeben",
-
   "statusLabel": "Status",
-
   "createClientSuccessMessage": "Kunde erfolgreich erstellt! Teilen Sie den Organisations-Einladungslink, um ihm Portal-Zugang zu gewähren.",
   "createClientSuccessMessageWithInvite": "Kunde erfolgreich erstellt! Einladung an {email} gesendet",
   "createClientErrorMessage": "Fehler beim Erstellen des Kunden",
@@ -93,14 +77,12 @@
   "updateClientErrorMessage": "Fehler beim Aktualisieren des Kunden",
   "deleteClientSuccessMessage": "Kunde erfolgreich gelöscht",
   "deleteClientErrorMessage": "Fehler beim Löschen des Kunden",
-
   "clientPortalAccessTitle": "Kundenportal-Zugang",
   "clientPortalAccessDescription": "Teilen Sie diesen Link mit Ihrem Kunden, um ihm Zugang zu seinem Portal zu gewähren",
   "clientPortalAccessInfo": "Nach dem Erstellen des Kunden verwenden Sie den Organisations-Einladungslink von der Kundenseite, um ihm Portal-Zugang zu gewähren.",
-  "clientInvitationEmailInfo": "Dem Kunden wird eine Einladungs-E-Mail zugesandt, um dem Portal beizutreten. Sie können auch den Einladungslink von der Kundenseite teilen.",
+  "clientInvitationEmailInfo": "Eine Einladungs-E-Mail wird an den Kunden gesendet, um dem Portal beizutreten. Sie können den Einladungslink auch von der Kundenseite aus teilen.",
   "copyButton": "Kopieren",
   "linkCopiedMessage": "Link in die Zwischenablage kopiert",
-
   "organizationInviteLinkTitle": "Organisations-Einladungslink",
   "organizationInviteLinkDescription": "Teilen Sie diesen einzelnen Link mit beliebigen Kunden, um ihnen den Beitritt zum Kundenportal Ihrer Organisation zu ermöglichen. Der Link läuft aus Sicherheitsgründen nach 7 Tagen ab und kann bei Bedarf neu generiert werden.",
   "generateLink": "Link generieren",
@@ -115,14 +97,11 @@
   "linkGenerating": "Einladungslink wird generiert...",
   "linkExpired": "Dieser Einladungslink ist abgelaufen",
   "linkActive": "Aktiv",
-
   "closeButton": "Schließen",
   "deleteButton": "Kunde löschen",
-
   "clientInformationTitle": "Kundeninformationen",
   "createdAtLabel": "Erstellt",
   "updatedAtLabel": "Aktualisiert",
-
   "statisticsTitle": "Statistiken",
   "activeProjectsLabel": "Aktive Projekte",
   "completedProjectsLabel": "Abgeschlossene Projekte",
@@ -131,34 +110,26 @@
   "pendingRequestsLabel": "Ausstehende Anfragen",
   "totalInvoicesLabel": "Gesamtrechnungen",
   "unpaidInvoicesLabel": "Unbezahlte Rechnungen",
-
   "teamMembersTitle": "Teammitglieder",
   "noTeamMembersText": "Keine Teammitglieder gefunden",
-
   "projectsTitle": "Projekte",
   "noProjectsText": "Keine Projekte gefunden",
-
   "overviewTab": "Übersicht",
   "teamTab": "Team",
   "projectsTab": "Projekte",
-
   "inviteMemberButton": "Mitglied einladen",
   "editButton": "Bearbeiten",
-
   "assignedProjectsTitle": "Zugewiesene Projekte",
   "assignProjectButton": "Projekt zuweisen",
   "noProjectsAssignedText": "Keine Projekte zugewiesen",
   "tasksProgressText": "Aufgaben",
-
   "nameLabel": "Name",
   "companyLabel": "Firma",
-
   "copyLinkLabel": "Link kopieren",
   "addTeamMembersLabel": "Teammitglieder hinzufügen",
   "teamMembersLabel": "Teammitglieder",
   "assignProjectLabel": "Projekt zuweisen",
   "searchProjectPlaceholder": "Projekt suchen",
-
   "bulkActions": "Massenaktionen",
   "selectedCount": "Ausgewählt",
   "activateSelected": "Ausgewählte aktivieren",
@@ -171,15 +142,12 @@
   "bulkDeleteErrorMessage": "Fehler beim Löschen der ausgewählten Kunden",
   "bulkUpdateSuccessMessage": "Ausgewählte Kunden erfolgreich aktualisiert",
   "bulkUpdateErrorMessage": "Fehler beim Aktualisieren der ausgewählten Kunden",
-
   "editClientTitle": "Kunde bearbeiten",
   "updateButton": "Kunde aktualisieren",
   "saveButton": "Änderungen speichern",
-
   "clientDetailsTitle": "Kundendetails",
   "clientTeamsTitle": "Kunden-Team-Verwaltung",
   "clientSettingsTitle": "Kundeneinstellungen",
-
   "inviteTeamMemberTitle": "Teammitglied einladen",
   "inviteTeamMemberDescription": "Senden Sie eine Einladung, um diesem Kunden-Team beizutreten",
   "inviteEmailLabel": "E-Mail-Adresse",
@@ -192,32 +160,25 @@
   "inviteButton": "Einladung senden",
   "inviteSuccessMessage": "Einladung erfolgreich gesendet",
   "inviteErrorMessage": "Fehler beim Senden der Einladung",
-
   "resendInvitationButton": "Einladung erneut senden",
   "resendInvitationSuccessMessage": "Einladung erfolgreich erneut gesendet",
   "resendInvitationErrorMessage": "Fehler beim erneuten Senden der Einladung",
-
   "removeTeamMemberTitle": "Teammitglied entfernen",
   "removeTeamMemberDescription": "Sind Sie sicher, dass Sie dieses Teammitglied entfernen möchten?",
   "removeTeamMemberSuccessMessage": "Teammitglied erfolgreich entfernt",
   "removeTeamMemberErrorMessage": "Fehler beim Entfernen des Teammitglieds",
-
   "assignProjectDescription": "Wählen Sie Projekte aus, die diesem Kunden zugewiesen werden sollen",
   "assignProjectSuccessMessage": "Projekte erfolgreich zugewiesen",
   "assignProjectErrorMessage": "Fehler beim Zuweisen der Projekte",
-
   "unassignProjectTitle": "Projektzuweisung aufheben",
   "unassignProjectDescription": "Sind Sie sicher, dass Sie die Zuweisung dieses Projekts aufheben möchten?",
   "unassignProjectSuccessMessage": "Projektzuweisung erfolgreich aufgehoben",
   "unassignProjectErrorMessage": "Fehler beim Aufheben der Projektzuweisung",
-
   "noDataText": "Keine Daten verfügbar",
   "loadingDataText": "Daten werden geladen...",
   "errorLoadingDataText": "Fehler beim Laden der Daten",
   "retryButton": "Wiederholen",
-
   "errorLoadingClient": "Fehler beim Laden der Kundendaten",
-
   "teamManagementTitle": "Team-Management",
   "clientPortalLinkLabel": "Kundenportal-Link",
   "clientPortalLinkDescription": "Teilen Sie diesen Link mit Ihrem Kunden, um ihm Zugang zu seinem Portal zu gewähren",
@@ -238,7 +199,6 @@
   "removeMemberConfirmationTitle": "Teammitglied entfernen",
   "removeMemberConfirmationDescription": "Sind Sie sicher, dass Sie dieses Teammitglied entfernen möchten?",
   "removeMemberTooltip": "Mitglied entfernen",
-
   "projectSettingsTitle": "Projekteinstellungen",
   "selectProjectLabel": "Projekt auswählen",
   "selectProjectPlaceholder": "Wählen Sie ein Projekt zum Zuweisen",
@@ -252,7 +212,6 @@
   "projectRemovedSuccessMessage": "Projekt erfolgreich entfernt",
   "projectRemovedErrorMessage": "Fehler beim Entfernen des Projekts",
   "noAssignedProjectsText": "Keine Projekte diesem Kunden zugewiesen",
-
   "portalStatusColumn": "Portal-Status",
   "portalStatus": {
     "active": "Aktiv",
@@ -266,20 +225,17 @@
     "notInvited": "Nicht eingeladen: Es wurde noch keine Einladung gesendet.",
     "expired": "Abgelaufen: Die vorherige Einladung ist abgelaufen und sollte erneut gesendet werden."
   },
-
   "inviteToPortalTooltip": "Zum Portal einladen",
   "resendInvitationTooltip": "Einladung erneut senden",
   "resendInviteEmailTooltip": "Einladungs-E-Mail erneut senden",
   "copyInviteLinkTooltip": "Einladungslink kopieren",
   "resendInvitationSuccess": "Einladungs-E-Mail erfolgreich gesendet!",
   "resendInvitationError": "Einladungs-E-Mail konnte nicht gesendet werden",
-
   "inviteSelectedToPortal": "Portal-Einladungen senden",
   "selectClientsToInvite": "Bitte wählen Sie Kunden zum Einladen aus",
   "bulkInviteSuccessMessage": "Einladung(en) erfolgreich generiert",
   "bulkInvitePartialFailMessage": "Einladung(en) fehlgeschlagen",
   "bulkInviteErrorMessage": "Fehler beim Generieren von Einladungen",
-
   "deactivateConfirmationTitle": "Kunde deaktivieren",
   "deactivateConfirmationDescription": "Sind Sie sicher, dass Sie diesen Kunden deaktivieren möchten? Er verliert den Zugang zum Portal, aber alle Daten werden erhalten bleiben.",
   "deactivateConfirmationOk": "Deaktivieren",
@@ -298,10 +254,8 @@
   "selectClientsToDeactivate": "Bitte wählen Sie Kunden zum Deaktivieren aus",
   "bulkDeactivateSuccessMessage": "Ausgewählte Kunden erfolgreich deaktiviert",
   "bulkDeactivateErrorMessage": "Fehler beim Deaktivieren der ausgewählten Kunden",
-
   "inviteLinkGeneratedSuccess": "Einladungslink erfolgreich generiert!",
   "inviteLinkGeneratedError": "Fehler beim Generieren des Einladungslinks",
-
   "invitationModalTitle": "Einladungslink generiert",
   "invitationModalDescription": "Teilen Sie diesen Link mit dem Kunden, um ihn einzuladen, sein Portal-Konto zu erstellen. Der Link läuft nach 7 Tagen ab.",
   "invitationModalFooterText": "Wenn der Kunde auf diesen Link klickt, kann er sein Portal-Konto erstellen und auf seine Projekte und Dienste zugreifen.",
@@ -332,5 +286,20 @@
   "addEmailButton": "E-Mail hinzufügen & einladen",
   "clientExistsWarning": "Ein Kunde mit dieser E-Mail existiert bereits. Der vorhandene Kundendatensatz wird verwendet.",
   "clientExistsWithInvitationSent": "Ein Kunde mit dieser E-Mail existiert bereits und eine Einladung wurde bereits gesendet.",
-  "clientExistsNoInvitation": "Ein Kunde mit dieser E-Mail existiert bereits. Sie können ihm eine Einladung aus der Kundenliste senden."
+  "clientExistsNoInvitation": "Ein Kunde mit dieser E-Mail existiert bereits. Sie können ihm eine Einladung aus der Kundenliste senden.",
+  "portalStatusFilterPlaceholder": "Filter by portal status",
+  "recordNameLabel": "Kundenname (Intern)",
+  "recordNamePlaceholder": "Internen Datensatznamen eingeben",
+  "recordNameRequired": "Bitte geben Sie einen internen Datensatznamen ein",
+  "recordNameMinLength": "Datensatzname muss mindestens 2 Zeichen lang sein",
+  "clientCompanyPlaceholder": "Kundennamen eingeben",
+  "clientCompanyRequired": "Bitte geben Sie den Kundennamen ein",
+  "primaryContactLabel": "Hauptkontakt (POC)",
+  "primaryContactPlaceholder": "Namen des Hauptkontakts (POC) eingeben",
+  "primaryContactRequired": "Bitte geben Sie einen Hauptkontakt ein",
+  "generatingLink": "Generating invite link...",
+  "deactivateButton": "Deactivate Client",
+  "teamMembersDescription": "Manage team members who have access to this client",
+  "roleLabel": "Role",
+  "rolePlaceholder": "Select role"
 }

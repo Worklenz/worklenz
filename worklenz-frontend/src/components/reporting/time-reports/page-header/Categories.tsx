@@ -107,7 +107,7 @@ const Categories: React.FC = () => {
 
   const getButtonText = () => {
     if (isNoneSelected) return t('categories');
-    if (isAllSelected) return `All ${t('categories')}`;
+    if (isAllSelected) return t('allCategories');
     return `${t('categories')} (${activeFiltersCount})`;
   };
 

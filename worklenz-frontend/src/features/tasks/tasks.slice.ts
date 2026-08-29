@@ -24,6 +24,7 @@ import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.serv
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskRecurringScheduleData } from '@/types/tasks/task-recurring-schedule';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { toArray } from '@/utils/to-array';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -43,6 +44,21 @@ export const GROUP_BY_OPTIONS: IGroupByOption[] = [
 ];
 
 const LOCALSTORAGE_GROUP_KEY = 'worklenz.tasklist.group_by';
+const LOCALSTORAGE_FILTERS_KEY_PREFIX = 'worklenz.tasklist.filters';
+
+interface IPersistedFilters {
+  priorities: string[];
+  phases: string[];
+  members: string[];
+  statuses: string[];
+  labels: string[];
+  search: string | null;
+  archived: boolean;
+}
+
+// Utility to get per-project localStorage key for filters
+const getFilterStorageKey = (projectId?: string | null): string =>
+  projectId ? `${LOCALSTORAGE_FILTERS_KEY_PREFIX}.${projectId}` : LOCALSTORAGE_FILTERS_KEY_PREFIX;
 
 export const getCurrentGroup = (): IGroupByOption => {
   const key = localStorage.getItem(LOCALSTORAGE_GROUP_KEY);
@@ -58,7 +74,49 @@ export const setCurrentGroup = (groupBy: IGroupBy): void => {
   localStorage.setItem(LOCALSTORAGE_GROUP_KEY, groupBy);
 };
 
-interface ITaskState {
+export const saveFiltersToLocalStorage = (
+  filters: {
+    priorities: string[];
+    phases: string[];
+    members: string[];
+    statuses: string[];
+    labels: string[];
+    search: string | null;
+    archived: boolean;
+  },
+  projectId?: string | null
+): void => {
+  try {
+    const key = getFilterStorageKey(projectId);
+    localStorage.setItem(key, JSON.stringify(filters));
+  } catch (error) {
+    console.error('Failed to save filters to localStorage:', error);
+  }
+};
+
+export const getFiltersFromLocalStorage = (projectId?: string | null): IPersistedFilters | null => {
+  try {
+    const key = getFilterStorageKey(projectId);
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error('Failed to parse filters from localStorage:', error);
+  }
+  return null;
+};
+
+export const clearFiltersFromLocalStorage = (projectId?: string | null): void => {
+  try {
+    const key = getFilterStorageKey(projectId);
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.error('Failed to clear filters from localStorage:', error);
+  }
+};
+
+export interface ITaskState {
   search: string | null;
   archived: boolean;
   groupBy: IGroupBy;
@@ -76,6 +134,7 @@ interface ITaskState {
   loadingLabels: boolean;
   labels: ITaskLabelFilter[];
   priorities: string[];
+  phases: string[];
   members: string[];
   activeTimers: Record<string, number | null>;
   convertToSubtaskDrawerOpen: boolean;
@@ -84,6 +143,8 @@ interface ITaskState {
   allTasks: IProjectTask[];
   grouping: string;
   totalTasks: number;
+  projectId: string | null;
+  isRestoringFilters: boolean;
 }
 
 const initialState: ITaskState = {
@@ -104,6 +165,7 @@ const initialState: ITaskState = {
   labels: [],
   loadingLabels: false,
   priorities: [],
+  phases: [],
   members: [],
   activeTimers: {},
   convertToSubtaskDrawerOpen: false,
@@ -112,6 +174,8 @@ const initialState: ITaskState = {
   allTasks: [],
   grouping: '',
   totalTasks: 0,
+  projectId: null,
+  isRestoringFilters: false,
 };
 
 export const COLUMN_KEYS = {
@@ -164,7 +228,8 @@ export const fetchTaskGroups = createAsyncThunk(
         field: taskReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
         order: '',
         search: taskReducer.search || '',
-        statuses: '',
+        statuses: taskReducer.statuses.map(s => s.id || '').join(' '),
+        phases: taskReducer.phases.join(' '),
         members: selectedMembers,
         projects: '',
         isSubtasksInclude: false,
@@ -233,7 +298,8 @@ export const fetchSubTasks = createAsyncThunk(
       field: taskReducer.fields.map(field => `${field.key} ${field.sort_order}`).join(','),
       order: '',
       search: taskReducer.search || '',
-      statuses: '',
+      statuses: taskReducer.statuses.map(s => s.id || '').join(' '),
+      phases: taskReducer.phases.join(' '),
       members: selectedMembers,
       projects: '',
       isSubtasksInclude: false,
@@ -283,7 +349,7 @@ export const fetchTaskAssignees = createAsyncThunk(
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await tasksApiService.fetchTaskAssignees(projectId);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Task Assignees', error);
       if (error instanceof Error) {
@@ -299,7 +365,7 @@ export const fetchLabelsByProject = createAsyncThunk(
   async (projectId: string, { rejectWithValue }) => {
     try {
       const response = await labelsApiService.getPriorityByProject(projectId);
-      return response.body;
+      return response.body ?? [];
     } catch (error) {
       logger.error('Fetch Labels By Project', error);
       if (error instanceof Error) {
@@ -402,7 +468,9 @@ const addTaskToGroup = (
       parentTask.sub_tasks.push({ ...task });
     }
   } else {
-    insert ? group.tasks.push(task) : group.tasks.unshift(task);
+    // Always append to bottom — new tasks should appear at the end of the group,
+    // matching the sort_order the server assigns (highest = newest).
+    group.tasks.push(task);
   }
 };
 
@@ -485,9 +553,27 @@ const taskSlice = createSlice({
       state.labels = action.payload;
     },
 
+    // Merges labels into the filter list without resetting selected state.
+    // Use this when a label is assigned to a task to avoid an API round-trip
+    // and to avoid wiping active filter selections.
+    addMissingLabelsToFilter: (state, action: PayloadAction<ITaskLabel[]>) => {
+      const existingIds = new Set(state.labels.map(l => l.id));
+      const toAdd = action.payload.filter(l => l.id && !existingIds.has(l.id));
+      if (toAdd.length > 0) {
+        state.labels = [
+          ...state.labels,
+          ...toAdd.map(l => ({ ...l, selected: false })),
+        ].sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+      }
+    },
+
     setMembers: (state, action: PayloadAction<ITaskListMemberFilter[]>) => {
       state.taskAssignees = action.payload;
     },
+    setPhases: (state, action: PayloadAction<string[]>) => {
+      state.phases = action.payload;
+    },
+
 
     setPriorities: (state, action: PayloadAction<string[]>) => {
       state.priorities = action.payload;
@@ -507,6 +593,10 @@ const taskSlice = createSlice({
 
     setConvertToSubtaskDrawerOpen: (state, action: PayloadAction<boolean>) => {
       state.convertToSubtaskDrawerOpen = action.payload;
+    },
+
+    setTaskListProjectId: (state, action: PayloadAction<string | null>) => {
+      state.projectId = action.payload;
     },
 
     addTask: (
@@ -533,12 +623,9 @@ const taskSlice = createSlice({
         // parentTask.show_sub_tasks = true;
         // }
       } else {
-        // Handle main task addition
-        if (insert) {
-          group.tasks.push(decodedTask);
-        } else {
-          group.tasks.unshift(decodedTask);
-        }
+        // Handle main task addition — always append to bottom so newly
+        // created tasks appear at the end, matching the server sort order.
+        group.tasks.push(decodedTask);
       }
     },
 
@@ -720,7 +807,7 @@ const taskSlice = createSlice({
       task.progress_value = +complete_ratio; // Also update progress_value field
       task.status = status_id;
       task.status_category = statusCategory;
-      task.completed_at = completed_at; // Update completed date
+      task.completed_at = completed_at ?? undefined; // Update completed date
 
       // If grouped by status and not a subtask, move the task to the new status group
       if (state.groupBy === GROUP_BY_STATUS_VALUE && !task.is_sub_task && groupId !== status_id) {
@@ -1096,6 +1183,85 @@ const taskSlice = createSlice({
       const { task } = taskInfo;
       task.schedule_id = id;
     },
+
+    // Persist current filter state to localStorage whenever filters change
+    persistFilters: state => {
+      // Never persist while a restoration is in progress, otherwise stale
+      // filters (from before restoration completes) would clobber the
+      // saved filters for the project.
+      if (state.isRestoringFilters) return;
+
+      saveFiltersToLocalStorage(
+        {
+          priorities: state.priorities,
+          phases: state.phases,
+          members: state.taskAssignees.filter(m => m.selected).map(m => m.id || ''),
+          statuses: state.statuses.map(s => s.id || ''),
+          labels: state.labels.filter(l => l.selected).map(l => l.id || ''),
+          search: state.search,
+          archived: state.archived,
+        },
+        state.projectId
+      );
+    },
+
+    // Mark the start of filter restoration to prevent useFilterPersistence from persisting stale filters
+    startFilterRestoration: state => {
+      state.isRestoringFilters = true;
+    },
+
+    // Restore filters from localStorage and apply them to the state
+    restoreFilters: (state) => {
+      const savedFilters = getFiltersFromLocalStorage(state.projectId);
+      if (!savedFilters) {
+        // No filters to restore, mark restoration as complete
+        state.isRestoringFilters = false;
+        return;
+      }
+
+      // Restore archived state
+      state.archived = savedFilters.archived;
+      state.search = savedFilters.search;
+
+      // Mark selected members
+      state.taskAssignees = state.taskAssignees.map(member => ({
+        ...member,
+        selected: !!member.id && savedFilters.members.includes(member.id),
+      }));
+
+      // Mark selected labels
+      state.labels = state.labels.map(label => ({
+        ...label,
+        selected: !!label.id && savedFilters.labels.includes(label.id),
+      }));
+
+      // Restore priorities and phases arrays
+      state.priorities = savedFilters.priorities;
+      state.phases = savedFilters.phases;
+    },
+
+    // Mark the end of filter restoration to allow useFilterPersistence to resume
+    endFilterRestoration: state => {
+      state.isRestoringFilters = false;
+    },
+
+    // Restore status filters from localStorage using available statuses
+    restoreStatusFilters: (state, action: PayloadAction<ITaskStatusViewModel[]>) => {
+      const savedFilters = getFiltersFromLocalStorage(state.projectId);
+      if (!savedFilters || !action.payload) {
+        // Failed to restore statuses, mark restoration as complete
+        state.isRestoringFilters = false;
+        return;
+      }
+
+      // Filter available statuses to only include selected ones
+      state.statuses = action.payload.filter(status => 
+        savedFilters.statuses.includes(status.id || '')
+      );
+
+      // Mark restoration as complete after status restoration
+      state.isRestoringFilters = false;
+    },
   },
 
   extraReducers: builder => {
@@ -1108,7 +1274,7 @@ const taskSlice = createSlice({
         state.loadingGroups = false;
         state.taskGroups =
           action.payload && action.payload.groups
-            ? decodeTaskGroupNames(action.payload.groups)
+            ? decodeTaskGroupNames(action.payload.groups as any as ITaskListGroup[])
             : [];
         state.allTasks =
           action.payload && action.payload.allTasks
@@ -1126,9 +1292,10 @@ const taskSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchSubTasks.fulfilled, (state, action) => {
-        if (action.payload && action.payload.groups && action.payload.groups.length > 0) {
+        const payload = action.payload as any;
+        if (payload && payload.groups && payload.groups.length > 0) {
           // Assuming subtasks are in the first group for this context
-          const subtasks = action.payload.groups[0].tasks;
+          const subtasks = payload.groups[0].tasks;
           const taskId = subtasks.length > 0 ? subtasks[0].parent_task_id : null;
           if (taskId) {
             for (const group of state.taskGroups) {
@@ -1154,7 +1321,7 @@ const taskSlice = createSlice({
         const existingSelections = new Map(
           state.taskAssignees.map(assignee => [assignee.id, assignee.selected])
         );
-        state.taskAssignees = action.payload.map(assignee => ({
+        state.taskAssignees = toArray(action.payload).map(assignee => ({
           ...assignee,
           selected: existingSelections.get(assignee.id) ?? false,
         }));
@@ -1182,9 +1349,9 @@ const taskSlice = createSlice({
         const customPayload = action.payload.custom;
         const customColumns = Array.isArray(customPayload)
           ? customPayload.map((col: any) => ({
-              ...col,
-              isCustom: true,
-            }))
+            ...col,
+            isCustom: true,
+          }))
           : [];
 
         // Merge columns
@@ -1201,7 +1368,13 @@ const taskSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchLabelsByProject.fulfilled, (state, action: PayloadAction<ITaskLabel[]>) => {
-        const newLabels = action.payload.map(label => ({ ...label, selected: false }));
+        // Preserve the selected state of existing labels so active filter selections
+        // are not wiped when the list is refreshed (e.g. after a new label is created).
+        const selectedIds = new Set(state.labels.filter(l => l.selected).map(l => l.id));
+        const newLabels = toArray(action.payload).map(label => ({
+          ...label,
+          selected: selectedIds.has(label.id) ? true : false,
+        }));
         state.labels = newLabels;
         state.loadingLabels = false;
       })
@@ -1252,7 +1425,9 @@ export const {
   toggleArchived,
   setMembers,
   setLabels,
+  addMissingLabelsToFilter,
   setPriorities,
+  setPhases,
   setStatuses,
   setFields,
   setSearch,
@@ -1269,6 +1444,7 @@ export const {
   updateTaskStatusColor,
   updateTaskGroupColor,
   setConvertToSubtaskDrawerOpen,
+  setTaskListProjectId,
   reorderTasks,
   updateTaskDescription,
   addCustomColumn,
@@ -1279,6 +1455,11 @@ export const {
   updateCustomColumnValue,
   updateCustomColumnPinned,
   updateRecurringChange,
+  persistFilters,
+  startFilterRestoration,
+  restoreFilters,
+  endFilterRestoration,
+  restoreStatusFilters,
 } = taskSlice.actions;
 
 export default taskSlice.reducer;

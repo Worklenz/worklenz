@@ -41,7 +41,7 @@ export const greetingString = (name: string): string => {
     morning = 'Morgen';
     afternoon = 'Tag';
     evening = 'Abend';
-  } else if (language === 'zh') {
+  } else if (language === 'zh_cn') {
     greetingPrefix = '你好';
     greetingSuffix = '';
     morning = '早上好';
@@ -56,7 +56,7 @@ export const greetingString = (name: string): string => {
   else localizedTimePeriod = evening;
 
   // Handle Chinese language which has different structure
-  if (language === 'zh') {
+  if (language === 'zh_cn') {
     return `${greetingPrefix} ${name}, ${localizedTimePeriod}!`;
   }
 

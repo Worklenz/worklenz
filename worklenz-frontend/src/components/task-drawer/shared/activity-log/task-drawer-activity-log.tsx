@@ -25,10 +25,10 @@ import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import logger from '@/utils/errorLogger';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 const TaskDrawerActivityLog = () => {
@@ -40,8 +40,7 @@ const TaskDrawerActivityLog = () => {
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
   const { t } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
@@ -322,7 +321,7 @@ const TaskDrawerActivityLog = () => {
                         trackAppSumoEvent(AppSumoUpsellEvents.LOCKED_HISTORY_VIEW_CLICKED, { feature: 'task_activity_history' });
                         trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'task_activity_history' });
                       }
-                      promptUpgrade();
+                      dispatch(toggleUpgradeModal());
                     }}
                   >
                     {t('upgradeNow', { defaultValue: 'Upgrade Now' })}

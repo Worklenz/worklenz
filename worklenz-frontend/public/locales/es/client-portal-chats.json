@@ -58,5 +58,11 @@
   "emojiPicker": "Agregar emoji",
   "noChatsWithClient": "Aún no hay conversaciones con este cliente",
   "startConversationWithClient": "Inicia una conversación para discutir esta solicitud con el cliente.",
-  "messageUnavailable": "Mensaje no disponible"
+  "messageUnavailable": "Mensaje no disponible",
+  "convertToTask": "Convertir en tarea",
+  "convertToTaskEmpty": "El mensaje no tiene texto para usar como nombre de tarea",
+  "convertToTaskError": "Error al crear la tarea",
+  "convertToTaskSuccess": "Tarea creada a partir del mensaje",
+  "noClientProject": "Este cliente no tiene ningún proyecto asignado",
+  "createTask": "Crear tarea"
 }

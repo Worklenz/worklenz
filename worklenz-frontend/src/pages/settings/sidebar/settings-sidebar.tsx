@@ -1,11 +1,19 @@
-import { ConfigProvider, Flex, Input, SearchOutlined, theme, Typography } from '@/shared/antd-imports';
+import {
+  ConfigProvider,
+  Collapse,
+  Flex,
+  Input,
+  SearchOutlined,
+  DownOutlined,
+  theme,
+  Typography,
+} from '@/shared/antd-imports';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 import { settingsItems, getAccessibleSettings } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const normalizeSearchText = (value: string) =>
   value
@@ -19,7 +27,6 @@ const SettingSidebar: React.FC = () => {
   const { t } = useTranslation('settings/sidebar');
   const currentSession = useAuthService().getCurrentSession();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
-  const { hasBusinessAccess } = useBusinessFeatures();
   const [searchValue, setSearchValue] = useState('');
   const { token } = theme.useToken();
 
@@ -32,9 +39,12 @@ const SettingSidebar: React.FC = () => {
 
   const activeKey = getCurrentActiveKey();
 
+  const [expandedGroupKeys, setExpandedGroupKeys] = useState<string[]>([]);
+  const [hasInitializedExpansion, setHasInitializedExpansion] = useState(false);
+
   const groupedSettings = useMemo(
     () =>
-      getAccessibleSettings(isOwnerOrAdmin, hasBusinessAccess)
+      getAccessibleSettings(isOwnerOrAdmin, currentSession)
         .filter(item => item.showInSidebar !== false)
         .filter(item => !(currentSession?.is_google && item.key === 'change-password'))
         .reduce<
@@ -88,6 +98,27 @@ const SettingSidebar: React.FC = () => {
     [currentSession, isOwnerOrAdmin, searchValue, t]
   );
 
+  useEffect(() => {
+    if (hasInitializedExpansion || groupedSettings.length === 0) return;
+
+    const firstGroupKey = groupedSettings[0].key;
+    const activeGroupKey = groupedSettings.find(group =>
+      group.items.some(item => item.key === activeKey)
+    )?.key;
+
+    setExpandedGroupKeys(
+      activeGroupKey && activeGroupKey !== firstGroupKey
+        ? [firstGroupKey, activeGroupKey]
+        : [firstGroupKey]
+    );
+    setHasInitializedExpansion(true);
+  }, [groupedSettings, activeKey, hasInitializedExpansion]);
+
+  const isSearching = normalizeSearchText(searchValue).length > 0;
+  const visibleExpandedKeys = isSearching
+    ? groupedSettings.map(group => group.key)
+    : expandedGroupKeys;
+
   return (
     <ConfigProvider
       theme={{
@@ -116,20 +147,23 @@ const SettingSidebar: React.FC = () => {
           aria-label={t('searchSettings', { defaultValue: 'Search settings...' })}
         />
 
-        <Flex vertical gap={16}>
-          {groupedSettings.map((group, groupIndex) => (
-            <Flex
-              key={group.key}
-              vertical
-              gap={8}
+        <Collapse
+          ghost
+          activeKey={visibleExpandedKeys}
+          onChange={keys => setExpandedGroupKeys(Array.isArray(keys) ? keys : [keys])}
+          expandIcon={({ isActive }) => (
+            <DownOutlined
               style={{
-                paddingBottom: 16,
-                borderBottom:
-                  groupIndex === groupedSettings.length - 1
-                    ? 'none'
-                    : `1px solid ${token.colorBorderSecondary}`,
+                fontSize: 11,
+                color: token.colorTextSecondary,
+                transition: 'transform 0.2s',
+                transform: isActive ? 'rotate(0deg)' : 'rotate(-90deg)',
               }}
-            >
+            />
+          )}
+          items={groupedSettings.map(group => ({
+            key: group.key,
+            label: (
               <Typography.Text
                 style={{
                   textTransform: 'uppercase',
@@ -141,7 +175,12 @@ const SettingSidebar: React.FC = () => {
               >
                 {group.label}
               </Typography.Text>
-
+            ),
+            style: {
+              marginBottom: 4,
+              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            },
+            children: (
               <Flex vertical gap={4}>
                 {group.items.map(item => {
                   const isActive = activeKey === item.key;
@@ -192,9 +231,9 @@ const SettingSidebar: React.FC = () => {
                   );
                 })}
               </Flex>
-            </Flex>
-          ))}
-        </Flex>
+            ),
+          }))}
+        />
       </Flex>
     </ConfigProvider>
   );

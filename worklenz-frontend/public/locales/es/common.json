@@ -110,12 +110,13 @@
   "projectFinanceTitle": "Finanzas del Proyecto",
   "projectFinanceUpgradeBody": "Controla presupuestos, costos y tiempo facturable en tus proyectos. Requiere el plan Business.",
   "upgrade-now": "Actualizar ahora",
-  "seeSpends": "Ver gastos",
+  "seeSpends": "Rastrear Gastos",
   "closePopover": "Cerrar ventana emergente",
   "or-switch-team": "OR SWITCH TEAM",
   "trial-expired": "Trial Expired",
   "switch-to-another-team": "Switch to another team",
   "need-help": "Need help?",
   "contact-support": "Contact support",
-  "view-pricing": "view pricing"
+  "view-pricing": "view pricing",
+  "justNow": "Justo ahora"
 }

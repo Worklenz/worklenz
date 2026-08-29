@@ -1,5 +1,7 @@
 {
   "title": "通知设置",
+  "generalSectionTitle": "通用通知",
+  "generalSectionDescription": "切换后立即生效，无需单独保存。",
   "emailTitle": "向我发送电子邮件通知",
   "emailDescription": "包括新的任务分配",
   "dailyDigestTitle": "向我发送每日摘要",
@@ -7,5 +9,17 @@
   "popupTitle": "当Worklenz打开时，在我的电脑上弹出通知",
   "popupDescription": "弹出通知可能会被您的浏览器禁用。更改您的浏览器设置以允许它们。",
   "unreadItemsTitle": "显示未读项目的数量",
-  "unreadItemsDescription": "您将看到每个通知的计数。"
+  "unreadItemsDescription": "您将看到每个通知的计数。",
+  "taskDigestSectionTitle": "计划任务摘要邮件",
+  "taskDigestSectionDescription": "按您的计划接收个性化任务摘要。管理员和项目经理部分将根据您的角色自动显示。",
+  "dailyReminderTitle": "每日任务提醒",
+  "dailyReminderDescription": "每天在您选择的时间发送。包括今天到期、明天到期和逾期任务。",
+  "weeklyStartTitle": "每周开始摘要",
+  "weeklyStartDescription": "每周一发送。显示本周到期和逾期任务的整周概览。",
+  "weeklyEndTitle": "每周结束摘要",
+  "weeklyEndDescription": "每周五发送。回顾已完成任务、逾期情况和下周展望。",
+  "channelLabel": "渠道",
+  "timeLabel": "发送时间",
+  "saveDigestPreferences": "保存通知偏好设置",
+  "digestPreferencesSaved": "您的通知偏好设置已保存"
 }

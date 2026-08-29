@@ -159,7 +159,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
             title: function (context: any) {
               const idx = context[0].dataIndex;
               const member = jsonData[idx];
-              return `👤 ${member?.name || 'Unknown Member'}`;
+              return `👤 ${member?.name || t('unknown', { defaultValue: 'Unknown Member' })}`;
             },
 
             // Customize the label content
@@ -170,32 +170,26 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
               const percent = parseFloat(member?.utilization_percent || '0.00');
               const overUnder = parseFloat(member?.over_under_utilized_hours || '0');
 
-              // Color indicators based on utilization state
               let statusText = '';
-              let criteriaText = '';
               switch (member.utilization_state) {
                 case 'under':
-                  statusText = '🟠 Under-Utilized';
-                  criteriaText = '(< 90%)';
+                  statusText = `🟠 ${t('underUtilized')} ${t('underUtilizedCriteria')}`;
                   break;
                 case 'optimal':
-                  statusText = '🟢 Optimally Utilized';
-                  criteriaText = '(90% - 110%)';
+                  statusText = `🟢 ${t('optimalUtilized')} ${t('optimalUtilizedCriteria')}`;
                   break;
                 case 'over':
-                  statusText = '🔴 Over-Utilized';
-                  criteriaText = '(> 110%)';
+                  statusText = `🔴 ${t('overUtilized')} ${t('overUtilizedCriteria')}`;
                   break;
                 default:
-                  statusText = '⚪ Unknown';
-                  criteriaText = '';
+                  statusText = `⚪ ${t('unknown')}`;
               }
 
               return [
                 `⏱️ ${context.dataset.label}: ${formatHours(hours)}`,
-                `📊 Utilization: ${percent.toFixed(1)}%`,
-                `${statusText} ${criteriaText}`,
-                `📈 Variance: ${formatHours(Math.abs(overUnder))}${overUnder < 0 ? ' (under)' : overUnder > 0 ? ' (over)' : ''}`,
+                `📊 ${t('utilization')}: ${percent.toFixed(1)}%`,
+                statusText,
+                `📈 ${t('variance')}: ${formatHours(Math.abs(overUnder))}${overUnder < 0 ? ' ' + t('varianceUnder') : overUnder > 0 ? ' ' + t('varianceOver') : ''}`,
               ];
             },
 
@@ -204,7 +198,7 @@ const MembersTimeSheet = forwardRef<MembersTimeSheetRef, MembersTimeSheetProps>(
               const idx = context[0].dataIndex;
               const member = jsonData[idx];
               const loggedTime = parseFloat(member?.logged_time || '0') / 3600;
-              return `Total Logged: ${formatHours(loggedTime)}`;
+              return `${t('totalLogged')}: ${formatHours(loggedTime)}`;
             },
           },
         },

@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Gestionar Clientes",
   "nameColumn": "Nombre",
   "projectColumn": "Proyecto",
   "noProjectsAvailable": "No hay proyectos disponibles",
@@ -18,5 +19,7 @@
   "createClientSuccessMessage": "¡Cliente creado exitosamente!",
   "createClientErrorMessage": "¡Error al crear el cliente!",
   "updateClientSuccessMessage": "¡Cliente actualizado exitosamente!",
-  "updateClientErrorMessage": "¡Error al actualizar el cliente!"
+  "updateClientErrorMessage": "¡Error al actualizar el cliente!",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Eliminar"
 }

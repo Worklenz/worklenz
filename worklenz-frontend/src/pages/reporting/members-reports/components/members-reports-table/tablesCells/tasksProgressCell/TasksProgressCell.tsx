@@ -1,4 +1,4 @@
-import { Flex, Tooltip, Typography } from '@/shared/antd-imports';
+import { Flex, Tooltip, Typography, theme } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
 import { useTranslation } from 'react-i18next';
 
@@ -9,6 +9,13 @@ type TasksProgressCellProps = {
 const TasksProgressCell = ({ tasksStat }: TasksProgressCellProps) => {
   // localization
   const { t } = useTranslation('reporting-members');
+  const { token } = theme.useToken();
+  const isDarkMode =
+    token.colorBgContainer === '#1f1f1f' ||
+    token.colorBgBase === '#141414' ||
+    token.colorBgElevated === '#1f1f1f' ||
+    document.documentElement.getAttribute('data-theme') === 'dark' ||
+    document.body.classList.contains('dark');
 
   if (!tasksStat) return null;
   const totalStat = tasksStat.todo + tasksStat.doing + tasksStat.done;
@@ -32,7 +39,7 @@ const TasksProgressCell = ({ tasksStat }: TasksProgressCellProps) => {
           {segments.map((seg, index) => (
             <Typography.Text
               key={index}
-              style={{ color: colors.white }}
+              style={{ color: isDarkMode ? colors.white : colors.darkGray }}
             >{`${t(`${seg.label}Text`)}: ${seg.percent}%`}</Typography.Text>
           ))}
         </Flex>

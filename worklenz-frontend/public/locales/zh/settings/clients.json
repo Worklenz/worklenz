@@ -1,4 +1,5 @@
 {
+  "pageTitle": "管理客户",
   "nameColumn": "名称",
   "projectColumn": "项目",
   "noProjectsAvailable": "没有可用的项目",
@@ -18,5 +19,7 @@
   "createClientSuccessMessage": "客户创建成功！",
   "createClientErrorMessage": "客户创建失败！",
   "updateClientSuccessMessage": "客户更新成功！",
-  "updateClientErrorMessage": "客户更新失败！"
+  "updateClientErrorMessage": "客户更新失败！",
+  "editTooltip": "编辑",
+  "deleteTooltip": "删除"
 }

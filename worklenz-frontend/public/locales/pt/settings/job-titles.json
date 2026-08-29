@@ -16,5 +16,8 @@
   "createJobTitleSuccessMessage": "Criar título de emprego com sucesso!",
   "createJobTitleErrorMessage": "Falha ao criar título de emprego!",
   "updateJobTitleSuccessMessage": "Atualizar título de emprego com sucesso!",
-  "updateJobTitleErrorMessage": "Falha ao atualizar título de emprego!"
+  "updateJobTitleErrorMessage": "Falha ao atualizar título de emprego!",
+  "paginationTotal": "{{start}}-{{end}} de {{total}} itens",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Excluir"
 }

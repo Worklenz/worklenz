@@ -2,7 +2,6 @@
   "searchButton": "Buscar",
   "resetButton": "Restablecer",
   "searchInputPlaceholder": "Buscar por nombre",
-
   "sortText": "Ordenar",
   "statusText": "Estado",
   "phaseText": "Fase",
@@ -37,18 +36,14 @@
   "reporterText": "Reportero",
   "dueTimeText": "Hora de vencimiento",
   "duetimeText": "Hora de vencimiento",
-
   "lowText": "Bajo",
   "mediumText": "Medio",
   "highText": "Alto",
-
   "createStatusButtonTooltip": "Configuración de estado",
   "configPhaseButtonTooltip": "Configuración de fase",
   "noLabelsFound": "No se encontraron etiquetas",
-
   "addStatusButton": "Agregar estado",
   "addPhaseButton": "Agregar fase",
-
   "createStatus": "Crear estado",
   "name": "Nombre",
   "category": "Categoría",
@@ -56,7 +51,6 @@
   "pleaseEnterAName": "Por favor ingrese un nombre",
   "pleaseSelectACategory": "Por favor seleccione una categoría",
   "create": "Crear",
-
   "searchTasks": "Buscar tareas...",
   "searchPlaceholder": "Buscar",
   "fieldsText": "Campos",
@@ -84,6 +78,7 @@
   "close": "Cerrar",
   "cannotMoveStatus": "No se puede mover el estado",
   "cannotMoveStatusMessage": "No se puede mover este estado porque dejaría vacía la categoría '{{categoryName}}'. Cada categoría debe tener al menos un estado.",
+  "dropToMoveToCategory": "Suelta aquí para mover a {{categoryName}}",
   "ok": "OK",
   "clearSort": "Limpiar Ordenamiento",
   "sortAscending": "Ordenar Ascendente",
@@ -91,5 +86,6 @@
   "sortByField": "Ordenar por {{field}}",
   "ascendingOrder": "Ascendente",
   "descendingOrder": "Descendente",
-  "currentSort": "Ordenamiento actual: {{field}} {{order}}"
+  "currentSort": "Ordenamiento actual: {{field}} {{order}}",
+  "apply": "Aplicar"
 }

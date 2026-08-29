@@ -3,8 +3,8 @@ import {
   fetchProjectData,
   setProjectId,
   setProjectData,
-  toggleProjectDrawer,
 } from '@/features/project/project-drawer.slice';
+import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { fetchProjects } from '@/features/projects/projectsSlice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
@@ -47,7 +47,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   const [toggleArchiveForAll] = useToggleArchiveProjectForAllMutation();
 
   const handleSettingsClick = () => {
-    if (record.id) {
+    if (record.id && !record.is_guest) {
       trackMixpanelEvent(evt_projects_settings_click);
       dispatch(setProjectId(record.id));
       dispatch(fetchProjectData(record.id))
@@ -62,12 +62,12 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
               priority_color_dark: projectData.priority_color_dark || record.priority_color_dark,
             })
           );
-          dispatch(toggleProjectDrawer());
+          dispatch(openProjectSettingsModal());
         })
         .catch(error => {
           console.error('Failed to fetch project data:', error);
           dispatch(setProjectData(record));
-          dispatch(toggleProjectDrawer());
+          dispatch(openProjectSettingsModal());
         });
     }
   };
@@ -92,9 +92,19 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
     }
   };
 
+  const isGuest = record.is_guest === true;
+
   return (
     <Space size={4} onClick={e => e.stopPropagation()}>
-      <Tooltip title={t('setting')}>
+      <Tooltip 
+        title={
+          isGuest
+            ? t('settingsDisabledForGuest', { defaultValue: 'Settings Disabled For Guest' })
+            : t('setting', { defaultValue: 'Settings' })
+        }
+        overlayStyle={{ maxWidth: '280px' }}
+        overlayInnerStyle={{ padding: '8px 12px', wordBreak: 'break-word', wordSpacing: '0.1em', lineHeight: '1.5' }}
+      >
         <Button
           className="action-button"
           type="text"
@@ -102,6 +112,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           onClick={handleSettingsClick}
           style={{ width: 28, minWidth: 28, paddingInline: 0 }}
           icon={<SettingOutlined />}
+          disabled={isGuest}
         />
       </Tooltip>
       <Tooltip

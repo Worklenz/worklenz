@@ -8,9 +8,12 @@ export interface ITeamMemberViewModel extends ITeamMember {
   name?: string;
   taskCount?: number;
   job_title?: string;
+  team_access?: string;
   email?: string;
   task_count?: number;
   projects_count?: number;
+  project_names?: string;
+  project_name?: string;
   role_name?: string;
   tasks?: ITask[];
   is_admin?: boolean;

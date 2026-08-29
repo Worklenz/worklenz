@@ -1,5 +1,14 @@
 {
   "upgradeNow": "Jetzt upgraden",
+  "description": {
+    "loadingEditor": "Editor wird geladen...",
+    "wordCount": "{{count}} Wörter",
+    "save": "Speichern",
+    "discard": "Verwerfen",
+    "offline": "Sie sind offline — die Beschreibung wurde nicht gespeichert. Bitte erneut verbinden und noch einmal versuchen.",
+    "saveTimeout": "Das Speichern der Beschreibung hat zu lange gedauert. Bitte versuchen Sie es erneut.",
+    "saveFailed": "Die Beschreibung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+  },
   "taskHeader": {
     "taskNamePlaceholder": "Geben Sie Ihre Aufgabe ein",
     "deleteTask": "Aufgabe löschen",
@@ -59,6 +68,8 @@
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "confirmDeleteSubTask": "Sind Sie sicher, dass Sie diese Unteraufgabe löschen möchten?",
+      "confirmDeleteYes": "Ja",
+      "confirmDeleteNo": "Nein",
       "deleteSubTask": "Unteraufgabe löschen"
     },
     "dependencies": {
@@ -83,6 +94,8 @@
       "edit": "Bearbeiten",
       "delete": "Löschen",
       "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
+      "edited": "(bearbeitet)",
+      "messageDeleted": "Diese Nachricht wurde gelöscht",
       "addCommentPlaceholder": "Kommentar hinzufügen...",
       "cancel": "Abbrechen",
       "commentButton": "Kommentieren",
@@ -92,6 +105,7 @@
       "maxFilesError": "Sie können maximal {{count}} Dateien hochladen",
       "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
+      "enterHint": "Enter zum Senden  ·  Shift+Enter für neue Zeile",
       "fileTooLargeToSend": "Dateien über 25MB in Kommentaren erfordern den Business-Plan. Entfernen Sie diese Datei oder führen Sie ein Upgrade durch.",
       "historyLockedBoundary": "Kommentare sind in diesem Plan auf die letzten 90 Tage begrenzt",
       "historyLockedTitle": "Kommentarverlauf gesperrt",
@@ -107,6 +121,7 @@
     "title": "Zeitprotokoll",
     "addTimeLog": "Neues Zeitprotokoll hinzufügen",
     "totalLogged": "Gesamt protokolliert",
+    "subtasksLogged": "Unteraufgaben protokolliert",
     "exportToExcel": "Nach Excel exportieren",
     "noTimeLogsFound": "Keine Zeitprotokolle gefunden",
     "historyLockedBoundary": "Zeitprotokolle sind in diesem Plan auf die letzten 90 Tage begrenzt",
@@ -125,8 +140,7 @@
       "workDescription": "Arbeitsbeschreibung",
       "descriptionPlaceholder": "Beschreibung hinzufügen",
       "logTime": "Zeit protokollieren",
-      "updateTime": "Zeit aktualisieren",
-      "cancel": "Abbrechen",
+      "updateTime": "Aktualisieren",
       "durationHelper": "Gesamtzeit mit Stunden und Minuten erfassen.",
       "timeRangeHelper": "Zeit durch Auswahl von Start- und Endzeit erfassen.",
       "selectDateError": "Bitte wählen Sie ein Datum",
@@ -135,7 +149,15 @@
       "hoursMinError": "Stunden müssen 0 oder größer sein",
       "minutesRangeError": "Minuten müssen zwischen 0 und 59 liegen",
       "durationGreaterThanZeroError": "Die Dauer muss größer als 0 Minuten sein",
-      "endTimeAfterStartError": "Endzeit muss nach der Startzeit liegen"
+      "endTimeAfterStartError": "Endzeit muss nach der Startzeit liegen",
+      "moveToProject": "Zu Projekt verschieben",
+      "moveToProjectTooltip": "Diesen Zeiteintrag einem anderen Projekt zuweisen",
+      "selectProject": "Projekt suchen...",
+      "moveToTask": "Zu Aufgabe verschieben",
+      "moveToTaskTooltip": "Diesen Zeiteintrag einer anderen Aufgabe zuweisen",
+      "selectTask": "Aufgabe auswählen...",
+      "backdateLimitError": "Zeiterfassungen können nicht weiter als {{days}} Tage zurückdatiert werden. Das früheste mögliche Datum ist {{earliestDate}}.",
+      "saveError": "Die Zeiterfassung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
     }
   },
   "taskActivityLogTab": {

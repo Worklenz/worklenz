@@ -8,6 +8,10 @@ type MemberState = {
   isUpdateMemberDrawerOpen: boolean;
   isInviteMemberDrawerOpen: boolean;
   refreshTeamMembers: boolean;
+  /** Pre-fills the "emails" field when the invite drawer opens — used by callers
+   * (e.g. the Planner/Home "New Task" assignee search) that already know the email
+   * the user typed before triggering the invite flow. */
+  inviteMemberPrefillEmail: string;
 };
 
 const initialState: MemberState = {
@@ -23,6 +27,7 @@ const initialState: MemberState = {
   isUpdateMemberDrawerOpen: false,
   isInviteMemberDrawerOpen: false,
   refreshTeamMembers: false,
+  inviteMemberPrefillEmail: '',
 };
 
 const memberSlice = createSlice({
@@ -42,9 +47,16 @@ const memberSlice = createSlice({
     triggerTeamMembersRefresh(state) {
       state.refreshTeamMembers = !state.refreshTeamMembers; // Toggle to trigger effect
     },
+    setInviteMemberPrefillEmail(state, action: PayloadAction<string>) {
+      state.inviteMemberPrefillEmail = action.payload;
+    },
   },
 });
 
-export const { toggleInviteMemberDrawer, toggleUpdateMemberDrawer, triggerTeamMembersRefresh } =
-  memberSlice.actions;
+export const {
+  toggleInviteMemberDrawer,
+  toggleUpdateMemberDrawer,
+  triggerTeamMembersRefresh,
+  setInviteMemberPrefillEmail,
+} = memberSlice.actions;
 export default memberSlice.reducer;

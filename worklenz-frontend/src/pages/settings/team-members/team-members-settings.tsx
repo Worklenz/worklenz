@@ -55,11 +55,10 @@ import {
 } from '@/utils/role-permissions.utils';
 import PinRouteToNavbarButton from '@components/PinRouteToNavbarButton';
 import { message } from '@/shared/antd-imports';
-import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import { SeatLimitModal } from '@/components/common/seat-limit-modal/SeatLimitModal';
-import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './team-members-settings.css';
 
@@ -70,8 +69,6 @@ const TeamMembersSettings = () => {
   const { socket } = useSocket();
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
   const isInviteRestricted = Boolean(currentSession?.is_expired);
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
@@ -103,15 +100,12 @@ const TeamMembersSettings = () => {
     is_appsumo_user: boolean;
   } | null>(null);
 
-  // Only count active members for seat usage (deactivated members don't consume seats)
   const totalUsedSeats = billingInfo?.total_used ?? 0;
   const totalAvailableSeats = billingInfo?.total_seats ?? 0;
   const hasReachedSeatLimit =
-    !hasBusinessAccess &&
+    !hasBusinessFeatureAccess(currentSession) &&
     totalAvailableSeats > 0 &&
     totalUsedSeats >= totalAvailableSeats;
-  // Show warning when total roster (including deactivated) exceeds the plan seat limit,
-  // indicating some members had to be deactivated to stay within the limit.
   const isSeatUsageOverLimit =
     totalAvailableSeats > 0 && (model.total ?? 0) > totalAvailableSeats;
 
@@ -148,7 +142,6 @@ const TeamMembersSettings = () => {
         record.email || ''
       );
 
-      // When re-activating a member, the backend may reject due to seat limit
       if (!res.done && res.body?.error_code === 'SEAT_LIMIT_EXCEEDED') {
         setSeatLimitData(res.body);
         setSeatLimitModalOpen(true);
@@ -164,40 +157,37 @@ const TeamMembersSettings = () => {
             const inviteData = JSON.parse(pendingTeamInvite);
             const inviteRes = await teamMembersApiService.createTeamMember(inviteData);
             if (inviteRes.done) {
-              message.success(t('memberDeactivatedInviteSent', { 
+              message.success(t('memberDeactivatedInviteSent', {
                 defaultValue: t('memberDeactivatedInviteSent')
               }));
               localStorage.removeItem('pendingTeamInvite');
             }
           } catch (error) {
-            // Error sending pending invite
             localStorage.removeItem('pendingTeamInvite');
           }
         }
-        
-        // Check for pending project invite and auto-send after deactivation
+
         const pendingProjectInvite = localStorage.getItem('pendingProjectInvite');
         if (pendingProjectInvite && !record.active) {
           try {
             const inviteData = JSON.parse(pendingProjectInvite);
-            // Send invites for each email in the pending project invite
-            const invitePromises = inviteData.emails.map((email: string) => 
+            const invitePromises = inviteData.emails.map((email: string) =>
               projectMembersApiService.inviteByEmail({
                 email: email.trim(),
                 project_id: inviteData.projectId,
-                role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' : 
+                role_name: inviteData.access === 'team-lead' ? 'TEAM_LEAD' :
                           inviteData.access === 'admin' ? 'ADMIN' : 'MEMBER',
                 is_admin: inviteData.access === 'admin',
+                access_level: inviteData.access === 'guest' ? 'GUEST' : undefined,
               })
             );
             await Promise.all(invitePromises);
-            message.success(t('memberDeactivatedProjectInviteSent', { 
+            message.success(t('memberDeactivatedProjectInviteSent', {
               defaultValue: t('memberDeactivatedProjectInviteSent'),
               projectName: inviteData.projectName,
             }));
             localStorage.removeItem('pendingProjectInvite');
           } catch (error) {
-            // Error sending pending project invite
             localStorage.removeItem('pendingProjectInvite');
           }
         }
@@ -210,7 +200,7 @@ const TeamMembersSettings = () => {
   const handleSeatLimitUpgrade = () => {
     setSeatLimitModalOpen(false);
     setSeatLimitData(null);
-    promptUpgrade();
+    dispatch(toggleUpgradeModal());
   };
 
   const handleSeatLimitDeactivate = () => {
@@ -219,7 +209,6 @@ const TeamMembersSettings = () => {
     if (isAppSumoUser) {
       trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_DEACTIVATE_CHOSEN, { feature: 'team_members' });
     }
-    // Scroll to the members table so the user can deactivate someone
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -263,6 +252,26 @@ const TeamMembersSettings = () => {
     }));
   }, []);
 
+  // NEW: updates the team lead columns in the table row immediately after
+  // the drawer saves, without waiting for a full getTeamMembers() refetch
+  const handleTeamLeadUpdate = useCallback(
+    (memberId: string, teamLeadId: string | null, teamLeadName: string | null) => {
+      setModel(prevModel => ({
+        ...prevModel,
+        data: prevModel.data?.map(member =>
+          member.id === memberId
+            ? {
+                ...member,
+                reports_to_member_id: teamLeadId,
+                current_team_lead_name: teamLeadName,
+              }
+            : member
+        ),
+      }));
+    },
+    []
+  );
+
   const handleRefresh = useCallback(() => {
     setIsLoading(true);
     getTeamMembers().finally(() => setIsLoading(false));
@@ -301,7 +310,8 @@ const TeamMembersSettings = () => {
       setIsLoading(true);
       const res = await teamManagementApiService.removeManagerAssignment(member.id);
       if (res.done) {
-        await getTeamMembers();
+        // Update the row immediately instead of refetching the whole list
+        handleTeamLeadUpdate(member.id, null, null);
       }
     } catch (error) {
       // Error removing team lead assignment
@@ -392,22 +402,33 @@ const TeamMembersSettings = () => {
   const getActionMenuItems = useCallback(
     (record: ITeamMemberViewModel): MenuProps['items'] => {
       const canManage = canManageUser(record.role_name);
+      // Team Owner can edit their own details
+      const isCurrentUser = currentUser?.team_member_id === record.id;
+      const isOwnerEditingOwnDetails = effectiveRole === ROLE_NAMES.OWNER && isCurrentUser;
+      // Admin cannot manage team owners, but owner can manage non-owners
+      const isTargetOwner = record.role_name?.toLowerCase() === 'owner';
+      
+      // Edit: Admin can't edit owners, but owners can edit themselves and others (except owners)
+      const canEdit = isOwnerEditingOwnDetails || (canManage && !isTargetOwner);
+
+      // Owner can deactivate/delete non-owner members, Admin can only do it for non-owners
+      const canDeactivateOrDelete = canManage && !isTargetOwner;
 
       const menuItems = [
         {
           key: 'edit',
           label: t('editTooltip'),
           icon: <EditOutlined />,
-          disabled: !canManage,
-          onClick: () => canManage && record.id && handleMemberClick(record.id, record.role_name),
+          disabled: !canEdit,
+          onClick: () => canEdit && record.id && handleMemberClick(record.id, record.role_name, record.name),
         },
         {
           key: 'status',
           label: record.active ? t('deactivateTooltip') : t('activateTooltip'),
           icon: <UserSwitchOutlined />,
-          disabled: !canManage,
+          disabled: !canDeactivateOrDelete,
           onClick: () => {
-            if (canManage) {
+            if (canDeactivateOrDelete) {
               return;
             }
           },
@@ -416,10 +437,10 @@ const TeamMembersSettings = () => {
           key: 'delete',
           label: t('deleteTooltip'),
           icon: <DeleteOutlined />,
-          disabled: !canManage,
+          disabled: !canDeactivateOrDelete,
           danger: true,
           onClick: () => {
-            if (canManage && record.id) {
+            if (canDeactivateOrDelete && record.id) {
               return;
             }
           },
@@ -428,7 +449,7 @@ const TeamMembersSettings = () => {
 
       return menuItems;
     },
-    [t, canManageUser, handleMemberClick]
+    [t, canManageUser, handleMemberClick, effectiveRole, currentUser?.team_member_id]
   );
 
   const columns: TableProps['columns'] = useMemo(
@@ -441,7 +462,12 @@ const TeamMembersSettings = () => {
         sorter: true,
         render: (_, record: ITeamMemberViewModel) => {
           const isPending = record.pending_invitation;
-          const canEdit = isPrivilegedUser && !isPending;
+          const isTargetOwner = record.role_name?.toLowerCase() === 'owner';
+          const isCurrentUser = currentUser?.team_member_id === record.id;
+          const isOwnerEditingOwnDetails = effectiveRole === ROLE_NAMES.OWNER && isCurrentUser;
+          // Admin cannot edit team owners, but owners can edit themselves
+          const canEdit = isPrivilegedUser && !isPending && (!isTargetOwner || isOwnerEditingOwnDetails);
+          const canManage = canManageUser(record.role_name);
 
           return (
             <Flex
@@ -451,7 +477,7 @@ const TeamMembersSettings = () => {
                 display: 'flex',
                 width: '100%',
               }}
-              onClick={() => handleMemberClick(record.id || '', record.role_name, record.name)}
+              onClick={() => canManage && handleMemberClick(record.id || '', record.role_name, record.name)}
             >
               <Avatar
                 size={28}
@@ -523,8 +549,8 @@ const TeamMembersSettings = () => {
         title: t('projectsColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
-          style: { cursor: 'pointer' },
+          onClick: () => canManageUser(record.role_name) && handleMemberClick(record.id || '', record.role_name, record.name),
+          style: { cursor: canManageUser(record.role_name) ? 'pointer' : 'default' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
           <Typography.Text>{record.projects_count}</Typography.Text>
@@ -536,8 +562,8 @@ const TeamMembersSettings = () => {
         title: t('emailColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
-          style: { cursor: 'pointer' },
+          onClick: () => canManageUser(record.role_name) && handleMemberClick(record.id || '', record.role_name, record.name),
+          style: { cursor: canManageUser(record.role_name) ? 'pointer' : 'default' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
           <div>
@@ -556,8 +582,8 @@ const TeamMembersSettings = () => {
         title: t('teamAccessColumn'),
         sorter: true,
         onCell: (record: ITeamMemberViewModel) => ({
-          onClick: () => handleMemberClick(record.id || '', record.role_name, record.name),
-          style: { cursor: 'pointer' },
+          onClick: () => canManageUser(record.role_name) && handleMemberClick(record.id || '', record.role_name, record.name),
+          style: { cursor: canManageUser(record.role_name) ? 'pointer' : 'default' },
         }),
         render: (_, record: ITeamMemberViewModel) => (
           <Flex gap={16} align="center">
@@ -757,8 +783,6 @@ const TeamMembersSettings = () => {
                 placement="bottomRight"
                 open={isSeatLimitPopoverOpen}
                 onOpenChange={open => {
-                  // Only allow opening via the button when seat limit is reached;
-                  // always allow closing (open === false) so outside-click works.
                   if (!open || hasReachedSeatLimit) {
                     setIsSeatLimitPopoverOpen(open);
                     if (isAppSumoUser) {
@@ -791,8 +815,7 @@ const TeamMembersSettings = () => {
                   <Flex vertical gap={12} style={{ maxWidth: 280 }}>
                     <Typography.Text>
                       {t('workspaceSeatLimitPopoverBody', {
-                        defaultValue:
-                          t('workspaceSeatLimitPopoverBody'),
+                        defaultValue: t('workspaceSeatLimitPopoverBody'),
                         used: totalUsedSeats,
                         total: totalAvailableSeats,
                       })}
@@ -805,7 +828,7 @@ const TeamMembersSettings = () => {
                           trackAppSumoEvent(AppSumoUpsellEvents.UPGRADE_NOW_CLICKED, { feature: 'seat_limit_team_members' });
                           trackAppSumoEvent(AppSumoUpsellEvents.SEAT_LIMIT_ADD_MORE_CLICKED, { feature: 'team_members' });
                         }
-                        promptUpgrade();
+                        dispatch(toggleUpgradeModal());
                       }}
                     >
                       {t('seatLimitPopoverCta', { defaultValue: t('seatLimitPopoverCta') })}
@@ -831,7 +854,6 @@ const TeamMembersSettings = () => {
                       if (!hasReachedSeatLimit) {
                         dispatch(toggleInviteMemberDrawer());
                       }
-                      // When hasReachedSeatLimit, the Popover's trigger="click" handles opening
                     }}
                   >
                     {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
@@ -887,11 +909,10 @@ const TeamMembersSettings = () => {
                 total,
               }),
           }}
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: 900 }}
         />
       </Card>
 
-      {/* Floating Action Button for Bulk Assign */}
       {isPrivilegedUser && selectedMembers.length > 0 && (
         <div
           style={{
@@ -937,6 +958,7 @@ const TeamMembersSettings = () => {
           onNameUpdate={handleMemberNameUpdate}
           onRoleUpdate={handleRoleUpdate}
           onJobTitleUpdate={handleJobTitleUpdate}
+          onTeamLeadUpdate={handleTeamLeadUpdate}
           initialRoleName={selectedMemberRole || undefined}
         />,
         document.body

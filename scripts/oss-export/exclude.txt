@@ -1,0 +1,65 @@
+# Paths excluded from the public (OSS) tree.
+#
+# One git pathspec per line. Consumed by build-oss-tree.sh, which materialises
+# every tracked file in the current commit EXCEPT these, into a clean directory
+# that is then pushed to the public repo as a single squashed commit.
+#
+# Rule of thumb for what belongs here:
+#   - anything under a *-private / src/private path (the private build only)
+#   - payment-integration internals not needed to run the free core
+#   - internal engineering notes, strategy docs, security remediation plans
+#   - CI wired to our own infra
+#   - editor / AI-assistant config that is ours, not the project's
+#
+# NOT excluded (intentionally): worklenz-frontend/src/components/appsumo-popup/,
+# worklenz-frontend/src/config/appsumo-promo.config.ts and
+# worklenz-frontend/src/ee/hooks/useAppSumoTracking.ts — these are promo UI +
+# a Mixpanel wrapper, contain nothing sensitive, and ~15 core components import
+# them. Removing them needs the core<->ee decoupling add-on, not a file delete.
+
+# ---- Private backend code (loaded optionally via shared/private-extensions.ts;
+#      falls back to no-ops when absent) ----
+worklenz-backend/src/private/
+
+# ---- Private DB migrations (scripts/migrate.js already skips these dirs when
+#      they are absent) ----
+worklenz-backend/database/migrations-private/
+worklenz-backend/database/pg-migrations-private/
+
+# ---- Payment-integration internals + monetization strategy docs ----
+DIRECTPAY_SETUP.md
+APPSUMO_POPUP_AND_DRAWER_BANNER.md
+docs/DIRECTPAY_IMPLEMENTATION_ANALYSIS.md
+docs/DIRECTPAY_INTEGRATION_PLAN.md
+docs/DIRECTPAY_RETRY_AND_CANCELLATION.md
+docs/appsumo-gates-clicks-model.md
+docs/engineering-proposal-licensing-and-monetization.md
+docs/licensing-monetization-checklist.md
+docs/ORGANIZATION_BASED_LICENSING_PROPOSAL.md
+docs/SECURITY_REMEDIATION_PLAN.md
+worklenz-backend/docs/Business Plan Override & AppSumo Implementation Summary.md
+worklenz-backend/docs/SAAS_SUBSCRIPTION_MIGRATION_SYSTEM.md
+
+# ---- Internal engineering notes / feature specs / implementation summaries.
+#      Keep the whole docs/ trees out except the curated allowlist below. ----
+docs/
+worklenz-backend/docs/
+worklenz-backend/doc/
+
+# ---- CI wired to our own infra (client-specific branch + Azure SWA) ----
+.github/workflows/azure-static-web-apps-victorious-hill-0eea4f810.yml
+
+# ---- Our editor / AI-assistant config ----
+.cursorrules
+.windsurfrules
+.coderabbit.yaml
+.fallow/
+.claude/
+worklenz-backend/.claude/
+worklenz-frontend/.claude/
+
+# ---- Scratch / one-off references ----
+TASK_3_QUICK_REFERENCE.md
+run-trello-diagnostic.js
+trello-location-diagnostic.js
+subscription_user_counts_queries.sql

@@ -655,7 +655,7 @@ const TeamLeadReports: React.FC = () => {
         }
       />
 
-      <div style={{ padding: 24 }}>
+      <div>
         {/* Date Range Filter */}
         <Card size="small" style={{ marginBottom: 16 }}>
           <Flex justify="space-between" align="center">

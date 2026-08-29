@@ -11,8 +11,39 @@ export type ColumnStyle = {
   maxWidth?: string;
 };
 
+// Extended column configuration type that includes all possible properties
+export interface ColumnConfig {
+  id: string;
+  label: string;
+  width: string;
+  key?: string;
+  isSticky?: boolean;
+  minWidth?: string;
+  maxWidth?: string;
+  isCustom?: boolean;
+  custom_column?: boolean;
+  custom_column_obj?: any;
+  name?: string;
+  uuid?: string;
+  [key: string]: unknown;
+}
+
+// Type for add task row items that are mixed with regular tasks
+export interface AddTaskRowItem {
+  id: string;
+  isAddTaskRow: true;
+  groupId: string;
+  groupType: string;
+  groupValue: string;
+  projectId?: string;
+  rowId: string;
+  autoFocus?: boolean;
+  isInsertMode?: boolean;
+  insertAfterTaskId?: string | null;
+}
+
 // Base column configuration
-export const BASE_COLUMNS = [
+export const BASE_COLUMNS: ColumnConfig[] = [
   { id: 'dragHandle', label: '', width: '20px', isSticky: true, key: 'dragHandle' },
   { id: 'checkbox', label: '', width: '28px', isSticky: true, key: 'checkbox' },
   {
@@ -72,4 +103,6 @@ export const BASE_COLUMNS = [
   { id: 'createdDate', label: 'createdDateColumn', width: '140px', key: COLUMN_KEYS.CREATED_DATE },
   { id: 'lastUpdated', label: 'lastUpdatedColumn', width: '140px', key: COLUMN_KEYS.LAST_UPDATED },
   { id: 'reporter', label: 'reporterColumn', width: '120px', key: COLUMN_KEYS.REPORTER },
-];
+] as const;
+
+export type BaseColumn = typeof BASE_COLUMNS[number];

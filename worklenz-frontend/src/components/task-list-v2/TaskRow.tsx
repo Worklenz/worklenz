@@ -23,9 +23,17 @@ interface TaskRowProps {
   }>;
   isSubtask?: boolean;
   isFirstInGroup?: boolean;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
   depth?: number;
   canCreateTask?: boolean;
+  /** When true, enables drag-and-drop even for subtask rows (used inside subtask DndContext) */
+  enableSubtaskDnd?: boolean;
+  /** Guest access restriction - prevents viewing and editing */
+  isGuest?: boolean;
 }
 
 const TaskRow: React.FC<TaskRowProps> = memo(
@@ -38,6 +46,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     updateTaskCustomColumnValue,
     depth = 0,
     canCreateTask = true,
+    enableSubtaskDnd = false,
+    isGuest = false,
   }) => {
     // Get task data and selection state from Redux
     const task = useAppSelector(state => selectTaskById(state, taskId));
@@ -88,7 +98,10 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       originalTaskNameRef,
     });
 
-    // Drag and drop functionality - only enable for parent tasks
+    // Drag and drop functionality
+    // Subtasks: disabled in the global DnD context, but enabled when placed inside
+    // a subtask-scoped DndContext (enableSubtaskDnd=true).
+    // Guest access: drag and drop is disabled for guests
     const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
       useSortable({
         id: safeTask.id || taskId,
@@ -96,7 +109,7 @@ const TaskRow: React.FC<TaskRowProps> = memo(
           type: 'task',
           task: safeTask,
         },
-        disabled: isSubtask || !task, // Disable drag and drop for subtasks and placeholders
+        disabled: (isSubtask && !enableSubtaskDnd) || !task || isGuest,
       });
 
     const { renderColumn } = useTaskRowColumns({
@@ -126,7 +139,8 @@ const TaskRow: React.FC<TaskRowProps> = memo(
       attributes,
       listeners,
       depth,
-      canCreateTask,
+      canCreateTask: canCreateTask && !isGuest,
+      isGuest,
     });
 
     // Render null only after all hooks are called to keep hook ordering stable
@@ -147,18 +161,19 @@ const TaskRow: React.FC<TaskRowProps> = memo(
     return (
       <div
         ref={setNodeRef}
-        style={{ ...style, height: '40px' }}
-        className={`flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
+        data-task-id={taskId}
+        style={{ ...style, height: '40px', position: 'relative', zIndex: 1 }}
+        className={`group flex items-center min-w-max px-1 border-t border-b border-gray-200 dark:border-gray-700 hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${
           isDragging ? 'opacity-50' : ''
-        } ${isOver && !isDragging ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${
-          isDrawerActive ? 'bg-blue-50 dark:bg-blue-900/25' : ''
+        } ${isOver && !isDragging ? 'bg-black/5 dark:bg-white/5' : ''} ${
+          isDrawerActive ? 'bg-black/[0.04] dark:bg-white/[0.05]' : ''
         }`}
       >
         {visibleColumns.map((column, index) => {
           const rowBackgrounds = {
             normal: isDarkMode ? (isSubtask ? '#141414' : '#1e1e1e') : '#ffffff',
-            hover: isDarkMode ? '#1f2937' : '#f9fafb',
-            dragOver: isDarkMode ? '#1e3a8a33' : '#dbeafe',
+            hover: isDarkMode ? '#2a2a2a' : '#f5f5f5',
+            dragOver: isDarkMode ? '#303030' : '#f0f0f0',
           };
 
           let currentBg = rowBackgrounds.normal;

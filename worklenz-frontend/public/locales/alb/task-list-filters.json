@@ -2,7 +2,6 @@
   "searchButton": "Kërko",
   "resetButton": "Rivendos",
   "searchInputPlaceholder": "Kërko sipas emrit",
-
   "sortText": "Rendit",
   "statusText": "Statusi",
   "phaseText": "Faza",
@@ -37,18 +36,14 @@
   "reporterText": "Raportuesi",
   "dueTimeText": "Koha e afatit",
   "duetimeText": "Koha e afatit",
-
   "lowText": "E ulët",
   "mediumText": "E mesme",
   "highText": "E lartë",
-
   "createStatusButtonTooltip": "Cilësimet e statusit",
   "configPhaseButtonTooltip": "Cilësimet e fazës",
   "noLabelsFound": "Nuk u gjetën etiketa",
-
   "addStatusButton": "Shto status",
   "addPhaseButton": "Shto fazë",
-
   "createStatus": "Krijo status",
   "name": "Emri",
   "category": "Kategoria",
@@ -56,7 +51,6 @@
   "pleaseEnterAName": "Ju lutemi shkruani një emër",
   "pleaseSelectACategory": "Ju lutemi zgjidhni një kategori",
   "create": "Krijo",
-
   "searchTasks": "Kërko detyra...",
   "searchPlaceholder": "Kërko",
   "fieldsText": "Fushat",
@@ -84,6 +78,7 @@
   "close": "Mbyll",
   "cannotMoveStatus": "Nuk mund të lëvizet statusi",
   "cannotMoveStatusMessage": "Nuk mund të lëvizet ky status sepse do të linte kategorinë '{{categoryName}}' bosh. Çdo kategori duhet të ketë të paktën një status.",
+  "dropToMoveToCategory": "Lësho këtu për ta zhvendosur te {{categoryName}}",
   "ok": "OK",
   "clearSort": "Pastro Renditjen",
   "sortAscending": "Rendit në Rritje",
@@ -91,5 +86,6 @@
   "sortByField": "Rendit sipas {{field}}",
   "ascendingOrder": "Rritës",
   "descendingOrder": "Zbritës",
-  "currentSort": "Renditja aktuale: {{field}} {{order}}"
+  "currentSort": "Renditja aktuale: {{field}} {{order}}",
+  "apply": "Apliko"
 }

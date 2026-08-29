@@ -1,13 +1,12 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback, useState, useRef } from 'react';
 // @ts-ignore: Heroicons module types
 import {
-  ChevronDownIcon,
   ChevronRightIcon,
   EllipsisHorizontalIcon,
   PencilIcon,
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
-import { Checkbox, Dropdown, Menu, Input, Modal, Badge, Flex } from '@/shared/antd-imports';
+import { Checkbox, Dropdown, Input, Badge } from '@/shared/antd-imports';
 import GroupProgressBar from './GroupProgressBar';
 import { useTranslation } from 'react-i18next';
 import { getContrastColor } from '@/utils/colorUtils';
@@ -34,6 +33,8 @@ import { ITaskPhase } from '@/types/tasks/taskPhase.types';
 import logger from '@/utils/errorLogger';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_project_board_column_setting_click } from '@/shared/worklenz-analytics-events';
+import AvatarGroup from '@/components/AvatarGroup';
+import PhaseAssigneeSelector from './PhaseAssigneeSelector';
 
 // ✅ FIX: Max character limit for phase names
 const PHASE_NAME_MAX_LENGTH = 50;
@@ -67,6 +68,8 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const allTasks = useAppSelector(selectAllTasksArray);
   const currentGrouping = useAppSelector(selectCurrentGrouping);
   const { statusCategories, status: statusList } = useAppSelector(state => state.taskStatusReducer);
+  const themeMode = useAppSelector(state => (state as any).themeReducer?.mode || 'light');
+  const isDarkMode = themeMode === 'dark';
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { isOwnerOrAdmin } = useAuthService();
 
@@ -74,6 +77,22 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [isChangingCategory, setIsChangingCategory] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
+  const [isPhaseAssigneeSelectorOpen, setIsPhaseAssigneeSelectorOpen] = useState(false);
+
+  // Refs for buttons
+  const assigneeButtonRef = useRef<HTMLDivElement>(null);
+
+  // Get phase data if grouping by phase
+  const { phaseList } = useAppSelector(state => state.phaseReducer);
+  const { project } = useAppSelector(state => state.projectReducer);
+  const phaseAssigneesEnabled = project?.phase_assignees_enabled || false;
+  const isGuest = project?.is_guest === true;
+
+  const currentPhaseData = useMemo(() => {
+    if (currentGrouping !== 'phase') return null;
+    const phaseId = group.id.replace('phase-', '');
+    return phaseList.find(p => p.id === phaseId);
+  }, [currentGrouping, group.id, phaseList]);
 
   // ✅ FIX: Trim to 50 chars on init if phase (handles existing long DB values)
   const [editingName, setEditingName] = useState(
@@ -195,13 +214,14 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const handleSelectAllChange = useCallback(
     (e: any) => {
       e.stopPropagation();
+      if (isGuest) return;
       if (isAllSelected) {
         tasksInGroup.forEach(taskId => dispatch(deselectTask(taskId)));
       } else {
         tasksInGroup.forEach(taskId => dispatch(selectTask(taskId)));
       }
     },
-    [dispatch, isAllSelected, tasksInGroup]
+    [dispatch, isAllSelected, tasksInGroup, isGuest]
   );
 
   const handleNameSave = useCallback(async () => {
@@ -215,7 +235,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     try {
       if (currentGrouping === 'status') {
         const statusId = group.id.replace('status-', '');
-        const currentStatus = statusList.find(s => s.id === statusId);
+        const currentStatus = statusList.find(s => s.id === statusId) as any;
 
         if (!currentStatus || !currentStatus.category_id) {
           logger.error('Cannot rename status: missing category_id', {
@@ -273,7 +293,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   const handleNameClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (!isOwnerOrAdmin) return;
+      if (!isOwnerOrAdmin || isGuest) return;
       if (isUnmappedPhaseForClick) return;
       setIsEditingName(true);
       // ✅ FIX: Trim to 50 chars when starting to edit
@@ -283,7 +303,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           : group.name
       );
     },
-    [group.name, isOwnerOrAdmin, isUnmappedPhaseForClick, currentGrouping]
+    [group.name, isOwnerOrAdmin, isGuest, isUnmappedPhaseForClick, currentGrouping]
   );
 
   const handleNameKeyDown = useCallback(
@@ -339,7 +359,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
   }, [currentGrouping, group.id, group.name]);
 
   const menuItems = useMemo(() => {
-    if (!isOwnerOrAdmin) return [];
+    if (!isOwnerOrAdmin || isGuest) return [];
     if (isUnmappedPhase) return [];
 
     const items = [
@@ -391,6 +411,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
     handleRenameGroup,
     handleCategoryChange,
     isOwnerOrAdmin,
+    isGuest,
     isUnmappedPhase,
     statusCategories,
     t,
@@ -439,6 +460,7 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           <Checkbox
             checked={isAllSelected}
             indeterminate={isPartiallySelected}
+            disabled={isGuest}
             onChange={handleSelectAllChange}
             onClick={e => e.stopPropagation()}
             style={{ color: headerTextColor }}
@@ -506,6 +528,63 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
           </div>
         </div>
 
+        {/* Phase Assignee Profile Icon or Avatar Group */}
+        {currentGrouping === 'phase' && currentPhaseData && phaseAssigneesEnabled && (
+          <div ref={assigneeButtonRef} className="flex items-center ml-2">
+            {currentPhaseData.default_assignee_id ? (
+              // When assignee exists: show avatar, clicking opens dropdown
+              <button
+                className="flex items-center hover:opacity-80 transition-opacity focus:outline-none cursor-pointer"
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsPhaseAssigneeSelectorOpen(true);
+                }}
+                title="Manage phase assignee"
+              >
+                <div style={{ pointerEvents: 'none' }}>
+                  <AvatarGroup
+                    members={[
+                      {
+                        id: currentPhaseData.default_assignee_id,
+                        name: currentPhaseData.default_assignee_name || '',
+                        avatar_url: currentPhaseData.default_assignee_avatar_url || undefined,
+                      },
+                    ]}
+                    maxCount={3}
+                    size={24}
+                    isDarkMode={false}
+                  />
+                </div>
+              </button>
+            ) : (
+              // When no assignee: show plus button
+              <button
+                className="flex items-center justify-center rounded-full hover:opacity-80 transition-opacity focus:outline-none"
+                style={{ width: '28px', height: '28px' }}
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsPhaseAssigneeSelectorOpen(true);
+                }}
+                title="Manage phase assignee"
+              >
+                <div
+                  className="text-xs font-semibold rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    color: headerTextColor,
+                  }}
+                >
+                  +
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Three-dot menu */}
         {menuItems.length > 0 && (currentGrouping === 'status' || currentGrouping === 'phase') && (
           <div className="flex items-center ml-2">
@@ -557,6 +636,18 @@ const TaskGroupHeader: React.FC<TaskGroupHeaderProps> = ({
             />
           </div>
         )}
+
+      {/* Phase Assignee Selector Modal */}
+      {currentGrouping === 'phase' && currentPhaseData && phaseAssigneesEnabled && isPhaseAssigneeSelectorOpen && (
+        <PhaseAssigneeSelector
+          phase={currentPhaseData}
+          projectId={projectId}
+          isDarkMode={isDarkMode}
+          isOpen={isPhaseAssigneeSelectorOpen}
+          onClose={() => setIsPhaseAssigneeSelectorOpen(false)}
+          triggerRef={assigneeButtonRef}
+        />
+      )}
     </div>
   );
 };

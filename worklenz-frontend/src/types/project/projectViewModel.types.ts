@@ -74,7 +74,9 @@ export interface IProjectViewModel extends IProject {
   use_time_progress?: boolean;
   auto_assign_task_creator?: boolean;
   restrict_task_creation?: boolean;
+  phase_assignees_enabled?: boolean;
   currency?: string;
   budget?: number;
   calculation_method?: 'hourly' | 'man_days';
+  is_guest?: boolean; // Indicates if current user is a guest in this project
 }

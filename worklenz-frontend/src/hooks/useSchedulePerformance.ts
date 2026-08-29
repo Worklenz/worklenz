@@ -1,1 +1,257 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';\nimport { useAppSelector } from './useAppSelector';\nimport { debounce, throttle } from 'lodash-es';\n\n// Performance optimization hook for schedule components\nexport const useSchedulePerformance = () => {\n  const [renderCount, setRenderCount] = useState(0);\n  const [lastRenderTime, setLastRenderTime] = useState(0);\n  const renderStartTime = useRef(0);\n  \n  // Track render performance\n  useEffect(() => {\n    renderStartTime.current = performance.now();\n    setRenderCount(prev => prev + 1);\n    \n    return () => {\n      const renderTime = performance.now() - renderStartTime.current;\n      setLastRenderTime(renderTime);\n      \n      // Log slow renders in development\n      if (process.env.NODE_ENV === 'development' && renderTime > 16) {\n        console.warn(`Slow render detected: ${renderTime.toFixed(2)}ms`);\n      }\n    };\n  });\n  \n  // Debounced scroll handler\n  const createDebouncedScrollHandler = useCallback(\n    (handler: (event: any) => void, delay: number = 16) => {\n      return debounce(handler, delay, { leading: true, trailing: true });\n    },\n    []\n  );\n  \n  // Throttled resize handler\n  const createThrottledResizeHandler = useCallback(\n    (handler: (event: any) => void, delay: number = 100) => {\n      return throttle(handler, delay, { leading: true, trailing: true });\n    },\n    []\n  );\n  \n  // Memoized date calculations\n  const createMemoizedDateCalculation = useCallback(\n    (calculationFn: (...args: any[]) => any, deps: any[]) => {\n      return useMemo(calculationFn, deps);\n    },\n    []\n  );\n  \n  // Virtual scrolling helper\n  const useVirtualScrolling = ({\n    itemCount,\n    itemHeight,\n    containerHeight,\n    scrollTop\n  }: {\n    itemCount: number;\n    itemHeight: number;\n    containerHeight: number;\n    scrollTop: number;\n  }) => {\n    return useMemo(() => {\n      const visibleStart = Math.floor(scrollTop / itemHeight);\n      const visibleEnd = Math.min(\n        itemCount - 1,\n        Math.ceil((scrollTop + containerHeight) / itemHeight)\n      );\n      \n      // Add buffer for smooth scrolling\n      const buffer = Math.ceil(containerHeight / itemHeight);\n      const startIndex = Math.max(0, visibleStart - buffer);\n      const endIndex = Math.min(itemCount - 1, visibleEnd + buffer);\n      \n      return {\n        startIndex,\n        endIndex,\n        visibleStart,\n        visibleEnd,\n        totalHeight: itemCount * itemHeight,\n        offsetY: startIndex * itemHeight\n      };\n    }, [itemCount, itemHeight, containerHeight, scrollTop]);\n  };\n  \n  return {\n    renderCount,\n    lastRenderTime,\n    createDebouncedScrollHandler,\n    createThrottledResizeHandler,\n    createMemoizedDateCalculation,\n    useVirtualScrolling\n  };\n};\n\n// Hook for optimizing gantt chart rendering\nexport const useGanttOptimization = ({\n  cellWidth,\n  dayCount,\n  memberCount\n}: {\n  cellWidth: number;\n  dayCount: number;\n  memberCount: number;\n}) => {\n  const [visibleRange, setVisibleRange] = useState({ start: 0, end: dayCount });\n  const [visibleMembers, setVisibleMembers] = useState({ start: 0, end: memberCount });\n  \n  // Calculate visible cells based on viewport\n  const calculateVisibleCells = useCallback((scrollLeft: number, viewportWidth: number) => {\n    const start = Math.floor(scrollLeft / cellWidth);\n    const end = Math.ceil((scrollLeft + viewportWidth) / cellWidth);\n    const buffer = Math.ceil(viewportWidth / cellWidth);\n    \n    setVisibleRange({\n      start: Math.max(0, start - buffer),\n      end: Math.min(dayCount, end + buffer)\n    });\n  }, [cellWidth, dayCount]);\n  \n  const calculateVisibleMembers = useCallback((scrollTop: number, viewportHeight: number, memberHeight: number) => {\n    const start = Math.floor(scrollTop / memberHeight);\n    const end = Math.ceil((scrollTop + viewportHeight) / memberHeight);\n    const buffer = Math.ceil(viewportHeight / memberHeight);\n    \n    setVisibleMembers({\n      start: Math.max(0, start - buffer),\n      end: Math.min(memberCount, end + buffer)\n    });\n  }, [memberCount]);\n  \n  // Memoized cell renderer\n  const createCellRenderer = useCallback((renderCell: (dayIndex: number, memberIndex: number) => React.ReactNode) => {\n    return useMemo(() => {\n      const cells: React.ReactNode[] = [];\n      \n      for (let memberIndex = visibleMembers.start; memberIndex < visibleMembers.end; memberIndex++) {\n        for (let dayIndex = visibleRange.start; dayIndex < visibleRange.end; dayIndex++) {\n          cells.push(renderCell(dayIndex, memberIndex));\n        }\n      }\n      \n      return cells;\n    }, [visibleRange, visibleMembers, renderCell]);\n  }, [visibleRange, visibleMembers]);\n  \n  return {\n    visibleRange,\n    visibleMembers,\n    calculateVisibleCells,\n    calculateVisibleMembers,\n    createCellRenderer\n  };\n};\n\n// Hook for caching and memoization\nexport const useScheduleCache = <T extends Record<string, any>>(key: string, data: T, ttl: number = 300000) => {\n  const cache = useRef<Map<string, { data: T; timestamp: number }>>(new Map());\n  \n  const getCachedData = useCallback((cacheKey: string): T | null => {\n    const cached = cache.current.get(cacheKey);\n    if (cached && Date.now() - cached.timestamp < ttl) {\n      return cached.data;\n    }\n    return null;\n  }, [ttl]);\n  \n  const setCachedData = useCallback((cacheKey: string, newData: T) => {\n    cache.current.set(cacheKey, {\n      data: newData,\n      timestamp: Date.now()\n    });\n  }, []);\n  \n  const invalidateCache = useCallback((cacheKey?: string) => {\n    if (cacheKey) {\n      cache.current.delete(cacheKey);\n    } else {\n      cache.current.clear();\n    }\n  }, []);\n  \n  // Auto-cache current data\n  useEffect(() => {\n    if (data) {\n      setCachedData(key, data);\n    }\n  }, [key, data, setCachedData]);\n  \n  return {\n    getCachedData,\n    setCachedData,\n    invalidateCache,\n    cacheSize: cache.current.size\n  };\n};\n\n// Hook for performance monitoring\nexport const usePerformanceMonitor = (componentName: string) => {\n  const metrics = useRef({\n    renderCount: 0,\n    totalRenderTime: 0,\n    maxRenderTime: 0,\n    minRenderTime: Infinity,\n    lastRenderTime: 0\n  });\n  \n  const startTime = useRef(0);\n  \n  useEffect(() => {\n    startTime.current = performance.now();\n    metrics.current.renderCount++;\n    \n    return () => {\n      const renderTime = performance.now() - startTime.current;\n      metrics.current.totalRenderTime += renderTime;\n      metrics.current.maxRenderTime = Math.max(metrics.current.maxRenderTime, renderTime);\n      metrics.current.minRenderTime = Math.min(metrics.current.minRenderTime, renderTime);\n      metrics.current.lastRenderTime = renderTime;\n      \n      // Log performance metrics in development\n      if (process.env.NODE_ENV === 'development' && metrics.current.renderCount % 100 === 0) {\n        const avgRenderTime = metrics.current.totalRenderTime / metrics.current.renderCount;\n        console.group(`${componentName} Performance Metrics`);\n        console.log(`Renders: ${metrics.current.renderCount}`);\n        console.log(`Avg Render Time: ${avgRenderTime.toFixed(2)}ms`);\n        console.log(`Max Render Time: ${metrics.current.maxRenderTime.toFixed(2)}ms`);\n        console.log(`Min Render Time: ${metrics.current.minRenderTime.toFixed(2)}ms`);\n        console.log(`Last Render Time: ${metrics.current.lastRenderTime.toFixed(2)}ms`);\n        console.groupEnd();\n      }\n    };\n  });\n  \n  const getMetrics = useCallback(() => {\n    const avgRenderTime = metrics.current.totalRenderTime / metrics.current.renderCount;\n    return {\n      ...metrics.current,\n      avgRenderTime\n    };\n  }, []);\n  \n  const resetMetrics = useCallback(() => {\n    metrics.current = {\n      renderCount: 0,\n      totalRenderTime: 0,\n      maxRenderTime: 0,\n      minRenderTime: Infinity,\n      lastRenderTime: 0\n    };\n  }, []);\n  \n  return {\n    getMetrics,\n    resetMetrics\n  };\n};
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAppSelector } from './useAppSelector';
+import { debounce, throttle } from 'lodash-es';
+
+// Performance optimization hook for schedule components
+export const useSchedulePerformance = () => {
+  const [renderCount, setRenderCount] = useState(0);
+  const [lastRenderTime, setLastRenderTime] = useState(0);
+  const renderStartTime = useRef(0);
+  
+  // Track render performance
+  useEffect(() => {
+    renderStartTime.current = performance.now();
+    setRenderCount(prev => prev + 1);
+    
+    return () => {
+      const renderTime = performance.now() - renderStartTime.current;
+      setLastRenderTime(renderTime);
+      
+      // Log slow renders in development
+      if (process.env.NODE_ENV === 'development' && renderTime > 16) {
+        console.warn(`Slow render detected: ${renderTime.toFixed(2)}ms`);
+      }
+    };
+  });
+  
+  // Debounced scroll handler
+  const createDebouncedScrollHandler = useCallback(
+    (handler: (event: any) => void, delay: number = 16) => {
+      return debounce(handler, delay, { leading: true, trailing: true });
+    },
+    []
+  );
+  
+  // Throttled resize handler
+  const createThrottledResizeHandler = useCallback(
+    (handler: (event: any) => void, delay: number = 100) => {
+      return throttle(handler, delay, { leading: true, trailing: true });
+    },
+    []
+  );
+  
+  // Memoized date calculations
+  const createMemoizedDateCalculation = useCallback(
+    (calculationFn: (...args: any[]) => any, deps: any[]) => {
+      return useMemo(calculationFn, deps);
+    },
+    []
+  );
+  
+  // Virtual scrolling helper
+  const useVirtualScrolling = ({
+    itemCount,
+    itemHeight,
+    containerHeight,
+    scrollTop
+  }: {
+    itemCount: number;
+    itemHeight: number;
+    containerHeight: number;
+    scrollTop: number;
+  }) => {
+    return useMemo(() => {
+      const visibleStart = Math.floor(scrollTop / itemHeight);
+      const visibleEnd = Math.min(
+        itemCount - 1,
+        Math.ceil((scrollTop + containerHeight) / itemHeight)
+      );
+      
+      // Add buffer for smooth scrolling
+      const buffer = Math.ceil(containerHeight / itemHeight);
+      const startIndex = Math.max(0, visibleStart - buffer);
+      const endIndex = Math.min(itemCount - 1, visibleEnd + buffer);
+      
+      return {
+        startIndex,
+        endIndex,
+        visibleStart,
+        visibleEnd,
+        totalHeight: itemCount * itemHeight,
+        offsetY: startIndex * itemHeight
+      };
+    }, [itemCount, itemHeight, containerHeight, scrollTop]);
+  };
+  
+  return {
+    renderCount,
+    lastRenderTime,
+    createDebouncedScrollHandler,
+    createThrottledResizeHandler,
+    createMemoizedDateCalculation,
+    useVirtualScrolling
+  };
+};
+
+// Hook for optimizing gantt chart rendering
+export const useGanttOptimization = ({
+  cellWidth,
+  dayCount,
+  memberCount
+}: {
+  cellWidth: number;
+  dayCount: number;
+  memberCount: number;
+}) => {
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: dayCount });
+  const [visibleMembers, setVisibleMembers] = useState({ start: 0, end: memberCount });
+  
+  // Calculate visible cells based on viewport
+  const calculateVisibleCells = useCallback((scrollLeft: number, viewportWidth: number) => {
+    const start = Math.floor(scrollLeft / cellWidth);
+    const end = Math.ceil((scrollLeft + viewportWidth) / cellWidth);
+    const buffer = Math.ceil(viewportWidth / cellWidth);
+    
+    setVisibleRange({
+      start: Math.max(0, start - buffer),
+      end: Math.min(dayCount, end + buffer)
+    });
+  }, [cellWidth, dayCount]);
+  
+  const calculateVisibleMembers = useCallback((scrollTop: number, viewportHeight: number, memberHeight: number) => {
+    const start = Math.floor(scrollTop / memberHeight);
+    const end = Math.ceil((scrollTop + viewportHeight) / memberHeight);
+    const buffer = Math.ceil(viewportHeight / memberHeight);
+    
+    setVisibleMembers({
+      start: Math.max(0, start - buffer),
+      end: Math.min(memberCount, end + buffer)
+    });
+  }, [memberCount]);
+  
+  // Memoized cell renderer
+  const createCellRenderer = useCallback((renderCell: (dayIndex: number, memberIndex: number) => React.ReactNode) => {
+    return useMemo(() => {
+      const cells: React.ReactNode[] = [];
+      
+      for (let memberIndex = visibleMembers.start; memberIndex < visibleMembers.end; memberIndex++) {
+        for (let dayIndex = visibleRange.start; dayIndex < visibleRange.end; dayIndex++) {
+          cells.push(renderCell(dayIndex, memberIndex));
+        }
+      }
+      
+      return cells;
+    }, [visibleRange, visibleMembers, renderCell]);
+  }, [visibleRange, visibleMembers]);
+  
+  return {
+    visibleRange,
+    visibleMembers,
+    calculateVisibleCells,
+    calculateVisibleMembers,
+    createCellRenderer
+  };
+};
+
+// Hook for caching and memoization
+export const useScheduleCache = <T extends Record<string, any>>(key: string, data: T, ttl: number = 300000) => {
+  const cache = useRef<Map<string, { data: T; timestamp: number }>>(new Map());
+  
+  const getCachedData = useCallback((cacheKey: string): T | null => {
+    const cached = cache.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < ttl) {
+      return cached.data;
+    }
+    return null;
+  }, [ttl]);
+  
+  const setCachedData = useCallback((cacheKey: string, newData: T) => {
+    cache.current.set(cacheKey, {
+      data: newData,
+      timestamp: Date.now()
+    });
+  }, []);
+  
+  const invalidateCache = useCallback((cacheKey?: string) => {
+    if (cacheKey) {
+      cache.current.delete(cacheKey);
+    } else {
+      cache.current.clear();
+    }
+  }, []);
+  
+  // Auto-cache current data
+  useEffect(() => {
+    if (data) {
+      setCachedData(key, data);
+    }
+  }, [key, data, setCachedData]);
+  
+  return {
+    getCachedData,
+    setCachedData,
+    invalidateCache,
+    cacheSize: cache.current.size
+  };
+};
+
+// Hook for performance monitoring
+export const usePerformanceMonitor = (componentName: string) => {
+  const metrics = useRef({
+    renderCount: 0,
+    totalRenderTime: 0,
+    maxRenderTime: 0,
+    minRenderTime: Infinity,
+    lastRenderTime: 0
+  });
+  
+  const startTime = useRef(0);
+  
+  useEffect(() => {
+    startTime.current = performance.now();
+    metrics.current.renderCount++;
+    
+    return () => {
+      const renderTime = performance.now() - startTime.current;
+      metrics.current.totalRenderTime += renderTime;
+      metrics.current.maxRenderTime = Math.max(metrics.current.maxRenderTime, renderTime);
+      metrics.current.minRenderTime = Math.min(metrics.current.minRenderTime, renderTime);
+      metrics.current.lastRenderTime = renderTime;
+      
+      // Log performance metrics in development
+      if (process.env.NODE_ENV === 'development' && metrics.current.renderCount % 100 === 0) {
+        const avgRenderTime = metrics.current.totalRenderTime / metrics.current.renderCount;
+        console.group(`${componentName} Performance Metrics`);
+        console.log(`Renders: ${metrics.current.renderCount}`);
+        console.log(`Avg Render Time: ${avgRenderTime.toFixed(2)}ms`);
+        console.log(`Max Render Time: ${metrics.current.maxRenderTime.toFixed(2)}ms`);
+        console.log(`Min Render Time: ${metrics.current.minRenderTime.toFixed(2)}ms`);
+        console.log(`Last Render Time: ${metrics.current.lastRenderTime.toFixed(2)}ms`);
+        console.groupEnd();
+      }
+    };
+  });
+  
+  const getMetrics = useCallback(() => {
+    const avgRenderTime = metrics.current.totalRenderTime / metrics.current.renderCount;
+    return {
+      ...metrics.current,
+      avgRenderTime
+    };
+  }, []);
+  
+  const resetMetrics = useCallback(() => {
+    metrics.current = {
+      renderCount: 0,
+      totalRenderTime: 0,
+      maxRenderTime: 0,
+      minRenderTime: Infinity,
+      lastRenderTime: 0
+    };
+  }, []);
+  
+  return {
+    getMetrics,
+    resetMetrics
+  };
+};

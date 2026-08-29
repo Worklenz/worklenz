@@ -2,6 +2,7 @@
 // https://crontab.guru/#0_22_*/1_*_*
 
 import {CronJob} from "cron";
+import {PoolClient} from "pg";
 import db from "../config/db";
 import {ITaskAssignmentsModel} from "../interfaces/task-assignments-model";
 import {sendAssignmentUpdate} from "../shared/email-notifications";
@@ -70,9 +71,11 @@ async function onNotificationJobTick() {
   }
 
   let hasLock = false;
+  let lockClient: PoolClient | null = null;
   isRunning = true;
   try {
-    const lockResult = await db.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-email-notifications"]);
+    lockClient = await db.pool.connect();
+    const lockResult = await lockClient.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-email-notifications"]);
     hasLock = !!lockResult.rows[0]?.locked;
     if (!hasLock) {
       log("(cron) Another instance is running notifications job, skipping tick.");
@@ -81,7 +84,7 @@ async function onNotificationJobTick() {
 
     log("(cron) Notifications job started.");
     const q = "SELECT get_task_updates() AS updates;";
-    const result = await db.query(q, []);
+    const result = await lockClient.query(q, []);
     const [data] = result.rows;
     const updates = (data.updates || []) as ITaskAssignmentsModel[];
 
@@ -123,13 +126,14 @@ async function onNotificationJobTick() {
     log_error(error);
     log("(cron) Notifications job ended with errors.");
   } finally {
-    if (hasLock) {
+    if (hasLock && lockClient) {
       try {
-        await db.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-email-notifications"]);
+        await lockClient.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-email-notifications"]);
       } catch (error) {
         log_error(error);
       }
     }
+    lockClient?.release();
     isRunning = false;
   }
 }

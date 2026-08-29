@@ -1,6 +1,11 @@
 {
-  "searchByNamePlaceholder": "Buscar por nombre",
+  "searchByNamePlaceholder": "Buscar por nombre del proyecto",
   "searchByCategoryPlaceholder": "Buscar por categoría",
+  "searchClientsPlaceholder": "Buscar clientes...",
+  "noClient": "Sin cliente",
+  "noCategoryText": "Sin Categoría",
+  "clearAll": "Limpiar todo",
+  "showingFirstN": "Mostrando {{count}} de {{total}} — escribe para buscar",
 
   "statusText": "Estado",
   "healthText": "Salud",
@@ -32,6 +37,11 @@
   "projectUpdateText": "Actualización del Proyecto",
   "clientText": "Cliente",
   "teamText": "Equipo",
+  "priorityText": "Prioridad",
+  "noPriority": "Sin prioridad",
+  "filtersTitle": "Filtros",
+  "quickFilters": "Filtros rápidos",
+  "filterButton": "Filtrar",
 
   "tableViewText": "Tabla",
   "groupedViewText": "Agrupado",

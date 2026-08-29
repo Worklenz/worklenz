@@ -21,9 +21,9 @@ import {
 } from '@/features/reporting/allTasksReports/all-tasks-reports-slice';
 
 const statusCategories = [
-  { key: 'todo', label: 'To Do', color: '#d9d9d9' },
-  { key: 'doing', label: 'Doing', color: '#1890ff' },
-  { key: 'done', label: 'Done', color: '#52c41a' },
+  { key: 'todo', label: 'todoStatus', color: '#d9d9d9' },
+  { key: 'doing', label: 'doingStatus', color: '#1890ff' },
+  { key: 'done', label: 'doneStatus', color: '#52c41a' },
 ];
 
 const AllTasksStatusFilter = () => {
@@ -58,7 +58,7 @@ const AllTasksStatusFilter = () => {
               onChange={() => handleToggle(status.key)}
             >
               <Tag color={status.color} style={{ margin: 0 }}>
-                {status.label}
+                {t(status.label, { defaultValue: status.key })}
               </Tag>
             </Checkbox>
           ))}

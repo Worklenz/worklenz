@@ -58,5 +58,11 @@
   "emojiPicker": "Adicionar emoji",
   "noChatsWithClient": "Ainda não há conversas com este cliente",
   "startConversationWithClient": "Inicie uma conversa para discutir esta solicitação com o cliente.",
-  "messageUnavailable": "Mensagem indisponível"
+  "messageUnavailable": "Mensagem indisponível",
+  "convertToTask": "Converter em tarefa",
+  "convertToTaskEmpty": "A mensagem não tem texto para usar como nome da tarefa",
+  "convertToTaskError": "Falha ao criar a tarefa",
+  "convertToTaskSuccess": "Tarefa criada a partir da mensagem",
+  "noClientProject": "Este cliente não tem nenhum projeto atribuído",
+  "createTask": "Criar tarefa"
 }

@@ -1,5 +1,14 @@
 {
   "upgradeNow": "Upgrade Now",
+  "description": {
+    "loadingEditor": "Loading editor...",
+    "wordCount": "{{count}} words",
+    "save": "Save",
+    "discard": "Discard",
+    "offline": "You're offline — the description wasn't saved. Reconnect and try again.",
+    "saveTimeout": "Saving the description timed out. Please try again.",
+    "saveFailed": "Failed to save the description. Please try again."
+  },
   "taskHeader": {
     "taskNamePlaceholder": "Type your Task",
     "deleteTask": "Delete Task",
@@ -75,6 +84,8 @@
       "edit": "Edit",
       "delete": "Delete",
       "confirmDeleteSubTask": "Are you sure you want to delete this subtask?",
+      "confirmDeleteYes": "Yes",
+      "confirmDeleteNo": "No",
       "deleteSubTask": "Delete Sub Task"
     },
     "dependencies": {
@@ -100,6 +111,8 @@
       "save": "Save",
       "delete": "Delete",
       "confirmDeleteComment": "Are you sure you want to delete this comment?",
+      "edited": "(edited)",
+      "messageDeleted": "This message was deleted",
       "addCommentPlaceholder": "Add a comment...",
       "cancel": "Cancel",
       "commentButton": "Comment",
@@ -109,6 +122,7 @@
       "maxFilesError": "You can only upload a maximum of {{count}} files",
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
+      "enterHint": "Enter to send  ·  Shift+Enter for new line",
       "fileTooLargeToSend": "Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.",
       "historyLockedBoundary": "Comment history is limited to the last 90 days on this plan",
       "historyLockedTitle": "Comment History Locked",
@@ -124,6 +138,7 @@
     "title": "Time Log",
     "addTimeLog": "Add new time log",
     "totalLogged": "Total Logged",
+    "subtasksLogged": "Subtasks Logged",
     "exportToExcel": "Export to Excel",
     "noTimeLogsFound": "No time logs found",
     "historyLockedBoundary": "Time log history is limited to the last 90 days on this plan",
@@ -142,7 +157,7 @@
       "workDescription": "Work Description",
       "descriptionPlaceholder": "Add a description",
       "logTime": "Log time",
-      "updateTime": "Update time",
+      "updateTime": "Update",
       "cancel": "Cancel",
       "durationHelper": "Log total time with hours and minutes.",
       "timeRangeHelper": "Log time by selecting start and end times.",
@@ -152,8 +167,17 @@
       "hoursMinError": "Hours must be 0 or greater",
       "minutesRangeError": "Minutes must be between 0 and 59",
       "durationGreaterThanZeroError": "Duration must be greater than 0 minutes",
-      "endTimeAfterStartError": "End time must be after start time"
-    }
+      "endTimeAfterStartError": "End time must be after start time",
+      "moveToProject": "Move to Project",
+      "moveToProjectTooltip": "Reassign this time log to a different project",
+      "selectProject": "Search project...",
+      "moveToTask": "Move to Task",
+      "moveToTaskTooltip": "Reassign this time log to a different task.",
+      "selectTask": "Select task...",
+      "backdateLimitError": "Time logs cannot be backdated more than {{days}} days. The earliest date you can log against is {{earliestDate}}.",
+      "saveError": "Could not save the time log. Please try again."
+    },
+    "rollupLoggedTooltip": "Sum of time logged on subtasks"
   },
   "taskActivityLogTab": {
     "title": "Activity Log",

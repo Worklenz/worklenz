@@ -92,8 +92,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
   }
 
   /**
-   * Filters tasks by priority, including tasks that have descendants (at any level) matching the priority filter.
-   * Uses recursive CTE to find all descendants.
+   * Filters tasks by priority.
+   * Only tasks whose own priority matches the filter are included.
+   * Sub-tasks are fetched separately and filtered independently.
    * Uses parameterized queries.
    */
   private static getFilterByPriorityWhereClosure(
@@ -105,35 +106,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const priorityIds = text.split(" ").filter(id => id.trim());
     const { clause: inClause, params } = SqlHelper.buildInClause(priorityIds, paramOffset);
 
-    // Use recursive CTE to find all descendants at any level
-    const clause = `(
-      priority_id IN (${inClause})
-      OR EXISTS (
-        WITH RECURSIVE task_descendants AS (
-          -- Base case: direct children
-          SELECT id, parent_task_id, priority_id
-          FROM tasks
-          WHERE parent_task_id = t.id AND archived IS FALSE
-          
-          UNION ALL
-          
-          -- Recursive case: children of children
-          SELECT child.id, child.parent_task_id, child.priority_id
-          FROM tasks child
-          INNER JOIN task_descendants td ON child.parent_task_id = td.id
-          WHERE child.archived IS FALSE
-        )
-        SELECT 1 FROM task_descendants
-        WHERE priority_id IN (${inClause})
-      )
-    )`;
+    const clause = `priority_id IN (${inClause})`;
 
     return { clause, params };
   }
 
   /**
-   * Filters tasks by labels, including tasks that have descendants (at any level) matching the label filter.
-   * Uses recursive CTE to find all descendants.
+   * Filters tasks by labels.
+   * Only tasks that directly have a matching label are included.
+   * Sub-tasks are fetched separately and filtered independently.
    * Uses parameterized queries.
    */
   private static getFilterByLabelsWhereClosure(
@@ -145,36 +126,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const labelIds = text.split(" ").filter(id => id.trim());
     const { clause: inClause, params } = SqlHelper.buildInClause(labelIds, paramOffset);
 
-    // Use recursive CTE to find all descendants at any level
-    const clause = `(
-      id IN (SELECT task_id FROM task_labels WHERE label_id IN (${inClause}))
-      OR EXISTS (
-        WITH RECURSIVE task_descendants AS (
-          -- Base case: direct children
-          SELECT id, parent_task_id
-          FROM tasks
-          WHERE parent_task_id = t.id AND archived IS FALSE
-          
-          UNION ALL
-          
-          -- Recursive case: children of children
-          SELECT child.id, child.parent_task_id
-          FROM tasks child
-          INNER JOIN task_descendants td ON child.parent_task_id = td.id
-          WHERE child.archived IS FALSE
-        )
-        SELECT 1 FROM task_descendants td
-        JOIN task_labels tl ON tl.task_id = td.id
-        WHERE tl.label_id IN (${inClause})
-      )
-    )`;
+    const clause = `id IN (SELECT task_id FROM task_labels WHERE label_id IN (${inClause}))`;
 
     return { clause, params };
   }
 
   /**
-   * Filters tasks by assigned members, including tasks that have descendants (at any level) matching the member filter.
-   * Uses recursive CTE to find all descendants.
+   * Filters tasks by assigned members.
+   * Only tasks that are directly assigned to a matching member are included.
+   * Sub-tasks are fetched separately and filtered independently.
    * Uses parameterized queries.
    */
   private static getFilterByMembersWhereClosure(
@@ -186,29 +146,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     const memberIds = text.split(" ").filter(id => id.trim());
     const { clause: inClause, params } = SqlHelper.buildInClause(memberIds, paramOffset);
 
-    // Use recursive CTE to find all descendants at any level
-    const clause = `(
-      id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${inClause}))
-      OR EXISTS (
-        WITH RECURSIVE task_descendants AS (
-          -- Base case: direct children
-          SELECT id, parent_task_id
-          FROM tasks
-          WHERE parent_task_id = t.id AND archived IS FALSE
-          
-          UNION ALL
-          
-          -- Recursive case: children of children
-          SELECT child.id, child.parent_task_id
-          FROM tasks child
-          INNER JOIN task_descendants td ON child.parent_task_id = td.id
-          WHERE child.archived IS FALSE
-        )
-        SELECT 1 FROM task_descendants td
-        JOIN tasks_assignees ta ON ta.task_id = td.id
-        WHERE ta.team_member_id IN (${inClause})
-      )
-    )`;
+    const clause = `id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${inClause}))`;
 
     return { clause, params };
   }
@@ -224,6 +162,23 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     return {
       clause: `project_id IN (${inClause})`,
+      params,
+    };
+  }
+
+  private static getFilterByPhaseWhereClosure(
+    text: string,
+    paramOffset: number = 1
+  ): { clause: string; params: string[] } {
+    if (!text) return { clause: "", params: [] };
+
+    const phaseIds = text.split(" ").filter(id => id.trim());
+    if (!phaseIds.length) return { clause: "", params: [] };
+
+    const { clause: inClause, params } = SqlHelper.buildInClause(phaseIds, paramOffset);
+
+    return {
+      clause: `(SELECT phase_id FROM task_phase WHERE task_id = t.id) IN (${inClause})`,
       params,
     };
   }
@@ -384,6 +339,15 @@ export default class TasksControllerV2 extends TasksControllerBase {
       paramOffset += priorityResult.params.length;
     }
 
+    const phaseResult = TasksControllerV2.getFilterByPhaseWhereClosure(
+      options.phases as string,
+      paramOffset
+    );
+    if (phaseResult.params.length > 0) {
+      queryParams.push(...phaseResult.params);
+      paramOffset += phaseResult.params.length;
+    }
+
     let enhancedSearchQuery = searchQuery;
     let searchParamNum = 0;
     
@@ -471,12 +435,22 @@ export default class TasksControllerV2 extends TasksControllerBase {
       } else if (isSubTasks) {
         // Fallback: if parent_task is not provided, this shouldn't happen but handle gracefully
         subTasksFilter = "1 = 0"; // Return no results
-      } else {
+      } else if (options.archived === "true") {
         // In archived mode we need archived subtasks too, so they can be shown under parent containers.
-        subTasksFilter =
-          options.archived === "true"
-            ? "(parent_task_id IS NULL OR parent_task_id IS NOT NULL)"
-            : "parent_task_id IS NULL";
+        subTasksFilter = "(parent_task_id IS NULL OR parent_task_id IS NOT NULL)";
+      } else {
+        // When filters are active, also include sub-tasks that directly match the filter
+        // so they surface at the top level (e.g. filtering by Low priority shows a Low
+        // sub-task even when its parent is not Low).
+        // Without active filters, only show top-level tasks (parent_task_id IS NULL).
+        const hasDirectFilters = !!(
+          options.priorities || options.labels || options.members || options.statuses || options.phases
+        );
+        if (hasDirectFilters) {
+          subTasksFilter = "(parent_task_id IS NULL OR parent_task_id IS NOT NULL)";
+        } else {
+          subTasksFilter = "parent_task_id IS NULL";
+        }
       }
     }
 
@@ -487,6 +461,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       isSubTasks ? "1 = 1" : filterByAssignee,
       statusesResult.clause,
       priorityResult.clause,
+      phaseResult.clause,
       labelsResult.clause,
       membersResult.clause,
       projectsResult.clause,
@@ -505,18 +480,45 @@ export default class TasksControllerV2 extends TasksControllerBase {
       subtaskFilters.push(statusesResult.clause.replace(/\bt\./g, 'subtask.'));
     }
 
-    // Apply priority filter to subtasks if present (reuse parameters)
+    // Apply priority filter to subtasks if present (reuse parameters).
+    // Param positions are recomputed from scratch (base + preceding filters'
+    // param counts) rather than derived from `paramOffset`, since by this point
+    // `paramOffset` may have already been advanced past the search param.
     if (options.priorities && priorityResult.clause) {
       const priorityIds = (options.priorities as string).split(" ").filter(id => id.trim());
-      const priorityParamStart = paramOffset - priorityResult.params.length;
+      let priorityParamStart = 2;
+      if (projectId) priorityParamStart++;
+      if (isSubTasks && options.parent_task) priorityParamStart++;
+      priorityParamStart += statusesResult.params.length;
+      priorityParamStart += labelsResult.params.length;
+      priorityParamStart += membersResult.params.length;
+      priorityParamStart += projectsResult.params.length;
       const { clause: inClause } = SqlHelper.buildInClause(priorityIds, priorityParamStart);
       subtaskFilters.push(`subtask.priority_id IN (${inClause})`);
+    }
+
+    // Apply phase filter to subtasks if present (reuse parameters)
+    if (options.phases && phaseResult.clause) {
+      const phaseIds = (options.phases as string).split(" ").filter(id => id.trim());
+      let phaseParamStart = 2;
+      if (projectId) phaseParamStart++;
+      if (isSubTasks && options.parent_task) phaseParamStart++;
+      phaseParamStart += statusesResult.params.length;
+      phaseParamStart += labelsResult.params.length;
+      phaseParamStart += membersResult.params.length;
+      phaseParamStart += projectsResult.params.length;
+      phaseParamStart += priorityResult.params.length;
+      const { clause: inClause } = SqlHelper.buildInClause(phaseIds, phaseParamStart);
+      subtaskFilters.push(`(SELECT phase_id FROM task_phase WHERE task_id = subtask.id) IN (${inClause})`);
     }
 
     // Apply labels filter to subtasks if present (reuse parameters)
     if (options.labels && labelsResult.clause) {
       const labelIds = (options.labels as string).split(" ").filter(id => id.trim());
-      const labelParamStart = paramOffset - labelsResult.params.length - priorityResult.params.length;
+      let labelParamStart = 2;
+      if (projectId) labelParamStart++;
+      if (isSubTasks && options.parent_task) labelParamStart++;
+      labelParamStart += statusesResult.params.length;
       const { clause: inClause } = SqlHelper.buildInClause(labelIds, labelParamStart);
       subtaskFilters.push(`subtask.id IN (SELECT task_id FROM task_labels WHERE label_id IN (${inClause}))`);
     }
@@ -524,7 +526,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Apply members filter to subtasks if present (reuse parameters)
     if (options.members && membersResult.clause) {
       const memberIds = (options.members as string).split(" ").filter(id => id.trim());
-      const memberParamStart = paramOffset - membersResult.params.length - projectsResult.params.length;
+      let memberParamStart = 2;
+      if (projectId) memberParamStart++;
+      if (isSubTasks && options.parent_task) memberParamStart++;
+      memberParamStart += statusesResult.params.length;
+      memberParamStart += labelsResult.params.length;
       const { clause: inClause } = SqlHelper.buildInClause(memberIds, memberParamStart);
       subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${inClause}))`);
     }
@@ -542,7 +548,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
 
     // Build has_filtered_children query - checks if any descendant (at any level) matches the active filters
     // This is used to auto-expand parent tasks when their descendants match filters
-    const hasActiveFilters = !!(options.priorities || options.labels || options.members || (options.search && !isSubTasks));
+    const hasActiveFilters = !!(options.priorities || options.labels || options.members || options.phases || options.statuses || (options.search && !isSubTasks));
 
     let hasFilteredChildrenQuery = "FALSE";
     if (hasActiveFilters) {
@@ -551,7 +557,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       // Build filter conditions for descendants using the same parameter positions
       if (options.priorities) {
         const priorityIds = (options.priorities as string).split(" ").filter(id => id.trim());
-        // Find the parameter positions for priority IDs (they were added after labels and members)
+        // Find the parameter positions for priority IDs (they were added after statuses, labels, members, projects, phases)
         let priorityParamStart = 2; // Start after userId
         if (projectId) priorityParamStart++;
         if (isSubTasks && options.parent_task) priorityParamStart++;
@@ -594,20 +600,48 @@ export default class TasksControllerV2 extends TasksControllerBase {
         )`);
       }
 
+      // Status filter for descendants
+      if (options.statuses) {
+        const statusIds = (options.statuses as string).split(" ").filter(id => id.trim());
+        let statusParamStart = 2;
+        if (projectId) statusParamStart++;
+        if (isSubTasks && options.parent_task) statusParamStart++;
+
+        const { clause: inClause } = SqlHelper.buildInClause(statusIds, statusParamStart);
+        descendantFilterConditions.push(`td.status_id IN (${inClause})`);
+      }
+
+      // Phase filter for descendants — phase lives in the task_phase join table,
+      // so we use a correlated subquery against td.id
+      if (options.phases) {
+        const phaseIds = (options.phases as string).split(" ").filter(id => id.trim());
+        let phaseParamStart = 2;
+        if (projectId) phaseParamStart++;
+        if (isSubTasks && options.parent_task) phaseParamStart++;
+        phaseParamStart += statusesResult.params.length;
+        phaseParamStart += labelsResult.params.length;
+        phaseParamStart += membersResult.params.length;
+        phaseParamStart += projectsResult.params.length;
+        phaseParamStart += priorityResult.params.length;
+
+        const { clause: inClause } = SqlHelper.buildInClause(phaseIds, phaseParamStart);
+        descendantFilterConditions.push(`(SELECT phase_id FROM task_phase WHERE task_id = td.id) IN (${inClause})`);
+      }
+
       if (descendantFilterConditions.length > 0) {
         const descendantFilterClause = descendantFilterConditions.join(" OR ");
         hasFilteredChildrenQuery = `(
           EXISTS (
             WITH RECURSIVE task_descendants AS (
               -- Base case: direct children
-              SELECT id, parent_task_id, priority_id, name, task_no, project_id
+              SELECT id, parent_task_id, priority_id, status_id, name, task_no, project_id
               FROM tasks
               WHERE parent_task_id = t.id AND archived IS FALSE
               
               UNION ALL
               
               -- Recursive case: children of children (all levels)
-              SELECT child.id, child.parent_task_id, child.priority_id, child.name, child.task_no, child.project_id
+              SELECT child.id, child.parent_task_id, child.priority_id, child.status_id, child.name, child.task_no, child.project_id
               FROM tasks child
               INNER JOIN task_descendants td ON child.parent_task_id = td.id
               WHERE child.archived IS FALSE
@@ -641,6 +675,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
              (SELECT color_code
               FROM task_priorities
               WHERE id = (SELECT priority_id FROM tasks WHERE id = t.parent_task_id)) AS parent_task_priority_color,
+             (SELECT parent_task_id IS NOT NULL
+              FROM tasks WHERE id = t.parent_task_id) AS parent_is_subtask,
              (SELECT COUNT(*)::INT
               FROM tasks subtask
               WHERE subtask.parent_task_id = t.id
@@ -654,13 +690,25 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.status_sort_order,
              t.priority_sort_order,
              t.phase_sort_order,
-             t.progress_value,
+             (CASE
+                WHEN EXISTS(SELECT 1
+                            FROM tasks_with_status_view
+                            WHERE tasks_with_status_view.task_id = t.id
+                              AND is_done IS TRUE) THEN 100
+                ELSE t.progress_value
+              END) AS progress_value,
              t.manual_progress,
              t.weight,
              (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
              (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
              (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
-             COALESCE(t.progress_value, 0) AS complete_ratio,
+             (CASE
+                WHEN EXISTS(SELECT 1
+                            FROM tasks_with_status_view
+                            WHERE tasks_with_status_view.task_id = t.id
+                              AND is_done IS TRUE) THEN 100
+                ELSE COALESCE(t.progress_value, 0)
+              END) AS complete_ratio,
 
              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
              (SELECT name
@@ -744,8 +792,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
         q = `
           SELECT id,
                  name,
-                 (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id),
-                 (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id),
+                COALESCE(task_statuses.color_code,
+                   (SELECT color_code FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                 ) AS color_code,
+                 COALESCE(task_statuses.color_code,
+                   (SELECT color_code_dark FROM sys_task_status_categories WHERE id = task_statuses.category_id)
+                 ) AS color_code_dark,
+                 category_id
                  category_id
           FROM task_statuses
           WHERE project_id = $1
@@ -1322,13 +1375,24 @@ export default class TasksControllerV2 extends TasksControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { taskId } = req.params;
-    const { column_key, value, project_id } = req.body;
+    const { column_key, value } = req.body;
 
-    if (!taskId || !column_key || value === undefined || !project_id) {
+    if (!taskId || !column_key || value === undefined) {
       return res
         .status(400)
         .send(new ServerResponse(false, "Missing required parameters"));
     }
+
+    // Resolve the task's actual project rather than trusting a client-supplied
+    // project_id, which can go stale (e.g. after the task moves projects).
+    const taskProjectResult = await db.query(
+      `SELECT project_id FROM tasks WHERE id = $1 LIMIT 1`,
+      [taskId]
+    );
+    if (taskProjectResult.rowCount === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Task not found"));
+    }
+    const project_id = taskProjectResult.rows[0].project_id;
 
     // Get column information
     const columnQuery = `
@@ -1726,6 +1790,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         parent_task_priority_id: task.parent_task_priority_id || null,
         parent_task_priority_value: task.parent_task_priority_value ?? null,
         parent_task_priority_color: task.parent_task_priority_color || null,
+        parent_is_subtask: !!task.parent_is_subtask,
         // Add flag for auto-expansion when filters match descendants
         has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
@@ -1860,6 +1925,48 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
 
 
+    // ── Deduplication: when filters are active, the query returns both parent
+    // tasks and their matching subtasks as flat rows.  If a subtask has any
+    // ancestor present in the result set we must NOT add it as a standalone
+    // top-level row — it will surface nested under its ancestor chain via the
+    // sequential fetchSubTasks + has_filtered_children auto-expand.
+    //
+    // We walk up the full ancestor chain (not just direct parent) to handle
+    // deeply nested subtasks correctly.
+    //
+    // If NO ancestor is present (e.g. grandparent, parent both filtered out but
+    // the grandchild matched), the subtask stays flat with a parent breadcrumb.
+    const hasActiveFilters = !!(
+      req.query.priorities ||
+      req.query.labels ||
+      req.query.members ||
+      req.query.statuses ||
+      req.query.phases
+    );
+    let filteredTransformedTasks = transformedTasks;
+    if (hasActiveFilters && !isSubTasks) {
+      const presentTaskIds = new Set(transformedTasks.map((t: any) => t.id));
+
+      // Build a parent_id lookup for O(1) ancestor walks
+      const parentIdOf = new Map<string, string>();
+      for (const t of transformedTasks) {
+        if (t.parent_task_id) parentIdOf.set(t.id, t.parent_task_id);
+      }
+
+      const hasAncestorInSet = (taskId: string): boolean => {
+        let current = parentIdOf.get(taskId);
+        while (current) {
+          if (presentTaskIds.has(current)) return true;
+          current = parentIdOf.get(current);
+        }
+        return false;
+      };
+
+      filteredTransformedTasks = transformedTasks.filter(
+        (task: any) => !task.parent_task_id || !hasAncestorInSet(task.id)
+      );
+    }
+
     const groupedResponse: Record<string, any> = {};
 
     // Initialize groups from database data
@@ -1894,7 +2001,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Distribute tasks into groups
     const unmappedTasks: any[] = [];
 
-    transformedTasks.forEach((task) => {
+    filteredTransformedTasks.forEach((task: any) => {
       let groupKey: string;
       let taskAssigned = false;
 
@@ -2022,6 +2129,11 @@ export default class TasksControllerV2 extends TasksControllerBase {
       group.tasks.sort((a: any, b: any) => a.order - b.order);
     });
 
+    // When a phase filter is active, only include groups matching selected phases
+    const selectedPhaseIds = req.query.phases
+      ? (req.query.phases as string).split(" ").filter(id => id.trim())
+      : [];
+
     // Convert to array format expected by frontend, maintaining database order
     const responseGroups = groups
       .map((group) => {
@@ -2036,13 +2148,18 @@ export default class TasksControllerV2 extends TasksControllerBase {
         return groupedResponse[groupKey];
       })
       .filter(
-        (group) =>
-          group &&
-          (group.tasks.length > 0 || req.query.include_empty === "true")
+        (group) => {
+          if (!group) return false;
+          // If a phase filter is active, only show groups whose id is in the selected phases
+          if (selectedPhaseIds.length > 0 && groupBy === GroupBy.PHASE) {
+            return selectedPhaseIds.includes(group.id);
+          }
+          return group.tasks.length > 0 || req.query.include_empty === "true";
+        }
       );
 
-    // Add unmapped group to the end if it exists
-    if (groupedResponse[UNMAPPED.toLowerCase()]) {
+    // Add unmapped group to the end if it exists and no phase filter is active
+    if (groupedResponse[UNMAPPED.toLowerCase()] && selectedPhaseIds.length === 0) {
       responseGroups.push(groupedResponse[UNMAPPED.toLowerCase()]);
     }
 
@@ -2061,9 +2178,9 @@ export default class TasksControllerV2 extends TasksControllerBase {
     return res.status(200).send(
       new ServerResponse(true, {
         groups: responseGroups,
-        allTasks: transformedTasks,
+        allTasks: filteredTransformedTasks,
         grouping: groupBy,
-        totalTasks: transformedTasks.length,
+        totalTasks: filteredTransformedTasks.length,
       })
     );
   }

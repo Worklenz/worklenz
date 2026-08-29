@@ -168,14 +168,14 @@
   border-radius: 4px;
   max-height: 200px;
   overflow-y: auto;
-  animation: slideIn 0.2s ease-out;
+  animation: slideIn 0.15s ease-out;
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   left: 0;
   right: 0;
-  margin-top: 4px;
+  margin-bottom: 4px;
   z-index: 1050;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .mentions-dropdown.theme-light {
@@ -271,7 +271,7 @@
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;

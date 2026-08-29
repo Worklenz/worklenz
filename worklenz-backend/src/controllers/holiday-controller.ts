@@ -232,47 +232,85 @@ export default class HolidayController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, "Year and month are required"));
     }
 
-    const q = `SELECT oh.id, oh.name, oh.description, oh.date, oh.is_recurring,
-                      ht.name as holiday_type_name, ht.color_code,
-                      'organization' as source
-               FROM organization_holidays oh
-               JOIN holiday_types ht ON oh.holiday_type_id = ht.id
-               WHERE oh.organization_id = (
-                 SELECT id FROM organizations WHERE user_id = $1
-               )
-               AND EXTRACT(YEAR FROM oh.date) = $2
-               AND EXTRACT(MONTH FROM oh.date) = $3
-               
-               UNION ALL
-               
-               SELECT ch.id, ch.name, ch.description, ch.date, ch.is_recurring,
-                      'Public Holiday' as holiday_type_name, '#f37070' as color_code,
-                      'country' as source
-               FROM country_holidays ch
-               JOIN organizations o ON ch.country_code = (
-                 SELECT c.code FROM countries c WHERE c.id = o.country
-               )
-               WHERE o.user_id = $1
-               AND EXTRACT(YEAR FROM ch.date) = $2
-               AND EXTRACT(MONTH FROM ch.date) = $3
-               
-               ORDER BY date;`;
+    // Get the organization's country to determine which source to use
+    const orgCountryQ = `SELECT c.code FROM organizations o 
+                         JOIN countries c ON o.country = c.id 
+                         WHERE o.user_id = $1;`;
+    const orgCountryResult = await db.query(orgCountryQ, [req.user?.owner_id]);
+    const countryCode = orgCountryResult.rows[0]?.code;
+
+    // For Sri Lanka, only use country_holidays (unified source)
+    // For other countries, include both organization and country holidays
+    const q = countryCode === 'LK' 
+      ? `SELECT ch.id, ch.name, ch.description, ch.date, ch.is_recurring,
+                'Public Holiday' as holiday_type_name, '#f37070' as color_code,
+                'country' as source
+         FROM country_holidays ch
+         WHERE ch.country_code = $4
+         AND EXTRACT(YEAR FROM ch.date) = $2
+         AND EXTRACT(MONTH FROM ch.date) = $3
+         ORDER BY date;`
+      : `SELECT oh.id, oh.name, oh.description, oh.date, oh.is_recurring,
+                ht.name as holiday_type_name, ht.color_code,
+                'organization' as source
+         FROM organization_holidays oh
+         JOIN holiday_types ht ON oh.holiday_type_id = ht.id
+         WHERE oh.organization_id = (
+           SELECT id FROM organizations WHERE user_id = $1
+         )
+         AND EXTRACT(YEAR FROM oh.date) = $2
+         AND EXTRACT(MONTH FROM oh.date) = $3
+         
+         UNION ALL
+         
+         SELECT ch.id, ch.name, ch.description, ch.date, ch.is_recurring,
+                'Public Holiday' as holiday_type_name, '#f37070' as color_code,
+                'country' as source
+         FROM country_holidays ch
+         WHERE ch.country_code = $4
+         AND EXTRACT(YEAR FROM ch.date) = $2
+         AND EXTRACT(MONTH FROM ch.date) = $3
+         ORDER BY date;`;
     
-    const result = await db.query(q, [req.user?.owner_id, year, month]);
+    const result = await db.query(q, [req.user?.owner_id, year, month, countryCode]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
   @HandleExceptions()
   public static async populateCountryHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    // Get the organization's selected country
+    const orgQ = `SELECT id, country FROM organizations WHERE user_id = $1;`;
+    const orgResult = await db.query(orgQ, [req.user?.owner_id]);
+    const organization = orgResult.rows[0];
+    
+    if (!organization) {
+      return res.status(404).send(new ServerResponse(false, "Organization not found"));
+    }
+
+    if (!organization.country) {
+      return res.status(400).send(new ServerResponse(false, "Organization has no country selected"));
+    }
+
+    const organizationId = organization.id;
+
+    // Get the country code from organizations table
+    const countryCodeQ = `SELECT code FROM countries WHERE id = $1;`;
+    const countryCodeResult = await db.query(countryCodeQ, [organization.country]);
+    const countryCode = countryCodeResult.rows[0]?.code;
+
+    if (!countryCode) {
+      return res.status(400).send(new ServerResponse(false, "Invalid country selected for organization"));
+    }
+
     // Check if this organization has recently populated holidays (within last hour)
     const recentPopulationCheck = `
       SELECT COUNT(*) as count
       FROM organization_holidays 
-      WHERE organization_id = (SELECT id FROM organizations WHERE user_id = $1)
+      WHERE organization_id = $1
       AND created_at > NOW() - INTERVAL '1 hour'
     `;
     
-    const recentResult = await db.query(recentPopulationCheck, [req.user?.owner_id]);
+    const recentResult = await db.query(recentPopulationCheck, [organizationId]);
     const recentCount = parseInt(recentResult.rows[0]?.count || '0');
     
     // If there are recent holidays added, skip population
@@ -285,132 +323,75 @@ export default class HolidayController extends WorklenzControllerBase {
       }));
     }
 
-    const Holidays = require("date-holidays");
+    // Get default holiday type (Public Holiday)
+    const typeQ = `SELECT id FROM holiday_types WHERE name = 'Public Holiday' LIMIT 1`;
+    const typeResult = await db.query(typeQ);
+    const holidayTypeId = typeResult.rows[0]?.id;
 
-    const countries = [
-      { code: "US", name: "United States" },
-      { code: "GB", name: "United Kingdom" },
-      { code: "CA", name: "Canada" },
-      { code: "AU", name: "Australia" },
-      { code: "DE", name: "Germany" },
-      { code: "FR", name: "France" },
-      { code: "IT", name: "Italy" },
-      { code: "ES", name: "Spain" },
-      { code: "NL", name: "Netherlands" },
-      { code: "BE", name: "Belgium" },
-      { code: "CH", name: "Switzerland" },
-      { code: "AT", name: "Austria" },
-      { code: "SE", name: "Sweden" },
-      { code: "NO", name: "Norway" },
-      { code: "DK", name: "Denmark" },
-      { code: "FI", name: "Finland" },
-      { code: "PL", name: "Poland" },
-      { code: "CZ", name: "Czech Republic" },
-      { code: "HU", name: "Hungary" },
-      { code: "RO", name: "Romania" },
-      { code: "BG", name: "Bulgaria" },
-      { code: "HR", name: "Croatia" },
-      { code: "SI", name: "Slovenia" },
-      { code: "SK", name: "Slovakia" },
-      { code: "LT", name: "Lithuania" },
-      { code: "LV", name: "Latvia" },
-      { code: "EE", name: "Estonia" },
-      { code: "IE", name: "Ireland" },
-      { code: "PT", name: "Portugal" },
-      { code: "GR", name: "Greece" },
-      { code: "CY", name: "Cyprus" },
-      { code: "MT", name: "Malta" },
-      { code: "LU", name: "Luxembourg" },
-      { code: "IS", name: "Iceland" },
-      { code: "CN", name: "China" },
-      { code: "JP", name: "Japan" },
-      { code: "KR", name: "South Korea" },
-      { code: "IN", name: "India" },
-      { code: "BR", name: "Brazil" },
-      { code: "AR", name: "Argentina" },
-      { code: "MX", name: "Mexico" },
-      { code: "ZA", name: "South Africa" },
-      { code: "NZ", name: "New Zealand" },
-      { code: "LK", name: "Sri Lanka" }
-    ];
+    if (!holidayTypeId) {
+      return res.status(404).send(new ServerResponse(false, "Default holiday type not found"));
+    }
 
     let totalPopulated = 0;
     const errors = [];
 
-    for (const country of countries) {
-      try {
-        // Special handling for Sri Lanka
-        if (country.code === 'LK') {
-          // Import the holiday data provider
-          const { HolidayDataProvider } = require("../services/holiday-data-provider");
-          
-          for (let year = 2020; year <= 2050; year++) {
-            const sriLankanHolidays = await HolidayDataProvider.getSriLankanHolidays(year);
-            
-            for (const holiday of sriLankanHolidays) {
-              const query = `
-                INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (country_code, name, date) DO NOTHING
-              `;
-              
-              await db.query(query, [
-                'LK',
-                holiday.name,
-                holiday.description,
-                holiday.date,
-                holiday.is_recurring
-              ]);
-              
-              totalPopulated++;
-            }
-          }
-        } else {
-          // Use date-holidays for other countries
-          const hd = new Holidays(country.code);
-          
-          for (let year = 2020; year <= 2050; year++) {
-            const holidays = hd.getHolidays(year);
-            
-            for (const holiday of holidays) {
-              if (!holiday.date || typeof holiday.date !== "object") {
-                continue;
-              }
-              
-              const dateStr = holiday.date.toISOString().split("T")[0];
-              const name = holiday.name || "Unknown Holiday";
-              const description = holiday.type || "Public Holiday";
-              
-              const query = `
-                INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (country_code, name, date) DO NOTHING
-              `;
-              
-              await db.query(query, [
-                country.code,
-                name,
-                description,
-                dateStr,
-                true
-              ]);
-              
-              totalPopulated++;
-            }
-          }
-        }
-      } catch (error: any) {
-        errors.push(`${country.name}: ${error?.message || "Unknown error"}`);
+    try {
+      // For Sri Lanka, use the country_holidays table (populated by migration)
+      // instead of inserting into organization_holidays to avoid duplicates
+      if (countryCode === 'LK') {
+        return res.status(200).send(new ServerResponse(true, {
+          success: true,
+          message: "Sri Lanka holidays are managed via country_holidays table. Use getHolidayCalendar to view them.",
+          total_populated: 0,
+          note: "Sri Lanka country holidays are displayed automatically in the calendar view"
+        }));
       }
+
+      // Use date-holidays for other countries
+      const Holidays = require("date-holidays");
+      const hd = new Holidays(countryCode);
+      
+      for (let year = 2020; year <= 2050; year++) {
+        const holidays = hd.getHolidays(year);
+        
+        for (const holiday of holidays) {
+          if (!holiday.date || typeof holiday.date !== "object") {
+            continue;
+          }
+          
+          const dateStr = holiday.date.toISOString().split("T")[0];
+          const name = holiday.name || "Unknown Holiday";
+          const description = holiday.type || "Public Holiday";
+          
+          const query = `
+            INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (organization_id, date) DO NOTHING
+          `;
+          
+          await db.query(query, [
+            organizationId,
+            holidayTypeId,
+            name,
+            description,
+            dateStr,
+            true
+          ]);
+          
+          totalPopulated++;
+        }
+      }
+    } catch (error: any) {
+      errors.push(`${countryCode}: ${error?.message || "Unknown error"}`);
     }
 
-    const response = {
-      success: true,
-      message: `Successfully populated ${totalPopulated} holidays`,
+    return res.status(200).send(new ServerResponse(true, {
+      success: totalPopulated > 0 || countryCode === 'LK',
+      message: countryCode === 'LK' 
+        ? "Sri Lanka country holidays are automatically available"
+        : `Populated ${totalPopulated} holidays`,
       total_populated: totalPopulated,
       errors: errors.length > 0 ? errors : undefined
-    };
-
-    return res.status(200).send(new ServerResponse(true, response));
+    }));
   }
 } 

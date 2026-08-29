@@ -16,5 +16,8 @@ export enum IEmailTemplateType {
   ProjectComment,
   ClientInvitation,
   ClientPortalNewRequest,
-  ClientPortalRequestComment
+  ClientPortalRequestComment,
+  DailyTaskReminder,
+  WeeklyStartSummary,
+  WeeklyEndSummary
 }

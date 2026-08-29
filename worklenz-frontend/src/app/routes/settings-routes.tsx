@@ -4,7 +4,6 @@ import { Suspense } from 'react';
 import SettingsLayout from '@/layouts/SettingsLayout';
 import { getAccessibleSettings, settingsItems } from '@/lib/settings/settings-constants';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 
 const SettingsGuard = ({
@@ -15,9 +14,9 @@ const SettingsGuard = ({
   itemKey: string;
 }) => {
   const authService = useAuthService();
+  const currentSession = authService.getCurrentSession();
   const isOwnerOrAdmin = authService.isOwnerOrAdmin();
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin, hasBusinessAccess);
+  const accessibleSettings = getAccessibleSettings(isOwnerOrAdmin, currentSession);
   const hasAccess = accessibleSettings.some(item => item.key === itemKey);
 
   if (!hasAccess) {

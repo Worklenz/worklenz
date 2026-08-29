@@ -2,6 +2,9 @@
   "keyColumn": "Schlüssel",
   "taskColumn": "Aufgabe",
   "descriptionColumn": "Beschreibung",
+  "descriptionSaveOffline": "Sie sind offline — die Beschreibung wurde nicht gespeichert. Bitte erneut verbinden und noch einmal versuchen.",
+  "descriptionSaveTimeout": "Das Speichern der Beschreibung hat zu lange gedauert. Bitte versuchen Sie es erneut.",
+  "descriptionSaveFailed": "Die Beschreibung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
   "progressColumn": "Fortschritt",
   "membersColumn": "Mitglieder",
   "assigneesColumn": "Zugewiesene",
@@ -31,24 +34,19 @@
   "todoSelectorText": "Zu erledigen",
   "doingSelectorText": "Tun",
   "doneSelectorText": "Erledigt",
-
   "lowSelectorText": "Niedrig",
   "mediumSelectorText": "Mittel",
   "highSelectorText": "Hoch",
-
   "selectText": "Auswählen",
   "labelsSelectorInputTip": "Enter drücken zum Erstellen!",
-
   "addTaskText": "Aufgabe hinzufügen",
   "addSubTaskText": "+ Unteraufgabe hinzufügen",
   "addSubTaskInputPlaceholder": "Namen der Unteraufgabe eingeben und mit Enter speichern",
   "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
   "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
   "dropTaskHere": "Aufgabe hier ablegen",
-
   "openButton": "Öffnen",
   "okButton": "OK",
-
   "noLabelsFound": "Keine Labels gefunden",
   "searchInputPlaceholder": "Suchen oder erstellen",
   "assigneeSelectorInviteButton": "Neues Mitglied per E-Mail einladen",
@@ -56,9 +54,7 @@
   "searchLabelsPlaceholder": "Labels suchen...",
   "createLabelButton": "\"{{name}}\" erstellen",
   "manageLabelsPath": "Einstellungen → Labels",
-
   "pendingInvitation": "Einladung ausstehend",
-
   "contextMenu": {
     "duplicateTask": "Doppelte Aufgabe",
     "assignToMe": "Mir zuweisen",
@@ -79,21 +75,18 @@
   "clearStartDate": "Startdatum löschen",
   "dueDatePlaceholder": "Fälligkeitsdatum",
   "startDatePlaceholder": "Startdatum",
-
   "exampleTasks": {
     "prefix": "z.B.",
     "task1": "Projektumfang und Ziele definieren",
     "task2": "Mit Stakeholdern abstimmen",
     "task3": "Kickoff-Meeting planen"
   },
-
   "emptyStates": {
     "noTaskGroups": "Keine Aufgabengruppen gefunden",
     "noTaskGroupsDescription": "Aufgaben werden hier angezeigt, wenn sie erstellt oder Filter angewendet werden.",
     "errorPrefix": "Fehler:",
     "dragTaskFallback": "Aufgabe"
   },
-
   "customColumns": {
     "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
     "customColumnHeader": "Benutzerdefinierte Spalte",
@@ -115,7 +108,13 @@
       "noMembersFound": "Keine Mitglieder gefunden",
       "inviteMember": "Mitglied einladen"
     },
-
+    "limitPopover": {
+      "title": "Limit für benutzerdefinierte Felder erreicht",
+      "body": "Sie haben alle {{limit}} benutzerdefinierten Felder Ihres Plans verwendet. Führen Sie ein Upgrade durch, um unbegrenzte benutzerdefinierte Felder zu Ihren Projekten hinzuzufügen.",
+      "appSumoTitle": "Plan-Upgrade erforderlich",
+      "appSumoBody": "Um benutzerdefinierte Felder über Ihr aktuelles Planlimit hinaus hinzuzufügen, ist ein Business-Plan erforderlich.",
+      "cta": "Jetzt upgraden"
+    },
     "modal": {
       "addFieldTitle": "Feld hinzufügen",
       "editFieldTitle": "Feld bearbeiten",
@@ -136,7 +135,6 @@
       "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
       "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
     },
-
     "fieldTypes": {
       "people": "Personen",
       "text": "Text",
@@ -147,9 +145,39 @@
       "labels": "Etiketten",
       "key": "Schlüssel",
       "formula": "Formel"
+    },
+    "fieldTypeForms": {
+      "numberType": "Zahlentyp",
+      "numberTypeOptions": {
+        "unformatted": "Unformatiert",
+        "percentage": "Prozentsatz",
+        "withLabel": "Mit Bezeichnung",
+        "formatted": "Formatiert"
+      },
+      "decimals": "Dezimalstellen",
+      "preview": "Vorschau",
+      "label": "Bezeichnung",
+      "position": "Position",
+      "left": "Links",
+      "right": "Rechts",
+      "firstColumn": "Erste Spalte",
+      "secondColumn": "Zweite Spalte",
+      "expression": "Ausdruck",
+      "selectFirstColumn": "Erste Spalte auswählen",
+      "selectSecondColumn": "Zweite Spalte auswählen",
+      "expressionOptions": {
+        "add": "+ Addieren",
+        "subtract": "- Subtrahieren",
+        "divide": "/ Dividieren",
+        "multiply": "x Multiplizieren"
+      },
+      "selections": "Auswahlmöglichkeiten",
+      "addSelection": "+ Auswahl hinzufügen",
+      "labels": "Beschriftungen",
+      "addLabel": "+ Beschriftung hinzufügen",
+      "keyLabelPlaceholder": "z. B.: MK"
     }
   },
-
   "indicators": {
     "tooltips": {
       "subtasks": "{{count}} Unteraufgabe",
@@ -163,7 +191,6 @@
       "recurring": "Wiederkehrende Aufgabe"
     }
   },
-
   "timer": {
     "conflictTitle": "Timer läuft bereits",
     "conflictMessage": "Sie haben einen Timer für \"{{taskName}}\" im Projekt \"{{projectName}}\" laufen. Möchten Sie diesen Timer stoppen und einen neuen für diese Aufgabe starten?",

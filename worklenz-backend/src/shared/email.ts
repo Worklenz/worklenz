@@ -1,6 +1,8 @@
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
+import lodash from "lodash";
+import sanitizeHtmlLib from "sanitize-html";
 import { log_error, isValidateEmail } from "./utils";
 import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
@@ -226,11 +228,12 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
 
     const charset = "UTF-8";
     
-    // Generate plain text version by stripping HTML tags
-    const plainText = options.html
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
+    // Generate plain text version by stripping HTML tags. Use sanitize-html
+    // (drops <script>/<style> and their contents reliably) then decode entities
+    // so the plaintext body reads naturally.
+    const plainText = lodash.unescape(
+      sanitizeHtmlLib(options.html, { allowedTags: [], allowedAttributes: {} })
+    )
       .replace(/\s+/g, ' ')
       .trim();
     

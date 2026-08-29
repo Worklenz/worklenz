@@ -38,6 +38,7 @@ export interface ILocalSession extends IUserType {
   trial_days_remaining?: number; // Days remaining in plan trial
   trial_plan_display_name?: string; // Display name of trial plan
   is_plan_trial?: boolean; // Quick flag for plan trial status
+  post_trial_plan_name?: string; // Plan the user will drop to once the active trial ends
   // Manual override flags
   business_plan_override?: boolean; // Manual override for business plan feature access
   team_member_limit_override?: boolean; // Manual override to bypass team member limits
@@ -54,4 +55,6 @@ export interface ILocalSession extends IUserType {
   updated_at?: string;
   // Mobile app banner
   mobile_app_banner_dismissed?: boolean;
+  // AppSumo popup: backend-configurable reappearance interval in days
+  appsumo_popup_frequency_days?: number;
 }

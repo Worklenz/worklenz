@@ -16,5 +16,8 @@
   "createJobTitleSuccessMessage": "¡Cargo creado exitosamente!",
   "createJobTitleErrorMessage": "¡Error al crear el cargo!",
   "updateJobTitleSuccessMessage": "¡Cargo actualizado exitosamente!",
-  "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!"
+  "updateJobTitleErrorMessage": "¡Error al actualizar el cargo!",
+  "paginationTotal": "{{start}}-{{end}} de {{total}} elementos",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Eliminar"
 }

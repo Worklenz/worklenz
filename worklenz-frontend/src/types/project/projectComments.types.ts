@@ -25,4 +25,6 @@ export interface IProjectCommentsCreateRequest {
   team_name?: string;
   content?: string;
   mentions?: IMentionMember[];
+  reply_to_id?: string;
+  attachments?: { name: string; url: string; key: string; type?: string; size?: number }[];
 }

@@ -1,9 +1,15 @@
 {
+  "pageTitle": "Plantillas de Tareas",
   "nameColumn": "Nombre",
   "createdColumn": "Creado",
   "editToolTip": "Editar",
   "deleteToolTip": "Eliminar",
   "confirmText": "¿Estás seguro?",
   "okText": "Sí",
-  "cancelText": "Cancelar"
+  "cancelText": "Cancelar",
+  "noTemplatesYet": "Aún no hay plantillas de tareas",
+  "step1": "Navega a un proyecto y ábrelo.",
+  "step2": "Selecciona tareas usando la opción de Edición Masiva.",
+  "step3": "Haz clic en Más Opciones en la barra de acciones masivas y elige Crear Plantilla de Tarea.",
+  "totalItems": "Elementos Totales"
 }

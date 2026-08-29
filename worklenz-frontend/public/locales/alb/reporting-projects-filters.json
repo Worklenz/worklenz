@@ -1,6 +1,11 @@
 {
-  "searchByNamePlaceholder": "Kërko sipas emrit",
+  "searchByNamePlaceholder": "Kërko sipas emrit të projektit",
   "searchByCategoryPlaceholder": "Kërko sipas kategorisë",
+  "searchClientsPlaceholder": "Kërko klientë...",
+  "noClient": "Pa klient",
+  "noCategoryText": "Pa Kategori",
+  "clearAll": "Pastro të gjitha",
+  "showingFirstN": "Duke shfaqur {{count}} nga {{total}} — shkruaj për të kërkuar",
 
   "statusText": "Statusi",
   "healthText": "Gjendja",
@@ -32,6 +37,11 @@
   "projectUpdateText": "Përditësimi i projektit",
   "clientText": "Klienti",
   "teamText": "Ekipi",
+  "priorityText": "Prioriteti",
+  "noPriority": "Pa prioritet",
+  "filtersTitle": "Filtrat",
+  "quickFilters": "Filtra të shpejta",
+  "filterButton": "Filtro",
 
   "tableViewText": "Tabelë",
   "groupedViewText": "Grupuar",

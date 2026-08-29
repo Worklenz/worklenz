@@ -2,7 +2,6 @@
   "searchButton": "Pesquisar",
   "resetButton": "Redefinir",
   "searchInputPlaceholder": "Pesquisar por nome",
-
   "sortText": "Ordenar",
   "statusText": "Status",
   "phaseText": "Fase",
@@ -37,18 +36,14 @@
   "reporterText": "Relator",
   "dueTimeText": "Hora de vencimento",
   "duetimeText": "Hora de vencimento",
-
   "lowText": "Baixa",
   "mediumText": "Média",
   "highText": "Alta",
-
   "createStatusButtonTooltip": "Configurações de status",
   "configPhaseButtonTooltip": "Configurações de fase",
   "noLabelsFound": "Nenhuma etiqueta encontrada",
-
   "addStatusButton": "Adicionar status",
   "addPhaseButton": "Adicionar fase",
-
   "createStatus": "Criar status",
   "name": "Nome",
   "category": "Categoria",
@@ -56,7 +51,6 @@
   "pleaseEnterAName": "Por favor, digite um nome",
   "pleaseSelectACategory": "Por favor, selecione uma categoria",
   "create": "Criar",
-
   "searchTasks": "Pesquisar tarefas...",
   "searchPlaceholder": "Pesquisar",
   "fieldsText": "Campos",
@@ -84,6 +78,7 @@
   "close": "Fechar",
   "cannotMoveStatus": "Não é possível mover o status",
   "cannotMoveStatusMessage": "Não é possível mover este status porque deixaria a categoria '{{categoryName}}' vazia. Cada categoria deve ter pelo menos um status.",
+  "dropToMoveToCategory": "Solte aqui para mover para {{categoryName}}",
   "ok": "OK",
   "clearSort": "Limpar Ordenação",
   "sortAscending": "Ordenar Crescente",
@@ -91,5 +86,6 @@
   "sortByField": "Ordenar por {{field}}",
   "ascendingOrder": "Crescente",
   "descendingOrder": "Decrescente",
-  "currentSort": "Ordenação atual: {{field}} {{order}}"
+  "currentSort": "Ordenação atual: {{field}} {{order}}",
+  "apply": "Aplicar"
 }

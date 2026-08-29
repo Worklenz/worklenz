@@ -1,14 +1,10 @@
 import { Flex } from '@/shared/antd-imports';
 import { useMemo, useCallback, memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import ProjectTeamFilterDropdown from './project-team-filter-dropdown';
-import ProjectStatusFilterDropdown from './project-status-filter-dropdown';
-import ProjectHealthFilterDropdown from './project-health-filter-dropdown';
-import ProjectCategoriesFilterDropdown from './project-categories-filter-dropdown';
-import ProjectManagersFilterDropdown from './project-managers-filter-dropdown';
-import ProjectTableShowFieldsDropdown from './project-table-show-fields-dropdown';
 import ProjectViewModeToggle from './project-view-mode-toggle';
 import ProjectGroupByDropdown from './project-group-by-dropdown';
+import ProjectTableShowFieldsDropdown from './project-table-show-fields-dropdown';
+import ProjectReportsFilterPanel from './project-reports-filter-panel';
 import CustomSearchbar from '@/components/CustomSearchbar';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -21,67 +17,43 @@ const ProjectsReportsFilters = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('reporting-projects-filters');
 
-  // Read both searchQuery and viewMode from the shared slice
   const { searchQuery, viewMode } = useAppSelector(state => state.projectReportsReducer);
-
-  // Local state drives what the user SEES in the input box — updates instantly on every keystroke
-  // so the input never feels laggy.
   const [localSearch, setLocalSearch] = useState(searchQuery);
-
-  // Keep a ref to the previous viewMode so we can detect when the user switches views
   const prevViewModeRef = useRef(viewMode);
 
-  // ── Fix #1: Clear search when the user toggles between Table and Grouped views ──
-  // The searchQuery lives in the shared Redux slice, so without this reset it would
-  // carry over and silently filter the other view.
+  // Clear search when view mode switches
   useEffect(() => {
     if (prevViewModeRef.current !== viewMode) {
       prevViewModeRef.current = viewMode;
-      // Clear both the local input display and the Redux state
       setLocalSearch('');
       dispatch(setSearchQuery(''));
     }
   }, [viewMode, dispatch]);
 
-  // ── Fix #2: Debounce the API-triggering dispatch ──
-  // Every time localSearch changes we set a 500 ms timer. If the user keeps typing
-  // the previous timer is cancelled (cleanup function), so the API is only called
-  // 500 ms after the user stops. This prevents the 30 000 ms timeout error caused
-  // by firing a new request on every single keystroke.
+  // Debounce the Redux dispatch so the API only fires 500 ms after the user stops typing
   useEffect(() => {
-    const debounceTimer = setTimeout(() => {
+    const timer = setTimeout(() => {
       dispatch(setSearchQuery(localSearch));
     }, SEARCH_DEBOUNCE_MS);
-
-    return () => clearTimeout(debounceTimer);
+    return () => clearTimeout(timer);
   }, [localSearch, dispatch]);
 
-  // Update local state immediately so the input box responds without delay
   const handleSearchQueryChange = useCallback((text: string) => {
     setLocalSearch(text);
   }, []);
 
-  // Memoize the filter dropdowns container to prevent recreation on every render
-  const filterDropdowns = useMemo(
+  // All controls live on the right:
+  //   Table | Grouped  →  Filter  →  Group By  →  Show Fields  →  Search
+  const controls = useMemo(
     () => (
-      <Flex gap={8} wrap={'wrap'}>
-        <ProjectTeamFilterDropdown />
-        <ProjectStatusFilterDropdown />
-        <ProjectHealthFilterDropdown />
-        <ProjectCategoriesFilterDropdown />
-        <ProjectManagersFilterDropdown />
-      </Flex>
-    ),
-    []
-  );
-
-  // Memoize the right side controls to prevent recreation on every render.
-  // Note: we pass localSearch (not searchQuery) so the input box always reflects
-  // what the user typed, even while the debounce timer is still running.
-  const rightControls = useMemo(
-    () => (
-      <Flex gap={12} align="center">
+      <Flex
+        gap={8}
+        align="center"
+        wrap="nowrap"
+        style={{ marginLeft: 'auto' }}
+      >
         <ProjectViewModeToggle />
+        <ProjectReportsFilterPanel />
         <ProjectGroupByDropdown />
         <ProjectTableShowFieldsDropdown />
         <CustomSearchbar
@@ -95,9 +67,8 @@ const ProjectsReportsFilters = () => {
   );
 
   return (
-    <Flex gap={8} align="center" justify="space-between">
-      {filterDropdowns}
-      {rightControls}
+    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
+      {controls}
     </Flex>
   );
 };

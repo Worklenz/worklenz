@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useCallback, useMemo, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
@@ -40,7 +40,7 @@ const ClientsSettings: React.FC = () => {
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  useDocumentTitle('Manage Clients');
+  useDocumentTitle(t('pageTitle', { defaultValue: 'Clients' }));
 
   const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [selectedClient, setSelectedClient] = useState<IClientViewModel | null>(null);
@@ -52,17 +52,15 @@ const ClientsSettings: React.FC = () => {
     order: 'desc',
   });
 
-  const getClients = useMemo(() => {
-    return () => {
-      const params = {
-        index: pagination.current,
-        size: pagination.pageSize,
-        field: pagination.field,
-        order: pagination.order,
-        search: searchQuery,
-      };
-      dispatch(fetchClients(params));
+  const getClients = useCallback(() => {
+    const params = {
+      index: pagination.current,
+      size: pagination.pageSize,
+      field: pagination.field,
+      order: pagination.order,
+      search: searchQuery,
     };
+    dispatch(fetchClients(params));
   }, [pagination, searchQuery, dispatch]);
 
   useEffect(() => {
@@ -93,7 +91,7 @@ const ClientsSettings: React.FC = () => {
       {
         key: 'name',
         sorter: true,
-        title: t('nameColumn'),
+        title: t('nameColumn', { defaultValue: 'Name' }),
         onCell: record => ({
           onClick: () => handleClientSelect(record),
         }),
@@ -101,7 +99,7 @@ const ClientsSettings: React.FC = () => {
       },
       {
         key: 'project',
-        title: t('projectColumn'),
+        title: t('projectColumn', { defaultValue: 'Projects' }),
         onCell: record => ({
           onClick: () => handleClientSelect(record),
         }),
@@ -109,7 +107,7 @@ const ClientsSettings: React.FC = () => {
           record.projects_count ? (
             <Typography.Text>{record.projects_count}</Typography.Text>
           ) : (
-            <Typography.Text type="secondary">{t('noProjectsAvailable')}</Typography.Text>
+            <Typography.Text type="secondary">{t('noProjectsAvailable', { defaultValue: 'No projects' })}</Typography.Text>
           ),
       },
       {
@@ -118,7 +116,7 @@ const ClientsSettings: React.FC = () => {
         render: (record: IClientViewModel) =>
           hoverRow === record.id && (
             <Flex gap={8} style={{ padding: 0 }}>
-              <Tooltip title="Edit">
+              <Tooltip title={t('editTooltip', { defaultValue: 'Edit' })}>
                 <Button
                   size="small"
                   icon={<EditOutlined />}
@@ -126,13 +124,13 @@ const ClientsSettings: React.FC = () => {
                 />
               </Tooltip>
               <Popconfirm
-                title={t('deleteConfirmationTitle')}
+                title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
                 icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                okText={t('deleteConfirmationOk')}
-                cancelText={t('deleteConfirmationCancel')}
+                okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
+                cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
                 onConfirm={() => deleteClientHandler(record.id)}
               >
-                <Tooltip title="Delete">
+                <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
                   <Button
                     shape="default"
                     icon={<DeleteOutlined />}
@@ -157,7 +155,7 @@ const ClientsSettings: React.FC = () => {
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('search', { defaultValue: 'Search' })}
+              placeholder={t('searchPlaceholder', { defaultValue: 'Search by name' })}
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
             />
@@ -168,9 +166,9 @@ const ClientsSettings: React.FC = () => {
                 setSelectedClient(null);
               }}
             >
-              {t('createClient')}
+              {t('createClient', { defaultValue: 'Create Client' })}
             </Button>
-            <Tooltip title={t('pinTooltip')} trigger={'hover'}>
+            <Tooltip title={t('pinTooltip', { defaultValue: 'Pin to navbar' })} trigger={'hover'}>
               <PinRouteToNavbarButton
                 name="clients"
                 path="/worklenz/settings/clients"
@@ -194,6 +192,7 @@ const ClientsSettings: React.FC = () => {
           defaultPageSize: DEFAULT_PAGE_SIZE,
           current: pagination.current,
           pageSize: pagination.pageSize,
+          total: clients.total,
         }}
         onChange={(paginationInfo, _filters, sorter) => {
           const sort = Array.isArray(sorter) ? sorter[0] : sorter;

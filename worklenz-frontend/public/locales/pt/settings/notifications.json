@@ -1,4 +1,7 @@
 {
+  "title": "Notificações",
+  "generalSectionTitle": "Notificações gerais",
+  "generalSectionDescription": "Aplica-se imediatamente ao ativar — não é necessário salvar separadamente.",
   "emailTitle": "Envie-me notificações por email",
   "emailDescription": "Isso inclui novas atribuições de tarefas",
   "dailyDigestTitle": "Envie-me um resumo diário",
@@ -6,5 +9,18 @@
   "popupTitle": "Notificações pop-up no meu computador quando o Worklenz está aberto",
   "popupDescription": "As notificações pop-up podem ser desativadas pelo seu navegador. Altere as configurações do seu navegador para permiti-las.",
   "unreadItemsTitle": "Mostrar o número de itens não lidos",
-  "unreadItemsDescription": "Você verá contagens para cada notificação."
+  "unreadItemsDescription": "Você verá contagens para cada notificação.",
+  "taskDigestSectionTitle": "E-mails de resumo de tarefas agendados",
+  "taskDigestSectionDescription": "Receba um resumo personalizado de tarefas de acordo com sua programação. As seções de Admin e PM aparecem automaticamente com base em sua função.",
+  "dailyReminderTitle": "Lembrete diário de tarefas",
+  "dailyReminderDescription": "Enviado diariamente no horário escolhido. Inclui tarefas para hoje, amanhã e atrasadas.",
+  "weeklyStartTitle": "Resumo de início semanal",
+  "weeklyStartDescription": "Enviado toda segunda-feira. Mostra sua semana completa com tarefas para esta semana e atrasadas.",
+  "weeklyEndTitle": "Resumo de fim semanal",
+  "weeklyEndDescription": "Enviado toda sexta-feira. Revisão de tarefas concluídas, atrasadas e perspectiva da próxima semana.",
+  "channelLabel": "Canal",
+  "timeLabel": "Enviar às",
+  "saveDigestPreferences": "Salvar preferências de notificação",
+  "digestPreferencesSaved": "Suas preferências de notificação foram salvas",
+  "title": "Configurações de notificações"
 }

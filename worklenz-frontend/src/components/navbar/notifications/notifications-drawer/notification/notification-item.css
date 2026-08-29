@@ -436,3 +436,30 @@
   background-color: rgba(105, 177, 255, 0.1);
   text-decoration: underline;
 }
+
+/* AppSumo drawer footer banner */
+.appsumo-drawer-banner {
+  cursor: pointer;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #f0f0f0);
+  transition: box-shadow 0.3s ease;
+}
+
+.appsumo-drawer-banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.appsumo-drawer-banner:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .appsumo-drawer-banner {
+  --border-color: #303030;
+}
+
+[data-theme="dark"] .appsumo-drawer-banner:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}

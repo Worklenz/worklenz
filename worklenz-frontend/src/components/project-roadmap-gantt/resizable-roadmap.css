@@ -1,0 +1,205 @@
+/* Resizable Roadmap View Styles */
+
+.resizable-roadmap-view {
+  /* Main container styles */
+}
+
+.resizable-roadmap-view .gantt-container {
+  /* Gantt chart container - inherits colors from CSS variables */
+  --gantt-background: #ffffff;
+  --gantt-grid: #f3f4f6;
+  --gantt-text: #111827;
+  --gantt-border: #e5e7eb;
+}
+
+/* Left Panel - Task Names and Section Labels */
+.resizable-roadmap-view .left-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(249, 250, 251);
+  border-right: 1px solid rgb(229, 231, 235);
+  overflow-y: auto;
+  user-select: none;
+}
+
+.resizable-roadmap-view .left-panel-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: rgb(243, 244, 246);
+  border-bottom: 1px solid rgb(229, 231, 235);
+  padding: 0.75rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: rgb(17, 24, 39);
+}
+
+.resizable-roadmap-view .left-panel-content {
+  padding: 0.75rem;
+}
+
+.resizable-roadmap-view .left-panel-phase {
+  margin-bottom: 1rem;
+}
+
+.resizable-roadmap-view .left-panel-phase-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(17, 24, 39);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.resizable-roadmap-view .left-panel-phase-name:hover {
+  background-color: rgb(229, 231, 235);
+  color: rgb(37, 99, 235);
+}
+
+.resizable-roadmap-view .left-panel-tasks {
+  margin-left: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resizable-roadmap-view .left-panel-task {
+  font-size: 0.75rem;
+  color: rgb(107, 114, 128);
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease-in-out;
+}
+
+.resizable-roadmap-view .left-panel-task:hover {
+  background-color: rgb(229, 231, 235);
+  color: rgb(17, 24, 39);
+}
+
+/* Divider */
+.resizable-roadmap-view .divider {
+  width: 4px;
+  background-color: rgb(209, 213, 219);
+  cursor: col-resize;
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+}
+
+.resizable-roadmap-view .divider:hover {
+  background-color: rgb(59, 130, 246);
+}
+
+.resizable-roadmap-view .divider.dragging {
+  background-color: rgb(59, 130, 246);
+}
+
+/* Dark Theme Support */
+.dark .resizable-roadmap-view .left-panel {
+  background-color: rgb(17, 24, 39);
+  border-right-color: rgb(75, 85, 99);
+}
+
+.dark .resizable-roadmap-view .left-panel-header {
+  background-color: rgb(31, 41, 55);
+  border-bottom-color: rgb(75, 85, 99);
+  color: rgb(243, 244, 246);
+}
+
+.dark .resizable-roadmap-view .left-panel-phase-name {
+  color: rgb(243, 244, 246);
+}
+
+.dark .resizable-roadmap-view .left-panel-phase-name:hover {
+  background-color: rgb(55, 65, 81);
+  color: rgb(96, 165, 250);
+}
+
+.dark .resizable-roadmap-view .left-panel-task {
+  color: rgb(209, 213, 219);
+}
+
+.dark .resizable-roadmap-view .left-panel-task:hover {
+  background-color: rgb(55, 65, 81);
+  color: rgb(243, 244, 246);
+}
+
+.dark .resizable-roadmap-view .divider {
+  background-color: rgb(75, 85, 99);
+}
+
+.dark .resizable-roadmap-view .divider:hover,
+.dark .resizable-roadmap-view .divider.dragging {
+  background-color: rgb(96, 165, 250);
+}
+
+/* Smooth transitions during resize */
+.resizable-roadmap-view .left-panel.resizing,
+.resizable-roadmap-view .right-panel.resizing {
+  transition: none;
+}
+
+/* Right Panel - Gantt Chart */
+.resizable-roadmap-view .right-panel {
+  flex: 1;
+  overflow-x: auto;
+  transition: flex 0.1s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .resizable-roadmap-view .left-panel {
+    width: 140px !important;
+  }
+
+  .resizable-roadmap-view .left-panel-phase-name {
+    padding: 0.375rem;
+    font-size: 0.75rem;
+  }
+
+  .resizable-roadmap-view .left-panel-task {
+    font-size: 0.7rem;
+  }
+}
+
+/* Accessibility improvements */
+.resizable-roadmap-view .divider:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: -1px;
+}
+
+.resizable-roadmap-view .left-panel-phase-name:focus,
+.resizable-roadmap-view .left-panel-task:focus {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling */
+.resizable-roadmap-view .left-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resizable-roadmap-view .left-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.resizable-roadmap-view .left-panel::-webkit-scrollbar-thumb {
+  background: rgb(209, 213, 219);
+  border-radius: 3px;
+}
+
+.resizable-roadmap-view .left-panel::-webkit-scrollbar-thumb:hover {
+  background: rgb(156, 163, 175);
+}
+
+.dark .resizable-roadmap-view .left-panel::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+}
+
+.dark .resizable-roadmap-view .left-panel::-webkit-scrollbar-thumb:hover {
+  background: rgb(107, 114, 128);
+}

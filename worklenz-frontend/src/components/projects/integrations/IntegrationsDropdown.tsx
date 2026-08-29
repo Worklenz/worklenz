@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button, ApiOutlined, SettingOutlined, TeamOutlined, theme } from '@/shared/antd-imports';
 import { GithubOutlined } from '@ant-design/icons';
-import { SlackProjectIntegration } from './SlackProjectIntegration';
+import { SlackProjectIntegration } from '../../../ee/components/projects/integrations/SlackProjectIntegration';
 import { IntegrationItem } from './IntegrationItem';
 import type { ProjectIntegrationStatus } from './integrations.types';
 

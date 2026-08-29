@@ -15,8 +15,8 @@ import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import PhaseOptionItem from './PhaseOptionItem';
 import {
   DndContext,
@@ -59,12 +59,10 @@ const PhaseDrawer = () => {
   const { project } = useAppSelector(state => state.projectReducer);
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
-  const { isFreeUser: isFree } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const isFree = isFreeUser(currentSession);
   const [phaseName, setPhaseName] = useState<string>(project?.phase_label || '');
   const [initialPhaseName, setInitialPhaseName] = useState<string>(project?.phase_label || '');
   const { phaseList, loadingPhases } = useAppSelector(state => state.phaseReducer);
-  const [sorting, setSorting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const sensors = useSensors(
@@ -85,14 +83,14 @@ const PhaseDrawer = () => {
 
   const handleAddOptions = async () => {
     if (isFree) {
-      promptUpgrade();
+      dispatch(toggleUpgradeModal());
       return;
     }
 
     if (!projectId) return;
 
     await dispatch(addPhaseOption({ projectId: projectId }));
-    await dispatch(fetchPhasesByProjectId(projectId));
+    // Slice appends the new phase in-place; no full re-fetch needed.
     await refreshTasks();
   };
 
@@ -106,32 +104,23 @@ const PhaseDrawer = () => {
 
       const newPhaseList = arrayMove(phaseList, oldIndex, newIndex);
 
+      // Optimistically update the list immediately — no spinner.
+      dispatch(updatePhaseListOrder(newPhaseList));
+
+      const body: UpdateSortOrderBody = {
+        from_index: oldIndex,
+        to_index: newIndex,
+        phases: newPhaseList,
+        project_id: projectId,
+      };
+
       try {
-        setSorting(true);
-
-        dispatch(updatePhaseListOrder(newPhaseList));
-
-        const body: UpdateSortOrderBody = {
-          from_index: oldIndex,
-          to_index: newIndex,
-          phases: newPhaseList,
-          project_id: projectId,
-        };
-
-        // Update the sort order
-        await dispatch(
-          updatePhaseOrder({
-            projectId: projectId,
-            body,
-          })
-        ).unwrap();
+        await dispatch(updatePhaseOrder({ projectId, body })).unwrap();
         await refreshTasks();
       } catch (error) {
-        // If there's an error, revert back to the server state
+        // Revert to server state on failure.
         dispatch(fetchPhasesByProjectId(projectId));
         logger.error('Error updating phase order', error);
-      } finally {
-        setSorting(false);
       }
     }
   };
@@ -207,7 +196,7 @@ const PhaseDrawer = () => {
           )}
         </Flex>
 
-        <Spin spinning={loadingPhases || sorting}>
+        <Spin spinning={loadingPhases && phaseList.length === 0}>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}

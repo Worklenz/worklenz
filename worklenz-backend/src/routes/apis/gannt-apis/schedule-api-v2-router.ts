@@ -4,6 +4,7 @@ import idParamValidator from "../../../middlewares/validators/id-param-validator
 import safeControllerFunction from "../../../shared/safe-controller-function";
 import ScheduleControllerV2 from "../../../controllers/schedule-v2/schedule-controller";
 import TaskTimelineController from "../../../controllers/schedule-v2/task-timeline-controller";
+import ProjectTimelineController from "../../../controllers/schedule-v2/project-timeline-controller";
 import TimeOffController from "../../../controllers/schedule-v2/time-off-controller";
 import CapacityController from "../../../controllers/schedule-v2/capacity-controller";
 import WorkloadController from "../../../controllers/schedule-v2/workload-controller";
@@ -44,6 +45,15 @@ scheduleApiRouter.put("/tasks/:taskId/dates", idParamValidator, safeControllerFu
 
 // Get scheduling conflicts for a task
 scheduleApiRouter.get("/tasks/:taskId/conflicts", idParamValidator, safeControllerFunction(TaskTimelineController.getTaskConflicts));
+
+// ============================================
+// Project Timeline Endpoints (Portfolio View)
+// ============================================
+// Get all projects with date range + todo/doing/done breakdown
+scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimelineController.getProjectsTimeline));
+
+// Update a project's start/end date (drag-resize on the Timeline bar)
+scheduleApiRouter.put("/timeline/projects/:id/dates", idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
 
 // ============================================
 // Time-Off Management Endpoints

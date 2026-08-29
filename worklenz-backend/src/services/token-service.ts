@@ -462,7 +462,7 @@ class TokenService {
         return null; // Password doesn't match
       }
     } catch (error) {
-      console.error(`[Client Auth] Error during authentication for email: ${email}`, error);
+      console.error("[Client Auth] Error during authentication for email:", email, error);
       return null;
     }
   }

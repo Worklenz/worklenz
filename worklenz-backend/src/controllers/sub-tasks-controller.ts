@@ -29,6 +29,7 @@ export default class SubTasksController extends WorklenzControllerBase {
               t.priority_id AS priority,
               tp.name AS priority_name,
               t.end_date,
+              t.sort_order,
               (ts.id) AS status,
               (ts.name) AS status_name,
               TRUE AS is_sub_task,
@@ -59,7 +60,7 @@ export default class SubTasksController extends WorklenzControllerBase {
                 INNER JOIN task_priorities tp ON tp.id = t.priority_id
                 LEFT JOIN sys_task_status_categories tsc ON ts.category_id = tsc.id
         WHERE parent_task_id = $1
-        ORDER BY created_at;
+        ORDER BY t.sort_order ASC, t.created_at ASC;
       `;
     const result = await db.query(q, [req.params.id]);
 

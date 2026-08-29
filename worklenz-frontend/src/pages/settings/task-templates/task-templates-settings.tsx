@@ -22,12 +22,6 @@ import { calculateTimeGap } from '@/utils/calculate-time-gap';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_settings_task_templates_visit } from '@/shared/worklenz-analytics-events';
 
-const steps = [
-  { label: 'Navigate to a project and open it.' },
-  { label: 'Select tasks using the Bulk Edit option.' },
-  { label: 'Click More Options in the bulk action bar and choose Create Task Template.' },
-];
-
 const TaskTemplatesSettings = () => {
   const { t } = useTranslation('settings/task-templates');
   const dispatch = useAppDispatch();
@@ -37,7 +31,14 @@ const TaskTemplatesSettings = () => {
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
   const { trackMixpanelEvent } = useMixpanelTracking();
-  useDocumentTitle('Task Templates');
+
+  const steps = [
+    { label: t('step1', { defaultValue: 'Step 1' }) },
+    { label: t('step2', { defaultValue: 'Step 2' }) },
+    { label: t('step3', { defaultValue: 'Step 3' }) },
+  ];
+
+  useDocumentTitle(t('pageTitle', { defaultValue: 'Task Templates' }));
 
   const fetchTaskTemplates = async () => {
     try {
@@ -71,12 +72,12 @@ const TaskTemplatesSettings = () => {
   const columns: TableProps<ITaskTemplatesGetResponse>['columns'] = [
     {
       key: 'name',
-      title: t('nameColumn'),
+       title: t('nameColumn', { defaultValue: 'Template Name' }),
       dataIndex: 'name',
     },
     {
       key: 'created',
-      title: t('createdColumn'),
+      title: t('createdColumn', { defaultValue: 'Created' }),
       dataIndex: 'created_at',
       render: (date: string) => calculateTimeGap(date),
     },
@@ -88,18 +89,18 @@ const TaskTemplatesSettings = () => {
           style={{ display: 'flex', gap: '10px', justifyContent: 'right' }}
           className="button-visibilty"
         >
-          <Tooltip title={t('editToolTip')}>
+          <Tooltip title={t('editToolTip', { defaultValue: 'Edit' })}>
             <Button size="small" onClick={() => setTemplateId(record.id)}>
               <EditOutlined />
             </Button>
           </Tooltip>
-          <Tooltip title={t('deleteToolTip')}>
+          <Tooltip title={t('deleteToolTip', { defaultValue: 'Delete' })}>
             <Popconfirm
               title={
-                <Typography.Text style={{ fontWeight: 400 }}>{t('confirmText')}</Typography.Text>
+                <Typography.Text style={{ fontWeight: 400 }}>{t('confirmText', { defaultValue: 'Are you sure?' })}</Typography.Text>
               }
-              okText={t('okText')}
-              cancelText={t('cancelText')}
+              okText={t('okText', { defaultValue: 'OK' })}
+              cancelText={t('cancelText', { defaultValue: 'Cancel' })}
               onConfirm={() => handleDeleteTemplate(record.id)}
             >
               <Button size="small">
@@ -153,7 +154,7 @@ const TaskTemplatesSettings = () => {
         <line x1="56" y1="58" x2="68" y2="58" stroke={svgColors.badgePlus} strokeWidth="2.2" strokeLinecap="round" />
       </svg>
       <p style={{ fontSize: 15, fontWeight: 600, color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)', margin: '0 0 28px' }}>
-        No task templates yet
+         {t('noTemplatesYet', { defaultValue: 'No templates yet' })}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 360, textAlign: 'left' }}>
         {steps.map((step, i) => (
@@ -187,7 +188,7 @@ const TaskTemplatesSettings = () => {
         pagination={{
           size: 'small',
           showSizeChanger: true,
-          showTotal: total => t('totalItems', { total }),
+           showTotal: total => t('totalItems', { total, defaultValue: '{{total}} items' }),
         }}
         columns={columns}
         dataSource={taskTemplates}

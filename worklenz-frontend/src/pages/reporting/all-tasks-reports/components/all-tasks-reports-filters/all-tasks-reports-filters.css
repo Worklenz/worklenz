@@ -4,11 +4,6 @@
   width: 100%;
 }
 
-.all-tasks-filters-left,
-.all-tasks-filters-right {
-  flex-shrink: 0;
-}
-
 /* Compact filter buttons */
 .all-tasks-filters .ant-btn {
   font-size: 13px;
@@ -29,17 +24,9 @@
   line-height: 28px !important;
 }
 
-/* Responsive */
+/* Responsive: controls wrap onto multiple lines instead of overflowing (see all-tasks-reports-filters.tsx) */
 @media (max-width: 992px) {
   .all-tasks-filters {
-    flex-direction: column;
     align-items: flex-start !important;
-    gap: 8px !important;
-  }
-
-  .all-tasks-filters-left,
-  .all-tasks-filters-right {
-    width: 100%;
-    justify-content: flex-start;
   }
 }

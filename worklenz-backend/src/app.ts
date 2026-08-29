@@ -17,11 +17,12 @@ import importsApiRouter from "./routes/apis/imports-api-router";
 import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
+import clientPortalApiRouter from "./ee/routes/apis/client-portal-api-router";
 import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
-import business from "./business";
+import BillingController from "./ee/controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import importWorker from "./services/import-worker";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
@@ -115,9 +116,9 @@ const allowedOrigins = [
         `https://app.worklenz.com`,
         `https://www.app.worklenz.com`,
         `https://clients.worklenz.com`,
-        `https://react.worklenz.com`,
-        `https://www.react.worklenz.com`,
-        `https://wl-client.ceydigital.dev`,
+        `https://uat.app.worklenz.com`,
+        `https://www.uat.app.worklenz.com`,
+        `https://uat.clients.worklenz.com`,
         `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
         `https://api.ncinga.worklenz.com`,
         `https://ncinga.worklenz.com`,
@@ -171,6 +172,7 @@ app.use(cors({
     "Authorization",
     "X-CSRF-Token",
     "x-client-token",
+    "x-silent-request",
     "Cache-Control",
     "cache-control",
     "Pragma",
@@ -425,8 +427,57 @@ app.post(
   safeControllerFunction(AwsSesController.handleReplies),
 );
 
-// Payment webhooks — Business-plan only (DirectPay/Paddle); CE no-op
-business.registerWebhooks(app);
+// DirectPay webhook test endpoint (GET) - verify webhook is reachable
+app.get("/webhook/directpay/card-response", (req: Request, res: Response) => {
+  console.log("[DirectPay Webhook Test] GET request received");
+  res.status(200).json({ 
+    message: "DirectPay webhook endpoint is reachable",
+    timestamp: new Date().toISOString(),
+    url: req.url,
+    headers: req.headers
+  });
+});
+
+// DirectPay webhook (no auth/CSRF required - called by DirectPay server)
+// Add raw body parser to handle text/plain and capture raw payload
+app.post("/webhook/directpay/card-response", 
+  express.raw({ type: "*/*", limit: "10mb" }),
+  (req: any, res: Response, next: NextFunction) => {
+    // Log raw body for debugging
+    console.log("[DirectPay Webhook] Raw body type:", typeof req.body);
+    console.log("[DirectPay Webhook] Raw body:", req.body);
+    console.log("[DirectPay Webhook] Content-Type:", req.headers["content-type"]);
+    
+    // If body is Buffer (raw), try to parse it
+    if (Buffer.isBuffer(req.body)) {
+      try {
+        const bodyString = req.body.toString("utf8");
+        req.rawBody = bodyString;
+        console.log("[DirectPay Webhook] Body string:", bodyString);
+        
+        // Try to parse as JSON
+        try {
+          req.body = JSON.parse(bodyString);
+          console.log("[DirectPay Webhook] Parsed JSON body:", req.body);
+        } catch (jsonError) {
+          // If not JSON, try base64 decode
+          try {
+            const decoded = Buffer.from(bodyString, "base64").toString("utf8");
+            req.body = JSON.parse(decoded);
+            console.log("[DirectPay Webhook] Decoded base64 and parsed JSON:", req.body);
+          } catch (base64Error) {
+            console.error("[DirectPay Webhook] Failed to parse body:", jsonError, base64Error);
+            req.body = { raw: bodyString };
+          }
+        }
+      } catch (error) {
+        console.error("[DirectPay Webhook] Error processing raw body:", error);
+      }
+    }
+    next();
+  },
+  safeControllerFunction(BillingController.handleCardAddResponse)
+);
 
 // Static file serving
 if (isProduction()) {
@@ -500,7 +551,7 @@ const csrfRotation = createCsrfRotation(generateToken);
 // Backward compatibility for clients still calling /api/imports (without v1 prefix)
 app.use("/api/v1", isLoggedIn, apiRouter);
 app.use("/api/imports", isLoggedIn, importsApiRouter);
-business.registerClientPortalRoutes(app); // EE: /api/client-portal; CE: no-op
+app.use("/api/client-portal", clientPortalApiRouter);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
 

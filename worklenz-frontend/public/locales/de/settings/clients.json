@@ -1,4 +1,5 @@
 {
+  "pageTitle": "Kunden verwalten",
   "nameColumn": "Name",
   "projectColumn": "Projekt",
   "noProjectsAvailable": "Keine Projekte verfügbar",
@@ -18,5 +19,7 @@
   "createClientSuccessMessage": "Kunde erfolgreich angelegt!",
   "createClientErrorMessage": "Anlegen des Kunden fehlgeschlagen!",
   "updateClientSuccessMessage": "Kunde erfolgreich aktualisiert!",
-  "updateClientErrorMessage": "Aktualisierung des Kunden fehlgeschlagen!"
+  "updateClientErrorMessage": "Aktualisierung des Kunden fehlgeschlagen!",
+  "editTooltip": "Bearbeiten",
+  "deleteTooltip": "Löschen"
 }

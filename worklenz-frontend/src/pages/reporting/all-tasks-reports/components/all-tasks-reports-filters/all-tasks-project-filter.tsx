@@ -138,9 +138,7 @@ const AllTasksProjectFilter = () => {
     <Card className="custom-card" styles={{ body: { padding: 8, width: 280 } }}>
       <Flex vertical gap={8}>
         <Input
-          placeholder={t('searchPlaceholder', {
-            defaultValue: 'Search by task name, key, or description',
-          })}
+          placeholder={t('searchProjectsPlaceholder', { defaultValue: 'Search projects...' })}
           prefix={<SearchOutlined />}
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}

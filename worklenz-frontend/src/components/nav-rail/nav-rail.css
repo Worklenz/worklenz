@@ -1,0 +1,28 @@
+/* Shared collapse-width transition for every left rail host (Home, Planner,
+   Reporting, Client Portal) and their content areas' margin-left. */
+.nav-rail-width-transition {
+  transition: width 0.18s ease, margin-left 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail-width-transition {
+    transition: none;
+  }
+}
+
+/* Pin + drag-handle affordances on a NavRailItem: always in the DOM (so a
+   keyboard user tabbing through can reach them), hidden until the item is
+   hovered or something inside it has focus, or the affordance is forced
+   visible (a pinned item's pin icon stays showing even without hover). */
+.nav-rail-affordance {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.nav-rail-item-wrapper:hover .nav-rail-affordance,
+.nav-rail-item-wrapper:focus-within .nav-rail-affordance,
+.nav-rail-affordance.nav-rail-affordance-visible {
+  opacity: 1;
+  pointer-events: auto;
+}

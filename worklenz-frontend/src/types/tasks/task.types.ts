@@ -60,7 +60,15 @@ export interface ITask {
   name: string;
   description: string;
   status_id: string;
+  // Populated by tasks-list/board/kanban slices, which normalize `priority_id`
+  // into this field client-side. NOT populated by the task drawer's own fetch
+  // (get_task_form_view_model only returns priority_id) — for taskFormViewModel.task,
+  // read priority_id instead. See #1902.
   priority: string;
+  // The raw priority id. Always populated when the task comes from the task
+  // drawer's fetch (get_task_form_view_model); not populated by the
+  // tasks-list/board/kanban slices, which normalize it into `priority` above.
+  priority_id?: string;
   start_date: string;
   end_date: string;
   due_time: string;

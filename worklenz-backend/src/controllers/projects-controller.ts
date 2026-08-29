@@ -13,7 +13,7 @@ import { NotificationsService } from "../services/notifications/notifications.se
 import { IPassportSession } from "../interfaces/passport-session";
 import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
-import { getCurrentProjectsCount, getFreePlanSettings } from "../shared/licensing-utils";
+import { getCurrentProjectsCount, getFreePlanSettings } from "../ee/shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
 
 export default class ProjectsController extends WorklenzControllerBase {
@@ -261,11 +261,23 @@ export default class ProjectsController extends WorklenzControllerBase {
     return res.status(200).send(new ServerResponse(true, data?.projects || this.paginatedDatasetDefaultStruct));
   }
 
+  private static readonly NONE_FILTER_SENTINEL = "none";
+
   private static getFilterByCategoryWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
     if (!text) return { clause: "", params: [] };
-    const categoryIds = text.split(" ").filter(id => id.trim());
-    const { clause } = SqlHelper.buildInClause(categoryIds, paramOffset);
-    return { clause: `AND category_id IN (${clause})`, params: categoryIds };
+    const ids = text.split(" ").filter(id => id.trim());
+    const includesNone = ids.includes(ProjectsController.NONE_FILTER_SENTINEL);
+    const realIds = ids.filter(id => id !== ProjectsController.NONE_FILTER_SENTINEL);
+
+    if (includesNone && realIds.length === 0) {
+      return { clause: "AND category_id IS NULL", params: [] };
+    }
+    if (includesNone && realIds.length > 0) {
+      const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+      return { clause: `AND (category_id IS NULL OR category_id IN (${clause}))`, params: realIds };
+    }
+    const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+    return { clause: `AND category_id IN (${clause})`, params: realIds };
   }
 
   private static getFilterByStatusWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
@@ -277,9 +289,53 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   private static getFilterByPriorityWhereClosure(text: string, paramOffset: number): { clause: string; params: string[] } {
     if (!text) return { clause: "", params: [] };
-    const priorityIds = text.split(" ").filter(id => id.trim());
-    const { clause } = SqlHelper.buildInClause(priorityIds, paramOffset);
-    return { clause: `AND priority_id IN (${clause})`, params: priorityIds };
+    const ids = text.split(" ").filter(id => id.trim());
+    const includesNone = ids.includes(ProjectsController.NONE_FILTER_SENTINEL);
+    const realIds = ids.filter(id => id !== ProjectsController.NONE_FILTER_SENTINEL);
+
+    if (includesNone && realIds.length === 0) {
+      return { clause: "AND priority_id IS NULL", params: [] };
+    }
+    if (includesNone && realIds.length > 0) {
+      const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+      return { clause: `AND (priority_id IS NULL OR priority_id IN (${clause}))`, params: realIds };
+    }
+    const { clause } = SqlHelper.buildInClause(realIds, paramOffset);
+    return { clause: `AND priority_id IN (${clause})`, params: realIds };
+  }
+
+
+  private static getFilterByClientWhereClosure(
+    text: string,
+    paramOffset: number
+  ): { clause: string; innerClause: string; params: string[] } {
+    if (!text) return { clause: "", innerClause: "", params: [] };
+
+    const ids = text.split(" ").filter(id => id.trim());
+    const includesNone = ids.includes(ProjectsController.NONE_FILTER_SENTINEL);
+    const realIds = ids.filter(id => id !== ProjectsController.NONE_FILTER_SENTINEL);
+
+    const buildClauses = (alias: string, inClause: string): string => {
+      if (includesNone && realIds.length === 0) {
+        return `AND ${alias}.client_id IS NULL`;
+      }
+      if (includesNone && realIds.length > 0) {
+        return `AND (${alias}.client_id IS NULL OR ${alias}.client_id IN (${inClause}))`;
+      }
+      return `AND ${alias}.client_id IN (${inClause})`;
+    };
+
+    // The IN clause is param-offset-based and identical for both aliases;
+    // only the table qualifier differs.
+    const { clause: inClause } = realIds.length > 0
+      ? SqlHelper.buildInClause(realIds, paramOffset)
+      : { clause: "" };
+
+    return {
+      clause:      buildClauses("projects", inClause),
+      innerClause: buildClauses("p2",       inClause),
+      params:      realIds,
+    };
   }
 
   /**
@@ -294,12 +350,19 @@ export default class ProjectsController extends WorklenzControllerBase {
     // Maps frontend field names to safe database column names
     const fieldMapping: Record<string, string> = {
       'name': 'name',
+      'NAME': 'name',
       'updated_at': 'updated_at',
+      'UPDATED_AT': 'updated_at',
       'created_at': 'created_at',
       'start_date': 'start_date',
       'end_date': 'end_date',
-      'status': 'status_id',
-      'status_id': 'status_id',
+      'END_DATE': 'end_date',
+      // Sort by the status's configured display order, not its id — status_id
+      // is a UUID, so ordering by the raw column would sort rows in an
+      // effectively random order that happens to be stable between requests.
+      'status': `(SELECT sort_order FROM sys_project_statuses WHERE id = projects.status_id)`,
+      'STATUS': `(SELECT sort_order FROM sys_project_statuses WHERE id = projects.status_id)`,
+      'status_id': `(SELECT sort_order FROM sys_project_statuses WHERE id = projects.status_id)`,
       // For category sorting, use natural sort by extracting and padding numbers
       // This ensures "Category 2" comes before "Category 10"
       'category': `(
@@ -312,19 +375,33 @@ export default class ProjectsController extends WorklenzControllerBase {
         WHERE id = projects.category_id
       )`,
       'category_id': `(
-        SELECT 
+        SELECT
           REGEXP_REPLACE(
             REGEXP_REPLACE(name, '([0-9]+)', LPAD('\\1', 20, '0'), 'g'),
             '\\s+', ' ', 'g'
           )
-        FROM project_categories 
+        FROM project_categories
         WHERE id = projects.category_id
       )`,
+      'CATEGORY': `(
+        SELECT
+          REGEXP_REPLACE(
+            REGEXP_REPLACE(name, '([0-9]+)', LPAD('\\1', 20, '0'), 'g'),
+            '\\s+', ' ', 'g'
+          )
+        FROM project_categories
+        WHERE id = projects.category_id
+      )`, // Map CATEGORY column key from frontend
       'client_name': `(SELECT name FROM clients WHERE id = projects.client_id)`, // fix bug 751
+      'CLIENT': `(SELECT name FROM clients WHERE id = projects.client_id)`, // Map CLIENT column key from frontend
       'priority': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
+      'PRIORITY': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
       'priority_id': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
+      'PRIORITY_ID': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
       'priority_name': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
+      'PRIORITY_NAME': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
       'project_owner': 'owner_id',
+      'PROJECT_OWNER': 'owner_id',
     };
 
     // If the field is already a valid database column name (contains dot or matches exactly)
@@ -381,35 +458,31 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const queryParams: any[] = [req.user?.team_id || null];
-    let paramOffset = 2;
-
-    // User ID parameters - only add if actually used
+    // userId is pushed once, unconditionally, as $2 — every clause below that
+    // needs it (member check, favorites, archived, and the per-row EXISTS
+    // checks in the SELECT list) references that same parameter instead of
+    // each pushing its own copy or, worse, interpolating the value into the
+    // SQL text directly.
     const userId = req.user?.id;
+    const queryParams: any[] = [req.user?.team_id || null, userId];
+    let paramOffset = 3;
+
     let filterByMember = "";
     let isFavorites = "";
     let isArchived = "";
-    
+
     if (!req.user?.owner && !req.user?.is_admin) {
-      queryParams.push(userId);
-      filterByMember = ` AND is_member_of_project(projects.id, $${paramOffset}, $1) `;
-      paramOffset++;
+      filterByMember = ` AND is_member_of_project(projects.id, $2, $1) `;
     }
 
     if (req.query.filter === "1") {
-      queryParams.push(userId);
-      isFavorites = ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
-      paramOffset++;
+      isFavorites = ` AND EXISTS(SELECT user_id FROM favorite_projects WHERE user_id = $2 AND project_id = projects.id)`;
     }
-    
+
     if (req.query.filter === "2") {
-      queryParams.push(userId);
-      isArchived = ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
-      paramOffset++;
+      isArchived = ` AND EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $2 AND project_id = projects.id)`;
     } else {
-      queryParams.push(userId);
-      isArchived = ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $${paramOffset} AND project_id = projects.id)`;
-      paramOffset++;
+      isArchived = ` AND NOT EXISTS(SELECT user_id FROM archived_projects WHERE user_id = $2 AND project_id = projects.id)`;
     }
 
     const categoriesResult = this.getFilterByCategoryWhereClosure(req.query.categories as string, paramOffset);
@@ -430,6 +503,12 @@ export default class ProjectsController extends WorklenzControllerBase {
       paramOffset += prioritiesResult.params.length;
     }
 
+    const clientsResult = this.getFilterByClientWhereClosure(req.query.clients as string, paramOffset);
+    if (clientsResult.params.length > 0) {
+      queryParams.push(...clientsResult.params);
+      paramOffset += clientsResult.params.length;
+    }
+
     // Now get search query with correct paramOffset
     const {searchQuery, searchParams, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name", false, paramOffset);
     
@@ -443,9 +522,19 @@ export default class ProjectsController extends WorklenzControllerBase {
     const safeSortField = this.validateAndMapSortField(sortField, "name");
     const safeSortOrder = (sortOrder === "desc" || sortOrder === "DESC" || sortOrder === "descend") ? "DESC" : "ASC";
 
+    // Special handling for CLIENT and CATEGORY sorts: put NULLs/empty values last
+    // and sort non-empty values normally
+    let orderByClause = `${safeSortField} ${safeSortOrder} NULLS LAST`;
+    if ((sortField === 'CLIENT' || sortField === 'client_name') && safeSortField.includes('SELECT name FROM clients')) {
+      orderByClause = `(${safeSortField} IS NOT NULL) DESC, ${safeSortField} ${safeSortOrder} NULLS LAST`;
+    } else if ((sortField === 'CATEGORY' || sortField === 'category' || sortField === 'category_id') && safeSortField.includes('REGEXP_REPLACE')) {
+      orderByClause = `(${safeSortField} IS NOT NULL) DESC, ${safeSortField} ${safeSortOrder} NULLS LAST`;
+    }
+
     const categories = categoriesResult.clause;
     const statuses = statusesResult.clause;
     const priorities = prioritiesResult.clause;
+    const clients = clientsResult.clause;
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS projects
@@ -458,11 +547,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                  (SELECT icon FROM sys_project_statuses WHERE id = status_id) AS status_icon,
                                  EXISTS(SELECT user_id
                                         FROM favorite_projects
-                                        WHERE user_id = '${req.user?.id}'
+                                        WHERE user_id = $2
                                           AND project_id = projects.id) AS favorite,
                                  EXISTS(SELECT user_id
                                         FROM archived_projects
-                                        WHERE user_id = '${req.user?.id}'
+                                        WHERE user_id = $2
                                           AND project_id = projects.id) AS archived,
                                  color_code,
                                  start_date,
@@ -506,6 +595,16 @@ export default class ProjectsController extends WorklenzControllerBase {
                                     WHERE prm.project_id = projects.id
                                       AND team_member_id = '${req.user?.team_member_id}') AS team_member_default_view,
 
+                                  EXISTS(
+                                    SELECT 1
+                                    FROM project_members pm
+                                    WHERE pm.project_id = projects.id
+                                      AND pm.team_member_id = '${req.user?.team_member_id}'
+                                      AND pm.project_access_level_id = (
+                                        SELECT id FROM project_access_levels WHERE key = 'GUEST'
+                                      )
+                                  ) AS is_guest,
+
                                  (SELECT CASE
                                            WHEN ((SELECT MAX(updated_at)
                                                   FROM tasks
@@ -518,11 +617,11 @@ export default class ProjectsController extends WorklenzControllerBase {
                                                      AND project_id = projects.id)
                                            ELSE updated_at END) AS updated_at
                           FROM projects
-                          WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
-                          ORDER BY ${safeSortField} ${safeSortOrder} NULLS LAST
+                          WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                          ORDER BY ${orderByClause}
                           LIMIT $${paramOffset} OFFSET $${paramOffset + 1}) t) AS data
             FROM projects
-            WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
+            WHERE team_id = $1 ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}) rec;
     `;
     
     // Add pagination parameters at the end
@@ -584,7 +683,8 @@ export default class ProjectsController extends WorklenzControllerBase {
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id) AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE))) AS completed_tasks_count,
                EXISTS(SELECT email FROM email_invitations WHERE team_member_id = project_members.team_member_id AND email_invitations.team_id = $2) AS pending_invitation,
-               COALESCE((SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access,
+               COALESCE((SELECT name FROM project_access_levels WHERE id = project_members.project_access_level_id),
+                        COALESCE((SELECT name FROM roles WHERE id = tm.role_id), 'Member')) AS access,
                (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title
         FROM project_members
         INNER JOIN team_members tm ON project_members.team_member_id = tm.id
@@ -653,6 +753,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.use_time_progress,
              projects.auto_assign_task_creator,
              projects.restrict_task_creation,
+             projects.phase_assignees_enabled,
              (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
              (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
 
@@ -698,6 +799,26 @@ export default class ProjectsController extends WorklenzControllerBase {
       }
       if (data.end_date) {
         data.end_date = moment(data.end_date).format('YYYY-MM-DD');
+      }
+
+      // Add is_guest flag to indicate if current user is a guest
+      const isGuestQuery = `
+        SELECT 1
+        FROM project_members pm
+        INNER JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+        INNER JOIN team_members tm ON pm.team_member_id = tm.id
+        WHERE pm.project_id = $1 
+          AND tm.user_id = $2 
+          AND pal.key = 'GUEST'
+        LIMIT 1;
+      `;
+
+      try {
+        const isGuestResult = await db.query(isGuestQuery, [req.params.id, req.user?.id]);
+        data.is_guest = isGuestResult.rowCount && isGuestResult.rowCount > 0 ? true : false;
+      } catch (error) {
+        // If query fails, default to false
+        data.is_guest = false;
       }
     }
 
@@ -748,6 +869,18 @@ export default class ProjectsController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data.project?.id) {
+      if (Object.prototype.hasOwnProperty.call(req.body, 'phase_assignees_enabled')) {
+        await db.query(
+          `
+            UPDATE projects
+            SET phase_assignees_enabled = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [Boolean(req.body.phase_assignees_enabled), req.params.id, req.user?.team_id || null]
+        );
+      }
+
       await this.setProjectPriority(data.project.id, req.body.priority_id, req.user?.team_id || null);
     }
 
@@ -784,8 +917,7 @@ export default class ProjectsController extends WorklenzControllerBase {
     }
 
     const project = projectResult.rows[0];
-    const userName = req.user?.name || "Unknown User";
-    
+
     // Log project deletion
     await ActivityLoggingService.logProjectDeleted(
       req.user?.team_id || "",
@@ -794,12 +926,14 @@ export default class ProjectsController extends WorklenzControllerBase {
       project.name
     );
 
-    // Delete the project
-    const deleteQ = `DELETE
-                     FROM projects
-                     WHERE id = $1
-                       AND team_id = $2`;
-    const result = await db.query(deleteQ, [req.params.id, req.user?.team_id || null]);
+    // Explicitly delete all tasks first to avoid FK constraint errors on
+    // databases where ON DELETE CASCADE may not have been applied yet.
+    // Child records (subtasks, assignees, comments, etc.) cascade off tasks.
+    await db.query(`DELETE FROM tasks WHERE project_id = $1`, [req.params.id]);
+
+    // Delete the project — remaining related data (members, statuses, phases,
+    // labels, files, etc.) is handled by DB-level cascade constraints.
+    await db.query(`DELETE FROM projects WHERE id = $1 AND team_id = $2`, [req.params.id, req.user?.team_id || null]);
     
     return res.status(200).send(new ServerResponse(true, { 
       message: `Project "${project.name}" has been successfully deleted`,
@@ -1166,7 +1300,12 @@ export default class ProjectsController extends WorklenzControllerBase {
     const prioritiesResult = this.getFilterByPriorityWhereClosure(req.query.priorities as string, paramOffset);
     const priorities = prioritiesResult.clause;
     paramOffset += prioritiesResult.params.length;
-    
+
+    const clientsResult = this.getFilterByClientWhereClosure(req.query.clients as string, paramOffset);
+    const clients = clientsResult.clause;
+    const clientsInner = clientsResult.innerClause;
+    paramOffset += clientsResult.params.length;
+
     const userIdParam = paramOffset;
     paramOffset++;
     
@@ -1239,6 +1378,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       SELECT ROW_TO_JSON(rec) AS groups
       FROM (
         SELECT COUNT(DISTINCT ${groupField}) AS total_groups,
+               COUNT(*) AS total_projects,
                (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(group_data))), '[]'::JSON)
                 FROM (
                   SELECT ${groupField} AS group_key,
@@ -1317,6 +1457,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                               ${categories.replace("projects.", "p2.")}
                               ${statuses.replace("projects.", "p2.")}
                               ${priorities.replace("projects.", "p2.")}
+                              ${clientsInner}
                               ${isArchived.replace("projects.", "p2.")}
                               ${isFavorites.replace("projects.", "p2.")}
                               ${filterByMember.replace("projects.", "p2.")}
@@ -1326,7 +1467,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                          ) AS projects
                   FROM projects
                   ${groupJoin}
-                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
+                  WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
                   GROUP BY ${groupByFields}
                   ORDER BY ${groupOrderBy}
                   LIMIT $${sizeParam}::INTEGER OFFSET $${offsetParam}::INTEGER
@@ -1334,17 +1475,20 @@ export default class ProjectsController extends WorklenzControllerBase {
                ) AS data
         FROM projects
         ${groupJoin}
-        WHERE projects.team_id = $${teamIdParam}
+        WHERE projects.team_id = $${teamIdParam} ${categories} ${statuses} ${priorities} ${clients} ${isArchived} ${isFavorites} ${filterByMember} ${searchQuery}
       ) rec;
     `;
 
-    // Build parameter array: team_id, searchParams, categories params, statuses params, userId, size, offset
+    // Build parameter array: team_id, searchParams, categories params, statuses params,
+    // priorities params, clients params, userId, size, offset.
+    // Order MUST match the order the paramOffset was advanced above.
     const queryParams: any[] = [
       req.user?.team_id || null,
       ...searchParams,
       ...categoriesResult.params,
       ...statusesResult.params,
       ...prioritiesResult.params,
+      ...clientsResult.params,
       userId
     ];
     queryParams.push(size, offset);
@@ -1370,7 +1514,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       }
     }
 
-    return res.status(200).send(new ServerResponse(true, data?.groups || { total_groups: 0, data: [] }));
+    return res.status(200).send(new ServerResponse(true, data?.groups || { total_groups: 0, total_projects: 0, data: [] }));
   }
 
 }

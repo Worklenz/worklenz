@@ -1,1 +1,261 @@
-import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';\nimport { FixedSizeGrid as Grid } from 'react-window';\nimport { useAppSelector } from '@/hooks/useAppSelector';\nimport { themeWiseColor } from '../../../utils/themeWiseColor';\nimport { CELL_WIDTH } from '../../../shared/constants';\nimport DayAllocationCell from './day-allocation-cell';\nimport ProjectTimelineBar from './project-timeline-bar';\nimport { useGanttOptimization, usePerformanceMonitor } from '@/hooks/useSchedulePerformance';\nimport { useTranslation } from 'react-i18next';\n\ninterface VirtualizedGanttChartProps {\n  teamData: any[];\n  dateList: any;\n  dayCount: number;\n  expandedProject: string | null;\n  zoomLevel: number;\n  showWeekends: boolean;\n  onProjectExpand: (memberId: string) => void;\n}\n\nconst MEMBER_HEIGHT = 90;\nconst PROJECT_HEIGHT = 65;\n\nconst VirtualizedGanttChart: React.FC<VirtualizedGanttChartProps> = ({\n  teamData,\n  dateList,\n  dayCount,\n  expandedProject,\n  zoomLevel,\n  showWeekends,\n  onProjectExpand,\n}) => {\n  const { t } = useTranslation('schedule');\n  const themeMode = useAppSelector(state => state.themeReducer.mode);\n  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });\n  const containerRef = useRef<HTMLDivElement>(null);\n  const gridRef = useRef<any>(null);\n  \n  // Performance monitoring\n  const { getMetrics } = usePerformanceMonitor('VirtualizedGanttChart');\n  \n  // Calculate actual cell width based on zoom\n  const cellWidth = useMemo(() => CELL_WIDTH * zoomLevel, [zoomLevel]);\n  \n  // Filter date data based on showWeekends\n  const filteredDateData = useMemo(() => {\n    if (!dateList?.date_data) return [];\n    \n    return dateList.date_data.map((dateGroup: any) => ({\n      ...dateGroup,\n      days: showWeekends ? dateGroup.days : dateGroup.days.filter((day: any) => !day.isWeekend)\n    }));\n  }, [dateList, showWeekends]);\n  \n  const filteredDayCount = useMemo(() => {\n    return filteredDateData.reduce((count, dateGroup) => count + dateGroup.days.length, 0);\n  }, [filteredDateData]);\n  \n  // Calculate expanded rows\n  const expandedRows = useMemo(() => {\n    const rows: any[] = [];\n    \n    teamData.forEach((member, memberIndex) => {\n      rows.push({\n        type: 'member',\n        data: member,\n        memberIndex,\n        height: MEMBER_HEIGHT,\n      });\n      \n      if (expandedProject === member.id && member.projects) {\n        member.projects.forEach((project: any, projectIndex: number) => {\n          rows.push({\n            type: 'project',\n            data: project,\n            memberIndex,\n            projectIndex,\n            height: PROJECT_HEIGHT,\n          });\n        });\n      }\n    });\n    \n    return rows;\n  }, [teamData, expandedProject]);\n  \n  // Gantt optimization\n  const {\n    visibleRange,\n    calculateVisibleCells,\n  } = useGanttOptimization({\n    cellWidth,\n    dayCount: filteredDayCount,\n    memberCount: expandedRows.length,\n  });\n  \n  // Handle container resize\n  useEffect(() => {\n    const updateSize = () => {\n      if (containerRef.current) {\n        const { offsetWidth, offsetHeight } = containerRef.current;\n        setContainerSize({ width: offsetWidth, height: offsetHeight });\n      }\n    };\n    \n    updateSize();\n    window.addEventListener('resize', updateSize);\n    \n    return () => window.removeEventListener('resize', updateSize);\n  }, []);\n  \n  // Cell renderer for virtualized grid\n  const CellRenderer = useCallback(({ columnIndex, rowIndex, style }: any) => {\n    const row = expandedRows[rowIndex];\n    if (!row) return null;\n    \n    // Calculate day data from filtered date list\n    let dayData: any = null;\n    let dayCount = 0;\n    \n    for (const dateGroup of filteredDateData) {\n      if (columnIndex < dayCount + dateGroup.days.length) {\n        dayData = dateGroup.days[columnIndex - dayCount];\n        break;\n      }\n      dayCount += dateGroup.days.length;\n    }\n    \n    if (!dayData) return null;\n    \n    const isWeekend = dayData.isWeekend;\n    const isToday = dayData.isToday;\n    \n    if (row.type === 'member') {\n      return (\n        <div\n          style={{\n            ...style,\n            background: isWeekend \n              ? themeMode === 'dark' \n                ? 'rgba(100, 100, 100, 0.2)' \n                : 'rgba(217, 217, 217, 0.3)'\n              : isToday\n                ? 'rgba(24, 144, 255, 0.1)'\n                : themeWiseColor('#ffffff', '#1f1f1f', themeMode),\n            borderRight: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',\n            borderBottom: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',\n            transition: 'all 0.2s ease',\n          }}\n        >\n          <DayAllocationCell\n            workingHours={8}\n            loggedHours={0}\n            totalPerDayHours={0}\n            isWeekend={isWeekend}\n            capacity={100}\n            availableHours={8}\n            memberName={row.data.name}\n            date={`${dayData.name} ${dayData.day}`}\n          />\n        </div>\n      );\n    }\n    \n    if (row.type === 'project') {\n      return (\n        <div\n          style={{\n            ...style,\n            background: isWeekend \n              ? themeMode === 'dark' \n                ? 'rgba(100, 100, 100, 0.2)' \n                : 'rgba(217, 217, 217, 0.3)'\n              : isToday\n                ? 'rgba(24, 144, 255, 0.05)'\n                : 'transparent',\n            borderRight: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',\n            borderBottom: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',\n            position: 'relative',\n            transition: 'all 0.2s ease',\n          }}\n        >\n          {/* Project timeline bar would be positioned absolutely here */}\n          {row.data?.date_union?.start && row.data?.date_union?.end && (\n            <ProjectTimelineBar\n              defaultData={row.data?.default_values}\n              project={row.data}\n              indicatorWidth={row.data?.indicator_width}\n              indicatorOffset={row.data?.indicator_offset}\n            />\n          )}\n        </div>\n      );\n    }\n    \n    return null;\n  }, [expandedRows, filteredDateData, themeMode]);\n  \n  // Handle scroll to update visible range\n  const handleScroll = useCallback(({ scrollLeft }: { scrollLeft: number }) => {\n    calculateVisibleCells(scrollLeft, containerSize.width);\n  }, [calculateVisibleCells, containerSize.width]);\n  \n  // Calculate total dimensions\n  const totalWidth = filteredDayCount * cellWidth;\n  const totalHeight = expandedRows.reduce((sum, row) => sum + row.height, 0);\n  \n  return (\n    <div \n      ref={containerRef}\n      style={{ \n        width: '100%', \n        height: '100%',\n        overflow: 'hidden',\n        position: 'relative'\n      }}\n    >\n      {containerSize.width > 0 && containerSize.height > 0 && (\n        <Grid\n          ref={gridRef}\n          width={containerSize.width}\n          height={containerSize.height}\n          columnCount={filteredDayCount}\n          rowCount={expandedRows.length}\n          columnWidth={cellWidth}\n          rowHeight={(index) => expandedRows[index]?.height || MEMBER_HEIGHT}\n          onScroll={handleScroll}\n          style={{\n            backgroundColor: themeWiseColor('#ffffff', '#141414', themeMode),\n          }}\n        >\n          {CellRenderer}\n        </Grid>\n      )}\n      \n      {/* Performance overlay for development */}\n      {process.env.NODE_ENV === 'development' && (\n        <div\n          style={{\n            position: 'absolute',\n            top: 10,\n            right: 10,\n            background: 'rgba(0, 0, 0, 0.8)',\n            color: 'white',\n            padding: '4px 8px',\n            fontSize: '12px',\n            borderRadius: '4px',\n            pointerEvents: 'none',\n            fontFamily: 'monospace',\n          }}\n        >\n          <div>Visible: {visibleRange.start}-{visibleRange.end}</div>\n          <div>Rows: {expandedRows.length}</div>\n          <div>Cols: {filteredDayCount}</div>\n        </div>\n      )}\n    </div>\n  );\n};\n\nexport default React.memo(VirtualizedGanttChart);
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import { FixedSizeGrid as Grid } from 'react-window';
+import { useAppSelector } from '@/hooks/useAppSelector';
+import { themeWiseColor } from '../../../utils/themeWiseColor';
+import { CELL_WIDTH } from '../../../shared/constants';
+import DayAllocationCell from './day-allocation-cell';
+import ProjectTimelineBar from './project-timeline-bar';
+import { useGanttOptimization, usePerformanceMonitor } from '@/hooks/useSchedulePerformance';
+import { useTranslation } from 'react-i18next';
+
+interface VirtualizedGanttChartProps {
+  teamData: any[];
+  dateList: any;
+  dayCount: number;
+  expandedProject: string | null;
+  zoomLevel: number;
+  showWeekends: boolean;
+  onProjectExpand: (memberId: string) => void;
+}
+
+const MEMBER_HEIGHT = 90;
+const PROJECT_HEIGHT = 65;
+
+const VirtualizedGanttChart: React.FC<VirtualizedGanttChartProps> = ({
+  teamData,
+  dateList,
+  dayCount,
+  expandedProject,
+  zoomLevel,
+  showWeekends,
+  onProjectExpand,
+}) => {
+  const { t } = useTranslation('schedule');
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<any>(null);
+  
+  // Performance monitoring
+  const { getMetrics } = usePerformanceMonitor('VirtualizedGanttChart');
+  
+  // Calculate actual cell width based on zoom
+  const cellWidth = useMemo(() => CELL_WIDTH * zoomLevel, [zoomLevel]);
+  
+  // Filter date data based on showWeekends
+  const filteredDateData = useMemo(() => {
+    if (!dateList?.date_data) return [];
+    
+    return dateList.date_data.map((dateGroup: any) => ({
+      ...dateGroup,
+      days: showWeekends ? dateGroup.days : dateGroup.days.filter((day: any) => !day.isWeekend)
+    }));
+  }, [dateList, showWeekends]);
+  
+  const filteredDayCount = useMemo(() => {
+    return filteredDateData.reduce((count, dateGroup) => count + dateGroup.days.length, 0);
+  }, [filteredDateData]);
+  
+  // Calculate expanded rows
+  const expandedRows = useMemo(() => {
+    const rows: any[] = [];
+    
+    teamData.forEach((member, memberIndex) => {
+      rows.push({
+        type: 'member',
+        data: member,
+        memberIndex,
+        height: MEMBER_HEIGHT,
+      });
+      
+      if (expandedProject === member.id && member.projects) {
+        member.projects.forEach((project: any, projectIndex: number) => {
+          rows.push({
+            type: 'project',
+            data: project,
+            memberIndex,
+            projectIndex,
+            height: PROJECT_HEIGHT,
+          });
+        });
+      }
+    });
+    
+    return rows;
+  }, [teamData, expandedProject]);
+  
+  // Gantt optimization
+  const {
+    visibleRange,
+    calculateVisibleCells,
+  } = useGanttOptimization({
+    cellWidth,
+    dayCount: filteredDayCount,
+    memberCount: expandedRows.length,
+  });
+  
+  // Handle container resize
+  useEffect(() => {
+    const updateSize = () => {
+      if (containerRef.current) {
+        const { offsetWidth, offsetHeight } = containerRef.current;
+        setContainerSize({ width: offsetWidth, height: offsetHeight });
+      }
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+  
+  // Cell renderer for virtualized grid
+  const CellRenderer = useCallback(({ columnIndex, rowIndex, style }: any) => {
+    const row = expandedRows[rowIndex];
+    if (!row) return null;
+    
+    // Calculate day data from filtered date list
+    let dayData: any = null;
+    let dayCount = 0;
+    
+    for (const dateGroup of filteredDateData) {
+      if (columnIndex < dayCount + dateGroup.days.length) {
+        dayData = dateGroup.days[columnIndex - dayCount];
+        break;
+      }
+      dayCount += dateGroup.days.length;
+    }
+    
+    if (!dayData) return null;
+    
+    const isWeekend = dayData.isWeekend;
+    const isToday = dayData.isToday;
+    
+    if (row.type === 'member') {
+      return (
+        <div
+          style={{
+            ...style,
+            background: isWeekend 
+              ? themeMode === 'dark' 
+                ? 'rgba(100, 100, 100, 0.2)' 
+                : 'rgba(217, 217, 217, 0.3)'
+              : isToday
+                ? 'rgba(24, 144, 255, 0.1)'
+                : themeWiseColor('#ffffff', '#1f1f1f', themeMode),
+            borderRight: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',
+            borderBottom: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <DayAllocationCell
+            workingHours={8}
+            loggedHours={0}
+            totalPerDayHours={0}
+            isWeekend={isWeekend}
+            capacity={100}
+            availableHours={8}
+            memberName={row.data.name}
+            date={`${dayData.name} ${dayData.day}`}
+          />
+        </div>
+      );
+    }
+    
+    if (row.type === 'project') {
+      return (
+        <div
+          style={{
+            ...style,
+            background: isWeekend 
+              ? themeMode === 'dark' 
+                ? 'rgba(100, 100, 100, 0.2)' 
+                : 'rgba(217, 217, 217, 0.3)'
+              : isToday
+                ? 'rgba(24, 144, 255, 0.05)'
+                : 'transparent',
+            borderRight: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',
+            borderBottom: themeMode === 'dark' ? '1px solid #303030' : '1px solid #f0f0f0',
+            position: 'relative',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          {/* Project timeline bar would be positioned absolutely here */}
+          {row.data?.date_union?.start && row.data?.date_union?.end && (
+            <ProjectTimelineBar
+              defaultData={row.data?.default_values}
+              project={row.data}
+              indicatorWidth={row.data?.indicator_width}
+              indicatorOffset={row.data?.indicator_offset}
+            />
+          )}
+        </div>
+      );
+    }
+    
+    return null;
+  }, [expandedRows, filteredDateData, themeMode]);
+  
+  // Handle scroll to update visible range
+  const handleScroll = useCallback(({ scrollLeft }: { scrollLeft: number }) => {
+    calculateVisibleCells(scrollLeft, containerSize.width);
+  }, [calculateVisibleCells, containerSize.width]);
+  
+  // Calculate total dimensions
+  const totalWidth = filteredDayCount * cellWidth;
+  const totalHeight = expandedRows.reduce((sum, row) => sum + row.height, 0);
+  
+  return (
+    <div 
+      ref={containerRef}
+      style={{ 
+        width: '100%', 
+        height: '100%',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
+    >
+      {containerSize.width > 0 && containerSize.height > 0 && (
+        <Grid
+          ref={gridRef}
+          width={containerSize.width}
+          height={containerSize.height}
+          columnCount={filteredDayCount}
+          rowCount={expandedRows.length}
+          columnWidth={cellWidth}
+          rowHeight={(index) => expandedRows[index]?.height || MEMBER_HEIGHT}
+          onScroll={handleScroll}
+          style={{
+            backgroundColor: themeWiseColor('#ffffff', '#141414', themeMode),
+          }}
+        >
+          {CellRenderer}
+        </Grid>
+      )}
+      
+      {/* Performance overlay for development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 10,
+            background: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '4px 8px',
+            fontSize: '12px',
+            borderRadius: '4px',
+            pointerEvents: 'none',
+            fontFamily: 'monospace',
+          }}
+        >
+          <div>Visible: {visibleRange.start}-{visibleRange.end}</div>
+          <div>Rows: {expandedRows.length}</div>
+          <div>Cols: {filteredDayCount}</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default React.memo(VirtualizedGanttChart);

@@ -26,6 +26,7 @@
   "lowText": "低",
   "mediumText": "中",
   "highText": "高",
+  "criticalText": "紧急",
   "billableButton": "可计费",
   "billableText": "可计费",
   "nonBillableText": "不可计费",

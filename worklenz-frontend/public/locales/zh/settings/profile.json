@@ -15,5 +15,9 @@
   "removeAvatarConfirmTitle": "移除个人资料照片？",
   "removeAvatarConfirmDescription": "您的头像将被移除，并改为显示您的姓名首字母。",
   "cancel": "取消",
-  "title": "个人资料设置"
+  "justNow": "刚刚",
+  "cropProfilePicture": "裁剪个人资料图片",
+  "title": "个人资料设置",
+  "nameMinLengthError": "姓名至少需要 2 个字符",
+  "nameMaxLengthError": "姓名不能超过 50 个字符"
 }

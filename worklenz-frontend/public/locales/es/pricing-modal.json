@@ -250,5 +250,12 @@
     "popular": "Más Popular",
     "bestValue": "Mejor Valor",
     "appsumoSpecial": "Especial AppSumo"
+  },
+  "customFields": {
+    "upgradeModalHeadline": "Capture cada detalle con campos personalizados ilimitados",
+    "upgradeModalSubCopy": "Su plan incluye hasta {{limit}} campos personalizados. Actualice a Business para crear campos ilimitados y hacer un seguimiento exacto de lo que le importa a su equipo.",
+    "benefit1": "Campos personalizados ilimitados por proyecto",
+    "benefit2": "Tipos de campo: texto, número, lista desplegable, fecha y más",
+    "benefit3": "Los campos se sincronizan en todas las vistas de tareas"
   }
 }

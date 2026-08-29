@@ -42,9 +42,10 @@ const Utilization: React.FC = () => {
   const isNoneSelected = utilization.length > 0 && !utilization.some(item => item.selected);
 
   // Filter members based on search text
-  const filteredItems = utilization.filter(item =>
-    item.name?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const filteredItems = utilization.filter(item => {
+    const translatedName = item.nameKey ? t(item.nameKey, { defaultValue: item.nameKey }) : item.name;
+    return translatedName.toLowerCase().includes(searchText.toLowerCase());
+  });
 
   // Theme-aware colors matching improved task filters
   const isDark = token.colorBgContainer !== '#ffffff';
@@ -90,7 +91,7 @@ const Utilization: React.FC = () => {
 
   const getButtonText = () => {
     if (isNoneSelected) return t('utilization');
-    if (isAllSelected) return `All ${t('utilization')}`;
+    if (isAllSelected) return t('allUtilization');
     return `${t('utilization')} (${activeFiltersCount})`;
   };
 
@@ -191,7 +192,7 @@ const Utilization: React.FC = () => {
                   onChange={e => handleCheckboxChange(ut.id, e.target.checked)}
                   style={{ fontSize: '14px' }}
                 >
-                  <span style={{ marginLeft: '2px', fontSize: '14px' }}>{ut.name}</span>
+                  <span style={{ marginLeft: '2px', fontSize: '14px' }}>{t(ut.nameKey, { defaultValue: ut.nameKey })}</span>
                 </Checkbox>
                 {ut.selected && (
                   <CheckCircleFilled

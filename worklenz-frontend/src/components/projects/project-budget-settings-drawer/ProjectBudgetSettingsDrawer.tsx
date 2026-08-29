@@ -26,9 +26,9 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import {
   updateProjectFinanceCurrency,
   fetchProjectFinancesSilent,
-} from '@/features/projects/finance/project-finance.slice';
+} from '@/ee/features/projects/finance/project-finance.slice';
 import { updateProjectCurrency, getProject } from '@/features/project/project.slice';
-import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
+import { projectFinanceApiService } from '@/ee/api/project-finance-ratecard/project-finance.api.service';
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
 
 const { Text } = Typography;

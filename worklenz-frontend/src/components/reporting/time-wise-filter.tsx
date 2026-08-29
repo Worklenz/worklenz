@@ -13,6 +13,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 
 import { colors } from '@/styles/colors';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -36,6 +37,7 @@ const TimeWiseFilter = () => {
   //   dateRange.length === 2 ? [dateRange[0], dateRange[1]] : null
   // );
   const [customRange, setCustomRange] = useState<[string, string] | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
 
   // Format customRange for display
   const getDisplayLabel = () => {
@@ -47,12 +49,25 @@ const TimeWiseFilter = () => {
   };
 
   // Apply changes when date range is selected
-  const handleDateRangeChange = (dates: any, dateStrings: [string, string]) => {
-    if (dates) {
+  const handleDateRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
+    if (dates && dates[0] && dates[1]) {
+      if (dates[1].isBefore(dates[0], 'day')) {
+        setDateError(
+          t('customDateRangeInvalidError', {
+            defaultValue: 'End date cannot be before the start date. Please select a valid range.',
+          })
+        );
+        setCustomRange(null);
+        return;
+      }
+      setDateError(null);
       setSelectedTimeFrame('');
-      setCustomRange([dates[0].$d.toString(), dates[1].$d.toString()]);
+      setCustomRange([dates[0].toDate().toString(), dates[1].toDate().toString()]);
     } else {
-      setCustomRange(null);
+      if (!dates || !dates[0]) {
+        setDateError(null);
+        setCustomRange(null);
+      }
     }
   };
 
@@ -104,7 +119,7 @@ const TimeWiseFilter = () => {
   }, [duration]);
 
   // custom dropdown content
-  const timeWiseDropdownContent = (
+  const renderDropdownContent = () => (
     <Card
       className="custom-card"
       styles={{
@@ -133,7 +148,7 @@ const TimeWiseFilter = () => {
             display: 'block',
           }}
         >
-          Quick Ranges
+          {t('quickRanges', { defaultValue: 'Quick Ranges' })}
         </Typography.Text>
 
         {durations.map(item => (
@@ -242,12 +257,25 @@ const TimeWiseFilter = () => {
             value={customRange ? [dayjs(customRange[0]), dayjs(customRange[1])] : null}
             style={{ width: '100%' }}
             size="middle"
-            placeholder={['Start date', 'End date']}
+            placeholder={[t('startDateInputPlaceholder', { defaultValue: 'Start date' }), t('EndDateInputPlaceholder', { defaultValue: 'End date' })]}
+            disabledDate={(current, { from }) => {
+              if (from) {
+                return current.isBefore(from, 'day');
+              }
+              return false;
+            }}
           />
+          {dateError && (
+            <Typography.Text type="danger" style={{ fontSize: 12 }}>
+              {dateError}
+            </Typography.Text>
+          )}
 
           <Flex justify="space-between" align="center">
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {customRange ? 'Ready to apply custom range' : 'Select start and end dates'}
+              {t(customRange ? 'readyToApplyCustomRange' : 'selectStartEndDates', {
+                defaultValue: customRange ? 'Ready to apply custom range' : 'Select start and end dates',
+              })}
             </Typography.Text>
             <Button
               type="primary"
@@ -271,7 +299,7 @@ const TimeWiseFilter = () => {
     <Dropdown
       overlayClassName="custom-dropdown"
       trigger={['click']}
-      dropdownRender={() => timeWiseDropdownContent}
+      dropdownRender={() => renderDropdownContent()}
       onOpenChange={open => setIsDropdownOpen(open)}
       open={isDropdownOpen}
     >

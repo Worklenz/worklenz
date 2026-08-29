@@ -22,5 +22,7 @@
   "seatLimitPopoverCta": "立即升级",
   "addMoreSeats": "添加更多席位",
   "closePopover": "关闭弹出层",
-  "searchPlaceholder": "Search members"
+  "invite": "邀请",
+  "searchPlaceholder": "搜索成员",
+  "Invite": "邀请"
 }

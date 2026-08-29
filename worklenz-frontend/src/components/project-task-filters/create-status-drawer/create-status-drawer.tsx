@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleDrawer } from '@/features/projects/status/StatusSlice';
+import { scheduleApi } from '@/api/schedule/scheduleApi';
+
 
 import './create-status-drawer.css';
 
@@ -58,6 +60,8 @@ const StatusDrawer: React.FC = () => {
       dispatch(fetchStatusesCategories());
       // Refetch task statuses to ensure UI reflects the new status
       dispatch(fetchStatuses(projectId));
+      dispatch(scheduleApi.util.invalidateTags(['TaskTimeline']));
+
     }
   };
 

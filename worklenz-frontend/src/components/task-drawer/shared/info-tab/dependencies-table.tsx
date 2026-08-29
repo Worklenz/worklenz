@@ -30,6 +30,8 @@ interface DependenciesTableProps {
   taskDependencies: ITaskDependency[];
   loadingTaskDependencies: boolean;
   refreshTaskDependencies: () => void;
+  canCreateTask?: boolean;
+  isGuest?: boolean;
 }
 
 const DependenciesTable = ({
@@ -38,6 +40,8 @@ const DependenciesTable = ({
   taskDependencies,
   loadingTaskDependencies,
   refreshTaskDependencies,
+  canCreateTask = true,
+  isGuest = false,
 }: DependenciesTableProps) => {
   const [hoverRow, setHoverRow] = useState<string | null>(null);
   const [isDependencyInputShow, setIsDependencyInputShow] = useState(false);
@@ -135,17 +139,9 @@ const DependenciesTable = ({
     {
       key: 'blockedBy',
       render: record => (
-        <Select
-          value={record.dependency_type}
-          options={[
-            {
-              key: IDependencyType.BLOCKED_BY,
-              value: IDependencyType.BLOCKED_BY,
-              label: 'Blocked By',
-            },
-          ]}
-          size="small"
-        />
+        <Tag>
+          {t('taskInfoTab.dependencies.blockedBy', { defaultValue: 'Blocked By' })}
+        </Tag>
       ),
     },
     {
@@ -156,9 +152,16 @@ const DependenciesTable = ({
           <Popconfirm
             title={t('taskInfoTab.dependencies.confirmDeleteDependency')}
             icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-            onConfirm={() => handleDeleteDependency(record.id)}
+            onConfirm={() => !isGuest && canCreateTask && handleDeleteDependency(record.id)}
+            disabled={isGuest || !canCreateTask}
           >
-            <Button shape="default" icon={<DeleteOutlined />} size="small" danger />
+            <Button
+              shape="default"
+              icon={<DeleteOutlined />}
+              size="small"
+              danger
+              disabled={isGuest || !canCreateTask}
+            />
           </Popconfirm>
         </div>
       ),
@@ -179,7 +182,7 @@ const DependenciesTable = ({
         />
       )}
 
-      {isDependencyInputShow ? (
+      {isDependencyInputShow && !isGuest ? (
         <Form layout="inline">
           <Row gutter={8} style={{ width: '100%' }}>
             <Col span={14}>
@@ -212,17 +215,9 @@ const DependenciesTable = ({
 
             <Col span={6}>
               <Form.Item name="blockedBy" style={{ marginBottom: 0 }}>
-                <Select
-                  options={[
-                    {
-                      key: IDependencyType.BLOCKED_BY,
-                      value: IDependencyType.BLOCKED_BY,
-                      label: 'Blocked By',
-                    },
-                  ]}
-                  size="small"
-                  disabled
-                />
+                <Typography.Text type="secondary">
+                  {t('taskInfoTab.dependencies.blockedBy', { defaultValue: 'Blocked By' })}
+                </Typography.Text>
               </Form.Item>
             </Col>
 
@@ -239,19 +234,22 @@ const DependenciesTable = ({
             </Col>
           </Row>
         </Form>
-      ) : (
+      ) : !isGuest ? (
         <Button
           type="text"
           style={{
             width: 'fit-content',
-            color: colors.skyBlue,
+            color: canCreateTask ? colors.skyBlue : undefined,
             padding: 0,
+            opacity: !canCreateTask ? 0.4 : 1,
+            cursor: !canCreateTask ? 'not-allowed' : 'pointer',
           }}
-          onClick={() => setIsDependencyInputShow(true)}
+          disabled={!canCreateTask}
+          onClick={() => canCreateTask && setIsDependencyInputShow(true)}
         >
           {t('taskInfoTab.dependencies.addDependency')}
         </Button>
-      )}
+      ) : null}
     </Flex>
   );
 };

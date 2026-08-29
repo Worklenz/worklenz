@@ -116,6 +116,7 @@ const AllTasksReports = () => {
     <Flex vertical gap={24}>
       <CustomPageHeader
         title={`${t('pageTitle', { defaultValue: 'All Tasks' })} (${total})`}
+        style={{ padding: 0 }}
         children={
           <Space>
             <Button>
@@ -169,7 +170,7 @@ const AllTasksReports = () => {
             align="center"
             wrap="wrap"
             gap={24}
-            style={{ paddingBlock: 10 }}
+            style={{ paddingBlock: 10, width: '100%' }}
           >
             <AllTasksReportsFilters />
           </Flex>

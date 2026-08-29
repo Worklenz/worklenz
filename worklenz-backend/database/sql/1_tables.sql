@@ -286,6 +286,269 @@ ALTER TABLE job_titles
     ADD CONSTRAINT job_titles_name_check
         CHECK (CHAR_LENGTH(name) <= 55);
 
+CREATE TABLE IF NOT EXISTS licensing_admin_users (
+    id         UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name       TEXT                               NOT NULL,
+    username   TEXT                               NOT NULL,
+    phone_no   TEXT                               NOT NULL,
+    otp        TEXT,
+    otp_expiry TIMESTAMP WITH TIME ZONE,
+    active     BOOLEAN DEFAULT TRUE               NOT NULL
+);
+
+ALTER TABLE licensing_admin_users
+    ADD CONSTRAINT licensing_admin_users_id_pk
+        PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS licensing_app_sumo_batches (
+    id         UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    name       TEXT                                                NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_by UUID                                                NOT NULL
+);
+
+ALTER TABLE licensing_app_sumo_batches
+    ADD CONSTRAINT licensing_app_sumo_batches_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_app_sumo_batches
+    ADD CONSTRAINT licensing_app_sumo_batches_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_coupon_codes (
+    id                 UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    coupon_code        TEXT                                                NOT NULL,
+    is_redeemed        BOOLEAN                  DEFAULT FALSE,
+    is_app_sumo        BOOLEAN                  DEFAULT FALSE,
+    projects_limit     INTEGER,
+    team_members_limit INTEGER                  DEFAULT 3,
+    storage_limit      INTEGER                  DEFAULT 5,
+    redeemed_by        UUID,
+    batch_id           UUID,
+    created_by         UUID                                                NOT NULL,
+    created_at         TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    redeemed_at        TIMESTAMP WITH TIME ZONE,
+    is_refunded        BOOLEAN                  DEFAULT FALSE,
+    reason             TEXT,
+    feedback           TEXT,
+    refunded_at        TIMESTAMP WITH TIME ZONE
+);
+
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_credit_subs (
+    id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    next_plan_id   UUID                                                NOT NULL,
+    user_id        UUID                                                NOT NULL,
+    credit_given   NUMERIC                                             NOT NULL,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    created_by     UUID                                                NOT NULL,
+    checkout_url   TEXT,
+    credit_balance NUMERIC                  DEFAULT 0
+);
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_created_by_fk
+        FOREIGN KEY (created_by) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_custom_subs (
+    id           UUID                     DEFAULT uuid_generate_v4()        NOT NULL,
+    user_id      UUID                                                       NOT NULL,
+    billing_type TEXT                     DEFAULT 'year'::CHARACTER VARYING NOT NULL,
+    currency     TEXT                     DEFAULT 'LKR'::CHARACTER VARYING  NOT NULL,
+    rate         NUMERIC                  DEFAULT 0                         NOT NULL,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP         NOT NULL,
+    end_date     DATE                                                       NOT NULL,
+    user_limit   INTEGER
+);
+
+ALTER TABLE licensing_custom_subs
+    ADD PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS licensing_custom_subs_logs (
+    id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    subscription_id UUID                                                NOT NULL,
+    log_text        TEXT                                                NOT NULL,
+    description     TEXT,
+    admin_user_id   UUID                                                NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
+);
+
+ALTER TABLE licensing_custom_subs_logs
+    ADD PRIMARY KEY (id);
+
+ALTER TABLE licensing_custom_subs_logs
+    ADD CONSTRAINT licensing_custom_subs_logs_licensing_admin_users_id_fk
+        FOREIGN KEY (admin_user_id) REFERENCES licensing_admin_users;
+
+CREATE TABLE IF NOT EXISTS licensing_payment_details (
+    id                      UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    user_id                 UUID,
+    alert_id                TEXT                                                NOT NULL,
+    alert_name              TEXT                                                NOT NULL,
+    balance_currency        TEXT                     DEFAULT 'USD'::TEXT,
+    balance_earnings        NUMERIC                  DEFAULT 0                  NOT NULL,
+    balance_fee             NUMERIC                  DEFAULT 0                  NOT NULL,
+    balance_gross           NUMERIC                  DEFAULT 0                  NOT NULL,
+    balance_tax             NUMERIC                  DEFAULT 0                  NOT NULL,
+    checkout_id             TEXT                                                NOT NULL,
+    country                 TEXT                                                NOT NULL,
+    coupon                  TEXT                                                NOT NULL,
+    currency                TEXT                     DEFAULT 'USD'::TEXT        NOT NULL,
+    custom_data             TEXT,
+    customer_name           TEXT                                                NOT NULL,
+    earnings                NUMERIC                  DEFAULT 0                  NOT NULL,
+    email                   TEXT                                                NOT NULL,
+    event_time              TEXT                                                NOT NULL,
+    fee                     NUMERIC                  DEFAULT 0                  NOT NULL,
+    initial_payment         NUMERIC                  DEFAULT 1                  NOT NULL,
+    instalments             NUMERIC                  DEFAULT 1                  NOT NULL,
+    marketing_consent       INTEGER                  DEFAULT 0,
+    next_bill_date          DATE                                                NOT NULL,
+    next_payment_amount     NUMERIC                  DEFAULT 0                  NOT NULL,
+    order_id                TEXT                                                NOT NULL,
+    p_signature             TEXT                                                NOT NULL,
+    passthrough             TEXT,
+    payment_method          TEXT                     DEFAULT 'card'::TEXT       NOT NULL,
+    payment_tax             NUMERIC                  DEFAULT 0,
+    plan_name               TEXT                                                NOT NULL,
+    quantity                NUMERIC                  DEFAULT 0                  NOT NULL,
+    receipt_url             TEXT                                                NOT NULL,
+    sale_gross              TEXT                     DEFAULT 0                  NOT NULL,
+    status                  TEXT                                                NOT NULL,
+    subscription_id         TEXT                                                NOT NULL,
+    subscription_payment_id TEXT                                                NOT NULL,
+    subscription_plan_id    INTEGER,
+    unit_price              NUMERIC                  DEFAULT 0                  NOT NULL,
+    paddle_user_id          TEXT                                                NOT NULL,
+    created_at              TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL,
+    payment_status          TEXT                     DEFAULT 'success'::TEXT    NOT NULL
+);
+
+ALTER TABLE licensing_payment_details
+    ADD PRIMARY KEY (id);
+
+CREATE TABLE IF NOT EXISTS licensing_pricing_plans (
+    id               UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    name             TEXT    DEFAULT ''::TEXT           NOT NULL,
+    billing_type     TEXT    DEFAULT 'month'::TEXT      NOT NULL,
+    billing_period   INTEGER DEFAULT 1                  NOT NULL,
+    default_currency TEXT    DEFAULT 'USD'::TEXT        NOT NULL,
+    initial_price    TEXT    DEFAULT '0'::TEXT          NOT NULL,
+    recurring_price  TEXT    DEFAULT '0'::TEXT          NOT NULL,
+    trial_days       INTEGER DEFAULT 0                  NOT NULL,
+    paddle_id        INTEGER DEFAULT 0,
+    active           BOOLEAN DEFAULT FALSE              NOT NULL,
+    is_startup_plan  BOOLEAN DEFAULT FALSE              NOT NULL
+);
+
+ALTER TABLE licensing_pricing_plans
+    ADD CONSTRAINT licensing_pricing_plans_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_next_plan_id_fk
+        FOREIGN KEY (next_plan_id) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_pricing_plans
+    ADD UNIQUE (paddle_id);
+
+ALTER TABLE licensing_payment_details
+    ADD CONSTRAINT licensing_payment_details_licensing_pricing_plans_paddle_id_fk
+        FOREIGN KEY (subscription_plan_id) REFERENCES licensing_pricing_plans (paddle_id);
+
+ALTER TABLE licensing_pricing_plans
+    ADD CONSTRAINT billing_type_allowed
+        CHECK (billing_type = ANY (ARRAY ['month'::TEXT, 'year'::TEXT]));
+
+CREATE TABLE IF NOT EXISTS licensing_settings (
+    default_trial_storage NUMERIC DEFAULT 1  NOT NULL,
+    default_storage       NUMERIC DEFAULT 25 NOT NULL,
+    storage_addon_price   NUMERIC DEFAULT 0  NOT NULL,
+    storage_addon_size    NUMERIC DEFAULT 0,
+    default_monthly_plan  UUID,
+    default_annual_plan   UUID,
+    default_startup_plan  UUID,
+    projects_limit        INTEGER DEFAULT 5  NOT NULL,
+    team_member_limit     INTEGER DEFAULT 0  NOT NULL,
+    free_tier_storage     INTEGER DEFAULT 5  NOT NULL,
+    trial_duration        INTEGER DEFAULT 14 NOT NULL
+);
+
+COMMENT ON COLUMN licensing_settings.default_trial_storage IS 'default storage amount for a trial in Gigabytes(GB)';
+
+COMMENT ON COLUMN licensing_settings.default_storage IS 'default storage amount for a paid account in Gigabytes(GB)';
+
+ALTER TABLE licensing_settings
+    ADD CONSTRAINT licensing_settings_licensing_pricing_plans_id_fk
+        FOREIGN KEY (default_startup_plan) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_settings
+    ADD CONSTRAINT licensing_settings_licensing_user_plans_id_fk
+        FOREIGN KEY (default_monthly_plan) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_settings
+    ADD CONSTRAINT licensing_settings_licensing_user_plans_id_fk_2
+        FOREIGN KEY (default_annual_plan) REFERENCES licensing_pricing_plans;
+
+CREATE TABLE IF NOT EXISTS licensing_user_subscription_modifiers (
+    subscription_id INTEGER                                            NOT NULL,
+    modifier_id     INTEGER                                            NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS licensing_user_subscriptions (
+    id                          UUID    DEFAULT uuid_generate_v4() NOT NULL,
+    user_id                     UUID                               NOT NULL,
+    paddle_user_id              INTEGER,
+    cancel_url                  TEXT,
+    update_url                  TEXT,
+    checkout_id                 TEXT,
+    next_bill_date              TEXT,
+    quantity                    INTEGER DEFAULT 1                  NOT NULL,
+    subscription_id             INTEGER,
+    subscription_plan_id        INTEGER,
+    unit_price                  NUMERIC,
+    plan_id                     UUID                               NOT NULL,
+    status                      TEXT,
+    custom_value_month          NUMERIC DEFAULT 0                  NOT NULL,
+    custom_value_year           NUMERIC DEFAULT 0                  NOT NULL,
+    custom_storage_amount       NUMERIC DEFAULT 0                  NOT NULL,
+    custom_storage_unit         TEXT    DEFAULT 'MB'::TEXT         NOT NULL,
+    cancellation_effective_date DATE,
+    currency                    TEXT    DEFAULT 'USD'::TEXT        NOT NULL,
+    event_time                  TEXT,
+    paused_at                   TEXT,
+    paused_from                 TEXT,
+    paused_reason               TEXT,
+    active                      BOOLEAN DEFAULT TRUE
+);
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_plans_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_user_subscriptions
+    ADD UNIQUE (subscription_id);
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_subscriptions_licensing_pricing_plans_id_fk
+        FOREIGN KEY (plan_id) REFERENCES licensing_pricing_plans;
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_subscriptions_statuses_allowed
+        CHECK (status = ANY
+               (ARRAY ['active'::TEXT, 'past_due'::TEXT, 'trialing'::TEXT, 'paused'::TEXT, 'deleted'::TEXT]));
 
 CREATE TABLE IF NOT EXISTS notification_settings (
     email_notifications_enabled BOOLEAN DEFAULT TRUE  NOT NULL,
@@ -937,6 +1200,10 @@ ALTER TABLE task_comment_contents
     ADD CONSTRAINT task_comment_contents_name_check
         CHECK (CHAR_LENGTH(text_content) <= 5000);
 
+ALTER TABLE task_comment_contents
+    ADD CONSTRAINT task_comment_contents_comment_id_uk
+        UNIQUE (comment_id);
+
 CREATE TABLE IF NOT EXISTS task_comments (
     id             UUID                     DEFAULT uuid_generate_v4() NOT NULL,
     user_id        UUID                                                NOT NULL,
@@ -1286,7 +1553,7 @@ ALTER TABLE tasks
 
 ALTER TABLE tasks
     ADD CONSTRAINT tasks_name_check
-        CHECK (CHAR_LENGTH(name) <= 500);
+        CHECK (CHAR_LENGTH(name) <= 250);
 
 ALTER TABLE tasks
     ADD CONSTRAINT tasks_total_minutes_check
@@ -1424,6 +1691,26 @@ ALTER TABLE archived_projects
 
 ALTER TABLE favorite_projects
     ADD CONSTRAINT favorite_projects_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_coupon_codes
+    ADD CONSTRAINT licensing_coupon_codes_users_id_fk
+        FOREIGN KEY (redeemed_by) REFERENCES users;
+
+ALTER TABLE licensing_credit_subs
+    ADD CONSTRAINT licensing_credit_subs_user_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_custom_subs
+    ADD CONSTRAINT licensing_custom_subs_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_payment_details
+    ADD CONSTRAINT licensing_payment_details_users_id_fk
+        FOREIGN KEY (user_id) REFERENCES users;
+
+ALTER TABLE licensing_user_subscriptions
+    ADD CONSTRAINT licensing_user_subscriptions_users_id_fk
         FOREIGN KEY (user_id) REFERENCES users;
 
 ALTER TABLE notification_settings
@@ -1732,6 +2019,35 @@ CREATE TABLE IF NOT EXISTS worklenz_alerts (
 ALTER TABLE worklenz_alerts
     ADD CONSTRAINT worklenz_alerts_type_check
         CHECK (type = ANY (ARRAY ['success'::TEXT, 'info'::TEXT, 'warning'::TEXT, 'error'::TEXT]));
+
+CREATE TABLE IF NOT EXISTS licensing_coupon_logs (
+    id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
+    coupon_code TEXT                                                NOT NULL,
+    redeemed_by UUID                                                NOT NULL,
+    redeemed_at TIMESTAMP WITH TIME ZONE                            NOT NULL,
+    is_refunded BOOLEAN                  DEFAULT TRUE               NOT NULL,
+    reason      TEXT,
+    reverted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    feedback    TEXT
+);
+
+ALTER TABLE licensing_coupon_logs
+    ADD CONSTRAINT licensing_coupon_logs_pk
+        PRIMARY KEY (id);
+
+ALTER TABLE licensing_coupon_logs
+    ADD CONSTRAINT licensing_coupon_logs_users_id_fk
+        FOREIGN KEY (redeemed_by) REFERENCES users;
+
+CREATE TABLE IF NOT EXISTS sys_license_types (
+    id          UUID DEFAULT uuid_generate_v4() NOT NULL,
+    name        TEXT                            NOT NULL,
+    key         TEXT                            NOT NULL,
+    description TEXT
+);
+
+ALTER TABLE sys_license_types
+    ADD PRIMARY KEY (id);
 
 CREATE TABLE IF NOT EXISTS task_comment_mentions (
     comment_id      UUID                                               NOT NULL,
@@ -2128,3 +2444,43 @@ ALTER TABLE survey_questions ADD CONSTRAINT survey_questions_sort_order_check CH
 ALTER TABLE survey_questions ADD CONSTRAINT survey_questions_type_check CHECK (question_type IN ('single_choice', 'multiple_choice', 'text'));
 ALTER TABLE survey_responses ADD CONSTRAINT unique_user_survey_response UNIQUE (user_id, survey_id);
 ALTER TABLE survey_answers ADD CONSTRAINT unique_response_question_answer UNIQUE (response_id, question_id);
+
+-- Home > Inbox / project chat - soft delete, reply threading, pinning, and
+-- per-user unread watermark (mirrors pg-migrations/1783800000000_project-chat-inbox.js).
+ALTER TABLE project_comments
+    ADD COLUMN IF NOT EXISTS deleted_at  TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS deleted_by  UUID REFERENCES users(id),
+    ADD COLUMN IF NOT EXISTS reply_to_id UUID REFERENCES project_comments(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS pinned_at   TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS pinned_by   UUID REFERENCES users(id);
+
+CREATE INDEX IF NOT EXISTS idx_project_comments_project_created
+    ON project_comments (project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_project_comments_pinned
+    ON project_comments (project_id, pinned_at DESC) WHERE pinned_at IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS project_comment_reads (
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    project_id   UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    last_read_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, project_id)
+);
+
+-- Home > Inbox / project chat - message attachments
+-- (mirrors pg-migrations/1784000000000_project-comment-attachments.js).
+CREATE TABLE IF NOT EXISTS project_comment_attachments (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name        TEXT NOT NULL,
+    type        TEXT,
+    size        BIGINT,
+    key         TEXT NOT NULL,
+    comment_id  UUID NOT NULL REFERENCES project_comments(id) ON DELETE CASCADE,
+    project_id  UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    team_id     UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    uploaded_by UUID REFERENCES users(id),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_comment_attachments_comment
+    ON project_comment_attachments (comment_id);

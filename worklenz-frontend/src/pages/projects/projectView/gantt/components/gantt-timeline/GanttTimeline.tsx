@@ -1,17 +1,21 @@
 import React, { memo, useMemo, forwardRef, RefObject } from 'react';
+import { theme } from '@/shared/antd-imports';
 import { GanttViewMode } from '../../types/gantt-types';
-import { useGanttDimensions } from '../../hooks/useGanttDimensions';
 import { TimelineUtils } from '../../utils/timeline-calculator';
 import { useGanttContext } from '../../context/gantt-context';
+import { useAppSelector } from '@/hooks/useAppSelector';
 
-// Helper function to get column label based on view mode
-const getColumnLabel = (column: any, viewMode: GanttViewMode): string => {
+// Week zoom ticks by individual day, same as Day zoom (just narrower/zoomed further out) —
+// it is not "one column per week". Only Month/Quarter/Year tick by a coarser unit, so this
+// treats Day and Week identically wherever the fine (bottom) row's per-column look is
+// decided, matching Planner > Timeline's TIMELINE_ZOOM_CFG (`unit: 'day'` for both).
+const isDayTickMode = (viewMode: GanttViewMode) => viewMode === 'day' || viewMode === 'week';
+
+// Bottom (fine) row label for a single column.
+const getColumnLabel = (column: { date: Date }, viewMode: GanttViewMode): string => {
   const date = column.date;
+  if (isDayTickMode(viewMode)) return date.getDate().toString();
   switch (viewMode) {
-    case 'day':
-      return date.getDate().toString();
-    case 'week':
-      return `W${TimelineUtils.getWeekNumber(date)}`;
     case 'month':
       return date.toLocaleDateString('en-US', { month: 'short' });
     case 'quarter':
@@ -23,228 +27,158 @@ const getColumnLabel = (column: any, viewMode: GanttViewMode): string => {
   }
 };
 
+// Day/Week stack a weekday abbreviation above the day number (e.g. "Mon" / "12"), matching
+// Planner > Timeline's Days/Weeks zoom column cells exactly.
+const getColumnSubLabel = (column: { date: Date }, viewMode: GanttViewMode): string | undefined => {
+  if (!isDayTickMode(viewMode)) return undefined;
+  return column.date.toLocaleDateString('en-US', { weekday: 'short' });
+};
+
+const isWeekendColumn = (column: { date: Date }, viewMode: GanttViewMode): boolean => {
+  if (!isDayTickMode(viewMode)) return false;
+  const day = column.date.getDay();
+  return day === 0 || day === 6;
+};
+
+// Top (coarse) grouping row: which group a column's date belongs to, and that group's
+// label — Day groups by month, Week groups by week number ("Week 23"), Month groups by
+// year, Quarter groups by quarter. Year has no top row (topUnit === null in Planner's
+// equivalent config). Mirrors PlannerTimelineView's TIMELINE_ZOOM_CFG.topUnit exactly.
+const getTopGroupKey = (date: Date, viewMode: GanttViewMode): string | null => {
+  switch (viewMode) {
+    case 'day':
+      return `month-${date.getFullYear()}-${date.getMonth()}`;
+    case 'week':
+      return `week-${date.getFullYear()}-${TimelineUtils.getWeekNumber(date)}`;
+    case 'month':
+      return `year-${date.getFullYear()}`;
+    case 'quarter':
+      return `quarter-${date.getFullYear()}-${Math.ceil((date.getMonth() + 1) / 3)}`;
+    case 'year':
+    default:
+      return null;
+  }
+};
+
+// Whether a given view mode renders a top grouping row at all — derived from getTopGroupKey
+// itself (only 'year' has none) rather than a separately maintained list of view modes, so
+// GanttTaskList.tsx's header-height calc can share this instead of hardcoding its own copy
+// that would silently drift if a view mode's grouping ever changes.
+export const hasTopHeaderRow = (viewMode: GanttViewMode): boolean =>
+  getTopGroupKey(new Date(), viewMode) !== null;
+
+const getTopGroupLabel = (date: Date, viewMode: GanttViewMode): string => {
+  switch (viewMode) {
+    case 'day':
+      return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    case 'week':
+      // Include the month alongside the week number — a bare "Week 25" gives no sense
+      // of when that week actually falls without counting columns back to the nearest
+      // month boundary.
+      return `Week ${TimelineUtils.getWeekNumber(date)} · ${date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    case 'month':
+      return `${date.getFullYear()}`;
+    case 'quarter':
+      return `Q${Math.ceil((date.getMonth() + 1) / 3)} ${date.getFullYear()}`;
+    default:
+      return '';
+  }
+};
+
 interface GanttTimelineProps {
   viewMode: GanttViewMode;
   containerRef: RefObject<HTMLDivElement | null>;
   dateRange?: { start: Date; end: Date };
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
 const GanttTimeline = forwardRef<HTMLDivElement, GanttTimelineProps>(
-  ({ viewMode, containerRef, dateRange }, ref) => {
-    // Get timeline calculator from context
-    const { timelineCalculator } = useGanttContext();
-    const { topHeaders, bottomHeaders } = useMemo(() => {
-      if (!dateRange) {
-        return { topHeaders: [], bottomHeaders: [] };
-      }
+  ({ viewMode, onScroll }, ref) => {
+    // Get timeline calculator, highlighted date range, and shouldScroll from context
+    const { timelineCalculator, highlightedDateRange, shouldScroll } = useGanttContext();
+    const { token } = theme.useToken();
+    const themeMode = useAppSelector(state => state.themeReducer.mode);
+    // Dim the header's column dividers to match GanttChart.tsx's GridColumn lines below —
+    // full-strength colorBorderSecondary reads much heavier in dark mode across this many
+    // adjacent vertical lines than it does for a single border elsewhere.
+    const gridBorderColor = themeMode === 'dark' ? `${token.colorBorderSecondary}40` : token.colorBorderSecondary;
 
-      const { start, end } = dateRange;
-      const topHeaders: Array<{ label: string; key: string; span: number }> = [];
-      const bottomHeaders: Array<{ label: string; key: string }> = [];
+    // Bottom (fine) row — one cell per real timelineCalculator column, each using its own
+    // width (uniform for Day/Week's day-ticks, variable per real month for Month) rather
+    // than a single shared column width. This is what keeps the header's cells exactly the
+    // width GanttChart.tsx's grid columns and task bars use, since both read from the same
+    // calculator instance.
+    const bottomColumns = useMemo(() => {
+      if (!timelineCalculator) return [];
+      return timelineCalculator.getColumns().map((column: any) => ({
+        key: column.key,
+        date: column.date as Date,
+        width: column.width as number,
+        label: getColumnLabel(column, viewMode),
+        subLabel: getColumnSubLabel(column, viewMode),
+        isWeekend: isWeekendColumn(column, viewMode),
+      }));
+    }, [timelineCalculator, viewMode]);
 
-      switch (viewMode) {
-        case 'month':
-          // Top: Years, Bottom: Months
-          const startYear = start.getFullYear();
-          const startMonth = start.getMonth();
-          const endYear = end.getFullYear();
-          const endMonth = end.getMonth();
+    // Top (coarse) grouping row — spans consecutive bottom columns that share the same
+    // group key, its width the sum of those columns' real widths (mirrors Planner >
+    // Timeline's topGroups builder exactly).
+    const topGroups = useMemo(() => {
+      const groups: Array<{ key: string; label: string; width: number }> = [];
+      bottomColumns.forEach(column => {
+        const key = getTopGroupKey(column.date, viewMode);
+        if (key === null) return;
+        const last = groups[groups.length - 1];
+        if (last && last.key === key) {
+          last.width += column.width;
+        } else {
+          groups.push({ key, label: getTopGroupLabel(column.date, viewMode), width: column.width });
+        }
+      });
+      return groups;
+    }, [bottomColumns, viewMode]);
 
-          // Generate bottom headers (months)
-          let currentYear = startYear;
-          let currentMonth = startMonth;
+    const totalWidth = timelineCalculator ? timelineCalculator.getTotalWidth() : 0;
 
-          while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
-            const date = new Date(currentYear, currentMonth, 1);
-            bottomHeaders.push({
-              label: date.toLocaleDateString('en-US', { month: 'short' }),
-              key: `month-${currentYear}-${currentMonth}`,
-            });
-
-            currentMonth++;
-            if (currentMonth > 11) {
-              currentMonth = 0;
-              currentYear++;
-            }
-          }
-
-          // Generate top headers (years)
-          for (let year = startYear; year <= endYear; year++) {
-            const monthsInYear = bottomHeaders.filter(h => h.key.includes(`-${year}-`)).length;
-            if (monthsInYear > 0) {
-              topHeaders.push({
-                label: `${year}`,
-                key: `year-${year}`,
-                span: monthsInYear,
-              });
-            }
-          }
-          break;
-
-        case 'week':
-          // Top: Months, Bottom: Weeks
-          const weekStart = new Date(start);
-          const weekEnd = new Date(end);
-          weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-
-          const weekDates: Date[] = [];
-          const tempDate = new Date(weekStart);
-          while (tempDate <= weekEnd) {
-            weekDates.push(new Date(tempDate));
-            tempDate.setDate(tempDate.getDate() + 7);
-          }
-
-          // Generate bottom headers (weeks)
-          weekDates.forEach(date => {
-            const weekNum = TimelineUtils.getWeekNumber(date);
-            bottomHeaders.push({
-              label: `W${weekNum}`,
-              key: `week-${date.getFullYear()}-${weekNum}`,
-            });
-          });
-
-          // Generate top headers (months)
-          const monthGroups = new Map<string, number>();
-          weekDates.forEach(date => {
-            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-            monthGroups.set(monthKey, (monthGroups.get(monthKey) || 0) + 1);
-          });
-
-          monthGroups.forEach((count, monthKey) => {
-            const [year, month] = monthKey.split('-').map(Number);
-            const date = new Date(year, month, 1);
-            topHeaders.push({
-              label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-              key: `month-${monthKey}`,
-              span: count,
-            });
-          });
-          break;
-
-        case 'day':
-          // Top: Months, Bottom: Days
-          const dayStart = new Date(start);
-          const dayEnd = new Date(end);
-
-          const dayDates: Date[] = [];
-          const tempDayDate = new Date(dayStart);
-          while (tempDayDate <= dayEnd) {
-            dayDates.push(new Date(tempDayDate));
-            tempDayDate.setDate(tempDayDate.getDate() + 1);
-          }
-
-          // Generate bottom headers (days)
-          dayDates.forEach(date => {
-            bottomHeaders.push({
-              label: date.getDate().toString(),
-              key: `day-${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`,
-            });
-          });
-
-          // Generate top headers (months)
-          const dayMonthGroups = new Map<string, number>();
-          dayDates.forEach(date => {
-            const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-            dayMonthGroups.set(monthKey, (dayMonthGroups.get(monthKey) || 0) + 1);
-          });
-
-          dayMonthGroups.forEach((count, monthKey) => {
-            const [year, month] = monthKey.split('-').map(Number);
-            const date = new Date(year, month, 1);
-            topHeaders.push({
-              label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-              key: `month-${monthKey}`,
-              span: count,
-            });
-          });
-          break;
-
-        default:
-          // Fallback to single row for other view modes
-          const result = [];
-          switch (viewMode) {
-            case 'quarter':
-              const qStartYear = start.getFullYear();
-              const qStartQuarter = Math.ceil((start.getMonth() + 1) / 3);
-              const qEndYear = end.getFullYear();
-              const qEndQuarter = Math.ceil((end.getMonth() + 1) / 3);
-
-              let qYear = qStartYear;
-              let qQuarter = qStartQuarter;
-
-              while (qYear < qEndYear || (qYear === qEndYear && qQuarter <= qEndQuarter)) {
-                result.push({
-                  label: `Q${qQuarter} ${qYear}`,
-                  key: `quarter-${qYear}-${qQuarter}`,
-                });
-
-                qQuarter++;
-                if (qQuarter > 4) {
-                  qQuarter = 1;
-                  qYear++;
-                }
-              }
-              break;
-            case 'year':
-              const yearStart = start.getFullYear();
-              const yearEnd = end.getFullYear();
-
-              for (let year = yearStart; year <= yearEnd; year++) {
-                result.push({
-                  label: `${year}`,
-                  key: `year-${year}`,
-                });
-              }
-              break;
-          }
-
-          result.forEach(item => {
-            bottomHeaders.push(item);
-          });
-          break;
-      }
-
-      return { topHeaders, bottomHeaders };
-    }, [viewMode, dateRange]);
-
-    // Use timeline calculator columns if available, otherwise fallback to generated headers
-    const effectiveBottomHeaders = useMemo(() => {
-      if (timelineCalculator) {
-        const columns = timelineCalculator.getColumns();
-        return columns.map(column => ({
-          label: getColumnLabel(column, viewMode),
-          key: column.key,
-        }));
-      }
-      return bottomHeaders;
-    }, [timelineCalculator, bottomHeaders, viewMode]);
-
-    const { actualColumnWidth, totalWidth, shouldScroll } = useGanttDimensions(
-      viewMode,
-      containerRef,
-      effectiveBottomHeaders.length
-    );
-
-    const hasTopHeaders = topHeaders.length > 0;
+    const hasTopHeaders = topGroups.length > 0;
+    // Header row heights match Planner > Timeline's TOP_HEADER_HEIGHT/UNIT_HEADER_HEIGHT
+    // constants exactly, instead of the much taller h-20/h-10 (80px/40px) this used before.
+    const TOP_HEADER_HEIGHT = 24;
+    const UNIT_HEADER_HEIGHT = 34;
 
     return (
       <div
         ref={ref}
-        className={`${hasTopHeaders ? 'h-20' : 'h-10'} flex-shrink-0 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 overflow-y-hidden ${
+        onScroll={onScroll}
+        className={`flex-shrink-0 overflow-y-hidden ${
           shouldScroll ? 'overflow-x-auto' : 'overflow-x-hidden'
         } scrollbar-hide flex flex-col`}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        style={{
+          height: hasTopHeaders ? TOP_HEADER_HEIGHT + UNIT_HEADER_HEIGHT : UNIT_HEADER_HEIGHT,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          backgroundColor: token.colorBgContainer,
+          borderBottom: `1px solid ${token.colorBorderSecondary}`,
+        }}
       >
         {hasTopHeaders && (
           <div
-            className="flex h-10 border-b border-gray-200 dark:border-gray-700"
-            style={{ width: `${totalWidth}px`, minWidth: shouldScroll ? 'auto' : '100%' }}
+            className="flex"
+            style={{
+              width: `${totalWidth}px`,
+              minWidth: shouldScroll ? 'auto' : '100%',
+              height: TOP_HEADER_HEIGHT,
+              borderBottom: `1px solid ${token.colorBorderSecondary}`,
+            }}
           >
-            {topHeaders.map(header => (
+            {topGroups.map(header => (
               <div
                 key={header.key}
-                className="py-2.5 text-center border-r border-gray-200 dark:border-gray-700 text-sm font-semibold text-gray-800 dark:text-gray-200 flex-shrink-0 px-2 whitespace-nowrap bg-gray-50 dark:bg-gray-750"
-                style={{ width: `${actualColumnWidth * header.span}px` }}
+                className="flex items-center justify-center text-center text-xs font-semibold text-gray-800 dark:text-gray-200 flex-shrink-0 px-2 whitespace-nowrap"
+                style={{
+                  width: `${header.width}px`,
+                  borderRight: `1px solid ${gridBorderColor}`,
+                }}
                 title={header.label}
               >
                 {header.label}
@@ -253,25 +187,56 @@ const GanttTimeline = forwardRef<HTMLDivElement, GanttTimelineProps>(
           </div>
         )}
         <div
-          className="flex h-10"
-          style={{ width: `${totalWidth}px`, minWidth: shouldScroll ? 'auto' : '100%' }}
+          className="flex"
+          style={{ width: `${totalWidth}px`, minWidth: shouldScroll ? 'auto' : '100%', height: UNIT_HEADER_HEIGHT }}
         >
-          {effectiveBottomHeaders.map(header => (
+          {bottomColumns.map((header, index) => {
+            // Check if this column should be highlighted
+            let isHighlighted = false;
+
+            if (highlightedDateRange) {
+              const colDate = new Date(header.date);
+              colDate.setHours(0, 0, 0, 0);
+
+              const highlightStart = new Date(highlightedDateRange.start);
+              highlightStart.setHours(0, 0, 0, 0);
+
+              const highlightEnd = new Date(highlightedDateRange.end);
+              highlightEnd.setHours(0, 0, 0, 0);
+
+              isHighlighted = colDate >= highlightStart && colDate <= highlightEnd;
+            }
+
+            return (
             <div
               key={header.key}
-              className={`py-2.5 text-center border-r border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 ${
-                viewMode === 'day' ? 'px-1 text-xs' : 'px-2'
+              className={`flex flex-col items-center justify-center text-center text-xs font-medium text-gray-700 dark:text-gray-300 flex-shrink-0 ${
+                isDayTickMode(viewMode) ? 'px-1' : 'px-2'
               } ${
-                viewMode === 'day' && actualColumnWidth < 50
+                isDayTickMode(viewMode) && header.width < 50
                   ? 'whitespace-nowrap overflow-hidden text-ellipsis'
                   : 'whitespace-nowrap'
               }`}
-              style={{ width: `${actualColumnWidth}px` }}
+              style={{
+                width: `${header.width}px`,
+                borderRight: `1px solid ${gridBorderColor}`,
+                backgroundColor: isHighlighted
+                  ? `${token.colorPrimary}26`
+                  : header.isWeekend
+                    ? token.colorFillQuaternary
+                    : undefined,
+              }}
               title={header.label}
             >
-              {header.label}
+              {header.subLabel && (
+                <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.55, lineHeight: 1.3 }}>
+                  {header.subLabel}
+                </span>
+              )}
+              <span style={{ lineHeight: 1.3 }}>{header.label}</span>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );

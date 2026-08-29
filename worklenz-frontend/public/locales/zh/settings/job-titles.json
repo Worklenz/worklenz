@@ -16,5 +16,8 @@
   "createJobTitleSuccessMessage": "职位创建成功！",
   "createJobTitleErrorMessage": "职位创建失败！",
   "updateJobTitleSuccessMessage": "职位更新成功！",
-  "updateJobTitleErrorMessage": "职位更新失败！"
+  "updateJobTitleErrorMessage": "职位更新失败！",
+  "paginationTotal": "第 {{start}}-{{end}} 条，共 {{total}} 条",
+  "editTooltip": "编辑",
+  "deleteTooltip": "删除"
 }
