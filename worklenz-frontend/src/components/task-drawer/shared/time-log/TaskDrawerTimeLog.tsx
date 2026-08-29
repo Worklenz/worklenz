@@ -44,8 +44,8 @@ const TaskDrawerTimeLog = () => {
       setLoading(true);
       const res = await taskTimeLogsApiService.getByTask(selectedTaskId);
       if (res.done) {
-        buildTotalTimeText(res.body);
-        setTimeLoggedList(res.body);
+        buildTotalTimeText(res.body.logs);
+        setTimeLoggedList(res.body.logs);
       }
     } catch (error) {
       console.error('Error fetching time logs:', error);

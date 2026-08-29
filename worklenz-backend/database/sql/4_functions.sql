@@ -726,6 +726,7 @@ DECLARE
     _created_by    UUID;
     _comment_id    UUID;
     _team_id       UUID;
+    _reply_to_id   UUID;
     _user_name     TEXT;
     _project_name  TEXT;
     _content       TEXT;
@@ -736,12 +737,13 @@ BEGIN
     _created_by = (_body ->> 'created_by');
     _content = (_body ->> 'content');
     _team_id = (_body ->> 'team_id');
+    _reply_to_id = NULLIF((_body ->> 'reply_to_id'), '')::UUID;
 
     SELECT name FROM users WHERE id = _created_by LIMIT 1 INTO _user_name;
     SELECT name FROM projects WHERE id = _project_id INTO _project_name;
 
-    INSERT INTO project_comments (content, created_by, project_id)
-    VALUES (_content, _created_by, _project_id)
+    INSERT INTO project_comments (content, created_by, project_id, reply_to_id)
+    VALUES (_content, _created_by, _project_id, _reply_to_id)
     RETURNING id INTO _comment_id;
 
     FOR _mention IN SELECT * FROM JSON_ARRAY_ELEMENTS((_body ->> 'mentions')::JSON)
@@ -768,6 +770,7 @@ BEGIN
             'avatar_url', (SELECT avatar_url FROM users WHERE id = _created_by),
             'created_at', (SELECT created_at FROM project_comments WHERE id = _comment_id),
             'updated_at', (SELECT updated_at FROM project_comments WHERE id = _comment_id),
+            'reply_to_id', (_reply_to_id)::UUID,
             'mentions', (SELECT COALESCE(JSON_AGG(rec), '[]'::JSON)
                         FROM (SELECT u.name  AS user_name,
                                      u.email AS user_email
@@ -793,6 +796,7 @@ DECLARE
     _member_user_id UUID;
     _notification   TEXT;
     _access_level   TEXT;
+    _existing_access_level TEXT;
 BEGIN
     _team_member_id = (_body ->> 'team_member_id')::UUID;
     _team_id = (_body ->> 'team_id')::UUID;
@@ -803,6 +807,41 @@ BEGIN
     -- Map team-lead access level to PROJECT_MANAGER since Team Lead is a role, not a project access level
     IF UPPER(_access_level) IN ('TEAM-LEAD', 'TEAM_LEAD') THEN
         _access_level = 'PROJECT_MANAGER';
+    END IF;
+
+    -- Enforce guest uniqueness across the team: a user cannot have both GUEST and non-GUEST access levels
+    -- Check 1: If adding as GUEST, ensure they don't have a non-GUEST role in the team
+    IF UPPER(_access_level) = 'GUEST' THEN
+        SELECT DISTINCT pal.key
+        INTO _existing_access_level
+        FROM project_members pm
+        JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+        JOIN projects p ON pm.project_id = p.id
+        WHERE pm.team_member_id = _team_member_id
+          AND p.team_id = _team_id
+          AND pal.key != 'GUEST'
+        LIMIT 1;
+
+        IF _existing_access_level IS NOT NULL THEN
+            RAISE 'MEMBER_DIFFERENT_ACCESS_LEVEL:%', _existing_access_level;
+        END IF;
+    END IF;
+
+    -- Check 2: If adding as non-GUEST, ensure they don't have a GUEST role in the team
+    IF UPPER(_access_level) != 'GUEST' THEN
+        SELECT DISTINCT pal.key
+        INTO _existing_access_level
+        FROM project_members pm
+        JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
+        JOIN projects p ON pm.project_id = p.id
+        WHERE pm.team_member_id = _team_member_id
+          AND p.team_id = _team_id
+          AND pal.key = 'GUEST'
+        LIMIT 1;
+
+        IF _existing_access_level IS NOT NULL THEN
+            RAISE 'MEMBER_DIFFERENT_ACCESS_LEVEL:GUEST';
+        END IF;
     END IF;
 
     SELECT user_id FROM team_members WHERE id = _team_member_id INTO _member_user_id;
@@ -1031,7 +1070,7 @@ BEGIN
         description
     )
     VALUES (
-        TRIM((_body ->> 'name')::TEXT),
+        SUBSTRING(TRIM((_body ->> 'name')::TEXT), 1, 250),
         _priority_id,
         _project_id,
         _reporter_id,
@@ -1484,141 +1523,188 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION deserialize_user(_id uuid) RETURNS json
-    LANGUAGE plpgsql
-AS
+create function deserialize_user(_id uuid) returns json
+    language plpgsql
+as
 $$
 DECLARE
     _result JSON;
 BEGIN
-    WITH user_team_data AS (
-        SELECT u.id,
-               u.name,
-               u.email,
-               u.timezone_id AS timezone,
-               u.language,
-               u.avatar_url,
-               u.user_no,
-               u.socket_id,
-               u.created_at AS joined_date,
-               u.updated_at AS last_updated,
-               u.setup_completed AS my_setup_completed,
-               (is_null_or_empty(u.google_id) IS FALSE) AS is_google,
-               COALESCE(u.active_team, (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
-               u.active_team
-        FROM users u
-        WHERE u.id = _id
-    ),
-    team_org_data AS (
-        SELECT utd.*,
-               t.name AS team_name,
-               t.user_id AS owner_id,
-               o.subscription_status,
-               o.license_type_id,
-               o.trial_expire_date,
-               o.id AS organization_id,
-               o.business_plan_override,
-               o.team_member_limit_override
-        FROM user_team_data utd
-        INNER JOIN teams t ON t.id = utd.team_id
-        LEFT JOIN organizations o ON o.user_id = t.user_id
-    ),
-    plan_trial_data AS (
-        SELECT pt.id AS trial_id,
-               pt.plan_tier_id,
-               pt.trial_end_date AS plan_trial_end_date,
-               pt.is_active,
-               lpt.tier_name AS active_plan_trial,
-               lpt.display_name AS trial_plan_display_name,
-               GREATEST(0, EXTRACT(DAY FROM (pt.trial_end_date - NOW()))::INTEGER) AS trial_days_remaining
-        FROM team_org_data tod
-        LEFT JOIN licensing_plan_trials pt
-            ON pt.user_id = tod.owner_id
-            AND pt.organization_id = tod.organization_id
-            AND pt.is_active = TRUE
-            AND pt.trial_end_date > NOW()
-        LEFT JOIN licensing_plan_tiers lpt ON lpt.id = pt.plan_tier_id
-        LIMIT 1
-    ),
-    notification_data AS (
-        SELECT tod.*,
-               ptd.active_plan_trial,
-               ptd.plan_trial_end_date,
-               ptd.trial_days_remaining,
-               ptd.trial_plan_display_name,
-               COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
-        FROM team_org_data tod
-        LEFT JOIN plan_trial_data ptd ON TRUE
-        LEFT JOIN notification_settings ns ON (ns.user_id = tod.id AND ns.team_id = tod.team_id)
-    ),
-    alerts_data AS (
-        SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(alert_rec))), '[]'::JSON) AS alerts
-        FROM (SELECT description, type FROM worklenz_alerts WHERE active IS TRUE) alert_rec
-    ),
-    complete_user_data AS (
-        SELECT nd.*,
-               tz.name AS timezone_name,
-               (SELECT r.name FROM roles r WHERE r.id = tm.role_id) AS role_name,
-               CASE
-                   WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'BUSINESS_TRIAL'
-                   WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'ENTERPRISE_TRIAL'
-                   WHEN nd.active_plan_trial IS NOT NULL THEN 'PLAN_TRIAL'
-                   ELSE slt.key
-               END AS subscription_type,
-               CASE
-                   WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'business'
-                   WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'enterprise'
-                   ELSE (SELECT name
-                         FROM licensing_pricing_plans lpp
-                         LEFT JOIN licensing_user_subscriptions lus ON lus.subscription_plan_id = lpp.paddle_id
-                         WHERE lus.user_id = nd.owner_id AND lus.active IS TRUE
-                         LIMIT 1)
-               END AS plan_name,
-               tm.id AS team_member_id,
-               ad.alerts,
-               nd.active_plan_trial,
-               nd.plan_trial_end_date,
-               nd.trial_days_remaining,
-               nd.trial_plan_display_name,
-               CASE WHEN nd.active_plan_trial IS NOT NULL THEN TRUE ELSE FALSE END AS is_plan_trial,
-               CASE
-                   WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
-                   WHEN nd.active_plan_trial IS NOT NULL THEN nd.plan_trial_end_date::DATE
-                   WHEN EXISTS(SELECT 1 FROM licensing_custom_subs WHERE user_id = nd.owner_id)
-                       THEN (SELECT end_date FROM licensing_custom_subs WHERE user_id = nd.owner_id LIMIT 1)::DATE
-                   WHEN EXISTS(SELECT 1 FROM licensing_user_subscriptions WHERE user_id = nd.owner_id AND active IS TRUE)
-                       THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day'
-                             FROM licensing_user_subscriptions
-                             WHERE user_id = nd.owner_id AND active IS TRUE
-                             LIMIT 1)::DATE
-                   ELSE NULL
-               END AS valid_till_date,
-               CASE
-                   WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
-                   ELSE TRUE
-               END AS setup_completed,
-               is_owner(nd.id, nd.active_team) AS owner,
-               is_admin(nd.id, nd.active_team) AS is_admin
-        FROM notification_data nd
-        CROSS JOIN alerts_data ad
-        LEFT JOIN timezones tz ON tz.id = nd.timezone
-        LEFT JOIN sys_license_types slt ON slt.id = nd.license_type_id
-        LEFT JOIN team_members tm ON (tm.user_id = nd.id AND tm.team_id = nd.team_id AND tm.active IS TRUE)
-    )
-    SELECT ROW_TO_JSON(complete_user_data.*) INTO _result FROM complete_user_data;
+    WITH user_team_data AS (SELECT u.id,
+                                   u.name,
+                                   u.email,
+                                   u.timezone_id                                                 AS timezone,
+                                   u.avatar_url,
+                                   u.user_no,
+                                   u.socket_id,
+                                   u.created_at                                                  AS joined_date,
+                                   u.updated_at                                                  AS last_updated,
+                                   u.setup_completed                                             AS my_setup_completed,
+                                   u.mobile_app_banner_dismissed,
+                                   (is_null_or_empty(u.google_id) IS FALSE)                      AS is_google,
+                                   COALESCE(u.active_team,
+                                            (SELECT id FROM teams WHERE user_id = u.id LIMIT 1)) AS team_id,
+                                   u.active_team,
+                                   u.language
+                            FROM users u
+                            WHERE u.id = _id),
+         team_org_data AS (SELECT utd.*,
+                                  t.name    AS team_name,
+                                  t.user_id AS owner_id,
+                                  o.subscription_status,
+                                  o.license_type_id,
+                                  o.trial_expire_date,
+                                  o.id      AS organization_id,
+                                  o.business_plan_override,
+                                  o.team_member_limit_override
+                           FROM user_team_data utd
+                                    INNER JOIN teams t ON t.id = utd.team_id
+                                    LEFT JOIN organizations o ON o.user_id = t.user_id),
+         -- AppSumo lifetime-deal entitlement lookup (licensing_coupon_codes) is a private,
+         -- unpublished feature — see database/pg-migrations-private/. This CTE always
+         -- resolves to "not an AppSumo user", which is exactly correct for every account
+         -- in the public schema (there is no licensing_coupon_codes table here). The
+         -- private build overlays this function with the real query via CREATE OR REPLACE.
+         appsumo_data AS (SELECT tod.owner_id,
+                                 FALSE AS is_ltd,
+                                 0     AS redeemed_codes_count,
+                                 FALSE AS appsumo_business_eligible
+                          FROM team_org_data tod),
+         plan_trial_data AS (SELECT pt.id                                                            AS trial_id,
+                                    pt.plan_tier_id,
+                                    pt.trial_end_date                                                AS plan_trial_end_date,
+                                    pt.is_active,
+                                    lpt.tier_name                                                    AS active_plan_trial,
+                                    lpt.display_name                                                 AS trial_plan_display_name,
+                                    GREATEST(0,
+                                             EXTRACT(DAY FROM (pt.trial_end_date - NOW()))::INTEGER) AS trial_days_remaining
+                             FROM team_org_data tod
+                                      LEFT JOIN appsumo_data ad ON TRUE
+                                      LEFT JOIN licensing_plan_trials pt
+                                                ON pt.user_id = tod.owner_id
+                                                    AND pt.organization_id = tod.organization_id
+                                                    AND pt.is_active = TRUE
+                                                    AND pt.trial_end_date > NOW()
+                                      LEFT JOIN licensing_plan_tiers lpt ON lpt.id = pt.plan_tier_id
+                             WHERE pt.id IS NULL
+                                OR NOT (
+                                 ad.is_ltd = TRUE
+                                     AND COALESCE(ad.redeemed_codes_count, 0) < 5
+                                     AND lpt.tier_name = 'BUSINESS_LARGE'
+                                 )
+                             ORDER BY pt.trial_end_date DESC
+                             LIMIT 1),
+         notification_data AS (SELECT tod.*,
+                                      ptd.active_plan_trial,
+                                      ptd.plan_trial_end_date,
+                                      ptd.trial_days_remaining,
+                                      ptd.trial_plan_display_name,
+                                      ad.redeemed_codes_count,
+                                      (ad.is_ltd AND ad.appsumo_business_eligible)   AS appsumo_business_eligible,
+                                      COALESCE(ns.email_notifications_enabled, TRUE) AS email_notifications_enabled
+                               FROM team_org_data tod
+                                        LEFT JOIN plan_trial_data ptd ON TRUE
+                                        LEFT JOIN appsumo_data ad ON TRUE
+                                        LEFT JOIN notification_settings ns
+                                                  ON (ns.user_id = tod.id AND ns.team_id = tod.team_id)),
+         alerts_data AS (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(alert_rec))), '[]'::JSON) AS alerts
+                         FROM (SELECT description, type
+                               FROM worklenz_alerts
+                               WHERE active IS TRUE) alert_rec),
+         complete_user_data AS (SELECT nd.*,
+                                       tz.name                                                             AS timezone_name,
+                                       (SELECT r.name FROM roles r WHERE r.id = tm.role_id)                AS role_name,
+                                       CASE
+                                           WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'BUSINESS_TRIAL'
+                                           WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'ENTERPRISE_TRIAL'
+                                           WHEN nd.active_plan_trial IS NOT NULL THEN 'PLAN_TRIAL'
+                                           ELSE slt.key
+                                           END                                                             AS subscription_type,
+                                       CASE
+                                           WHEN nd.active_plan_trial = 'BUSINESS_LARGE' THEN 'business'
+                                           WHEN nd.active_plan_trial = 'ENTERPRISE' THEN 'enterprise'
+                                           WHEN (nd.appsumo_business_eligible = TRUE) THEN 'Business Plan'
+                                           WHEN EXISTS(SELECT 1
+                                                       FROM licensing_custom_subs lcs
+                                                       WHERE lcs.user_id = nd.owner_id
+                                                         AND lcs.status IN ('active', 'pending'))
+                                               THEN (SELECT lpp.display_name
+                                                     FROM licensing_custom_subs lcs
+                                                              JOIN licensing_custom_plan_pricing lpp ON lpp.id = lcs.plan_tier_id
+                                                     WHERE lcs.user_id = nd.owner_id
+                                                       AND lcs.status IN ('active', 'pending')
+                                                     ORDER BY lcs.created_at DESC
+                                                     LIMIT 1)
+                                           ELSE (SELECT name
+                                                 FROM licensing_pricing_plans lpp
+                                                          LEFT JOIN licensing_user_subscriptions lus
+                                                                    ON lus.subscription_plan_id = lpp.paddle_id
+                                                 WHERE lus.user_id = nd.owner_id
+                                                   AND lus.active IS TRUE
+                                                 LIMIT 1)
+                                           END                                                             AS plan_name,
+                                       tm.id                                                               AS team_member_id,
+                                       ad.alerts,
+                                       nd.active_plan_trial,
+                                       nd.plan_trial_end_date,
+                                       nd.trial_days_remaining,
+                                       nd.trial_plan_display_name,
+                                       CASE WHEN nd.active_plan_trial IS NOT NULL THEN TRUE ELSE FALSE END AS is_plan_trial,
+                                       CASE
+                                           WHEN nd.subscription_status = 'trialing' THEN nd.trial_expire_date::DATE
+                                           WHEN nd.active_plan_trial IS NOT NULL THEN nd.plan_trial_end_date::DATE
+                                           WHEN EXISTS(SELECT 1
+                                                       FROM licensing_custom_subs
+                                                       WHERE user_id = nd.owner_id
+                                                         AND status IN ('active', 'pending'))
+                                               THEN (SELECT COALESCE(end_date, next_billing_date)
+                                                     FROM licensing_custom_subs
+                                                     WHERE user_id = nd.owner_id
+                                                       AND status IN ('active', 'pending')
+                                                     ORDER BY created_at DESC
+                                                     LIMIT 1)::DATE
+                                           WHEN EXISTS(SELECT 1
+                                                       FROM licensing_user_subscriptions
+                                                       WHERE user_id = nd.owner_id
+                                                         AND active IS TRUE)
+                                               THEN (SELECT (next_bill_date)::DATE - INTERVAL '1 day'
+                                                     FROM licensing_user_subscriptions
+                                                     WHERE user_id = nd.owner_id
+                                                       AND active IS TRUE
+                                                     LIMIT 1)::DATE
+                                           ELSE NULL
+                                           END                                                             AS valid_till_date,
+                                       CASE
+                                           WHEN is_owner(nd.id, nd.active_team) THEN nd.my_setup_completed
+                                           ELSE TRUE
+                                           END                                                             AS setup_completed,
+                                       is_owner(nd.id, nd.active_team)                                     AS owner,
+                                       is_admin(nd.id, nd.active_team)                                     AS is_admin
+                                FROM notification_data nd
+                                         CROSS JOIN alerts_data ad
+                                         LEFT JOIN timezones tz ON tz.id = nd.timezone
+                                         LEFT JOIN sys_license_types slt ON slt.id = nd.license_type_id
+                                         LEFT JOIN team_members tm
+                                                   ON (tm.user_id = nd.id AND tm.team_id = nd.team_id AND tm.active IS TRUE))
+    SELECT ROW_TO_JSON(complete_user_data.*)
+    INTO _result
+    FROM complete_user_data;
 
-    INSERT INTO notification_settings (user_id, team_id, email_notifications_enabled, popup_notifications_enabled, show_unread_items_count)
+    INSERT INTO notification_settings (user_id, team_id, email_notifications_enabled, popup_notifications_enabled,
+                                       show_unread_items_count)
     SELECT _id,
            COALESCE((SELECT active_team FROM users WHERE id = _id),
                     (SELECT id FROM teams WHERE user_id = _id LIMIT 1)),
-           TRUE, TRUE, TRUE
+           TRUE,
+           TRUE,
+           TRUE
     ON CONFLICT (user_id, team_id) DO NOTHING;
 
     RETURN _result;
 END
 $$;
 
-COMMENT ON FUNCTION deserialize_user(uuid) IS 'Returns user session data including plan trial information and manual override flags for feature access control';
+comment on function deserialize_user(uuid) is 'Returns user session data including plan trial information, override flags, AppSumo LTD eligibility fields, and LKR/DirectPay subscription details';
 
 CREATE OR REPLACE FUNCTION get_activity_logs_by_task(_task_id uuid) RETURNS json
     LANGUAGE plpgsql
@@ -3699,6 +3785,27 @@ DECLARE
     _total_tasks      FLOAT = 0;
     _ratio            FLOAT = 0;
 BEGIN
+    -- Count total sub-tasks
+    SELECT COUNT(*) FROM tasks WHERE parent_task_id = _task_id AND archived IS FALSE INTO _sub_tasks_count;
+
+    -- If no sub-tasks, this task's ratio is based on its own done status (leaf task)
+    IF _sub_tasks_count = 0 THEN
+        SELECT (CASE
+                    WHEN EXISTS(SELECT 1
+                                FROM tasks_with_status_view
+                                WHERE tasks_with_status_view.task_id = _task_id
+                                  AND is_done IS TRUE) THEN 100
+                    ELSE 0 END)
+        INTO _ratio;
+
+        RETURN JSON_BUILD_OBJECT(
+            'ratio', _ratio,
+            'total_completed', 0,
+            'total_tasks', 0
+        );
+    END IF;
+
+    -- Check if parent task is marked as done
     SELECT (CASE
                 WHEN EXISTS(SELECT 1
                             FROM tasks_with_status_view
@@ -3706,18 +3813,25 @@ BEGIN
                               AND is_done IS TRUE) THEN 1
                 ELSE 0 END)
     INTO _parent_task_done;
-    SELECT COUNT(*) FROM tasks WHERE parent_task_id = _task_id AND archived IS FALSE INTO _sub_tasks_count;
-
+    
+    -- Count sub-tasks marked as done
     SELECT COUNT(*)
     FROM tasks_with_status_view
     WHERE parent_task_id = _task_id
       AND is_done IS TRUE
     INTO _sub_tasks_done;
 
+    -- Calculate totals. Include the parent in the denominator so the backend ratio matches
+    -- the task's actual completion set when the parent itself is considered complete.
     _total_completed = _parent_task_done + _sub_tasks_done;
---     _total_tasks = _sub_tasks_count + 1; -- +1 for the parent task
-    _total_tasks = _sub_tasks_count; -- +1 for the parent task
-    _ratio = (_total_completed / _total_tasks) * 100;
+    _total_tasks = _sub_tasks_count + 1; -- +1 for the parent task
+    
+    -- Calculate ratio with safety check
+    IF _total_tasks > 0 THEN
+        _ratio = (_total_completed / _total_tasks) * 100;
+    ELSE
+        _ratio = 0;
+    END IF;
 
     RETURN JSON_BUILD_OBJECT(
         'ratio', _ratio,

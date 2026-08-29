@@ -1,4 +1,6 @@
 {
+  "connect": "Lidhu",
+  "comingSoon": "Në dispozicion së shpejti",
   "availableSoon": "Në dispozicion së shpejti",
   "slack": {
     "title": "Slack",
@@ -19,5 +21,7 @@
   "googleCalendar": {
     "title": "Google Calendar",
     "description": "Sinkronizoni detyrat dhe afatet tuaja me Google Calendar për të menaxhuar orarin tuaj, për të vendosur kujtues dhe për të mos humbur asnjëherë pikat kryesore të rëndësishme të projektit."
-  }
+  },
+  "connect": "Lidhu",
+  "comingSoon": "Së shpejti"
 }

@@ -31,6 +31,7 @@
   "lowText": "Niedrig",
   "mediumText": "Mittel",
   "highText": "Hoch",
+  "criticalText": "Kritisch",
 
   "billableButton": "Abrechenbar",
   "billableText": "Abrechenbar",

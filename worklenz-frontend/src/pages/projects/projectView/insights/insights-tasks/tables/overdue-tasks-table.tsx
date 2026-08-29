@@ -6,6 +6,7 @@ import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
+import { useTranslation } from 'react-i18next';
 
 const OverdueTasksTable = ({
   projectId,
@@ -17,6 +18,7 @@ const OverdueTasksTable = ({
   const [overdueTaskList, setOverdueTaskList] = useState<IInsightTasks[]>([]);
   const [loading, setLoading] = useState(true);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const getOverdueTasks = async () => {
     setLoading(true);
@@ -40,14 +42,12 @@ const OverdueTasksTable = ({
   const columns: TableProps['columns'] = [
     {
       key: 'name',
-      title: 'Name',
-      // render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      title: t('common.name', { defaultValue: 'Name' }),
       render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
-      title: 'Status',
-      // render: (record: IInsightTasks) => (
+      title: t('common.status', { defaultValue: 'Status' }),
       render: (_: any, record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -74,18 +74,16 @@ const OverdueTasksTable = ({
     },
     {
       key: 'dueDate',
-      title: 'End Date',
-      // render: (record: IInsightTasks) => (
+      title: t('common.dueDate', { defaultValue: 'End Date' }),
       render: (_: any, record: IInsightTasks) => (
         <Typography.Text>
-          {record.end_date ? simpleDateFormat(record.end_date) : 'N/A'}
+          {record.end_date ? simpleDateFormat(record.end_date) : t('common.na', { defaultValue: 'N/A' })}
         </Typography.Text>
       ),
     },
     {
       key: 'daysOverdue',
-      title: 'Days overdue',
-      // render: (record: IInsightTasks) => <Typography.Text>{record.days_overdue}</Typography.Text>,
+      title: t('tasksTable.daysOverdue', { defaultValue: 'Days overdue' }),
       render: (_: any, record: IInsightTasks) => <Typography.Text>{record.days_overdue}</Typography.Text>,
     },
   ];

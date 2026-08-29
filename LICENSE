@@ -1,3 +1,10 @@
+This license applies to all software in this repository EXCEPT for:
+  - the contents of any `src/ee/` directory (e.g. worklenz-backend/src/ee/,
+    worklenz-frontend/src/ee/), and
+  - the worklenz-client-portal/ package in its entirety,
+which are licensed separately under the Worklenz Commercial License found
+in LICENSE.md within each of those locations.
+
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 

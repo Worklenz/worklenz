@@ -156,4 +156,51 @@ export const projectMembersApiService = {
     );
     return response.data;
   },
+
+  // Guest members management
+  getGuestMembers: async (
+    current: number,
+    pageSize: number,
+    field: string,
+    order: string,
+    search?: string
+  ): Promise<IServerResponse<any>> => {
+    const params = new URLSearchParams({
+      current: current.toString(),
+      page_size: pageSize.toString(),
+      field,
+      order,
+    });
+
+    if (search) {
+      params.append('search', search);
+    }
+
+    const response = await apiClient.get<IServerResponse<any>>(
+      `${rootUrl}/guests?${params}`,
+      { headers: { 'X-Silent-Request': '1' } }
+    );
+    return response.data;
+  },
+
+  toggleGuestStatus: async (
+    id: string,
+    active: boolean,
+    email: string
+  ): Promise<IServerResponse<any>> => {
+    const response = await apiClient.patch<IServerResponse<any>>(
+      `${rootUrl}/guests/deactivate/${id}`,
+      { active, email }
+    );
+    return response.data;
+  },
+
+  deleteGuestMember: async (
+    id: string
+  ): Promise<IServerResponse<any>> => {
+    const response = await apiClient.delete<IServerResponse<any>>(
+      `${rootUrl}/guests/${id}`
+    );
+    return response.data;
+  },
 };

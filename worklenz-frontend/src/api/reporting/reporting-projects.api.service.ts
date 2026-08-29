@@ -99,6 +99,8 @@ export const reportingProjectsApiService = {
     archived?: boolean;
     index?: number;
     size?: number;
+    clients?: string;
+    priorities?: string;
   }): Promise<
     IServerResponse<{
       groups: Array<{

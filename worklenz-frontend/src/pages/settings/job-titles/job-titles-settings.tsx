@@ -7,7 +7,7 @@ import {
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import { colors } from '@/styles/colors';
 import { IJobTitle, IJobTitlesViewModel } from '@/types/job.types';
 import { deleteJobTitle } from '@features/settings/job/jobSlice';
@@ -44,7 +44,7 @@ const JobTitlesSettings = () => {
   const { t } = useTranslation('settings/job-titles');
   const dispatch = useAppDispatch();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  useDocumentTitle('Manage Job Titles');
+  useDocumentTitle(t('pageTitle', { defaultValue: 'Manage Job Titles' }));
 
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [showDrawer, setShowDrawer] = useState(false);
@@ -56,7 +56,7 @@ const JobTitlesSettings = () => {
     field: 'name',
     order: 'desc',
     total: 0,
-    pageSizeOptions: ['5', '10', '15', '20', '50', '100'],
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
     size: 'small',
   });
 
@@ -116,7 +116,7 @@ const JobTitlesSettings = () => {
     () => [
       {
         key: 'jobTitle',
-        title: t('nameColumn'),
+         title: t('nameColumn', { defaultValue: 'Job Title' }),
         sorter: true,
         onCell: record => ({
           onClick: () => handleEditClick(record.id),
@@ -128,7 +128,8 @@ const JobTitlesSettings = () => {
         width: 80,
         render: (record: IJobTitle) => (
           <Flex gap={8} style={{ padding: 0 }}>
-            <Tooltip title="Edit">
+            <Tooltip title={t('editTooltip', { defaultValue: 'Edit' })}>
+
               <Button
                 size="small"
                 icon={<EditOutlined />}
@@ -136,14 +137,14 @@ const JobTitlesSettings = () => {
               />
             </Tooltip>
 
-            <Popconfirm
-              title={t('deleteConfirmationTitle')}
-              icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-              okText={t('deleteConfirmationOk')}
-              cancelText={t('deleteConfirmationCancel')}
-              onConfirm={() => record.id && deleteJobTitle(record.id)}
-            >
-              <Tooltip title="Delete">
+             <Popconfirm
+               title={t('deleteConfirmationTitle', { defaultValue: 'Are you sure?' })}
+               icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+               okText={t('deleteConfirmationOk', { defaultValue: 'Yes' })}
+               cancelText={t('deleteConfirmationCancel', { defaultValue: 'Cancel' })}
+               onConfirm={() => record.id && deleteJobTitle(record.id)}
+             >
+               <Tooltip title={t('deleteTooltip', { defaultValue: 'Delete' })}>
                 <Button shape="default" icon={<DeleteOutlined />} size="small" />
               </Tooltip>
             </Popconfirm>
@@ -173,15 +174,15 @@ const JobTitlesSettings = () => {
             <Input
               value={searchQuery}
               onChange={e => setSearchQuery(e.currentTarget.value)}
-              placeholder={t('search', { defaultValue: 'Search' })}
+              placeholder={t('searchPlaceholder', { defaultValue: 'Search by name' })}
               style={{ maxWidth: 232 }}
               suffix={<SearchOutlined />}
             />
             <Button type="primary" onClick={handleCreateClick}>
-              {t('createJobTitleButton')}
+              {t('createJobTitleButton', { defaultValue: 'Create Job Title' })}
             </Button>
 
-            <Tooltip title={t('pinTooltip')} trigger={'hover'}>
+            <Tooltip title={t('pinTooltip', { defaultValue: 'Pin to navbar' })} trigger={'hover'}>
               <PinRouteToNavbarButton
                 name="jobTitles"
                 path="/worklenz/settings/job-titles"
@@ -197,7 +198,17 @@ const JobTitlesSettings = () => {
         size="small"
         columns={columns}
         rowKey={(record: IJobTitle) => record.id!}
-        pagination={pagination}
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          showTotal: (total, range) =>
+            t('paginationTotal', {
+              start: range[0],
+              end: range[1],
+              total,
+              defaultValue: `${range[0]}-${range[1]} of ${total} items`,
+            }),
+        }}
         onChange={handleTableChange}
       />
       <JobTitleDrawer

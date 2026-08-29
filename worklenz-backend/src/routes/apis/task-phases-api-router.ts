@@ -14,6 +14,7 @@ taskPhasesApiRouter.get("/", safeControllerFunction(TaskPhasesController.get));
 taskPhasesApiRouter.put("/update-sort-order", projectManagerValidator, safeControllerFunction(TaskPhasesController.updateSortOrder));
 taskPhasesApiRouter.put("/label/:id", projectManagerValidator, taskPhaseNameValidator, safeControllerFunction(TaskPhasesController.updateLabel));
 taskPhasesApiRouter.put("/change-color/:id", projectManagerValidator, safeControllerFunction(TaskPhasesController.updateColor));
+taskPhasesApiRouter.patch("/:id/default-assignee", projectManagerValidator, safeControllerFunction(TaskPhasesController.updateDefaultAssignee));
 taskPhasesApiRouter.put("/:id", projectManagerValidator, taskPhaseNameValidator, schemaValidator(taskPhaseCreateSchema), safeControllerFunction(TaskPhasesController.update));
 taskPhasesApiRouter.delete("/:id", projectManagerValidator, safeControllerFunction(TaskPhasesController.deleteById));
 

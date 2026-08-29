@@ -1,5 +1,5 @@
 import { rateCardApiService } from '@/api/settings/rate-cards/rate-cards.api.service';
-import { RatecardType } from '@/types/project/ratecard.types';
+import { RatecardType } from '@/ee/types/project/ratecard.types';
 import logger from '@/utils/errorLogger';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 

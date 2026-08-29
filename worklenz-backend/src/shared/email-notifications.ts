@@ -237,3 +237,30 @@ export async function sendClientPortalRequestCommentNotification(toEmail: string
   }
   return null;
 }
+
+export async function sendDailyTaskReminder(toEmail: string, data: object) {
+  try {
+    const template = FileConstants.getEmailTemplate(IEmailTemplateType.DailyTaskReminder) as compileTemplate;
+    if (!template) { log_error("Daily task reminder template not found"); return null; }
+    return await sendEmail({ subject: `Your tasks for today`, to: [toEmail], html: template(data) });
+  } catch (e) { log_error(e); }
+  return null;
+}
+
+export async function sendWeeklyStartSummary(toEmail: string, data: object) {
+  try {
+    const template = FileConstants.getEmailTemplate(IEmailTemplateType.WeeklyStartSummary) as compileTemplate;
+    if (!template) { log_error("Weekly start summary template not found"); return null; }
+    return await sendEmail({ subject: `Your week ahead`, to: [toEmail], html: template(data) });
+  } catch (e) { log_error(e); }
+  return null;
+}
+
+export async function sendWeeklyEndSummary(toEmail: string, data: object) {
+  try {
+    const template = FileConstants.getEmailTemplate(IEmailTemplateType.WeeklyEndSummary) as compileTemplate;
+    if (!template) { log_error("Weekly end summary template not found"); return null; }
+    return await sendEmail({ subject: `Your week in review`, to: [toEmail], html: template(data) });
+  } catch (e) { log_error(e); }
+  return null;
+}

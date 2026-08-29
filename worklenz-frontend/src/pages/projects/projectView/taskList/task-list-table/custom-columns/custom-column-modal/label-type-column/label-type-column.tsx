@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { nanoid } from 'nanoid';
+import { useTranslation } from 'react-i18next';
 import { PhaseColorCodes } from '../../../../../../../../shared/constants';
 import { Button, Flex, Input, Select, Tag, Typography } from '@/shared/antd-imports';
 import { CloseCircleOutlined, HolderOutlined } from '@/shared/antd-imports';
@@ -14,6 +15,7 @@ export type LabelType = {
 };
 
 const LabelTypeColumn = () => {
+  const { t } = useTranslation('task-list-table');
   const dispatch = useAppDispatch();
   const [labels, setLabels] = useState<LabelType[]>([
     {
@@ -98,37 +100,39 @@ const LabelTypeColumn = () => {
   };
 
   return (
-    <div style={{ maxWidth: '100%', minHeight: 180 }}>
-      <Typography.Text>Labels</Typography.Text>
+    <div style={{ maxWidth: '100%' }}>
+      <Typography.Text style={{ fontSize: 13, fontWeight: 500, display: 'block', marginBottom: 8 }}>
+        {t('customColumns.fieldTypeForms.labels')}
+      </Typography.Text>
       <Flex vertical gap={8}>
-        <Flex vertical gap={8} style={{ maxHeight: 120, overflow: 'auto' }}>
+        <Flex vertical gap={8} style={{ maxHeight: 160, overflow: 'auto' }}>
           {labels.map(label => (
-            <Flex gap={8} key={label.label_id}>
-              <HolderOutlined style={{ fontSize: 18 }} />
+            <Flex gap={8} align="center" key={label.label_id}>
+              <HolderOutlined style={{ fontSize: 14, color: 'rgba(0,0,0,0.35)' }} />
               <Input
                 value={label.label_name}
                 onChange={e => handleUpdateLabelName(label.label_id, e.target.value)}
-                style={{ width: 'fit-content', maxWidth: 400 }}
+                size="small"
+                style={{ maxWidth: 300 }}
               />
-              <Flex gap={8} align="center">
-                <Select
-                  options={phaseOptionColorList}
-                  value={label.label_color}
-                  onChange={value => handleUpdateLabelColor(label.label_id, value)}
-                  style={{ width: 48 }}
-                  suffixIcon={null}
-                />
-                <CloseCircleOutlined
-                  onClick={() => handleRemoveLabel(label.label_id)}
-                  style={{ cursor: 'pointer' }}
-                />
-              </Flex>
+              <Select
+                options={phaseOptionColorList}
+                value={label.label_color}
+                onChange={value => handleUpdateLabelColor(label.label_id, value)}
+                size="small"
+                style={{ width: 48 }}
+                suffixIcon={null}
+              />
+              <CloseCircleOutlined
+                onClick={() => handleRemoveLabel(label.label_id)}
+                style={{ cursor: 'pointer' }}
+              />
             </Flex>
           ))}
         </Flex>
 
-        <Button type="link" onClick={handleAddLabel} style={{ width: 'fit-content', padding: 0 }}>
-          + Add a label
+        <Button type="link" size="small" onClick={handleAddLabel} style={{ width: 'fit-content', padding: 0 }}>
+          {t('customColumns.fieldTypeForms.addLabel')}
         </Button>
       </Flex>
     </div>

@@ -1,0 +1,15 @@
+{
+  "pageTitle": "Organization Currency",
+  "pageSubtitle": "Set the base currency for your organization. Finance totals will be converted to this currency using live exchange rates.",
+  "save": "Save",
+  "saveChanges": "Save Changes",
+  "adminOnly": "Only organization owners and admins can change this setting.",
+  "successMessage": "Organization base currency set to {{currency}}",
+  "errorMessage": "Failed to save currency setting",
+  "selectAriaLabel": "Organization base currency",
+  "ratesCardTitle": "Live Exchange Rates - 1 {{currency}} =",
+  "ratesUpdated": "Updated: {{time}}",
+  "refreshRatesTooltip": "Refresh rates",
+  "refreshRatesAriaLabel": "Refresh exchange rates",
+  "noRateData": "No rate data available."
+}

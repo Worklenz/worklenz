@@ -1,9 +1,15 @@
 {
+  "pageTitle": "Task Templates",
   "nameColumn": "Name",
   "createdColumn": "Created",
   "editToolTip": "Edit",
   "deleteToolTip": "Delete",
   "confirmText": "Are you sure?",
   "okText": "Yes",
-  "cancelText": "Cancel"
+  "cancelText": "Cancel",
+  "noTemplatesYet": "No task templates yet",
+  "step1": "Navigate to a project and open it.",
+  "step2": "Select tasks using the Bulk Edit option.",
+  "step3": "Click More Options in the bulk action bar and choose Create Task Template.",
+  "totalItems": "Total Items"
 }

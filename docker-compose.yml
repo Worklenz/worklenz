@@ -32,6 +32,21 @@ services:
     networks:
       - worklenz
 
+  client-portal:
+    build:
+      context: ./worklenz-client-portal
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${CLIENT_PORTAL_API_BASE_URL:-http://backend:3000/api/client-portal}
+    container_name: worklenz_client_portal
+    ports:
+      - "5174:5174"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - worklenz
+
   minio:
     image: minio/minio:latest
     container_name: worklenz_minio

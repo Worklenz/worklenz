@@ -6,7 +6,7 @@ import Flex from 'antd/es/flex';
 import GreetingWithTime from './greeting-with-time';
 import TasksList from '@/pages/home/task-list/tasks-list';
 import TodoList from '@/pages/home/todo-list/todo-list';
-import { ProjectDrawer } from '@/components/projects/project-drawer/project-drawer';
+import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
 import CreateProjectButton from '@/components/projects/project-create-button/project-create-button';
 import RecentAndFavouriteProjectList from '@/pages/home/recent-and-favourite-project-list/recent-and-favourite-project-list';
 
@@ -99,32 +99,40 @@ const HomePage = memo(() => {
 
   const MainContent = useMemo(() => {
     return isDesktop ? (
-      <Flex gap={24} align="flex-start" className="w-full mt-12">
-        <Flex style={desktopFlexStyle}>
-          <TasksList />
+      <Flex vertical gap={24} align="stretch" style={{ minHeight: 0, height: '100%', width: '100%' }}>
+        <Flex gap={24} align="flex-start" style={{ minHeight: 0, flex: 1, width: '100%' }}>
+          <Flex style={{ ...desktopFlexStyle, width: '100%', minHeight: 0, flex: 1 }}>
+            <TasksList />
+          </Flex>
+          <Flex vertical gap={24} style={{ ...sidebarFlexStyle, minHeight: 0, flex: 1 }}>
+            <RecentAndFavouriteProjectList />
+          </Flex>
         </Flex>
-        <Flex vertical gap={24} style={sidebarFlexStyle}>
+        <div style={{ flex: 1, minHeight: 0, height: '100%' }}>
           <TodoList />
-          <RecentAndFavouriteProjectList />
-        </Flex>
+        </div>
       </Flex>
     ) : (
-      <Flex vertical gap={24} className="mt-6">
+      <Flex vertical gap={24} className="mt-6" style={{ flex: 1, height: '100%' }}>
         <TasksList />
-        <TodoList />
+        <div style={{ flex: 1, minHeight: 0, height: '100%' }}>
+          <TodoList />
+        </div>
         <RecentAndFavouriteProjectList />
       </Flex>
     );
   }, [isDesktop, desktopFlexStyle, sidebarFlexStyle]);
 
   return (
-    <div className="my-24 min-h-[90vh]">
-      <Col className="flex flex-col gap-6">
+    <div className="min-h-screen flex flex-col">
+      <Col className="flex flex-col gap-6 pt-6 pb-6">
         <GreetingWithTime />
         {CreateProjectButtonComponent}
       </Col>
 
-      {MainContent}
+      <div className="flex-1">
+        {MainContent}
+      </div>
 
       {/* Use Suspense for lazy-loaded components with error boundary */}
       <Suspense fallback={<div>Loading...</div>}>
@@ -138,9 +146,9 @@ const HomePage = memo(() => {
       </Suspense>
 
       {createPortal(
-        <ProjectDrawer onClose={handleProjectDrawerClose} />,
+        <ProjectSettingsModal onClose={handleProjectDrawerClose} />,
         document.body,
-        'project-drawer'
+        'project-settings-modal'
       )}
     </div>
   );

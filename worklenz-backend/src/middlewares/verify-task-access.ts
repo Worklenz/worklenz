@@ -4,6 +4,7 @@ import {IWorkLenzResponse} from "../interfaces/worklenz-response";
 import {ServerResponse} from "../models/server-response";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
+import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
 
 /**
  * Middleware to verify that the authenticated user has access to a specific task.
@@ -61,6 +62,49 @@ export default function verifyTaskAccess(
       // Task not found or user doesn't have access
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this task")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying task access")
+      );
+    }
+  };
+}
+
+export function verifyNonGuestTaskAccess(
+  location: 'params' | 'body' | 'query' = 'params',
+  fieldName: string = 'id'
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+    const taskId = req[location]?.[fieldName];
+
+    if (!taskId) {
+      return res.status(400).send(new ServerResponse(false, null, "Task ID is required"));
+    }
+
+    if (!userId || !teamId) {
+      return res.status(401).send(new ServerResponse(false, null, "Authentication required"));
+    }
+
+    try {
+      const q = `
+        SELECT 1
+        FROM tasks t
+        INNER JOIN projects p ON t.project_id = p.id
+        ${NON_GUEST_ACCESS_JOIN('$2')}
+        WHERE t.id = $1
+          AND ${NON_GUEST_ACCESS_PREDICATE}
+        LIMIT 1;
+      `;
+      const result = await db.query(q, [taskId, userId]);
+
+      if (result.rowCount && result.rowCount > 0) return next();
+
+      return res.status(403).send(
+        new ServerResponse(false, null, "Guests cannot edit custom column values")
       );
     } catch (error) {
       log_error(error);
@@ -363,6 +407,66 @@ export function verifyTaskAccessViaAttachment(
         return next();
       }
       
+      return res.status(403).send(
+        new ServerResponse(false, null, "You do not have permission to access this attachment")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying attachment access")
+      );
+    }
+  };
+}
+
+/**
+ * Same as verifyTaskAccessViaAttachment, but additionally rejects guests
+ * (project_members.access_level = GUEST) — for endpoints like attachment
+ * deletion that guests must not be able to perform.
+ *
+ * @param location - Where to find the attachment ID ('params', 'body', or 'query')
+ * @param fieldName - The name of the field containing the attachment ID
+ */
+export function verifyNonGuestTaskAccessViaAttachment(
+  location: 'params' | 'body' | 'query' = 'params',
+  fieldName: string = 'id'
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    const attachmentId = req[location]?.[fieldName];
+
+    if (!attachmentId) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Attachment ID is required")
+      );
+    }
+
+    if (!userId || !teamId) {
+      return res.status(401).send(
+        new ServerResponse(false, null, "Authentication required")
+      );
+    }
+
+    try {
+      const q = `
+        SELECT 1
+        FROM task_attachments ta
+        INNER JOIN tasks t ON ta.task_id = t.id
+        INNER JOIN projects p ON t.project_id = p.id
+        ${NON_GUEST_ACCESS_JOIN('$2')}
+        WHERE ta.id = $1
+          AND ${NON_GUEST_ACCESS_PREDICATE}
+        LIMIT 1;
+      `;
+
+      const result = await db.query(q, [attachmentId, userId]);
+
+      if (result.rowCount && result.rowCount > 0) {
+        return next();
+      }
+
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this attachment")
       );

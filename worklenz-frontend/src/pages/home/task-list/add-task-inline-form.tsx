@@ -33,6 +33,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   const [isAlertShowing, setIsAlertShowing] = useState(false);
   const [isDueDateFieldShowing, setIsDueDateFieldShowing] = useState(false);
   const [isProjectFieldShowing, setIsProjectFieldShowing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form] = Form.useForm();
   const currentSession = useAuthService().getCurrentSession();
   const { socket } = useSocket();
@@ -42,6 +43,7 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   const { refetch } = useGetMyTasksQuery(homeTasksConfig);
 
   const taskInputRef = useRef<InputRef | null>(null);
+  const isSubmittingRef = useRef(false);
 
   const dueDateOptions = [
     {
@@ -106,6 +108,14 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
   ];
 
   const handleTaskSubmit = (values: { name: string; project: string; dueDate: string }) => {
+    // Prevent duplicate submissions
+    if (isSubmittingRef.current) {
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+
     const endDate = calendarView
       ? homeTasksConfig.selected_date?.format('YYYY-MM-DD')
       : calculateEndDate(values.dueDate);
@@ -128,7 +138,13 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
     };
 
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(newTask));
-    socket?.on(SocketEvents.QUICK_TASK.toString(), (task: IMyTask) => {
+    socket?.once(SocketEvents.QUICK_TASK.toString(), (task: IMyTask & { error?: boolean; message?: string }) => {
+      if (task?.error) {
+        isSubmittingRef.current = false;
+        setIsSubmitting(false);
+        return;
+      }
+
       if (task) {
         const taskBody = {
           team_member_id: currentSession?.team_member_id,
@@ -142,21 +158,23 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
           SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
           (response: ITaskAssigneesUpdateResponse) => {
             refetch();
+
+            setTimeout(() => {
+              if (taskInputRef.current) {
+                taskInputRef.current.focus({
+                  cursor: 'start',
+                });
+              }
+              form.resetFields();
+              setIsDueDateFieldShowing(false);
+              setIsProjectFieldShowing(false);
+              isSubmittingRef.current = false;
+              setIsSubmitting(false);
+            }, 100);
           }
         );
       }
     });
-
-    setTimeout(() => {
-      if (taskInputRef.current) {
-        taskInputRef.current.focus({
-          cursor: 'start',
-        });
-      }
-      form.resetFields();
-      setIsDueDateFieldShowing(false);
-      setIsProjectFieldShowing(false);
-    }, 100);
   };
 
   useEffect(() => {
@@ -170,8 +188,8 @@ const AddTaskInlineForm = ({ t, calendarView }: AddTaskInlineFormProps) => {
       form.setFieldValue('dueDate', dueDateOptions[0]?.value);
     }
     return () => {
-      socket?.off(SocketEvents.QUICK_TASK.toString());
-      socket?.off(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString());
+      // Cleanup flag on unmount
+      isSubmittingRef.current = false;
     };
   }, []);
 

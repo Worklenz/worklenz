@@ -1,4 +1,7 @@
 {
+  "overviewTab": "Përmbledhje",
+  "membersTab": "Anëtarët",
+  "tasksTab": "Detyrat",
   "overview": {
     "title": "Përmbledhje",
     "statusOverview": "Përmbledhje Statusi",
@@ -26,6 +29,29 @@
     "overLoggedTasksTooltip": "Detyrat me kohë të regjistruar mbi kohën e vlerësuar",
     "overdueTasksTooltip": "Detyrat që kanë kaluar afatin e tyre"
   },
+  "projectDeadline": {
+    "title": "Afati i Projektit",
+    "overdueTasksHours": "Detyra të vonuara (orë)",
+    "overdueTasksHoursTooltip": "Detyrat me kohë të regjistruar përtej datës së përfundimit të projektit",
+    "overdueTasks": "Detyra të vonuara",
+    "overdueTasksTooltip": "Detyrat që kanë kaluar datën e përfundimit të projektit"
+  },
+  "priorityChart": {
+    "priorityAxis": "Prioriteti",
+    "taskCountAxis": "Numri i Detyrave",
+    "tasks": "Detyrat",
+    "taskCount": "detyrë",
+    "noPriority": "Pa prioritet",
+    "low": "Ulët",
+    "medium": "Mesatar",
+    "high": "I lartë",
+    "critical": "Kritik"
+  },
+  "memberStats": {
+    "projectMembers": "Anëtarët e Projektit",
+    "assigneesWithOverdueTasks": "Përgjegjësit me detyra të vonuara",
+    "unassignedMembers": "Anëtarë të papërshoqëruar"
+  },
   "common": {
     "seeAll": "Shiko të gjitha",
     "totalLoggedHours": "Orët totale të regjistruara",
@@ -34,8 +60,22 @@
     "incompleteTasks": "Detyrat e papërfunduara",
     "overdueTasks": "Detyrat e vonuara",
     "overdueTasksTooltip": "Detyrat që kanë kaluar afatin e tyre",
-    "totalLoggedHoursTooltip": "Vlerësimi dhe koha e regjistruar për detyrat.",
+    "totalLoggedHoursTooltip": "Vlerësimi dhe koha e regjistruar për detyra.",
     "includeArchivedTasks": "Përfshi Detyrat e Arkivuara",
-    "export": "Eksporto"
+    "export": "Eksporto",
+    "name": "Emri",
+    "status": "Statusi",
+    "dueDate": "Data e afatit",
+    "lastUpdated": "Përditësimi i fundit",
+    "na": "N/U"
+  },
+  "justNow": "Sapo",
+  "tasksTable": {
+    "daysOverdue": "Ditë të vonuara",
+    "completedAt": "Përfunduar më",
+    "members": "Anëtarët",
+    "overLoggedTime": "Kohë e tepërt regjistruar",
+    "completedDate": "Data e përfundimit",
+    "totalAllocation": "Zbatimi total"
   }
 }

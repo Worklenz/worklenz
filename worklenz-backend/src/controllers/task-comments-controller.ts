@@ -6,14 +6,15 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
-import { humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
+import { escapeRegExp, humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
 import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendTaskComment } from "../shared/email-notifications";
 import { getRootDir, uploadBase64, getKey, getTaskAttachmentKey, createPresignedUrlWithClient } from "../shared/s3";
-import { getFreePlanSettings, getUsedStorage } from "../shared/licensing-utils";
+import { getFreePlanSettings, getUsedStorage } from "../ee/shared/paddle-utils";
 import { ExternalNotificationsService } from "../services/external-notifications.service";
+import { syncCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
 
 interface ITaskAssignee {
   team_member_id: string;
@@ -59,7 +60,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const replacedContent = mentionNames.reduce(
       (content, mentionName, index) => {
-        const regex = new RegExp(`@${mentionName}`, "g");
+        const regex = new RegExp(`@${escapeRegExp(mentionName)}`, "g");
         return content.replace(regex, `{${index}}`);
       },
       messageContent
@@ -150,7 +151,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       // Restore mention placeholders for email display (convert [0], [1] to actual names)
       restoredContentForEmail = this.restoreMentionPlaceholders(commentContent, mentions);
       restoredContentForEmail = sanitizeCommentContent(restoredContentForEmail);
-      
+
       commentContent = this.replaceContent(commentContent, mentions);
       commentContent = sanitizeCommentContent(commentContent);
     } else {
@@ -208,8 +209,10 @@ export default class TaskCommentsController extends WorklenzControllerBase {
         socketId: member.socket_id,
         message: commentMessage,
         taskId: req.body.task_id,
-        projectId: response.project_id
+        projectId: response.project_id,
+        commentId: commentId,
       });
+
 
       if (member.email_notifications_enabled)
         await this.sendMail({
@@ -303,6 +306,8 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       log_error("Error sending external notifications for comment:", notifError);
     }
 
+    void syncCommentLinks(response.project_id, task_id, commentId, req.user?.team_id as string, commentContent, req.user?.id);
+
     return res.status(200).send(new ServerResponse(true, commentdata));
   } // ← end of create()
 
@@ -343,22 +348,30 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     // Bump the parent task's updated_at so the "Updated X ago" timestamp reflects the edit
     await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [updatedComment.task_id]);
 
-    // ✅ Update content — check first to avoid ON CONFLICT issues
-    const contentExistsResult = await db.query(
-      `SELECT comment_id FROM task_comment_contents WHERE comment_id = $1;`,
-      [commentId]
+// ✅ Atomic upsert — avoids the race condition where two concurrent
+    // update requests both see "no row exists" and both INSERT, producing
+    // duplicate rows for the same comment_id.
+    await db.query(
+      `INSERT INTO task_comment_contents (index, comment_id, text_content)
+       VALUES (0, $1, $2)
+       ON CONFLICT (comment_id) DO UPDATE SET text_content = EXCLUDED.text_content;`,
+      [commentId, commentContent]
     );
 
-    if ((contentExistsResult.rowCount ?? 0) > 0) {
-      await db.query(
-        `UPDATE task_comment_contents SET text_content = $1 WHERE comment_id = $2;`,
-        [commentContent, commentId]
-      );
-    } else {
-      await db.query(
-        `INSERT INTO task_comment_contents (comment_id, text_content) VALUES ($1, $2);`,
-        [commentId, commentContent]
-      );
+    // ✅ Update mentions — replace existing ones with the new set
+    await db.query(`DELETE FROM task_comment_mentions WHERE comment_id = $1;`, [commentId]);
+    if (mentions.length > 0) {
+      for (let i = 0; i < mentions.length; i++) {
+        const mention = mentions[i];
+        if (mention?.team_member_id) {
+          await db.query(
+            `INSERT INTO task_comment_mentions (comment_id, mentioned_index, mentioned_by, informed_by)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT DO NOTHING;`,
+            [commentId, i, req.user?.id, mention.team_member_id]
+          );
+        }
+      }
     }
 
     // ✅ Send email notifications for mentions
@@ -401,6 +414,11 @@ export default class TaskCommentsController extends WorklenzControllerBase {
       }
     }
 
+    const projectRow = await db.query(`SELECT project_id FROM tasks WHERE id = $1`, [updatedComment.task_id]);
+    if (projectRow.rows[0]) {
+      void syncCommentLinks(projectRow.rows[0].project_id, updatedComment.task_id, commentId, req.user?.team_id as string, commentContent, req.user?.id);
+    }
+
     return res.status(200).send(new ServerResponse(true, {
       id: updatedComment.id,
       task_id: updatedComment.task_id,
@@ -425,6 +443,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
                     task_comments.team_member_id,
                     task_comments.task_id,
                     task_comments.is_edited,
+                    task_comments.is_deleted,
                     (SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = tm.id) AS member_name,
                     u.avatar_url,
                     task_comments.created_at,
@@ -470,6 +489,16 @@ export default class TaskCommentsController extends WorklenzControllerBase {
     for (const comment of result.rows) {
       if (!comment.content) comment.content = "";
       comment.rawContent = comment.content;
+
+      // Soft-deleted comments: wipe content so the frontend shows the placeholder
+      if (comment.is_deleted) {
+        comment.content = "";
+        comment.rawContent = "";
+        comment.attachments = [];
+        comment.mentions = [];
+        continue;
+      }
+
       comment.content = comment.content.replace(/\n/g, "</br>");
       comment.edit = false;
       const { mentions } = comment;
@@ -497,12 +526,20 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `DELETE
-               FROM task_comments
-               WHERE id = $1
-                 AND task_id = $2
-                 AND user_id = $3;`;
+    // Soft-delete: mark as deleted so the frontend can show "This message was deleted"
+    const q = `
+      UPDATE task_comments
+      SET is_deleted = TRUE,
+          updated_at = NOW()
+      WHERE id = $1
+        AND task_id = $2
+        AND user_id = $3
+      RETURNING id;
+    `;
     const result = await db.query(q, [req.params.id, req.params.taskId, req.user?.id || null]);
+    if (result.rowCount) {
+      void deleteCommentLinks(req.params.id);
+    }
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 

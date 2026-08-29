@@ -21,5 +21,14 @@
   "selectColor": "Farbe auswählen",
   "managePhases": "Phasen verwalten",
   "close": "Schließen",
-  "apply": "Anwenden"
+  "apply": "Anwenden",
+  "selectDefaultAssignee": "Standard-Beauftragter",
+  "phaseAssigneesInfo": "Phasen-Beauftragte ist aktiviert. Legen Sie unten für jede Phase einen Standard-Beauftragten fest – dieser wird automatisch zugewiesen, wenn eine Aufgabe in diese Phase eintritt.",
+  "phasesText": "Phasen",
+  "phaseText": "Phase",
+  "searchMembers": "Mitglieder suchen...",
+  "noMembersFound": "Keine Mitglieder gefunden",
+  "continue": "Fortfahren",
+  "pendingMemberLabel": "(Ausstehend)",
+  "inviteMember": "Mitglied einladen"
 }

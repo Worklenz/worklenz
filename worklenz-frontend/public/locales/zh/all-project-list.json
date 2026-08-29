@@ -6,13 +6,16 @@
   "priority": "优先级",
   "tasksProgress": "任务进度",
   "updated_at": "最后更新",
+  "endDate": "项目结束日期",
   "setting": "设置",
+  "settingsDisabledForGuest": "设置已为访客禁用",
+  "settingsTooltip": "打开项目设置",
   "projects": "项目",
   "refreshProjects": "刷新项目",
   "all": "全部",
   "favorites": "收藏",
   "archived": "已归档",
-  "placeholder": "按名称搜索",
+  "placeholder": "按项目名称搜索",
   "archive": "归档",
   "unarchive": "取消归档",
   "archiveConfirm": "您确定要归档此项目吗？",
@@ -34,5 +37,18 @@
     "categories": "类别",
     "clients": "客户"
   },
-  "noPermission": "您没有权限执行此操作"
+  "noPermission": "您没有权限执行此操作",
+  "favorite": "收藏",
+  "fieldsText": "字段",
+  "fieldsWithCount": "字段：{{count}}",
+  "showFields": "显示字段",
+  "projectFields": "项目字段",
+  "noOptionsFound": "未找到选项",
+  "required": "必需",
+  "activeFiltersCount": "筛选：{{count}}",
+  "filter": {
+    "noClient": "无客户",
+    "noPriority": "无优先级",
+    "noCategory": "无类别"
+  }
 }

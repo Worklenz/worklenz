@@ -9,9 +9,11 @@ import {
   CrownOutlined,
 } from '@/shared/antd-imports';
 import { IntegrationsDropdown } from './IntegrationsDropdown';
-import { slackApiService } from '@api/slack/slack.api.service';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
-import { useUpgradePrompt } from '@/worklenz-ee/hooks/use-upgrade-prompt';
+import { slackApiService } from '@/ee/api/slack/slack.api.service';
+import { useAuthService } from '@/hooks/useAuth';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import type { ProjectIntegrationStatus } from './integrations.types';
 
 interface ProjectIntegrationsButtonProps {
@@ -24,8 +26,13 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   projectName,
 }) => {
   const { t } = useTranslation('project-integrations');
-  const { hasBusinessAccess } = useBusinessFeatures();
-  const { promptUpgrade } = useUpgradePrompt();
+  const dispatch = useAppDispatch();
+  const authService = useAuthService();
+  const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
+  const hasBusinessAccess = useMemo(
+    () => hasBusinessFeatureAccess(currentSession),
+    [currentSession]
+  );
 
   const [open, setOpen] = useState(false);
   const [integrationStatus, setIntegrationStatus] = useState<ProjectIntegrationStatus | null>(null);
@@ -97,8 +104,14 @@ export const ProjectIntegrationsButton: React.FC<ProjectIntegrationsButtonProps>
   }, [fetchIntegrationStatus]);
 
   const handleUpgradeClick = useCallback(() => {
-    promptUpgrade();
-  }, [promptUpgrade]);
+    dispatch(
+      showUpgradePrompt({
+        title: 'Integrations',
+        description:
+          'Connect Slack, Teams, and GitHub to your projects. Available on the Business plan.',
+      })
+    );
+  }, [dispatch]);
 
   // Show premium button for non-business users
   if (!hasBusinessAccess) {

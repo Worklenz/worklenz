@@ -7,16 +7,40 @@ import { getStorageUrl } from "../shared/constants";
 import { ServerResponse } from "../models/server-response";
 import {
   createPresignedUrlWithClient,
+  createPresignedUploadUrl,
   deleteObject,
   getAvatarKey,
   getKey,
   getRootDir,
   uploadBase64,
-  uploadBuffer
+  uploadBuffer,
+  getObjectSize,
 } from "../shared/storage";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import path from "path";
+import { randomUUID } from "crypto";
+
+// Blocked extensions — kept in sync with frontend and validator middleware
+const BLOCKED_EXTENSIONS = new Set([
+  "exe", "bat", "cmd", "com", "pif", "scr", "vbs", "js",
+  "jar", "app", "deb", "rpm", "dmg", "pkg", "sh", "ps1", "dll", "msi",
+]);
+
+// Maximum file size for presigned uploads (250 MB — Business plan ceiling)
+const MAX_PRESIGN_FILE_SIZE_BYTES = 250 * 1024 * 1024;
+
+// How long (ms) a pending presign record is considered valid before cleanup
+const PRESIGN_EXPIRY_MS = 20 * 60 * 1000;
+
+const sanitizeFileName = (fileName: string, extension: string): string => {
+  const parsed = path.parse(fileName);
+  const baseName = parsed.name || "file";
+  const normalizedBase = baseName.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const maxBaseLength = Math.max(1, 255 - (extension ? extension.length + 1 : 0));
+  const trimmedBase = normalizedBase.slice(0, maxBaseLength);
+  return extension ? `${trimmedBase}.${extension}` : trimmedBase;
+};
 
 export default class AttachmentController extends WorklenzControllerBase {
 
@@ -53,6 +77,212 @@ export default class AttachmentController extends WorklenzControllerBase {
     data.size = humanFileSize(data.size);
 
     return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  /**
+   * Step 1 of the async upload flow for task attachments.
+   *
+   * Validates the file metadata, creates a pending DB record, and returns a
+   * presigned URL the browser can use to PUT the file directly to S3/Azure.
+   * No file bytes pass through Node.
+   *
+   * POST /api/v1/attachments/tasks/presign
+   * Body: { task_id: string; filename: string; size: number; mime_type: string }
+   */
+  @HandleExceptions()
+  public static async presignTaskAttachment(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const { task_id, project_id, filename, size, mime_type } = req.body as {
+      task_id?: string;
+      project_id?: string;
+      filename?: string;
+      size?: number;
+      mime_type?: string;
+    };
+
+    // --- Input validation ---
+    if (!task_id || !project_id || !filename || !size || !mime_type) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "task_id, project_id, filename, size, and mime_type are required"));
+    }
+
+    const extension = path.extname(filename).replace(".", "").toLowerCase();
+
+    if (!extension) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "A valid file extension is required.").withTitle("Upload failed!"));
+    }
+
+    if (BLOCKED_EXTENSIONS.has(extension)) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, `File type .${extension} is not allowed for security.`).withTitle("Upload blocked!"));
+    }
+
+    if (size > MAX_PRESIGN_FILE_SIZE_BYTES) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Max file size is 250 MB per file.").withTitle("Upload failed!"));
+    }
+
+    // --- Auth & task/project ownership ---
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    if (!userId || !teamId) {
+      return res
+        .status(401)
+        .send(new ServerResponse(false, null, "Authentication required"));
+    }
+
+    // Verify task exists and belongs to the user's team
+    const taskResult = await db.query(
+      `SELECT t.id, t.project_id, p.team_id
+       FROM tasks t
+       JOIN projects p ON p.id = t.project_id
+       WHERE t.id = $1 AND p.team_id = $2`,
+      [task_id, teamId],
+    );
+
+    if (!taskResult.rowCount) {
+      return res
+        .status(403)
+        .send(new ServerResponse(false, null, "You cannot attach files to this task"));
+    }
+
+    // Use the project_id resolved from the database, not the client-supplied
+    // value — trusting req.body.project_id here would let a caller pass a
+    // path-traversal payload (e.g. "../otherTeamId/x") into the storage key.
+    const verifiedProjectId = taskResult.rows[0].project_id;
+
+    // --- Generate storage key and presigned URL ---
+    const fileId = randomUUID();
+    const cleanFileName = sanitizeFileName(filename, extension);
+    const storageKey = getKey(teamId, verifiedProjectId, fileId, extension);
+
+    const uploadUrl = await createPresignedUploadUrl(storageKey);
+
+    if (!uploadUrl) {
+      return res
+        .status(500)
+        .send(new ServerResponse(false, null, "Failed to generate upload URL. Please try again."));
+    }
+
+    // --- Insert a pending record ---
+    await db.query(
+      `INSERT INTO task_attachments (id, name, size, type, task_id, project_id, team_id, uploaded_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
+      [fileId, cleanFileName, size, extension, task_id, verifiedProjectId, teamId, userId],
+    );
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        file_id: fileId,
+        upload_url: uploadUrl,
+        expires_in: 900, // seconds
+      }),
+    );
+  }
+
+  /**
+   * Step 2 of the async upload flow for task attachments.
+   *
+   * Called by the browser after it has finished PUTting the file to storage.
+   * Verifies the object actually exists in storage.
+   *
+   * POST /api/v1/attachments/tasks/confirm
+   * Body: { file_id: string; task_id: string }
+   */
+  @HandleExceptions()
+  public static async confirmTaskAttachment(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const { file_id, task_id } = req.body as {
+      file_id?: string;
+      task_id?: string;
+    };
+
+    if (!file_id || !task_id) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "file_id and task_id are required"));
+    }
+
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    if (!userId || !teamId) {
+      return res
+        .status(401)
+        .send(new ServerResponse(false, null, "Authentication required"));
+    }
+
+    // Get attachment details
+    const attachmentResult = await db.query(
+      `SELECT id, name, size, type, task_id, project_id, team_id
+       FROM task_attachments
+       WHERE id = $1 AND team_id = $2`,
+      [file_id, teamId],
+    );
+
+    if (!attachmentResult.rowCount) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Attachment not found"));
+    }
+
+    const attachment = attachmentResult.rows[0];
+
+    // Verify the object actually exists in storage and read its real size —
+    // the size on the attachment record at this point is still the
+    // client-declared value from presign, which cannot be trusted since the
+    // browser PUTs directly to storage and could have sent more (or less)
+    // data than it claimed.
+    const storageKey = getKey(attachment.team_id, attachment.project_id, attachment.id, attachment.type);
+    const actualSize = await getObjectSize(storageKey);
+
+    if (actualSize === null) {
+      // Clean up the pending record if file doesn't exist in storage
+      await db.query("DELETE FROM task_attachments WHERE id = $1", [file_id]);
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Upload verification failed. File not found in storage."));
+    }
+
+    if (actualSize > MAX_PRESIGN_FILE_SIZE_BYTES) {
+      // Uploaded object exceeds the size ceiling regardless of what was
+      // declared at presign time — remove it from storage and reject.
+      await deleteObject(storageKey);
+      await db.query("DELETE FROM task_attachments WHERE id = $1", [file_id]);
+      return res
+        .status(400)
+        .send(new ServerResponse(false, null, "Max file size is 250 MB per file.").withTitle("Upload failed!"));
+    }
+
+    // Persist the real, storage-verified size rather than the client-declared one.
+    await db.query("UPDATE task_attachments SET size = $1 WHERE id = $2", [actualSize, file_id]);
+
+    // Bump task updated_at
+    await db.query(`UPDATE tasks SET updated_at = NOW() WHERE id = $1;`, [task_id]);
+
+    // Return attachment details
+    const url = `${getStorageUrl()}/${getRootDir()}/${attachment.team_id}/${attachment.project_id}/${attachment.id}.${attachment.type}`;
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        id: attachment.id,
+        name: attachment.name,
+        size: humanFileSize(actualSize),
+        type: attachment.type,
+        url,
+        created_at: new Date().toISOString(),
+      }),
+    );
   }
 
   @HandleExceptions()

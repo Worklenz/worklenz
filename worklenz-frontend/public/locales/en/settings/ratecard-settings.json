@@ -13,7 +13,6 @@
   "createError": "Failed to create rate card",
   "deleteSuccess": "Rate card deleted successfully",
   "deleteError": "Failed to delete rate card",
-
   "jobTitleColumn": "Job title",
   "ratePerHourColumn": "Rate per hour",
   "ratePerDayColumn": "Rate per day",
@@ -51,5 +50,6 @@
   "cancelButton": "Cancel",
   "discardButton": "Discard",
   "manDaysCalculationMessage": "Organization is using man days calculation ({{hours}}h/day). Rates above represent daily rates.",
-  "hourlyCalculationMessage": "Organization is using hourly calculation. Rates above represent hourly rates."
+  "hourlyCalculationMessage": "Organization is using hourly calculation. Rates above represent hourly rates.",
+  "createSuccess": "Rate card created successfully"
 }

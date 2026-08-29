@@ -104,7 +104,34 @@
   "considerWorkloadRedistribution": "Consider workload redistribution",
   "capacityAvailableForNewProjects": "Capacity available for new projects",
   "optimal": "Optimal",
-  "underUtilized": "Under Utilized",
-  "overUtilized": "Over Utilized",
-  "noDataAvailable": "No Data Available"
+  "noDataAvailable": "No Data Available",
+
+  "teamMembersFor": "{{name}}'s Team Members",
+  "allTeamMembersFor": "All {{name}}'s Team Members",
+  "allUtilization": "All Utilization",
+  "allProjects": "All Projects",
+  "allCategories": "All Categories",
+  "allTeams": "All Teams",
+
+  "underUtilized": "Under-utilized (Under 90%)",
+  "optimalUtilized": "Optimal-utilized (90%-110%)",
+  "overUtilized": "Over-utilized (Over 110%)",
+
+  "noTeamLeadsFound": "No Team Leads found",
+  "noTeamLeadsFoundError": "No Team Leads found in your organization",
+  "unableToLoadTeamLeadData": "Unable to load Team Lead data",
+  "failedToLoadTeamLeadData": "Failed to load Team Lead data. Please try again.",
+  "retry": "Retry",
+
+  "showUtilization": "Show Utilization",
+  "hideUtilization": "Hide Utilization",
+  "loadingText": "Loading...",
+  "underUtilizedCriteria": "(< 90%)",
+  "optimalUtilizedCriteria": "(90% - 110%)",
+  "overUtilizedCriteria": "(> 110%)",
+  "unknown": "Unknown",
+  "totalLogged": "Total Logged",
+  "varianceUnder": "(under)",
+  "varianceOver": "(over)"
+
 }

@@ -1,0 +1,42 @@
+{
+  "name": "worklenz-client-portal",
+  "private": true,
+  "version": "2.2.3",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.0.0",
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
+    "@reduxjs/toolkit": "^2.2.1",
+    "antd": "^5.20.1",
+    "axios": "^1.7.9",
+    "i18next": "^25.3.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-i18next": "^15.1.1",
+    "react-redux": "^9.1.0",
+    "react-responsive": "^10.0.1",
+    "react-router-dom": "^7.7.0",
+    "socket.io-client": "^4.8.1",
+    "typescript-eslint": "^8.37.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^9.31.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "sass": "^1.72.0",
+    "typescript": "^5.2.2",
+    "vite": "^6.3.5"
+  }
+}

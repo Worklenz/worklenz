@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Badge,
@@ -121,6 +121,27 @@ const TaskListBulkActionsBar = () => {
   const deleteRef = useRef(null);
   const moreOptionsRef = useRef(null);
   const deselectAllRef = useRef(null);
+  // Compute members assigned to ALL selected tasks (intersection)
+  const commonAssigneeMemberIds = useMemo(() => {
+    if (!selectedTasks || selectedTasks.length === 0) return [];
+
+    const getTaskMemberIds = (task: any): string[] => {
+      const source = (task.assignee_names?.length ? task.assignee_names : task.assignees) ?? [];
+      return source
+        .map((a: any) => String(a?.team_member_id ?? a?.id ?? '').trim())
+        .filter((id: string) => id.length > 0);
+    };
+
+    const assigneeArrays = selectedTasks.map(getTaskMemberIds);
+
+    if (assigneeArrays.length === 0) return [];
+    return assigneeArrays[0].filter(id =>
+      assigneeArrays.every(arr => arr.includes(id))
+    );
+  }, [selectedTasks]);
+
+
+
 
   // Handlers
   const handleChangeStatus = async (status: ITaskStatus) => {
@@ -273,12 +294,15 @@ const TaskListBulkActionsBar = () => {
         tasks: selectedTaskIdsList,
         project_id: projectId,
         members: selectedAssignees.map(member => ({
-          id: member.id,
-          name: member.name || '',
-          email: member.email,
-          avatar_url: member.avatar_url,
-        })) as ITaskAssignee[],
+          id: member.id ?? '',
+          name: member.name ?? '',
+          email: member.email ?? '',
+          avatar_url: member.avatar_url ?? '',
+          team_member_id: member.id ?? '',
+          project_member_id: member.id ?? '',
+        })),
       };
+
       const res = await taskListBulkActionsApiService.assignTasks(body);
       if (res.done) {
         trackMixpanelEvent(evt_project_task_list_bulk_assign_members);
@@ -363,6 +387,8 @@ const TaskListBulkActionsBar = () => {
         onApply={handleChangeAssignees}
         onClose={() => setAssigneeDropdownOpen(false)}
         t={t}
+        preSelectedMemberIds={commonAssigneeMemberIds}
+
       />
     );
   };
@@ -407,6 +433,8 @@ const TaskListBulkActionsBar = () => {
       setUpdatingLabels(false);
     }
   };
+
+
 
   const labelsDropdownContent = (
     <LabelsDropdown

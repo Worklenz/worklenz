@@ -13,6 +13,7 @@ import { reportingProjectsApiService } from '@/api/reporting/reporting-projects.
 import { reportingExportApiService } from '@/api/reporting/reporting-export.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import logger from '@/utils/errorLogger';
+import { decodeHtmlEntities } from '@/utils/html-entities';
 import { IRPTOverviewProjectMember } from '@/types/reporting/reporting.types';
 
 type ProjectReportsMembersTaskDrawerProps = {
@@ -131,7 +132,7 @@ const ProjectReportsMembersTaskDrawer = ({ selectedMember }: ProjectReportsMembe
         <Flex align="center" justify="space-between">
           <Flex gap={8} align="center" style={{ fontWeight: 500 }}>
             <FileOutlined style={{ color: colors.lightGray }} />
-            <Typography.Text>{selectedProject?.name} /</Typography.Text>
+            <Typography.Text>{decodeHtmlEntities(selectedProject?.name)} /</Typography.Text>
             <Typography.Text>{selectedMember?.name}</Typography.Text>
           </Flex>
 

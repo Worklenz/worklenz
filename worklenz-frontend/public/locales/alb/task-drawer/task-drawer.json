@@ -1,5 +1,14 @@
 {
   "upgradeNow": "Bëj upgrade tani",
+  "description": {
+    "loadingEditor": "Duke ngarkuar editorin...",
+    "wordCount": "{{count}} fjalë",
+    "save": "Ruaj",
+    "discard": "Anulo",
+    "offline": "Jeni jashtë linje — përshkrimi nuk u ruajt. Rilidhuni dhe provoni përsëri.",
+    "saveTimeout": "Ruajtja e përshkrimit skadoi. Ju lutemi provoni përsëri.",
+    "saveFailed": "Ruajtja e përshkrimit dështoi. Ju lutemi provoni përsëri."
+  },
   "taskHeader": {
     "taskNamePlaceholder": "Shkruani detyrën tuaj",
     "deleteTask": "Fshi detyrën",
@@ -61,6 +70,8 @@
       "edit": "Redakto",
       "delete": "Fshi",
       "confirmDeleteSubTask": "Jeni i sigurt që dëshironi ta fshini këtë nëndetyrë?",
+      "confirmDeleteYes": "Po",
+      "confirmDeleteNo": "Jo",
       "deleteSubTask": "Fshi nëndetyrën"
     },
     "dependencies": {
@@ -85,6 +96,8 @@
       "edit": "Redakto",
       "delete": "Fshi",
       "confirmDeleteComment": "Jeni i sigurt që dëshironi ta fshini këtë koment?",
+      "edited": "(redaktuar)",
+      "messageDeleted": "Ky mesazh u fshi",
       "addCommentPlaceholder": "Shto një koment...",
       "cancel": "Anulo",
       "commentButton": "Komento",
@@ -94,6 +107,7 @@
       "maxFilesError": "Mund të ngarkoni maksimumi {{count}} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "enterHint": "Enter për të dërguar  ·  Shift+Enter për rresht të ri",
       "fileTooLargeToSend": "Skedarët mbi 25MB në komente kërkojnë planin Business. Hiqeni këtë skedar ose bëni upgrade për të vazhduar.",
       "historyLockedBoundary": "Komentet janë të kufizuara në 90 ditët e fundit në këtë plan",
       "historyLockedTitle": "Historiku i komenteve i bllokuar",
@@ -109,6 +123,7 @@
     "title": "Regjistri i kohës",
     "addTimeLog": "Shto regjistër të ri kohe",
     "totalLogged": "Totali i regjistruar",
+    "subtasksLogged": "Nëndetyrat e regjistruara",
     "exportToExcel": "Eksporto në Excel",
     "noTimeLogsFound": "Nuk u gjetën regjistrime kohe",
     "historyLockedBoundary": "Regjistrat e kohës janë të kufizuar në 90 ditët e fundit në këtë plan",
@@ -127,8 +142,7 @@
       "workDescription": "Përshkrimi i punës",
       "descriptionPlaceholder": "Shto një përshkrim",
       "logTime": "Regjistro kohën",
-      "updateTime": "Përditëso kohën",
-      "cancel": "Anulo",
+      "updateTime": "Përditëso",
       "durationHelper": "Regjistro kohën totale me orë dhe minuta.",
       "timeRangeHelper": "Regjistro kohën duke zgjedhur orën e fillimit dhe përfundimit.",
       "selectDateError": "Ju lutemi zgjidhni një datë",
@@ -137,7 +151,15 @@
       "hoursMinError": "Orët duhet të jenë 0 ose më shumë",
       "minutesRangeError": "Minutat duhet të jenë midis 0 dhe 59",
       "durationGreaterThanZeroError": "Kohëzgjatja duhet të jetë më e madhe se 0 minuta",
-      "endTimeAfterStartError": "Ora e përfundimit duhet të jetë pas orës së fillimit"
+      "endTimeAfterStartError": "Ora e përfundimit duhet të jetë pas orës së fillimit",
+      "moveToProject": "Zhvendos te projekti",
+      "moveToProjectTooltip": "Ricakto këtë regjistër kohe në një projekt tjetër",
+      "selectProject": "Kërko projekt...",
+      "moveToTask": "Zhvendos te detyra",
+      "moveToTaskTooltip": "Ricakto këtë regjistër kohe në një detyrë tjetër",
+      "selectTask": "Zgjidh detyrën...",
+      "backdateLimitError": "Regjistrimet e kohës nuk mund të datohen më shumë se {{days}} ditë prapa. Data më e hershme që mund të regjistroni është {{earliestDate}}.",
+      "saveError": "Regjistrimi i kohës nuk mund të ruhej. Ju lutemi provoni përsëri."
     }
   },
   "taskActivityLogTab": {

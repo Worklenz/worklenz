@@ -21,5 +21,14 @@
   "selectColor": "Seleccionar color",
   "managePhases": "Gestionar Fases",
   "close": "Cerrar",
-  "apply": "Aplicar"
+  "apply": "Aplicar",
+  "selectDefaultAssignee": "Asignado predeterminado",
+  "phaseAssigneesInfo": "Los Asignados por Fase están habilitados. Establece un asignado predeterminado para cada fase: se asignarán automáticamente cuando una tarea ingrese a esa fase.",
+  "phasesText": "Fases",
+  "phaseText": "Fase",
+  "searchMembers": "Buscar miembros...",
+  "noMembersFound": "No se encontraron miembros",
+  "continue": "Continuar",
+  "pendingMemberLabel": "(Pendiente)",
+  "inviteMember": "Invitar miembro"
 }

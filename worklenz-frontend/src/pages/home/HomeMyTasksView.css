@@ -1,0 +1,101 @@
+/* Mirrors worklenz-frontend/src/pages/home/task-list/tasks-list.css so the
+   "My Tasks" table (Home > My Tasks) matches the Home > Overview priority
+   table's look: 12px header/body text, sticky header, and a hover-reveal
+   "open task" icon instead of always-visible chrome. */
+
+.my-tasks-table-card .row-action-button {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.my-tasks-table-card .ant-table-row:hover .row-action-button {
+  opacity: 1;
+}
+
+.my-tasks-table-card .ant-table {
+  font-size: 12px;
+}
+
+.my-tasks-table-card .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 4px 8px !important;
+  /* Plain CSS sticky header, same approach as tasks-list.css — antd's own
+     `sticky` prop tracks a custom scroll container via JS and loses it in
+     this layout; sticking each `th` directly works off normal scroll-ancestor
+     rules instead. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--my-tasks-sticky-bg, #fff);
+}
+
+.my-tasks-table-card .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  /* Matches the Home > Overview priority table's measured 45px row height —
+     padding alone doesn't guarantee this since it only pads whatever the
+     tallest cell's own content happens to be, which varies by row. */
+  height: 45px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
+/* antd Typography (Text/Paragraph) and form controls (DatePicker, Select) set
+   their own explicit font-size (14px) rather than inheriting the cell's 12px,
+   so row data ends up mismatched with the header — pin them all to the same
+   size as the rest of the row, same as tasks-list.css. */
+.my-tasks-table-card .ant-table-tbody .ant-typography,
+.my-tasks-table-card .ant-table-tbody .ant-picker-input input,
+.my-tasks-table-card .ant-table-tbody .ant-select-selection-item,
+.my-tasks-table-card .ant-table-tbody .ant-select-selector {
+  font-size: 12px !important;
+}
+
+/* `.my-tasks-table-card` itself is the scroll container (overflowY: auto,
+   set inline in HomeMyTasksView.tsx) so only the table body scrolls, not the
+   whole page — the sticky header above pins to the top of that box. This
+   inner antd-generated wrapper must stay `visible` so it doesn't become a
+   second, competing scroll container that the sticky header gets stuck
+   inside instead. */
+.my-tasks-table-card .ant-table-container {
+  overflow: visible;
+}
+
+/* Responsive — same fix as tasks-list.css's identical table. Below the same
+   1024px breakpoint the page's isDesktop switch uses (HomeMyTasksView.tsx),
+   the fixed-percentage columns get crushed instead of the table scrolling
+   horizontally, so give the table its own horizontal scroll once it can't
+   fit. Matching 1024px here (rather than an independent 768px) avoids a
+   769–1023px gap where the JS layout has already gone "mobile" but this
+   scroll safety net hasn't kicked in yet. This goes on `.my-tasks-table-card`
+   itself (already the single scrolling ancestor, per the comment above)
+   rather than `.ant-table-wrapper` — setting overflow-x without overflow-y
+   on that inner antd wrapper would force its overflow-y to `auto` too (CSS
+   overflow computed-value rule), turning it into a second scroll container
+   that intercepts the sticky header instead of `.my-tasks-table-card`. */
+@media (max-width: 1023px) {
+  .my-tasks-table-card {
+    overflow-x: auto;
+  }
+
+  .my-tasks-table-card .ant-table {
+    min-width: 700px;
+  }
+}
+
+@media (max-width: 576px) {
+  .my-tasks-table-card .ant-table-thead > tr > th {
+    padding: 4px 6px !important;
+  }
+
+  .my-tasks-table-card .ant-table-tbody > tr > td {
+    padding: 4px 6px !important;
+  }
+
+  /* Hover-reveal never triggers on touch devices — always show the "open
+     task" affordance below this breakpoint, same as tasks-list.css. */
+  .my-tasks-table-card .row-action-button {
+    opacity: 1;
+  }
+}

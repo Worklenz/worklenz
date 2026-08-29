@@ -48,10 +48,29 @@ export interface ITaskListV3Response {
   totalTasks: number;
 }
 
+export interface IQuickTaskSearchResult {
+  id: string;
+  name: string;
+  task_no: number;
+  project_id: string;
+  project_name: string;
+  project_key: string;
+}
+
 export const tasksApiService = {
   getTaskList: async (config: ITaskListConfigV2): Promise<IServerResponse<ITaskListGroup[]>> => {
     const q = toQueryString(config);
     const response = await apiClient.get(`${rootUrl}/list/v2/${config.id}${q}`);
+    return response.data;
+  },
+
+  searchTasks: async (
+    index: number,
+    size: number,
+    search: string | null
+  ): Promise<IServerResponse<{ total: number; data: IQuickTaskSearchResult[] }>> => {
+    const q = toQueryString({ index, size, search: search || '' });
+    const response = await apiClient.get(`${rootUrl}/quick-search${q}`);
     return response.data;
   },
 

@@ -32,6 +32,10 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
   const [creatingTask, setCreatingTask] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<InputRef>(null);
+  const pendingRequestRef = useRef<{
+    eventHandler: (task: IProjectTask) => void;
+    timeout: ReturnType<typeof setTimeout>;
+  } | null>(null);
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const projectId = useAppSelector(state => state.projectReducer.projectId);
@@ -44,6 +48,17 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Clean up a still-pending create-task request if the card unmounts mid-flight
+  useEffect(() => {
+    return () => {
+      if (pendingRequestRef.current) {
+        clearTimeout(pendingRequestRef.current.timeout);
+        socket?.off(SocketEvents.QUICK_TASK.toString(), pendingRequestRef.current.eventHandler);
+        pendingRequestRef.current = null;
+      }
+    };
+  }, [socket]);
 
   const createRequestBody = (): ITaskCreateRequest | null => {
     if (!projectId || !currentSession) return null;
@@ -81,18 +96,25 @@ const EnhancedKanbanCreateTaskCard: React.FC<EnhancedKanbanCreateTaskCardProps> 
     if (creatingTask || !projectId || !currentSession || newTaskName.trim() === '') return;
 
     const body = createRequestBody();
-    if (!body) {
-      setCreatingTask(true);
-      setShowNewCard(true);
-      return;
-    }
+    if (!body) return;
+
+    setCreatingTask(true);
+
+    const responseTimeout = setTimeout(() => {
+      console.warn('Task creation socket response timeout');
+      pendingRequestRef.current = null;
+      setCreatingTask(false);
+    }, 5000);
 
     // Real-time socket event handler
     const eventHandler = (task: IProjectTask) => {
+      clearTimeout(responseTimeout);
+      pendingRequestRef.current = null;
       // Only reset the form - the global handler will add the task to Redux
       socket?.off(SocketEvents.QUICK_TASK.toString(), eventHandler);
       resetForNextTask();
     };
+    pendingRequestRef.current = { eventHandler, timeout: responseTimeout };
     socket?.once(SocketEvents.QUICK_TASK.toString(), eventHandler);
     socket?.emit(SocketEvents.QUICK_TASK.toString(), JSON.stringify(body));
   };

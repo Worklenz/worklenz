@@ -2,6 +2,7 @@ import './project-templates-settings.css';
 import {
   Button,
   Card,
+  notification,
   Popconfirm,
   Table,
   TableProps,
@@ -11,32 +12,38 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { DeleteOutlined, EditOutlined } from '@/shared/antd-imports';
+import { DeleteOutlined, EditOutlined, EyeOutlined } from '@/shared/antd-imports';
 import { ProjectTemplateRenameModal } from '@/components/project-templates/project-template-rename-modal';
+import { ProjectTemplatePreviewModal } from '@/components/project-templates/project-template-preview-modal';
 import { useNavigate } from 'react-router-dom';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import logger from '@/utils/errorLogger';
 import { ICustomTemplate } from '@/types/project-templates/project-templates.types';
 
-const steps = [
-  { label: 'Navigate to a project and open it.' },
-  { label: 'Click the Create Template icon next to the Refresh button.' },
-];
-
 const ProjectTemplatesSettings = () => {
   const { t } = useTranslation('settings/project-templates');
 
+  const steps = [
+    { label: t('noProjectTemplatesStep1') },
+    { label: t('noProjectTemplatesStep2') },
+  ];
+
   const [projectTemplates, setProjectTemplates] = useState<ICustomTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(10);
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const navigate = useNavigate();
-
+  // Rename modal state
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [selectedTemplateName, setSelectedTemplateName] = useState<string>('');
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [previewTemplateName, setPreviewTemplateName] = useState<string>('');
+  const [importing, setImporting] = useState(false);
 
-  useDocumentTitle('Project Templates');
+  useDocumentTitle(t('pageTitle', { defaultValue: 'Project Templates' }));
 
   const fetchProjectTemplates = async () => {
     try {
@@ -61,17 +68,57 @@ const ProjectTemplatesSettings = () => {
     }
   };
 
+  const handleImportTemplate = async (templateId: string, projectName: string): Promise<string | null> => {
+    try {
+      setImporting(true);
+      const res = await projectTemplatesApiService.createFromCustomTemplate({
+        template_id: templateId, project_name: projectName,
+      });
+      if (res.done) {
+        notification.success({
+          message: t('importSuccess', { defaultValue: 'Template imported successfully!' }),
+          placement: 'topRight',
+          style: { borderRadius: '4px' },
+        });
+        setPreviewModalVisible(false);
+        navigate(`/worklenz/projects/${(res.body as any)?.project_id ?? ''}`);
+        return null;
+      } else {
+        // Return the error message so the modal can display it inline on the name field
+        return (res as any).message ?? t('importError', { defaultValue: 'Failed to import template' });
+      }
+    } catch (error) {
+      logger.error('Failed to import template:', error);
+      return t('importError', { defaultValue: 'Failed to import template' });
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const columns: TableProps<ICustomTemplate>['columns'] = [
     {
       key: 'name',
-      title: t('nameColumn'),
+       title: t('nameColumn', { defaultValue: 'Template Name' }),
       dataIndex: 'name',
     },
     {
       key: 'button',
       render: record => (
         <div className="button-visibilty">
-          <Tooltip title={t('editToolTip')}>
+          <Tooltip title={t('previewToolTip', { defaultValue: 'Preview' })}>
+            <Button
+              size="small"
+              onClick={() => {
+                setPreviewTemplateId(record.id);
+                setPreviewTemplateName(record.name);
+                setPreviewModalVisible(true);
+              }}
+            >
+              <EyeOutlined />
+            </Button>
+          </Tooltip>
+
+          <Tooltip title={t('editToolTip', { defaultValue: 'Edit' })}>
             <Button
               size="small"
               onClick={() => {
@@ -83,13 +130,13 @@ const ProjectTemplatesSettings = () => {
               <EditOutlined />
             </Button>
           </Tooltip>
-          <Tooltip title={t('deleteToolTip')}>
+          <Tooltip title={t('deleteToolTip', { defaultValue: 'Delete' })}>
             <Popconfirm
               title={
-                <Typography.Text style={{ fontWeight: 400 }}>{t('confirmText')}</Typography.Text>
+                <Typography.Text style={{ fontWeight: 400 }}>{t('confirmText', { defaultValue: 'Are you sure?' })}</Typography.Text>
               }
-              okText={t('okText')}
-              cancelText={t('cancelText')}
+              okText={t('okText', { defaultValue: 'OK' })}
+              cancelText={t('cancelText', { defaultValue: 'Cancel' })}
               onConfirm={() => deleteProjectTemplate(record.id)}
             >
               <Button size="small">
@@ -135,7 +182,7 @@ const ProjectTemplatesSettings = () => {
         <line x1="56" y1="58" x2="68" y2="58" stroke={svgColors.badgePlus} strokeWidth="2.2" strokeLinecap="round" />
       </svg>
       <p style={{ fontSize: 15, fontWeight: 600, color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.85)', margin: '0 0 28px' }}>
-        No project templates yet
+        {t('noProjectTemplatesYet')}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 360, textAlign: 'left' }}>
         {steps.map((step, i) => (
@@ -167,14 +214,17 @@ const ProjectTemplatesSettings = () => {
         columns={columns}
         dataSource={projectTemplates}
         size="small"
-         showHeader={loading || projectTemplates.length > 0}
+        showHeader={loading || projectTemplates.length > 0}
         // ✅ FIXED: added pageSize, showSizeChanger and showTotal for full pagination support
         pagination={{
           size: 'small',
-          pageSize: 10,
+          pageSize,
           showSizeChanger: true,
           pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} templates`,
+           showTotal: (total, range) => t('paginationTotal', { start: range[0], end: range[1], total, defaultValue: '{{start}}-{{end}} of {{total}} items' }),
+          onShowSizeChange: (_, size) => {
+            setPageSize(size);
+          },
         }}
         rowClassName={(_, index) =>
           `no-border-row ${index % 2 === 0 ? '' : themeMode === 'dark' ? 'dark-alternate-row-color' : 'alternate-row-color'}`
@@ -191,6 +241,19 @@ const ProjectTemplatesSettings = () => {
           setSelectedTemplateName('');
           if (renamed) fetchProjectTemplates();
         }}
+      />
+
+      <ProjectTemplatePreviewModal
+        visible={previewModalVisible}
+        templateId={previewTemplateId}
+        templateName={previewTemplateName}
+        importing={importing}
+        onClose={() => {
+          setPreviewModalVisible(false);
+          setPreviewTemplateId(null);
+          setPreviewTemplateName('');
+        }}
+        onImport={handleImportTemplate}
       />
     </Card>
   );

@@ -6,11 +6,13 @@ import { ChartOptions } from 'chart.js';
 import { projectInsightsApiService } from '@/api/projects/insights/project-insights.api.service';
 import { ITaskStatusCounts } from '@/types/project/project-insights.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useTranslation } from 'react-i18next';
 
 Chart.register(ArcElement);
 
 const StatusOverview = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
+  const { t } = useTranslation('project-view-insights');
 
   const [stats, setStats] = useState<ITaskStatusCounts[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ const StatusOverview = () => {
         callbacks: {
           label: context => {
             const value = context.raw as number;
-            return `${context.label}: ${value} task${value !== 1 ? 's' : ''}`;
+            return `${context.label}: ${value} ${t('priorityChart.taskCount', { defaultValue: 'task' })}${value !== 1 ? 's' : ''}`;
           },
         },
       },
@@ -64,7 +66,7 @@ const StatusOverview = () => {
     labels: stats.map(status => status.name),
     datasets: [
       {
-        label: 'Tasks',
+        label: t('priorityChart.tasks', { defaultValue: 'Tasks' }),
         data: stats.map(status => status.y),
         backgroundColor: stats.map(status => status.color),
         hoverBackgroundColor: stats.map(status => status.color + '90'),

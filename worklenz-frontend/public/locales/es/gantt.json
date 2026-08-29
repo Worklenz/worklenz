@@ -5,6 +5,9 @@
     "clickNavigateTimeline": "Haz clic para navegar a la tarea en la línea de tiempo",
     "clickTimelineSetDates": "Haz clic en la línea de tiempo para establecer fechas para esta tarea",
     "clickTimelineAddDates": "Haz clic en la línea de tiempo para agregar fechas",
+    "setTaskDate": "Establecer Fechas de Tarea",
+    "setTaskDateHint": "Haz clic en la línea de tiempo para establecer un rango de {{duration}} días para esta tarea",
+    "addTask": "Agregar Tarea",
     "resizeStartDate": "Cambiar fecha de inicio",
     "resizeEndDate": "Cambiar fecha de fin",
     "dragToMove": "Arrastra para mover la tarea",
@@ -14,11 +17,53 @@
     "phaseTitle": "Fase: {{name}} - {{startDate}} hasta {{endDate}}",
     "taskTitle": "{{name}} - {{startDate}} hasta {{endDate}}",
     "datesUpdatedSuccessfully": "Fechas de la tarea actualizadas con éxito",
-    "failedToUpdateDates": "Error al actualizar las fechas de la tarea"
+    "failedToUpdateDates": "Error al actualizar las fechas de la tarea",
+    "addSubtask": "Agregar Subtarea",
+    "addTaskInputPlaceholder": "Escribe el nombre de la tarea y presiona Enter para guardar",
+    "writeTaskName": "Escribe un nombre de tarea",
+    "writeSubtaskName": "Escribe un nombre de subtarea",
+    "expandSubtasks": "Expandir subtareas",
+    "collapseSubtasks": "Contraer subtareas",
+    "finishToStartDependency": "Dependencia Fin-Inicio",
+    "startToFinishDependency": "Dependencia Inicio-Fin",
+    "dependencyType": "Tipo de dependencia",
+    "removeDependency": "Eliminar",
+    "circularDependencyError": "Esto crearía una dependencia circular.",
+    "dependencyCreatedSuccessfully": "Dependencia creada con éxito.",
+    "dependencyRemovedSuccessfully": "Dependencia eliminada con éxito.",
+    "failedToCreateDependency": "Error al crear la dependencia.",
+    "failedToRemoveDependency": "Error al eliminar la dependencia.",
+    "taskAddedToRoadmap": "Tarea agregada a la hoja de ruta para los próximos 5 días.",
+    "failedToAddTaskToRoadmap": "Error al agregar la tarea a la hoja de ruta.",
+    "unscheduledTaskNotFound": "No se pudo encontrar la tarea seleccionada."
   },
   "common": {
     "noStart": "Sin inicio",
     "noEnd": "Sin fin"
+  },
+  "sections": {
+    "unmapped": "Sin asignar"
+  },
+  "grouping": {
+    "phase": "Fase",
+    "status": "Estado",
+    "priority": "Prioridad"
+  },
+  "toolbar": {
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "expandAll": "Expandir todo",
+    "collapseAll": "Contraer todo",
+    "today": "Hoy",
+    "fullscreen": "Pantalla completa",
+    "noDate": "Sin fecha"
+  },
+  "viewMode": {
+    "day": "Día",
+    "week": "Semana",
+    "month": "Mes",
+    "quarter": "Trimestre",
+    "year": "Año"
   },
   "businessPlan": {
     "phaseCreationRestricted": "La creación de fases está disponible solo para usuarios del plan Business",
@@ -26,5 +71,18 @@
     "phaseEditingRestricted": "La edición de fases está disponible solo para usuarios del plan Business",
     "taskEditingRestricted": "La edición de tareas está disponible solo para usuarios del plan Business",
     "phaseReorderingRestricted": "La reordenación de fases está disponible solo para usuarios del plan Business"
-  }
+  },
+  "list": {
+    "taskNameColumn": "Nombre de tarea",
+    "addNewPhase": "Agregar nueva fase",
+    "addNewStatus": "Agregar nuevo estado",
+    "noTasksAvailable": "No hay tareas disponibles"
+  },
+  "roadmap": {
+    "phasesAndTasks": "Fases y tareas",
+    "tasksCount": "tareas",
+    "complete": "completado"
+  },
+  "unscheduledTasksTitle": "Tareas sin programar",
+  "noUnscheduledTasks": "No hay tareas sin programar disponibles."
 }

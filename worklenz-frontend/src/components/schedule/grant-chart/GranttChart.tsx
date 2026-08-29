@@ -22,7 +22,15 @@ import { useMemberProjectsSocketHandlers } from '@/hooks/useMemberProjectsSocket
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 
-const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date }, ref) => {
+interface GranttChartProps {
+  type: string;
+  date: Date;
+  filterMemberIds?: string[] | null;
+  showWeekends?: boolean;
+}
+
+const GranttChart = React.forwardRef(
+  ({ type, date, filterMemberIds = null, showWeekends = true }: GranttChartProps, ref) => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
@@ -87,11 +95,26 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   const [fetchMemberProjects, { isLoading: isProjectsLoading }] = useLazyFetchMemberProjectsQuery();
 
   const teamData = teamDataResponse?.body || [];
+  const visibleTeamData = React.useMemo(
+    () =>
+      filterMemberIds
+        ? teamData.filter((m: any) => filterMemberIds.includes(m.team_member_id || m.id))
+        : teamData,
+    [teamData, filterMemberIds]
+  );
   const dateList = dateListResponse?.body;
+  // When "Show weekends" is off, drop weekend day columns from every month bucket
+  const visibleDateData = React.useMemo(() => {
+    if (showWeekends) return dateList?.date_data;
+    return dateList?.date_data?.map((month: any) => ({
+      ...month,
+      days: (month.days || []).filter((day: any) => !day.isWeekend),
+    }));
+  }, [dateList, showWeekends]);
   const loading = teamLoading || dateLoading;
   const isRefetching = teamFetching || dateFetching || capacityFetching;
   const dayCount =
-    dateList?.date_data?.reduce(
+    visibleDateData?.reduce(
       (total: number, month: any) => total + (month.days?.length || 0),
       0
     ) || 0;
@@ -246,11 +269,11 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
   };
 
   const scrollToToday = () => {
-    if (!timelineScrollRef.current || !dateList?.date_data) return;
+    if (!timelineScrollRef.current || !visibleDateData) return;
 
     // Find the index of the "Today" date
     let todayIndex = 0;
-    dateList.date_data.some((date: any) => {
+    visibleDateData.some((date: any) => {
       const dayIndex = date.days.findIndex((day: any) => day.isToday);
       if (dayIndex !== -1) {
         todayIndex += dayIndex; // Add the index of today within the current month's days
@@ -341,7 +364,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
           className={`after:content relative z-10 after:absolute after:-right-1 after:top-0 after:-z-10 after:h-full after:w-1.5 after:bg-transparent after:bg-linear-to-r after:from-[rgba(0,0,0,0.12)] after:to-transparent`}
         >
           <GranttMembersTable
-            members={teamData}
+            members={visibleTeamData}
             expandedMemberId={expandedMemberId}
             onToggleProject={handleToggleProject}
             getMemberProjects={getMemberProjects}
@@ -374,7 +397,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                 gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
               }}
             >
-              {dateList?.date_data?.map((date: any, index: number) =>
+              {visibleDateData?.map((date: any, index: number) =>
                 date.days.map((day: any) => (
                   <div
                     key={index + day.day}
@@ -412,8 +435,8 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
               overflow: 'auto',
             }}
           >
-            {teamData && teamData.length > 0 ? (
-              teamData.map((member: any) => {
+            {visibleTeamData && visibleTeamData.length > 0 ? (
+              visibleTeamData.map((member: any) => {
                 // Standardize on team_member_id since that's what backend returns
                 const memberId = member.team_member_id;
 
@@ -429,7 +452,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                         gridTemplateColumns: `repeat(${dayCount}, ${CELL_WIDTH}px)`,
                       }}
                     >
-                      {dateList?.date_data?.map((dateObj: any, dateIndex: number) =>
+                      {visibleDateData?.map((dateObj: any, dateIndex: number) =>
                         dateObj.days.map((day: any, dayIndex: number) => {
                           // Extract year and month from chart_start or calculate from month string
                           // Month format is "Mon YYYY" (e.g., "Jan 2025")
@@ -544,7 +567,7 @@ const GranttChart = React.forwardRef(({ type, date }: { type: string; date: Date
                               ))}
 
                               {/* Background grid cells */}
-                              {dateList?.date_data?.map((date: any) =>
+                              {visibleDateData?.map((date: any) =>
                                 date.days.map((day: any) => (
                                   <div
                                     key={`${date.month}-${day.day}`}

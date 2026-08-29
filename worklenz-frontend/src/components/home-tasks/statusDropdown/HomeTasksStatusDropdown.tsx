@@ -1,16 +1,13 @@
 import { Badge, Flex, Select } from '@/shared/antd-imports';
 import './home-tasks-status-dropdown.css';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { ITaskStatus } from '@/types/status.types';
 import { useState, useEffect, useMemo } from 'react';
-import { ALPHA_CHANNEL } from '@/shared/constants';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
-import homePageApi, { useGetMyTasksQuery } from '@/api/home-page/home-page.api.service';
 
 type HomeTasksStatusDropdownProps = {
   task: IProjectTask;
@@ -19,12 +16,8 @@ type HomeTasksStatusDropdownProps = {
 
 const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps) => {
   const { t } = useTranslation('task-list-table');
-  const dispatch = useAppDispatch();
   const { socket, connected } = useSocket();
-  const { homeTasksConfig } = useAppSelector(state => state.homePageReducer);
-  const { refetch } = useGetMyTasksQuery(homeTasksConfig, {
-    skip: false, // Ensure this query runs
-  });
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
 
   const [selectedStatus, setSelectedStatus] = useState<ITaskStatus | undefined>(undefined);
 
@@ -53,12 +46,6 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
         status_category: response.statusCategory,
       };
       setSelectedStatus(updatedTask);
-      // Only refetch when there's an actual status change
-      if (response.status_id !== task.status_id) {
-        refetch();
-        // Invalidate task counts cache to refresh calendar badges
-        dispatch(homePageApi.util.invalidateTags(['taskCounts']));
-      }
     }
   };
 
@@ -92,6 +79,13 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
     [task.project_statuses]
   );
 
+  // Solid status color, same convention as the Priority cell's badge —
+  // matches its color_code/color_code_dark + borderRadius: 4 pairing instead
+  // of a diluted alpha-blended pill.
+  const statusColor =
+    (themeMode === 'dark' ? selectedStatus?.color_code_dark : selectedStatus?.color_code) ??
+    selectedStatus?.color_code;
+
   return (
     <>
       {
@@ -99,19 +93,27 @@ const HomeTasksStatusDropdown = ({ task, teamId }: HomeTasksStatusDropdownProps)
           variant="borderless"
           value={task.status_id}
           onChange={handleStatusChange}
+          className="home-status-select"
           styles={{
             popup: {
               root: { borderRadius: 8, minWidth: 150, maxWidth: 200 },
             },
           }}
-          style={{
-            backgroundColor: selectedStatus?.color_code + ALPHA_CHANNEL,
-            borderRadius: 16,
-            height: 22,
-          }}
+          style={
+            {
+              // A CSS var, not `backgroundColor` directly — antd's dark theme
+              // paints its own opaque fill on the inner `.ant-select-selector`
+              // (not the outer node this `style` prop targets), which sat on
+              // top of and hid this color in dark mode. See the matching
+              // `.home-status-select .ant-select-selector` rule in the CSS file.
+              '--status-color': statusColor,
+              borderRadius: 4,
+              height: 22,
+            } as React.CSSProperties
+          }
           labelRender={value => {
             const status = task.project_statuses?.find(status => status.id === value.value);
-            return status ? <span style={{ fontSize: 13 }}>{status.name}</span> : '';
+            return status ? <span style={{ fontSize: 12, color: '#fff' }}>{status.name}</span> : '';
           }}
           options={options}
         />

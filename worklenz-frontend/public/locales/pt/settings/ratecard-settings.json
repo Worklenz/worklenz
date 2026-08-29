@@ -13,7 +13,6 @@
   "createError": "Falha ao criar rate card",
   "deleteSuccess": "Rate card excluído com sucesso",
   "deleteError": "Falha ao excluir rate card",
-
   "jobTitleColumn": "Cargo",
   "ratePerHourColumn": "Taxa por hora",
   "ratePerDayColumn": "Taxa por dia",
@@ -51,5 +50,6 @@
   "cancelButton": "Cancelar",
   "discardButton": "Descartar",
   "manDaysCalculationMessage": "A organização está usando cálculo por dias-homem ({{hours}}h/dia). As taxas acima representam taxas diárias.",
-  "hourlyCalculationMessage": "A organização está usando cálculo por horas. As taxas acima representam taxas horárias."
+  "hourlyCalculationMessage": "A organização está usando cálculo por horas. As taxas acima representam taxas horárias.",
+  "createSuccess": "Cartão de tarifa criado com sucesso"
 }

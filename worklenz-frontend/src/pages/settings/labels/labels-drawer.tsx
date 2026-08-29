@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { theme } from '@/shared/antd-imports';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
+import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 
 const WorklenzColorShades = {
   '#154c9b': [
@@ -309,45 +310,35 @@ const WorklenzColorCodes = Object.values(WorklenzColorShades).flat();
 
 type LabelsDrawerProps = {
   drawerOpen: boolean;
-  labelId: string | null;
+  selectedLabel: ITaskLabel | null;
   drawerClosed: () => void;
 };
 
-const LabelsDrawer = ({ drawerOpen = false, labelId = null, drawerClosed }: LabelsDrawerProps) => {
+const LabelsDrawer = ({
+  drawerOpen = false,
+  selectedLabel = null,
+  drawerClosed,
+}: LabelsDrawerProps) => {
   const { t } = useTranslation('settings/labels');
   const { token } = theme.useToken();
   const [form] = Form.useForm();
 
+  // Populate the form synchronously from data the parent already has.
+  // No network call here, so there is no intermediate render where the
+  // fields are empty/default before the real values show up.
   useEffect(() => {
-    if (labelId) {
-      getLabelById(labelId);
-    } else {
-      form.resetFields();
-      form.setFieldsValue({ color_code: Object.keys(WorklenzColorShades)[0] }); // Set default color
-    }
-  }, [labelId, form]);
+    if (!drawerOpen) return;
 
-  const getLabelById = async (id: string) => {
-    try {
-      const response = await labelsApiService.getLabels();
-      if (response.done) {
-        const label = response.body.find((l: any) => l.id === id);
-        if (label) {
-          form.setFieldsValue({
-            name: label.name,
-            color_code: label.color_code,
-          });
-        }
-      }
-    } catch (error) {
-      message.error(t('fetchLabelErrorMessage', 'Failed to fetch label'));
-    }
-  };
+    form.setFieldsValue({
+      name: selectedLabel?.name ?? '',
+      color_code: selectedLabel?.color_code ?? Object.keys(WorklenzColorShades)[0],
+    });
+  }, [drawerOpen, selectedLabel, form]);
 
   const handleFormSubmit = async (values: { name: string; color_code: string }) => {
     try {
-      if (labelId) {
-        const response = await labelsApiService.updateLabel(labelId, {
+      if (selectedLabel?.id) {
+        const response = await labelsApiService.updateLabel(selectedLabel.id, {
           name: values.name,
           color: values.color_code,
         });
@@ -355,19 +346,19 @@ const LabelsDrawer = ({ drawerOpen = false, labelId = null, drawerClosed }: Labe
           message.success(t('updateLabelSuccessMessage', 'Label updated successfully'));
           drawerClosed();
         }
-      }  else {
-  const response = await labelsApiService.createLabel({
-    name: values.name,
-    color: values.color_code,
-  });
-  if (response.done) {
-    message.success(t('createLabelSuccessMessage', 'Label created successfully'));
-    drawerClosed();
-  }
-}
+      } else {
+        const response = await labelsApiService.createLabel({
+          name: values.name,
+          color: values.color_code,
+        });
+        if (response.done) {
+          message.success(t('createLabelSuccessMessage', 'Label created successfully'));
+          drawerClosed();
+        }
+      }
     } catch (error) {
       message.error(
-        labelId
+        selectedLabel?.id
           ? t('updateLabelErrorMessage', 'Failed to update label')
           : t('createLabelErrorMessage', 'Failed to create label')
       );
@@ -375,7 +366,6 @@ const LabelsDrawer = ({ drawerOpen = false, labelId = null, drawerClosed }: Labe
   };
 
   const handleClose = () => {
-    form.resetFields();
     drawerClosed();
   };
 
@@ -468,7 +458,7 @@ const LabelsDrawer = ({ drawerOpen = false, labelId = null, drawerClosed }: Labe
     <Drawer
       title={
         <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
-          {labelId
+          {selectedLabel
             ? t('updateLabelDrawerTitle', 'Edit Label')
             : t('createLabelDrawerTitle', 'Create Label')}
         </Typography.Text>
@@ -508,7 +498,7 @@ const LabelsDrawer = ({ drawerOpen = false, labelId = null, drawerClosed }: Labe
         <Flex justify="end" gap={8}>
           <Button onClick={handleClose}>{t('cancelButton', 'Cancel')}</Button>
           <Button type="primary" htmlType="submit">
-            {labelId ? t('updateButton', 'Update') : t('createButton', 'Create')}
+            {selectedLabel ? t('updateButton', 'Update') : t('createButton', 'Create')}
           </Button>
         </Flex>
       </Form>

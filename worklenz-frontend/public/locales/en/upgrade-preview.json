@@ -1,0 +1,337 @@
+{
+  "upgradeNowButton": "Upgrade Now",
+  "comingSoonTag": "Coming Soon",
+  "clientPortalMockups": {
+    "requests": {
+      "statusAccepted": "Accepted",
+      "statusPending": "Pending",
+      "statusRejected": "Rejected"
+    },
+    "services": {
+      "statusActive": "Active"
+    }
+  },
+  "cards": {
+    "finance": {
+      "overview": {
+        "title": "Finance Overview",
+        "description": "Budget, actual cost, and variance rolled up across all projects in one place.",
+        "features": [
+          "Budget vs. actual cost per project",
+          "Portfolio-wide variance & utilization",
+          "Projects needing attention, flagged automatically",
+          "Exportable to Excel"
+        ]
+      },
+      "expenses": {
+        "title": "Expenses",
+        "description": "All fixed costs added to project tasks across your team, tracked in one place.",
+        "features": [
+          "Log fixed costs against any task",
+          "See spend by project and assignee",
+          "Included in every project's Finance rollup",
+          "Exportable expense history"
+        ]
+      },
+      "profitability": {
+        "title": "Profitability",
+        "description": "See profit margins by project and team as soon as this feature ships.",
+        "features": [
+          "Revenue vs. cost per project",
+          "Profit margin trends over time",
+          "Team-level profitability breakdown",
+          "Export-ready profitability reports"
+        ]
+      },
+      "budgets": {
+        "title": "Budgets",
+        "description": "Set budgets per project and track spend against them in real time.",
+        "features": [
+          "Project budget planning",
+          "Real-time spend tracking",
+          "Over-budget alerts",
+          "Budget vs. actual reporting"
+        ]
+      },
+      "invoices": {
+        "title": "Invoices",
+        "description": "Generate, send, and track client invoices without leaving Worklenz.",
+        "features": [
+          "Create invoices from tracked time & expenses",
+          "Track paid, pending & overdue invoices",
+          "Client-facing invoice portal",
+          "Payment status at a glance"
+        ]
+      },
+      "billableTime": {
+        "title": "Billable Time",
+        "description": "Track billable vs. non-billable hours across every project and teammate.",
+        "features": [
+          "Billable vs. non-billable breakdown",
+          "Revenue from billable hours",
+          "Per-teammate billable rates",
+          "Exportable timesheets for billing"
+        ]
+      },
+      "utilization": {
+        "title": "Utilization",
+        "description": "See how fully your team's time is allocated across active projects.",
+        "features": [
+          "Team utilization by week or month",
+          "Over- and under-allocated teammates",
+          "Capacity planning at a glance",
+          "Utilization trends over time"
+        ]
+      },
+      "forecasts": {
+        "title": "Forecasts",
+        "description": "Project future revenue and costs based on your active pipeline.",
+        "features": [
+          "Revenue & cost forecasting",
+          "Projected profit margins",
+          "Pipeline-based projections",
+          "Month-over-month forecast trends"
+        ]
+      },
+      "generic": {
+        "title": "Finance",
+        "description": "Track profitability, budgets, invoices, and expenses across every project in one place.",
+        "features": [
+          "Project profitability tracking",
+          "Budgets & forecasts",
+          "Invoicing & expense tracking",
+          "Billable time & utilization reports"
+        ]
+      }
+    },
+    "planner": {
+      "schedule": {
+        "title": "Schedule",
+        "description": "See your whole team's schedule and assign work at a glance.",
+        "features": [
+          "Team-wide weekly & monthly schedule grid",
+          "Drag-to-assign scheduling",
+          "Capacity conflicts flagged automatically",
+          "Real-time updates as work is assigned"
+        ]
+      },
+      "timeline": {
+        "title": "Timeline",
+        "description": "Plan every project on one zoomable timeline.",
+        "features": [
+          "Gantt-style project timelines",
+          "Drag-to-adjust start & end dates",
+          "Cross-project dependency view",
+          "Zoom from days to years"
+        ]
+      },
+      "workload": {
+        "title": "Workload",
+        "description": "Balance capacity across your team before you over-commit them.",
+        "features": [
+          "Per-person allocated vs. available hours",
+          "Over- and under-allocation alerts",
+          "Capacity planning across active projects",
+          "Workload trends over time"
+        ]
+      }
+    },
+    "clientPortal": {
+      "clients": {
+        "title": "Clients",
+        "description": "Give clients a branded portal to track project progress, share files, and stay in the loop.",
+        "features": [
+          "Branded client portal for sharing project progress",
+          "Client requests, approvals & messaging",
+          "Client-facing invoicing",
+          "Unlimited client accounts"
+        ]
+      },
+      "requests": {
+        "title": "Requests",
+        "description": "Let clients submit and track service requests without leaving their portal.",
+        "features": [
+          "Client-submitted service requests",
+          "Accept, reject, or follow up in one place",
+          "Status tracking from submission to completion",
+          "Linked directly to the service that was requested"
+        ]
+      },
+      "services": {
+        "title": "Services",
+        "description": "Publish the services clients can request, and control what they can see.",
+        "features": [
+          "A catalog of requestable services",
+          "Per-service visibility controls",
+          "Request volume per service",
+          "Assign a service owner on your team"
+        ]
+      },
+      "chats": {
+        "title": "Messages",
+        "description": "Message clients directly from the same portal they use for everything else.",
+        "features": [
+          "Direct messaging with clients",
+          "One conversation thread per client",
+          "Searchable conversation history",
+          "Notifications when a client replies"
+        ]
+      },
+      "invoices": {
+        "title": "Invoices",
+        "description": "Create, send, and track client invoices without leaving Worklenz.",
+        "features": [
+          "Create invoices from tracked time & expenses",
+          "Track paid, pending & overdue invoices",
+          "Client-facing invoice portal",
+          "Payment status at a glance"
+        ]
+      },
+      "ticketing": {
+        "title": "Ticketing",
+        "description": "Let clients raise and track support tickets right from their portal.",
+        "features": [
+          "Client-submitted support tickets",
+          "Ticket status tracking & updates",
+          "Internal notes & assignment",
+          "Priority & SLA tagging"
+        ]
+      },
+      "settings": {
+        "title": "Portal Settings",
+        "description": "Customize your client portal with your own branding.",
+        "features": [
+          "Upload your own logo",
+          "Branded header across the portal",
+          "Consistent visual identity for clients",
+          "Company details clients can see"
+        ]
+      }
+    }
+  },
+  "financeMockups": {
+    "overview": {
+      "paginationText": "{{from}}-{{to}} of {{total}}",
+      "perPageText": "{{count}} / page"
+    },
+    "profitability": {
+      "totalRevenue": "Total Revenue",
+      "totalCost": "Total Cost",
+      "netProfit": "Net Profit",
+      "avgMargin": "Avg. Margin",
+      "marginByProjectCard": "Profit Margin by Project"
+    },
+    "budgets": {
+      "totalBudget": "Total Budget",
+      "spent": "Spent",
+      "remaining": "Remaining",
+      "overBudget": "Over Budget",
+      "budgetVsSpendCard": "Budget vs. Spend by Project"
+    },
+    "invoices": {
+      "totalInvoiced": "Total Invoiced",
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "invoicesCard": "Invoices",
+      "invoiceNoColumn": "Invoice #",
+      "clientColumn": "Client",
+      "amountColumn": "Amount",
+      "statusColumn": "Status"
+    },
+    "billableTime": {
+      "billableHours": "Billable Hours",
+      "nonBillableHours": "Non-Billable Hours",
+      "billablePercent": "Billable %",
+      "billableRevenue": "Billable Revenue",
+      "byTeamMemberCard": "Billable Time by Team Member",
+      "teamMemberColumn": "Team Member",
+      "billableHoursColumn": "Billable Hours"
+    },
+    "utilization": {
+      "avgUtilization": "Avg. Utilization",
+      "teamSize": "Team Size",
+      "overutilized": "Overutilized",
+      "underutilized": "Underutilized",
+      "byTeamMemberCard": "Utilization by Team Member",
+      "teamMemberColumn": "Team Member"
+    },
+    "forecasts": {
+      "forecastedRevenue": "Forecasted Revenue",
+      "forecastedCost": "Forecasted Cost",
+      "projectedMargin": "Projected Margin",
+      "forecastWindow": "Forecast Window",
+      "revenueTrendCard": "Revenue Forecast Trend"
+    },
+    "expenses": {
+      "pageTitle": "Project Expenses",
+      "pageSubtitle": "All fixed costs added to project tasks across your team.",
+      "projectColumn": "Project",
+      "taskColumn": "Task",
+      "amountColumn": "Amount",
+      "assigneeColumn": "Assignee",
+      "dateColumn": "Date",
+      "rowsPerPage": "Rows per page: {{count}}"
+    }
+  },
+  "ticketingMockup": {
+    "openTickets": "Open Tickets",
+    "inProgress": "In Progress",
+    "resolvedToday": "Resolved Today",
+    "avgResponseTime": "Avg. Response Time",
+    "ticketsCard": "Tickets",
+    "ticketNoColumn": "Ticket #",
+    "clientColumn": "Client",
+    "subjectColumn": "Subject",
+    "priorityColumn": "Priority",
+    "statusColumn": "Status",
+    "priorityHigh": "High",
+    "priorityMedium": "Medium",
+    "priorityLow": "Low",
+    "statusOpen": "Open",
+    "statusResolved": "Resolved"
+  },
+  "plannerMockup": {
+    "chrome": {
+      "daysOption": "Days",
+      "weeksOption": "Weeks",
+      "monthsOption": "Months",
+      "quartersOption": "Quarters",
+      "yearsOption": "Years",
+      "dayOption": "Day",
+      "weekOption": "Week",
+      "monthOption": "Month",
+      "membersOption": "Members",
+      "projectsOption": "Projects",
+      "priority": "Priority",
+      "category": "Category",
+      "projectStatus": "Project Status",
+      "projectPriority": "Project Priority",
+      "taskLegend": "Task",
+      "projectBlockLegend": "Project block"
+    },
+    "schedule": {
+      "scheduledHours": "Scheduled Hours",
+      "membersScheduled": "Members Scheduled",
+      "unassignedHours": "Unassigned Hours",
+      "overbookedMembers": "Overbooked Members",
+      "memberColumn": "Member",
+      "thisWeekCard": "This Week"
+    },
+    "timeline": {
+      "activeProjects": "Active Projects",
+      "onTrack": "On Track",
+      "atRisk": "At Risk",
+      "avgCompletion": "Avg. Completion",
+      "projectTimelineCard": "Project Timeline"
+    },
+    "workload": {
+      "totalCapacity": "Total Capacity",
+      "allocatedHours": "Allocated Hours",
+      "availableHours": "Available Hours",
+      "overallocatedMembers": "Overallocated Members",
+      "utilColumn": "UTIL",
+      "teamTotalRow": "Team Total"
+    }
+  }
+}

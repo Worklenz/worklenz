@@ -14,7 +14,7 @@ const PhaseHeader = () => {
 
   return (
     <Flex align="center" justify="space-between">
-      {project?.phase_label || t('phasesText')}
+      {t('phasesText', { defaultValue: 'Phases' })}
       <ConfigPhaseButton />
     </Flex>
   );

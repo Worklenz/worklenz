@@ -13,6 +13,7 @@ import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-o
 import {
   validateUuidParam,
   validateUuidArrayParam,
+  validateUuidArrayParamWithSentinels,
   validatePaginationParams,
   validateEnumParam
 } from "../../middlewares/validators/query-param-validator";
@@ -90,7 +91,7 @@ reportingApiRouter.get("/projects",
   teamOwnerOrAdminValidator,
   validateUuidArrayParam("statuses", ","),      // ?statuses=uuid1,uuid2
   validateUuidArrayParam("healths", ","),        // ?healths=uuid1,uuid2
-  validateUuidArrayParam("categories", ","),     // ?categories=uuid1,uuid2
+  validateUuidArrayParamWithSentinels("categories", ",", ["__no_category__"]),     // ?categories=uuid1,uuid2,__no_category__
   validateUuidArrayParam("project_managers", ","), // ?project_managers=uuid1,uuid2
   validateUuidArrayParam("teams", ","),          // ?teams=uuid1,uuid2
   validateEnumParam("archived", ["true", "false"]), // ?archived=true
@@ -101,7 +102,7 @@ reportingApiRouter.get("/projects/grouped",
   teamOwnerOrAdminValidator,
   validateUuidArrayParam("statuses", ","),
   validateUuidArrayParam("healths", ","),
-  validateUuidArrayParam("categories", ","),
+  validateUuidArrayParamWithSentinels("categories", ",", ["__no_category__"]),
   validateUuidArrayParam("project_managers", ","),
   validateUuidArrayParam("teams", ","),
   validateEnumParam("archived", ["true", "false"]),

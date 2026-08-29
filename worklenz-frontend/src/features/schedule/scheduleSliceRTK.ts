@@ -84,7 +84,7 @@ interface ScheduleState {
 
 const initialUIState: UIState = {
   isFullscreen: false,
-  showWeekends: true,
+  showWeekends: false,
   zoomLevel: 1,
   viewMode: 'gantt',
   selectedTimeRange: 'month',

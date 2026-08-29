@@ -7,6 +7,8 @@ import { SocketEvents } from '@/shared/socket-events';
 import { taskTimeLogsApiService } from '@/api/tasks/task-time-logs.api.service';
 import { Modal } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { updateTaskTimeTracking } from '@/features/tasks/tasks.slice';
 
 interface NavbarTimerProps {
   taskId: string;
@@ -23,6 +25,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 }) => {
   const [timeString, setTimeString] = useState('0m 0s');
   const [localRunning, setLocalRunning] = useState(isRunning);
+  const dispatch = useAppDispatch();
   const { socket } = useSocket();
   const { t } = useTranslation('navbar');
 
@@ -67,6 +70,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
   const handleStartTimer = async () => {
     try {
+      const startTimestamp = Date.now();
       // Check for conflicting timers
       const response = await taskTimeLogsApiService.getRunningTimers();
       const runningTimers = response.body || [];
@@ -74,15 +78,23 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
       if (conflictingTimer) {
         Modal.confirm({
-          title: 'Timer Conflict',
-          content: `Another timer is running for "${conflictingTimer.task_name}" in project "${conflictingTimer.project_name}". Do you want to stop it and start this timer?`,
-          okText: 'Stop and Start',
-          cancelText: 'Cancel',
+          title: t('timerButton.conflictTitle', { defaultValue: 'Timer Conflict' }),
+          content: t('timerButton.conflictMessage', {
+            taskName: conflictingTimer.task_name,
+            projectName: conflictingTimer.project_name,
+            defaultValue:
+              'Another timer is running for "{{taskName}}" in project "{{projectName}}". Do you want to stop it and start this timer?',
+          }),
+          okText: t('timerButton.stopAndStart', { defaultValue: 'Stop and Start' }),
+          cancelText: t('timerButton.cancel', { defaultValue: 'Cancel' }),
           onOk: () => {
             // Stop conflicting timer
             socket?.emit(
               SocketEvents.TASK_TIMER_STOP.toString(),
               JSON.stringify({ task_id: conflictingTimer.task_id })
+            );
+            dispatch(
+              updateTaskTimeTracking({ taskId: conflictingTimer.task_id, timeTracking: null })
             );
 
             // Start new timer
@@ -91,6 +103,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
                 SocketEvents.TASK_TIMER_START.toString(),
                 JSON.stringify({ task_id: taskId })
               );
+              dispatch(updateTaskTimeTracking({ taskId, timeTracking: startTimestamp }));
               setLocalRunning(true);
               onTimerChange?.();
             }, 100);
@@ -99,6 +112,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
       } else {
         // No conflict, start timer directly
         socket?.emit(SocketEvents.TASK_TIMER_START.toString(), JSON.stringify({ task_id: taskId }));
+        dispatch(updateTaskTimeTracking({ taskId, timeTracking: startTimestamp }));
         setLocalRunning(true);
         onTimerChange?.();
       }
@@ -109,6 +123,7 @@ const NavbarTimer: React.FC<NavbarTimerProps> = ({
 
   const handleStopTimer = () => {
     socket?.emit(SocketEvents.TASK_TIMER_STOP.toString(), JSON.stringify({ task_id: taskId }));
+    dispatch(updateTaskTimeTracking({ taskId, timeTracking: null }));
     setLocalRunning(false);
     onTimerChange?.();
   };

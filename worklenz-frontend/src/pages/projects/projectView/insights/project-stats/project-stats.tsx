@@ -45,11 +45,11 @@ const ProjectStats = ({ t }: { t: TFunction }) => {
     <table>
       <tbody>
         <tr style={{ display: 'flex', gap: 12 }}>
-          <td style={{ width: 120 }}>{t('common.totalEstimation')}</td>
+          <td style={{ width: 150}}>{t('common.totalEstimation')}</td>
           <td>{stats.total_estimated_hours_string || '0h'}</td>
         </tr>
         <tr style={{ display: 'flex', gap: 12 }}>
-          <td style={{ width: 120 }}>{t('common.totalLogged')}</td>
+          <td style={{ width: 150}}>{t('common.totalLoggedHours')}</td>
           <td>{stats.total_logged_hours_string || '0h'}</td>
         </tr>
       </tbody>

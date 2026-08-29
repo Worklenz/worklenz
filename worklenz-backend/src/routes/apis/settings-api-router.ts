@@ -2,7 +2,9 @@ import express from "express";
 import NotificationController from "../../controllers/notification-controller";
 
 import ProfileSettingsController from "../../controllers/profile-settings-controller";
+import ClientPortalSettingsController from "../../ee/controllers/client-portal/client-portal-settings-controller";
 import OrgConfigurationController from "../../controllers/org-configuration-controller";
+import CurrencyRatesController from "../../controllers/currency-rates-controller";
 
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import profileSettingsBodyValidator from "../../middlewares/validators/profile-settings-body-validator";
@@ -25,10 +27,17 @@ settingsApiRouter.put("/team-name/:id", idParamValidator, teamSettingsBodyValida
 
 settingsApiRouter.put("/mobile-app-banner-dismissed", safeControllerFunction(ProfileSettingsController.dismissMobileAppBanner));
 
-// Client Portal Settings are a Business-plan feature — mounted by the EE settings-client-portal router.
+// Client Portal Settings (for organization-side management)
+settingsApiRouter.get("/client-portal", safeControllerFunction(ClientPortalSettingsController.getSettings));
+settingsApiRouter.put("/client-portal", safeControllerFunction(ClientPortalSettingsController.updateSettings));
+settingsApiRouter.post("/client-portal/upload-logo", safeControllerFunction(ClientPortalSettingsController.uploadLogo));
+settingsApiRouter.get("/client-portal/base-url", safeControllerFunction(ClientPortalSettingsController.getClientPortalBaseUrl));
 
 // Organization Configuration Settings (Business Plan feature)
 settingsApiRouter.get("/configuration", safeControllerFunction(OrgConfigurationController.get));
 settingsApiRouter.put("/configuration", teamOwnerOrAdminValidator, safeControllerFunction(OrgConfigurationController.update));
+
+// Currency exchange rates (cached proxy — no admin restriction)
+settingsApiRouter.get("/currency-rates", safeControllerFunction(CurrencyRatesController.getRates));
 
 export default settingsApiRouter;

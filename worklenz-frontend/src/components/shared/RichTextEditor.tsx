@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import './RichTextEditor.css';
 
 interface RichTextEditorProps {
@@ -38,10 +38,10 @@ export default function RichTextEditor({
     [readOnly]
   );
 
-  const formats = useMemo(
-    () => ['header', 'bold', 'italic', 'underline', 'list', 'bullet', 'link'],
-    []
-  );
+  // 'bullet' is not a registered format in Quill 2 — 'list' covers both the
+  // ordered and bulleted variants. Leaving it in makes Quill log an error for
+  // an unknown format on init.
+  const formats = useMemo(() => ['header', 'bold', 'italic', 'underline', 'list', 'link'], []);
 
   return (
     <div className={`rich-text-editor ${themeMode}`} style={{ minHeight: height }}>

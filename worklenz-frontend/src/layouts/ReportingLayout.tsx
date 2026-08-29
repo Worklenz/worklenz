@@ -1,6 +1,5 @@
-import { Col, ConfigProvider, Layout, theme } from '@/shared/antd-imports';
-import { useEffect, useState } from 'react';
-import Navbar from '@/features/navbar/navbar';
+import { ConfigProvider, theme } from '@/shared/antd-imports';
+import { useEffect } from 'react';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { useAppDispatch } from '../hooks/useAppDispatch';
 import ReportingSider from '../pages/reporting/sidebar/reporting-sider';
@@ -8,15 +7,27 @@ import { Outlet } from 'react-router-dom';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { setCurrentOrganization } from '@/features/reporting/reporting.slice';
 import { fetchOrganizationDetails } from '@/features/admin-center/admin-center.slice';
-import UpgradePlansModal from '@/worklenz-ee/components/UpgradePlansModal';
+import GlobalUpgradeModal from '@/components/upgrade/GlobalUpgradeModal';
 import logger from '@/utils/errorLogger';
+import { useNavPreferences } from '@/features/navigation/useNavPreferences';
+import {
+  NAV_RAIL_BG_DARK,
+  NAV_RAIL_BG_LIGHT,
+  NAV_RAIL_COLLAPSED_WIDTH,
+  NAV_RAIL_DIVIDER_DARK,
+  NAV_RAIL_DIVIDER_LIGHT,
+  NAV_RAIL_EXPANDED_WIDTH,
+} from '@/components/nav-rail/nav-rail-constants';
+import '@/components/nav-rail/nav-rail.css';
 
 const ReportingLayout = () => {
   const dispatch = useAppDispatch();
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const { resolved } = useNavPreferences('reporting');
+  const isCollapsed = resolved.collapsed;
   const { token } = theme.useToken();
-
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const railBg = themeMode === 'dark' ? NAV_RAIL_BG_DARK : NAV_RAIL_BG_LIGHT;
+  const railDividerColor = themeMode === 'dark' ? NAV_RAIL_DIVIDER_DARK : NAV_RAIL_DIVIDER_LIGHT;
 
   const fetchCurrentOrganization = async () => {
     try {
@@ -35,62 +46,42 @@ const ReportingLayout = () => {
     dispatch(fetchOrganizationDetails());
   }, [dispatch]);
 
+  const sidebarWidth = isCollapsed ? NAV_RAIL_COLLAPSED_WIDTH : NAV_RAIL_EXPANDED_WIDTH;
+
   return (
     <ConfigProvider wave={{ disabled: true }}>
-      <Layout style={{ minHeight: '100vh' }}>
-        <Layout.Header
-          className={`shadow-md ${themeMode === 'dark' ? 'shadow-[#5f5f5f1f]' : 'shadow-[#18181811]'}`}
+      <div style={{ display: 'flex', height: 'calc(100vh - 52px)', overflow: 'hidden', background: railBg }}>
+        <div
+          className="nav-rail-width-transition"
           style={{
-            zIndex: 999,
-            position: 'fixed',
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            padding: 0,
+            width: sidebarWidth,
+            minWidth: sidebarWidth,
+            flexShrink: 0,
+            background: railBg,
+            height: '100%',
+            overflow: 'auto',
           }}
         >
-          <Navbar />
-        </Layout.Header>
+          <ReportingSider />
+        </div>
 
-        <Layout style={{ marginTop: 64 }}>
-          <Layout.Sider
-            trigger={null}
-            collapsible
-            collapsed={isCollapsed}
-            collapsedWidth={80}
-            width={240}
-            style={{
-              borderRight: `1px solid ${token.colorBorderSecondary}`,
-              background: token.colorBgContainer,
-              position: 'fixed',
-              height: 'calc(100vh - 64px)',
-              left: 0,
-              top: 64,
-              zIndex: 100,
-              overflow: 'auto',
-            }}
-          >
-            <ReportingSider
-              collapsed={isCollapsed}
-              onToggleCollapse={() => setIsCollapsed(prev => !prev)}
-            />
-          </Layout.Sider>
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: 'auto',
+            padding: 24,
+            background: token.colorBgContainer,
+            borderTopLeftRadius: 12,
+            borderTop: `1px solid ${railDividerColor}`,
+            borderLeft: `1px solid ${railDividerColor}`,
+          }}
+        >
+          <Outlet />
+        </div>
+      </div>
 
-          <Layout
-            style={{
-              marginLeft: isCollapsed ? 80 : 240,
-              transition: 'margin-left 0.2s cubic-bezier(0.645, 0.045, 0.355, 1)',
-            }}
-          >
-            <Layout.Content style={{ padding: 32, minHeight: 'calc(100vh - 64px)' }}>
-              <Outlet />
-            </Layout.Content>
-          </Layout>
-        </Layout>
-      </Layout>
-
-      {/* Global Upgrade Modal */}
-      <UpgradePlansModal />
+      <GlobalUpgradeModal />
     </ConfigProvider>
   );
 };

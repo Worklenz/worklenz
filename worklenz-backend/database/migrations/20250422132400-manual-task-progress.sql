@@ -10,7 +10,7 @@ ADD COLUMN IF NOT EXISTS manual_progress BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS progress_value INTEGER DEFAULT NULL,
 ADD COLUMN IF NOT EXISTS weight INTEGER DEFAULT NULL;
 
--- Update function to consider manual progress
+-- Update function to consider manual progress and count total + subtasks
 CREATE OR REPLACE FUNCTION get_task_complete_ratio(_task_id uuid) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -58,7 +58,7 @@ BEGIN
     INTO _sub_tasks_done;
 
     _total_completed = _parent_task_done + _sub_tasks_done;
-    _total_tasks = _sub_tasks_count; -- +1 for the parent task
+    _total_tasks = _sub_tasks_count + 1; -- +1 for the parent task
     
     IF _total_tasks > 0 THEN
         _ratio = (_total_completed / _total_tasks) * 100;

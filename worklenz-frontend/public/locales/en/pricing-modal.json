@@ -335,7 +335,7 @@
   },
   "customFields": {
     "upgradeModalHeadline": "Capture every detail with unlimited custom fields",
-    "upgradeModalSubCopy": "Your plan includes up to 10 custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.",
+    "upgradeModalSubCopy": "Your plan includes up to {{limit}} custom fields. Upgrade to Business to create unlimited fields and track exactly what matters to your team.",
     "benefit1": "Unlimited custom fields per project",
     "benefit2": "Field types: text, number, dropdown, date, and more",
     "benefit3": "Fields sync across all task views"

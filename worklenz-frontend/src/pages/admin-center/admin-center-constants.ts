@@ -9,7 +9,7 @@ import React, { ReactNode, lazy } from 'react';
 const Overview = lazy(() => import('./overview/overview'));
 const Users = lazy(() => import('./users/users'));
 const Teams = lazy(() => import('./teams/teams'));
-const Billing = lazy(() => import('./billing/BillingSection'));
+const Billing = lazy(() => import('../../ee/pages/admin-center/billing/BillingSection'));
 const Projects = lazy(() => import('./projects/projects'));
 
 // type of a menu item in admin center sidebar

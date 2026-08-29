@@ -36,7 +36,9 @@ const EstimatedVsActualTimeReports = () => {
             style={{
               padding: '16px 0',
               display: 'flex',
+              flexWrap: 'wrap',
               justifyContent: 'space-between',
+              rowGap: 12,
             }}
           >
             <TimeReportPageHeader />
@@ -58,7 +60,7 @@ const EstimatedVsActualTimeReports = () => {
         }
         styles={{
           body: {
-            maxWidth: 'calc(100vw - 220px)',
+            width: '100%',
             overflowX: 'auto',
             padding: '16px',
           },

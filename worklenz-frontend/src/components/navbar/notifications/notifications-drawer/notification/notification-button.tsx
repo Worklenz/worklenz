@@ -1,35 +1,33 @@
 import { BellOutlined } from '@/shared/antd-imports';
-import { Badge, Button, Tooltip } from '@/shared/antd-imports';
+import { Badge, Tooltip } from '@/shared/antd-imports';
 import { toggleDrawer } from '@features/navbar/notificationSlice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useTooltipTheme } from '@/hooks/useTooltipTheme';
+import '@/features/navbar/navbar-icon-hover.css';
 
 const NotificationButton = () => {
   const dispatch = useAppDispatch();
   const { unreadNotificationsCount } = useAppSelector(state => state.notificationReducer);
   const { t } = useTranslation('navbar');
+  const { tooltipProps } = useTooltipTheme();
 
   const hasUnreadNotifications = () => {
     return unreadNotificationsCount > 0;
   };
 
   return (
-    <Tooltip title={t('notificationTooltip')} trigger={'hover'}>
-      <Button
-        style={{ height: '62px', width: '60px' }}
-        type="text"
-        icon={
-          hasUnreadNotifications() ? (
-            <Badge count={unreadNotificationsCount}>
-              <BellOutlined style={{ fontSize: 20 }} />
-            </Badge>
-          ) : (
+    <Tooltip title={t('notificationTooltip')} trigger={'hover'} {...tooltipProps}>
+      <button className="navbar-icon-hover" onClick={() => dispatch(toggleDrawer())}>
+        {hasUnreadNotifications() ? (
+          <Badge count={unreadNotificationsCount}>
             <BellOutlined style={{ fontSize: 20 }} />
-          )
-        }
-        onClick={() => dispatch(toggleDrawer())}
-      />
+          </Badge>
+        ) : (
+          <BellOutlined style={{ fontSize: 20 }} />
+        )}
+      </button>
     </Tooltip>
   );
 };

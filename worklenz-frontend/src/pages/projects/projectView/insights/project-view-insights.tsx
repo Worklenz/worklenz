@@ -1,5 +1,6 @@
 import { DownloadOutlined } from '@/shared/antd-imports';
-import { Badge, Button, Checkbox, Flex, Segmented } from '@/shared/antd-imports';
+import { Badge, Button, Checkbox, Flex } from '@/shared/antd-imports';
+import PillToggle from '@/pages/home/PillToggle';
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -138,11 +139,14 @@ const ProjectViewInsights = () => {
   return (
     <Flex vertical gap={24}>
       <Flex align="center" justify="space-between">
-        <Segmented
-          options={['Overview', 'Members', 'Tasks']}
-          defaultValue={activeSegment}
+        <PillToggle<SegmentType>
           value={activeSegment}
           onChange={handleSegmentChange}
+          options={[
+            { value: 'Overview', label: t('overviewTab', { defaultValue: 'Overview' }) },
+            { value: 'Members', label: t('membersTab', { defaultValue: 'Members' }) },
+            { value: 'Tasks', label: t('tasksTab', { defaultValue: 'Tasks' }) },
+          ]}
         />
 
         <Flex gap={8}>

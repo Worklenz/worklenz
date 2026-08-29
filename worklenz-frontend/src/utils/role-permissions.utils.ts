@@ -6,7 +6,10 @@ export const normalizeRoleName = (roleName?: string, isOwner?: boolean): RoleNam
     return ROLE_NAMES.OWNER;
   }
 
-  const normalizedRoleName = roleName?.toLowerCase().trim();
+  const normalizedRoleName = roleName
+    ?.toLowerCase()
+    .trim()
+    .replace(/[_\s]+/g, ' ');
 
   if (normalizedRoleName === 'owner') {
     return ROLE_NAMES.OWNER;

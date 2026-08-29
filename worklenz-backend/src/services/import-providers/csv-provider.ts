@@ -2,12 +2,17 @@ import createHttpError from "http-errors";
 import { ImportProvider, ProviderResult } from "./provider-types";
 import { ImportJob, StageTaskRow } from "../imports-service";
 
+// Upper bound on CSV payload we will parse. Keeps the single-pass loop below
+// from being driven by an attacker-controlled length (CodeQL loop-bound check).
+const MAX_CSV_LENGTH = 10 * 1024 * 1024; // 10 MB
+
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let current: string[] = [];
   let field = "";
   let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
+  const len = Math.min(text.length, MAX_CSV_LENGTH);
+  for (let i = 0; i < len; i++) {
     const char = text[i];
     const next = text[i + 1];
     if (char === '"') {
@@ -49,8 +54,11 @@ export default class CsvProvider implements ImportProvider {
     _job: ImportJob,
     payload?: Record<string, unknown>
   ): Promise<ProviderResult> {
-    const csvText = (payload?.csvText as string) || "";
+    const csvText = typeof payload?.csvText === "string" ? payload.csvText : "";
     if (!csvText.trim()) return { tasks: [], fields: [] };
+    if (csvText.length > MAX_CSV_LENGTH) {
+      throw createHttpError(400, "The CSV file is too large. Please upload a file smaller than 10 MB.");
+    }
 
     // Reject binary content (PDF, images, etc.) — check for non-text byte sequences
     const sample = csvText.slice(0, 512);

@@ -3,7 +3,6 @@ import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import {
   Card,
   Checkbox,
-  Collapse,
   InboxOutlined,
   Input,
   PlusOutlined,
@@ -18,6 +17,7 @@ import {
 const MOVE_USERS_ROW_HEIGHT = 52;
 const MOVE_USERS_MAX_LIST_HEIGHT = 420;
 const CREATE_CUSTOM_FIELD_PREFIX = '__create_custom__:';
+export const CREATE_NEW_STATUS_PREFIX = '__create_new_status__:';
 
 const toCustomFieldKey = (value: string): string => {
   const normalized = value
@@ -73,6 +73,11 @@ interface CsvMappingStepsContentProps {
   statusOptions: WorkTypeOption[];
   statusValueMapping: Record<string, string>;
   setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  pendingNewStatuses: Record<string, { name: string; categoryId: string }>;
+  setPendingNewStatuses: React.Dispatch<
+    React.SetStateAction<Record<string, { name: string; categoryId: string }>>
+  >;
+  statusCategories: Array<{ id?: string; name?: string; color_code?: string }>;
   csvUserRows: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -128,6 +133,191 @@ const MoveUsersRow = ({ index, style, data }: ListChildComponentProps<MoveUserLi
   );
 };
 
+interface StatusValueRowProps {
+  value: string;
+  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  palette: MoveUserListData['palette'];
+  statusOptions: WorkTypeOption[];
+  statusValueMapping: Record<string, string>;
+  setStatusValueMapping: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  pendingNewStatuses: Record<string, { name: string; categoryId: string }>;
+  setPendingNewStatuses: React.Dispatch<
+    React.SetStateAction<Record<string, { name: string; categoryId: string }>>
+  >;
+  statusCategories: Array<{ id?: string; name?: string; color_code?: string }>;
+  defaultCategoryId: string;
+}
+
+const StatusValueRow: React.FC<StatusValueRowProps> = ({
+  value,
+  t,
+  palette,
+  statusOptions,
+  statusValueMapping,
+  setStatusValueMapping,
+  pendingNewStatuses,
+  setPendingNewStatuses,
+  statusCategories,
+  defaultCategoryId,
+}) => {
+  const [searchText, setSearchText] = React.useState('');
+  const storedValue = statusValueMapping[value];
+  const isPendingNew = !!storedValue?.startsWith(CREATE_NEW_STATUS_PREFIX);
+  const pendingName = pendingNewStatuses[value]?.name;
+
+  const trimmedSearch = searchText.trim();
+  const matchesExisting = statusOptions.some(
+    wt => wt.label.trim().toLowerCase() === trimmedSearch.toLowerCase()
+  );
+  const showCreateOption = trimmedSearch.length > 0 && !matchesExisting;
+
+  const options = [
+    ...statusOptions.map(wt => ({ value: wt.key, label: wt.label, wt })),
+    ...(showCreateOption
+      ? [
+          {
+            value: `${CREATE_NEW_STATUS_PREFIX}${trimmedSearch}`,
+            label: t('importStep.createNewStatus', {
+              defaultValue: 'Create new status "{{name}}"',
+              name: trimmedSearch,
+            }),
+            wt: null,
+          },
+        ]
+      : []),
+    // Keep whatever "create new status: X" choice is already selected visible in the
+    // closed Select even after the search text is cleared.
+    ...(isPendingNew && pendingName && !showCreateOption
+      ? [
+          {
+            value: storedValue,
+            label: t('importStep.newStatusChip', {
+              defaultValue: 'New status "{{name}}"',
+              name: pendingName,
+            }),
+            wt: null,
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <div
+      style={{
+        background: palette.inputBg,
+        borderRadius: 8,
+        marginBottom: 8,
+        padding: '4px 0',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', minHeight: 44 }}>
+        <span style={{ flex: 2, paddingLeft: 8, color: palette.text, fontSize: 16 }}>{value}</span>
+        <span style={{ flex: 1, textAlign: 'center', color: palette.textSecondary, fontSize: 20 }}>
+          &rarr;
+        </span>
+        <span style={{ flex: 2 }}>
+          <Select
+            showSearch
+            value={storedValue || undefined}
+            searchValue={searchText}
+            onSearch={setSearchText}
+            onChange={val => {
+              setSearchText('');
+              if (val.startsWith(CREATE_NEW_STATUS_PREFIX)) {
+                const name = val.slice(CREATE_NEW_STATUS_PREFIX.length).trim();
+                setStatusValueMapping(m => ({ ...m, [value]: val }));
+                setPendingNewStatuses(p => ({
+                  ...p,
+                  [value]: { name, categoryId: defaultCategoryId },
+                }));
+                return;
+              }
+              setStatusValueMapping(m => ({ ...m, [value]: val }));
+              setPendingNewStatuses(p => {
+                if (!p[value]) return p;
+                const copy = { ...p };
+                delete copy[value];
+                return copy;
+              });
+            }}
+            filterOption={false}
+            placeholder={t('importStep.selectWorkType', { defaultValue: 'Select status' })}
+            style={{
+              width: '100%',
+              background: palette.rowBg,
+              color: palette.text,
+              border: `1px solid ${palette.border}`,
+            }}
+            styles={{ popup: { root: { background: palette.rowBg, color: palette.text } } }}
+            popupRender={menu => (
+              <>
+                <div
+                  style={{
+                    padding: '8px 12px',
+                    color: palette.textSecondary,
+                    fontWeight: 500,
+                    fontSize: 13,
+                  }}
+                >
+                  {showCreateOption
+                    ? t('importStep.typeToCreateStatus', 'TYPE A NAME TO CREATE A NEW STATUS')
+                    : 'MAP TO A SUGGESTED STATUS'}
+                </div>
+                {menu}
+                <div style={{ borderTop: `1px solid ${palette.border}`, margin: '8px 0' }} />
+                <div
+                  style={{ padding: '8px 12px', color: palette.primary, cursor: 'pointer' }}
+                  onClick={() => {
+                    setSearchText('');
+                    setStatusValueMapping(m => {
+                      const copy = { ...m };
+                      delete copy[value];
+                      return copy;
+                    });
+                    setPendingNewStatuses(p => {
+                      if (!p[value]) return p;
+                      const copy = { ...p };
+                      delete copy[value];
+                      return copy;
+                    });
+                  }}
+                >
+                  Clear selection
+                </div>
+              </>
+            )}
+            optionLabelProp="label"
+            options={options}
+          />
+        </span>
+      </div>
+      {isPendingNew && statusCategories.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 8, paddingBottom: 4 }}>
+          <span style={{ flex: 2 }} />
+          <span style={{ flex: 1 }} />
+          <span style={{ flex: 2, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Typography.Text style={{ color: palette.primary, fontSize: 12, whiteSpace: 'nowrap' }}>
+              {t('importStep.willCreateStatusIn', { defaultValue: 'Will create in:' })}
+            </Typography.Text>
+            <Select
+              size="small"
+              value={pendingNewStatuses[value]?.categoryId || defaultCategoryId}
+              onChange={categoryId =>
+                setPendingNewStatuses(p => ({
+                  ...p,
+                  [value]: { name: p[value]?.name || '', categoryId },
+                }))
+              }
+              style={{ minWidth: 130 }}
+              options={statusCategories.map(cat => ({ value: cat.id, label: cat.name }))}
+            />
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   step,
   t,
@@ -147,31 +337,19 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
   statusOptions,
   statusValueMapping,
   setStatusValueMapping,
+  pendingNewStatuses,
+  setPendingNewStatuses,
+  statusCategories,
   csvUserRows,
   userEmails,
   setUserEmails,
   addUsers,
   setAddUsers,
 }) => {
-  const browserLocale = React.useMemo(() => {
-    if (typeof navigator !== 'undefined' && navigator.language) return navigator.language;
-    return 'en-US';
-  }, []);
-
-  const browserTimezone = React.useMemo(() => {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    } catch (error) {
-      return 'UTC';
-    }
-  }, []);
-
-  const timezoneOptions = React.useMemo(() => {
-    const common = ['UTC', 'Asia/Colombo', 'America/New_York', 'Europe/London'];
-    const all = Array.from(new Set([browserTimezone, ...common]));
-    return all.map(zone => ({ value: zone, label: zone }));
-  }, [browserTimezone]);
-
+  const defaultCategoryId = React.useMemo(() => {
+    const todoCategory = statusCategories.find(cat => /to.?do/i.test(cat.name || ''));
+    return todoCategory?.id || statusCategories[0]?.id || '';
+  }, [statusCategories]);
   const palette = React.useMemo(
     () => ({
       text: themeToken.colorText,
@@ -216,6 +394,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
         ...worklenzFieldOptions.map(option => ({
           value: option.value,
           label: option.label,
+          searchLabel: option.label.toLowerCase(),
         })),
         {
           value: `${CREATE_CUSTOM_FIELD_PREFIX}${columnName}`,
@@ -256,76 +435,6 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
         <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 16 }}>
           {t('importStep.mapFieldsDescription', { defaultValue: '' })}
         </Typography.Paragraph>
-
-        <Collapse ghost style={{ marginBottom: 16 }} bordered={false} expandIconPosition="start">
-          <Collapse.Panel
-            header={
-              <span style={{ color: palette.primary, fontSize: 15 }}>
-                &gt; Date and time parsing options (optional)
-              </span>
-            }
-            key="dateTimeFormat"
-            style={{ background: 'transparent', border: 'none', padding: 0 }}
-          >
-            <Typography.Paragraph style={{ color: palette.textSecondary, marginBottom: 8 }}>
-              {t('importStep.dateParsingOptional', {
-                defaultValue:
-                  'Use these only if imported dates look incorrect. By default, we try to infer values from your CSV and browser settings.',
-              })}
-            </Typography.Paragraph>
-            <div style={{ display: 'flex', gap: 24, marginBottom: 8, marginTop: 8 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Typography.Text style={{ color: palette.text, fontWeight: 500, marginBottom: 2 }}>
-                  {t('importStep.dateTimeFormatOptional', {
-                    defaultValue: 'Date and time format (optional)',
-                  })}
-                </Typography.Text>
-                <Input
-                  placeholder={t('importStep.dateTimeFormatPlaceholder', {
-                    defaultValue: 'Auto-detect (e.g. dd/MMM/yy h:mm a)',
-                  })}
-                  style={{
-                    width: '100%',
-                    background: palette.inputBg,
-                    color: palette.text,
-                    border: `1px solid ${palette.border}`,
-                  }}
-                />
-                <Typography.Text style={{ color: palette.textMuted, fontSize: 12 }}>
-                  e.g. dd/MMM/yy h:mm a
-                </Typography.Text>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Typography.Text style={{ color: palette.text, fontWeight: 500, marginBottom: 2 }}>
-                  {t('importStep.localeOptional', { defaultValue: 'Locale (optional)' })}
-                </Typography.Text>
-                <Select defaultValue={browserLocale} style={{ width: '100%' }}>
-                  <Select.Option value={browserLocale}>
-                    {t('importStep.detectedLocale', {
-                      defaultValue: '{{locale}} (detected)',
-                      locale: browserLocale,
-                    })}
-                  </Select.Option>
-                  <Select.Option value="en-US">English (US)</Select.Option>
-                  <Select.Option value="fr">French (FR)</Select.Option>
-                  <Select.Option value="de">German (DE)</Select.Option>
-                </Select>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <Typography.Text style={{ color: palette.text, fontWeight: 500, marginBottom: 2 }}>
-                  {t('importStep.timezoneOptional', { defaultValue: 'Timezone (optional)' })}
-                </Typography.Text>
-                <Select defaultValue={browserTimezone} style={{ width: '100%' }}>
-                  {timezoneOptions.map(option => (
-                    <Select.Option key={option.value} value={option.value}>
-                      {option.label}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          </Collapse.Panel>
-        </Collapse>
 
         <Typography.Text style={{ color: palette.textSecondary, display: 'block', marginBottom: 12 }}>
           {t('importStep.customColumnHint', {
@@ -448,7 +557,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
                           }}
                           options={[
                             ...(storedValue && !mappingOptions.some(option => option.value === storedValue)
-                              ? [{ value: storedValue, label: displayValue, searchLabel: displayValue.toLowerCase() }]
+                              ? [{ value: storedValue, label: displayValue, searchLabel: String(displayValue).toLowerCase() }]
                               : []),
                             ...mappingOptions,
                           ]}
@@ -574,81 +683,19 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           <div style={{ color: palette.textMuted, margin: '24px 0' }}>{emptyValuesMessage}</div>
         ) : (
           filteredValues.map(value => (
-            <div
+            <StatusValueRow
               key={value}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: palette.inputBg,
-                borderRadius: 8,
-                marginBottom: 8,
-                minHeight: 44,
-              }}
-            >
-              <span style={{ flex: 2, paddingLeft: 8, color: palette.text, fontSize: 16 }}>
-                {value}
-              </span>
-              <span style={{ flex: 1, textAlign: 'center', color: palette.textSecondary, fontSize: 20 }}>
-                &rarr;
-              </span>
-              <span style={{ flex: 2 }}>
-                <Select
-                  value={statusValueMapping[value] || undefined}
-                  onChange={val => setStatusValueMapping(m => ({ ...m, [value]: val }))}
-                  placeholder={t('importStep.selectWorkType', {
-                    defaultValue: 'Select status',
-                  })}
-                  style={{
-                    width: '100%',
-                    background: palette.rowBg,
-                    color: palette.text,
-                    border: `1px solid ${palette.border}`,
-                  }}
-                  styles={{ popup: { root: { background: palette.rowBg, color: palette.text } } }}
-                  popupRender={menu => (
-                    <>
-                      <div
-                        style={{
-                          padding: '8px 12px',
-                          color: palette.textSecondary,
-                          fontWeight: 500,
-                          fontSize: 13,
-                        }}
-                      >
-                        MAP TO A SUGGESTED STATUS
-                      </div>
-                      {menu}
-                      <div style={{ borderTop: `1px solid ${palette.border}`, margin: '8px 0' }} />
-                      <div
-                        style={{ padding: '8px 12px', color: palette.primary, cursor: 'pointer' }}
-                        onClick={() => {
-                          setStatusValueMapping(m => {
-                            const copy = { ...m };
-                            delete copy[value];
-                            return copy;
-                          });
-                        }}
-                      >
-                        Clear selection
-                      </div>
-                    </>
-                  )}
-                  optionLabelProp="label"
-                >
-                  {statusOptions.map(wt => (
-                    <Select.Option key={wt.key} value={wt.key} label={wt.label}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {wt.icon}
-                        <span style={{ color: palette.text }}>{wt.label}</span>
-                        <span style={{ color: palette.textSecondary, fontSize: 13, marginLeft: 8 }}>
-                          {t('importStep.statusLevel', 'Level')} {wt.level}
-                        </span>
-                      </span>
-                    </Select.Option>
-                  ))}
-                </Select>
-              </span>
-            </div>
+              value={value}
+              t={t}
+              palette={palette}
+              statusOptions={statusOptions}
+              statusValueMapping={statusValueMapping}
+              setStatusValueMapping={setStatusValueMapping}
+              pendingNewStatuses={pendingNewStatuses}
+              setPendingNewStatuses={setPendingNewStatuses}
+              statusCategories={statusCategories}
+              defaultCategoryId={defaultCategoryId}
+            />
           ))
         )}
       </div>
@@ -683,7 +730,7 @@ export const CsvMappingStepsContent: React.FC<CsvMappingStepsContentProps> = ({
           <Card
             style={{
               marginBottom: 24,
-              maxWidth: 680,
+              width: '100%',
               background: palette.infoBg,
               borderColor: palette.infoBorder,
             }}

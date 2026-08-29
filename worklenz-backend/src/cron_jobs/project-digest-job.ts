@@ -1,4 +1,5 @@
 import {CronJob} from "cron";
+import {PoolClient} from "pg";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
 import {getBaseUrl} from "./helpers";
@@ -35,9 +36,11 @@ async function onProjectDigestJobTick() {
   }
 
   let hasLock = false;
+  let lockClient: PoolClient | null = null;
   isRunning = true;
   try {
-    const lockResult = await db.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-project-digest"]);
+    lockClient = await db.pool.connect();
+    const lockResult = await lockClient.query("SELECT pg_try_advisory_lock(hashtext($1)) AS locked;", ["worklenz-project-digest"]);
     hasLock = !!lockResult.rows[0]?.locked;
     if (!hasLock) {
       log("(cron) Another instance is running project digest job, skipping tick.");
@@ -46,7 +49,7 @@ async function onProjectDigestJobTick() {
 
     log("(cron) Daily digest job started.");
     const q = "SELECT get_project_daily_digest() AS digest;";
-    const result = await db.query(q, []);
+    const result = await lockClient.query(q, []);
     const [fn] = result.rows;
 
     const dataset: IProjectDigest[] = fn.digest || [];
@@ -75,13 +78,14 @@ async function onProjectDigestJobTick() {
     log_error(error);
     log("(cron) Project digest job ended with errors.");
   } finally {
-    if (hasLock) {
+    if (hasLock && lockClient) {
       try {
-        await db.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-project-digest"]);
+        await lockClient.query("SELECT pg_advisory_unlock(hashtext($1));", ["worklenz-project-digest"]);
       } catch (error) {
         log_error(error);
       }
     }
+    lockClient?.release();
     isRunning = false;
   }
 }

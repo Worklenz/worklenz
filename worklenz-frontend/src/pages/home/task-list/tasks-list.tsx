@@ -190,9 +190,7 @@ const TasksList: React.FC = React.memo(() => {
     setCurrentPage(1);
   };
 
-  // Add effect to handle task config changes
   useEffect(() => {
-    // Only refetch if we're not skipping auto refetch
     if (!skipAutoRefetch) {
       originalRefetch();
     }
@@ -251,7 +249,8 @@ const TasksList: React.FC = React.memo(() => {
     >
       {/* toggle task view list / calendar */}
       {viewOptions === 'List' ? (
-        <ListView refetch={refetch} model={data?.body || (model as IHomeTasksModel)} />
+      <ListView model={data?.body || (model as IHomeTasksModel)} />
+
       ) : (
         <CalendarView />
       )}

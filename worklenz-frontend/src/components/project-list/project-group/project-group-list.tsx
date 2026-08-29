@@ -5,7 +5,6 @@ import {
   Skeleton,
   Typography,
   Tooltip,
-  Badge,
   Space,
   theme,
   Divider,
@@ -23,16 +22,18 @@ import {
 } from '@/shared/antd-imports';
 
 import { ProjectGroupListProps } from '@/types/project/project.types';
+import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
+import { getContrastColor } from '@/utils/colorUtils';
 
 import {
   fetchProjectData,
   setProjectId,
   setProjectData,
-  toggleProjectDrawer,
 } from '@/features/project/project-drawer.slice';
+import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 
 import {
   toggleArchiveProject,
@@ -50,10 +51,63 @@ import {
 } from '@/shared/worklenz-analytics-events';
 
 import logger from '@/utils/errorLogger';
+import { simpleDateFormat } from '@/utils/simpleDateFormat';
 import { ProjectRateCell } from '@/components/project-list/project-list-table/project-list-favorite/project-rate-cell';
 import { ProjectListUpdatedAt } from '@/components/project-list/project-list-table/project-list-updated-at/project-list-updated';
 
 const { Title, Text } = Typography;
+
+// ── Presence-aware comparators for Client / Category columns.
+//
+// Requirement: projects that HAVE a client/category must always appear
+// above projects that don't — in BOTH ascending and descending order.
+// Only the alphabetical ordering *within* the "has a value" group (and
+// within the "no value" group) should flip with direction.
+//
+// AntD's default column `sorter` return value gets auto-negated whenever
+// the user switches to descending, so a plain comparator function can
+// never keep the "has value" group pinned in place across both directions
+// — the presence check would flip right along with the alphabetical part.
+// To avoid that, these columns use `sorter: true` (no auto comparator) and
+// we sort the data ourselves in `getSortedProjects` based on tracked sort
+// state, applying direction only to the alphabetical part.
+const compareClientPresenceTop = (
+  a: IProjectViewModel,
+  b: IProjectViewModel,
+  order?: 'ascend' | 'descend'
+): number => {
+  const aVal = a.client_name?.trim();
+  const bVal = b.client_name?.trim();
+  const aHas = !!aVal;
+  const bHas = !!bVal;
+
+  // Presence always wins, regardless of direction.
+  if (aHas !== bHas) return aHas ? -1 : 1;
+  // Neither has a client -> equal
+  if (!aHas && !bHas) return 0;
+
+  const cmp = aVal!.localeCompare(bVal!);
+  return order === 'descend' ? -cmp : cmp;
+};
+
+const compareCategoryPresenceTop = (
+  a: IProjectViewModel,
+  b: IProjectViewModel,
+  order?: 'ascend' | 'descend'
+): number => {
+  const aVal = a.category_name?.trim();
+  const bVal = b.category_name?.trim();
+  const aHas = !!aVal;
+  const bHas = !!bVal;
+
+  // Presence always wins, regardless of direction.
+  if (aHas !== bHas) return aHas ? -1 : 1;
+  // Neither has a category -> equal
+  if (!aHas && !bHas) return 0;
+
+  const cmp = aVal!.localeCompare(bVal!);
+  return order === 'descend' ? -cmp : cmp;
+};
 
 const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   groups = [],
@@ -63,20 +117,63 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
   t,
 }) => {
   const { groupedRequestParams } = useAppSelector(state => state.projectsReducer);
+  const projectListFields = useAppSelector(state => state.projectListFieldsReducer.fields);
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const dispatch = useAppDispatch();
   const isOwnerOrAdmin = useAuthService().isOwnerOrAdmin();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  // Track which groups are collapsed. Default: all collapsed on first load.
+  // Track which groups are collapsed. Default: only the first group expanded.
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const hasInitialized = React.useRef(false);
+
+  // Manual sort state per group table, used only for the CLIENT and
+  // CATEGORY columns (see compareClientPresenceTop / compareCategoryPresenceTop
+  // above for why these two need controlled sorting instead of AntD's default).
+  const [sortStates, setSortStates] = useState<
+    Record<string, { columnKey?: string; order?: 'ascend' | 'descend' }>
+  >({});
+
+  const handleSortChange = useCallback((groupKey: string, sorterResult: any) => {
+    setSortStates(prev => ({
+      ...prev,
+      [groupKey]: {
+        columnKey: sorterResult?.columnKey as string | undefined,
+        order: sorterResult?.order as 'ascend' | 'descend' | undefined,
+      },
+    }));
+  }, []);
+
+  // Applies manual sorting only when the active sorted column is CLIENT or
+  // CATEGORY. For every other column, AntD's own internal sorter (the
+  // `sorter` function defined on that column) already handles it correctly,
+  // so we just return the projects untouched and let the Table component sort.
+  const getSortedProjects = useCallback(
+    (
+      projects: IProjectViewModel[],
+      sortInfo?: { columnKey?: string; order?: 'ascend' | 'descend' }
+    ) => {
+      if (!sortInfo?.order || !sortInfo.columnKey) return projects;
+
+      if (sortInfo.columnKey === 'CLIENT') {
+        return [...projects].sort((a, b) => compareClientPresenceTop(a, b, sortInfo.order));
+      }
+      if (sortInfo.columnKey === 'CATEGORY') {
+        return [...projects].sort((a, b) => compareCategoryPresenceTop(a, b, sortInfo.order));
+      }
+      return projects;
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (!hasInitialized.current && groups.length > 0) {
       hasInitialized.current = true;
-      setCollapsedGroups(new Set(groups.map((g, i) => g?.groupKey || String(i))));
+      const collapsedByDefault = groups
+        .map((g, i) => g?.groupKey || String(i))
+        .filter((_, i) => i !== 0);
+      setCollapsedGroups(new Set(collapsedByDefault));
     }
   }, [groups]);
 
@@ -121,7 +218,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
 
   const handleSettingsClick = (e: React.MouseEvent, project: any) => {
     e.stopPropagation();
-    if (!project?.id) return;
+    if (!project?.id || project?.is_guest) return;  // ✅ Prevent opening settings for guests
     trackMixpanelEvent(evt_projects_settings_click);
     dispatch(setProjectId(project.id));
     dispatch(fetchProjectData(project.id))
@@ -136,11 +233,11 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
             priority_color_dark: projectData.priority_color_dark || project.priority_color_dark,
           })
         );
-        dispatch(toggleProjectDrawer());
+        dispatch(openProjectSettingsModal());
       })
       .catch(() => {
         dispatch(setProjectData(project));
-        dispatch(toggleProjectDrawer());
+        dispatch(openProjectSettingsModal());
       });
   };
 
@@ -159,16 +256,28 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
     }
   };
 
+  // Helper to check if a field is visible
+  const isFieldVisible = useCallback(
+    (fieldKey: string) => {
+      const field = projectListFields.find(f => f.key === fieldKey);
+      return field?.visible ?? true;
+    },
+    [projectListFields]
+  );
+
   // ✅ Column order: Favorite → Name → Client → Priority → Status → Tasks Progress → Category → Last Updated → Actions
-  const tableColumns = useMemo(
+  // Sorting: each column below gets a `sorter`. Since every group renders its own
+  // <Table> instance, AntD keeps sort state scoped to that instance automatically —
+  // sorting one group's table does NOT affect sibling groups.
+  const allTableColumns = useMemo(
     () => [
       // 1. Favorite
       {
         title: '',
-        key: 'favorite',
+        key: 'FAVORITE',
         width: 56,
         align: 'center' as const,
-        render: (_: any, record: any) => (
+        render: (_: any, record: IProjectViewModel) => (
           <ProjectRateCell key={record.id} t={t as any} record={record} />
         ),
       },
@@ -176,9 +285,12 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: t('name', { defaultValue: 'Name' }),
         dataIndex: 'name',
-        key: 'name',
+        key: 'NAME',
         width: 280,
-        render: (text: string, record: any) => (
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          (a.name || '').localeCompare(b.name || ''),
+        showSorterTooltip: false,
+        render: (text: string, record: IProjectViewModel) => (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span
               style={{
@@ -209,25 +321,50 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         ),
       },
       // 3. Client
+      // FIX: projects with an assigned client must always sort above projects
+      // without one, in BOTH ascending and descending order. AntD auto-negates
+      // a plain comparator's return value on descend, which would flip that
+      // presence check along with the alphabetical part. So this column uses
+      // `sorter: true` (no auto comparator) — actual sorting happens manually
+      // in getSortedProjects, using compareClientPresenceTop, which applies
+      // direction only to the alphabetical ordering and keeps "has client"
+      // pinned on top regardless of direction.
       {
         title: t('client', { defaultValue: 'Client' }),
         dataIndex: 'client_name',
-        key: 'client_name',
+        key: 'CLIENT',
+        sorter: true,
+        showSorterTooltip: false,
         render: (text: string) => text || '—',
       },
       // 4. Priority
       {
         title: t('priority', { defaultValue: 'Priority' }),
         dataIndex: 'priority_name',
-        key: 'priority_name',
-        render: (_: any, record: any) => {
+        key: 'PRIORITY',
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          (a.priority_name || '').localeCompare(b.priority_name || ''),
+        showSorterTooltip: false,
+        render: (_: any, record: IProjectViewModel) => {
           if (!record.priority_name) {
             return <span style={{ color: 'var(--ant-color-text-quaternary)' }}>—</span>;
           }
-          const color =
-            themeMode === 'dark' ? record.priority_color_dark : record.priority_color;
+          const background =
+            (themeMode === 'dark' ? record.priority_color_dark : record.priority_color) ??
+            record.priority_color ??
+            'transparent';
           return (
-            <span style={{ color: color || undefined, fontWeight: 500, fontSize: 13 }}>
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '2px 10px',
+                borderRadius: 4,
+                fontSize: 12,
+                fontWeight: 400,
+                background,
+                color: '#fff',
+              }}
+            >
               {record.priority_name}
             </span>
           );
@@ -237,16 +374,31 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: t('status', { defaultValue: 'Status' }),
         dataIndex: 'status',
-        key: 'status',
+        key: 'STATUS',
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          (a.status || '').localeCompare(b.status || ''),
+        showSorterTooltip: false,
         render: (text: string) => text || '—',
       },
       // 6. Tasks Progress
       {
         title: t('tasksProgress', { defaultValue: 'Tasks Progress' }),
-        key: 'tasksProgress',
-        render: (_: any, record: any) => {
-          const completed = record?.completed_tasks_count || 0;
-          const total = record?.all_tasks_count || 0;
+        key: 'TASKS_PROGRESS',
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) => {
+          const pctA =
+            (a as any).all_tasks_count > 0
+              ? (a as any).completed_tasks_count / (a as any).all_tasks_count
+              : 0;
+          const pctB =
+            (b as any).all_tasks_count > 0
+              ? (b as any).completed_tasks_count / (b as any).all_tasks_count
+              : 0;
+          return pctA - pctB;
+        },
+        showSorterTooltip: false,
+        render: (_: any, record: IProjectViewModel) => {
+          const completed = (record as any)?.completed_tasks_count || 0;
+          const total = (record as any)?.all_tasks_count || 0;
           const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
           return (
             <Tooltip title={`${completed} / ${total} tasks completed.`}>
@@ -256,14 +408,27 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
         },
       },
       // 7. Category
+      // FIX: same "always on top regardless of direction" requirement as
+      // Client above. Uses `sorter: true` — sorting handled manually in
+      // getSortedProjects via compareCategoryPresenceTop.
       {
         title: t('category', { defaultValue: 'Category' }),
         dataIndex: 'category_name',
-        key: 'category_name',
-        render: (text: string, record: any) => {
+        key: 'CATEGORY',
+        sorter: true,
+        showSorterTooltip: false,
+        render: (text: string, record: IProjectViewModel) => {
           if (!text || text === '-') return <>-</>;
+          const bgColor = record.category_color || '#ff9c3c';
+          const textColor = getContrastColor(bgColor);
           return (
-            <Tag color={record.category_color || '#ff9c3c'} style={{ borderRadius: '50rem' , color: '#000000' }}>
+            <Tag
+              style={{
+                backgroundColor: bgColor,
+                color: textColor,
+                border: 'none',
+              }}
+            >
               {text}
             </Tag>
           );
@@ -273,54 +438,116 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
       {
         title: t('updated_at', { defaultValue: 'Last Updated' }),
         dataIndex: 'updated_at',
-        key: 'updated_at',
+        key: 'UPDATED_AT',
         width: 160,
-        render: (_: any, record: any) => <ProjectListUpdatedAt record={record} />,
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          new Date((a as any).updated_at).getTime() - new Date((b as any).updated_at).getTime(),
+        showSorterTooltip: false,
+        render: (_: any, record: IProjectViewModel) => <ProjectListUpdatedAt record={record} />,
       },
-      // 9. Actions
+      // 9. End Date (hidden by default)
+      {
+        title: t('endDate', { defaultValue: 'Project End Date' }),
+        dataIndex: 'end_date',
+        key: 'END_DATE',
+        sorter: (a: IProjectViewModel, b: IProjectViewModel) =>
+          new Date((a as any).end_date).getTime() - new Date((b as any).end_date).getTime(),
+        showSorterTooltip: false,
+        render: (_: any, record: IProjectViewModel) => (
+          <span>{record.end_date ? simpleDateFormat(record.end_date) : '-'}</span>
+        ),
+      },
+      // 10. Actions
       {
         title: '',
         key: 'actions',
         width: 76,
         align: 'center' as const,
-        render: (_: any, record: any) => (
-          <Space size="small" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            <Tooltip title={t('setting', { defaultValue: 'Settings' })}>
-              <button
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
-                onClick={e => handleSettingsClick(e, record)}
+        render: (_: any, record: IProjectViewModel) => {
+          const isGuest = record.is_guest === true;
+          
+          return (
+            <Space size={4} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <Tooltip 
+                title={
+                  isGuest
+                    ? t('settingsDisabledForGuest', { defaultValue: 'Project settings are not accessible for guest users' })
+                    : t('setting', { defaultValue: 'Settings' })
+                }
               >
-                <SettingOutlined />
-              </button>
-            </Tooltip>
-            <Popconfirm
-              title={record.archived ? t('unarchive') : t('archive')}
-              description={record.archived ? t('unarchiveConfirm') : t('archiveConfirm')}
-              onConfirm={() => handleArchiveClick(record.id)}
-              okText={t('yes')}
-              cancelText={t('no')}
-              disabled={!isOwnerOrAdmin}
-            >
-              <button
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: isOwnerOrAdmin ? 'pointer' : 'not-allowed',
-                  opacity: isOwnerOrAdmin ? 1 : 0.5,
-                  padding: '2px 6px',
-                }}
-                onClick={e => e.stopPropagation()}
-                disabled={!isOwnerOrAdmin}
+                <button
+                  style={{ 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: isGuest ? 'not-allowed' : 'pointer', 
+                    padding: '2px 6px',
+                    opacity: isGuest ? 0.5 : 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '28px',
+                    height: '28px',
+                    fontSize: '14px'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    !isGuest && handleSettingsClick(e, record);
+                  }}
+                  disabled={isGuest}
+                  type="button"
+                >
+                  <SettingOutlined />
+                </button>
+              </Tooltip>
+              <Tooltip
+                title={isOwnerOrAdmin ? (record.archived ? t('unarchive') : t('archive')) : t('noPermission')}
               >
-                <InboxOutlined />
-              </button>
-            </Popconfirm>
-          </Space>
-        ),
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: isOwnerOrAdmin ? 'pointer' : 'not-allowed',
+                    opacity: isOwnerOrAdmin ? 1 : 0.5,
+                    padding: '2px 6px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '28px',
+                    height: '28px',
+                    fontSize: '14px'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isOwnerOrAdmin) {
+                      handleArchiveClick(record.id);
+                    }
+                  }}
+                  disabled={!isOwnerOrAdmin}
+                  type="button"
+                >
+                  <InboxOutlined />
+                </button>
+              </Tooltip>
+            </Space>
+          );
+        },
       },
     ],
     [token, t, themeMode, isOwnerOrAdmin]
   );
+
+  // Filter columns based on field visibility
+  const tableColumns = useMemo(() => {
+    return allTableColumns.filter(col => {
+      const key = col.key as string;
+      // Always show actions column
+      if (key === 'actions') return true;
+      // Always show name column
+      if (key === 'NAME') return true;
+      // Check visibility for other columns
+      return isFieldVisible(key);
+    });
+  }, [allTableColumns, isFieldVisible]);
 
   if (loading) {
     return (
@@ -388,8 +615,12 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
 
       {groups.map((group, groupIndex) => {
         const groupKey = group?.groupKey || String(groupIndex);
-        const projects = group?.projects || [];
+        const rawProjects = group?.projects || [];
         const isCollapsed = collapsedGroups.has(groupKey);
+        // Apply manual presence-aware sorting when CLIENT or CATEGORY is the
+        // active sorted column for this group's table; otherwise leave as-is
+        // and let AntD's own column sorter (for other columns) handle it.
+        const projects = getSortedProjects(rawProjects, sortStates[groupKey]);
 
         return (
           <div key={groupKey} style={{ marginBottom: 24 }}>
@@ -409,7 +640,6 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 userSelect: 'none',
                 transition: 'background 0.15s',
               }}
-              // Subtle hover handled via inline onMouseEnter/Leave
               onMouseEnter={e =>
                 ((e.currentTarget as HTMLDivElement).style.background = getThemeAwareColor(
                   token.colorFillSecondary,
@@ -423,9 +653,7 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 ))
               }
             >
-              {/* Left side: chevron + color dot + name + count */}
               <Space align="center">
-                {/* Chevron */}
                 <span
                   style={{
                     display: 'inline-flex',
@@ -450,26 +678,16 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                     }}
                   />
                 )}
-                <div>
-                  <Title level={5} style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                  <Title level={5} style={{ margin: 0, fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}>
                     {group?.groupName || 'Unnamed Group'}
                   </Title>
-                  <Text style={{ fontSize: 12, color: token.colorTextSecondary }}>
+                  <span style={{ color: token.colorTextSecondary, fontSize: 12 }}>|</span>
+                  <Text style={{ fontSize: 12, color: token.colorTextSecondary, whiteSpace: 'nowrap' }}>
                     {projects.length} {projects.length === 1 ? 'project' : 'projects'}
                   </Text>
                 </div>
               </Space>
-
-              {/* Right side: badge */}
-              <Badge
-                count={projects.length}
-                style={{
-                  backgroundColor: processColor(group.groupColor, token.colorPrimary),
-                  color: '#000000',
-                  fontWeight: 600,
-                  fontSize: 11,
-                }}
-              />
             </div>
 
             {/* ── Collapsible table ── */}
@@ -480,6 +698,8 @@ const ProjectGroupList: React.FC<ProjectGroupListProps> = ({
                 rowKey="id"
                 pagination={false}
                 size="small"
+                showSorterTooltip={false}
+                onChange={(_pagination, _filters, sorter) => handleSortChange(groupKey, sorter)}
                 onRow={record => ({
                   onClick: () =>
                     onProjectSelect(

@@ -5,7 +5,7 @@ import ChunkErrorHandler from '@/utils/chunk-error-handler';
 
 const OrganizationInvitePage = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-view/organization-invite/organization-invite'),
+    () => import('@/ee/pages/client-view/organization-invite/organization-invite'),
     'OrganizationInvitePage'
   )
 );

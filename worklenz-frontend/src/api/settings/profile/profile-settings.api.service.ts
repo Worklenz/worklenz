@@ -2,7 +2,7 @@ import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { IProfileSettings } from '@/types/settings/profile.types';
-import { INotificationSettings } from '@/types/settings/notifications.types';
+import { IDigestPreferences, INotificationSettings } from '@/types/settings/notifications.types';
 import {
   IAccountSetupRequest,
   IAccountSetupResponse,
@@ -10,6 +10,7 @@ import {
 import { ITeam } from '@/types/teams/team.type';
 
 const rootUrl = `${API_BASE_URL}/settings`;
+const digestUrl = `${API_BASE_URL}/digest`;
 
 export const profileSettingsApiService = {
   getProfile: async (): Promise<IServerResponse<IProfileSettings>> => {
@@ -67,6 +68,23 @@ export const profileSettingsApiService = {
   }): Promise<IServerResponse<any>> => {
     const response = await apiClient.post<IServerResponse<any>>(
       `${API_BASE_URL}/change-password`,
+      body
+    );
+    return response.data;
+  },
+
+  getDigestPreferences: async (): Promise<IServerResponse<IDigestPreferences>> => {
+    const response = await apiClient.get<IServerResponse<IDigestPreferences>>(
+      `${digestUrl}/preferences`
+    );
+    return response.data;
+  },
+
+  updateDigestPreferences: async (
+    body: IDigestPreferences
+  ): Promise<IServerResponse<IDigestPreferences>> => {
+    const response = await apiClient.put<IServerResponse<IDigestPreferences>>(
+      `${digestUrl}/preferences`,
       body
     );
     return response.data;

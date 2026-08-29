@@ -46,5 +46,22 @@
   "taskColumn": "Detyra",
   "taskAttachmentsEmptyText": "Nuk u gjetën bashkëngjitje detyrash.",
   "taskAttachmentDeleteSuccess": "Bashkëngjitja u fshi me sukses.",
-  "taskAttachmentDeleteFailed": "Nuk mund të fshihej bashkëngjitja."
+  "taskAttachmentDeleteFailed": "Nuk mund të fshihej bashkëngjitja.",
+  "linksTab": "Lidhjet",
+  "addLink": "Shto Lidhje",
+  "editLink": "Ndrysho Lidhjen",
+  "linkTitle": "Titulli",
+  "linkTitleRequired": "Titulli është i detyrueshëm",
+  "linkUrl": "URL",
+  "linkDescription": "Përshkrimi",
+  "linkDescriptionPlaceholder": "Përshkrim opsional",
+  "linkSource": "Burimi",
+  "linkAddedBy": "Shtuar nga",
+  "linkAddedOn": "Shtuar më",
+  "linkLastModified": "Modifikuar së fundi",
+  "invalidUrl": "Ju lutemi shkruani një URL të vlefshme",
+  "deleteLink": "Fshi lidhjen",
+  "openTask": "Hap detyrën",
+  "fromTask": "Nga: {{taskName}}",
+  "noLinks": "Ende nuk ka lidhje. Klikoni \"Shto Lidhje\" për të shtuar lidhjen tuaj të parë."
 }

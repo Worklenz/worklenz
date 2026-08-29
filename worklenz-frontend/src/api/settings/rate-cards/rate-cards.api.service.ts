@@ -2,7 +2,7 @@ import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { toQueryString } from '@/utils/toQueryString';
-import { RatecardType, IRatecardViewModel } from '@/types/project/ratecard.types';
+import { RatecardType, IRatecardViewModel } from '@/ee/types/project/ratecard.types';
 
 type IRatecard = {
   id: string;
@@ -18,8 +18,7 @@ export const rateCardApiService = {
     order: string | null,
     search?: string | null
   ): Promise<IServerResponse<IRatecardViewModel>> {
-    const s = encodeURIComponent(search || '');
-    const queryString = toQueryString({ index, size, field, order, search: s });
+    const queryString = toQueryString({ index, size, field, order, search: search || '' });
     const response = await apiClient.get<IServerResponse<IRatecardViewModel>>(
       `${rootUrl}${queryString}`
     );

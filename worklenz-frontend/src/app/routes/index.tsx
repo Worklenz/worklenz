@@ -6,9 +6,10 @@ import mainRoutes from './main-routes';
 import notFoundRoute from './not-found-route';
 import accountSetupRoute from './account-setup-routes';
 import reportingRoutes from './reporting-routes';
-import clientPortalRoutes from './client-portal-routes';
+import clientPortalRoutes from '../../ee/app/routes/client-portal-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
+import AppShellLayout from '@/layouts/AppShellLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
@@ -33,7 +34,7 @@ const withCodeSplitting = (Component: React.LazyExoticComponent<React.ComponentT
 
 // Memoized guard components with defensive programming
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import clientViewRoutes from './client-view-routes';
+import clientViewRoutes from '../../ee/app/routes/client-view-routes';
 
 export const AuthGuard = memo(({ children }: GuardProps) => {
   const { isAuthenticated, location } = useAuthStatus();
@@ -244,9 +245,14 @@ const router = createBrowserRouter(
         </ErrorBoundary>
       ),
       children: [
-        ...licenseCheckedMainRoutes,
-        ...licenseCheckedAdminRoutes,
-        ...adminclientPortalRoutes,
+        {
+          element: <AppShellLayout />,
+          children: [
+            ...licenseCheckedMainRoutes,
+            ...licenseCheckedAdminRoutes,
+            ...adminclientPortalRoutes,
+          ],
+        },
         ...setupRoutes,
       ],
     },

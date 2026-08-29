@@ -89,21 +89,6 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
     ];
   }, [providerKey, t]);
 
-  const handleDownloadConfig = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    const config = {
-      spaceName: reviewSpaceName,
-      fieldMappings,
-      statusValueMapping,
-    };
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'worklenz-import-config.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
   const cardStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
@@ -135,7 +120,14 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
             "We're ready to import your team's data. Here's a summary of what will be imported into Worklenz.",
         })}
       </Typography.Paragraph>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 600 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 16,
+          width: '100%',
+        }}
+      >
         <div style={cardStyle}>
           <div style={iconStyle} aria-hidden="true">
             <ProjectOutlined />
@@ -241,20 +233,10 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
           </div>
         </div>
       </div>
-      <div style={{ marginTop: 32, color: themeToken.colorTextSecondary, fontSize: 15 }}>
-        <a href="#" onClick={handleDownloadConfig} style={{ color: themeToken.colorTextSecondary, textDecoration: 'underline' }}>
-          {t('importStep.downloadConfiguration', {
-            defaultValue: 'Download a configuration file',
-          })}
-        </a>{' '}
-        {t('importStep.downloadConfigurationSuffix', {
-          defaultValue: 'to use the same space preferences in your next import.',
-        })}
-      </div>
       <div
         style={{
-          marginTop: 20,
-          maxWidth: 600,
+          marginTop: 24,
+          width: '100%',
           borderRadius: 12,
           border: `1px solid ${themeToken.colorBorder}`,
           background: themeToken.colorFillQuaternary || themeToken.colorBgContainer,

@@ -9,6 +9,7 @@ import ImportsService, {
 } from "../services/imports-service";
 import safeControllerFunction from "../shared/safe-controller-function";
 import createHttpError from "http-errors";
+import { assertSafeExternalHost } from "../shared/ssrf-guard";
 import { ServerResponse } from "../models/server-response";
 import ImportIngestionService from "../services/import-ingestion-service";
 import axios from "axios";
@@ -1144,8 +1145,8 @@ export default class ImportsController {
       if (!email) throw createHttpError(400, "email is required");
       if (!domain) throw createHttpError(400, "domain is required");
 
-      // Remove protocol and trailing slashes from domain
-      const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+      // Validate the user-supplied domain and reject internal/private hosts (SSRF guard)
+      const cleanDomain = assertSafeExternalHost(domain);
       const baseUrl = `https://${cleanDomain}`;
 
       // Create Basic Auth header

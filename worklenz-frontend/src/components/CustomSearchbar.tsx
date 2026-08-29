@@ -13,7 +13,7 @@ const CustomSearchbar = ({
   setSearchQuery,
 }: CustomSearchbarProps) => {
   return (
-    <div style={{ position: 'relative', width: 240 }}>
+    <div style={{ position: 'relative', width: '100%', maxWidth: 240 }}>
       <Input
         placeholder={placeholderText}
         value={searchQuery}

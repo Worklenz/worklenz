@@ -78,7 +78,7 @@ const projectPrioritySlice = createSlice({
         fetchProjectPriorities.fulfilled,
         (state, action: PayloadAction<IProjectPrioritiesGetResponse[]>) => {
           state.loading = false;
-          state.priorities = action.payload;
+          state.priorities = action.payload ?? [];
           state.initialized = true;
         }
       )

@@ -14,8 +14,7 @@ export const jobTitlesApiService = {
     order: string | null,
     search?: string | null
   ): Promise<IServerResponse<IJobTitlesViewModel>> {
-    const s = encodeURIComponent(search || '');
-    const queryString = toQueryString({ index, size, field, order, search: s });
+    const queryString = toQueryString({ index, size, field, order, search: search || '' });
     const response = await apiClient.get<IServerResponse<IJobTitlesViewModel>>(
       `${rootUrl}${queryString}`
     );

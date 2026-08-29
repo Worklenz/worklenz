@@ -4,6 +4,7 @@ import { Button, Tag, Typography, theme } from '@/shared/antd-imports';
 import DOMPurify from 'dompurify';
 import React, { useState } from 'react';
 import { fromNow } from '@/utils/dateUtils';
+import { useTranslation } from 'react-i18next';
 import './notification-item.css';
 
 const { Text } = Typography;
@@ -22,6 +23,7 @@ const NotificationItem = ({
   goToUrl,
 }: NotificationItemProps) => {
   const { token } = theme.useToken();
+  const { t } = useTranslation('navbar');
   const [loading, setLoading] = useState(false);
   const isDarkMode =
     token.colorBgContainer === '#141414' ||
@@ -112,7 +114,7 @@ const NotificationItem = ({
               className="p-0"
               onClick={e => handleMarkAsRead(e)}
             >
-              <u>Mark as read</u>
+              <u>{t('notificationsDrawer.markAsRead', { defaultValue: 'Mark as read' })}</u>
             </Button>
           )}
           <Text type="secondary" className="small">

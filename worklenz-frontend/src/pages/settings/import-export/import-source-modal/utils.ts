@@ -114,6 +114,58 @@ export const parseCsvText = (
   return { fields, rows };
 };
 
+// Recognized header spellings for each Worklenz field, used to auto-map CSV columns
+// on upload (e.g. Linear/Jira/Asana exports). Keyed by the same `value` used in
+// worklenzFieldOptions in ImportSourceModal.tsx. Keep aliases lowercase with no
+// punctuation — column names are normalized the same way before matching.
+export const CSV_COLUMN_ALIASES: Record<string, string[]> = {
+  key: ['title', 'task name', 'name', 'summary', 'issue', 'task'],
+  description: ['description', 'desc', 'details'],
+  status: ['status', 'state'],
+  assignees: ['assignee', 'assignees', 'owner'],
+  labels: ['labels', 'label', 'tags'],
+  phase: ['phase', 'epic'],
+  priority: ['priority'],
+  timeTracking: ['time tracking', 'time spent', 'time logged'],
+  estimation: ['estimate', 'estimation', 'story points', 'points'],
+  startDate: ['start date', 'started'],
+  dueDate: ['due date', 'due'],
+  dueTime: ['due time'],
+  completedDate: ['completed', 'completed date'],
+  createdDate: ['created', 'created date'],
+  lastUpdated: ['updated', 'last updated', 'updated date'],
+  reporter: ['creator', 'reporter'],
+};
+
+export const normalizeCsvHeader = (value: string): string =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ');
+
+/** Maps CSV column headers to Worklenz field values by exact alias match, e.g.
+ * "Title" -> "key", "Due Date" -> "dueDate". Each target field is used at most
+ * once; unrecognized columns are left unmapped for the user to assign manually
+ * (or leave as a custom field). */
+export const autoMapCsvColumns = (columns: string[]): Record<string, string> => {
+  const mapping: Record<string, string> = {};
+  const usedTargets = new Set<string>();
+
+  for (const column of columns) {
+    const normalized = normalizeCsvHeader(column);
+    const match = Object.entries(CSV_COLUMN_ALIASES).find(
+      ([target, aliases]) => !usedTargets.has(target) && aliases.includes(normalized)
+    );
+    if (match) {
+      mapping[column] = match[0];
+      usedTargets.add(match[0]);
+    }
+  }
+
+  return mapping;
+};
+
 export const normalizeDomain = (value: string): string =>
   value
     .trim()

@@ -70,6 +70,8 @@
       "noComments": "Aún no hay comentarios. ¡Sé el primero en comentar!",
       "delete": "Eliminar",
       "confirmDeleteComment": "¿Está seguro de que desea eliminar este comentario?",
+      "edited": "(editado)",
+      "messageDeleted": "Este mensaje fue eliminado",
       "addCommentPlaceholder": "Agregar un comentario...",
       "cancel": "Cancelar",
       "commentButton": "Comentar",

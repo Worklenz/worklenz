@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
-import { useBusinessFeatures } from '@/worklenz-ee/hooks/use-business-features';
+import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 
@@ -9,10 +9,9 @@ import { ROLE_NAMES } from '@/types/roles/role.types';
  * Returns whether the current user can create and assign tasks in the current project.
  *
  * Rules (Business Plan only):
- *  - If the feature is not on a Business plan → everyone can create tasks (no restriction).
- *  - If project-level `restrict_task_creation` is TRUE → only Admins/Owners/Team Leads can create.
- *  - If org-level restriction is active (surfaced via `orgRestrictTaskCreation`) → same rule.
- *  - Project-level setting takes priority over org-level.
+ *  - If the feature is not on a Business plan, everyone can create tasks.
+ *  - If project-level `restrict_task_creation` is TRUE on Business Plan → only Admins/Owners/Team Leads can create.
+ *  - If org-level restriction is active → same rule.
  *
  * The hook returns:
  *  - `canCreateTask`  — whether the current user may create/assign tasks
@@ -29,7 +28,6 @@ const useTaskCreationPermission = (
 ): ITaskCreationPermission => {
   const auth = useAuthService();
   const session = auth.getCurrentSession();
-  const { hasBusinessAccess } = useBusinessFeatures();
   const reduxProject = useAppSelector(state => state.projectReducer.project);
   const orgConfig = useAppSelector(state => state.orgConfigReducer);
 
@@ -37,7 +35,7 @@ const useTaskCreationPermission = (
     const project = projectOverride !== undefined ? projectOverride : reduxProject;
 
     // If not on a Business plan, no restrictions apply
-    if (!hasBusinessAccess) {
+    if (!hasBusinessFeatureAccess(session)) {
       return { canCreateTask: true, isRestricted: false };
     }
 
@@ -59,7 +57,7 @@ const useTaskCreationPermission = (
       roleName === ROLE_NAMES.TEAM_LEAD;
 
     return { canCreateTask: isPrivileged, isRestricted: true };
-  }, [session, hasBusinessAccess, reduxProject, orgConfig, projectOverride]);
+  }, [session, reduxProject, orgConfig, projectOverride]);
 };
 
 export default useTaskCreationPermission;

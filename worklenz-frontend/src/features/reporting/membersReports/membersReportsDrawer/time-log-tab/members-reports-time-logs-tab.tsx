@@ -1,5 +1,5 @@
 import { Flex, Skeleton } from '@/shared/antd-imports';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import BillableFilter from './billable-filter';
 import { fetchData } from '@/utils/fetchData';
 import TimeLogCard from './time-log-card';
@@ -81,7 +81,15 @@ const MembersReportsTimeLogsTab = ({ memberId = null }: MembersReportsTimeLogsTa
         )}
       </Skeleton>
 
-      {createPortal(<TaskDrawer />, document.body)}
+      {createPortal(
+        // See members-reports-activity-logs-tab.tsx: no fallback, since a
+        // spinner unpositioned in document.body is a worse glitch than a
+        // brief blank frame, and the prefetch normally beats this anyway.
+        <Suspense fallback={null}>
+          <TaskDrawer />
+        </Suspense>,
+        document.body
+      )}
     </Flex>
   );
 };

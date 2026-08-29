@@ -7,13 +7,13 @@ import {getLoggedInUserIdFromSocket, notifyProjectUpdates} from "../util";
 import {getTaskDetails, logPriorityChange} from "../../services/activity-logs/activity-logs.service";
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
-import {verifyTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
+import {verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess} from "../authorization";
 
 export async function on_task_priority_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
     
-    const hasAccess = await verifyTaskAccessSocket(socket, body.task_id);
+    const hasAccess = await verifyNonGuestTaskAccessSocket(socket, body.task_id);
     if (!hasAccess) {
       logUnauthorizedSocketAccess(socket, 'TASK_PRIORITY_CHANGE', 'task', body.task_id);
       return;

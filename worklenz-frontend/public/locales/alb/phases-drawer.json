@@ -21,5 +21,14 @@
   "selectColor": "Zgjidh ngjyrën",
   "managePhases": "Menaxho Fazat",
   "close": "Mbyll",
-  "apply": "Apliko"
+  "apply": "Apliko",
+  "selectDefaultAssignee": "Caktuar i paracaktuar",
+  "phaseAssigneesInfo": "Të Caktuarit për Fazë janë aktivizuar. Vendos një të caktuar të paracaktuar për çdo fazë më poshtë — ata do të caktohen automatikisht kur një detyrë hyjë në atë fazë.",
+  "phasesText": "Fazat",
+  "phaseText": "Fazë",
+  "searchMembers": "Kërko anëtarë...",
+  "noMembersFound": "Nuk u gjetën anëtarë",
+  "continue": "Vazhdim",
+  "pendingMemberLabel": "(Në pritje)",
+  "inviteMember": "Fto anëtar"
 }

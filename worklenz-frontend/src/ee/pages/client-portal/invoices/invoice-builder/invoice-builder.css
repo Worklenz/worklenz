@@ -1,0 +1,164 @@
+/* Invoice Builder Styles */
+
+.invoice-builder-table .ant-table-cell {
+  padding: 8px 12px !important;
+  vertical-align: middle;
+}
+
+.invoice-builder-table .ant-input-number,
+.invoice-builder-table .ant-input {
+  background: transparent;
+}
+
+.invoice-builder-table .ant-input-number:hover,
+.invoice-builder-table .ant-input:hover {
+  background: var(--ant-color-bg-container);
+}
+
+/* InputNumber base styles */
+.invoice-builder-table .ant-input-number {
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+  font-size: 14px;
+  line-height: 1.5715;
+  min-height: 32px;
+  position: relative;
+}
+
+.invoice-builder-table .ant-input-number:not(:hover):not(.ant-input-number-focused) {
+  border: 1px solid transparent;
+}
+
+.invoice-builder-table .ant-input-number:hover {
+  border-color: var(--ant-color-primary-hover, rgba(64, 150, 255, 0.5));
+  background: var(--ant-color-bg-container);
+  box-shadow: 0 0 0 1px var(--ant-color-primary-hover, rgba(64, 150, 255, 0.2));
+}
+
+.invoice-builder-table .ant-input-number-focused,
+.invoice-builder-table .ant-input-number:focus-within {
+  border-color: var(--ant-color-primary, #4096ff);
+  box-shadow: 0 0 0 2px var(--ant-color-primary-bg, rgba(64, 150, 255, 0.1));
+  background: var(--ant-color-bg-container);
+}
+
+/* Input element styling - with padding for spinner arrows */
+.invoice-builder-table .ant-input-number-input {
+  text-align: right;
+  padding: 4px 8px 4px 8px !important;
+  padding-right: 24px !important; /* Make room for spinner arrows on the right */
+  color: var(--ant-color-text);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: text !important;
+  caret-color: var(--ant-color-primary, #4096ff);
+}
+
+.invoice-builder-table .ant-input-number:hover .ant-input-number-input {
+  padding-right: 24px !important; /* Ensure padding on hover */
+}
+
+.invoice-builder-table .ant-input-number-input::placeholder {
+  color: var(--ant-color-text-placeholder, rgba(0, 0, 0, 0.25));
+  opacity: 0.6;
+}
+
+[data-theme="dark"] .invoice-builder-table .ant-input-number-input::placeholder {
+  color: var(--ant-color-text-placeholder, rgba(255, 255, 255, 0.25));
+}
+
+/* Position spinner arrows to the right and prevent overlap */
+.invoice-builder-table .ant-input-number-handler-wrap {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 22px;
+  height: 100%;
+  border-left: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: 0 6px 6px 0;
+  cursor: default;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.invoice-builder-table .ant-input-number-handler {
+  height: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.invoice-builder-table .ant-input-number-handler-up {
+  border-top-right-radius: 6px;
+}
+
+.invoice-builder-table .ant-input-number-handler-down {
+  border-bottom-right-radius: 6px;
+  border-top: 1px solid var(--ant-color-border, #d9d9d9);
+}
+
+/* Dark mode support for handler border */
+[data-theme="dark"] .invoice-builder-table .ant-input-number-handler-wrap {
+  border-left-color: var(--ant-color-border, rgba(255, 255, 255, 0.2));
+}
+
+[data-theme="dark"] .invoice-builder-table .ant-input-number-handler-down {
+  border-top-color: var(--ant-color-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Prefix styling - prevent cursor interference */
+.invoice-builder-table .ant-input-number-prefix {
+  color: var(--ant-color-text-secondary, rgba(0, 0, 0, 0.45));
+  margin-right: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+}
+
+[data-theme="dark"] .invoice-builder-table .ant-input-number-prefix {
+  color: var(--ant-color-text-secondary, rgba(255, 255, 255, 0.45));
+}
+
+/* Ensure handlers don't overlap with prefix */
+.invoice-builder-table .ant-input-number-prefix + .ant-input-number-input-wrap {
+  margin-left: 0;
+}
+
+/* Make sure input wrapper has proper positioning */
+.invoice-builder-table .ant-input-number-input-wrap {
+  position: relative;
+  padding-right: 0;
+  cursor: text;
+}
+
+.invoice-builder-table
+  .ant-input-number
+  .ant-input-number-input-wrap
+  > *:not(.ant-input-number-input) {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* Summary card styling */
+.invoice-summary-card {
+  position: sticky;
+  top: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .invoice-builder-container {
+    flex-direction: column;
+  }
+
+  .invoice-builder-left,
+  .invoice-builder-right {
+    min-width: 100% !important;
+    flex: 1 !important;
+  }
+}

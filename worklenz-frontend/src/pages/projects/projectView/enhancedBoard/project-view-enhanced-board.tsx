@@ -4,6 +4,7 @@ import EnhancedKanbanBoardNativeDnD from '@/components/enhanced-kanban/EnhancedK
 
 const ProjectViewEnhancedBoard: React.FC = () => {
   const { project } = useAppSelector(state => state.projectReducer);
+  const isGuest = project?.is_guest === true;
 
   if (!project?.id) {
     return <div className="p-4 text-center text-gray-500">Project not found</div>;
@@ -11,7 +12,7 @@ const ProjectViewEnhancedBoard: React.FC = () => {
 
   return (
     <div className="project-view-enhanced-board">
-      <EnhancedKanbanBoardNativeDnD projectId={project.id} />
+      <EnhancedKanbanBoardNativeDnD projectId={project.id} isGuest={isGuest} />
     </div>
   );
 };

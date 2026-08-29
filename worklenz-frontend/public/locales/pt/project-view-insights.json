@@ -1,4 +1,7 @@
 {
+  "overviewTab": "Visão Geral",
+  "membersTab": "Membros",
+  "tasksTab": "Tarefas",
   "overview": {
     "title": "Visão Geral",
     "statusOverview": "Visão Geral do Status",
@@ -26,6 +29,29 @@
     "overLoggedTasksTooltip": "Tarefas que têm tempo registrado além do tempo estimado",
     "overdueTasksTooltip": "Tarefas que estão atrasadas"
   },
+  "projectDeadline": {
+    "title": "Prazo do Projeto",
+    "overdueTasksHours": "Tarefas atrasadas (horas)",
+    "overdueTasksHoursTooltip": "Tarefas que têm tempo registrado além da data de término do projeto",
+    "overdueTasks": "Tarefas atrasadas",
+    "overdueTasksTooltip": "Tarefas que estão além da data de término do projeto"
+  },
+  "priorityChart": {
+    "priorityAxis": "Prioridade",
+    "taskCountAxis": "Contagem de Tarefas",
+    "tasks": "Tarefas",
+    "taskCount": "tarefa",
+    "noPriority": "Sem prioridade",
+    "low": "Baixa",
+    "medium": "Média",
+    "high": "Alta",
+    "critical": "Crítica"
+  },
+  "memberStats": {
+    "projectMembers": "Membros do projeto",
+    "assigneesWithOverdueTasks": "Responsáveis com tarefas atrasadas",
+    "unassignedMembers": "Membros não atribuídos"
+  },
   "common": {
     "seeAll": "Ver tudo",
     "totalLoggedHours": "Total de horas registradas",
@@ -36,6 +62,20 @@
     "overdueTasksTooltip": "Tarefas que estão atrasadas",
     "totalLoggedHoursTooltip": "Estimativa de tarefas e tempo registrado.",
     "includeArchivedTasks": "Incluir Tarefas Arquivadas",
-    "export": "Exportar"
+    "export": "Exportar",
+    "name": "Nome",
+    "status": "Status",
+    "dueDate": "Data de vencimento",
+    "lastUpdated": "Última atualização",
+    "na": "N/A"
+  },
+  "justNow": "Agora mesmo",
+  "tasksTable": {
+    "daysOverdue": "Dias de atraso",
+    "completedAt": "Concluído em",
+    "members": "Membros",
+    "overLoggedTime": "Tempo registrado excessivo",
+    "completedDate": "Data de conclusão",
+    "totalAllocation": "Alocação total"
   }
 }

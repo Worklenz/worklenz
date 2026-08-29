@@ -18,6 +18,8 @@ import {
   toggleDrawer,
   fetchUnreadCount,
 } from '../../../../../features/navbar/notificationSlice';
+import { setTargetCommentId } from '@/features/task-drawer/task-drawer.slice';
+
 import { NOTIFICATION_OPTION_READ, NOTIFICATION_OPTION_UNREAD } from '@/shared/constants';
 import { useTranslation } from 'react-i18next';
 import { SocketEvents } from '@/shared/socket-events';
@@ -38,16 +40,23 @@ import { getUserSession } from '@/utils/session-helper';
 import { setUser } from '@/features/user/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
-
-const HTML_TAG_REGEXP = /<[^>]*>/g;
+import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
+import { shouldShowAppSumoPromo } from '@/ee/utils/subscription-utils';
+import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
+import { APPSUMO_DRAWER_IMAGE_URL } from '@/config/appsumo-promo.config';
+import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { MixpanelBillingEvents } from '@/types/mixpanel-events.types';
+import { stripHtmlTags } from '@/utils/sanitizeInput';
 
 const NotificationDrawer = () => {
   const { token } = theme.useToken();
   const { isDrawerOpen, notificationType, notifications, invitations } = useAppSelector(
     state => state.notificationReducer
   );
+  const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
   const dispatch = useAppDispatch();
   const { t } = useTranslation('navbar');
+  const { trackMixpanelEvent } = useMixpanelTracking();
   const { socket, connected } = useSocket();
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
   const [showBrowserPush, setShowBrowserPush] = useState(false);
@@ -60,6 +69,7 @@ const NotificationDrawer = () => {
 
   const notificationCount = notifications?.length || 0;
   const [isLoading, setIsLoading] = useState(false);
+  const [appSumoBannerImageLoaded, setAppSumoBannerImageLoaded] = useState(false);
 
   const isPushEnabled = () => {
     return notificationsSettings.popup_notifications_enabled && showBrowserPush;
@@ -72,7 +82,7 @@ const NotificationDrawer = () => {
     if (Notification.permission === 'granted' && showBrowserPush) {
       const img = 'https://worklenz.com/assets/icons/icon-128x128.png';
       const notification = new Notification(title, {
-        body: message.replace(HTML_TAG_REGEXP, ''),
+        body: stripHtmlTags(message),
         icon: img,
         badge: img,
       });
@@ -138,7 +148,19 @@ const NotificationDrawer = () => {
     dispatch(fetchUnreadCount()); // Fetch updated unread count
   };
 
-  const handleTeamMemberRemoved = async (data: { teamId: string; message: string }) => {
+  const handleTeamMemberRemoved = async (data: { teamId: string; message: string; removedUserId?: string }) => {
+    // Only show the removal notification if:
+    // 1. If removedUserId is provided (new format), only show if current user is the removed one
+    // 2. If removedUserId is not provided (old format for backward compatibility), show the notification
+    // This ensures the removed user always sees the notification
+    
+    if (data.removedUserId !== undefined) {
+      const profile = getUserSession();
+      if (!profile || profile.id !== data.removedUserId) {
+        return;
+      }
+    }
+
     const notification: IWorklenzNotification = {
       id: '',
       team: '',
@@ -195,40 +217,59 @@ const NotificationDrawer = () => {
   const goToUrl = async (event: React.MouseEvent, notification: IWorklenzNotification) => {
     event.preventDefault();
     event.stopPropagation();
-    if (notification.url) {
-      dispatch(toggleDrawer());
-      setIsLoading(true);
-      try {
-        const currentSession = getUserSession();
-        
-        // Build the target URL
-        let targetUrl = notification.url;
-        if (notification.project && notification.task_id) {
-          targetUrl = `${notification.url}${toQueryString({ task: notification.params?.task, tab: notification.params?.tab })}`;
+    if (!notification.url) return;
+
+    dispatch(toggleDrawer());
+    setIsLoading(true);
+    try {
+      const currentSession = getUserSession();
+
+      // Resolve the comment ID to scroll to:
+      // - new notifications have comment_id stored in DB
+      // - old notifications fall back to fetching the latest comment for the task
+      let resolvedCommentId: string | null = notification.comment_id || null;
+      if (!resolvedCommentId && notification.task_id) {
+        try {
+          const res = await taskCommentsApiService.getByTaskId(notification.task_id);
+          if (res.done && res.body?.length > 0) {
+            const sorted = [...res.body].sort(
+              (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+            );
+            resolvedCommentId = sorted[0]?.id || null;
+          }
+        } catch {
+          // non-fatal
         }
-        
-        // If notification is from a different team, switch teams first
-        if (currentSession?.team_id && notification.team_id && notification.team_id !== currentSession.team_id) {
-          // Switch to the notification's team
-          await teamsApiService.setActiveTeam(notification.team_id);
-          
-          // Refresh authentication to get updated session with new team
-          await handleVerifyAuth();
-          
-          // Use window.location.href to force full page reload with new session
-          // This ensures guards re-evaluate with fresh session data
-          window.location.href = targetUrl;
-        } else {
-          // Same team - use React Router navigation
-          navigate(targetUrl);
-        }
-      } catch (error) {
-        console.error('Error navigating to URL:', error);
-      } finally {
-        setIsLoading(false);
       }
+
+      // Dispatch before navigate so it's in Redux before the drawer opens
+      dispatch(setTargetCommentId(resolvedCommentId));
+
+      // Build target URL (include comment param for URL sync)
+      let targetUrl = notification.url;
+      if (notification.project && notification.task_id) {
+        const qParams: Record<string, string | undefined> = {
+          task: notification.params?.task,
+          tab: notification.params?.tab,
+          comment: resolvedCommentId || undefined,
+        };
+        targetUrl = `${notification.url}${toQueryString(qParams)}`;
+      }
+
+      // If different team, switch teams first then full reload
+      if (currentSession?.team_id && notification.team_id && notification.team_id !== currentSession.team_id) {
+        await teamsApiService.setActiveTeam(notification.team_id);
+        await handleVerifyAuth();
+        window.location.href = targetUrl;
+      } else {
+        navigate(targetUrl);
+      }
+    } catch (error) {
+    } finally {
+      setIsLoading(false);
     }
   };
+
 
   const fetchNotificationsSettings = async () => {
     try {
@@ -283,44 +324,104 @@ const NotificationDrawer = () => {
     return isDarkMode ? '#69b1ff' : '#1677ff';
   };
 
+  const showAppSumoBanner =
+    Boolean(APPSUMO_DRAWER_IMAGE_URL) &&
+    shouldShowAppSumoPromo(getUserSession(), billingInfo) &&
+    authService.isOwnerOrAdmin();
+
+  // Preload the banner image in the background so it's already cached by the
+  // time the user opens the drawer, instead of loading on first render.
+  useEffect(() => {
+    if (!showAppSumoBanner || !APPSUMO_DRAWER_IMAGE_URL) return;
+
+    const preloadImage = new Image();
+    preloadImage.onload = () => setAppSumoBannerImageLoaded(true);
+    preloadImage.onerror = () => setAppSumoBannerImageLoaded(true);
+    preloadImage.src = APPSUMO_DRAWER_IMAGE_URL;
+
+    return () => {
+      preloadImage.onload = null;
+      preloadImage.onerror = null;
+    };
+  }, [showAppSumoBanner]);
+
+  const handleAppSumoBannerClick = () => {
+    trackMixpanelEvent(MixpanelBillingEvents.APPSUMO_PROMO_DRAWER_BANNER_CLICKED, {
+      source_component: 'NotificationDrawer',
+    });
+    dispatch(toggleDrawer());
+    dispatch(openUpgradeModal());
+  };
+
   return (
     <Drawer
       title={
         <Typography.Text style={{ fontWeight: 500, fontSize: 16 }}>
           {notificationType === NOTIFICATION_OPTION_READ
-            ? t('notificationsDrawer.read')
-            : t('notificationsDrawer.unread')}{' '}
+            ? t('notificationsDrawer.read', { defaultValue: 'Read' })
+            : t('notificationsDrawer.unread', { defaultValue: 'Unread' })}{' '}
           ({notificationCount})
         </Typography.Text>
       }
       open={isDrawerOpen}
       onClose={() => dispatch(toggleDrawer())}
       width={400}
+      styles={showAppSumoBanner ? { footer: { padding: 8 } } : undefined}
+      footer={
+        showAppSumoBanner ? (
+          <div
+            role="button"
+            tabIndex={0}
+            className="appsumo-drawer-banner"
+            onClick={handleAppSumoBannerClick}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleAppSumoBannerClick();
+              }
+            }}
+          >
+            {!appSumoBannerImageLoaded && (
+              <Flex align="center" justify="center" style={{ minHeight: 60 }}>
+                <Spin size="small" />
+              </Flex>
+            )}
+            <img
+              src={APPSUMO_DRAWER_IMAGE_URL}
+              alt="AppSumo"
+              style={{ display: appSumoBannerImageLoaded ? 'block' : 'none' }}
+              onLoad={() => setAppSumoBannerImageLoaded(true)}
+            />
+          </div>
+        ) : undefined
+      }
     >
       <Flex justify="space-between" align="center">
         <Segmented<string>
-          options={['Unread', 'Read']}
+          options={[
+            { label: t('notificationsDrawer.unread', { defaultValue: 'Unread' }), value: NOTIFICATION_OPTION_UNREAD },
+            { label: t('notificationsDrawer.read', { defaultValue: 'Read' }), value: NOTIFICATION_OPTION_READ },
+          ]}
           defaultValue={NOTIFICATION_OPTION_UNREAD}
           onChange={(value: string) => {
-            if (value === NOTIFICATION_OPTION_UNREAD)
-              dispatch(setNotificationType(NOTIFICATION_OPTION_UNREAD));
-            if (value === NOTIFICATION_OPTION_READ)
-              dispatch(setNotificationType(NOTIFICATION_OPTION_READ));
+            dispatch(setNotificationType(value));
           }}
         />
 
-        <Button
-          type="link"
-          onClick={handleMarkAllAsRead}
-          onMouseEnter={() => setIsMarkAllHovered(true)}
-          onMouseLeave={() => setIsMarkAllHovered(false)}
-          style={{
-            color: isMarkAllHovered ? getMarkAllHoverColor() : 'var(--ant-primary-color)',
-            transition: 'color 0.3s ease',
-          }}
-        >
-          {t('notificationsDrawer.markAsRead')}
-        </Button>
+        {notificationType === NOTIFICATION_OPTION_UNREAD && (
+          <Button
+            type="link"
+            onClick={handleMarkAllAsRead}
+            onMouseEnter={() => setIsMarkAllHovered(true)}
+            onMouseLeave={() => setIsMarkAllHovered(false)}
+            style={{
+              color: isMarkAllHovered ? getMarkAllHoverColor() : 'var(--ant-primary-color)',
+              transition: 'color 0.3s ease',
+            }}
+          >
+            {t('notificationsDrawer.markAsRead', { defaultValue: 'Mark all as read' })}
+          </Button>
+        )}
       </Flex>
 
       {isLoading && (
@@ -355,7 +456,7 @@ const NotificationDrawer = () => {
       ) : (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={t('notificationsDrawer.noNotifications')}
+          description={t('notificationsDrawer.noNotifications', { defaultValue: 'No notifications' })}
           style={{
             display: 'flex',
             flexDirection: 'column',
