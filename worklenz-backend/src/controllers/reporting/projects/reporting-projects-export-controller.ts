@@ -192,11 +192,24 @@ export default class ReportingProjectsExportController extends ReportingProjects
   }
 
 
+  /**
+   * Coerces a single request-supplied value to a strict YYYY-MM-DD string, or
+   * null if it is not a scalar parseable date. Guards against type confusion
+   * (array/object params) and SQL injection via the interpolated clause below.
+   */
+  private static toStrictIsoDate(value: unknown): string | null {
+    if (typeof value !== "string" && typeof value !== "number") return null;
+    const formatted = moment(String(value)).format("YYYY-MM-DD");
+    return /^\d{4}-\d{2}-\d{2}$/.test(formatted) ? formatted : null;
+  }
+
   protected static getMinMaxDates(key: string, dateRange: string[]) {
-    if (dateRange.length === 2) {
-      const start = moment(dateRange[0]).format("YYYY-MM-DD");
-      const end = moment(dateRange[1]).format("YYYY-MM-DD");
-      return `,(SELECT '${start}'::DATE )AS start_date, (SELECT '${end}'::DATE )AS end_date`;
+    if (Array.isArray(dateRange) && dateRange.length === 2) {
+      const start = this.toStrictIsoDate(dateRange[0]);
+      const end = this.toStrictIsoDate(dateRange[1]);
+      if (start && end) {
+        return `,(SELECT '${start}'::DATE )AS start_date, (SELECT '${end}'::DATE )AS end_date`;
+      }
     }
 
     if (key === DATE_RANGES.YESTERDAY)

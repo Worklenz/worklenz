@@ -14,14 +14,10 @@ export function decodeHtmlEntities(text: string | undefined): string {
     return '';
   }
 
-  if (typeof document === 'undefined') {
-    return decodeHtmlEntitiesFallback(text);
-  }
-
-  // Create a temporary element to decode HTML entities
-  const textarea = document.createElement('textarea');
-  textarea.innerHTML = text;
-  return textarea.value;
+  // Decode without assigning untrusted input to `innerHTML` (avoids the
+  // xss-through-dom sink). The backend only emits a small, known set of named
+  // entities plus numeric character references, both handled below.
+  return decodeHtmlEntitiesFallback(text);
 }
 
 /**
@@ -62,10 +58,29 @@ export function decodeHtmlEntitiesFallback(text: string): string {
   }
 
   let decoded = text;
+
+  // Numeric character references: &#123; and &#x1F600;
+  decoded = decoded
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => safeFromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => safeFromCodePoint(parseInt(dec, 10)));
+
   Object.entries(HTML_ENTITY_MAP).forEach(([entity, char]) => {
+    if (entity === '&amp;') return; // handled last, see below
     const regex = new RegExp(entity.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
     decoded = decoded.replace(regex, char);
   });
 
+  // &amp; must be decoded last so "&amp;lt;" does not collapse to "<"
+  decoded = decoded.replace(/&amp;/g, '&');
+
   return decoded;
+}
+
+function safeFromCodePoint(code: number): string {
+  if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return '';
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return '';
+  }
 }

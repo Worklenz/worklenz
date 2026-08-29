@@ -6,7 +6,7 @@ import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
-import { humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
+import { escapeRegExp, humanFileSize, log_error, megabytesToBytes, sanitizeCommentContent, sanitizePlainText } from "../shared/utils";
 import { HTML_TAG_REGEXP, S3_URL } from "../shared/constants";
 import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
@@ -60,7 +60,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
     const replacedContent = mentionNames.reduce(
       (content, mentionName, index) => {
-        const regex = new RegExp(`@${mentionName}`, "g");
+        const regex = new RegExp(`@${escapeRegExp(mentionName)}`, "g");
         return content.replace(regex, `{${index}}`);
       },
       messageContent

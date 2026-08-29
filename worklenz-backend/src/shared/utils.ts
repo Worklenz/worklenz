@@ -340,6 +340,15 @@ export function unescape(value: string) {
   return lodash.unescape(value);
 }
 
+/**
+ * Escapes characters that carry special meaning inside a regular expression so a
+ * user-provided string can be embedded in a `RegExp` literal safely (prevents
+ * regex-injection / ReDoS via crafted input).
+ */
+export function escapeRegExp(value: string): string {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function isUnicode(value: string) {
   for (let i = 0, n = value.length; i < n; i++) {
     if (value.charCodeAt(i) > 255) return true;
