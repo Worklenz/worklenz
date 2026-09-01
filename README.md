@@ -312,7 +312,7 @@ If you've previously opted in and want to opt-out:
 <p align="center">
   <a href="https://worklenz.com/features/task-management/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/task-views-view.png"
+      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/task-list.png"
       alt="Worklenz task views"
       width="1024"
     />
@@ -321,7 +321,7 @@ If you've previously opted in and want to opt-out:
 <p align="center">
   <a href="https://worklenz.com/features/time-tracking/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/time-tracking-view.png"
+      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/time-tracking.png"
       alt="Worklenz time tracking"
       width="1024"
     />
@@ -330,7 +330,7 @@ If you've previously opted in and want to opt-out:
 <p align="center">
   <a href="https://worklenz.com/features/analytics/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/analytics-view.png"
+      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/insights.png"
       alt="Worklenz analytics"
       width="1024"
     />
@@ -339,7 +339,7 @@ If you've previously opted in and want to opt-out:
 <p align="center">
   <a href="https://worklenz.com/features/resource-management/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/schedule-view.png"
+      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/schedule.png"
       alt="Worklenz scheduler"
       width="1024"
     />
@@ -348,7 +348,7 @@ If you've previously opted in and want to opt-out:
 <p align="center">
   <a href="https://worklenz.com/features/templates/" target="_blank">
     <img
-      src="https://worklenz.s3.amazonaws.com/assets/screenshots/templates-view.png"
+      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/templates.png"
       alt="Worklenz templates"
       width="1024"
     />
@@ -371,4 +371,3 @@ Two locations are licensed separately under the [Worklenz Commercial License](wo
 That code is readable and can be run for development, testing, and non-production evaluation without a subscription; production use requires a Worklenz Business Edition subscription or a separate written agreement with ceydigital solutions private limited. See the `LICENSE.md` in each of those locations for the full terms.
 
 By contributing to Worklenz, you agree to sign our [Contributor License Agreement](https://cla-assistant.io/Worklenz/worklenz), which grants ceydigital solutions private limited a perpetual, worldwide, sublicensable license to your contribution — you keep full ownership of your original work. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
-
