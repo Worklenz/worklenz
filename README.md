@@ -35,7 +35,7 @@
 <p align="center">
     <a href="https://worklenz.com" target="_blank">
       <img
-        src="https://worklenz.s3.amazonaws.com/assets/screenshots/hero-view.png"
+        src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/worklenz_banner.png"
         alt="Worklenz"
         width="1200"
       />
