@@ -18,17 +18,17 @@ ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS user_name TEXT;
 ALTER TABLE project_logs ADD COLUMN IF NOT EXISTS project_name TEXT;
 
 -- Add foreign key constraint for user_id
-ALTER TABLE project_logs 
-ADD CONSTRAINT IF NOT EXISTS project_logs_user_id_fk 
+ALTER TABLE project_logs
+ADD CONSTRAINT project_logs_user_id_fk
 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL;
 
--- Add i18n fields to task_activity_logs table  
+-- Add i18n fields to task_activity_logs table
 ALTER TABLE task_activity_logs ADD COLUMN IF NOT EXISTS i18n_key TEXT;
 ALTER TABLE task_activity_logs ADD COLUMN IF NOT EXISTS i18n_params JSONB;
 
 -- CREATE INDEX IF NOT EXISTS for better performance on i18n_key queries
-CREATE INDEX IF NOT EXISTS CONCURRENTLY IF NOT EXISTS idx_project_logs_i18n_key ON project_logs(i18n_key);
-CREATE INDEX IF NOT EXISTS CONCURRENTLY IF NOT EXISTS idx_task_activity_logs_i18n_key ON task_activity_logs(i18n_key);
+CREATE INDEX IF NOT EXISTS idx_project_logs_i18n_key ON project_logs(i18n_key);
+CREATE INDEX IF NOT EXISTS idx_task_activity_logs_i18n_key ON task_activity_logs(i18n_key);
 
 -- Create function to log project activities with i18n support
 CREATE OR REPLACE FUNCTION log_project_activity_i18n(
@@ -47,28 +47,28 @@ DECLARE
 BEGIN
     -- Get user name
     SELECT name INTO _user_name FROM users WHERE id = _user_id;
-    
+
     -- Get project name if not provided
     IF _project_name IS NULL THEN
         SELECT name INTO _resolved_project_name FROM projects WHERE id = _project_id;
     ELSE
         _resolved_project_name := _project_name;
     END IF;
-    
+
     -- Add user info to params
     _i18n_params := _i18n_params || jsonb_build_object(
         'userName', COALESCE(_user_name, 'Unknown User'),
         'projectName', COALESCE(_resolved_project_name, 'Unknown Project')
     );
-    
+
     -- Insert the log entry
     INSERT INTO project_logs (
-        team_id, 
-        project_id, 
+        team_id,
+        project_id,
         user_id,
         user_name,
         project_name,
-        i18n_key, 
+        i18n_key,
         i18n_params,
         description
     ) VALUES (
@@ -144,7 +144,7 @@ $$;
 
 -- Update existing logs to have basic i18n keys for backward compatibility
 -- This will help transition existing logs to the new system
-UPDATE project_logs SET 
+UPDATE project_logs SET
     i18n_key = CASE
         WHEN description LIKE '%created by%' THEN 'activityLogs.project.created'
         WHEN description LIKE '%updated by%' THEN 'activityLogs.project.updated'
@@ -161,9 +161,9 @@ UPDATE project_logs SET
         ELSE 'activityLogs.generic.activity'
     END,
     i18n_params = jsonb_build_object(
-        'userName', 
-        CASE 
-            WHEN description LIKE '%by %' THEN 
+        'userName',
+        CASE
+            WHEN description LIKE '%by %' THEN
                 TRIM(SUBSTRING(description FROM '.* by (.*)'))
             ELSE 'Unknown User'
         END,

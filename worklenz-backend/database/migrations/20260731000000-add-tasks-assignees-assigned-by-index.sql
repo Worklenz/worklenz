@@ -7,5 +7,5 @@
 -- on every request, so the query never actually ran. Now that it's fixed,
 -- this index is needed to avoid a full table scan on tasks_assignees.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_tasks_assignees_assigned_by
+CREATE INDEX IF NOT EXISTS idx_tasks_assignees_assigned_by
 ON tasks_assignees(assigned_by);

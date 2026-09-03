@@ -26,32 +26,32 @@ CREATE INDEX IF NOT EXISTS idx_clients_invite_slug
   ON clients (invite_slug)
   WHERE invite_slug IS NOT NULL;
 
--- ADD CONSTRAINT IF NOT EXISTS to ensure slug format (lowercase alphanumeric and hyphens only)
+-- ADD CONSTRAINT to ensure slug format (lowercase alphanumeric and hyphens only)
 -- Drop constraint if exists, then add it
 DO $$
 BEGIN
     ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_invite_slug_format;
-    ALTER TABLE clients ADD CONSTRAINT IF NOT EXISTS clients_invite_slug_format
+    ALTER TABLE clients ADD CONSTRAINT clients_invite_slug_format
       CHECK (invite_slug ~ '^[a-z0-9-]+$');
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
--- ADD CONSTRAINT IF NOT EXISTS for minimum length (at least 3 characters)
+-- ADD CONSTRAINT for minimum length (at least 3 characters)
 DO $$
 BEGIN
     ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_invite_slug_length;
-    ALTER TABLE clients ADD CONSTRAINT IF NOT EXISTS clients_invite_slug_length
+    ALTER TABLE clients ADD CONSTRAINT clients_invite_slug_length
       CHECK (invite_slug IS NULL OR LENGTH(invite_slug) >= 3);
 EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
--- ADD CONSTRAINT IF NOT EXISTS for maximum length (max 50 characters)
+-- ADD CONSTRAINT for maximum length (max 50 characters)
 DO $$
 BEGIN
     ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_invite_slug_max_length;
-    ALTER TABLE clients ADD CONSTRAINT IF NOT EXISTS clients_invite_slug_max_length
+    ALTER TABLE clients ADD CONSTRAINT clients_invite_slug_max_length
       CHECK (invite_slug IS NULL OR LENGTH(invite_slug) <= 50);
 EXCEPTION
     WHEN duplicate_object THEN NULL;

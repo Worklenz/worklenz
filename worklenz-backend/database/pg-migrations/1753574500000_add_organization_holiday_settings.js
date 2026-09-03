@@ -19,22 +19,22 @@ CREATE TABLE IF NOT EXISTS organization_holiday_settings (
 );
 
 ALTER TABLE organization_holiday_settings
-    ADD CONSTRAINT IF NOT EXISTS organization_holiday_settings_pk
+    ADD CONSTRAINT organization_holiday_settings_pk
         PRIMARY KEY (id);
 
 ALTER TABLE organization_holiday_settings
-    ADD CONSTRAINT IF NOT EXISTS organization_holiday_settings_organization_id_fk
+    ADD CONSTRAINT organization_holiday_settings_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations
             ON DELETE CASCADE;
 
 ALTER TABLE organization_holiday_settings
-    ADD CONSTRAINT IF NOT EXISTS organization_holiday_settings_country_code_fk
+    ADD CONSTRAINT organization_holiday_settings_country_code_fk
         FOREIGN KEY (country_code) REFERENCES countries(code)
             ON DELETE SET NULL;
 
 -- Ensure one settings record per organization
 ALTER TABLE organization_holiday_settings
-    ADD CONSTRAINT IF NOT EXISTS organization_holiday_settings_organization_unique
+    ADD CONSTRAINT organization_holiday_settings_organization_unique
         UNIQUE (organization_id);
 
 -- CREATE INDEX IF NOT EXISTS for better performance
@@ -54,17 +54,17 @@ CREATE TABLE IF NOT EXISTS state_holidays (
 );
 
 ALTER TABLE state_holidays
-    ADD CONSTRAINT IF NOT EXISTS state_holidays_pk
+    ADD CONSTRAINT state_holidays_pk
         PRIMARY KEY (id);
 
 ALTER TABLE state_holidays
-    ADD CONSTRAINT IF NOT EXISTS state_holidays_country_code_fk
+    ADD CONSTRAINT state_holidays_country_code_fk
         FOREIGN KEY (country_code) REFERENCES countries(code)
             ON DELETE CASCADE;
 
 -- Add unique constraint to prevent duplicate holidays for the same state, name, and date
 ALTER TABLE state_holidays
-    ADD CONSTRAINT IF NOT EXISTS state_holidays_state_name_date_unique
+    ADD CONSTRAINT state_holidays_state_name_date_unique
         UNIQUE (country_code, state_code, name, date);
 
 -- Create indexes for better performance

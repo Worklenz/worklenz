@@ -21,11 +21,11 @@ CREATE TABLE IF NOT EXISTS user_deletion_logs (
 );
 
 ALTER TABLE user_deletion_logs
-    ADD CONSTRAINT IF NOT EXISTS user_deletion_logs_pk
+    ADD CONSTRAINT user_deletion_logs_pk
         PRIMARY KEY (id);
 
 ALTER TABLE user_deletion_logs
-    ADD CONSTRAINT IF NOT EXISTS user_deletion_logs_user_id_fk
+    ADD CONSTRAINT user_deletion_logs_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 -- CREATE INDEX IF NOT EXISTS for faster queries

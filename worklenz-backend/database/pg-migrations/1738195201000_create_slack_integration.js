@@ -26,21 +26,21 @@ CREATE TABLE IF NOT EXISTS slack_workspaces (
 );
 
 ALTER TABLE slack_workspaces
-    ADD CONSTRAINT IF NOT EXISTS slack_workspaces_pk
+    ADD CONSTRAINT slack_workspaces_pk
         PRIMARY KEY (id);
 
 ALTER TABLE slack_workspaces
-    ADD CONSTRAINT IF NOT EXISTS slack_workspaces_organization_id_fk
+    ADD CONSTRAINT slack_workspaces_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations
             ON DELETE CASCADE;
 
 ALTER TABLE slack_workspaces
-    ADD CONSTRAINT IF NOT EXISTS slack_workspaces_created_by_fk
+    ADD CONSTRAINT slack_workspaces_created_by_fk
         FOREIGN KEY (created_by) REFERENCES users
             ON DELETE SET NULL;
 
 ALTER TABLE slack_workspaces
-    ADD CONSTRAINT IF NOT EXISTS slack_workspaces_organization_team_unique
+    ADD CONSTRAINT slack_workspaces_organization_team_unique
         UNIQUE (organization_id, team_id);
 
 -- Create slack_users table to store Slack user information
@@ -57,21 +57,21 @@ CREATE TABLE IF NOT EXISTS slack_users (
 );
 
 ALTER TABLE slack_users
-    ADD CONSTRAINT IF NOT EXISTS slack_users_pk
+    ADD CONSTRAINT slack_users_pk
         PRIMARY KEY (id);
 
 ALTER TABLE slack_users
-    ADD CONSTRAINT IF NOT EXISTS slack_users_slack_workspace_id_fk
+    ADD CONSTRAINT slack_users_slack_workspace_id_fk
         FOREIGN KEY (slack_workspace_id) REFERENCES slack_workspaces
             ON DELETE CASCADE;
 
 ALTER TABLE slack_users
-    ADD CONSTRAINT IF NOT EXISTS slack_users_user_id_fk
+    ADD CONSTRAINT slack_users_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users
             ON DELETE SET NULL;
 
 ALTER TABLE slack_users
-    ADD CONSTRAINT IF NOT EXISTS slack_users_workspace_slack_user_unique
+    ADD CONSTRAINT slack_users_workspace_slack_user_unique
         UNIQUE (slack_workspace_id, slack_user_id);
 
 -- Create slack_channels table to store Slack channel information
@@ -87,16 +87,16 @@ CREATE TABLE IF NOT EXISTS slack_channels (
 );
 
 ALTER TABLE slack_channels
-    ADD CONSTRAINT IF NOT EXISTS slack_channels_pk
+    ADD CONSTRAINT slack_channels_pk
         PRIMARY KEY (id);
 
 ALTER TABLE slack_channels
-    ADD CONSTRAINT IF NOT EXISTS slack_channels_slack_workspace_id_fk
+    ADD CONSTRAINT slack_channels_slack_workspace_id_fk
         FOREIGN KEY (slack_workspace_id) REFERENCES slack_workspaces
             ON DELETE CASCADE;
 
 ALTER TABLE slack_channels
-    ADD CONSTRAINT IF NOT EXISTS slack_channels_workspace_channel_unique
+    ADD CONSTRAINT slack_channels_workspace_channel_unique
         UNIQUE (slack_workspace_id, channel_id);
 
 -- Create slack_channel_configs table to link Worklenz projects with Slack channels
@@ -112,26 +112,26 @@ CREATE TABLE IF NOT EXISTS slack_channel_configs (
 );
 
 ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT IF NOT EXISTS slack_channel_configs_pk
+    ADD CONSTRAINT slack_channel_configs_pk
         PRIMARY KEY (id);
 
 ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT IF NOT EXISTS slack_channel_configs_project_id_fk
+    ADD CONSTRAINT slack_channel_configs_project_id_fk
         FOREIGN KEY (project_id) REFERENCES projects
             ON DELETE CASCADE;
 
 ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT IF NOT EXISTS slack_channel_configs_slack_channel_id_fk
+    ADD CONSTRAINT slack_channel_configs_slack_channel_id_fk
         FOREIGN KEY (slack_channel_id) REFERENCES slack_channels
             ON DELETE CASCADE;
 
 ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT IF NOT EXISTS slack_channel_configs_created_by_fk
+    ADD CONSTRAINT slack_channel_configs_created_by_fk
         FOREIGN KEY (created_by) REFERENCES users
             ON DELETE SET NULL;
 
 ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT IF NOT EXISTS slack_channel_configs_project_channel_unique
+    ADD CONSTRAINT slack_channel_configs_project_channel_unique
         UNIQUE (project_id, slack_channel_id);
 
 -- Create slack_notifications table to track sent notifications
@@ -150,11 +150,11 @@ CREATE TABLE IF NOT EXISTS slack_notifications (
 );
 
 ALTER TABLE slack_notifications
-    ADD CONSTRAINT IF NOT EXISTS slack_notifications_pk
+    ADD CONSTRAINT slack_notifications_pk
         PRIMARY KEY (id);
 
 ALTER TABLE slack_notifications
-    ADD CONSTRAINT IF NOT EXISTS slack_notifications_config_id_fk
+    ADD CONSTRAINT slack_notifications_config_id_fk
         FOREIGN KEY (slack_channel_config_id) REFERENCES slack_channel_configs
             ON DELETE CASCADE;
 
@@ -182,16 +182,16 @@ CREATE TABLE IF NOT EXISTS slack_audit_log (
 );
 
 ALTER TABLE slack_audit_log
-    ADD CONSTRAINT IF NOT EXISTS slack_audit_log_pk
+    ADD CONSTRAINT slack_audit_log_pk
         PRIMARY KEY (id);
 
 ALTER TABLE slack_audit_log
-    ADD CONSTRAINT IF NOT EXISTS slack_audit_log_user_id_fk
+    ADD CONSTRAINT slack_audit_log_user_id_fk
         FOREIGN KEY (user_id) REFERENCES users
             ON DELETE SET NULL;
 
 ALTER TABLE slack_audit_log
-    ADD CONSTRAINT IF NOT EXISTS slack_audit_log_organization_id_fk
+    ADD CONSTRAINT slack_audit_log_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations
             ON DELETE CASCADE;
 

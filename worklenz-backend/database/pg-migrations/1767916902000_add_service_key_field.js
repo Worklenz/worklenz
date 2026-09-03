@@ -21,16 +21,16 @@ ADD COLUMN IF NOT EXISTS service_key TEXT;
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint 
-    WHERE conname = 'chk_service_key_format' 
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'chk_service_key_format'
     AND conrelid = 'client_portal_services'::regclass
   ) THEN
     ALTER TABLE client_portal_services
-    ADD CONSTRAINT IF NOT EXISTS chk_service_key_format 
+    ADD CONSTRAINT chk_service_key_format
     CHECK (
       service_key IS NULL OR (
-        LENGTH(service_key) >= 2 AND 
-        LENGTH(service_key) <= 6 AND 
+        LENGTH(service_key) >= 2 AND
+        LENGTH(service_key) <= 6 AND
         service_key ~ '^[A-Z0-9]+$'
       )
     );
@@ -38,8 +38,8 @@ BEGIN
 END $$;
 
 -- Create unique constraint on (organization_team_id, service_key) to ensure uniqueness per org
-CREATE UNIQUE INDEX IF NOT EXISTS idx_client_portal_services_org_key 
-ON client_portal_services(organization_team_id, service_key) 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_client_portal_services_org_key
+ON client_portal_services(organization_team_id, service_key)
 WHERE service_key IS NOT NULL;
 
 -- Generate service keys for existing services based on name
@@ -54,59 +54,59 @@ DECLARE
   counter INTEGER;
   key_exists BOOLEAN;
 BEGIN
-  FOR service_record IN 
-    SELECT id, name, organization_team_id 
-    FROM client_portal_services 
+  FOR service_record IN
+    SELECT id, name, organization_team_id
+    FROM client_portal_services
     WHERE service_key IS NULL
     ORDER BY created_at
   LOOP
     -- Generate base key from name
     base_key := UPPER(
-      CASE 
+      CASE
         WHEN LENGTH(REGEXP_REPLACE(service_record.name, '[^A-Za-z0-9]', '', 'g')) >= 2 THEN
           SUBSTRING(REGEXP_REPLACE(service_record.name, '[^A-Za-z0-9]', '', 'g') FROM 1 FOR 4)
         ELSE
           SUBSTRING(REGEXP_REPLACE(service_record.id::TEXT, '[^A-Za-z0-9]', '', 'g') FROM 1 FOR 4)
       END
     );
-    
+
     -- Ensure base key is at least 2 characters
     IF LENGTH(base_key) < 2 THEN
       base_key := SUBSTRING(REGEXP_REPLACE(service_record.id::TEXT, '[^A-Za-z0-9]', '', 'g') FROM 1 FOR 4);
     END IF;
-    
+
     -- Try base key first
     unique_key := base_key;
     counter := 1;
-    
+
     -- Check if key exists and find unique one
     LOOP
       SELECT EXISTS(
-        SELECT 1 FROM client_portal_services 
-        WHERE organization_team_id = service_record.organization_team_id 
+        SELECT 1 FROM client_portal_services
+        WHERE organization_team_id = service_record.organization_team_id
         AND service_key = unique_key
         AND id != service_record.id
       ) INTO key_exists;
-      
+
       EXIT WHEN NOT key_exists;
-      
+
       -- Key exists, try appending number (max 6 chars total)
       IF counter > 999 THEN
         -- Fallback to UUID-based key if too many conflicts
         unique_key := UPPER(SUBSTRING(REGEXP_REPLACE(service_record.id::TEXT, '[^A-Za-z0-9]', '', 'g') FROM 1 FOR 6));
         EXIT;
       END IF;
-      
+
       DECLARE
         base_length INTEGER := GREATEST(0, 6 - LENGTH(counter::TEXT));
         base_part TEXT := SUBSTRING(base_key FROM 1 FOR base_length);
       BEGIN
         unique_key := base_part || counter::TEXT;
       END;
-      
+
       counter := counter + 1;
     END LOOP;
-    
+
     -- Update service with unique key
     UPDATE client_portal_services
     SET service_key = unique_key

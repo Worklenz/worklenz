@@ -18,7 +18,7 @@ DROP CONSTRAINT IF EXISTS client_portal_attachments_purpose_check;
 
 -- Add the new CHECK constraint with payment_proof included
 ALTER TABLE client_portal_attachments
-ADD CONSTRAINT IF NOT EXISTS client_portal_attachments_purpose_check 
+ADD CONSTRAINT client_portal_attachments_purpose_check
 CHECK (purpose IN ('request', 'chat', 'avatar', 'document', 'payment_proof', 'general'));
 
 -- Update the comment to reflect the new purpose

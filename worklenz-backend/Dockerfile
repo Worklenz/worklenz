@@ -32,8 +32,9 @@ COPY --from=builder /usr/src/app/build ./build
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/release ./release
 COPY --from=builder /usr/src/app/worklenz-email-templates ./worklenz-email-templates
+COPY --from=builder /usr/src/app/scripts/migrate.js ./scripts/migrate.js
+COPY --from=builder /usr/src/app/database/pg-migrations ./database/pg-migrations
 
 
 EXPOSE 3000
 CMD ["node", "build/bin/www"]
-
