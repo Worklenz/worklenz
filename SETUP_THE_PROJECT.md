@@ -6,7 +6,7 @@ Getting started with development is a breeze! Follow these steps and you'll be c
 
 - Node.js version v20 or newer - [Node.js](https://nodejs.org/en/download/)
 - PostgreSQL version v15 or newer - [PostgreSQL](https://www.postgresql.org/download/)
-- S3-compatible storage (like MinIO) for file storage
+- S3-compatible storage (SeaweedFS is bundled with Docker) for file storage
 
 ## Prerequisites
 
@@ -122,16 +122,16 @@ For an easier setup, you can use Docker and Docker Compose:
 2. From the root directory, run:
 
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. Access the application:
    - Frontend: http://localhost:5000 (Docker production build)
    - Backend API: http://localhost:3000
-   - MinIO Console: http://localhost:9001 (login with minioadmin/minioadmin)
+   - SeaweedFS S3 API: http://localhost:8333
 
 4. To stop the services:
 
    ```bash
-   docker-compose down
+   docker compose down
    ```

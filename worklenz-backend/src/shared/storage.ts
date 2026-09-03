@@ -31,26 +31,37 @@ import {
   BUCKET,
   REGION,
   S3_ACCESS_KEY_ID,
+  S3_ENDPOINT,
   S3_SECRET_ACCESS_KEY,
   S3_URL,
   STORAGE_PROVIDER,
 } from "./constants";
 
-// Parse the endpoint URL from S3_URL if it exists
+// S3_ENDPOINT is the private API endpoint used by the backend. S3_PUBLIC_URL
+// is exposed through the S3_URL constant and may use a different hostname.
 const getEndpointFromUrl = () => {
   try {
-    if (!S3_URL) return undefined;
+    if (!S3_ENDPOINT) return undefined;
 
-    // Extract the endpoint URL (e.g., http://minio:9000 from http://minio:9000/bucket)
-    const url = new URL(S3_URL);
+    const url = new URL(S3_ENDPOINT);
     return `${url.protocol}//${url.host}`;
   } catch (error) {
-    console.warn("Error parsing S3_URL:", error);
+    console.warn("Error parsing S3_ENDPOINT:", error);
     return undefined;
   }
 };
 
-// Initialize S3 Client with support for MinIO
+const getPublicEndpointFromUrl = () => {
+  try {
+    const url = new URL(S3_URL);
+    return `${url.protocol}//${url.host}`;
+  } catch (error) {
+    console.warn("Error parsing S3_PUBLIC_URL:", error);
+    return undefined;
+  }
+};
+
+// Initialize the S3 client with support for self-hosted S3-compatible storage.
 const s3Client = new S3Client({
   region: REGION,
   credentials: {
@@ -58,8 +69,20 @@ const s3Client = new S3Client({
     secretAccessKey: S3_SECRET_ACCESS_KEY || "",
   },
   endpoint: getEndpointFromUrl(),
-  forcePathStyle: true, // Required for MinIO
+  forcePathStyle: Boolean(S3_ENDPOINT),
 });
+
+const presignS3Client = S3_ENDPOINT
+  ? new S3Client({
+      region: REGION,
+      credentials: {
+        accessKeyId: S3_ACCESS_KEY_ID || "",
+        secretAccessKey: S3_SECRET_ACCESS_KEY || "",
+      },
+      endpoint: getPublicEndpointFromUrl(),
+      forcePathStyle: true,
+    })
+  : s3Client;
 
 // Log the storage configuration
 console.log(`Storage provider initialized: ${STORAGE_PROVIDER}`);
@@ -330,14 +353,6 @@ async function uploadBufferToS3(
 
     await s3Client.send(new PutObjectCommand(bucketParams));
 
-    // Create proper URL depending on whether we're using S3 or MinIO
-    const endpointUrl = getEndpointFromUrl();
-    if (endpointUrl) {
-      // For MinIO or custom S3 endpoint
-      return `${endpointUrl}/${BUCKET}/${location}`;
-    }
-
-    // For standard AWS S3
     return `${S3_URL}/${location}`;
   } catch (error) {
     log_error(error);
@@ -393,11 +408,6 @@ export function getPublicUrl(key: string): string {
   if (STORAGE_PROVIDER === "azure") {
     const containerName = AZURE_STORAGE_CONTAINER || "ifinitycdn";
     return `${AZURE_STORAGE_URL}/${containerName}/${key}`;
-  }
-
-  const endpointUrl = getEndpointFromUrl();
-  if (endpointUrl) {
-    return `${endpointUrl}/${BUCKET}/${key}`;
   }
 
   return `${S3_URL}/${key}`;
@@ -571,7 +581,7 @@ async function createPresignedUrlWithS3Client(key: string, file: string) {
     ResponseContentType: `${contentType}`,
     ResponseContentDisposition: `attachment; filename*=UTF-8''${encodeURIComponent(file)}`,
   });
-  return getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  return getSignedUrl(presignS3Client, command, { expiresIn: 3600 });
 }
 
 async function createPresignedUrlWithAzureClient(key: string, file: string) {
@@ -631,7 +641,7 @@ export async function createPresignedUrlWithClient(key: string, file: string) {
 // ---------------------------------------------------------------------------
 
 /**
- * Generate a presigned PUT URL for S3/MinIO so the browser can upload directly.
+ * Generate a presigned PUT URL for S3-compatible storage so the browser can upload directly.
  * Expires in 15 minutes — enough for large files on slow connections.
  * ContentType is intentionally NOT signed — S3 would reject the PUT if the
  * browser sends a slightly different Content-Type header (e.g. "application/pdf"
@@ -645,7 +655,7 @@ async function createPresignedUploadUrlS3(
     Bucket: BUCKET,
     Key: key,
   });
-  return getSignedUrl(s3Client, command, { expiresIn: 900 }); // 15 min
+  return getSignedUrl(presignS3Client, command, { expiresIn: 900 }); // 15 min
 }
 
 /**
@@ -694,7 +704,7 @@ async function createPresignedUploadUrlAzure(
 
 /**
  * Returns a presigned URL the browser can use to PUT a file directly to storage.
- * Works for both S3/MinIO and Azure Blob Storage.
+ * Works for both S3-compatible storage and Azure Blob Storage.
  */
 export async function createPresignedUploadUrl(
   key: string,
@@ -733,7 +743,7 @@ export async function getObjectSize(key: string): Promise<number | null> {
       return props.contentLength ?? null;
     }
 
-    // S3 / MinIO — HeadObject throws if the key doesn't exist
+    // S3-compatible storage — HeadObject throws if the key doesn't exist
     const head = await s3Client.send(
       new HeadObjectCommand({ Bucket: BUCKET, Key: key }),
     );

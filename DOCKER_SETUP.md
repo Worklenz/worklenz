@@ -25,10 +25,10 @@ cp .env.example .env
 #    - SESSION_SECRET (generate with: openssl rand -hex 32)
 #    - COOKIE_SECRET (generate with: openssl rand -hex 32)
 #    - JWT_SECRET (generate with: openssl rand -hex 32)
-#    - AWS_SECRET_ACCESS_KEY (MinIO password)
+#    - S3_SECRET_ACCESS_KEY (SeaweedFS secret)
 #    - REDIS_PASSWORD
 
-# 3. Start services (Express mode - includes PostgreSQL, Redis, MinIO)
+# 3. Start services (Express mode - includes PostgreSQL, Redis, SeaweedFS)
 docker compose --profile express up -d
 
 # 4. For production with SSL
@@ -125,9 +125,9 @@ One-command setup with auto-generated secrets and SSL configuration.
                     ┌────────────┼────────────┐
                     │            │            │
             ┌───────▼──┐   ┌────▼────┐  ┌───▼────┐
-            │PostgreSQL│   │  Redis  │  │ MinIO  │
+            │PostgreSQL│   │  Redis  │  │SeaweedFS│
             │  Port:   │   │ Port:   │  │ Port:  │
-            │  5432    │   │  6379   │  │ 9000   │
+            │  5432    │   │  6379   │  │ 8333   │
             └──────────┘   └─────────┘  └────────┘
 ```
 
@@ -136,7 +136,7 @@ One-command setup with auto-generated secrets and SSL configuration.
 ### Deployment Modes
 
 #### Express Mode (Default)
-All services bundled together - PostgreSQL, Redis, MinIO included.
+All services bundled together - PostgreSQL, Redis, and SeaweedFS included.
 ```bash
 docker compose --profile express up -d
 ```
@@ -238,7 +238,7 @@ All services include health checks:
 - Frontend: `http://localhost:5000`
 - PostgreSQL: `pg_isready`
 - Redis: `redis-cli ping`
-- MinIO: `/minio/health/live`
+- SeaweedFS: master cluster status health check
 
 ## 🔄 Upgrading
 
@@ -273,7 +273,7 @@ This will:
 
 ```
 worklenz/
-├── docker-compose.yaml          # Main compose file
+├── docker-compose.yml           # Main compose file
 ├── .env.example                 # Environment template
 ├── manage.sh                    # Management script
 ├── quick-setup.sh              # Quick setup script

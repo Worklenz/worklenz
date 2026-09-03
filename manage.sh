@@ -20,7 +20,7 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/.env"
-DOCKER_COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yaml"
+DOCKER_COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
 SSL_DIR="$SCRIPT_DIR/nginx/ssl"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 REPO_DIR="$SCRIPT_DIR"
@@ -343,7 +343,7 @@ view_logs() {
     echo "3. Frontend"
     echo "4. PostgreSQL"
     echo "5. Nginx"
-    echo "6. MinIO"
+    echo "6. SeaweedFS"
     echo "7. Redis"
     echo "8. Certbot"
     echo "0. Back"
@@ -358,7 +358,7 @@ view_logs() {
         3) $compose_cmd logs -f --tail=100 frontend ;;
         4) $compose_cmd logs -f --tail=100 postgres ;;
         5) $compose_cmd logs -f --tail=100 nginx ;;
-        6) $compose_cmd logs -f --tail=100 minio ;;
+        6) $compose_cmd logs -f --tail=100 seaweedfs ;;
         7) $compose_cmd logs -f --tail=100 redis ;;
         8) $compose_cmd logs -f --tail=100 certbot ;;
         0) return ;;
@@ -415,13 +415,13 @@ backup_data() {
         docker run --rm -v worklenz_redis_data:/data -v "$backup_dir:/backup" alpine tar czf "/backup/redis_data.tar.gz" -C /data . 2>/dev/null
         print_success "Redis data backed up"
 
-        # Backup MinIO data
-        print_info "[3/4] Backing up MinIO storage..."
-        docker run --rm -v worklenz_minio_data:/data -v "$backup_dir:/backup" alpine tar czf "/backup/minio_data.tar.gz" -C /data . 2>/dev/null
-        print_success "MinIO storage backed up"
+        # Backup SeaweedFS data
+        print_info "[3/4] Backing up SeaweedFS storage..."
+        docker run --rm -v worklenz_seaweedfs_data:/data -v "$backup_dir:/backup" alpine tar czf "/backup/seaweedfs_data.tar.gz" -C /data . 2>/dev/null
+        print_success "SeaweedFS storage backed up"
     else
         print_info "[2/4] Skipping Redis backup (advanced mode)"
-        print_info "[3/4] Skipping MinIO backup (advanced mode)"
+        print_info "[3/4] Skipping SeaweedFS backup (advanced mode)"
     fi
 
     # Backup configuration
@@ -492,7 +492,7 @@ restore_data() {
 
     echo ""
     print_warning "⚠️  WARNING: This will REPLACE current data!"
-    print_warning "⚠️  Current database, Redis, and MinIO data will be LOST!"
+    print_warning "⚠️  Current database, Redis, and SeaweedFS data will be LOST!"
     echo ""
     read -p "Type 'yes' to confirm restore: " confirm
 
@@ -531,11 +531,11 @@ restore_data() {
         print_success "Redis data restored"
     fi
 
-    # Restore MinIO
-    if [ -f "$temp_dir/$backup_content/minio_data.tar.gz" ]; then
-        print_info "Restoring MinIO storage..."
-        docker run --rm -v worklenz_minio_data:/data -v "$temp_dir/$backup_content:/backup" alpine sh -c "rm -rf /data/* && tar xzf /backup/minio_data.tar.gz -C /data"
-        print_success "MinIO storage restored"
+    # Restore SeaweedFS
+    if [ -f "$temp_dir/$backup_content/seaweedfs_data.tar.gz" ]; then
+        print_info "Restoring SeaweedFS storage..."
+        docker run --rm -v worklenz_seaweedfs_data:/data -v "$temp_dir/$backup_content:/backup" alpine sh -c "rm -rf /data/* && tar xzf /backup/seaweedfs_data.tar.gz -C /data"
+        print_success "SeaweedFS storage restored"
     fi
 
     # Restore configuration
@@ -615,10 +615,10 @@ auto_configure_env() {
         needs_update=1
     fi
 
-    if is_placeholder "$AWS_SECRET_ACCESS_KEY"; then
-        print_info "Generating AWS_SECRET_ACCESS_KEY (MinIO password)..."
-        local minio_password=$(generate_secret | cut -c1-32)
-        sed -i.bak "s/^AWS_SECRET_ACCESS_KEY=.*/AWS_SECRET_ACCESS_KEY=$minio_password/" "$ENV_FILE"
+    if is_placeholder "$S3_SECRET_ACCESS_KEY"; then
+        print_info "Generating S3_SECRET_ACCESS_KEY (SeaweedFS secret)..."
+        local seaweedfs_secret=$(generate_secret | cut -c1-32)
+        sed -i.bak "s/^S3_SECRET_ACCESS_KEY=.*/S3_SECRET_ACCESS_KEY=$seaweedfs_secret/" "$ENV_FILE"
         needs_update=1
     fi
 
@@ -661,7 +661,7 @@ auto_configure_env() {
         echo "  - COOKIE_SECRET"
         echo "  - JWT_SECRET"
         echo "  - DB_PASSWORD"
-        echo "  - AWS_SECRET_ACCESS_KEY (MinIO)"
+        echo "  - S3_SECRET_ACCESS_KEY (SeaweedFS)"
         echo "  - REDIS_PASSWORD"
         echo ""
         print_info "Configured URLs for domain: $domain"
@@ -704,10 +704,10 @@ configure_env() {
         db_password=$(generate_secret | cut -c1-32)
     fi
 
-    read -sp "Enter MinIO password (or press Enter to generate): " minio_password
+    read -sp "Enter SeaweedFS secret (or press Enter to generate): " seaweedfs_secret
     echo
-    if [ -z "$minio_password" ]; then
-        minio_password=$(generate_secret | cut -c1-32)
+    if [ -z "$seaweedfs_secret" ]; then
+        seaweedfs_secret=$(generate_secret | cut -c1-32)
     fi
 
     read -sp "Enter Redis password (or press Enter to generate): " redis_password
@@ -722,7 +722,7 @@ configure_env() {
     sed -i.bak "s/^COOKIE_SECRET=.*/COOKIE_SECRET=$cookie_secret/" "$ENV_FILE"
     sed -i.bak "s/^JWT_SECRET=.*/JWT_SECRET=$jwt_secret/" "$ENV_FILE"
     sed -i.bak "s/^DB_PASSWORD=.*/DB_PASSWORD=$db_password/" "$ENV_FILE"
-    sed -i.bak "s/^AWS_SECRET_ACCESS_KEY=.*/AWS_SECRET_ACCESS_KEY=$minio_password/" "$ENV_FILE"
+    sed -i.bak "s/^S3_SECRET_ACCESS_KEY=.*/S3_SECRET_ACCESS_KEY=$seaweedfs_secret/" "$ENV_FILE"
     sed -i.bak "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$redis_password/" "$ENV_FILE"
 
     # Update URLs based on domain
