@@ -1,8 +1,6 @@
 services:
   frontend:
-    build:
-      context: ./worklenz-frontend
-      dockerfile: Dockerfile
+    image: chamikajaycey/worklenz-frontend:3.1.0-beta
     container_name: worklenz_frontend
     ports:
       - "5000:5000"
@@ -15,9 +13,7 @@ services:
       - worklenz
 
   backend:
-    build:
-      context: ./worklenz-backend
-      dockerfile: Dockerfile
+    image: chamikajaycey/worklenz-backend:3.1.0-beta
     container_name: worklenz_backend
     ports:
       - "3000:3000"
@@ -32,21 +28,39 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 5432
+      # Allows the current published image to start when Google OAuth is not configured.
+      # Replace these defaults with real credentials in .env to enable Google sign-in.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-disabled}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-disabled}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://localhost/api/auth/google/verify}
     networks:
       - worklenz
 
   client-portal:
-    build:
-      context: ./worklenz-client-portal
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: ${CLIENT_PORTAL_API_BASE_URL:-http://backend:3000/api/client-portal}
+    image: chamikajaycey/worklenz-client-portal:latest
     container_name: worklenz_client_portal
     ports:
       - "5174:5174"
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - worklenz
+
+  nginx:
+    image: nginx:alpine
+    container_name: worklenz_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     networks:
       - worklenz
 
