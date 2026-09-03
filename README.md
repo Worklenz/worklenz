@@ -1,9 +1,9 @@
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="75">
+        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="150">
     </a>
     <br>
-    Worklenz    
+    Worklenz
 </h1>
 
 <p align="center">
@@ -56,7 +56,7 @@ comprehensive solution for managing projects, tasks, and collaboration within te
   - [Local Development](#local-development-with-docker)
   - [Remote Server Deployment](#remote-server-deployment)
 - [Configuration](#configuration)
-- [MinIO Integration](#minio-integration)
+- [SeaweedFS Integration](#seaweedfs-integration)
 - [Security](#security)
 - [Analytics](#analytics)
 - [Screenshots](#screenshots)
@@ -104,19 +104,22 @@ git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
 ```
 
-2. Start the Docker containers:
+2. Run the managed installer (it creates and configures `.env` automatically):
 ```bash
-docker-compose up -d
+./manage.sh install
 ```
+
+For a manual Compose installation, copy `.env.example` to `.env`, replace all
+`CHANGE_THIS` values, and run `docker compose up -d`.
 
 3. Access the application:
    - **Frontend**: http://localhost:5000
    - **Backend API**: http://localhost:3000
-   - **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
+   - **SeaweedFS S3 API**: http://localhost:8333
 
 4. To stop the services:
 ```bash
-docker-compose down
+docker compose down
 ```
 
 **Alternative startup methods:**
@@ -132,7 +135,7 @@ For developers who want to run the services individually or customize the setup.
 **Prerequisites:**
 - Node.js (version 18 or higher)
 - PostgreSQL (version 15 or higher)
-- An S3-compatible storage service (like MinIO) or Azure Blob Storage
+- An S3-compatible storage service (SeaweedFS is bundled) or Azure Blob Storage
 
 **Steps:**
 
@@ -207,8 +210,8 @@ When deploying to a remote server:
 
 2. Pull and run the latest Docker images:
    ```bash
-   docker-compose pull
-   docker-compose up -d
+   docker compose pull
+   docker compose up -d
    ```
 
 3. Access the application through your server's hostname:
@@ -243,31 +246,38 @@ The Docker setup uses environment variables to configure the services:
 
 For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
 
-## MinIO Integration
+## SeaweedFS Integration
 
-The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
+The Docker setup uses SeaweedFS as its bundled S3-compatible object storage service. The default bucket is created automatically when the service starts.
 
-### Working with MinIO
+### Working with SeaweedFS
 
-MinIO provides an S3-compatible API, so any code that works with S3 will work with MinIO by simply changing the endpoint URL. The backend has been configured to use MinIO by default, with no additional configuration required.
+SeaweedFS exposes an S3-compatible API on port `8333`. Worklenz uses a private container endpoint for API calls and a separate public bucket URL for attachment links.
 
-- **MinIO Console**: http://localhost:9001
-  - Username: minioadmin
-  - Password: minioadmin
+- **S3 API**: http://localhost:8333
+- **Access key**: configured with `S3_ACCESS_KEY_ID`
+- **Secret key**: configured with `S3_SECRET_ACCESS_KEY`
 
 - **Default Bucket**: worklenz-bucket (created automatically when the containers start)
 
+### Upgrading from MinIO
+
+SeaweedFS uses a different on-disk format. An existing `worklenz_minio_data`
+Docker volume is intentionally left untouched and is not mounted into
+SeaweedFS. Copy existing objects through the S3 API before removing the old
+volume; do not copy the raw volume contents into `worklenz_seaweedfs_data`.
+
 ### Backend Storage Configuration
 
-The backend is pre-configured to use MinIO with the following settings:
+The backend is pre-configured to use SeaweedFS with the following settings:
 
 ```javascript
-// S3 credentials with MinIO defaults
-export const REGION = process.env.AWS_REGION || "us-east-1";
-export const BUCKET = process.env.AWS_BUCKET || "worklenz-bucket";
-export const S3_URL = process.env.S3_URL || "http://minio:9000/worklenz-bucket";
-export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "minioadmin";
-export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "minioadmin";
+export const REGION = process.env.S3_REGION || "us-east-1";
+export const BUCKET = process.env.S3_BUCKET || "worklenz-bucket";
+export const S3_ENDPOINT = process.env.S3_ENDPOINT;
+export const S3_URL = process.env.S3_PUBLIC_URL || process.env.S3_URL;
+export const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || "";
+export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || "";
 ```
 
 ### Security Considerations

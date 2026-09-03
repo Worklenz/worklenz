@@ -12,4 +12,5 @@ describe("constants.ts", () => {
   it("should export REGION", () => expect(constants.REGION).toBeDefined());
   it("should export BUCKET", () => expect(constants.BUCKET).toBeDefined());
   it("should export S3_URL", () => expect(constants.S3_URL).toBeDefined());
+  it("should export S3_ENDPOINT", () => expect(constants).toHaveProperty("S3_ENDPOINT"));
 });
