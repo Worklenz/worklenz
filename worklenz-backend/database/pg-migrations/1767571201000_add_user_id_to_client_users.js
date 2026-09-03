@@ -28,7 +28,7 @@ WHERE user_id IS NOT NULL;
 ALTER TABLE client_users ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Add check constraint to ensure either user_id OR password_hash exists (not both null)
-ALTER TABLE client_users ADD CONSTRAINT IF NOT EXISTS client_users_auth_check
+ALTER TABLE client_users ADD CONSTRAINT client_users_auth_check
 CHECK (user_id IS NOT NULL OR password_hash IS NOT NULL);
 
 -- Add comments for documentation

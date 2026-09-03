@@ -25,11 +25,11 @@ ALTER TABLE client_users ALTER COLUMN password_hash DROP NOT NULL;
 DO $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint 
+        SELECT 1 FROM pg_constraint
         WHERE conname = 'client_user_organizations_client_user_id_team_id_key'
     ) THEN
-        ALTER TABLE client_user_organizations 
-        ADD CONSTRAINT IF NOT EXISTS client_user_organizations_client_user_id_team_id_key 
+        ALTER TABLE client_user_organizations
+        ADD CONSTRAINT client_user_organizations_client_user_id_team_id_key
         UNIQUE (client_user_id, team_id);
     END IF;
 END $$;
@@ -39,11 +39,11 @@ END $$;
 DO $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint 
+        SELECT 1 FROM pg_constraint
         WHERE conname = 'client_portal_access_client_id_key'
     ) THEN
-        ALTER TABLE client_portal_access 
-        ADD CONSTRAINT IF NOT EXISTS client_portal_access_client_id_key 
+        ALTER TABLE client_portal_access
+        ADD CONSTRAINT client_portal_access_client_id_key
         UNIQUE (client_id);
     END IF;
 END $$;
