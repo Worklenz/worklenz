@@ -23,6 +23,10 @@ out/
 !.env.example
 !.env.template
 
+# Locally generated TLS certificates and private keys
+nginx/ssl/*.pem
+!nginx/ssl/.gitkeep
+
 # Logs
 logs
 *.log
