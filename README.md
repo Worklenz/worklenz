@@ -1,9 +1,9 @@
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="75">
+        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="150">
     </a>
     <br>
-    Worklenz    
+    Worklenz
 </h1>
 
 <p align="center">
