@@ -26,6 +26,9 @@ jobs:
       - name: Checkout the codebase
         uses: actions/checkout@v4
 
+      - name: Set image name to lowercase
+        run: echo "IMAGE_BASE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/worklenz" >> $GITHUB_ENV
+
       - name: Login to the Container registry
         uses: docker/login-action@v3
         with:
@@ -37,7 +40,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.service.container_name }}
+          images: ${{ env.IMAGE_BASE }}-${{ matrix.service.name }}
           flavor: |
             latest=true     
 
