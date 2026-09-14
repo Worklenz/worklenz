@@ -30,6 +30,9 @@ const ProjectViewRoadmap = React.lazy(
 const ProjectViewWorkload = React.lazy(
   () => import('@/pages/projects/projectView/workload/ProjectViewWorkload')
 );
+const ProjectViewDocs = React.lazy(
+  () => import('@/pages/projects/projectView/docs/project-view-docs')
+);
 
 // type of a tab items
 type TabItems = {
@@ -60,6 +63,7 @@ const getTabLabel = (key: string): string => {
         roadmap: 'Roadmap',
         workload: 'Workload',
         finance: 'Finance',
+        docs: 'Docs',
       };
       return fallbacks[key] || key;
     }
@@ -74,6 +78,7 @@ const getTabLabel = (key: string): string => {
       members: 'Members',
       updates: 'Updates',
       finance: 'Finance',
+      docs: 'Docs',
     };
     return fallbacks[key] || key;
   }
@@ -158,6 +163,17 @@ export const tabItems: TabItems[] = [
     label: getTabLabel('finance'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
+  {
+    index: 9,
+    key: 'docs',
+    defaultLabel: 'Docs',
+    label: getTabLabel('docs'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewDocs)
+    ),
+  },
 ];
 
 // Function to update tab labels when language changes
@@ -192,6 +208,9 @@ export const updateTabLabels = () => {
         case 'finance':
           item.label = getTabLabel('finance');
           break;
+        case 'docs':
+          item.label = getTabLabel('docs');
+          break;
       }
     });
   } catch (error) {
@@ -217,7 +236,7 @@ export const isUserGuest = (currentProject?: IProjectViewModel | null): boolean 
  * Get restricted views for guests
  * Guests can only access Task List, Board, and Members views
  */
-const GUEST_RESTRICTED_VIEWS = ['roadmap', 'workload', 'project-insights-member-overview', 'finance', 'updates', 'all-attachments'];
+const GUEST_RESTRICTED_VIEWS = ['roadmap', 'workload', 'project-insights-member-overview', 'finance', 'updates', 'all-attachments', 'docs'];
 const GUEST_ALLOWED_VIEWS = ['tasks-list', 'board', 'members'];
 
 // Function to get filtered tab items based on user permissions
