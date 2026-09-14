@@ -1,0 +1,34 @@
+.project-docs-card {
+  min-height: 560px;
+}
+
+.project-docs-sidebar {
+  width: 240px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-doc-tree-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-doc-preview {
+  min-height: 80px;
+  padding: 16px;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 6px;
+}
+
+.project-doc-preview:empty::after {
+  content: '';
+}
+
+@media (max-width: 768px) {
+  .project-docs-sidebar {
+    width: 100%;
+  }
+}
