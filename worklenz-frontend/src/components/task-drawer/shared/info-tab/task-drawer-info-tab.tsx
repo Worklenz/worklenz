@@ -2,6 +2,7 @@ import {
   Collapse,
   CollapseProps,
   Flex,
+  List,
   Skeleton,
   Typography,
 } from '@/shared/antd-imports';
@@ -43,6 +44,8 @@ import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import projectDocsApiService from '@/api/projects/project-docs.api.service';
+import { IProjectDocTask } from '@/types/projects/project-docs.types';
 
 interface TaskDrawerInfoTabProps {
   t: TFunction;
@@ -86,6 +89,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
 
   const [taskComments, setTaskComments] = useState<ITaskCommentViewModel[]>([]);
   const [loadingTaskComments, setLoadingTaskComments] = useState<boolean>(false);
+  const [linkedDocs, setLinkedDocs] = useState<IProjectDocTask[]>([]);
 
   // Tab-level drag-and-drop state
   const [isTabDragOver, setIsTabDragOver] = useState(false);
@@ -372,6 +376,19 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     }
   }, [selectedTaskId]);
 
+  const fetchLinkedDocs = useCallback(async () => {
+    if (!selectedTaskId || !projectId || isGuest) {
+      setLinkedDocs([]);
+      return;
+    }
+    try {
+      const response = await projectDocsApiService.listByTask(projectId, selectedTaskId);
+      if (response.done) setLinkedDocs(response.body || []);
+    } catch (error) {
+      logger.error('Error fetching linked docs:', error);
+    }
+  }, [isGuest, projectId, selectedTaskId]);
+
   const panelStyle: React.CSSProperties = {
     border: 'none',
     paddingBlock: 0,
@@ -514,6 +531,27 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       className: 'custom-task-drawer-info-collapse',
       children: <TaskComments taskId={selectedTaskId || ''} t={t} isGuest={isGuest} />,
     },
+    ...(isGuest
+      ? []
+      : [
+          {
+            key: 'docs',
+            label: <Typography.Text strong>{t('taskInfoTab.docs.title', { defaultValue: 'Linked docs' })}</Typography.Text>,
+            style: panelStyle,
+            className: 'custom-task-drawer-info-collapse',
+            children: linkedDocs.length ? (
+              <List
+                size="small"
+                dataSource={linkedDocs}
+                renderItem={doc => <List.Item>{doc.title}</List.Item>}
+              />
+            ) : (
+              <Typography.Text type="secondary">
+                {t('taskInfoTab.docs.empty', { defaultValue: 'No docs linked to this task.' })}
+              </Typography.Text>
+            ),
+          },
+        ]),
   ];
 
   const infoItems =
@@ -565,6 +603,7 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
     fetchTaskDependencies();
     fetchTaskAttachments();
     fetchTaskComments();
+    fetchLinkedDocs();
 
     return () => {
       // Only clear local data when we're actually switching to a different
@@ -574,8 +613,9 @@ const TaskDrawerInfoTab = ({ t, canCreateTask, isGuest }: TaskDrawerInfoTabProps
       setTaskAttachments([]);
       selectedFilesRef.current = [];
       setTaskComments([]);
+      setLinkedDocs([]);
     };
-  }, [selectedTaskId, projectId, fetchSubTasks]);
+  }, [selectedTaskId, projectId, fetchSubTasks, fetchLinkedDocs]);
 
   return (
     <Skeleton active loading={loadingTask}>
