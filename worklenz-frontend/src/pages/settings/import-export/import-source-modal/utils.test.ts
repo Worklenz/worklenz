@@ -89,3 +89,53 @@ describe('parseCsvText + autoMapCsvColumns integration', () => {
     });
   });
 });
+
+describe('validateCsvImport', () => {
+  it('rejects empty titles and invalid due dates before import', async () => {
+    const { validateCsvImport } = await import('./utils');
+    const result = validateCsvImport({
+      rows: [
+        { Title: '', 'Due Date': '2026-02-30' },
+        { Title: 'Valid task', 'Due Date': '2026-09-09' },
+      ],
+      columns: ['Title', 'Due Date'],
+      fieldMappings: { Title: 'key', 'Due Date': 'dueDate' },
+      statusValueMapping: {},
+      csvUserRows: [],
+      userEmails: {},
+      addUsers: false,
+    });
+    expect(result.errors.some(error => error.message === 'Task title is empty.')).toBe(true);
+    expect(result.errors.some(error => error.message.includes('Invalid due date'))).toBe(true);
+  });
+
+  it('reports unmapped statuses as warnings and invalid assignee emails as errors', async () => {
+    const { validateCsvImport } = await import('./utils');
+    const result = validateCsvImport({
+      rows: [{ Title: 'Task', Status: 'Doing', Assignee: 'Alice' }],
+      columns: ['Title', 'Status', 'Assignee'],
+      fieldMappings: { Title: 'key', Status: 'status', Assignee: 'assignees' },
+      statusValueMapping: {},
+      csvUserRows: ['Alice'],
+      userEmails: { Alice: 'not-an-email' },
+      addUsers: true,
+    });
+    expect(result.warnings).toHaveLength(1);
+    expect(result.errors.some(error => error.field === 'Assignee')).toBe(true);
+  });
+});
+
+describe('CSV delimiter detection', () => {
+  it('detects semicolon-delimited files so preview and backend receive the same delimiter', async () => {
+    const { detectCsvDelimiter, parseCsvText } = await import('./utils');
+    const csv = 'Title;Status;Assignee;Due Date\nTask;Doing;alice@example.com;2026-09-09';
+    const delimiter = detectCsvDelimiter(csv);
+    expect(delimiter).toBe(';');
+    expect(parseCsvText(csv, delimiter).rows[0]).toEqual({
+      Title: 'Task',
+      Status: 'Doing',
+      Assignee: 'alice@example.com',
+      'Due Date': '2026-09-09',
+    });
+  });
+});
