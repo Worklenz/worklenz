@@ -1,10 +1,12 @@
 import React from 'react';
+import { validateCsvImport } from '../utils';
 import {
   ProjectOutlined,
   TableOutlined,
   TagsOutlined,
   UserAddOutlined,
   UnorderedListOutlined,
+  Table,
   Typography,
 } from '@/shared/antd-imports';
 
@@ -46,6 +48,19 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
     return addUsers && !!email && email.includes('@');
   }).length;
   const workItems = csvRows.length;
+  const validation = React.useMemo(
+    () =>
+      validateCsvImport({
+        rows: csvRows as Record<string, string>[],
+        columns: csvColumns,
+        fieldMappings,
+        statusValueMapping,
+        csvUserRows,
+        userEmails,
+        addUsers,
+      }),
+    [csvRows, csvColumns, fieldMappings, statusValueMapping, csvUserRows, userEmails, addUsers]
+  );
   const limitationItems = React.useMemo(() => {
     const lowerProvider = (providerKey || '').toLowerCase();
     if (lowerProvider === 'jira') {
@@ -88,6 +103,44 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
       }),
     ];
   }, [providerKey, t]);
+
+
+  const mappedPreview = React.useMemo(() => {
+    const findColumn = (target: string) =>
+      csvColumns.find(column => fieldMappings[column] === target && fieldMappings[column]) || '';
+    const titleColumn = findColumn('key');
+    const statusColumn = findColumn('status');
+    const assigneeColumn = findColumn('assignees');
+    const dueDateColumn = findColumn('dueDate');
+
+    return csvRows.slice(0, 8).map((row, index) => {
+      const rawStatus = statusColumn ? String(row[statusColumn] ?? '') : '';
+      const rawAssignee = assigneeColumn ? String(row[assigneeColumn] ?? '') : '';
+      const assigneeEmail = userEmails[rawAssignee]?.trim();
+      return {
+        key: index,
+        title: titleColumn ? String(row[titleColumn] ?? '').trim() : '',
+        status: statusValueMapping[rawStatus] || rawStatus,
+        assignee: addUsers && assigneeEmail ? assigneeEmail : rawAssignee,
+        dueDate: dueDateColumn ? String(row[dueDateColumn] ?? '').trim() : '',
+      };
+    });
+  }, [
+    addUsers,
+    csvColumns,
+    csvRows,
+    fieldMappings,
+    statusValueMapping,
+    userEmails,
+  ]);
+
+  const hasMappedTaskFields = React.useMemo(
+    () =>
+      ['key', 'status', 'assignees', 'dueDate'].some(target =>
+        csvColumns.some(column => fieldMappings[column] === target)
+      ),
+    [csvColumns, fieldMappings]
+  );
 
   const cardStyle: React.CSSProperties = {
     display: 'flex',
@@ -233,6 +286,104 @@ export const CsvReviewStepContent: React.FC<CsvReviewStepContentProps> = ({
           </div>
         </div>
       </div>
+      {(validation.errors.length > 0 || validation.warnings.length > 0) && (
+        <div
+          style={{
+            marginTop: 24,
+            width: '100%',
+            borderRadius: 12,
+            border: `1px solid ${validation.errors.length ? themeToken.colorErrorBorder || themeToken.colorBorder : themeToken.colorWarningBorder || themeToken.colorBorder}`,
+            background: themeToken.colorBgContainer,
+            padding: '14px 16px',
+          }}
+        >
+          <Typography.Text style={{ color: themeToken.colorText, fontWeight: 600 }}>
+            {validation.errors.length
+              ? t('importStep.validationErrorsTitle', { defaultValue: 'Fix before importing' })
+              : t('importStep.validationWarningsTitle', { defaultValue: 'Import warnings' })}
+          </Typography.Text>
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {validation.errors.slice(0, 10).map((item, index) => (
+              <Typography.Text type="danger" key={`error-${index}`}>
+                • {item.row ? `Row ${item.row}: ` : ''}{item.message}
+              </Typography.Text>
+            ))}
+            {validation.warnings.slice(0, 10).map((item, index) => (
+              <Typography.Text type="warning" key={`warning-${index}`}>
+                • {item.row ? `Row ${item.row}: ` : ''}{item.message}
+              </Typography.Text>
+            ))}
+            {(validation.errors.length > 10 || validation.warnings.length > 10) && (
+              <Typography.Text type="secondary">
+                {t('importStep.validationMore', { defaultValue: 'Additional validation messages are omitted from this preview.' })}
+              </Typography.Text>
+            )}
+          </div>
+        </div>
+      )}
+
+      {mappedPreview.length > 0 && hasMappedTaskFields && (
+        <div
+          style={{
+            marginTop: 24,
+            width: '100%',
+            borderRadius: 12,
+            border: `1px solid ${themeToken.colorBorder}`,
+            background: themeToken.colorBgContainer,
+            padding: '14px 16px',
+          }}
+        >
+          <Typography.Text style={{ color: themeToken.colorText, fontWeight: 600 }}>
+            {t('importStep.mappedImportPreviewTitle', {
+              defaultValue: 'Import preview',
+            })}
+          </Typography.Text>
+          <Typography.Paragraph style={{ color: themeToken.colorTextSecondary, margin: '6px 0 12px' }}>
+            {t('importStep.mappedImportPreviewDescription', {
+              defaultValue:
+                'These are the first {{count}} tasks using your selected column mappings. Tasks are not created until you click Finish.',
+              count: mappedPreview.length,
+            })}
+          </Typography.Paragraph>
+          <Table
+            size="small"
+            pagination={false}
+            scroll={{ x: true }}
+            dataSource={mappedPreview}
+            columns={[
+              {
+                title: t('fields.taskTitle', 'Task name / Title'),
+                dataIndex: 'title',
+                key: 'title',
+                ellipsis: true,
+                width: 220,
+              },
+              {
+                title: t('fields.status', 'Status'),
+                dataIndex: 'status',
+                key: 'status',
+                ellipsis: true,
+                width: 140,
+              },
+              {
+                title: t('fields.assignees', 'Assignees'),
+                dataIndex: 'assignee',
+                key: 'assignee',
+                ellipsis: true,
+                width: 180,
+              },
+              {
+                title: t('fields.dueDate', 'Due Date'),
+                dataIndex: 'dueDate',
+                key: 'dueDate',
+                ellipsis: true,
+                width: 140,
+              },
+            ]}
+          />
+        </div>
+      )}
+
       <div
         style={{
           marginTop: 24,
