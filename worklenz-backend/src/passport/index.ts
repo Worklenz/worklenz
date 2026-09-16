@@ -17,7 +17,9 @@ import LocalSignup from "./passport-strategies/passport-local-signup";
 export default (passport: PassportStatic) => {
   passport.use("local-login", LocalLogin);
   passport.use("local-signup", LocalSignup);
-  passport.use(GoogleLogin);
+  if (GoogleLogin) {
+    passport.use(GoogleLogin);
+  }
   passport.use("google-mobile", GoogleMobileLogin);
   passport.use("apple-mobile", AppleMobileLogin);
 
