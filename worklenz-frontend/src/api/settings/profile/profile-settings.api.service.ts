@@ -1,7 +1,11 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { IProfileSettings } from '@/types/settings/profile.types';
+import {
+  IGoogleCalendarStatus,
+  IGoogleCalendarSyncResult,
+  IProfileSettings,
+} from '@/types/settings/profile.types';
 import { IDigestPreferences, INotificationSettings } from '@/types/settings/notifications.types';
 import {
   IAccountSetupRequest,
@@ -23,6 +27,33 @@ export const profileSettingsApiService = {
       `${rootUrl}/profile`,
       body
     );
+    return response.data;
+  },
+
+  getGoogleCalendarStatus: async (): Promise<IServerResponse<IGoogleCalendarStatus>> => {
+    const response = await apiClient.get<IServerResponse<IGoogleCalendarStatus>>(
+      `${rootUrl}/google-calendar/status`
+    );
+    return response.data;
+  },
+
+  getGoogleCalendarConnectUrl: async (): Promise<IServerResponse<{ url: string }>> => {
+    const response = await apiClient.get<IServerResponse<{ url: string }>>(
+      `${rootUrl}/google-calendar/connect`
+    );
+    return response.data;
+  },
+
+  syncGoogleCalendar: async (projectId?: string): Promise<IServerResponse<IGoogleCalendarSyncResult>> => {
+    const response = await apiClient.post<IServerResponse<IGoogleCalendarSyncResult>>(
+      `${rootUrl}/google-calendar/sync`,
+      projectId ? { project_id: projectId } : undefined
+    );
+    return response.data;
+  },
+
+  disconnectGoogleCalendar: async (): Promise<IServerResponse<null>> => {
+    const response = await apiClient.delete<IServerResponse<null>>(`${rootUrl}/google-calendar`);
     return response.data;
   },
 

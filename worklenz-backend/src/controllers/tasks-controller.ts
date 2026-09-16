@@ -41,6 +41,7 @@ import {
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
 import { isRestrictedFromProPlanFeatures } from "../ee/middlewares/subscription-middleware";
+import { GoogleCalendarService } from "../services/google-calendar.service";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
@@ -737,6 +738,11 @@ export default class TasksController extends TasksControllerBase {
       new_value: null,
     };
 
+    // Remove a Worklenz-originated Google Calendar event before deleting the task.
+    // Imported Google meetings are intentionally not deleted from the user's calendar.
+    // If the remote deletion fails, keep the local task so the link is not orphaned.
+    await GoogleCalendarService.deleteLinkedEvent(userId, taskId);
+
     // Now delete the task
     const q = `DELETE
                FROM tasks
@@ -980,7 +986,14 @@ export default class TasksController extends TasksControllerBase {
     const detailsResult = await db.query(detailsQ, [taskIds]);
     const taskDetailsList = detailsResult.rows;
 
-    // Step 2: delete the tasks via Postgres function
+    // Step 2: clean up Google Calendar events before deleting local tasks.
+    // Imported Google meetings remain in Google Calendar. If a remote deletion
+    // fails, abort the local deletion so we do not intentionally orphan events.
+    for (const task of taskDetailsList) {
+      await GoogleCalendarService.deleteLinkedEvent(userId, task.id);
+    }
+
+    // Step 3: delete the tasks via Postgres function
     const bodyWithUser = {
       ...req.body,
       user_id: userId,
@@ -988,7 +1001,7 @@ export default class TasksController extends TasksControllerBase {
     const q = `SELECT bulk_delete_tasks($1) AS task;`;
     await db.query(q, [JSON.stringify(bodyWithUser)]);
 
-    // Step 3: write one activity log per task AFTER delete
+    // Step 4: write one activity log per task AFTER delete
     // task_id: undefined (NULL) so FK cascade cannot wipe these rows
     for (const task of taskDetailsList) {
       await insertToActivityLogs({

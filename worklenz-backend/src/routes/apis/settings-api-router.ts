@@ -5,6 +5,7 @@ import ProfileSettingsController from "../../controllers/profile-settings-contro
 import ClientPortalSettingsController from "../../ee/controllers/client-portal/client-portal-settings-controller";
 import OrgConfigurationController from "../../controllers/org-configuration-controller";
 import CurrencyRatesController from "../../controllers/currency-rates-controller";
+import GoogleCalendarController from "../../controllers/google-calendar-controller";
 
 import idParamValidator from "../../middlewares/validators/id-param-validator";
 import profileSettingsBodyValidator from "../../middlewares/validators/profile-settings-body-validator";
@@ -39,5 +40,9 @@ settingsApiRouter.put("/configuration", teamOwnerOrAdminValidator, safeControlle
 
 // Currency exchange rates (cached proxy — no admin restriction)
 settingsApiRouter.get("/currency-rates", safeControllerFunction(CurrencyRatesController.getRates));
+settingsApiRouter.get("/google-calendar/status", safeControllerFunction(GoogleCalendarController.status));
+settingsApiRouter.get("/google-calendar/connect", safeControllerFunction(GoogleCalendarController.connect));
+settingsApiRouter.post("/google-calendar/sync", safeControllerFunction(GoogleCalendarController.sync));
+settingsApiRouter.delete("/google-calendar", safeControllerFunction(GoogleCalendarController.disconnect));
 
 export default settingsApiRouter;

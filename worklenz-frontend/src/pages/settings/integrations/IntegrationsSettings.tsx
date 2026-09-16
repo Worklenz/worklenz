@@ -2,6 +2,7 @@ import { Card, Badge, Button } from 'antd';
 import { GithubOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { SlackIntegration } from '@/ee/components/settings/integrations/SlackIntegration';
+import { GoogleCalendarIntegration } from '@/components/settings/integrations/GoogleCalendarIntegration';
 import {
   MSTeamsIcon,
   SlackIcon,
@@ -116,7 +117,7 @@ function IntegrationsSettings() {
           available={false}
         />
 
-        {/* Google Calendar Integration - Coming Soon */}
+        {/* Google Calendar Integration - Active */}
         <IntegrationCard
           icon={<GoogleCalendarIcon />}
           title={t('googleCalendar.title', { defaultValue: 'Google Calendar' })}
@@ -124,8 +125,10 @@ function IntegrationsSettings() {
             defaultValue:
               'Sync your tasks and deadlines with Google Calendar to manage your schedule, set reminders, and never miss important project milestones.',
           })}
-          available={false}
-        />
+          available={true}
+          >
+          <GoogleCalendarIntegration />
+        </IntegrationCard>
       </div>
     </div>
   );

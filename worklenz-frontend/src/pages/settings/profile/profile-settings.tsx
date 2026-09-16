@@ -105,6 +105,7 @@ const ProfileSettings = () => {
     trackMixpanelEvent(evt_settings_profile_visit);
   }, [trackMixpanelEvent]);
 
+
   // ── File selected → open crop modal ──────────────────────────────────────
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (uploading || !event.target.files || event.target.files.length === 0) return;

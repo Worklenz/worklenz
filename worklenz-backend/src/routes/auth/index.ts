@@ -11,6 +11,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
 import { log_error } from "../../shared/utils";
 import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/reset-password-rate-limiter";
+import GoogleCalendarController from "../../controllers/google-calendar-controller";
 
 const authRouter = express.Router();
 
@@ -54,6 +55,8 @@ authRouter.get("/google", (req, res, next) => {
   })(req, res, next);
 });
 
+authRouter.get("/google-calendar/callback", safeControllerFunction(GoogleCalendarController.callback));
+
 authRouter.get("/google/verify", (req, res, next) => {
   if (!isGoogleOAuthConfigured) {
     return res.status(503).json({ message: "Google sign-in is not configured" });
@@ -89,6 +92,7 @@ authRouter.get("/google/verify", (req, res, next) => {
       }
       return res.redirect(successRedirect || "/");
     });
+
   })(req, res, next);
 });
 
