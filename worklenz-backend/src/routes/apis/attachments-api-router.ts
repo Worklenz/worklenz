@@ -9,6 +9,7 @@ import taskAttachmentsValidator from "../../middlewares/validators/task-attachme
 import safeControllerFunction from "../../shared/safe-controller-function";
 import verifyTaskAccess from "../../middlewares/verify-task-access";
 import {verifyNonGuestTaskAccessViaAttachment, verifyTaskAccessViaAttachment} from "../../middlewares/verify-task-access";
+import verifyProjectAccess from "../../middlewares/verify-project-access";
 
 const attachmentsApiRouter = express.Router();
 
@@ -26,7 +27,7 @@ attachmentsApiRouter.delete("/avatar", safeControllerFunction(AttachmentControll
 
 // Get attachments
 attachmentsApiRouter.get("/tasks/:id", idParamValidator, verifyTaskAccess('params', 'id'), safeControllerFunction(AttachmentController.get));
-attachmentsApiRouter.get("/project/:id", idParamValidator, safeControllerFunction(AttachmentController.getByProjectId));
+attachmentsApiRouter.get("/project/:id", idParamValidator, verifyProjectAccess('params', 'id'), safeControllerFunction(AttachmentController.getByProjectId));
 
 // Downloads and deletes
 attachmentsApiRouter.get("/download", verifyTaskAccessViaAttachment('query', 'id'), safeControllerFunction(AttachmentController.download));
