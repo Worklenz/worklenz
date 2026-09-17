@@ -5,10 +5,12 @@ import { SlackIntegration } from '@/ee/components/settings/integrations/SlackInt
 import {
   MSTeamsIcon,
   SlackIcon,
+  DiscordIcon,
   GitHubIcon,
   GoogleDriveIcon,
   GoogleCalendarIcon,
 } from '@/components/settings/integrations/IntegrationIcons';
+import { DiscordIntegration } from '@/components/settings/integrations/DiscordIntegration';
 
 interface IntegrationCardProps {
   icon: React.ReactNode;
@@ -84,6 +86,17 @@ function IntegrationsSettings() {
         </IntegrationCard>
 
         {/* MS Teams Integration - Coming Soon */}
+        <IntegrationCard
+          icon={<DiscordIcon />}
+          title={t('discord.title', { defaultValue: 'Discord' })}
+          description={t('discord.description', {
+            defaultValue: 'Send task updates to Discord and add task comments directly from your server.',
+          })}
+          available={true}
+        >
+          <DiscordIntegration />
+        </IntegrationCard>
+
         <IntegrationCard
           icon={<MSTeamsIcon />}
           title={t('teams.title', { defaultValue: 'Microsoft Teams' })}

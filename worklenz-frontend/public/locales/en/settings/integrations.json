@@ -6,6 +6,10 @@
     "title": "Slack",
     "description": "Integrate Slack to receive real-time notifications, create tasks, and sync your team."
   },
+  "discord": {
+    "title": "Discord",
+    "description": "Send task updates to Discord and add task comments directly from your server."
+  },
   "teams": {
     "title": "Microsoft Teams",
     "description": "Integrate Microsoft Teams with your Worklenz team to receive real-time notifications, create tasks from Teams, and keep your team synchronized across both platforms."

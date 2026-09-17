@@ -2,6 +2,7 @@ import db from "../config/db";
 import { log_error } from "../shared/utils";
 import { SlackService } from "../ee/services/slack.service";
 import { TeamsNotificationService } from "./teams-notification.service";
+import { DiscordService } from "./discord.service";
 
 interface TaskNotificationData {
   task_id: string;
@@ -448,6 +449,26 @@ export class ExternalNotificationsService {
           await TeamsNotificationService.sendTeamsNotification(teamsWebhookUrl, teamsMessage);
         } catch (error) {
           log_error("Error sending Teams notification:", error);
+        }
+
+        try {
+          await DiscordService.sendTaskNotification(
+            projectId,
+            taskId,
+            notificationType === "task_assigned" ||
+              notificationType === "status_changed" ||
+              notificationType === "task_completed" ||
+              notificationType === "comment_added"
+              ? notificationType
+              : "comment_added",
+            userName,
+            {
+              oldStatusName: taskData.old_status_name,
+              newStatusName: taskData.new_status_name,
+            }
+          );
+        } catch (error) {
+          log_error("Error sending Discord notification:", error);
         }
       }
     } catch (error) {

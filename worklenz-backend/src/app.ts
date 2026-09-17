@@ -46,7 +46,7 @@ app.use(express.json({
   limit: "50mb",
   verify: (req: Request & { rawBody?: string }, _res, buf) => {
     const url = req.originalUrl || req.url || "";
-    if (url.includes("/webhook/directpay/")) {
+    if (url.includes("/webhook/directpay/") || url.includes("/public/discord/interactions")) {
       req.rawBody = buf.toString("utf8");
     }
   },

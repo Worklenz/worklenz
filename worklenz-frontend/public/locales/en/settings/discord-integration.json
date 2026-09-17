@@ -1,0 +1,11 @@
+{
+  "description": "Send task assignments, status changes, completions, and comments to a Discord channel. Configure the Worklenz comment command to reply from Discord.",
+  "webhookUrl": "Discord webhook URL",
+  "guildId": "Discord server ID",
+  "leaveBlank": "Leave blank to keep the current webhook",
+  "save": "Save",
+  "disconnect": "Disconnect",
+  "saved": "Discord integration saved",
+  "disconnected": "Discord integration disconnected",
+  "commandHelp": "Users linked by an administrator can comment with /worklenz-comment task_id:<task UUID> comment:<text>."
+}

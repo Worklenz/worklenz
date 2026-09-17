@@ -10,6 +10,7 @@ export interface IProjectFileMeta {
 }
 
 export interface IWorkLenzRequest extends Request {
+    rawBody?: string;
   user?: IPassportSession;
   memberScope?: IMemberScope;
   file?: Express.Multer.File;

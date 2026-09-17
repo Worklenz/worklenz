@@ -3,6 +3,7 @@ import ClientsController from "../../controllers/clients-controller";
 import SlackController from "../../ee/controllers/slack-controller";
 import DigestPreferencesController from "../../controllers/digest-preferences-controller";
 import safeControllerFunction from "../../shared/safe-controller-function";
+import DiscordController from "../../controllers/discord-controller";
 
 const public_router = express.Router();
 
@@ -16,5 +17,6 @@ public_router.get("/slack/oauth/callback", safeControllerFunction(SlackControlle
 
 // Digest email unsubscribe (public - no authentication required)
 public_router.get("/digest/unsubscribe", DigestPreferencesController.unsubscribe);
+public_router.post("/discord/interactions", safeControllerFunction(DiscordController.interactions));
 
 export default public_router;
