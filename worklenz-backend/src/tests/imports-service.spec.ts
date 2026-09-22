@@ -2,6 +2,7 @@ import {
   FieldMappingRow,
   mapRawToTaskFields,
 } from "../services/imports-service";
+import { parseDateValue } from "../services/imports/resolvers";
 
 describe("mapRawToTaskFields", () => {
   it("maps labels into built-in labels patch", () => {
@@ -30,5 +31,14 @@ describe("mapRawToTaskFields", () => {
     const { patch } = mapRawToTaskFields(raw, mappings);
 
     expect(patch.assignee_source_id).toBe("John Doe");
+  });
+});
+
+describe("CSV import date validation", () => {
+  it("accepts common valid dates and rejects impossible dates", () => {
+    expect(parseDateValue("2026-09-09")).not.toBeNull();
+    expect(parseDateValue("09/09/2026")).not.toBeNull();
+    expect(parseDateValue("2026-02-30")).toBeNull();
+    expect(parseDateValue("not-a-date")).toBeNull();
   });
 });

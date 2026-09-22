@@ -35,6 +35,40 @@ export const enqueuePendingImportJob = (jobId: string) => {
   window.dispatchEvent(new CustomEvent(PENDING_JOBS_EVENT));
 };
 
+// Lets a caller (e.g. a task list that just kicked off a CSV import) find out
+// when that specific job finishes, without polling itself. Listeners are
+// one-shot and fire whether the job succeeded or failed; the callback
+// receives the final status.
+type ImportCompletionListener = (status: 'success' | 'failed') => void;
+const completionListeners = new Map<string, Set<ImportCompletionListener>>();
+
+export const registerImportCompletionListener = (
+  jobId: string,
+  listener: ImportCompletionListener
+): (() => void) => {
+  const trimmed = String(jobId || '').trim();
+  if (!trimmed) return () => {};
+  const listeners = completionListeners.get(trimmed) || new Set();
+  listeners.add(listener);
+  completionListeners.set(trimmed, listeners);
+  return () => {
+    completionListeners.get(trimmed)?.delete(listener);
+  };
+};
+
+const notifyImportCompletionListeners = (jobId: string, status: 'success' | 'failed') => {
+  const listeners = completionListeners.get(jobId);
+  if (!listeners?.size) return;
+  listeners.forEach(listener => {
+    try {
+      listener(status);
+    } catch {
+      // A subscriber's own error shouldn't break polling for other jobs.
+    }
+  });
+  completionListeners.delete(jobId);
+};
+
 // Track which jobs already have an open "in-progress" notification so we
 // don't open duplicates on every poll tick.
 const inProgressNotified = new Set<string>();
@@ -90,6 +124,7 @@ export const ImportProgressNotifier = () => {
                   defaultValue: 'Your import job finished successfully.',
                 })
               );
+              notifyImportCompletionListeners(jobId, 'success');
               continue;
             }
 
@@ -104,6 +139,7 @@ export const ImportProgressNotifier = () => {
                     defaultValue: 'Your import job failed. Please try again.',
                   })
               );
+              notifyImportCompletionListeners(jobId, 'failed');
               continue;
             }
 

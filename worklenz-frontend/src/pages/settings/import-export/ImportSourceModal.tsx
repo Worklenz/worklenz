@@ -55,7 +55,7 @@ import { useImportDerivedData } from './import-source-modal/hooks/useImportDeriv
 import { useImportFinishHandler } from './import-source-modal/hooks/useImportFinishHandler';
 import { useImportJobHelpers } from './import-source-modal/hooks/useImportJobHelpers';
 import { ClickupTeam, ImportSourceModalProps } from './import-source-modal/types';
-import { autoMapCsvColumns, parseCsvText } from './import-source-modal/utils';
+import { autoMapCsvColumns, detectCsvDelimiter, parseCsvText, validateCsvImport } from './import-source-modal/utils';
 import './import-export-settings.css';
 
 export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
@@ -312,7 +312,9 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
 
   const parseCsvData = React.useCallback(
     (text: string) => {
-      const parsed = parseCsvText(text || '', delimiter.trim() || undefined);
+      const effectiveDelimiter = delimiter.trim() || detectCsvDelimiter(text || '');
+      const parsed = parseCsvText(text || '', effectiveDelimiter);
+      if (!delimiter.trim()) setDelimiter(effectiveDelimiter);
       const fields = parsed.fields.map(field => String(field).trim()).filter(Boolean);
       const rows = Array.isArray(parsed.rows) ? (parsed.rows as Record<string, any>[]) : [];
       setCsvText(text || '');
@@ -589,20 +591,34 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
     );
   }, [integrationType, step, csvMappingStep, hasTaskTitleMapping, dispatch, t]);
 
+  const csvValidation = React.useMemo(
+    () =>
+      validateCsvImport({
+        rows: csvRows as Record<string, string>[],
+        columns: csvColumns,
+        fieldMappings,
+        statusValueMapping,
+        csvUserRows,
+        userEmails,
+        addUsers,
+      }),
+    [csvRows, csvColumns, fieldMappings, statusValueMapping, csvUserRows, userEmails, addUsers]
+  );
+
   React.useEffect(() => {
     if (integrationType !== 'csv' || step < totalSteps - 1) return;
-    const invalid = !csvText.trim() || !spaceName.trim();
+    const invalid = !csvText.trim() || !spaceName.trim() || csvValidation.errors.length > 0;
     dispatch(
       stepErrorSet({
         step: totalSteps - 1,
         error: invalid
           ? t('importStep.reviewStepIncomplete', {
-              defaultValue: 'Upload a CSV file and enter a project name to finish.',
+              defaultValue: 'Fix the CSV validation errors and enter a project name before importing.',
             })
           : null,
       })
     );
-  }, [integrationType, step, totalSteps, csvText, spaceName, dispatch, t]);
+  }, [integrationType, step, totalSteps, csvText, spaceName, csvValidation.errors.length, dispatch, t]);
 
   const { ensureImportJob, ensureDefaultProjectStatusId, persistAsanaSelection } =
     useImportJobHelpers({
@@ -627,6 +643,10 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
             'Task name / Title mapping is required. Map at least one CSV column to Task name / Title.',
         })
       );
+      return;
+    }
+    if (integrationType === 'csv' && step === totalSteps - 1 && csvValidation.errors.length > 0) {
+      message.error(csvValidation.errors[0].message);
       return;
     }
     setStep(s => Math.min(totalSteps - 1, s + 1));
@@ -668,6 +688,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
     mondayBoards,
     mondayToken,
     csvText,
+    csvDelimiter: delimiter,
     addUsers,
     csvColumns,
     includeInImport,
@@ -1040,7 +1061,7 @@ export const ImportSourceModal: React.FC<ImportSourceModalProps> = ({
                       !hasTaskTitleMapping) ||
                     (step === totalSteps - 1 &&
                       integrationType === 'csv' &&
-                      (!csvText.trim() || !spaceName.trim()))
+                      (!csvText.trim() || !spaceName.trim() || csvValidation.errors.length > 0))
                   }
                 >
                   {step === totalSteps - 1

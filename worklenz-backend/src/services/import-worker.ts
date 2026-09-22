@@ -72,7 +72,10 @@ class ImportWorker {
           const csvText = src.csvText as string | undefined;
           if (csvText) {
             // Ingest first — auto-detects headers and stages tasks.
-            await ImportIngestionService.ingest(job, { csvText });
+            await ImportIngestionService.ingest(job, {
+              csvText,
+              delimiter: typeof src.delimiter === "string" ? src.delimiter : ",",
+            });
             // Apply user-configured mappings AFTER auto-detection so they
             // take precedence (ImportIngestionService.ingest overwrites with
             // CSV headers; we restore the user's choices here).

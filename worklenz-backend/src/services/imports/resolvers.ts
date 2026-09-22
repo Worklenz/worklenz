@@ -65,7 +65,34 @@ export const resolveAssignees = (
 
 export const parseDateValue = (value?: string | null): Date | null => {
   if (!value) return null;
-  const parsed = new Date(value);
+  const input = value.toString().trim();
+  if (!input) return null;
+
+  // ISO/RFC timestamps and unambiguous ISO dates.
+  if (/^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(input)) {
+    const parsed = new Date(input);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  // Common spreadsheet dates: D/M/Y or M/D/Y. If both first two values are
+  // <= 12, retain the conventional M/D/Y interpretation used by JS/browser
+  // CSV previews; an out-of-range month disambiguates D/M/Y automatically.
+  const numeric = input.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (numeric) {
+    const first = Number(numeric[1]);
+    const second = Number(numeric[2]);
+    const year = Number(numeric[3]);
+    const month = first > 12 ? second : first;
+    const day = first > 12 ? first : second;
+    const parsed = new Date(Date.UTC(year, month - 1, day));
+    return parsed.getUTCFullYear() === year &&
+      parsed.getUTCMonth() === month - 1 &&
+      parsed.getUTCDate() === day
+      ? parsed
+      : null;
+  }
+
+  const parsed = new Date(input);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 

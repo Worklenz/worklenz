@@ -11,6 +11,7 @@ import {
   CalendarOutlined,
   DownOutlined,
   EditOutlined,
+  FileExcelOutlined,
   ImportOutlined,
   SaveOutlined,
   SettingOutlined,
@@ -57,6 +58,7 @@ import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import { getGroupIdByGroupedColumn } from '@/services/task-list/taskList.service';
 import logger from '@/utils/errorLogger';
 import ImportTaskTemplate from '@/components/task-templates/import-task-template';
+import ProjectImportModal from './ProjectImportModal';
 import { ProjectSettingsModal } from '@/components/projects/project-settings-modal/project-settings-modal';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
@@ -93,6 +95,7 @@ const ProjectViewHeader = memo(() => {
   const isGuest = useMemo(() => isUserGuest(selectedProject), [selectedProject]);
 
   const [creatingTask, setCreatingTask] = useState(false);
+  const [csvImportModalOpen, setCsvImportModalOpen] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const projectTasksFetching = useAppSelector(state => state.taskManagement.loading);
   const [isBackButtonHovered, setIsBackButtonHovered] = useState(false);
@@ -253,6 +256,10 @@ const ProjectViewHeader = memo(() => {
     }
   }, [dispatch, currentSession]);
 
+  const handleImportTasksFromCsv = useCallback(() => {
+    setCsvImportModalOpen(true);
+  }, []);
+
   const handleNavigateToProjects = useCallback(() => {
     navigate('/worklenz/projects');
   }, [navigate]);
@@ -283,8 +290,22 @@ const ProjectViewHeader = memo(() => {
           </div>
         ),
       },
+      {
+        key: 'import-csv',
+        label: (
+          <div
+            style={{ width: '100%', margin: 0, padding: 0 }}
+            onClick={handleImportTasksFromCsv}
+            title={t('importTasksFromCsvTooltip', {
+              defaultValue: 'Bulk import tasks from a CSV file',
+            })}
+          >
+            <FileExcelOutlined /> {t('importTasksFromCsv', { defaultValue: 'Import from CSV' })}
+          </div>
+        ),
+      },
     ],
-    [handleImportTaskTemplate, t]
+    [handleImportTaskTemplate, handleImportTasksFromCsv, t]
   );
 
   const projectAttributes = useMemo(() => {
@@ -582,6 +603,14 @@ const ProjectViewHeader = memo(() => {
       )}
       {createPortal(<ImportTaskTemplate />, document.body, 'import-task-template')}
       {createPortal(<SaveProjectAsTemplate />, document.body, 'save-project-as-template')}
+      {selectedProject?.id && (
+        <ProjectImportModal
+          open={csvImportModalOpen}
+          onClose={() => setCsvImportModalOpen(false)}
+          projectId={selectedProject.id}
+          projectName={selectedProject.name}
+        />
+      )}
     </>
   );
 });

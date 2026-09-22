@@ -1253,7 +1253,18 @@ class ImportsService {
         const rawTitle = String(
           (taskWithMappings as any).title || task.title || "",
         ).trim();
-        const taskTitle = (rawTitle || "Untitled task").slice(0, 500);
+        if (!rawTitle) {
+          throw new Error(`Import validation failed for row ${task.source_task_id || "unknown"}: task title is empty.`);
+        }
+        const taskTitle = rawTitle.slice(0, 500);
+
+        const rawDueDate = typeof taskWithMappings.due_at === "string"
+          ? taskWithMappings.due_at.trim()
+          : taskWithMappings.due_at;
+        if (rawDueDate && !parseDateValue(String(rawDueDate))) {
+          throw new Error(`Import validation failed for row ${task.source_task_id || "unknown"}: invalid due date "${rawDueDate}".`);
+        }
+
         let statusId = lookupStatusId(
           taskWithMappings.status,
           statusMap,

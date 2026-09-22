@@ -17,7 +17,7 @@ export interface ImportSourceModalProps {
   createTargetProject?: () => Promise<string>;
   initialProjectName?: string;
   hideProjectSetup?: boolean;
-  onImportStarted?: (projectId: string) => void;
+  onImportStarted?: (projectId: string, jobId: string) => void;
 }
 
 export interface ClickupTeam {

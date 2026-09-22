@@ -24,7 +24,7 @@ export const decodeBuffer = (buffer: ArrayBuffer, encoding: string): string => {
   }
 };
 
-const detectDelimiter = (text: string) => {
+export const detectCsvDelimiter = (text: string) => {
   const sampleLine = text
     .replace(/^\uFEFF/, '')
     .split(/\r?\n/)
@@ -89,7 +89,7 @@ export const parseCsvText = (
   text: string,
   providedDelimiter?: string
 ): { fields: string[]; rows: Record<string, string>[] } => {
-  const delimiter = providedDelimiter || detectDelimiter(text);
+  const delimiter = providedDelimiter || detectCsvDelimiter(text);
   const matrix = parseCsvRows(text || '', delimiter);
   if (!matrix.length) return { fields: [], rows: [] };
 
@@ -119,7 +119,7 @@ export const parseCsvText = (
 // worklenzFieldOptions in ImportSourceModal.tsx. Keep aliases lowercase with no
 // punctuation — column names are normalized the same way before matching.
 export const CSV_COLUMN_ALIASES: Record<string, string[]> = {
-  key: ['title', 'task name', 'name', 'summary', 'issue', 'task'],
+  key: ['title', 'task name', 'task title', 'name', 'summary', 'issue', 'task'],
   description: ['description', 'desc', 'details'],
   status: ['status', 'state'],
   assignees: ['assignee', 'assignees', 'owner'],
@@ -164,6 +164,107 @@ export const autoMapCsvColumns = (columns: string[]): Record<string, string> => 
   }
 
   return mapping;
+};
+
+
+export interface CsvImportValidation {
+  errors: Array<{ row: number; field: string; message: string }>;
+  warnings: Array<{ row?: number; field: string; message: string }>;
+}
+
+/** Validate values that will be written to Worklenz before the import starts.
+ * Blank optional values are accepted; populated due dates must be parseable and
+ * mapped status/assignee values must be explicitly resolved by the wizard. */
+export const validateCsvImport = (args: {
+  rows: Record<string, string>[];
+  columns: string[];
+  fieldMappings: Record<string, string>;
+  statusValueMapping: Record<string, string>;
+  csvUserRows: string[];
+  userEmails: Record<string, string>;
+  addUsers: boolean;
+}): CsvImportValidation => {
+  const { rows, columns, fieldMappings, statusValueMapping, csvUserRows, userEmails, addUsers } = args;
+  const findColumn = (target: string) =>
+    columns.find(column => fieldMappings[column] === target && fieldMappings[column]) || '';
+  const titleColumn = findColumn('key');
+  const statusColumn = findColumn('status');
+  const assigneeColumn = findColumn('assignees');
+  const dueDateColumn = findColumn('dueDate');
+  const errors: CsvImportValidation['errors'] = [];
+  const warnings: CsvImportValidation['warnings'] = [];
+
+  if (!titleColumn) {
+    errors.push({ row: 0, field: 'Title', message: 'Map a CSV column to Task name / Title.' });
+  }
+
+  rows.forEach((row, index) => {
+    const rowNumber = index + 2;
+    if (titleColumn && !String(row[titleColumn] ?? '').trim()) {
+      errors.push({ row: rowNumber, field: titleColumn, message: 'Task title is empty.' });
+    }
+    if (dueDateColumn) {
+      const raw = String(row[dueDateColumn] ?? '').trim();
+      if (raw && !isValidImportDate(raw)) {
+        errors.push({ row: rowNumber, field: dueDateColumn, message: `Invalid due date: ${raw}` });
+      }
+    }
+    if (statusColumn) {
+      const raw = String(row[statusColumn] ?? '').trim();
+      if (raw && !statusValueMapping[raw]) {
+        warnings.push({ row: rowNumber, field: statusColumn, message: `Status '${raw}' is not mapped and will use the project default.` });
+      }
+    }
+    if (assigneeColumn && addUsers) {
+      const raw = String(row[assigneeColumn] ?? '').trim();
+      if (raw && !isValidEmail(userEmails[raw] || '')) {
+        errors.push({ row: rowNumber, field: assigneeColumn, message: `Assignee '${raw}' has no valid email mapping.` });
+      }
+    }
+  });
+
+  if (assigneeColumn && addUsers) {
+    csvUserRows.forEach(user => {
+      const value = String(userEmails[user] || '').trim();
+      if (user && !isValidEmail(value)) {
+        errors.push({ row: 0, field: 'Assignee', message: `'${user}' needs a valid email address.` });
+      }
+    });
+  }
+
+  return { errors, warnings };
+};
+
+export const isValidEmail = (value: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
+export const isValidImportDate = (value: string): boolean => {
+  const input = value.trim();
+  if (!input) return true;
+  if (/^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.test(input)) {
+    const match = input.match(/^(\d{4})-(\d{2})-(\d{2})/)!;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const calendar = new Date(Date.UTC(year, month - 1, day));
+    if (calendar.getUTCFullYear() !== year || calendar.getUTCMonth() !== month - 1 || calendar.getUTCDate() !== day) return false;
+    const parsed = new Date(input);
+    return !Number.isNaN(parsed.getTime());
+  }
+  const numeric = input.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (numeric) {
+    const a = Number(numeric[1]);
+    const b = Number(numeric[2]);
+    const year = Number(numeric[3]);
+    // For ambiguous numeric dates, accept either D/M/Y or M/D/Y when both are
+    // structurally valid. The backend uses the same deterministic rule.
+    const month = a > 12 ? b : b > 12 ? a : a;
+    const day = a > 12 ? a : b > 12 ? b : b;
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  }
+  const parsed = new Date(input);
+  return !Number.isNaN(parsed.getTime());
 };
 
 export const normalizeDomain = (value: string): string =>

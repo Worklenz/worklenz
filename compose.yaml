@@ -1,0 +1,10 @@
+services:
+  tinymce:
+    image: tinymce
+    build:
+      context: worklenz-backend/src/public/tinymce
+      dockerfile: ./Dockerfile
+    environment:
+      NODE_ENV: production
+    ports:
+      - 3000:3000

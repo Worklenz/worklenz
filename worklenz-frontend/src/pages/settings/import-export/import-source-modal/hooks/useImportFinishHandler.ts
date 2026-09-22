@@ -61,6 +61,7 @@ interface UseImportFinishHandlerArgs {
   mondayBoards: Array<{ id: string; name: string }>;
   mondayToken: string;
   csvText: string;
+  csvDelimiter: string;
   addUsers: boolean;
   csvColumns: string[];
   includeInImport: Record<string, boolean>;
@@ -76,7 +77,7 @@ interface UseImportFinishHandlerArgs {
     overrides?: { importMembers?: boolean; importAttachments?: boolean }
   ) => Promise<void>;
   createTargetProject?: () => Promise<string>;
-  onImportStarted?: (projectId: string) => void;
+  onImportStarted?: (projectId: string, jobId: string) => void;
   setStep: React.Dispatch<React.SetStateAction<number>>;
   projectSetupStep: number;
 }
@@ -112,6 +113,7 @@ export const useImportFinishHandler = ({
   mondayBoards,
   mondayToken,
   csvText,
+  csvDelimiter,
   addUsers,
   csvColumns,
   includeInImport,
@@ -527,7 +529,7 @@ export const useImportFinishHandler = ({
       hasStartedIngestionRequest = true;
       await ingestImportJob(activeJob.id, {
         csvText,
-        sourceReference: { provider: lowerKey },
+        sourceReference: { provider: lowerKey, delimiter: csvDelimiter || "," },
         ...(mappedFields.length ? { fields: mappedFields } : {}),
         ...(mappedValues.length ? { values: mappedValues } : {}),
         ...(userMappings.length ? { users: userMappings } : {}),
@@ -536,7 +538,7 @@ export const useImportFinishHandler = ({
       enqueuePendingImportJob(activeJob.id);
 
       setShowCompletion(false);
-      onImportStarted?.(targetProjectId);
+      onImportStarted?.(targetProjectId, activeJob.id);
       onClose();
     } catch (err: any) {
       const status = err?.response?.status;
@@ -573,6 +575,7 @@ export const useImportFinishHandler = ({
     asanaProjects,
     csvColumns,
     csvText,
+    csvDelimiter,
     csvUserRows,
     ensureDefaultProjectStatusId,
     ensureImportJob,
