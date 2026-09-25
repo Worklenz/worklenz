@@ -17,18 +17,6 @@ CREATE TABLE IF NOT EXISTS holiday_types (
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE holiday_types
-    ADD CONSTRAINT holiday_types_pk
-        PRIMARY KEY (id);
-
--- Insert default holiday types
-INSERT INTO holiday_types (name, description, color_code) VALUES
-    ('Public Holiday', 'Official public holidays', '#f37070'),
-    ('Company Holiday', 'Company-specific holidays', '#70a6f3'),
-    ('Personal Holiday', 'Personal or optional holidays', '#75c997'),
-    ('Religious Holiday', 'Religious observances', '#fbc84c')
-ON CONFLICT DO NOTHING;
-
 -- Create organization holidays table
 CREATE TABLE IF NOT EXISTS organization_holidays (
     id              UUID                     DEFAULT uuid_generate_v4() NOT NULL,
@@ -42,25 +30,6 @@ CREATE TABLE IF NOT EXISTS organization_holidays (
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE organization_holidays
-    ADD CONSTRAINT organization_holidays_pk
-        PRIMARY KEY (id);
-
-ALTER TABLE organization_holidays
-    ADD CONSTRAINT organization_holidays_organization_id_fk
-        FOREIGN KEY (organization_id) REFERENCES organizations
-            ON DELETE CASCADE;
-
-ALTER TABLE organization_holidays
-    ADD CONSTRAINT organization_holidays_holiday_type_id_fk
-        FOREIGN KEY (holiday_type_id) REFERENCES holiday_types
-            ON DELETE RESTRICT;
-
--- Add unique constraint to prevent duplicate holidays on the same date for an organization
-ALTER TABLE organization_holidays
-    ADD CONSTRAINT organization_holidays_organization_date_unique
-        UNIQUE (organization_id, date);
-
 -- Create country holidays table for predefined holidays
 CREATE TABLE IF NOT EXISTS country_holidays (
     id          UUID                     DEFAULT uuid_generate_v4() NOT NULL,
@@ -73,23 +42,54 @@ CREATE TABLE IF NOT EXISTS country_holidays (
     updated_at  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE country_holidays
-    ADD CONSTRAINT country_holidays_pk
-        PRIMARY KEY (id);
+-- Ensure countries has a unique constraint on code for foreign key reference
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'countries'::regclass AND conname = 'countries_code_unique') THEN
+        ALTER TABLE countries ADD CONSTRAINT countries_code_unique UNIQUE (code);
+    END IF;
+END $$;
 
--- A foreign key may reference a non-primary column only when that column is
--- unique. Country holidays are keyed by the ISO country code.
-CREATE UNIQUE INDEX IF NOT EXISTS countries_code_unique_idx ON countries(code);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'holiday_types'::regclass AND conname = 'holiday_types_pk') THEN
+        ALTER TABLE holiday_types ADD CONSTRAINT holiday_types_pk PRIMARY KEY (id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_pk') THEN
+        ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_pk PRIMARY KEY (id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_organization_id_fk') THEN
+        ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_organization_id_fk
+            FOREIGN KEY (organization_id) REFERENCES organizations ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_holiday_type_id_fk') THEN
+        ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_holiday_type_id_fk
+            FOREIGN KEY (holiday_type_id) REFERENCES holiday_types ON DELETE RESTRICT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_organization_date_unique') THEN
+        ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_organization_date_unique
+            UNIQUE (organization_id, date);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'country_holidays'::regclass AND conname = 'country_holidays_pk') THEN
+        ALTER TABLE country_holidays ADD CONSTRAINT country_holidays_pk PRIMARY KEY (id);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'country_holidays'::regclass AND conname = 'country_holidays_country_code_fk') THEN
+        ALTER TABLE country_holidays ADD CONSTRAINT country_holidays_country_code_fk
+            FOREIGN KEY (country_code) REFERENCES countries(code) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'country_holidays'::regclass AND conname = 'country_holidays_country_name_date_unique') THEN
+        ALTER TABLE country_holidays ADD CONSTRAINT country_holidays_country_name_date_unique
+            UNIQUE (country_code, name, date);
+    END IF;
+END $$;
 
-ALTER TABLE country_holidays
-    ADD CONSTRAINT country_holidays_country_code_fk
-        FOREIGN KEY (country_code) REFERENCES countries(code)
-            ON DELETE CASCADE;
-
--- Add unique constraint to prevent duplicate holidays for the same country, name, and date
-ALTER TABLE country_holidays
-    ADD CONSTRAINT country_holidays_country_name_date_unique
-        UNIQUE (country_code, name, date);
+-- Insert default holiday types
+INSERT INTO holiday_types (name, description, color_code) VALUES
+    ('Public Holiday', 'Official public holidays', '#f37070'),
+    ('Company Holiday', 'Company-specific holidays', '#70a6f3'),
+    ('Personal Holiday', 'Personal or optional holidays', '#75c997'),
+    ('Religious Holiday', 'Religious observances', '#fbc84c')
+ON CONFLICT DO NOTHING;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_organization_holidays_organization_id ON organization_holidays(organization_id);
