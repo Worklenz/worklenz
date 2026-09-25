@@ -40,8 +40,7 @@ router.post("/auth/logout", safeControllerFunction(ClientPortalAuthController.cl
 router.get("/organizations", safeControllerFunction(ClientPortalAuthController.getClientOrganizations));
 router.post("/organizations/switch", safeControllerFunction(ClientPortalAuthController.switchOrganization));
 
-// Client Portal is a Business Edition feature — every route past this point requires
-// the client's organization to hold a Business plan, matching worklenz-client-portal/LICENSE.md.
+// Client Portal authorization
 router.use(requireBusinessPlanForOrganization);
 
 // Dashboard
