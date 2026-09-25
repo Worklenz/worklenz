@@ -22,6 +22,7 @@ import {
   ColumnFilterValues,
   DEFAULT_PROJECT_SORT_ORDER,
 } from './project-list.constants';
+import { getAddonSlotItems } from '@/addons/addon-slots';
 
 interface UseProjectListColumnsArgs {
   filterOptions: ColumnFilterOptions;
@@ -135,6 +136,22 @@ export const useProjectListColumns = ({
           <span>{record.end_date ? simpleDateFormat(record.end_date) : '-'}</span>
         ),
       },
+      ...getAddonSlotItems('projectListColumns').map(item => {
+        const ColumnComponent = item.component;
+        return {
+          title: item.labelKey
+            ? t(item.labelKey, { defaultValue: item.defaultLabel || item.key })
+            : (item.defaultLabel || item.key),
+          dataIndex: item.dataIndex || item.key,
+          key: item.key,
+          width: item.width,
+          align: item.align,
+          sorter: item.sorter,
+          render: ColumnComponent
+            ? (_: unknown, record: IProjectViewModel) => <ColumnComponent record={record} />
+            : undefined,
+        };
+      }),
       {
         title: '',
         key: 'actions',
