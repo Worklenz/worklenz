@@ -361,13 +361,6 @@ We welcome contributions from the community! If you'd like to contribute, please
 
 ## License
 
-Worklenz uses an open-core license model. The core product — everything in this repository except the locations noted below — is released under the [GNU Affero General Public License Version 3 (AGPLv3)](LICENSE), free to self-host, modify, and redistribute under copyleft terms.
-
-Two locations are licensed separately under the [Worklenz Commercial License](worklenz-backend/src/ee/LICENSE.md) and implement paid Business Edition features:
-
-- Any `src/ee/` directory (e.g. `worklenz-backend/src/ee/`, `worklenz-frontend/src/ee/`)
-- The `worklenz-client-portal/` package in its entirety
-
-That code is readable and can be run for development, testing, and non-production evaluation without a subscription; production use requires a Worklenz Business Edition subscription or a separate written agreement with ceydigital solutions private limited. See the `LICENSE.md` in each of those locations for the full terms.
+Worklenz is free and open-source software licensed under the [GNU Affero General Public License Version 3 (AGPLv3)](LICENSE).
 
 By contributing to Worklenz, you agree to sign our [Contributor License Agreement](https://cla-assistant.io/Worklenz/worklenz), which grants ceydigital solutions private limited a perpetual, worldwide, sublicensable license to your contribution — you keep full ownership of your original work. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.

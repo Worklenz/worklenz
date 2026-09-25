@@ -85,5 +85,10 @@ $RECYCLE.BIN/
 # Claude
 CLAUDE.md
 
+# Addons (optional local extensions)
+addons/*
+!addons/README.md
+!addons/.gitignore
+
 graphify-out
 .playwright-mcp

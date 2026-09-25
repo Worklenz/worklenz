@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import fs from 'fs';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { addonsPlugin } from './vite-plugin-addons';
 
 export default defineConfig(({ command, mode }) => {
   const isProduction = command === 'build';
@@ -14,6 +15,7 @@ export default defineConfig(({ command, mode }) => {
     // **Plugins**
     plugins: [
       react(),
+      addonsPlugin(),
       // Sentry plugin for source maps upload in production
       // sentryVitePlugin returns an array of plugins, so we spread it
       ...(isProduction
@@ -113,6 +115,9 @@ export default defineConfig(({ command, mode }) => {
     // **Development Server**
     server: {
       port: 5173,
+      fs: {
+        allow: ['..'],
+      },
       hmr: {
         overlay: false,
       },
@@ -130,6 +135,39 @@ export default defineConfig(({ command, mode }) => {
           target: process.env.VITE_API_URL || 'http://localhost:3000',
           changeOrigin: true,
           secure: false,
+        },
+        // Proxy comment/task short links to backend for Slack/Discord unfurls (crawler UA only)
+        '/worklenz/c': {
+          target: process.env.VITE_API_URL || 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+          bypass(req) {
+            const ua = req.headers['user-agent'] || '';
+            const isCrawler =
+              /bot|crawl|slurp|spider|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Discordbot|Slackbot|Slack-ImgProxy|SkypeUriPreview|WhatsApp|TelegramBot|preview/i.test(
+                ua
+              );
+            if (isCrawler) {
+              return undefined; // proxy to backend for OG HTML
+            }
+            return req.url; // normal browser → Vite SPA
+          },
+        },
+        '/worklenz/t': {
+          target: process.env.VITE_API_URL || 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+          bypass(req) {
+            const ua = req.headers['user-agent'] || '';
+            const isCrawler =
+              /bot|crawl|slurp|spider|facebookexternalhit|Facebot|Twitterbot|LinkedInBot|Discordbot|Slackbot|Slack-ImgProxy|SkypeUriPreview|WhatsApp|TelegramBot|preview/i.test(
+                ua
+              );
+            if (isCrawler) {
+              return undefined;
+            }
+            return req.url;
+          },
         },
         '/socket.io': {
           target: process.env.VITE_SOCKET_URL || 'ws://localhost:3000',
@@ -183,10 +221,21 @@ export default defineConfig(({ command, mode }) => {
 
       // **Rollup Options**
       rollupOptions: {
+        // Suppress noisy third-party warnings (gantt-task-react misplaced PURE annotations)
+        onwarn(warning, warn) {
+          if (
+            warning.code === 'INVALID_ANNOTATION' &&
+            warning.id?.includes('gantt-task-react')
+          ) {
+            return;
+          }
+          warn(warning);
+        },
         output: {
           // **Granular chunking strategy for better parallelism and cache reuse**
+          // Note: react/react-dom are intentionally NOT in manualChunks — Vite already
+          // dedupes them; forcing a react-vendor chunk produces an empty file.
           manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
             'react-router': ['react-router-dom'],
             'antd-core': ['antd'],
             'antd-icons': ['@ant-design/icons'],

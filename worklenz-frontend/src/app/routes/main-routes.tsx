@@ -6,6 +6,7 @@ import MainLayout from '@/layouts/MainLayout';
 import SimpleRailLayout from '@/layouts/SimpleRailLayout';
 import settingsRoutes from './settings-routes';
 import adminCenterRoutes from './admin-center-routes';
+import { addonRoutes } from 'virtual:addons-registry';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import FeatureUpgradePreview from '@/components/upgrade/FeatureUpgradePreview';
@@ -598,6 +599,7 @@ const mainRoutes: RouteObject[] = [
       },
       ...settingsRoutes,
       ...adminCenterRoutes,
+      ...addonRoutes,
     ],
   },
 ];

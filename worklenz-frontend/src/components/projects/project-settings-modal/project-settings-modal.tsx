@@ -53,6 +53,7 @@ import PhasesSettingsSection from './sections/phases-settings-section';
 import CustomColumnsSettingsSection from './sections/custom-columns-settings-section';
 import IntegrationsSettingsSection from './sections/integrations-settings-section';
 import DangerZoneSection from './sections/danger-zone-section';
+import { getAddonSlotItems } from '@/addons/addon-slots';
 
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -1203,6 +1204,23 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
             />
           ),
         },
+        ...getAddonSlotItems('projectSettingsTabs').map(item => {
+          const AddonComponent = item.component;
+          return {
+            key: item.key,
+            icon: item.icon,
+            label: item.labelKey
+              ? t(item.labelKey, { defaultValue: item.defaultLabel || item.key })
+              : (item.defaultLabel || item.key),
+            children: (
+              <AddonComponent
+                project={project}
+                projectId={projectId}
+                editMode={editMode}
+              />
+            ),
+          };
+        }),
         {
           key: 'dangerZone',
           icon: <WarningOutlined />,
