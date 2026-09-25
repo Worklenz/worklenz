@@ -14,7 +14,7 @@ exports.up = async (pgm) => {
 DO $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
+        SELECT 1 FROM information_schema.columns
         WHERE table_name = 'clients' AND column_name = 'status'
     ) THEN
         ALTER TABLE clients ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
@@ -22,9 +22,9 @@ BEGIN
 END $$;
 
 -- Update all clients with NULL status to 'active' (the default)
-UPDATE clients 
-SET status = 'active', 
-    updated_at = NOW() 
+UPDATE clients
+SET status = 'active',
+    updated_at = NOW()
 WHERE status IS NULL;
 
 -- Ensure the status column has the proper constraint
@@ -32,16 +32,16 @@ WHERE status IS NULL;
 ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_status_check;
 
 -- Set default and NOT NULL
-ALTER TABLE clients 
+ALTER TABLE clients
 ALTER COLUMN status SET DEFAULT 'active';
 
 -- Make the column NOT NULL (now that all NULL values are updated)
-ALTER TABLE clients 
+ALTER TABLE clients
 ALTER COLUMN status SET NOT NULL;
 
 -- Re-add the check constraint
-ALTER TABLE clients 
-ADD CONSTRAINT IF NOT EXISTS clients_status_check 
+ALTER TABLE clients
+ADD CONSTRAINT clients_status_check
 CHECK (status IN ('active', 'inactive', 'pending'));
 
 -- Create indexes on status column for better filter performance
