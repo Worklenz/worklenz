@@ -13,16 +13,24 @@ function resolveAddonFile(basePath: string): string | null {
   return null;
 }
 
-function getEnabledAddonIds(): string[] {
+function getEnabledAddonIds(env?: Record<string, string>): string[] {
   const rawAddons =
-    process.env.ENABLED_ADDONS || process.env.VITE_ENABLED_ADDONS || '';
-  return rawAddons
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
+    env?.ENABLED_ADDONS ||
+    env?.VITE_ENABLED_ADDONS ||
+    process.env.ENABLED_ADDONS ||
+    process.env.VITE_ENABLED_ADDONS ||
+    '';
+  return Array.from(
+    new Set(
+      rawAddons
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    )
+  );
 }
 
-export function addonsPlugin(): Plugin {
+export function addonsPlugin(env?: Record<string, string>): Plugin {
   const virtualModuleId = 'virtual:addons-registry';
   const resolvedVirtualModuleId = '\0' + virtualModuleId;
 
@@ -30,9 +38,9 @@ export function addonsPlugin(): Plugin {
     name: 'vite-plugin-addons',
     enforce: 'pre',
     transformIndexHtml(html) {
-      const enabledAddonIds = getEnabledAddonIds();
-      let appTitle = process.env.VITE_APP_TITLE;
-      let faviconUrl = process.env.VITE_FAVICON_URL;
+      const enabledAddonIds = getEnabledAddonIds(env);
+      let appTitle = env?.VITE_APP_TITLE || process.env.VITE_APP_TITLE;
+      let faviconUrl = env?.VITE_FAVICON_URL || process.env.VITE_FAVICON_URL;
 
       if (!appTitle || !faviconUrl) {
         for (const addonId of enabledAddonIds) {
@@ -93,7 +101,7 @@ export function addonsPlugin(): Plugin {
         return null;
       }
 
-      const enabledAddonIds = getEnabledAddonIds();
+      const enabledAddonIds = getEnabledAddonIds(env);
 
       if (enabledAddonIds.length === 0) {
         return `

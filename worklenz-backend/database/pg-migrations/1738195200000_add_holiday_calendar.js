@@ -45,39 +45,39 @@ CREATE TABLE IF NOT EXISTS country_holidays (
 -- Ensure countries has a unique constraint on code for foreign key reference
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'countries_code_unique') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'countries'::regclass AND conname = 'countries_code_unique') THEN
         ALTER TABLE countries ADD CONSTRAINT countries_code_unique UNIQUE (code);
     END IF;
 END $$;
 
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'holiday_types_pk') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'holiday_types'::regclass AND conname = 'holiday_types_pk') THEN
         ALTER TABLE holiday_types ADD CONSTRAINT holiday_types_pk PRIMARY KEY (id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_holidays_pk') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_pk') THEN
         ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_pk PRIMARY KEY (id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_holidays_organization_id_fk') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_organization_id_fk') THEN
         ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_organization_id_fk
             FOREIGN KEY (organization_id) REFERENCES organizations ON DELETE CASCADE;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_holidays_holiday_type_id_fk') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_holiday_type_id_fk') THEN
         ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_holiday_type_id_fk
             FOREIGN KEY (holiday_type_id) REFERENCES holiday_types ON DELETE RESTRICT;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'organization_holidays_organization_date_unique') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'organization_holidays'::regclass AND conname = 'organization_holidays_organization_date_unique') THEN
         ALTER TABLE organization_holidays ADD CONSTRAINT organization_holidays_organization_date_unique
             UNIQUE (organization_id, date);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'country_holidays_pk') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'country_holidays'::regclass AND conname = 'country_holidays_pk') THEN
         ALTER TABLE country_holidays ADD CONSTRAINT country_holidays_pk PRIMARY KEY (id);
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'country_holidays_country_code_fk') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'country_holidays'::regclass AND conname = 'country_holidays_country_code_fk') THEN
         ALTER TABLE country_holidays ADD CONSTRAINT country_holidays_country_code_fk
             FOREIGN KEY (country_code) REFERENCES countries(code) ON DELETE CASCADE;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'country_holidays_country_name_date_unique') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'country_holidays'::regclass AND conname = 'country_holidays_country_name_date_unique') THEN
         ALTER TABLE country_holidays ADD CONSTRAINT country_holidays_country_name_date_unique
             UNIQUE (country_code, name, date);
     END IF;
