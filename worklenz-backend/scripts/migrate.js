@@ -55,8 +55,18 @@ function run(dir) {
     }
   }
 
-  if (result.status !== null && result.status !== 0) {
-    process.exit(result.status);
+  if (result.error) {
+    console.error(`[Migrations] Failed to run migration process:`, result.error.message || result.error);
+    process.exit(1);
+  }
+
+  if (result.signal) {
+    console.error(`[Migrations] Migration process was killed by signal: ${result.signal}`);
+    process.exit(1);
+  }
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
   }
 }
 

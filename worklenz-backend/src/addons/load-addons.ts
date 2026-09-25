@@ -78,13 +78,39 @@ export function loadAddonRouters(app: Express, authMiddleware?: RequestHandler):
   // Ensure backend node_modules is available when resolving dependencies inside addons
   try {
     const backendNodeModules = path.resolve(__dirname, "../../node_modules");
-    if (!process.env.NODE_PATH || !process.env.NODE_PATH.includes(backendNodeModules)) {
-      process.env.NODE_PATH = (process.env.NODE_PATH ? process.env.NODE_PATH + ":" : "") + backendNodeModules;
+    const currentPaths = (process.env.NODE_PATH || "")
+      .split(path.delimiter)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    if (!currentPaths.includes(backendNodeModules)) {
+      currentPaths.push(backendNodeModules);
+      process.env.NODE_PATH = currentPaths.join(path.delimiter);
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const Module = require("module");
       if (typeof Module._initPaths === "function") {
         Module._initPaths();
       }
+    }
+
+    // Register runtime mapping for @worklenz/addon-sdk so addon routes can require it without MODULE_NOT_FOUND
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Module = require("module");
+    const sdkCandidates = [
+      path.resolve(__dirname, "../../dist-sdk/addons/addon-sdk.js"),
+      path.resolve(__dirname, "../dist-sdk/addons/addon-sdk.js"),
+      path.resolve(__dirname, "./addon-sdk.js"),
+      path.resolve(__dirname, "./addon-sdk.ts"),
+    ];
+    const resolvedSdkPath = sdkCandidates.find((cand) => fs.existsSync(cand));
+    if (resolvedSdkPath && typeof Module._resolveFilename === "function") {
+      const origResolveFilename = Module._resolveFilename;
+      Module._resolveFilename = function (request: string, parent: unknown, isMain: boolean, options: unknown) {
+        if (request === "@worklenz/addon-sdk") {
+          return resolvedSdkPath;
+        }
+        return origResolveFilename.call(this, request, parent, isMain, options);
+      };
     }
   } catch {
     // ignore
