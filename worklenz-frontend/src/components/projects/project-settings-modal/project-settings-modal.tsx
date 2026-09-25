@@ -1204,23 +1204,25 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
             />
           ),
         },
-        ...getAddonSlotItems('projectSettingsTabs').map(item => {
-          const AddonComponent = item.component;
-          return {
-            key: item.key,
-            icon: item.icon,
-            label: item.labelKey
-              ? t(item.labelKey, { defaultValue: item.defaultLabel || item.key })
-              : (item.defaultLabel || item.key),
-            children: (
-              <AddonComponent
-                project={project}
-                projectId={projectId}
-                editMode={editMode}
-              />
-            ),
-          };
-        }),
+        ...getAddonSlotItems('projectSettingsTabs')
+          .filter(item => Boolean(item.component))
+          .map(item => {
+            const AddonComponent = item.component!;
+            return {
+              key: item.key,
+              icon: item.icon,
+              label: item.labelKey
+                ? t(item.labelKey, { defaultValue: item.defaultLabel || item.key })
+                : (item.defaultLabel || item.key),
+              children: (
+                <AddonComponent
+                  project={project}
+                  projectId={projectId}
+                  editMode={editMode}
+                />
+              ),
+            };
+          }),
         {
           key: 'dangerZone',
           icon: <WarningOutlined />,

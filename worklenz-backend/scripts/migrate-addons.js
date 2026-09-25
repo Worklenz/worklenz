@@ -40,10 +40,14 @@ function resolveAddonDir(addonId) {
 }
 
 const rawAddons = process.env.ENABLED_ADDONS || '';
-const enabledAddonIds = rawAddons
-  .split(',')
-  .map((id) => id.trim())
-  .filter(Boolean);
+const enabledAddonIds = Array.from(
+  new Set(
+    rawAddons
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean)
+  )
+);
 
 if (enabledAddonIds.length === 0) {
   console.log('[Addon Migrations] No enabled addons specified in ENABLED_ADDONS.');
@@ -52,25 +56,15 @@ if (enabledAddonIds.length === 0) {
 
 console.log(`[Addon Migrations] Running migrations for enabled addons: ${enabledAddonIds.join(', ')}`);
 
+// Validate and plan migrations upfront to detect duplicate tracking tables or manifest errors
+const plans = [];
+const seenTables = new Map();
+
 for (const addonId of enabledAddonIds) {
   const addonDir = resolveAddonDir(addonId);
   if (!addonDir) {
     console.warn(`[Addon Migrations] Directory for enabled addon "${addonId}" not found. Skipping.`);
     continue;
-  }
-
-  const manifestPath = path.join(addonDir, 'manifest.json');
-  let migrationsTable = `pgmigrations_${addonId.replace(/-/g, '_')}`;
-
-  if (fs.existsSync(manifestPath)) {
-    try {
-      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-      if (manifest.migrationsTable) {
-        migrationsTable = manifest.migrationsTable;
-      }
-    } catch (e) {
-      console.error(`[Addon Migrations] Failed to parse manifest at ${manifestPath}`, e);
-    }
   }
 
   const migrationsDir = path.join(addonDir, 'backend', 'migrations');
@@ -79,23 +73,55 @@ for (const addonId of enabledAddonIds) {
     continue;
   }
 
+  const manifestPath = path.join(addonDir, 'manifest.json');
+  let migrationsTable = `pgmigrations_${addonId.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+
+  if (fs.existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      if (manifest.migrationsTable) {
+        migrationsTable = manifest.migrationsTable;
+      }
+    } catch (e) {
+      console.error(`[Addon Migrations] Failed to parse manifest at ${manifestPath}:`, e.message || e);
+      process.exit(1);
+    }
+  }
+
+  if (migrationsTable === 'pgmigrations') {
+    console.error(`[Addon Migrations] Addon "${addonId}" cannot use reserved core migrations table name "pgmigrations".`);
+    process.exit(1);
+  }
+
+  if (seenTables.has(migrationsTable)) {
+    console.error(
+      `[Addon Migrations] Tracking table collision detected: addons "${seenTables.get(migrationsTable)}" and "${addonId}" both use table "${migrationsTable}".`
+    );
+    process.exit(1);
+  }
+
+  seenTables.set(migrationsTable, addonId);
+  plans.push({ addonId, migrationsDir, migrationsTable });
+}
+
+for (const plan of plans) {
   console.log(`\n========================================`);
-  console.log(`Applying migrations for addon: ${addonId}`);
-  console.log(`Directory: ${migrationsDir}`);
-  console.log(`Tracking table: ${migrationsTable}`);
+  console.log(`Applying migrations for addon: ${plan.addonId}`);
+  console.log(`Directory: ${plan.migrationsDir}`);
+  console.log(`Tracking table: ${plan.migrationsTable}`);
   console.log(`========================================\n`);
 
   try {
     execFileSync(
       process.execPath,
-      [bin, '--migrations-dir', migrationsDir, '--migrations-table', migrationsTable, ...args],
+      [bin, '--migrations-dir', plan.migrationsDir, '--migrations-table', plan.migrationsTable, ...args],
       {
         stdio: 'inherit',
         env: { ...process.env, DATABASE_URL: databaseUrl },
       }
     );
   } catch (error) {
-    console.error(`[Addon Migrations] Failed to run migrations for addon "${addonId}":`, error.message);
+    console.error(`[Addon Migrations] Failed to run migrations for addon "${plan.addonId}":`, error.message);
     process.exit(1);
   }
 }

@@ -15,7 +15,7 @@ export default defineConfig(({ command, mode }) => {
     // **Plugins**
     plugins: [
       react(),
-      addonsPlugin(),
+      addonsPlugin(env),
       // Sentry plugin for source maps upload in production
       // sentryVitePlugin returns an array of plugins, so we spread it
       ...(isProduction
