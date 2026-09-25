@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS holiday_types (
 );
 
 ALTER TABLE holiday_types
-    ADD CONSTRAINT IF NOT EXISTS holiday_types_pk
+    ADD CONSTRAINT holiday_types_pk
         PRIMARY KEY (id);
 
 -- Insert default holiday types
@@ -43,22 +43,22 @@ CREATE TABLE IF NOT EXISTS organization_holidays (
 );
 
 ALTER TABLE organization_holidays
-    ADD CONSTRAINT IF NOT EXISTS organization_holidays_pk
+    ADD CONSTRAINT organization_holidays_pk
         PRIMARY KEY (id);
 
 ALTER TABLE organization_holidays
-    ADD CONSTRAINT IF NOT EXISTS organization_holidays_organization_id_fk
+    ADD CONSTRAINT organization_holidays_organization_id_fk
         FOREIGN KEY (organization_id) REFERENCES organizations
             ON DELETE CASCADE;
 
 ALTER TABLE organization_holidays
-    ADD CONSTRAINT IF NOT EXISTS organization_holidays_holiday_type_id_fk
+    ADD CONSTRAINT organization_holidays_holiday_type_id_fk
         FOREIGN KEY (holiday_type_id) REFERENCES holiday_types
             ON DELETE RESTRICT;
 
 -- Add unique constraint to prevent duplicate holidays on the same date for an organization
 ALTER TABLE organization_holidays
-    ADD CONSTRAINT IF NOT EXISTS organization_holidays_organization_date_unique
+    ADD CONSTRAINT organization_holidays_organization_date_unique
         UNIQUE (organization_id, date);
 
 -- Create country holidays table for predefined holidays
@@ -74,24 +74,28 @@ CREATE TABLE IF NOT EXISTS country_holidays (
 );
 
 ALTER TABLE country_holidays
-    ADD CONSTRAINT IF NOT EXISTS country_holidays_pk
+    ADD CONSTRAINT country_holidays_pk
         PRIMARY KEY (id);
 
+-- A foreign key may reference a non-primary column only when that column is
+-- unique. Country holidays are keyed by the ISO country code.
+CREATE UNIQUE INDEX IF NOT EXISTS countries_code_unique_idx ON countries(code);
+
 ALTER TABLE country_holidays
-    ADD CONSTRAINT IF NOT EXISTS country_holidays_country_code_fk
+    ADD CONSTRAINT country_holidays_country_code_fk
         FOREIGN KEY (country_code) REFERENCES countries(code)
             ON DELETE CASCADE;
 
 -- Add unique constraint to prevent duplicate holidays for the same country, name, and date
 ALTER TABLE country_holidays
-    ADD CONSTRAINT IF NOT EXISTS country_holidays_country_name_date_unique
+    ADD CONSTRAINT country_holidays_country_name_date_unique
         UNIQUE (country_code, name, date);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_organization_holidays_organization_id ON organization_holidays(organization_id);
 CREATE INDEX IF NOT EXISTS idx_organization_holidays_date ON organization_holidays(date);
 CREATE INDEX IF NOT EXISTS idx_country_holidays_country_code ON country_holidays(country_code);
-CREATE INDEX IF NOT EXISTS idx_country_holidays_date ON country_holidays(date); 
+CREATE INDEX IF NOT EXISTS idx_country_holidays_date ON country_holidays(date);
   `);
 };
 

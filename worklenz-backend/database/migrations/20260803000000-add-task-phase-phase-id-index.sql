@@ -9,5 +9,5 @@
 -- index seek on phase_id since it's the trailing column. Runs on every
 -- Roadmap tab load.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_task_phase_phase_id
+CREATE INDEX IF NOT EXISTS idx_task_phase_phase_id
 ON task_phase(phase_id, task_id);
