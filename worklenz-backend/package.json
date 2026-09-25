@@ -43,6 +43,8 @@
     "migrate:up": "node scripts/migrate.js up",
     "migrate:down": "node scripts/migrate.js down 1",
     "migrate:create": "node scripts/migrate.js create",
+    "migrate:addons": "node scripts/migrate-addons.js",
+    "build:addons": "node scripts/build-addons.js",
     "migrate:bootstrap": "node scripts/migrate-bootstrap.js"
   },
   "jestSonar": {
