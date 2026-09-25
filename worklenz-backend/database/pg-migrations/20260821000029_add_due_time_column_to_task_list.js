@@ -1,3 +1,12 @@
+'use strict';
+// Converted from database/migrations/20260427000002-add-due-time-column-to-task-list.sql
+
+/** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
+exports.shorthands = undefined;
+
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
+exports.up = async (pgm) => {
+  pgm.sql(`
 -- Migration: Add DUE_TIME to task list columns
 -- This allows users to show/hide the due time column and saves their preference
 
@@ -74,3 +83,10 @@ BEGIN
 END
 $$;
 COMMIT;
+  `);
+};
+
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
+exports.down = async (_pgm) => {
+  // Review manually before running migrate:down.
+};
