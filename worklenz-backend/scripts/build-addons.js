@@ -18,39 +18,52 @@ const addonDirs = fs
   .map((d) => d.name);
 
 const sdkSource = path.join(__dirname, '../src/addons/addon-sdk.ts');
-const sdkOutputDir = path.join(__dirname, '../dist-sdk');
-const sdkGeneratedFile = path.join(sdkOutputDir, 'addons', 'addon-sdk.js');
+const sdkBuildFile = path.join(__dirname, '../build/addons/addon-sdk.js');
+const sdkDistDir = path.join(__dirname, '../dist-sdk');
+const sdkDistFile = path.join(sdkDistDir, 'addons', 'addon-sdk.js');
 
-try {
-  execFileSync(
-    'npx',
-    [
-      'tsc',
-      sdkSource,
-      '--rootDir',
-      'src',
-      '--outDir',
-      'dist-sdk',
-      '--target',
-      'ES2022',
-      '--module',
-      'commonjs',
-      '--skipLibCheck',
-      '--esModuleInterop',
-    ],
-    { cwd: path.join(__dirname, '..'), stdio: 'inherit' }
-  );
+// Prefer reusing backend's compiled modules to avoid duplicate db connection pools
+let sdkGeneratedFile = sdkBuildFile;
 
-  // Copy shared json assets required by utils/sdk at runtime
-  const sharedJsonFiles = ['postgresql-error-codes.json', 'sample-data.json'];
-  const distSharedDir = path.join(sdkOutputDir, 'shared');
-  fs.mkdirSync(distSharedDir, { recursive: true });
-  for (const jsonFile of sharedJsonFiles) {
-    const srcFile = path.join(__dirname, '../src/shared', jsonFile);
-    if (fs.existsSync(srcFile)) {
-      fs.copyFileSync(srcFile, path.join(distSharedDir, jsonFile));
+if (!fs.existsSync(sdkBuildFile)) {
+  try {
+    execFileSync(
+      'npx',
+      [
+        'tsc',
+        sdkSource,
+        '--rootDir',
+        'src',
+        '--outDir',
+        'dist-sdk',
+        '--target',
+        'ES2022',
+        '--module',
+        'commonjs',
+        '--skipLibCheck',
+        '--esModuleInterop',
+      ],
+      { cwd: path.join(__dirname, '..'), stdio: 'inherit' }
+    );
+
+    // Copy shared json assets required by utils/sdk at runtime
+    const sharedJsonFiles = ['postgresql-error-codes.json', 'sample-data.json'];
+    const distSharedDir = path.join(sdkDistDir, 'shared');
+    fs.mkdirSync(distSharedDir, { recursive: true });
+    for (const jsonFile of sharedJsonFiles) {
+      const srcFile = path.join(__dirname, '../src/shared', jsonFile);
+      if (fs.existsSync(srcFile)) {
+        fs.copyFileSync(srcFile, path.join(distSharedDir, jsonFile));
+      }
     }
+
+    if (fs.existsSync(sdkDistFile)) {
+      sdkGeneratedFile = sdkDistFile;
+    }
+  } catch (err) {
+    console.warn('[Addon Build] Notice: sdk compilation fallback', err.message);
   }
+}
 
   // Provide a runtime mapping for @worklenz/addon-sdk to the generated SDK in node_modules
   const sdkPkgDir = path.join(__dirname, '../node_modules/@worklenz/addon-sdk');
@@ -67,9 +80,6 @@ try {
       2
     )
   );
-} catch (err) {
-  console.warn('[Addon Build] Notice: sdk compilation fallback', err.message);
-}
 
 for (const addonId of addonDirs) {
   const tsconfigPath = path.join(addonsDir, addonId, 'backend', 'tsconfig.json');

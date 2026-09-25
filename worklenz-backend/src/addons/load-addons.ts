@@ -97,9 +97,11 @@ export function loadAddonRouters(app: Express, authMiddleware?: RequestHandler):
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Module = require("module");
     const sdkCandidates = [
+      path.resolve(__dirname, "./addon-sdk.js"),
+      path.resolve(__dirname, "../../build/addons/addon-sdk.js"),
+      path.resolve(__dirname, "../addons/addon-sdk.js"),
       path.resolve(__dirname, "../../dist-sdk/addons/addon-sdk.js"),
       path.resolve(__dirname, "../dist-sdk/addons/addon-sdk.js"),
-      path.resolve(__dirname, "./addon-sdk.js"),
       path.resolve(__dirname, "./addon-sdk.ts"),
     ];
     const resolvedSdkPath = sdkCandidates.find((cand) => fs.existsSync(cand));
