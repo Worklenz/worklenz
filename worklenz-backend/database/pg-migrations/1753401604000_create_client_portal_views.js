@@ -235,14 +235,19 @@ LEFT JOIN client_portal_permissions cpp ON cr.id = cpp.client_relationship_id
 GROUP BY cr.id, cr.user_id, cr.client_id, cr.organization_team_id, cr.access_level, cr.is_active, u.name, c.name, ot.name;
 
 -- Grant permissions to worklenz_client role
-GRANT SELECT ON client_portal_services_view TO worklenz_client;
-GRANT SELECT ON client_portal_requests_view TO worklenz_client;
-GRANT SELECT ON client_portal_invoices_view TO worklenz_client;
-GRANT SELECT ON client_relationships_view TO worklenz_client;
-GRANT SELECT ON client_portal_chat_messages_view TO worklenz_client;
-GRANT SELECT ON client_portal_projects_view TO worklenz_client;
-GRANT SELECT ON client_portal_stats_view TO worklenz_client;
-GRANT SELECT ON client_portal_permissions_view TO worklenz_client; 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_client') THEN
+    GRANT SELECT ON client_portal_services_view TO worklenz_client;
+    GRANT SELECT ON client_portal_requests_view TO worklenz_client;
+    GRANT SELECT ON client_portal_invoices_view TO worklenz_client;
+    GRANT SELECT ON client_relationships_view TO worklenz_client;
+    GRANT SELECT ON client_portal_chat_messages_view TO worklenz_client;
+    GRANT SELECT ON client_portal_projects_view TO worklenz_client;
+    GRANT SELECT ON client_portal_stats_view TO worklenz_client;
+    GRANT SELECT ON client_portal_permissions_view TO worklenz_client;
+  END IF;
+END $$;
   `);
 };
 
