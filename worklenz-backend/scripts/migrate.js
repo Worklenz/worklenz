@@ -6,7 +6,7 @@
 
 require('dotenv').config();
 
-const { execFileSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -25,18 +25,38 @@ const databaseUrl = `postgresql://${DB_USER}:${encodeURIComponent(DB_PASSWORD ||
 // shebang script.
 const bin = path.join(__dirname, '..', 'node_modules', 'node-pg-migrate', 'bin', 'node-pg-migrate.js');
 const migrationsDir = path.join(__dirname, '..', 'database', 'pg-migrations');
-// Not present in the published tree — only exists in the full/private build.
-// Migrations here (currently: AppSumo, DirectPay) apply on top of the public
-// schema and are skipped entirely when this directory is absent.
+// Not present in the published tree — only exists in private builds.
+// Migrations here apply on top of the public schema and are skipped entirely when absent.
 const privateMigrationsDir = path.join(__dirname, '..', 'database', 'pg-migrations-private');
 
 const args = process.argv.slice(2);
 
 function run(dir) {
-  execFileSync(process.execPath, [bin, '--migrations-dir', dir, ...args], {
-    stdio: 'inherit',
-    env: { ...process.env, DATABASE_URL: databaseUrl },
-  });
+  const result = spawnSync(
+    process.execPath,
+    [bin, '--migrations-dir', dir, ...args],
+    {
+      stdio: ['inherit', 'inherit', 'pipe'],
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      encoding: 'utf-8',
+    }
+  );
+
+  if (result.stderr) {
+    // Filter out non-fatal warnings about 14-digit timestamp prefixes from node-pg-migrate
+    const filteredStderr = result.stderr
+      .split('\n')
+      .filter((line) => !line.includes("Can't determine timestamp for"))
+      .join('\n')
+      .trim();
+    if (filteredStderr) {
+      process.stderr.write(filteredStderr + '\n');
+    }
+  }
+
+  if (result.status !== null && result.status !== 0) {
+    process.exit(result.status);
+  }
 }
 
 run(migrationsDir);

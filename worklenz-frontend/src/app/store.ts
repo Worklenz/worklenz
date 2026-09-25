@@ -122,6 +122,8 @@ import seatLimitReducer from '@/features/seat-limit/seatLimitSlice';
 // Org Configuration
 import orgConfigReducer from '@/features/org-config/org-config.slice';
 
+import { addonReducers, addonMiddlewares } from 'virtual:addons-registry';
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -134,7 +136,8 @@ export const store = configureStore({
       userActivityApiService.middleware,
       roadmapApi.middleware,
       projectWorkloadApi.middleware,
-      scheduleApi.middleware
+      scheduleApi.middleware,
+      ...addonMiddlewares
     ),
   reducer: {
     // Auth & User
@@ -252,6 +255,9 @@ export const store = configureStore({
 
     // Org Configuration
     orgConfigReducer: orgConfigReducer,
+
+    // Addon Reducers
+    ...addonReducers,
   },
 });
 

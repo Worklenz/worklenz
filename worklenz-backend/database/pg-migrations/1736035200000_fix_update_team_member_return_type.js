@@ -10,6 +10,7 @@ exports.up = async (pgm) => {
 -- Migration to fix update_team_member function return type
 -- Changes return type from void to TEXT to return the team member ID
 
+DROP FUNCTION IF EXISTS update_team_member(json);
 CREATE OR REPLACE FUNCTION update_team_member(_body json) RETURNS TEXT
     LANGUAGE plpgsql
 AS
