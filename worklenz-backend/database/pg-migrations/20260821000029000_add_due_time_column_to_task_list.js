@@ -10,7 +10,6 @@ exports.up = async (pgm) => {
 -- Migration: Add DUE_TIME to task list columns
 -- This allows users to show/hide the due time column and saves their preference
 -- Note: We add it after DUE_DATE to keep related fields together
-ALTER TYPE WL_TASK_LIST_COL_KEY ADD VALUE IF NOT EXISTS 'DUE_TIME' AFTER 'DUE_DATE';
 -- Insert DUE_TIME column for each project that doesn't already have it
 -- Default: pinned = false (hidden by default, users can enable it)
 -- Index: 13 (after DUE_DATE which is typically index 12)
