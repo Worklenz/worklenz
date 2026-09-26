@@ -30,7 +30,7 @@ function makeIdempotent(sql) {
       const cleanCon = constraint.replace(/["']/g, '');
       return `DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${cleanCon}') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '${cleanCon}' AND conrelid = '${table}'::regclass) THEN
     ALTER TABLE ${table} ADD CONSTRAINT ${constraint} ${rest};
   END IF;
 END $$;`;
@@ -44,8 +44,12 @@ function escapeForTemplateLiteral(str) {
   return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 }
 
+function removeTopLevelTransactions(sql) {
+  return sql.replace(/^\s*(BEGIN|COMMIT)\s*;/gim, '');
+}
+
 function buildMigrationJS(description, sql) {
-  const safe = escapeForTemplateLiteral(makeIdempotent(sql));
+  const safe = escapeForTemplateLiteral(makeIdempotent(removeTopLevelTransactions(sql)));
   return `'use strict';
 // ${description}
 

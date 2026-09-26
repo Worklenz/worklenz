@@ -56,11 +56,17 @@ BEGIN
         WHERE series_date < p_end_date
     ),
     working_days AS (
-        -- Get organization working days configuration
+        -- Get organization working days configuration (defaults: Mon-Fri enabled, Sat-Sun disabled)
         SELECT 
-            monday, tuesday, wednesday, thursday, friday, saturday, sunday
-        FROM organization_working_days
-        WHERE organization_id = v_organization_id
+            COALESCE(owd.monday, TRUE) AS monday,
+            COALESCE(owd.tuesday, TRUE) AS tuesday,
+            COALESCE(owd.wednesday, TRUE) AS wednesday,
+            COALESCE(owd.thursday, TRUE) AS thursday,
+            COALESCE(owd.friday, TRUE) AS friday,
+            COALESCE(owd.saturday, FALSE) AS saturday,
+            COALESCE(owd.sunday, FALSE) AS sunday
+        FROM (SELECT 1) _
+        LEFT JOIN organization_working_days owd ON owd.organization_id = v_organization_id
         LIMIT 1
     ),
     date_info AS (
@@ -208,9 +214,6 @@ BEGIN
     ORDER BY di.info_date;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
--- Grant execute permission
-GRANT EXECUTE ON FUNCTION calculate_member_capacity(UUID, DATE, DATE) TO postgres;
 
 COMMENT ON FUNCTION calculate_member_capacity IS 'Calculates daily capacity for a team member based on task assignments and estimations - Final fix for same-day tasks';
   `);

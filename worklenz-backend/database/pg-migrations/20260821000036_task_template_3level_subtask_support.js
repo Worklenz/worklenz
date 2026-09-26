@@ -7,8 +7,6 @@ exports.shorthands = undefined;
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async (pgm) => {
   pgm.sql(`
-BEGIN;
-
 -- ============================================================
 -- Migration: Task Template 3-Level Subtask Support
 -- Extends the template functions to handle task > subtask > sub-subtask
@@ -328,8 +326,6 @@ BEGIN
     RETURN JSON_BUILD_OBJECT('id', _project_id);
 END;
 $$;
-
-COMMIT;
 
   `);
 };

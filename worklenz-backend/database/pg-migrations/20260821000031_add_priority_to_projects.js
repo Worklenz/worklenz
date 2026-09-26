@@ -11,9 +11,22 @@ exports.up = async (pgm) => {
 -- Date: 2026-05-07
 
 ALTER TABLE projects
-    ADD COLUMN IF NOT EXISTS priority_id UUID REFERENCES task_priorities (id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS priority_id UUID REFERENCES sys_project_priorities (id) ON DELETE SET NULL;
 
-COMMENT ON COLUMN projects.priority_id IS 'Optional project-level priority (references task_priorities)';
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'projects'::regclass AND conname = 'projects_priority_id_fk'
+  ) THEN
+    ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_priority_id_fkey;
+    ALTER TABLE projects
+      ADD CONSTRAINT projects_priority_id_fk
+      FOREIGN KEY (priority_id) REFERENCES sys_project_priorities (id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+COMMENT ON COLUMN projects.priority_id IS 'Optional project-level priority (references sys_project_priorities)';
 
   `);
 };

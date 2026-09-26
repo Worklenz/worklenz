@@ -13,8 +13,6 @@ exports.up = async (pgm) => {
 --          allowing names up to 500 characters, violating the business rule
 -- Solution: Update create_quick_task() to use SUBSTRING(..., 1, 250) on task names
 
-BEGIN;
-
 CREATE OR REPLACE FUNCTION create_quick_task(_body json) RETURNS json
     LANGUAGE plpgsql
 AS
@@ -146,8 +144,6 @@ BEGIN
     RETURN get_single_task(_task_id);
 END;
 $$;
-
-COMMIT;
 
   `);
 };
