@@ -56,21 +56,23 @@ const names = fs
 // "1740787200000_split_client_address_fields"
 function runOnFromName(name) {
   const prefix = name.split('_')[0];
-  if (/^\d{14}$/.test(prefix)) {
+  if (/^\d{14}(?:\d{3})?$/.test(prefix)) {
     const year = parseInt(prefix.substring(0, 4), 10);
     const month = parseInt(prefix.substring(4, 6), 10) - 1;
     const day = parseInt(prefix.substring(6, 8), 10);
     const hour = parseInt(prefix.substring(8, 10), 10);
     const min = parseInt(prefix.substring(10, 12), 10);
     const sec = parseInt(prefix.substring(12, 14), 10);
-    const d = new Date(Date.UTC(year, month, day, hour, min, sec));
+    const milliseconds = prefix.length === 17 ? parseInt(prefix.substring(14, 17), 10) : 0;
+    const d = new Date(Date.UTC(year, month, day, hour, min, sec, milliseconds));
     if (
       d.getUTCFullYear() === year &&
       d.getUTCMonth() === month &&
       d.getUTCDate() === day &&
       d.getUTCHours() === hour &&
       d.getUTCMinutes() === min &&
-      d.getUTCSeconds() === sec
+      d.getUTCSeconds() === sec &&
+      d.getUTCMilliseconds() === milliseconds
     ) {
       return d;
     }
