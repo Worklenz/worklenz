@@ -34,8 +34,8 @@ SELECT
     COALESCE(
         MAX(
             CASE 
-                WHEN req_no ~ '^REQ-[0-9]+$' 
-                THEN CAST(SUBSTRING(req_no FROM 5) AS INTEGER)
+                WHEN req_no ~ '[0-9]+$' 
+                THEN CAST(SUBSTRING(req_no FROM '[0-9]+$') AS INTEGER)
                 ELSE 0
             END
         ),

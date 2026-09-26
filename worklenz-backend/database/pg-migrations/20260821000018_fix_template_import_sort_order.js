@@ -7,8 +7,6 @@ exports.shorthands = undefined;
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async (pgm) => {
   pgm.sql(`
-BEGIN;
-
 -- Fix import_tasks_from_template() to write all 6 sort columns
 CREATE OR REPLACE FUNCTION import_tasks_from_template(_project_id uuid, _user_id uuid, _tasks json) RETURNS json
     LANGUAGE plpgsql
@@ -116,8 +114,6 @@ BEGIN
     RETURN get_single_pt_task(_task_id);
 END;
 $$;
-
-COMMIT;
 
   `);
 };

@@ -133,7 +133,7 @@ BEGIN
     END,
     updated_at = CURRENT_TIMESTAMP
     WHERE message_id = NEW.message_id
-       OR message_id LIKE NEW.message_id || '-%';
+       OR starts_with(message_id, NEW.message_id || '-');
 
     RETURN NEW;
 END;

@@ -7,8 +7,6 @@ exports.shorthands = undefined;
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async (pgm) => {
   pgm.sql(`
-BEGIN;
-
 -- ============================================================
 -- Migration: Task Template Subtask Support
 -- Adds parent_task_name column to task_templates_tasks so that
@@ -303,8 +301,6 @@ BEGIN
     RETURN JSON_BUILD_OBJECT('id', _project_id);
 END;
 $$;
-
-COMMIT;
 
   `);
 };

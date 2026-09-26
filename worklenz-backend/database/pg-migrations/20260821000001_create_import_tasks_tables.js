@@ -10,8 +10,6 @@ exports.up = async (pgm) => {
 -- Imports base tables for external/csv imports
 -- Direct and CSV flows share these tables
 
-BEGIN;
-
 CREATE TABLE IF NOT EXISTS import_jobs (
   id UUID DEFAULT uuid_generate_v4(),
   provider TEXT NOT NULL,
@@ -123,8 +121,6 @@ CREATE INDEX IF NOT EXISTS idx_import_user_job ON import_user_mappings(job_id);
 CREATE INDEX IF NOT EXISTS idx_import_attachment_job ON import_attachment_plans(job_id);
 CREATE INDEX IF NOT EXISTS idx_import_stage_task_job ON import_stage_tasks(job_id);
 CREATE INDEX IF NOT EXISTS idx_import_logs_job ON import_logs(job_id);
-
-COMMIT;
 
   `);
 };
