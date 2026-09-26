@@ -18,11 +18,14 @@ ALTER TYPE REACTION_TYPES ADD VALUE IF NOT EXISTS 'support';
 ALTER TYPE REACTION_TYPES ADD VALUE IF NOT EXISTS 'insightful';
 ALTER TYPE REACTION_TYPES ADD VALUE IF NOT EXISTS 'curious';
 
+-- Deduplicate existing reactions so unique constraint creation succeeds
+DELETE FROM task_comment_reactions a USING task_comment_reactions b
+WHERE a.ctid < b.ctid
+  AND a.comment_id = b.comment_id
+  AND a.team_member_id = b.team_member_id;
+
 -- Add a unique constraint to prevent duplicate reactions from the same user
 -- A user can only have one reaction type per comment
-ALTER TABLE task_comment_reactions
-    DROP CONSTRAINT IF EXISTS task_comment_reactions_unique_user_comment;
-
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'task_comment_reactions_unique_user_comment') THEN

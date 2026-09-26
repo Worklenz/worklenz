@@ -13,16 +13,12 @@ exports.up = async (pgm) => {
 --              Old tokens stored as bcrypt hashes (starting with '$2b$') are incompatible
 --              with the new lookup mechanism and must be marked as used.
 
-BEGIN;
-
 -- Mark all existing bcrypt-style tokens as used so they cannot be replayed.
 -- New tokens are 64-char hex strings; old ones start with '$2b$'.
 UPDATE password_reset_tokens
 SET is_used = TRUE, used_at = NOW()
 WHERE is_used = FALSE
   AND token_hash LIKE '$2b$%';
-
-COMMIT;
 
   `);
 };

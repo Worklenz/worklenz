@@ -10,8 +10,6 @@ exports.up = async (pgm) => {
 -- Migration: Add due_time to get_task_form_view_model function
 -- This ensures due_time is fetched when opening the task drawer
 
-BEGIN;
-
 create or replace function get_task_form_view_model(_user_id uuid, _team_id uuid, _task_id uuid, _project_id uuid) returns json
     language plpgsql
 as
@@ -226,10 +224,6 @@ BEGIN
     );
 END;
 $$;
-
-alter function get_task_form_view_model(uuid, uuid, uuid, uuid) owner to postgres;
-
-COMMIT;
 
   `);
 };

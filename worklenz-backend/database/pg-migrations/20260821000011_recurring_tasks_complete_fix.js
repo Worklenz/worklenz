@@ -15,8 +15,6 @@ exports.up = async (pgm) => {
 --   - Duration preservation
 --   - Foreign keys and indexes
 
-BEGIN;
-
 -- ============================================================================
 -- PART 1: Add missing columns to task_recurring_schedules
 -- ============================================================================
@@ -45,7 +43,7 @@ ADD COLUMN IF NOT EXISTS duration_days INTEGER;
 -- ============================================================================
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
-ON tasks (schedule_id, (end_date::DATE))
+ON tasks (schedule_id, end_date)
 WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
 
 -- ============================================================================
@@ -212,8 +210,6 @@ BEGIN
     RETURN v_new_id;
 END;
 $$;
-
-COMMIT;
 
   `);
 };
