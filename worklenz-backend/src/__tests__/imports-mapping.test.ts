@@ -7,6 +7,7 @@ import {
 
 jest.unmock("../services/imports-service");
 jest.unmock("slugify");
+jest.mock("../shared/storage");
 
 describe("mapRawToTaskFields", () => {
   it("maps standard fields and collects custom column values", () => {

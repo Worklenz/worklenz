@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Form, Card, Input, Flex, Button, Typography, Result } from '@/shared/antd-imports';
 import { LockOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
@@ -220,17 +220,11 @@ const VerifyResetEmailPage = () => {
                   {t('resetPasswordButton')}
                 </Button>
                 <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
-                <Button
-                  block
-                  type="default"
-                  size="large"
-                  onClick={() => navigate('/auth/forgot-password')}
-                  style={{
-                    borderRadius: 4,
-                  }}
-                >
-                  {t('resendResetEmail')}
-                </Button>
+                <Flex justify="center">
+                  <Link to="/auth/forgot-password" style={{ fontSize: 12.5 }}>
+                    {t('resendResetEmail')}
+                  </Link>
+                </Flex>
               </Flex>
             </Form.Item>
           </Form>

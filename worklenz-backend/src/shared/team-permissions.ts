@@ -135,9 +135,10 @@ export function isTeamAdmin(user: IPassportSession | undefined): boolean {
 
 /**
  * Check if user is team lead specifically (from session)
+ * Uses getEffectiveTeamRole so casing / owner flags stay consistent with TVR-17.
  */
 export function isTeamLeadFromSession(user: IPassportSession | undefined): boolean {
-  return user?.role_name === "Team Lead";
+  return getEffectiveTeamRole(user) === TEAM_ROLE_NAMES.TEAM_LEAD;
 }
 
 /**

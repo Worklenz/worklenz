@@ -1,7 +1,5 @@
-import {
-  FieldMappingRow,
-  mapRawToTaskFields,
-} from "../services/imports-service";
+import { FieldMappingRow } from "../services/imports/types";
+import { mapRawToTaskFields } from "../services/imports/field-mapping";
 
 describe("mapRawToTaskFields", () => {
   it("maps labels into built-in labels patch", () => {

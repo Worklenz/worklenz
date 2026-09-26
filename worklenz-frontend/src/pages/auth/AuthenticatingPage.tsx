@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, Flex, Spin, Typography } from '@/shared/antd-imports';
+import { Flex, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,8 @@ import logger from '@/utils/errorLogger';
 import { WORKLENZ_REDIRECT_PROJ_KEY } from '@/shared/constants';
 import { invitationRedirectService } from '@/services/invitation-redirect.service';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
+import { getDefaultAuthenticatedPath } from '@/utils/guest-session';
+import { ILocalSession } from '@/types/auth/local-session.types';
 
 const REDIRECT_DELAY = 500; // Delay in milliseconds before redirecting
 
@@ -19,7 +21,7 @@ const AuthenticatingPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
-  const handleSuccessRedirect = () => {
+  const handleSuccessRedirect = (user: ILocalSession) => {
     // Check for pending invitation first (highest priority)
     const pendingInvitation = invitationRedirectService.getPendingInvitation();
     if (pendingInvitation) {
@@ -27,8 +29,9 @@ const AuthenticatingPage: React.FC = () => {
         '[Authenticating] Found pending invitation, redirecting to:',
         pendingInvitation.url
       );
-      // Don't clear here - let the invite page clear it after successful join
-      navigate(pendingInvitation.url);
+      // Don't clear here - let the invite page clear it after successful join.
+      // Full reload rehydrates auth/session state after login before the invite page runs.
+      window.location.href = pendingInvitation.url;
       return;
     }
 
@@ -36,12 +39,12 @@ const AuthenticatingPage: React.FC = () => {
     const project = localStorage.getItem(WORKLENZ_REDIRECT_PROJ_KEY);
     if (project) {
       localStorage.removeItem(WORKLENZ_REDIRECT_PROJ_KEY);
+      // Full reload matches LoginPage and remounts project state for the post-login redirect.
       window.location.href = `/worklenz/projects/${project}?tab=tasks-list`;
       return;
     }
 
-    // Default redirect
-    navigate('/worklenz/home');
+    navigate(getDefaultAuthenticatedPath(user));
   };
 
   useEffect(() => {
@@ -63,7 +66,7 @@ const AuthenticatingPage: React.FC = () => {
 
         // Redirect based on setup status
         setTimeout(() => {
-          handleSuccessRedirect();
+          handleSuccessRedirect(session.user);
         }, REDIRECT_DELAY);
       } catch (error) {
         logger.error('Authentication verification failed:', error);
@@ -74,23 +77,16 @@ const AuthenticatingPage: React.FC = () => {
     void handleAuthentication();
   }, [dispatch, navigate]);
 
-  const cardStyles = {
-    width: '100%',
-    boxShadow: 'none',
-  };
-
   return (
-    <Card style={cardStyles}>
-      <Flex vertical align="center" gap="middle">
-        <WorklenzLogoLoader />
-        <Typography.Title level={3}>
-          {t('authenticating', { defaultValue: 'Authenticating...' })}
-        </Typography.Title>
-        <Typography.Text>
-          {t('gettingThingsReady', { defaultValue: 'Getting things ready for you...' })}
-        </Typography.Text>
-      </Flex>
-    </Card>
+    <Flex vertical align="center" justify="center" gap="middle">
+      <WorklenzLogoLoader />
+      <Typography.Title level={3}>
+        {t('authenticating', { defaultValue: 'Authenticating...' })}
+      </Typography.Title>
+      <Typography.Text>
+        {t('gettingThingsReady', { defaultValue: 'Getting things ready for you...' })}
+      </Typography.Text>
+    </Flex>
   );
 };
 

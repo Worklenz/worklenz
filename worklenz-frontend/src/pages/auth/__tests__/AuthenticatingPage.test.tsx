@@ -10,6 +10,9 @@ import AuthenticatingPage from '../AuthenticatingPage';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
 import { setSession } from '@/utils/session-helper';
+import { invitationRedirectService } from '@/services/invitation-redirect.service';
+
+const WORKLENZ_REDIRECT_PROJ_KEY = 'worklenz.redirect_proj';
 
 // Mock dependencies
 vi.mock('@/features/auth/authSlice', () => ({
@@ -31,7 +34,17 @@ vi.mock('@/utils/errorLogger', () => ({
 }));
 
 vi.mock('@/shared/constants', () => ({
-  WORKLENZ_REDIRECT_PROJ_KEY: 'worklenz_redirect_proj',
+  WORKLENZ_REDIRECT_PROJ_KEY: 'worklenz.redirect_proj',
+}));
+
+vi.mock('@/services/invitation-redirect.service', () => ({
+  invitationRedirectService: {
+    getPendingInvitation: vi.fn(() => null),
+  },
+}));
+
+vi.mock('@/components/worklenz-loader/worklenz-loader', () => ({
+  WorklenzLogoLoader: () => <div role="generic" aria-busy="true" />,
 }));
 
 // Mock navigation
@@ -89,10 +102,13 @@ describe('AuthenticatingPage', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     localStorage.clear();
-    // Mock window.location
+    vi.mocked(invitationRedirectService.getPendingInvitation).mockReturnValue(null);
+    // Plain object so assigning href does not trigger jsdom navigation.
+    const locationStub = { href: '' };
     Object.defineProperty(window, 'location', {
-      value: { href: '' },
+      configurable: true,
       writable: true,
+      value: locationStub,
     });
   });
 
@@ -169,9 +185,40 @@ describe('AuthenticatingPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/worklenz/home');
   });
 
+  it('redirects guest users to projects after successful authentication', async () => {
+    const mockUser = {
+      id: '1',
+      email: 'guest@example.com',
+      setup_completed: true,
+      is_guest: true,
+    };
+
+    mockDispatch.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        authenticated: true,
+        user: mockUser,
+      }),
+    });
+
+    renderWithProviders(<AuthenticatingPage />);
+
+    await vi.runAllTimersAsync();
+
+    expect(setSession).toHaveBeenCalledWith(mockUser);
+    expect(setUser).toHaveBeenCalledWith(mockUser);
+    expect(mockNavigate).toHaveBeenCalledWith('/worklenz/projects');
+  });
+
   it('redirects to project when redirect key is present in localStorage', async () => {
     const projectId = 'test-project-123';
-    localStorage.setItem('worklenz_redirect_proj', projectId);
+    const storage = new Map<string, string>([[WORKLENZ_REDIRECT_PROJ_KEY, projectId]]);
+    vi.mocked(localStorage.getItem).mockImplementation(key => storage.get(String(key)) ?? null);
+    vi.mocked(localStorage.setItem).mockImplementation((key, value) => {
+      storage.set(String(key), String(value));
+    });
+    vi.mocked(localStorage.removeItem).mockImplementation(key => {
+      storage.delete(String(key));
+    });
 
     const mockUser = {
       id: '1',
@@ -186,20 +233,6 @@ describe('AuthenticatingPage', () => {
       }),
     });
 
-    // Mock window.location with a proper setter
-    let hrefValue = '';
-    Object.defineProperty(window, 'location', {
-      value: {
-        get href() {
-          return hrefValue;
-        },
-        set href(value) {
-          hrefValue = value;
-        },
-      },
-      writable: true,
-    });
-
     renderWithProviders(<AuthenticatingPage />);
 
     // Run all pending timers
@@ -207,8 +240,40 @@ describe('AuthenticatingPage', () => {
 
     expect(setSession).toHaveBeenCalledWith(mockUser);
     expect(setUser).toHaveBeenCalledWith(mockUser);
-    expect(hrefValue).toBe(`/worklenz/projects/${projectId}?tab=tasks-list`);
-    expect(localStorage.getItem('worklenz_redirect_proj')).toBeNull();
+    expect(window.location.href).toBe(`/worklenz/projects/${projectId}?tab=tasks-list`);
+    expect(mockNavigate).not.toHaveBeenCalledWith(`/worklenz/projects/${projectId}?tab=tasks-list`);
+    expect(storage.has(WORKLENZ_REDIRECT_PROJ_KEY)).toBe(false);
+  });
+
+  it('redirects to pending invitation with a full reload after successful authentication', async () => {
+    const invitationUrl = '/invite/project/invite-token-123';
+    vi.mocked(invitationRedirectService.getPendingInvitation).mockReturnValue({
+      token: 'invite-token-123',
+      type: 'project',
+      url: invitationUrl,
+    });
+
+    const mockUser = {
+      id: '1',
+      email: 'test@example.com',
+      setup_completed: true,
+    };
+
+    mockDispatch.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({
+        authenticated: true,
+        user: mockUser,
+      }),
+    });
+
+    renderWithProviders(<AuthenticatingPage />);
+
+    await vi.runAllTimersAsync();
+
+    expect(setSession).toHaveBeenCalledWith(mockUser);
+    expect(setUser).toHaveBeenCalledWith(mockUser);
+    expect(window.location.href).toBe(invitationUrl);
+    expect(mockNavigate).not.toHaveBeenCalledWith(invitationUrl);
   });
 
   it('handles authentication errors and redirects to login', async () => {

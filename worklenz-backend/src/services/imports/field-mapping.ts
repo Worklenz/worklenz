@@ -13,6 +13,7 @@ import {
   countDecimalPlaces,
   isBooleanSample,
   isDateSample,
+  isIdentifierColumnName,
   isNumericSample,
   parseLabelValues,
 } from "./value-utils";
@@ -146,6 +147,12 @@ export const inferColumnConfig = (plan: CustomColumnPlan): ColumnPlanConfig => {
     plan.key.includes("location")
   ) {
     return { fieldType: "labels" };
+  }
+
+  // Task/issue IDs must stay text. Date.parse treats values like "JAT-1" as
+  // dates, so name-based inference is the reliable guard for ID columns.
+  if (isIdentifierColumnName(plan.name, plan.key)) {
+    return { fieldType: "text" };
   }
 
   if (values.length && values.every(isNumericSample)) {

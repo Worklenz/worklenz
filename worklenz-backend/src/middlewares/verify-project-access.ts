@@ -8,18 +8,18 @@ import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest
 
 /**
  * Middleware to verify user has access to a project
- * 
+ *
  * Access Rules:
  * - Owner: Can access all projects in their team
  * - Admin: Can access all projects in their team
  * - Team Lead: Can access all projects in their team
  * - Member: Can only access projects they are explicitly added to as project members
- * 
+ *
  * Usage:
  * - For project ID in URL params: verifyProjectAccess('params', 'id')
  * - For project ID in request body: verifyProjectAccess('body', 'project_id')
  * - For project ID in query params: verifyProjectAccess('query', 'project_id')
- * 
+ *
  * @param location - Where to find the project ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the project ID
  */
@@ -47,6 +47,22 @@ export default function verifyProjectAccess(
     }
 
     try {
+      const activeMembershipResult = await db.query(
+        `SELECT 1
+         FROM team_members
+         WHERE user_id = $1
+           AND team_id = $2
+           AND active = TRUE
+         LIMIT 1`,
+        [userId, teamId],
+      );
+
+      if (!activeMembershipResult.rowCount) {
+        return res.status(403).send(
+          new ServerResponse(false, null, "Your access to this team has been deactivated.")
+        );
+      }
+
       // First, get the project's team_id
       const projectTeamQuery = `
         SELECT team_id
@@ -55,7 +71,7 @@ export default function verifyProjectAccess(
         LIMIT 1;
       `;
       const projectTeamResult = await db.query(projectTeamQuery, [projectId]);
-      
+
       if (!projectTeamResult.rowCount || projectTeamResult.rowCount === 0) {
         return res.status(404).send(
           new ServerResponse(false, null, "Project not found")
@@ -63,7 +79,7 @@ export default function verifyProjectAccess(
       }
 
       const projectTeamId = projectTeamResult.rows[0].team_id;
-      
+
       // Check if project belongs to user's current active team
       if (projectTeamId !== teamId) {
         // Check if user has access to the project's team (is a member of that team)
@@ -71,25 +87,25 @@ export default function verifyProjectAccess(
           SELECT tm.id, r.owner, r.admin_role
           FROM team_members tm
           INNER JOIN roles r ON tm.role_id = r.id
-          WHERE tm.user_id = $1 AND tm.team_id = $2
+          WHERE tm.user_id = $1 AND tm.team_id = $2 AND tm.active = TRUE
           LIMIT 1;
         `;
         const userTeamAccessResult = await db.query(userTeamAccessQuery, [userId, projectTeamId]);
-        
+
         if (userTeamAccessResult.rowCount && userTeamAccessResult.rowCount > 0) {
           const userTeamRole = userTeamAccessResult.rows[0];
           const isOwnerOfProjectTeam = userTeamRole.owner;
           const isAdminOfProjectTeam = userTeamRole.admin_role;
-          
+
           // Before switching teams, verify user would actually have access to the project in that team
           const hasProjectAccessInTeam = await checkProjectAccessInTeam(projectId, userId, projectTeamId, isOwnerOfProjectTeam, isAdminOfProjectTeam);
-          
+
           if (hasProjectAccessInTeam) {
             try {
               // Call the activate_team database function to switch teams
               const activateTeamQuery = `SELECT activate_team($1, $2)`;
               await db.query(activateTeamQuery, [projectTeamId, userId]);
-              
+
               // Update the request user's team_id to reflect the new active team
               if (req.user) {
                 req.user.team_id = projectTeamId;
@@ -99,7 +115,7 @@ export default function verifyProjectAccess(
             } catch (switchError) {
               log_error(switchError);
               console.error(`[AUTO_TEAM_SWITCH] Failed to switch user ${userId} to team ${projectTeamId}:`, switchError);
-              
+
               // If team switch fails, return error
               return res.status(500).send(
                 new ServerResponse(false, null, "Failed to switch teams. Please try again.")
@@ -113,7 +129,7 @@ export default function verifyProjectAccess(
             );
           }
         }
-        
+
         // User doesn't have access to the project's team at all
         logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'NO_TEAM_ACCESS');
         return res.status(403).send(
@@ -132,13 +148,14 @@ export default function verifyProjectAccess(
         SELECT 1
         FROM team_members tm
         INNER JOIN roles r ON tm.role_id = r.id
-        WHERE tm.user_id = $1 
-          AND tm.team_id = $2 
+        WHERE tm.user_id = $1
+          AND tm.team_id = $2
+          AND tm.active = TRUE
           AND r.admin_role = TRUE
         LIMIT 1;
       `;
       const teamLeadResult = await db.query(teamLeadQuery, [userId, teamId]);
-      
+
       if (teamLeadResult.rowCount && teamLeadResult.rowCount > 0) {
         return next();
       }
@@ -148,20 +165,21 @@ export default function verifyProjectAccess(
         SELECT 1
         FROM project_members pm
         INNER JOIN team_members tm ON pm.team_member_id = tm.id
-        WHERE pm.project_id = $1 
-          AND tm.user_id = $2 
+        WHERE pm.project_id = $1
+          AND tm.user_id = $2
           AND tm.team_id = $3
+          AND tm.active = TRUE
         LIMIT 1;
       `;
       const projectMemberResult = await db.query(projectMemberQuery, [projectId, userId, teamId]);
-      
+
       if (projectMemberResult.rowCount && projectMemberResult.rowCount > 0) {
         return next();
       }
-      
+
       // User is a member but not part of this project
       logUnauthorizedAccess(userId, teamId, 'project', projectId, req.path, 'NOT_PROJECT_MEMBER');
-      
+
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this project")
       );
@@ -244,14 +262,15 @@ export async function hasProjectAccess(projectId: string, teamId: string): Promi
 }
 
 /**
- * Helper function to check if user would have access to a project in a specific team
- * This is used to verify access before suggesting team switch
+ * Check if a user has access to a project within a specific team.
+ * Owners/admins/team leads: all projects in the team.
+ * Members and guests: only projects they are explicitly invited to (project_members).
  */
-async function checkProjectAccessInTeam(
-  projectId: string, 
-  userId: string, 
-  teamId: string, 
-  isOwner: boolean, 
+export async function userHasProjectAccessInTeam(
+  projectId: string,
+  userId: string,
+  teamId: string,
+  isOwner: boolean,
   isAdmin: boolean
 ): Promise<boolean> {
   try {
@@ -265,34 +284,50 @@ async function checkProjectAccessInTeam(
       SELECT 1
       FROM team_members tm
       INNER JOIN roles r ON tm.role_id = r.id
-      WHERE tm.user_id = $1 
-        AND tm.team_id = $2 
+      WHERE tm.user_id = $1
+        AND tm.team_id = $2
+        AND tm.active = TRUE
         AND r.admin_role = TRUE
       LIMIT 1;
     `;
     const teamLeadResult = await db.query(teamLeadQuery, [userId, teamId]);
-    
+
     if (teamLeadResult.rowCount && teamLeadResult.rowCount > 0) {
       return true;
     }
 
-    // For regular members, check if they are explicitly added to the project
+    // Members and guests: must be explicitly invited to the project
     const projectMemberQuery = `
       SELECT 1
       FROM project_members pm
       INNER JOIN team_members tm ON pm.team_member_id = tm.id
-      WHERE pm.project_id = $1 
-        AND tm.user_id = $2 
+      WHERE pm.project_id = $1
+        AND tm.user_id = $2
         AND tm.team_id = $3
+        AND tm.active = TRUE
       LIMIT 1;
     `;
     const projectMemberResult = await db.query(projectMemberQuery, [projectId, userId, teamId]);
-    
+
     return projectMemberResult.rowCount ? projectMemberResult.rowCount > 0 : false;
   } catch (error) {
     log_error(error);
     return false;
   }
+}
+
+/**
+ * Helper function to check if user would have access to a project in a specific team
+ * This is used to verify access before suggesting team switch
+ */
+async function checkProjectAccessInTeam(
+  projectId: string,
+  userId: string,
+  teamId: string,
+  isOwner: boolean,
+  isAdmin: boolean
+): Promise<boolean> {
+  return userHasProjectAccessInTeam(projectId, userId, teamId, isOwner, isAdmin);
 }
 
 /**
@@ -317,6 +352,6 @@ function logUnauthorizedAccess(
     path,
     reason: reason || 'UNKNOWN'
   };
-  
+
   console.error("[SECURITY]", JSON.stringify(logEntry));
 }

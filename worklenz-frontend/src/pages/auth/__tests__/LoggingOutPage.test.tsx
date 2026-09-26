@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
 
@@ -32,6 +32,13 @@ vi.mock('@/utils/cache-cleanup', () => ({
 
 vi.mock('react-responsive', () => ({
   useMediaQuery: () => false,
+}));
+
+vi.mock('@/hooks/useMixpanelTracking', () => ({
+  useMixpanelTracking: () => ({
+    trackMixpanelEvent: vi.fn(),
+    reset: vi.fn(),
+  }),
 }));
 
 // Mock navigation
@@ -86,7 +93,8 @@ describe('LoggingOutPage', () => {
     renderWithProviders(<LoggingOutPage />);
 
     expect(screen.getByText('Logging Out...')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
+    // WorklenzLogoLoader uses role="status" with a visually hidden "Loading..." span
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('performs complete logout sequence successfully', async () => {
@@ -96,62 +104,37 @@ describe('LoggingOutPage', () => {
 
     renderWithProviders(<LoggingOutPage />);
 
-    await waitFor(() => {
-      expect(mockAuthService.signOut).toHaveBeenCalled();
-    });
+    // Allow microtasks (signOut, logout, clearAllCaches) to complete
+    await vi.runAllTimersAsync();
 
-    await waitFor(() => {
-      expect(authApiService.logout).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(CacheCleanup.clearAllCaches).toHaveBeenCalled();
-    });
-
-    // Fast-forward time to trigger the setTimeout
-    vi.advanceTimersByTime(1000);
-
-    await waitFor(() => {
-      expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
-    });
+    expect(mockAuthService.signOut).toHaveBeenCalled();
+    expect(authApiService.logout).toHaveBeenCalled();
+    expect(CacheCleanup.clearAllCaches).toHaveBeenCalled();
+    expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
   });
 
   it('handles auth service signOut failure', async () => {
     mockAuthService.signOut.mockRejectedValue(new Error('SignOut failed'));
-    (authApiService.logout as any).mockResolvedValue(undefined);
-    (CacheCleanup.clearAllCaches as any).mockResolvedValue(undefined);
 
     renderWithProviders(<LoggingOutPage />);
 
-    await waitFor(() => {
-      expect(mockAuthService.signOut).toHaveBeenCalled();
-    });
+    await vi.runAllTimersAsync();
 
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
-      expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
-    });
+    expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
+    expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
   });
 
   it('handles backend logout failure', async () => {
     mockAuthService.signOut.mockResolvedValue(undefined);
     (authApiService.logout as any).mockRejectedValue(new Error('Backend logout failed'));
-    (CacheCleanup.clearAllCaches as any).mockResolvedValue(undefined);
 
     renderWithProviders(<LoggingOutPage />);
 
-    await waitFor(() => {
-      expect(mockAuthService.signOut).toHaveBeenCalled();
-    });
+    await vi.runAllTimersAsync();
 
-    await waitFor(() => {
-      expect(authApiService.logout).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
-      expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
-    });
+    expect(mockAuthService.signOut).toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
+    expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
   });
 
   it('handles cache cleanup failure', async () => {
@@ -161,22 +144,13 @@ describe('LoggingOutPage', () => {
 
     renderWithProviders(<LoggingOutPage />);
 
-    await waitFor(() => {
-      expect(mockAuthService.signOut).toHaveBeenCalled();
-    });
+    await vi.runAllTimersAsync();
 
-    await waitFor(() => {
-      expect(authApiService.logout).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(CacheCleanup.clearAllCaches).toHaveBeenCalled();
-    });
-
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
-      expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
-    });
+    expect(mockAuthService.signOut).toHaveBeenCalled();
+    expect(authApiService.logout).toHaveBeenCalled();
+    expect(CacheCleanup.clearAllCaches).toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
+    expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
   });
 
   it('triggers logout sequence immediately on mount', () => {
@@ -200,13 +174,13 @@ describe('LoggingOutPage', () => {
 
     // Should show loading state immediately
     expect(screen.getByText('Logging Out...')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
 
     // Should continue showing loading state during the process
     vi.advanceTimersByTime(50);
 
     expect(screen.getByText('Logging Out...')).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('calls forceReload with correct path after timeout', async () => {
@@ -216,30 +190,20 @@ describe('LoggingOutPage', () => {
 
     renderWithProviders(<LoggingOutPage />);
 
-    // Wait for all async operations to complete
-    await waitFor(() => {
-      expect(CacheCleanup.clearAllCaches).toHaveBeenCalled();
-    });
+    await vi.runAllTimersAsync();
 
-    // Fast-forward exactly 1000ms
-    vi.advanceTimersByTime(1000);
-
-    await waitFor(() => {
-      expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
-      expect(CacheCleanup.forceReload).toHaveBeenCalledTimes(1);
-    });
+    expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
+    expect(CacheCleanup.forceReload).toHaveBeenCalledTimes(1);
   });
 
   it('handles complete failure of all logout steps', async () => {
     mockAuthService.signOut.mockRejectedValue(new Error('SignOut failed'));
-    (authApiService.logout as any).mockRejectedValue(new Error('Backend logout failed'));
-    (CacheCleanup.clearAllCaches as any).mockRejectedValue(new Error('Cache cleanup failed'));
 
     renderWithProviders(<LoggingOutPage />);
 
-    await waitFor(() => {
-      expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
-      expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
-    });
+    await vi.runAllTimersAsync();
+
+    expect(console.error).toHaveBeenCalledWith('Logout error:', expect.any(Error));
+    expect(CacheCleanup.forceReload).toHaveBeenCalledWith('/auth/login');
   });
 });

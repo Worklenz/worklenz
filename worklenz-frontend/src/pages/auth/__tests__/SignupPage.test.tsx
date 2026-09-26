@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -45,10 +45,6 @@ vi.mock('@/services/alerts/alertService', () => ({
   },
 }));
 
-vi.mock('react-responsive', () => ({
-  useMediaQuery: () => false,
-}));
-
 // Mock navigation
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -71,32 +67,33 @@ i18n.init({
   resources: {
     en: {
       'auth/signup': {
+        headline: 'Create your account',
         headerDescription: 'Sign up to get started',
-        nameLabel: 'Full Name',
-        emailLabel: 'Email',
-        passwordLabel: 'Password',
+        signUpWithLabel: 'Sign up with',
+        orText: 'or',
+        nameLabel: 'Full name',
+        namePlaceholder: 'Jordan Lee',
         nameRequired: 'Please input your name!',
-        emailRequired: 'Please input your email!',
-        passwordRequired: 'Please input your password!',
         nameMinCharacterRequired: 'Name must be at least 4 characters!',
+        emailLabel: 'Email',
+        emailPlaceholder: 'jordan@acme.com',
+        emailRequired: 'Please input your email!',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'At least 8 characters',
+        passwordRequired: 'Please input your password!',
         passwordMinCharacterRequired: 'Password must be at least 8 characters!',
         passwordMaxCharacterRequired: 'Password must be no more than 32 characters!',
         passwordPatternRequired:
           'Password must contain uppercase, lowercase, number and special character!',
-        namePlaceholder: 'Enter your full name',
-        emailPlaceholder: 'Enter your email',
-        strongPasswordPlaceholder: 'Enter a strong password',
-        passwordGuideline:
-          'Password must be at least 8 characters, include uppercase and lowercase letters, a number, and a special character.',
-        signupButton: 'Sign Up',
-        signInWithGoogleButton: 'Sign up with Google',
-        orText: 'or',
+        signupButton: 'Create account',
+        signInWithGoogleButton: 'Google',
+        signUpWithAppleButton: 'Apple',
         alreadyHaveAccountText: 'Already have an account?',
         loginButton: 'Log in',
-        bySigningUpText: 'By signing up, you agree to our',
+        bySigningUpText: 'By creating an account, you agree to our',
         privacyPolicyLink: 'Privacy Policy',
         andText: 'and',
-        termsOfUseLink: 'Terms of Use',
+        termsOfUseLink: 'Terms of Service',
         reCAPTCHAVerificationError: 'reCAPTCHA Verification Failed',
         reCAPTCHAVerificationErrorMessage: 'Please try again',
         'passwordChecklist.minLength': 'At least 8 characters',
@@ -113,18 +110,21 @@ i18n.init({
 const createTestStore = () => {
   return configureStore({
     reducer: {
+      auth: (state = {}) => state,
       themeReducer: (state = { mode: 'light' }) => state,
     },
   });
 };
 
+import { MemoryRouter } from 'react-router-dom';
+
 const renderWithProviders = (component: React.ReactElement) => {
   const store = createTestStore();
   return render(
     <Provider store={store}>
-      <BrowserRouter>
+      <MemoryRouter>
         <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
-      </BrowserRouter>
+      </MemoryRouter>
     </Provider>
   );
 };
@@ -138,9 +138,9 @@ describe('SignupPage', () => {
     vi.stubEnv('VITE_ENABLE_RECAPTCHA', 'false');
     vi.stubEnv('VITE_API_URL', 'http://localhost:3000');
 
-    // Mock URL search params
+    // Mock URL search params with a valid URL object
     Object.defineProperty(window, 'location', {
-      value: { search: '' },
+      value: new URL('http://localhost:5173/auth/signup'),
       writable: true,
     });
   });
@@ -148,24 +148,24 @@ describe('SignupPage', () => {
   it('renders signup form correctly', () => {
     renderWithProviders(<SignupPage />);
 
-    expect(screen.getByText('Sign up to get started')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter your full name')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter your email')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Enter a strong password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign Up' })).toBeInTheDocument();
+    expect(screen.getByText('Create your account')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Jordan Lee')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('jordan@acme.com')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('At least 8 characters')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
   });
 
   it('shows Google signup button when enabled', () => {
     renderWithProviders(<SignupPage />);
 
-    expect(screen.getByText('Sign up with Google')).toBeInTheDocument();
+    expect(screen.getByText('Google')).toBeInTheDocument();
   });
 
   it('validates required fields', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
-    const submitButton = screen.getByRole('button', { name: 'Sign Up' });
+    const submitButton = screen.getByRole('button', { name: 'Create account' });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -176,13 +176,13 @@ describe('SignupPage', () => {
   });
 
   it('validates name minimum length', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
-    const nameInput = screen.getByPlaceholderText('Enter your full name');
+    const nameInput = screen.getByPlaceholderText('Jordan Lee');
     await user.type(nameInput, 'Jo');
 
-    const submitButton = screen.getByRole('button', { name: 'Sign Up' });
+    const submitButton = screen.getByRole('button', { name: 'Create account' });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -191,13 +191,13 @@ describe('SignupPage', () => {
   });
 
   it('validates email format', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
-    const emailInput = screen.getByPlaceholderText('Enter your email');
+    const emailInput = screen.getByPlaceholderText('jordan@acme.com');
     await user.type(emailInput, 'invalid-email');
 
-    const submitButton = screen.getByRole('button', { name: 'Sign Up' });
+    const submitButton = screen.getByRole('button', { name: 'Create account' });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -206,13 +206,13 @@ describe('SignupPage', () => {
   });
 
   it('validates password requirements', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
-    const passwordInput = screen.getByPlaceholderText('Enter a strong password');
+    const passwordInput = screen.getByPlaceholderText('At least 8 characters');
     await user.type(passwordInput, 'weak');
 
-    const submitButton = screen.getByRole('button', { name: 'Sign Up' });
+    const submitButton = screen.getByRole('button', { name: 'Create account' });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -221,10 +221,10 @@ describe('SignupPage', () => {
   });
 
   it('shows password checklist when password field is focused', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
-    const passwordInput = screen.getByPlaceholderText('Enter a strong password');
+    const passwordInput = screen.getByPlaceholderText('At least 8 characters');
     await user.click(passwordInput);
 
     await waitFor(() => {
@@ -237,15 +237,15 @@ describe('SignupPage', () => {
   });
 
   it('updates password checklist based on input', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
-    const passwordInput = screen.getByPlaceholderText('Enter a strong password');
+    const passwordInput = screen.getByPlaceholderText('At least 8 characters');
     await user.click(passwordInput);
     await user.type(passwordInput, 'Password123!');
 
     await waitFor(() => {
-      // All checklist items should be visible and some should be checked
+      // All checklist items should be visible and satisfied for a strong password
       expect(screen.getByText('At least 8 characters')).toBeInTheDocument();
       expect(screen.getByText('One uppercase letter')).toBeInTheDocument();
       expect(screen.getByText('One lowercase letter')).toBeInTheDocument();
@@ -255,20 +255,20 @@ describe('SignupPage', () => {
   });
 
   it('submits form with valid data', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     (authApiService.signUpCheck as any).mockResolvedValue({ done: true });
 
     renderWithProviders(<SignupPage />);
 
-    const nameInput = screen.getByPlaceholderText('Enter your full name');
-    const emailInput = screen.getByPlaceholderText('Enter your email');
-    const passwordInput = screen.getByPlaceholderText('Enter a strong password');
+    const nameInput = screen.getByPlaceholderText('Jordan Lee');
+    const emailInput = screen.getByPlaceholderText('jordan@acme.com');
+    const passwordInput = screen.getByPlaceholderText('At least 8 characters');
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john@example.com');
     await user.type(passwordInput, 'Password123!');
 
-    const submitButton = screen.getByRole('button', { name: 'Sign Up' });
+    const submitButton = screen.getByRole('button', { name: 'Create account' });
     await user.click(submitButton);
 
     await waitFor(() => {
@@ -281,7 +281,7 @@ describe('SignupPage', () => {
   });
 
   it('handles Google signup click', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderWithProviders(<SignupPage />);
 
     // Mock window.location
@@ -290,7 +290,7 @@ describe('SignupPage', () => {
       writable: true,
     });
 
-    const googleButton = screen.getByText('Sign up with Google');
+    const googleButton = screen.getByText('Google');
     await user.click(googleButton);
 
     expect(window.location.href).toBe('http://localhost:3000/secure/google?');
@@ -305,8 +305,8 @@ describe('SignupPage', () => {
 
     renderWithProviders(<SignupPage />);
 
-    const nameInput = screen.getByPlaceholderText('Enter your full name') as HTMLInputElement;
-    const emailInput = screen.getByPlaceholderText('Enter your email') as HTMLInputElement;
+    const nameInput = screen.getByPlaceholderText('Jordan Lee') as HTMLInputElement;
+    const emailInput = screen.getByPlaceholderText('jordan@acme.com') as HTMLInputElement;
 
     expect(nameInput.value).toBe('Test User');
     expect(emailInput.value).toBe('test@example.com');
@@ -316,40 +316,37 @@ describe('SignupPage', () => {
     renderWithProviders(<SignupPage />);
 
     expect(screen.getByText('Privacy Policy')).toBeInTheDocument();
-    expect(screen.getByText('Terms of Use')).toBeInTheDocument();
+    expect(screen.getByText('Terms of Service')).toBeInTheDocument();
 
     const privacyLink = screen.getByText('Privacy Policy').closest('a');
-    const termsLink = screen.getByText('Terms of Use').closest('a');
+    const termsLink = screen.getByText('Terms of Service').closest('a');
 
     expect(privacyLink).toHaveAttribute('href', 'https://worklenz.com/privacy/');
     expect(termsLink).toHaveAttribute('href', 'https://worklenz.com/terms/');
   });
 
-  it('navigates to login page', async () => {
-    const user = userEvent.setup();
+  it('navigates to login page', () => {
     renderWithProviders(<SignupPage />);
 
     const loginLink = screen.getByText('Log in');
-    await user.click(loginLink);
-
     expect(loginLink.closest('a')).toHaveAttribute('href', '/auth/login');
   });
 
   it('shows loading state during signup', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     (authApiService.signUpCheck as any).mockResolvedValue({ done: true });
 
     renderWithProviders(<SignupPage />);
 
-    const nameInput = screen.getByPlaceholderText('Enter your full name');
-    const emailInput = screen.getByPlaceholderText('Enter your email');
-    const passwordInput = screen.getByPlaceholderText('Enter a strong password');
+    const nameInput = screen.getByPlaceholderText('Jordan Lee');
+    const emailInput = screen.getByPlaceholderText('jordan@acme.com');
+    const passwordInput = screen.getByPlaceholderText('At least 8 characters');
 
     await user.type(nameInput, 'John Doe');
     await user.type(emailInput, 'john@example.com');
     await user.type(passwordInput, 'Password123!');
 
-    const submitButton = screen.getByRole('button', { name: 'Sign Up' });
+    const submitButton = screen.getByRole('button', { name: 'Create account' });
     await user.click(submitButton);
 
     await waitFor(() => {

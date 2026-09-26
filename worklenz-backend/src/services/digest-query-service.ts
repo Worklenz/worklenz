@@ -1,6 +1,6 @@
 import db from "../config/db";
 import { getBaseUrl } from "../cron_jobs/helpers";
-import { WorkspaceDigestRole } from "./digest-role-service";
+import { getAssignedByMeScope, WorkspaceDigestRole } from "./digest-role-service";
 
 // ─── Shared task row shape ───────────────────────────────────────────────────
 
@@ -15,6 +15,7 @@ export interface DigestTask {
   daysOverdue: number | null;
   assigneeName: string | null;  // for "assigned by me" rows
   completedDay: string | null;  // e.g. "Monday" for weekly-end completed section
+  weekdayLabel: string | null;
 }
 
 export interface DigestTaskSection {
@@ -52,7 +53,8 @@ function notCompleteFilter(): string {
   `;
 }
 
-function notArchivedFilter(userIdParam: string): string {
+/** Exclude tasks the user archived at the project level. */
+export function notArchivedProjectFilter(userIdParam: string): string {
   return `
     t.project_id NOT IN (
       SELECT project_id FROM archived_projects WHERE user_id = ${userIdParam}
@@ -60,22 +62,25 @@ function notArchivedFilter(userIdParam: string): string {
   `;
 }
 
+export const NOT_ARCHIVED_TASK_SQL = "t.archived IS FALSE";
+
 function dueDateNotNull(): string {
   return `t.end_date IS NOT NULL`;
 }
 
-function taskSelectFields(tz: string): string {
+function taskSelectFields(): string {
   return `
     t.id,
     t.name,
+    t.project_id,
     p.name AS project_name,
     tm_ws.name AS workspace_name,
     tp.name AS priority_name,
-    TO_CHAR(t.end_date AT TIME ZONE '${tz}', 'YYYY-MM-DD') AS due_date,
+    TO_CHAR(t.end_date AT TIME ZONE $2, 'YYYY-MM-DD') AS due_date,
     GREATEST(
       DATE_PART('day',
-        DATE_TRUNC('day', CURRENT_TIMESTAMP AT TIME ZONE '${tz}') -
-        DATE_TRUNC('day', t.end_date AT TIME ZONE '${tz}')
+        DATE_TRUNC('day', CURRENT_TIMESTAMP AT TIME ZONE $2) -
+        DATE_TRUNC('day', t.end_date AT TIME ZONE $2)
       )::INT, 0
     ) AS days_overdue,
     NULL::TEXT AS assignee_name,
@@ -83,18 +88,19 @@ function taskSelectFields(tz: string): string {
   `;
 }
 
-function taskSelectFieldsWithAssignee(tz: string): string {
+function taskSelectFieldsWithAssignee(): string {
   return `
     t.id,
     t.name,
+    t.project_id,
     p.name AS project_name,
     tm_ws.name AS workspace_name,
     tp.name AS priority_name,
-    TO_CHAR(t.end_date AT TIME ZONE '${tz}', 'YYYY-MM-DD') AS due_date,
+    TO_CHAR(t.end_date AT TIME ZONE $2, 'YYYY-MM-DD') AS due_date,
     GREATEST(
       DATE_PART('day',
-        DATE_TRUNC('day', CURRENT_TIMESTAMP AT TIME ZONE '${tz}') -
-        DATE_TRUNC('day', t.end_date AT TIME ZONE '${tz}')
+        DATE_TRUNC('day', CURRENT_TIMESTAMP AT TIME ZONE $2) -
+        DATE_TRUNC('day', t.end_date AT TIME ZONE $2)
       )::INT, 0
     ) AS days_overdue,
     au.name AS assignee_name,
@@ -111,15 +117,18 @@ function taskJoins(): string {
   `;
 }
 
-function buildTaskUrl(taskId: string): string {
-  return `${getBaseUrl()}/worklenz/tasks/${taskId}`;
+export function buildDigestTaskUrl(projectId: string | null | undefined, taskId: string): string {
+  if (!projectId) {
+    return `${getBaseUrl()}/worklenz/my-tasks`;
+  }
+  return `${getBaseUrl()}/worklenz/projects/${projectId}?tab=tasks-list&task=${taskId}`;
 }
 
-function mapRows(rows: any[], workspaceCount: number): DigestTask[] {
+export function mapDigestRows(rows: any[], workspaceCount: number): DigestTask[] {
   return rows.map(r => ({
     id: r.id,
     name: r.name,
-    taskUrl: buildTaskUrl(r.id),
+    taskUrl: buildDigestTaskUrl(r.project_id, r.id),
     projectName: r.project_name ?? "No Project",
     workspaceName: workspaceCount > 1 ? r.workspace_name : null,
     priorityName: r.priority_name ?? null,
@@ -127,6 +136,7 @@ function mapRows(rows: any[], workspaceCount: number): DigestTask[] {
     daysOverdue: r.days_overdue ?? null,
     assigneeName: r.assignee_name ?? null,
     completedDay: r.completed_day ?? null,
+    weekdayLabel: r.weekday_label ? String(r.weekday_label).trim() : null,
   }));
 }
 
@@ -142,9 +152,29 @@ async function fetchWithCount(
     db.query(countSql, params),
   ]);
   return {
-    tasks: mapRows(dataResult.rows, workspaceCount),
+    tasks: mapDigestRows(dataResult.rows, workspaceCount),
     totalCount: parseInt(countResult.rows[0].total, 10),
   };
+}
+
+function assignedByMeScopeSql(): string {
+  return `(
+    (cardinality($3::uuid[]) > 0 AND p.team_id = ANY($3::uuid[]))
+    OR
+    (cardinality($4::uuid[]) > 0 AND t.project_id = ANY($4::uuid[]))
+  )`;
+}
+
+function assignedByMeParams(
+  userId: string,
+  tz: string,
+  roles: WorkspaceDigestRole[]
+): { params: any[]; empty: boolean } {
+  const { adminTeamIds, pmProjectIds } = getAssignedByMeScope(roles);
+  if (adminTeamIds.length === 0 && pmProjectIds.length === 0) {
+    return { params: [], empty: true };
+  }
+  return { params: [userId, tz, adminTeamIds, pmProjectIds], empty: false };
 }
 
 // ─── "Assigned to me" queries ────────────────────────────────────────────────
@@ -159,7 +189,7 @@ export async function getAssignedToMeDueToday(
   limit = 15
 ): Promise<DigestTaskSection> {
   const sql = `
-    SELECT ${taskSelectFields(tz)}
+    SELECT ${taskSelectFields()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -169,7 +199,8 @@ export async function getAssignedToMeDueToday(
       AND ${dueDateNotNull()}
       AND DATE(t.end_date AT TIME ZONE $2) = DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY tp.value DESC NULLS LAST, t.name ASC
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
@@ -185,7 +216,7 @@ export async function getAssignedToMeUpcomingTomorrow(
   limit = 15
 ): Promise<DigestTaskSection> {
   const sql = `
-    SELECT ${taskSelectFields(tz)}
+    SELECT ${taskSelectFields()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -195,7 +226,8 @@ export async function getAssignedToMeUpcomingTomorrow(
       AND ${dueDateNotNull()}
       AND DATE(t.end_date AT TIME ZONE $2) = DATE(CURRENT_TIMESTAMP AT TIME ZONE $2) + INTERVAL '1 day'
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY t.end_date ASC
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
@@ -211,7 +243,7 @@ export async function getAssignedToMeOverdue(
   limit = 15
 ): Promise<DigestTaskSection> {
   const sql = `
-    SELECT ${taskSelectFields(tz)}
+    SELECT ${taskSelectFields()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -221,7 +253,8 @@ export async function getAssignedToMeOverdue(
       AND ${dueDateNotNull()}
       AND DATE(t.end_date AT TIME ZONE $2) < DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY t.end_date ASC
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
@@ -238,7 +271,7 @@ export async function getAssignedToMeDueThisWeek(
   limit = 10
 ): Promise<DigestTaskSection> {
   const sql = `
-    SELECT ${taskSelectFields(tz)},
+    SELECT ${taskSelectFields()},
            TO_CHAR(t.end_date AT TIME ZONE $2, 'Day') AS weekday_label,
            EXTRACT(DOW FROM t.end_date AT TIME ZONE $2) AS dow
     FROM tasks t
@@ -251,32 +284,14 @@ export async function getAssignedToMeDueThisWeek(
       AND DATE(t.end_date AT TIME ZONE $2) > DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND DATE(t.end_date AT TIME ZONE $2) <= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)::DATE + 4
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY t.end_date ASC, tp.value DESC NULLS LAST
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
 }
 
 // ─── "Assigned by me" queries ─────────────────────────────────────────────────
-
-function buildAssignedByMeProjectFilter(
-  roles: WorkspaceDigestRole[],
-  projectIdParam: string
-): string {
-  const adminTeamIds = roles.filter(r => r.isAdmin).map(r => r.teamId);
-  const pmProjectIds = roles.flatMap(r => r.pmProjectIds);
-
-  if (adminTeamIds.length === 0 && pmProjectIds.length === 0) return "FALSE";
-
-  const conditions: string[] = [];
-  if (adminTeamIds.length > 0) {
-    conditions.push(`p.team_id = ANY(ARRAY[${adminTeamIds.map(id => `'${id}'::uuid`).join(",")}])`);
-  }
-  if (pmProjectIds.length > 0) {
-    conditions.push(`${projectIdParam} = ANY(ARRAY[${pmProjectIds.map(id => `'${id}'::uuid`).join(",")}])`);
-  }
-  return `(${conditions.join(" OR ")})`;
-}
 
 export async function getAssignedByMeDueToday(
   userId: string,
@@ -285,11 +300,11 @@ export async function getAssignedByMeDueToday(
   workspaceCount: number,
   limit = 15
 ): Promise<DigestTaskSection> {
-  const scopeFilter = buildAssignedByMeProjectFilter(roles, "t.project_id");
-  if (scopeFilter === "FALSE") return { tasks: [], totalCount: 0 };
+  const { params, empty } = assignedByMeParams(userId, tz, roles);
+  if (empty) return { tasks: [], totalCount: 0 };
 
   const sql = `
-    SELECT ${taskSelectFieldsWithAssignee(tz)}
+    SELECT ${taskSelectFieldsWithAssignee()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -300,11 +315,12 @@ export async function getAssignedByMeDueToday(
       AND ${dueDateNotNull()}
       AND DATE(t.end_date AT TIME ZONE $2) = DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
-      AND ${scopeFilter}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
+      AND ${assignedByMeScopeSql()}
     ORDER BY t.name ASC
   `;
-  return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
+  return fetchWithCount(sql, params, limit, workspaceCount);
 }
 
 export async function getAssignedByMeOverdue(
@@ -314,11 +330,11 @@ export async function getAssignedByMeOverdue(
   workspaceCount: number,
   limit = 15
 ): Promise<DigestTaskSection> {
-  const scopeFilter = buildAssignedByMeProjectFilter(roles, "t.project_id");
-  if (scopeFilter === "FALSE") return { tasks: [], totalCount: 0 };
+  const { params, empty } = assignedByMeParams(userId, tz, roles);
+  if (empty) return { tasks: [], totalCount: 0 };
 
   const sql = `
-    SELECT ${taskSelectFieldsWithAssignee(tz)}
+    SELECT ${taskSelectFieldsWithAssignee()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -329,11 +345,12 @@ export async function getAssignedByMeOverdue(
       AND ${dueDateNotNull()}
       AND DATE(t.end_date AT TIME ZONE $2) < DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
-      AND ${scopeFilter}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
+      AND ${assignedByMeScopeSql()}
     ORDER BY t.end_date ASC
   `;
-  return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
+  return fetchWithCount(sql, params, limit, workspaceCount);
 }
 
 export async function getAssignedByMeDueThisWeek(
@@ -343,11 +360,11 @@ export async function getAssignedByMeDueThisWeek(
   workspaceCount: number,
   limit = 10
 ): Promise<DigestTaskSection> {
-  const scopeFilter = buildAssignedByMeProjectFilter(roles, "t.project_id");
-  if (scopeFilter === "FALSE") return { tasks: [], totalCount: 0 };
+  const { params, empty } = assignedByMeParams(userId, tz, roles);
+  if (empty) return { tasks: [], totalCount: 0 };
 
   const sql = `
-    SELECT ${taskSelectFieldsWithAssignee(tz)},
+    SELECT ${taskSelectFieldsWithAssignee()},
            TO_CHAR(t.end_date AT TIME ZONE $2, 'Day') AS weekday_label,
            EXTRACT(DOW FROM t.end_date AT TIME ZONE $2) AS dow
     FROM tasks t
@@ -361,11 +378,12 @@ export async function getAssignedByMeDueThisWeek(
       AND DATE(t.end_date AT TIME ZONE $2) > DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND DATE(t.end_date AT TIME ZONE $2) <= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)::DATE + 4
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
-      AND ${scopeFilter}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
+      AND ${assignedByMeScopeSql()}
     ORDER BY t.end_date ASC
   `;
-  return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
+  return fetchWithCount(sql, params, limit, workspaceCount);
 }
 
 // ─── Weekly End specific ──────────────────────────────────────────────────────
@@ -380,6 +398,7 @@ export async function getAssignedToMeCompletedThisWeek(
     SELECT
       t.id,
       t.name,
+      t.project_id,
       p.name AS project_name,
       tm_ws.name AS workspace_name,
       NULL::TEXT AS priority_name,
@@ -397,7 +416,8 @@ export async function getAssignedToMeCompletedThisWeek(
       AND t.completed_at IS NOT NULL
       AND t.completed_at AT TIME ZONE $2 >= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND t.completed_at AT TIME ZONE $2 <= CURRENT_TIMESTAMP AT TIME ZONE $2
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY t.completed_at DESC
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
@@ -410,7 +430,7 @@ export async function getAssignedToMeStillDueThisWeek(
   limit = 10
 ): Promise<DigestTaskSection> {
   const sql = `
-    SELECT ${taskSelectFields(tz)}
+    SELECT ${taskSelectFields()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -421,7 +441,8 @@ export async function getAssignedToMeStillDueThisWeek(
       AND DATE(t.end_date AT TIME ZONE $2) >= DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND DATE(t.end_date AT TIME ZONE $2) <= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)::DATE + 4
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY t.end_date ASC
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
@@ -434,7 +455,7 @@ export async function getAssignedToMeBecameOverdueThisWeek(
   limit = 10
 ): Promise<DigestTaskSection> {
   const sql = `
-    SELECT ${taskSelectFields(tz)}
+    SELECT ${taskSelectFields()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -445,7 +466,8 @@ export async function getAssignedToMeBecameOverdueThisWeek(
       AND DATE(t.end_date AT TIME ZONE $2) >= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)::DATE
       AND DATE(t.end_date AT TIME ZONE $2) < DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
     ORDER BY t.end_date ASC
   `;
   return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
@@ -466,9 +488,8 @@ export async function getAssignedToMeAllTimeOverdueCount(
        AND t.end_date IS NOT NULL
        AND DATE(t.end_date AT TIME ZONE $2) < DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)::DATE
        AND ${notCompleteFilter()}
-       AND t.project_id NOT IN (
-         SELECT project_id FROM archived_projects WHERE user_id = $1
-       )`,
+       AND ${NOT_ARCHIVED_TASK_SQL}
+       AND ${notArchivedProjectFilter("$1")}`,
     [userId, tz]
   );
   return parseInt(result.rows[0].cnt, 10);
@@ -481,13 +502,14 @@ export async function getAssignedByMeCompletedThisWeek(
   workspaceCount: number,
   limit = 10
 ): Promise<DigestTaskSection> {
-  const scopeFilter = buildAssignedByMeProjectFilter(roles, "t.project_id");
-  if (scopeFilter === "FALSE") return { tasks: [], totalCount: 0 };
+  const { params, empty } = assignedByMeParams(userId, tz, roles);
+  if (empty) return { tasks: [], totalCount: 0 };
 
   const sql = `
     SELECT
       t.id,
       t.name,
+      t.project_id,
       p.name AS project_name,
       tm_ws.name AS workspace_name,
       NULL::TEXT AS priority_name,
@@ -506,11 +528,12 @@ export async function getAssignedByMeCompletedThisWeek(
       AND t.completed_at IS NOT NULL
       AND t.completed_at AT TIME ZONE $2 >= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND t.completed_at AT TIME ZONE $2 <= CURRENT_TIMESTAMP AT TIME ZONE $2
-      AND ${notArchivedFilter("$1")}
-      AND ${scopeFilter}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
+      AND ${assignedByMeScopeSql()}
     ORDER BY t.completed_at DESC
   `;
-  return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
+  return fetchWithCount(sql, params, limit, workspaceCount);
 }
 
 export async function getAssignedByMeBecameOverdueThisWeek(
@@ -520,11 +543,11 @@ export async function getAssignedByMeBecameOverdueThisWeek(
   workspaceCount: number,
   limit = 10
 ): Promise<DigestTaskSection> {
-  const scopeFilter = buildAssignedByMeProjectFilter(roles, "t.project_id");
-  if (scopeFilter === "FALSE") return { tasks: [], totalCount: 0 };
+  const { params, empty } = assignedByMeParams(userId, tz, roles);
+  if (empty) return { tasks: [], totalCount: 0 };
 
   const sql = `
-    SELECT ${taskSelectFieldsWithAssignee(tz)}
+    SELECT ${taskSelectFieldsWithAssignee()}
     FROM tasks t
     ${taskJoins()}
     JOIN tasks_assignees ta ON ta.task_id = t.id
@@ -536,14 +559,24 @@ export async function getAssignedByMeBecameOverdueThisWeek(
       AND DATE(t.end_date AT TIME ZONE $2) >= DATE_TRUNC('week', CURRENT_TIMESTAMP AT TIME ZONE $2)::DATE
       AND DATE(t.end_date AT TIME ZONE $2) < DATE(CURRENT_TIMESTAMP AT TIME ZONE $2)
       AND ${notCompleteFilter()}
-      AND ${notArchivedFilter("$1")}
-      AND ${scopeFilter}
+      AND ${NOT_ARCHIVED_TASK_SQL}
+      AND ${notArchivedProjectFilter("$1")}
+      AND ${assignedByMeScopeSql()}
     ORDER BY t.end_date ASC
   `;
-  return fetchWithCount(sql, [userId, tz], limit, workspaceCount);
+  return fetchWithCount(sql, params, limit, workspaceCount);
 }
 
 // ─── Admin team overview ──────────────────────────────────────────────────────
+
+/** Team overview counts all workspace projects; personal archive must not hide them. */
+export function adminProjectJoin(): string {
+  return `
+    LEFT JOIN projects proj ON proj.team_id = ws.id
+    LEFT JOIN tasks t ON t.project_id = proj.id AND t.archived IS FALSE
+    LEFT JOIN task_statuses ts ON ts.id = t.status_id
+  `;
+}
 
 export async function getDailyAdminTeamOverview(
   adminTeamIds: string[],
@@ -569,27 +602,17 @@ export async function getDailyAdminTeamOverview(
          THEN t.id END) AS overdue,
        COUNT(DISTINCT tm.id) FILTER (WHERE tm.active = TRUE) AS member_count
      FROM teams ws
-     LEFT JOIN projects proj ON proj.team_id = ws.id
-     LEFT JOIN tasks t ON t.project_id = proj.id
-     LEFT JOIN task_statuses ts ON ts.id = t.status_id
-     -- workspace teams (project_groups / labels named "team") - use teams table for workspace
-     -- We group by workspace since the spec shows per-workspace counts for daily
+     ${adminProjectJoin()}
      LEFT JOIN team_members tm ON tm.team_id = ws.id
-     -- wt is the same as ws here for daily (no sub-team breakdown)
      JOIN teams wt ON wt.id = ws.id
      WHERE ws.id = ANY($1::uuid[])
      GROUP BY wt.id, wt.name, ws.id, ws.name`,
     [adminTeamIds, tz]
   );
 
-  return buildWorkspaceOverviews(result.rows, "daily");
+  return buildWorkspaceOverviews(result.rows);
 }
 
-/**
- * Weekly admin overview with sub-team breakdown.
- * "Teams" in the spec refers to project groups / sub-teams within a workspace.
- * We use the `teams` table for workspace, and group projects by their team.
- */
 export async function getWeeklyAdminTeamOverview(
   adminTeamIds: string[],
   tz: string,
@@ -652,19 +675,17 @@ export async function getWeeklyAdminTeamOverview(
        ${nextWeekCol}
        0::BIGINT AS placeholder
      FROM teams ws
-     LEFT JOIN projects proj ON proj.team_id = ws.id
-     LEFT JOIN tasks t ON t.project_id = proj.id
-     LEFT JOIN task_statuses ts ON ts.id = t.status_id
+     ${adminProjectJoin()}
      LEFT JOIN team_members tm ON tm.team_id = ws.id
      WHERE ws.id = ANY($1::uuid[])
      GROUP BY ws.id, ws.name`,
     [adminTeamIds, tz]
   );
 
-  return buildWorkspaceOverviews(result.rows, includeNextWeek ? "weekly_end" : "weekly_start");
+  return buildWorkspaceOverviews(result.rows);
 }
 
-function buildWorkspaceOverviews(rows: any[], _type: string): AdminWorkspaceOverview[] {
+function buildWorkspaceOverviews(rows: any[]): AdminWorkspaceOverview[] {
   const wsMap = new Map<string, AdminWorkspaceOverview>();
 
   for (const r of rows) {

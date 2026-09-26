@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
@@ -57,6 +57,7 @@ i18n.init({
   resources: {
     en: {
       'auth/verify-reset-email': {
+        title: 'Set a new password',
         description: 'Enter your new password',
         passwordRequired: 'Please input your password!',
         confirmPasswordRequired: 'Please confirm your password!',
@@ -95,7 +96,12 @@ const renderWithProviders = (
   return render(
     <Provider store={store}>
       <MemoryRouter initialEntries={[route]}>
-        <I18nextProvider i18n={i18n}>{component}</I18nextProvider>
+        <I18nextProvider i18n={i18n}>
+          <Routes>
+            <Route path="/verify-reset/:hash/:user" element={component} />
+            <Route path="*" element={component} />
+          </Routes>
+        </I18nextProvider>
       </MemoryRouter>
     </Provider>
   );
@@ -118,7 +124,7 @@ describe('VerifyResetEmailPage', () => {
     expect(screen.getByPlaceholderText('Enter new password')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Confirm new password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reset Password' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Resend Reset Email' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Resend Reset Email' })).toBeInTheDocument();
   });
 
   it('shows password checklist immediately', () => {
@@ -249,7 +255,9 @@ describe('VerifyResetEmailPage', () => {
     await user.click(submitButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
+      // The submit button should show loading state (Ant Design renders loading attribute)
+      const submitButton = screen.getByRole('button', { name: /Reset Password/i });
+      expect(submitButton).toHaveAttribute('disabled');
     });
   });
 
@@ -278,14 +286,11 @@ describe('VerifyResetEmailPage', () => {
     });
   });
 
-  it('navigates to forgot password page when resend button is clicked', async () => {
-    const user = userEvent.setup();
+  it('navigates to forgot password page when resend link is clicked', () => {
     renderWithProviders(<VerifyResetEmailPage />);
 
-    const resendButton = screen.getByRole('button', { name: 'Resend Reset Email' });
-    await user.click(resendButton);
-
-    expect(resendButton.closest('a')).toHaveAttribute('href', '/auth/forgot-password');
+    const resendLink = screen.getByRole('link', { name: 'Resend Reset Email' });
+    expect(resendLink).toHaveAttribute('href', '/auth/forgot-password');
   });
 
   it('prevents pasting in confirm password field', async () => {
@@ -296,12 +301,8 @@ describe('VerifyResetEmailPage', () => {
 
     await user.click(confirmPasswordInput);
 
-    // Try to paste - should be prevented
-    const pasteEvent = new ClipboardEvent('paste', {
-      clipboardData: new DataTransfer(),
-    });
-
-    fireEvent(confirmPasswordInput, pasteEvent);
+    // Try to paste - fireEvent.paste is safe in jsdom without ClipboardEvent/DataTransfer
+    fireEvent.paste(confirmPasswordInput);
 
     // The preventDefault should be called (we can't easily test this directly,
     // but we can ensure the input behavior remains consistent)

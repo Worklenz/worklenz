@@ -5,9 +5,13 @@ jest.mock('../config/db', () => ({
   },
 }));
 
-jest.mock('../shared/paddle-utils', () => ({
-  checkTeamSubscriptionStatus: jest.fn(),
-}));
+jest.mock('../ee/shared/paddle-utils', () => {
+  const actual = jest.requireActual('../ee/shared/paddle-utils');
+  return {
+    ...actual,
+    checkTeamSubscriptionStatus: jest.fn(),
+  };
+});
 
 jest.mock('../shared/guest-seat-limits', () => ({
   getGuestSeatLimit: jest.fn(),
@@ -47,6 +51,7 @@ describe('ProjectMembersController.getGuestMembers', () => {
       user: {
         id: 'admin-user',
         team_id: 'team-123',
+        owner: true,
       },
       query: {
         current: '1',
@@ -61,7 +66,7 @@ describe('ProjectMembersController.getGuestMembers', () => {
       send: jest.fn().mockReturnThis(),
     };
 
-    jest.spyOn(ProjectMembersController as any, 'verifyAdminAccess').mockResolvedValue(true);
+    (ProjectMembersController as any).verifyAdminAccess = jest.fn().mockResolvedValue(true);
 
     await ProjectMembersController.getGuestMembers(req, res);
 
@@ -129,7 +134,7 @@ describe('ProjectMembersController.create', () => {
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.send).toHaveBeenCalledWith(
       expect.objectContaining({
-        success: false,
+        done: false,
         message: 'Guest limit exceeded',
       })
     );

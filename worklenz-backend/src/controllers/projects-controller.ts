@@ -209,6 +209,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                         WHERE user_id = '${req.user?.id}'
                                           AND project_id = projects.id) AS archived,
                                  color_code,
+                                 to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
                                  (SELECT COUNT(*)
                                   FROM tasks
                                   WHERE archived IS FALSE
@@ -402,6 +403,8 @@ export default class ProjectsController extends WorklenzControllerBase {
       'PRIORITY_NAME': `(SELECT value FROM sys_project_priorities WHERE id = projects.priority_id)`,
       'project_owner': 'owner_id',
       'PROJECT_OWNER': 'owner_id',
+      'WORKLENZ_ID': "to_jsonb(projects)->>'worklenz_id'",
+      'worklenz_id': "to_jsonb(projects)->>'worklenz_id'",
     };
 
     // If the field is already a valid database column name (contains dot or matches exactly)
@@ -557,6 +560,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                  start_date,
                                  end_date,
                                  category_id,
+                                 to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
                                  (SELECT COUNT(*)
                                   FROM tasks
                                   WHERE archived IS FALSE
@@ -754,6 +758,7 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.auto_assign_task_creator,
              projects.restrict_task_creation,
              projects.phase_assignees_enabled,
+             to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
              (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
              (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
 
@@ -1404,6 +1409,7 @@ export default class ProjectsController extends WorklenzControllerBase {
                                    p2.start_date,
                                    p2.end_date,
                                    p2.category_id,
+                                   to_jsonb(p2)->>'worklenz_id' AS worklenz_id,
                                    (SELECT COUNT(*)
                                     FROM tasks
                                     WHERE archived IS FALSE

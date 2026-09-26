@@ -16,7 +16,7 @@ interface CopyTaskOptions {
 }
 
 export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction): IWorkLenzResponse | void {
-  const { options, task_id, project_id } = req.body;
+  const { options, task_id, project_id, destination_project_id } = req.body;
 
   // Required top-level fields
   if (!task_id) {
@@ -25,6 +25,12 @@ export default function (req: IWorkLenzRequest, res: IWorkLenzResponse, next: Ne
 
   if (!project_id) {
     return res.status(200).send(new ServerResponse(false, null, "Project id is required"));
+  }
+
+  if (destination_project_id !== undefined && typeof destination_project_id !== "string") {
+    return res
+      .status(200)
+      .send(new ServerResponse(false, null, "Destination project id must be a string"));
   }
 
   // Check if options exists and is an object

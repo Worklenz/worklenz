@@ -1,4 +1,5 @@
 import { AssigneeResolutionContext } from "./types";
+import { parseImportDate } from "./value-utils";
 
 // Worklenz only has Low / Medium / High / Critical — there is no "Urgent"
 // priority, so aliases must resolve to one of those four names or the value
@@ -63,11 +64,8 @@ export const resolveAssignees = (
   return teamMemberId ? [teamMemberId] : [];
 };
 
-export const parseDateValue = (value?: string | null): Date | null => {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
+export const parseDateValue = (value?: string | null): Date | null =>
+  parseImportDate(value);
 
 const COMPLETED_DATE_KEYS = new Set([
   "completed on",

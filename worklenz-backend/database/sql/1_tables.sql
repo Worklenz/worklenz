@@ -584,8 +584,13 @@ CREATE TABLE IF NOT EXISTS organizations (
     updated_at               TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     license_type_id          UUID,
     is_lkr_billing           BOOLEAN                  DEFAULT FALSE,
-    working_hours            DOUBLE PRECISION         DEFAULT 8                  NOT NULL
+    working_hours            DOUBLE PRECISION         DEFAULT 8                  NOT NULL,
+    business_plan_override   BOOLEAN                  DEFAULT FALSE              NOT NULL,
+    team_member_limit_override BOOLEAN                DEFAULT FALSE              NOT NULL
 );
+
+COMMENT ON COLUMN organizations.business_plan_override IS 'Manual override to grant business plan feature access (client portal, Slack, finance, etc.) regardless of subscription status. Set manually by admins.';
+COMMENT ON COLUMN organizations.team_member_limit_override IS 'Manual override to bypass all team member limits. When enabled, organization can add unlimited team members regardless of subscription plan.';
 
 ALTER TABLE organizations
     ADD CONSTRAINT organizations_pk
@@ -1679,7 +1684,8 @@ CREATE TABLE IF NOT EXISTS users (
     temp_email      BOOLEAN                  DEFAULT FALSE,
     is_deleted      BOOLEAN                  DEFAULT FALSE,
     deleted_at      TIMESTAMP WITH TIME ZONE,
-    language        LANGUAGE_TYPE            DEFAULT 'en'::LANGUAGE_TYPE
+    language        LANGUAGE_TYPE            DEFAULT 'en'::LANGUAGE_TYPE,
+    mobile_app_banner_dismissed BOOLEAN      DEFAULT FALSE
 );
 
 ALTER TABLE users
