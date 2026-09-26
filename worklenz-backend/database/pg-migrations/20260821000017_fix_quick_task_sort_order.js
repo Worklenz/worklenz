@@ -21,8 +21,6 @@ exports.up = async (pgm) => {
 -- Solution (Part B): Data migration — back-fill existing tasks whose group sort orders are 0
 --   but whose base sort_order is already set.
 
-BEGIN;
-
 -- ─── Part A: Replace create_quick_task() ────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION create_quick_task(_body json) RETURNS json
@@ -174,8 +172,6 @@ WHERE
     AND priority_sort_order = 0
     AND phase_sort_order    = 0
     AND member_sort_order   = 0;
-
-COMMIT;
 
   `);
 };
