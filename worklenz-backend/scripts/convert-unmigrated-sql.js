@@ -40,6 +40,7 @@ END $$;`;
   return s;
 }
 
+
 function escapeForTemplateLiteral(str) {
   return str.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 }
@@ -127,7 +128,7 @@ let skipped = 0;
 
 FILES_TO_CONVERT.forEach((item, index) => {
   const seq = String(index + 1).padStart(6, '0');
-  const filename = `20260821${seq}_${item.name}.js`;
+  const filename = '20260821' + seq + '000_' + item.name + '.js';
   const outPath = path.join(OUT_DIR, filename);
 
   if (fs.existsSync(outPath)) {

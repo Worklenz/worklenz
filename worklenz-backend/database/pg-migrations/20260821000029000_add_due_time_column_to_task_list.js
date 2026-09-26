@@ -9,17 +9,8 @@ exports.up = async (pgm) => {
   pgm.sql(`
 -- Migration: Add DUE_TIME to task list columns
 -- This allows users to show/hide the due time column and saves their preference
-
-BEGIN;
-
--- Step 1: Add DUE_TIME to the WL_TASK_LIST_COL_KEY enum
 -- Note: We add it after DUE_DATE to keep related fields together
 ALTER TYPE WL_TASK_LIST_COL_KEY ADD VALUE IF NOT EXISTS 'DUE_TIME' AFTER 'DUE_DATE';
-
-COMMIT;
-
-BEGIN;
--- Step 2: Add DUE_TIME column to all existing projects
 -- Insert DUE_TIME column for each project that doesn't already have it
 -- Default: pinned = false (hidden by default, users can enable it)
 -- Index: 13 (after DUE_DATE which is typically index 12)
@@ -37,9 +28,6 @@ WHERE NOT EXISTS (
     WHERE ptlc.project_id = p.id 
     AND ptlc.key = 'DUE_TIME'
 );
-COMMIT;
-
-BEGIN;
 CREATE OR REPLACE FUNCTION insert_task_list_columns(_project_id uuid) RETURNS void
     LANGUAGE plpgsql
 AS
@@ -82,7 +70,7 @@ BEGIN
     VALUES (_project_id, 'Reporter', 'REPORTER', 17, FALSE);
 END
 $$;
-COMMIT;
+
   `);
 };
 
