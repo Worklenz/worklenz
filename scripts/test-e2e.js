@@ -62,7 +62,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
   // Step 0: Organization
   console.log('Handling Step 0: Organization...');
   const orgInput = page.locator('.organization-step input').first();
-  if (await orgInput.isVisible({ timeout: 5000 })) {
+  if (await orgInput.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     await orgInput.fill(testUser.orgName);
   }
   const continueBtn = page.getByRole('button', { name: /^Continue$/i });
@@ -72,7 +72,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
   // Step 1: Survey Step
   console.log('Handling Step 1: Survey...');
   const orgTypeBtn = page.locator('button', { hasText: /Startup|Small/i }).first();
-  if (await orgTypeBtn.isVisible({ timeout: 5000 })) {
+  if (await orgTypeBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     console.log('Selecting Organization Type...');
     await orgTypeBtn.click({ force: true });
     await page.waitForTimeout(500);
@@ -89,7 +89,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
     // Survey Sub-step 1: Main use cases
     console.log('Selecting Use Cases...');
     const useCaseBtn = page.locator('button').filter({ hasText: /Project|Task|Team/i }).first();
-    if (await useCaseBtn.isVisible({ timeout: 5000 })) {
+    if (await useCaseBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
       await useCaseBtn.click({ force: true });
       await page.waitForTimeout(500);
       await continueBtn.click({ force: true });
@@ -99,7 +99,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
     // Survey Sub-step 2: How heard about
     console.log('Selecting How heard about...');
     const howHeardBtn = page.locator('button').filter({ hasText: /Google|Search|Friend|Social|Other/i }).first();
-    if (await howHeardBtn.isVisible({ timeout: 5000 })) {
+    if (await howHeardBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
       await howHeardBtn.click({ force: true });
       await page.waitForTimeout(500);
       await continueBtn.click({ force: true });
@@ -110,13 +110,13 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
   // Step 2: Project Step
   console.log('Handling Step 2: Project...');
   const suggestionBtn = page.locator('.project-suggestion-button').first();
-  if (await suggestionBtn.isVisible({ timeout: 5000 })) {
+  if (await suggestionBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     console.log('Clicking project suggestion...');
     await suggestionBtn.click({ force: true });
     await page.waitForTimeout(500);
   } else {
     const projInput = page.locator('input').last();
-    if (await projInput.isVisible({ timeout: 3000 })) {
+    if (await projInput.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
       await projInput.fill(testUser.projectName);
     }
   }
@@ -126,7 +126,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
   // Step 3: Tasks Step
   console.log('Handling Step 3: Tasks...');
   const taskInput = page.locator('input.task-input, .tasks-step input').first();
-  if (await taskInput.isVisible({ timeout: 5000 })) {
+  if (await taskInput.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     await taskInput.fill(testUser.taskName);
     await page.waitForTimeout(500);
   }
@@ -136,7 +136,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
   // Step 4: Members Step (Skip)
   console.log('Handling Step 4: Members (Skip)...');
   const skipBtn = page.locator('button', { hasText: /Skip/i }).first();
-  if (await skipBtn.isVisible({ timeout: 5000 })) {
+  if (await skipBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     await skipBtn.click({ force: true });
   } else {
     await continueBtn.click({ force: true });
@@ -219,7 +219,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
 
   // Use "+ Add Task" button to create an inline task
   const addTaskBtn = page2.getByRole('button', { name: /add task/i }).first();
-  if (await addTaskBtn.isVisible({ timeout: 5000 })) {
+  if (await addTaskBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
     console.log('Found Add Task button. Clicking...');
     await addTaskBtn.click();
     await page2.waitForTimeout(500);
@@ -239,11 +239,7 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
     await page2.waitForTimeout(2000);
   }
 
-  const pageBody = await page2.locator('body').innerText();
-  const taskCreated = pageBody.includes(testUser.createdTaskName) || pageBody.includes('Untitled Task');
-  if (!taskCreated) {
-    throw new Error(`Task verification failed: neither ${testUser.createdTaskName} nor Untitled Task found on page.`);
-  }
+  await page2.getByText(testUser.createdTaskName, { exact: true }).waitFor({ state: 'visible', timeout: 10000 });
   console.log('SUCCESSFULLY CREATED AND VERIFIED TASK:', testUser.createdTaskName);
 
   console.log('\n======================================================');
@@ -254,9 +250,10 @@ const { chromium } = require(path.resolve(__dirname, '../worklenz-frontend/node_
   console.log('  4. Create Task (New task created in project)');
   console.log('======================================================');
 
-  await browser.close();
-  process.exit(0);
-})().catch(async err => {
+  process.exitCode = 0;
+})().catch(err => {
   console.error('\n❌ VERIFICATION FAILED:', err);
-  process.exit(1);
+  process.exitCode = 1;
+}).finally(async () => {
+  await browser.close();
 });

@@ -162,8 +162,13 @@ BEGIN
             AND di.is_working_day = true
             AND twd.working_days_count > 0  -- Only include tasks that have working days
     ),
+    daily_project_allocations AS (
+        SELECT alloc_date, project_id, project_name, color_code, SUM(daily_hours) AS daily_hours
+        FROM task_allocations
+        GROUP BY alloc_date, project_id, project_name, color_code
+    ),
     project_summary AS (
-        -- Aggregate allocations by project per day
+        -- Build one project entry per day after combining task allocations.
         SELECT 
             alloc_date AS summary_date,
             COALESCE(
@@ -179,7 +184,7 @@ BEGIN
                 '[]'::jsonb
             ) AS projects,
             COALESCE(SUM(daily_hours), 0) AS total_allocated
-        FROM task_allocations
+        FROM daily_project_allocations
         GROUP BY alloc_date
     )
     SELECT 

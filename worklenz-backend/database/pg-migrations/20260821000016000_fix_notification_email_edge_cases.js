@@ -132,8 +132,8 @@ BEGIN
         ELSE delivered_at
     END,
     updated_at = CURRENT_TIMESTAMP
-    WHERE message_id = NEW.message_id
-       OR starts_with(message_id, NEW.message_id || '-');
+    WHERE (message_id = NEW.message_id OR message_id LIKE NEW.message_id || '-%')
+      AND LOWER(recipient_email) = LOWER(NEW.recipient_email);
 
     RETURN NEW;
 END;
