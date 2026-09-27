@@ -148,9 +148,21 @@ BEGIN
         use_manual_progress      = COALESCE((_body ->> 'use_manual_progress')::BOOLEAN, FALSE),
         use_weighted_progress    = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
         use_time_progress        = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
-        auto_assign_task_creator = COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
-        restrict_task_creation   = COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE),
-        phase_assignees_enabled  = COALESCE((_body ->> 'phase_assignees_enabled')::BOOLEAN, FALSE)
+        auto_assign_task_creator = CASE
+                                     WHEN _body::JSONB ? 'auto_assign_task_creator'
+                                       THEN COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE)
+                                     ELSE COALESCE(auto_assign_task_creator, FALSE)
+                                   END,
+        restrict_task_creation   = CASE
+                                     WHEN _body::JSONB ? 'restrict_task_creation'
+                                       THEN COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE)
+                                     ELSE COALESCE(restrict_task_creation, FALSE)
+                                   END,
+        phase_assignees_enabled  = CASE
+                                     WHEN _body::JSONB ? 'phase_assignees_enabled'
+                                       THEN COALESCE((_body ->> 'phase_assignees_enabled')::BOOLEAN, FALSE)
+                                     ELSE COALESCE(phase_assignees_enabled, FALSE)
+                                   END
     WHERE id = (_body ->> 'id')::UUID
       AND team_id = _team_id
     RETURNING id INTO _project_id;

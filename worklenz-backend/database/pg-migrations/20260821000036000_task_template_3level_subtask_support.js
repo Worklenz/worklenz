@@ -124,7 +124,14 @@ BEGIN
         RAISE 'TASK_TEMPLATE_EXISTS_ERROR:%', _name;
     END IF;
 
-    UPDATE task_templates SET name = _name, updated_at = NOW() WHERE id = _id;
+    UPDATE task_templates
+    SET name = _name, updated_at = NOW()
+    WHERE id = _id
+      AND team_id = _team_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'TASK_TEMPLATE_NOT_FOUND:%', _id;
+    END IF;
 
     DELETE FROM task_templates_tasks WHERE template_id = _id;
 
@@ -210,6 +217,21 @@ DECLARE
     _l2_map              JSONB := '{}'::JSONB;
     _parent_id           UUID;
 BEGIN
+    -- The current API identifies parents by name. Reject ambiguous input rather
+    -- than silently attaching a child to the last same-named row in a map.
+    IF EXISTS (
+        SELECT 1
+        FROM JSON_ARRAY_ELEMENTS(_tasks) child
+        WHERE (child ->> 'parent_task_name') IS NOT NULL
+          AND (
+              SELECT COUNT(*)
+              FROM JSON_ARRAY_ELEMENTS(_tasks) candidate
+              WHERE TRIM((candidate ->> 'name')::TEXT) = TRIM((child ->> 'parent_task_name')::TEXT)
+          ) > 1
+    ) THEN
+        RAISE EXCEPTION 'TASK_TEMPLATE_AMBIGUOUS_PARENT';
+    END IF;
+
     SELECT COALESCE((SELECT MAX(sort_order) FROM tasks WHERE project_id = _project_id), 0)
     INTO _max_sort;
 

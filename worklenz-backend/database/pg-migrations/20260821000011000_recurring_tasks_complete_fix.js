@@ -187,7 +187,11 @@ BEGIN
         t.reporter_id,
         t.status_id,
         COALESCE(
-            (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('project_member_id', tas.project_member_id, 'team_member_id', tas.team_member_id))
+            (SELECT JSONB_AGG(JSONB_BUILD_OBJECT(
+                'project_member_id', tas.project_member_id,
+                'team_member_id', tas.team_member_id,
+                'assigned_by', tas.assigned_by
+            ))
              FROM tasks_assignees tas
              WHERE tas.task_id = t.id),
             '[]'::JSONB
@@ -210,6 +214,27 @@ BEGIN
     RETURN v_new_id;
 END;
 $$;
+
+-- Existing templates created before assigned_by was captured would otherwise
+-- create recurring tasks without any assignees.
+UPDATE task_recurring_templates trt
+SET assignees = COALESCE(
+    (
+        SELECT JSONB_AGG(JSONB_BUILD_OBJECT(
+            'project_member_id', tas.project_member_id,
+            'team_member_id', tas.team_member_id,
+            'assigned_by', tas.assigned_by
+        ))
+        FROM tasks_assignees tas
+        WHERE tas.task_id = trt.task_id
+    ),
+    '[]'::JSONB
+)
+WHERE EXISTS (
+    SELECT 1
+    FROM JSONB_ARRAY_ELEMENTS(COALESCE(trt.assignees::JSONB, '[]'::JSONB)) assignee
+    WHERE NOT (assignee ? 'assigned_by')
+);
 
   `);
 };
