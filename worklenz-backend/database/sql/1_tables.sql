@@ -1309,7 +1309,8 @@ CREATE TABLE IF NOT EXISTS task_statuses (
     project_id  UUID                               NOT NULL,
     team_id     UUID                               NOT NULL,
     category_id UUID                               NOT NULL,
-    sort_order  INTEGER DEFAULT 0                  NOT NULL
+    sort_order  INTEGER DEFAULT 0                  NOT NULL,
+    color_code  TEXT    DEFAULT NULL
 );
 
 ALTER TABLE task_statuses
@@ -2169,7 +2170,7 @@ ALTER TABLE task_recurring_schedules
         ON DELETE SET NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_schedule_end_date_unique
-ON tasks (schedule_id, (end_date::DATE))
+ON tasks (schedule_id, end_date)
 WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_task_recurring_schedules_timezone_id

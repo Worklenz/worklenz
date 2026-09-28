@@ -44,15 +44,7 @@ function run(dir) {
   );
 
   if (result.stderr) {
-    // Filter out non-fatal warnings about 14-digit timestamp prefixes from node-pg-migrate
-    const filteredStderr = result.stderr
-      .split('\n')
-      .filter((line) => !line.includes("Can't determine timestamp for"))
-      .join('\n')
-      .trim();
-    if (filteredStderr) {
-      process.stderr.write(filteredStderr + '\n');
-    }
+    process.stderr.write(result.stderr);
   }
 
   if (result.error) {
