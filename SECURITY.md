@@ -4,11 +4,11 @@
 
 We provide security updates for the following versions of Worklenz:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 3.x     | :white_check_mark: |
-| 2.x     | :x:                |
-| < 2.0   | :x:                |
+| Version | Supported |
+| ------- | --------- |
+| 3.x     | ✅        |
+| 2.x     | ❌        |
+| < 2.0   | ❌        |
 
 ---
 
