@@ -1,10 +1,10 @@
+<div align="center">
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
-        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="150">
-    </a>
-    <br>
-    Worklenz
+        <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="400">
+    </a>  
 </h1>
+<h3 align="center">All-in-one open-source project management for efficient teams</h3>
 
 <p align="center">
     <a href="https://github.com/Worklenz/worklenz/blob/main/LICENSE">
@@ -22,144 +22,215 @@
     <a href="https://github.com/Worklenz/worklenz/issues">
         <img src="https://img.shields.io/github/issues/Worklenz/worklenz" alt="Issues">
     </a>
-</p>
-
-<p align="center">
-    <a href="https://worklenz.com/task-management/">Task Management</a> |
-    <a href="https://worklenz.com/time-tracking/">Time Tracking</a> |
-    <a href="https://worklenz.com/analytics/">Analytics</a> |
-    <a href="https://worklenz.com/resource-management/">Resource Management</a> |
-    <a href="https://worklenz.com/templates/">Project Templates</a>
-</p>
-
-<p align="center">
-    <a href="https://worklenz.com" target="_blank">
-      <img
-        src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/worklenz_banner.png"
-        alt="Worklenz"
-        width="1200"
-      />
+    <a href="https://discord.com/invite/6Qmm839mgr">
+        <img src="https://img.shields.io/discord/1202616582757556276?style=flat&logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Discord">
     </a>
 </p>
 
-Worklenz is a project management tool designed to help organizations improve their efficiency. It provides a
-comprehensive solution for managing projects, tasks, and collaboration within teams.
+<p align="center">
+    <a href="https://worklenz.com"><b>Website</b></a> •
+    <a href="https://app.worklenz.com/auth/signup"><b>Sign in</b></a> •
+    <a href="https://docs.worklenz.com/en/start/introduction/"><b>Documentation</b></a>
+</p>
 
-## Table of Contents
+</div>
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-  - [Quick Start (Docker)](#-quick-start-docker---recommended)
-  - [Manual Installation](#️-manual-installation-for-development)
-- [Deployment](#deployment)
-  - [Local Development](#local-development-with-docker)
-  - [Remote Server Deployment](#remote-server-deployment)
-- [Configuration](#configuration)
-- [MinIO Integration](#minio-integration)
-- [Security](#security)
-- [Analytics](#analytics)
-- [Screenshots](#screenshots)
-- [Contributing](#contributing)
-- [License](#license)
+---
+Meet [Worklenz](https://worklenz.com), a powerful, open-source project management platform built to help teams plan smarter, collaborate better, and ship faster. No bloated tools. No unnecessary complexity. Just everything your team needs, in one place. 🚀
+> Worklenz is growing every day. Your bug reports, feature ideas, and feedback shape what we build next. Jump into [Discord](https://discord.com/invite/6Qmm839mgr) or open a GitHub issue - we read everything!
 
-## Features
 
-- **Project Planning**: Create and organize projects, assign tasks to team members.
-- **Task Management**: Break down projects into smaller tasks, set due dates, priorities, and track progress.
-- **Collaboration**: Share files, leave comments, and communicate seamlessly with your team members.
-- **Time Tracking**: Monitor time spent on tasks and projects for better resource allocation and billing.
-- **Reporting**: Generate detailed reports on project status, team workload, and performance metrics.
+## 🚀 Getting Started
 
-## Tech Stack
+Pick the setup that works best for you:
+<br>
+### ☁️ Worklenz Cloud
+The fastest way to get started - no setup, no infrastructure. Just sign up at [worklenz.com](https://worklenz.com) and start managing projects in minutes.
 
-This repository contains the frontend and backend code for Worklenz.
+### 🖥️ Self-Host Worklenz
+Prefer full control over your data? Run Worklenz on your own server.
 
-- **Frontend**: Built using React with Ant Design as the UI library.
-- **Backend**: Built using TypeScript, Express.js, with PostgreSQL as the database.
+| Method | Guide |
+|--------|-------|
+| 🐳 Docker (Recommended) | [Quick Docker Setup](#quick-start-docker) | 
+| 🔧 Manual Installation | [Manual Dev Setup](#manual-installation) |
 
-## Requirements
+<br>
+
+## 🌟 Features
+
+- **🗺️ Project Management** - Plan, execute, and monitor projects from start to finish with full visibility across every stage.
+- **📋 Task Management** - Break projects into tasks, set priorities, due dates, and track progress with multiple views (list, board, Gantt).
+- **📐 Resource Planning** - Allocate the right people to the right tasks at the right time - keep your team balanced and productive.
+- **👥 Team & Client Collaboration** - Bring your team and clients together in one shared space to align on goals, updates, and deliverables.
+- **💰 Financial Insights** - Track budgets, costs, and financial performance across projects to keep spending on track and transparent.
+- **⏱️ Time Tracking** - Log time directly on tasks to understand where your team's hours are actually going.
+- **📊 Analytics & Reporting** - Get real-time insights into project health, team workload, and performance.
+- **🗓️ Resource Management** - Plan team capacity, avoid overallocation, and schedule work with a visual scheduler.
+- **🧩 Project Templates** - Start new projects in seconds using pre-built templates for common workflows.
+- **🤝 Team Collaboration** - Comment on tasks, share files, and keep all communication in context - right where the work is.
+<br><br>
+
+## 📸 Screenshots
+
+<div align="center">
+
+[![Task Management Task List View](https://tinyurl.com/2cd35sk2)](https://worklenz.com/task-management/)
+_**Task Management Task List View**_
+
+[![Task Management Kanban View](https://tinyurl.com/253o4fp7)](https://worklenz.com/task-management/)
+_**Task Management Kanban View**_
+
+[![Resource Management](https://tinyurl.com/228kgt26)](https://worklenz.com/resource-management/)
+_**Resource Management**_
+
+[![Projects & Tasks Templates](https://tinyurl.com/2are8yqt)](https://worklenz.com/project-templates/)
+_**Projects & Tasks Templates**_
+
+[![Time Tracking](https://tinyurl.com/28t2gryx)](https://worklenz.com/time-tracking/)
+_**Time Tracking**_
+
+[![Project Insights](https://tinyurl.com/23lxzxx9)](https://worklenz.com/analytics/)
+_**Project Insights**_
+
+[![Team Utilization](https://tinyurl.com/2xox9a9v)](https://worklenz.com/team-utilization/)
+_**Team Utilization**_
+
+[![Scheduler](https://tinyurl.com/239vjndh)](https://worklenz.com/timesheets/)
+_**Scheduler**_
+
+[![Project Profitability Monitor](https://tinyurl.com/2y4husx3)](https://worklenz.com/project-finance/)
+_**Project Profitability Monitor**_
+
+[![Client Portal](https://tinyurl.com/2yepbyt2)](https://worklenz.com/client-portal/)
+_**Client Portal**_
+</div>
+<br>
+
+## ⚙️ Tech Stack
+
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Express.js](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React + Ant Design |
+| **Backend** | TypeScript + Express.js |
+| **Database** | PostgreSQL |
+| **Storage** | MinIO (S3-compatible) / AWS S3 / Azure Blob |
+| **Cache** | Redis |
+| **Proxy** | Nginx |
+
+### Requirements
 
 - Node.js version v18 or newer
 - PostgreSQL version v15 or newer
 - Docker and Docker Compose (for containerized setup)
 
-## Getting Started
 
-Choose your preferred setup method below. Docker is recommended for quick setup and testing.
+## 📝 Documentation
 
-### 🚀 Quick Start (Docker - Recommended)
+Explore Worklenz's [product documentation](https://docs.worklenz.com/en/start/introduction/) to learn about features, setup, and usage and more.
+<br>
 
-The fastest way to get Worklenz running locally with all dependencies included.
+<a id="quick-start-docker"></a>
+### 🐳 Quick Start (Docker — Recommended)
 
-**Prerequisites:**
+The fastest way to get Worklenz running locally with all dependencies included. This setup includes **production-ready features** like nginx reverse proxy, SSL/TLS support, Redis caching, and automated backups.
+
+**📋 Prerequisites:**
 - Docker and Docker Compose installed on your system
 - Git
 
-**Steps:**
+**🪜 Steps:**
 
-1. Clone the repository:
+#### Option 1: Automated Setup (Easiest)
 ```bash
+# 📥 Clone the repository
 git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
+
+# Run the automated setup script
+./quick-setup.sh
 ```
 
-2. Start the Docker containers:
+This script will:
+- ✅ Create `.env` file with auto-generated security secrets
+- ✅ Configure URLs based on your domain (localhost or production)
+- ✅ Set up SSL certificates (self-signed for localhost, Let's Encrypt for production)
+- ✅ Install and start all services
+
+#### Option 2: Manual Setup
 ```bash
-docker-compose up -d
+# 📥 Clone the repository
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
+
+# 📄 Copy and configure environment file
+cp .env.example .env
+# Edit .env and set required values (DB_PASSWORD, SESSION_SECRET, etc.)
+
+# ▶️ Start services (Express mode - includes PostgreSQL, Redis, MinIO)
+docker compose --profile express up -d
 ```
 
-3. Access the application:
-   - **Frontend**: http://localhost:5000
-   - **Backend API**: http://localhost:3000
-   - **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
+**🌐 Access the application:**
+- **Application**: https://localhost (or http://localhost)
+- **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
 
-4. To stop the services:
+**🛠️ Management:**
 ```bash
-docker-compose down
+# Use the management script for common operations
+./manage.sh status    # View service status
+./manage.sh logs      # View logs
+./manage.sh backup    # Create database backup
+./manage.sh stop      # Stop all services
+./manage.sh start     # Start all services
 ```
 
-**Alternative startup methods:**
-- **Windows**: Run `start.bat`
-- **Linux/macOS**: Run `./start.sh`
+**For detailed documentation**, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
 
 **Video Guide**: For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
 
+<a id="manual-installation"></a>
 ### 🛠️ Manual Installation (For Development)
 
 For developers who want to run the services individually or customize the setup.
 
-**Prerequisites:**
+**📋 Prerequisites:**
 - Node.js (version 18 or higher)
 - PostgreSQL (version 15 or higher)
 - An S3-compatible storage service (like MinIO) or Azure Blob Storage
 
-**Steps:**
+**🪜 Steps:**
 
-1. Clone the repository:
+1. 📥 Clone the repository:
 ```bash
 git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
 ```
 
-2. Set up environment variables:
+2. ⚙️ Set up environment variables:
 ```bash
 cp worklenz-backend/.env.template worklenz-backend/.env
 # Update the environment variables with your configuration
 ```
 
-3. Install dependencies:
+3. 📦 Install dependencies:
 ```bash
 # Backend dependencies
 cd worklenz-backend
 npm install
 
-# Frontend dependencies
+# 🖥️ Frontend dependencies
 cd ../worklenz-frontend
 npm install
 ```
 
-4. Set up the database:
+4. 🗄️ Set up the database:
 ```bash
 # Create a PostgreSQL database named worklenz_db
 cd worklenz-backend
@@ -175,89 +246,146 @@ psql -U your_username -d worklenz_db -f database/sql/2_dml.sql
 psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
 ```
 
-5. Start the development servers:
+5. ▶️ Start the development servers:
 ```bash
-# Terminal 1: Start the backend
+# Backend (single command for build, watch, and auto-restart)
 cd worklenz-backend
-npm run dev
+npm run dev:all
 
-# Terminal 2: Start the frontend
+# Frontend (in another terminal)
 cd worklenz-frontend
 npm run dev
 ```
 
-6. Access the application at http://localhost:5000
+6. 🌐 Access the application at http://localhost:5000
 
-## Deployment
+## 🚢 Deployment
 
-For local development, follow the [Quick Start (Docker)](#-quick-start-docker---recommended) section above.
+### 🏠 Local Development
 
-### Remote Server Deployment
+For local development, follow the [Quick Start (Docker)](#quick-start-docker) section above.
 
-When deploying to a remote server:
+### 🌍 Production Deployment
 
-1. Set up the environment files with your server's hostname:
+The new Docker setup includes production-ready features for secure and scalable deployments.
+
+#### ⚡ Quick Production Setup
+
+```bash
+# Clone and navigate to the repository
+git clone https://github.com/Worklenz/worklenz.git
+cd worklenz
+
+# Run the automated setup
+./quick-setup.sh
+# When prompted, enter your production domain (e.g., worklenz.example.com)
+# The script will configure SSL with Let's Encrypt automatically
+```
+
+#### 🔧 Manual Production Setup
+
+1. **Configure environment for your domain:**
    ```bash
-   # For HTTP/WS
-   ./update-docker-env.sh your-server-hostname
-   
-   # For HTTPS/WSS
-   ./update-docker-env.sh your-server-hostname true
+   cp .env.example .env
+   # Edit .env and set:
+   # - DOMAIN=your-domain.com
+   # - VITE_API_URL=https://your-domain.com
+   # - VITE_SOCKET_URL=wss://your-domain.com
+   # - ENABLE_SSL=true
+   # - LETSENCRYPT_EMAIL=your-email@domain.com
+   # - Generate secure secrets for DB_PASSWORD, SESSION_SECRET, etc.
    ```
 
-2. Pull and run the latest Docker images:
+2. **Point your domain's DNS A record to your server IP**
+
+3. **Start services with SSL:**
    ```bash
-   docker-compose pull
-   docker-compose up -d
+   docker compose --profile express --profile ssl up -d
    ```
 
-3. Access the application through your server's hostname:
-   - Frontend: http://your-server-hostname:5000
-   - Backend API: http://your-server-hostname:3000
+4. **Access your application at:** https://your-domain.com
 
-4. **Video Guide**: For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
+#### 🛠️ Management Commands
 
-## Configuration
+```bash
+./manage.sh install    # Interactive installation
+./manage.sh upgrade    # Upgrade to latest version
+./manage.sh backup     # Create database backup
+./manage.sh restore    # Restore from backup
+./manage.sh ssl        # Manage SSL certificates
+./manage.sh status     # View service status
+```
+
+#### 🗂️ Deployment Modes
+
+- 🟢 **Express Mode** (default): All services bundled (PostgreSQL, Redis, MinIO)
+  ```bash
+  docker compose --profile express up -d
+  ```
+
+- 🔵 **Advanced Mode**: Use external services (AWS S3, Azure Blob, external PostgreSQL)
+  ```bash
+  # Set DEPLOYMENT_MODE=advanced in .env
+  docker compose up -d
+  ```
+
+**For complete deployment documentation**, see [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
+**Video Guide**: For a complete walkthrough of deploying Worklenz to a remote server, check out our [deployment video guide](https://www.youtube.com/watch?v=CAZGu2iOXQs&t=10s).
+
+## ⚙️ Configuration
 
 ### Environment Variables
 
-Worklenz requires several environment variables to be configured for proper operation. These include:
+Worklenz uses a comprehensive environment configuration system. Copy `.env.example` to `.env` and configure according to your needs.
 
-- Database credentials
-- Session secrets
-- Storage configuration (S3 or Azure)
-- Authentication settings
+**📂 Key Configuration Areas:**
 
-Please refer to the `.env.example` files for a full list of required variables.
+- **Deployment Mode**: `express` (all services bundled) or `advanced` (external services)
+- **Domain & URLs**: Configure for localhost or production domain
+- **Database**: PostgreSQL credentials and connection settings
+- **Security Secrets**: Session, cookie, and JWT secrets (auto-generated by setup scripts)
+- **Storage**: MinIO (default), AWS S3, or Azure Blob Storage
+- **Redis**: Cache configuration (Express mode)
+- **SSL/TLS**: Let's Encrypt for production, self-signed for localhost
+- **Backups**: Automated backup retention settings
+- **Optional Features**: Google OAuth, reCAPTCHA, email notifications
 
-The Docker setup uses environment variables to configure the services:
+**⚡ Quick Configuration:**
 
-- **Frontend:**
-  - `VITE_API_URL`: URL of the backend API (default: http://backend:3000 for container networking)
-  - `VITE_SOCKET_URL`: WebSocket URL for real-time communication (default: ws://backend:3000)
+```bash
+# Auto-generate all secrets and configure based on domain
+./manage.sh auto-configure
 
-- **Backend:**
-  - Database connection parameters
-  - Storage configuration
-  - Other backend settings
+# Or manually generate secrets
+openssl rand -hex 32  # Use for SESSION_SECRET, COOKIE_SECRET, JWT_SECRET
+```
 
-For custom configuration, edit the `.env` file or the `update-docker-env.sh` script.
+**📌 Important Variables:**
 
-## MinIO Integration
+- `DOMAIN`: Your domain (localhost for local testing)
+- `DEPLOYMENT_MODE`: express or advanced
+- `STORAGE_PROVIDER`: s3 (MinIO/AWS) or azure
+- `ENABLE_SSL`: true/false for SSL/TLS
+- `BACKUP_RETENTION_DAYS`: Days to keep backups (default: 30)
+
+For a complete list of variables with detailed documentation, see `.env.example`.
+
+## 🪣 MinIO Integration
 
 The project uses MinIO as an S3-compatible object storage service, which provides an open-source alternative to AWS S3 for development and production.
 
-### Working with MinIO
+### 🔧 Working with MinIO
 
 MinIO provides an S3-compatible API, so any code that works with S3 will work with MinIO by simply changing the endpoint URL. The backend has been configured to use MinIO by default, with no additional configuration required.
 
-- **MinIO Console**: http://localhost:9001
+- **🖥️ MinIO Console**: http://localhost:9001
   - Username: minioadmin
   - Password: minioadmin
 
-- **Default Bucket**: worklenz-bucket (created automatically when the containers start)
+- **🪣 Default Bucket**: worklenz-bucket (created automatically when the containers start)
 
-### Backend Storage Configuration
+### 🛠️ Backend Storage Configuration
 
 The backend is pre-configured to use MinIO with the following settings:
 
@@ -270,97 +398,75 @@ export const S3_ACCESS_KEY_ID = process.env.AWS_ACCESS_KEY_ID || "minioadmin";
 export const S3_SECRET_ACCESS_KEY = process.env.AWS_SECRET_ACCESS_KEY || "minioadmin";
 ```
 
-### Security Considerations
+## 🔒 Security
 
-For production deployments:
+Worklenz is built with security in mind:
 
-1. Use strong, unique passwords and keys for all services
-2. Do not commit `.env` files to version control
-3. Use a production-grade PostgreSQL setup with proper backup procedures
-4. Enable HTTPS for all public endpoints
-5. Review and update dependencies regularly
+- 🔐 Non-root Docker containers
+- 🌐 Network isolation (backend is internal-only)
+- 🔑 SSL/TLS (Let's Encrypt for production, self-signed for localhost)
+- 🛡️ Rate limiting on API and login endpoints
+- 🔒 Security headers (HSTS, CSP, X-Frame-Options, etc.)
+- 🗝️ Auto-generated secure secrets via `openssl rand -hex 32`
 
-## Security
+Found a security vulnerability? Please **do not** open a public issue. Email us at [info@worklenz.com](mailto:info@worklenz.com) instead. We take all legitimate reports seriously.
+<br>
 
-If you believe you have found a security vulnerability in Worklenz, we encourage you to responsibly disclose this and not open a public issue. We will investigate all legitimate reports.
+## 📈 Analytics
 
-Email [info@worklenz.com](mailto:info@worklenz.com) to disclose any security vulnerabilities.
+Worklenz uses Google Analytics to better understand how the application is used - helping us prioritize improvements and make smarter product decisions.
 
-## Analytics
+**What we track:**
+- 📊 Anonymous usage statistics
+- 🗺️ Page views and navigation patterns
+- 🧩 Feature usage
+- 💻 Browser and device information
 
-Worklenz uses Google Analytics to understand how the application is being used. This helps us improve the application and make better decisions about future development.
+**Your privacy matters:**
+- 🔘 Analytics is **opt-in only** - we never collect data without your consent
+- 🙈 No personal information is ever collected
+- 🚪 You can **opt-out at any time** by clearing your browser's local storage for the Worklenz domain, or clicking "Decline" in the analytics notice
+- 📜 Data is stored and handled according to [Google's Privacy Policy](https://policies.google.com/privacy)
+<br/>
 
-### What We Track
-- Anonymous usage statistics
-- Page views and navigation patterns
-- Feature usage
-- Browser and device information
+## 🤝 Contributing
+We love contributions from the community! Here's how you can help:
 
-### Privacy
-- Analytics is opt-in only
-- No personal information is collected
-- Users can opt-out at any time
-- Data is stored according to Google's privacy policy
+- 🐛 [Report bugs](https://github.com/Worklenz/worklenz/issues/new)
+- ✨ [Request features](https://github.com/Worklenz/worklenz/issues/new)
+- 📖 Improve the documentation
+- 💬 Share Worklenz with your team or write about it
 
-### How to Opt-Out
-If you've previously opted in and want to opt-out:
-1. Clear your browser's local storage for the Worklenz domain
-2. Or click the "Decline" button in the analytics notice if it appears
+Please read [CONTRIBUTING.md](https://github.com/Worklenz/worklenz/blob/main/CONTRIBUTING.md) before submitting a pull request.
+<br>
 
-## Screenshots
+## Contributors
+Thanks to everyone who has contributed to Worklenz! 💙
 
-<p align="center">
-  <a href="https://worklenz.com/features/task-management/" target="_blank">
-    <img
-      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/task-list.png"
-      alt="Worklenz task views"
-      width="1024"
-    />
-  </a>
-</p>
-<p align="center">
-  <a href="https://worklenz.com/features/time-tracking/" target="_blank">
-    <img
-      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/time-tracking.png"
-      alt="Worklenz time tracking"
-      width="1024"
-    />
-  </a>
-</p>
-<p align="center">
-  <a href="https://worklenz.com/features/analytics/" target="_blank">
-    <img
-      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/insights.png"
-      alt="Worklenz analytics"
-      width="1024"
-    />
-  </a>
-</p>
-<p align="center">
-  <a href="https://worklenz.com/features/resource-management/" target="_blank">
-    <img
-      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/schedule.png"
-      alt="Worklenz scheduler"
-      width="1024"
-    />
-  </a>
-</p>
-<p align="center">
-  <a href="https://worklenz.com/features/templates/" target="_blank">
-    <img
-      src="https://s3.us-west-2.amazonaws.com/worklenz.com/assets/github-readme/templates.png"
-      alt="Worklenz templates"
-      width="1024"
-    />
-  </a>
-</p>
+[![Contributors](https://contrib.rocks/image?repo=Worklenz/worklenz)](https://github.com/Worklenz/worklenz/graphs/contributors)
+<br>
 
-## Contributing
+## 💙 Community
+Join the Worklenz community:
 
-We welcome contributions from the community! If you'd like to contribute, please follow our [contributing guidelines](CONTRIBUTING.md).
+- 💬 [Discord Server](https://discord.gg/6Qmm839mgr) - chat with contributors and users
+- 🐙 [GitHub Discussions](https://github.com/Worklenz/worklenz/discussions) - longer form conversations
+- 🐦 Follow updates on our [website](https://worklenz.com)
 
-## License
+We follow a [Code of Conduct](https://github.com/Worklenz/worklenz/blob/main/CODE_OF_CONDUCT.md) across all community spaces.
+<br>
 
-Worklenz is free and open-source software licensed under the [GNU Affero General Public License Version 3 (AGPLv3)](LICENSE).
+## 📄 License
 
-By contributing to Worklenz, you agree to sign our [Contributor License Agreement](https://cla-assistant.io/Worklenz/worklenz), which grants ceydigital solutions private limited a perpetual, worldwide, sublicensable license to your contribution — you keep full ownership of your original work. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Worklenz is open source, released under the [GNU Affero General Public License v3.0](https://github.com/Worklenz/worklenz/blob/main/LICENSE).
+
+By contributing to Worklenz, you agree your contributions will be licensed under AGPL v3.0.
+<br>
+
+---
+<br>
+<div align="center">
+  <strong>Built with 💙 by the Worklenz team and amazing contributors around the world.</strong>
+  <br/>
+  <a href="https://worklenz.com">www.worklenz.com</a>
+</div>
