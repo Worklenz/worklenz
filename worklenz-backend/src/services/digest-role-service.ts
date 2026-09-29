@@ -44,9 +44,25 @@ export async function resolveUserDigestRoles(userId: string): Promise<WorkspaceD
     adminTeamIds.length > 0 ? [userId, adminTeamIds] : [userId]
   );
 
+  const memberResult = await db.query(
+    `SELECT tm.team_id, t.name AS team_name
+     FROM team_members tm
+     JOIN teams t ON t.id = tm.team_id
+     WHERE tm.user_id = $1 AND tm.active = TRUE`,
+    [userId]
+  );
+
+  return mergeDigestRoleRows(adminResult.rows, pmResult.rows, memberResult.rows);
+}
+
+export function mergeDigestRoleRows(
+  adminRows: Array<{ team_id: string; team_name: string }>,
+  pmRows: Array<{ project_id: string; team_id: string; team_name: string }>,
+  memberRows: Array<{ team_id: string; team_name: string }>
+): WorkspaceDigestRole[] {
   const rolesMap = new Map<string, WorkspaceDigestRole>();
 
-  for (const row of adminResult.rows) {
+  for (const row of adminRows) {
     rolesMap.set(row.team_id, {
       teamId: row.team_id,
       teamName: row.team_name,
@@ -55,7 +71,7 @@ export async function resolveUserDigestRoles(userId: string): Promise<WorkspaceD
     });
   }
 
-  for (const row of pmResult.rows) {
+  for (const row of pmRows) {
     const existing = rolesMap.get(row.team_id);
     if (existing) {
       existing.pmProjectIds.push(row.project_id);
@@ -69,16 +85,7 @@ export async function resolveUserDigestRoles(userId: string): Promise<WorkspaceD
     }
   }
 
-  // Include Member-only workspaces (user is in team but not admin/PM)
-  const memberResult = await db.query(
-    `SELECT tm.team_id, t.name AS team_name
-     FROM team_members tm
-     JOIN teams t ON t.id = tm.team_id
-     WHERE tm.user_id = $1 AND tm.active = TRUE`,
-    [userId]
-  );
-
-  for (const row of memberResult.rows) {
+  for (const row of memberRows) {
     if (!rolesMap.has(row.team_id)) {
       rolesMap.set(row.team_id, {
         teamId: row.team_id,

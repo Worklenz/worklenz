@@ -2,6 +2,8 @@ export type GanttViewMode = 'day' | 'week' | 'month' | 'quarter' | 'year';
 
 export type GanttGroupingMode = 'phase' | 'status' | 'priority';
 
+export type PhaseSortMode = 'manual' | 'chronological';
+
 export type DependencyType =
   | 'blocked_by'
   | 'finish_to_start'
