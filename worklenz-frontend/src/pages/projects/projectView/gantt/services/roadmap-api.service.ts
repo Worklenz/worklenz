@@ -3,7 +3,7 @@ import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
 import { getCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import config from '@/config/env';
-import { GanttTask, GanttPhase, GanttGroupingMode } from '../types/gantt-types';
+import { GanttTask, GanttPhase, GanttGroupingMode, PhaseSortMode } from '../types/gantt-types';
 
 const rootUrl = '/roadmap';
 
@@ -62,6 +62,20 @@ export interface ProjectPhaseResponse {
   done_progress: number;
   total_tasks: number;
 }
+
+// Roadmap-only display ordering — never persisted, never touches sort_index.
+// 'manual' returns phase milestones in their existing (backend drag-order) sequence.
+// 'chronological' sorts by each milestone's already-resolved `start_date`. Undated
+// milestones sort last, preserving their relative order (stable sort).
+export const sortPhasesForDisplay = (milestones: GanttTask[], mode: PhaseSortMode): GanttTask[] => {
+  if (mode !== 'chronological') return milestones;
+
+  return [...milestones].sort((a, b) => {
+    const aTime = a.start_date ? new Date(a.start_date).getTime() : Infinity;
+    const bTime = b.start_date ? new Date(b.start_date).getTime() : Infinity;
+    return aTime - bTime;
+  });
+};
 
 export interface UpdateTaskDatesRequest {
   task_id: string;

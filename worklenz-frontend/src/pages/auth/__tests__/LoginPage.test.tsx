@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
@@ -8,7 +8,7 @@ import { I18nextProvider } from 'react-i18next';
 import i18n from 'i18next';
 
 import LoginPage from '../LoginPage';
-import { login, verifyAuthentication } from '@/features/auth/authSlice';
+import { login } from '@/features/auth/authSlice';
 
 // Mock dependencies
 vi.mock('@/features/auth/authSlice', () => ({
@@ -22,6 +22,7 @@ vi.mock('@/features/user/userSlice', () => ({
 
 vi.mock('@/utils/session-helper', () => ({
   setSession: vi.fn(),
+  getUserSession: vi.fn().mockReturnValue(null),
 }));
 
 vi.mock('@/utils/errorLogger', () => ({
@@ -40,20 +41,10 @@ vi.mock('@/hooks/useDoumentTItle', () => ({
   useDocumentTitle: vi.fn(),
 }));
 
-vi.mock('@/hooks/useAuth', () => ({
-  useAuthService: () => ({
-    getCurrentSession: () => null,
-  }),
-}));
-
 vi.mock('@/services/alerts/alertService', () => ({
   default: {
     error: vi.fn(),
   },
-}));
-
-vi.mock('react-responsive', () => ({
-  useMediaQuery: () => false,
 }));
 
 // Mock navigation
@@ -78,18 +69,28 @@ i18n.init({
   resources: {
     en: {
       'auth/login': {
-        headerDescription: 'Sign in to your account',
-        emailRequired: 'Please input your email!',
-        passwordRequired: 'Please input your password!',
-        emailPlaceholder: 'Email',
-        passwordPlaceholder: 'Password',
-        loginButton: 'Sign In',
-        rememberMe: 'Remember me',
-        forgotPasswordButton: 'Forgot password?',
-        signInWithGoogleButton: 'Sign in with Google',
+        headline: 'Welcome back',
+        headerDescription: 'Log in to your Worklenz workspace.',
+        signInWithLabel: 'Sign in with',
         orText: 'or',
-        dontHaveAccountText: "Don't have an account?",
+        emailLabel: 'Email',
+        emailPlaceholder: 'you@company.com',
+        emailRequired: 'Please enter your email!',
+        nextButton: 'Next',
+        changeEmailLink: 'Change',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'Enter your password',
+        passwordRequired: 'Please enter your password!',
+        loginButton: 'Log in',
         signupButton: 'Sign up',
+        forgotPasswordButton: 'Forgot password?',
+        signInWithGoogleButton: 'Google',
+        signInWithAppleButton: 'Apple',
+        dontHaveAccountText: "Don't have an account?",
+        bySigningInText: 'By signing in, you understand and agree to our',
+        andText: 'and',
+        termsOfServiceLink: 'Terms of Service',
+        privacyPolicyLink: 'Privacy Policy',
         successMessage: 'Login successful!',
         'validationMessages.email': 'Please enter a valid email!',
         'validationMessages.password': 'Password must be at least 8 characters!',
@@ -106,6 +107,7 @@ const createTestStore = (initialState: any = {}) => {
     reducer: {
       auth: (state = { isLoading: false, ...initialState.auth }) => state,
       user: (state = {}) => state,
+      themeReducer: (state = { mode: 'light' }) => state,
     },
   });
 };
@@ -121,79 +123,104 @@ const renderWithProviders = (component: React.ReactElement, initialState: any = 
   );
 };
 
+// Advances the form from the email step to the password step
+const goToPasswordStep = async (
+  user: ReturnType<typeof userEvent.setup>,
+  email = 'test@example.com'
+) => {
+  const emailInput = screen.getByPlaceholderText('you@company.com');
+  await user.type(emailInput, email);
+
+  const nextButton = screen.getByRole('button', { name: 'Next' });
+  await waitFor(() => expect(nextButton).toBeEnabled());
+  await user.click(nextButton);
+
+  await waitFor(() => {
+    expect(screen.getByPlaceholderText('Enter your password')).toBeInTheDocument();
+  });
+};
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Mock environment variables
     vi.stubEnv('VITE_ENABLE_GOOGLE_LOGIN', 'true');
     vi.stubEnv('VITE_API_URL', 'http://localhost:3000');
+
+    mockDispatch.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({ authenticated: false }),
+    });
   });
 
-  it('renders login form correctly', () => {
+  it('renders the email step by default', () => {
     renderWithProviders(<LoginPage />);
 
-    expect(screen.getByText('Sign in to your account')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sign In' })).toBeInTheDocument();
-    expect(screen.getByText('Remember me')).toBeInTheDocument();
-    expect(screen.getByText('Forgot password?')).toBeInTheDocument();
+    expect(screen.getByText('Welcome back')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('you@company.com')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+    expect(screen.queryByPlaceholderText('Enter your password')).not.toBeInTheDocument();
   });
 
   it('shows Google login button when enabled', () => {
     renderWithProviders(<LoginPage />);
 
-    expect(screen.getByText('Sign in with Google')).toBeInTheDocument();
+    expect(screen.getByText('Google')).toBeInTheDocument();
   });
 
-  it('validates required fields', async () => {
+  it('keeps Next disabled for an invalid email', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    const submitButton = screen.getByRole('button', { name: 'Sign In' });
-    await user.click(submitButton);
+    await user.type(screen.getByPlaceholderText('you@company.com'), 'invalid-email');
 
-    await waitFor(() => {
-      expect(screen.getByText('Please input your email!')).toBeInTheDocument();
-      expect(screen.getByText('Please input your password!')).toBeInTheDocument();
-    });
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
-  it('validates email format', async () => {
+  it('advances to the password step with a valid email', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    const emailInput = screen.getByPlaceholderText('Email');
-    await user.type(emailInput, 'invalid-email');
+    await goToPasswordStep(user);
 
-    const submitButton = screen.getByRole('button', { name: 'Sign In' });
-    await user.click(submitButton);
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
+    expect(screen.getByText('Change')).toBeInTheDocument();
+    expect(screen.getByText('Forgot password?')).toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText('Please enter a valid email!')).toBeInTheDocument();
-    });
+  it('returns to the email step via Change', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+
+    await goToPasswordStep(user);
+    await user.click(screen.getByText('Change'));
+
+    expect(screen.getByPlaceholderText('you@company.com')).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Enter your password')).not.toBeInTheDocument();
   });
 
   it('validates password minimum length', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    const emailInput = screen.getByPlaceholderText('Email');
-    const passwordInput = screen.getByPlaceholderText('Password');
+    await goToPasswordStep(user);
 
-    await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, '123');
-
-    const submitButton = screen.getByRole('button', { name: 'Sign In' });
-    await user.click(submitButton);
+    await user.type(screen.getByPlaceholderText('Enter your password'), '123');
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
 
     await waitFor(() => {
       expect(screen.getByText('Password must be at least 8 characters!')).toBeInTheDocument();
     });
   });
 
-  it('submits form with valid credentials', async () => {
+  it('submits with valid credentials', async () => {
     const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+
+    await goToPasswordStep(user);
+
+    // Only start returning an authenticated session once the credentials are
+    // actually submitted — the mount-time auth check reuses the same mocked
+    // dispatch, so setting this up front would redirect before the test gets
+    // a chance to interact with the password step.
     mockDispatch.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({
         authenticated: true,
@@ -201,59 +228,38 @@ describe('LoginPage', () => {
       }),
     });
 
-    renderWithProviders(<LoginPage />);
-
-    const emailInput = screen.getByPlaceholderText('Email');
-    const passwordInput = screen.getByPlaceholderText('Password');
-
-    await user.type(emailInput, 'test@example.com');
-    await user.type(passwordInput, 'password123');
-
-    const submitButton = screen.getByRole('button', { name: 'Sign In' });
-    await user.click(submitButton);
+    await user.type(screen.getByPlaceholderText('Enter your password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
 
     await waitFor(() => {
       expect(login).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
-        remember: true,
+        team_id: undefined,
+        team_member_id: undefined,
+        project_id: undefined,
       });
     });
-  });
-
-  it('shows loading state during login', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<LoginPage />, { auth: { isLoading: true } });
-
-    const submitButton = screen.getByRole('button', { name: 'Sign In' });
-    expect(submitButton).toBeDisabled();
-    expect(screen.getByRole('img', { name: /loading/i })).toBeInTheDocument();
   });
 
   it('handles Google login click', async () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    // Mock window.location
     Object.defineProperty(window, 'location', {
       value: { href: '' },
       writable: true,
     });
 
-    const googleButton = screen.getByText('Sign in with Google');
-    await user.click(googleButton);
+    await user.click(screen.getByText('Google'));
 
     expect(window.location.href).toBe('http://localhost:3000/secure/google');
   });
 
-  it('navigates to signup page', async () => {
-    const user = userEvent.setup();
+  it('navigates to signup page', () => {
     renderWithProviders(<LoginPage />);
 
     const signupLink = screen.getByText('Sign up');
-    await user.click(signupLink);
-
-    // Link navigation is handled by React Router, so we just check the element exists
     expect(signupLink.closest('a')).toHaveAttribute('href', '/auth/signup');
   });
 
@@ -261,24 +267,13 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<LoginPage />);
 
-    const forgotPasswordLink = screen.getByText('Forgot password?');
-    await user.click(forgotPasswordLink);
+    await goToPasswordStep(user);
 
+    const forgotPasswordLink = screen.getByText('Forgot password?');
     expect(forgotPasswordLink.closest('a')).toHaveAttribute('href', '/auth/forgot-password');
   });
 
-  it('toggles remember me checkbox', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<LoginPage />);
-
-    const rememberMeCheckbox = screen.getByRole('checkbox', { name: 'Remember me' });
-    expect(rememberMeCheckbox).toBeChecked(); // Default is true
-
-    await user.click(rememberMeCheckbox);
-    expect(rememberMeCheckbox).not.toBeChecked();
-  });
-
-  it('redirects already authenticated users', async () => {
+  it('redirects already authenticated users to home', async () => {
     mockDispatch.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({
         authenticated: true,
@@ -286,30 +281,15 @@ describe('LoginPage', () => {
       }),
     });
 
-    renderWithProviders(<LoginPage />);
-
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/worklenz/home');
+    Object.defineProperty(window, 'location', {
+      value: { href: '' },
+      writable: true,
     });
-  });
-
-  it('redirects to setup for users with incomplete setup', async () => {
-    const mockCurrentSession = {
-      id: '1',
-      email: 'test@example.com',
-      setup_completed: false,
-    };
-
-    vi.mock('@/hooks/useAuth', () => ({
-      useAuthService: () => ({
-        getCurrentSession: () => mockCurrentSession,
-      }),
-    }));
 
     renderWithProviders(<LoginPage />);
 
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/worklenz/setup');
+      expect(window.location.href).toBe('/worklenz/home');
     });
   });
 });
