@@ -76,7 +76,7 @@ auto_generate_secrets() {
     local session_secret=$(generate_secret)
     local cookie_secret=$(generate_secret)
     local jwt_secret=$(generate_secret)
-    local minio_password=$(generate_secret)
+    local seaweedfs_secret=$(generate_secret)
     local redis_password=$(generate_secret)
 
     # Update .env file with generated secrets
@@ -84,7 +84,7 @@ auto_generate_secrets() {
     sed -i.bak "s|^SESSION_SECRET=.*|SESSION_SECRET=${session_secret}|" "$env_file"
     sed -i.bak "s|^COOKIE_SECRET=.*|COOKIE_SECRET=${cookie_secret}|" "$env_file"
     sed -i.bak "s|^JWT_SECRET=.*|JWT_SECRET=${jwt_secret}|" "$env_file"
-    sed -i.bak "s|^AWS_SECRET_ACCESS_KEY=.*|AWS_SECRET_ACCESS_KEY=${minio_password}|" "$env_file"
+    sed -i.bak "s|^S3_SECRET_ACCESS_KEY=.*|S3_SECRET_ACCESS_KEY=${seaweedfs_secret}|" "$env_file"
 
     # Add Redis password if not present
     if ! grep -q "^REDIS_PASSWORD=" "$env_file"; then
@@ -93,8 +93,8 @@ auto_generate_secrets() {
         sed -i.bak "s|^REDIS_PASSWORD=.*|REDIS_PASSWORD=${redis_password}|" "$env_file"
     fi
 
-    # Update MinIO root password to match
-    sed -i.bak "s|^AWS_ACCESS_KEY_ID=.*|AWS_ACCESS_KEY_ID=minioadmin|" "$env_file"
+    # Set the SeaweedFS S3 access key
+    sed -i.bak "s|^S3_ACCESS_KEY_ID=.*|S3_ACCESS_KEY_ID=worklenz|" "$env_file"
 
     rm -f "$env_file.bak"
 
@@ -105,7 +105,7 @@ auto_generate_secrets() {
     echo "  • Session Secret: ${session_secret:0:16}..."
     echo "  • Cookie Secret: ${cookie_secret:0:16}..."
     echo "  • JWT Secret: ${jwt_secret:0:16}..."
-    echo "  • MinIO Password: ${minio_password:0:16}..."
+    echo "  • SeaweedFS Secret: ${seaweedfs_secret:0:16}..."
     echo "  • Redis Password: ${redis_password:0:16}..."
     echo ""
     print_warning "These secrets are saved in .env file - keep it secure!"

@@ -124,22 +124,22 @@ IF %ERRORLEVEL% EQU 0 (
     echo Backend service failed to start >> worklenz_startup.log
 )
 
-REM Check MinIO
-findstr /C:"minio" running_services.txt > nul
+REM Check SeaweedFS
+findstr /C:"seaweedfs" running_services.txt > nul
 IF %ERRORLEVEL% EQU 0 (
-    echo [92m^✓[0m MinIO is running
-    echo    MinIO Console URL: http://localhost:9001 (login: minioadmin/minioadmin)
-    echo MinIO is running >> worklenz_startup.log
+    echo [92m^✓[0m SeaweedFS is running
+    echo    SeaweedFS S3 API: http://localhost:8333
+    echo SeaweedFS is running >> worklenz_startup.log
 ) ELSE (
-    echo [91m^✗[0m MinIO service failed to start
-    echo MinIO service failed to start >> worklenz_startup.log
+    echo [91m^✗[0m SeaweedFS service failed to start
+    echo SeaweedFS service failed to start >> worklenz_startup.log
 
-    REM Check MinIO logs
-    echo Checking MinIO logs for errors:
-    docker-compose logs minio --tail=20 > minio_logs.txt
-    type minio_logs.txt
-    type minio_logs.txt >> worklenz_startup.log
-    del minio_logs.txt > nul 2>&1
+    REM Check SeaweedFS logs
+    echo Checking SeaweedFS logs for errors:
+    docker-compose logs seaweedfs --tail=20 > seaweedfs_logs.txt
+    type seaweedfs_logs.txt
+    type seaweedfs_logs.txt >> worklenz_startup.log
+    del seaweedfs_logs.txt > nul 2>&1
 )
 
 REM Check Database
@@ -156,7 +156,7 @@ del running_services.txt > nul 2>&1
 
 REM Check if all services are running
 set allRunning=1
-docker-compose ps --services | findstr /V /C:"frontend" /C:"backend" /C:"minio" /C:"db" > remaining_services.txt
+docker-compose ps --services | findstr /V /C:"frontend" /C:"backend" /C:"seaweedfs" /C:"db" > remaining_services.txt
 FOR /F "tokens=*" %%s IN (remaining_services.txt) DO (
     findstr /C:"%%s" running_services.txt > nul || set allRunning=0
 )
@@ -182,4 +182,4 @@ echo.
 echo For any errors, check worklenz_startup.log file
 echo.
 echo Press any key to exit...
-pause > nul 
+pause > nul

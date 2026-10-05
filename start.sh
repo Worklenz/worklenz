@@ -101,7 +101,7 @@ else
 fi
 
 # Check if any of the ports are already in use
-ports=(3000 5000 9000 9001 5432)
+ports=(3000 5000 8333 5432)
 for port in "${ports[@]}"; do
     if lsof -i:"$port" > /dev/null 2>&1; then
         echo -e "${YELLOW}⚠ Warning: Port $port is already in use. This may cause conflicts.${NC}"
@@ -121,8 +121,8 @@ echo "This may take a minute or two depending on your system..."
 check_service "Database" "worklenz_db" ""
 DB_STATUS=$?
 
-check_service "MinIO" "worklenz_minio" "http://localhost:9000/minio/health/live"
-MINIO_STATUS=$?
+check_service "SeaweedFS" "worklenz_seaweedfs" ""
+SEAWEEDFS_STATUS=$?
 
 check_service "Backend" "worklenz_backend" "http://localhost:3000/public/health"
 BACKEND_STATUS=$?
@@ -134,10 +134,10 @@ FRONTEND_STATUS=$?
 echo -e "\n${BLUE}Service URLs:${NC}"
 [ $FRONTEND_STATUS -eq 0 ] && echo "  • Frontend: http://localhost:5000 (or https://localhost:5000 if SSL is enabled)"
 [ $BACKEND_STATUS -eq 0 ] && echo "  • Backend API: http://localhost:3000 (or https://localhost:3000 if SSL is enabled)"
-[ $MINIO_STATUS -eq 0 ] && echo "  • MinIO Console: http://localhost:9001 (login: minioadmin/minioadmin)"
+[ $SEAWEEDFS_STATUS -eq 0 ] && echo "  • SeaweedFS S3 API: http://localhost:8333"
 
 # Check if all services are up
-if [ $DB_STATUS -eq 0 ] && [ $MINIO_STATUS -eq 0 ] && [ $BACKEND_STATUS -eq 0 ] && [ $FRONTEND_STATUS -eq 0 ]; then
+if [ $DB_STATUS -eq 0 ] && [ $SEAWEEDFS_STATUS -eq 0 ] && [ $BACKEND_STATUS -eq 0 ] && [ $FRONTEND_STATUS -eq 0 ]; then
     echo -e "\n${GREEN}✅ All Worklenz services are running successfully!${NC}"
 else
     echo -e "\n${YELLOW}⚠ Some services may not be running properly. Check the logs for more details:${NC}"
@@ -148,4 +148,4 @@ echo -e "\n${BLUE}Useful commands:${NC}"
 echo "  • View logs: $DOCKER_COMPOSE_CMD logs -f"
 echo "  • Stop services: ./stop.sh"
 echo "  • Update environment variables: ./update-docker-env.sh"
-echo -e "\n${YELLOW}Note:${NC} To enable SSL, set ENABLE_SSL=true in your .env file and run ./update-docker-env.sh" 
+echo -e "\n${YELLOW}Note:${NC} To enable SSL, set ENABLE_SSL=true in your .env file and run ./update-docker-env.sh"
