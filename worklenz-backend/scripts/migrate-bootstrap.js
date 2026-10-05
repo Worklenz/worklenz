@@ -26,6 +26,17 @@
  * allowing a newly introduced migration to run normally.
  */
 
+const args = process.argv.slice(2);
+const beforeMigration = args[0] === '--before' ? args[1] : undefined;
+
+if (
+  (args.length !== 0 && args.length !== 2) ||
+  (args.length === 2 && (!beforeMigration || beforeMigration.startsWith('-')))
+) {
+  console.error('Usage: node scripts/migrate-bootstrap.js [--before <migration-name>]');
+  process.exit(1);
+}
+
 require('dotenv').config();
 
 const path = require('path');
@@ -33,12 +44,6 @@ const fs   = require('fs');
 const { Pool } = require('pg');
 
 const MIGRATIONS_DIR = path.join(__dirname, '..', 'database', 'pg-migrations');
-const beforeMigration = process.argv[2] === '--before' ? process.argv[3] : undefined;
-
-if (process.argv.length > 2 && !beforeMigration) {
-  console.error('Usage: node scripts/migrate-bootstrap.js [--before <migration-name>]');
-  process.exit(1);
-}
 
 const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT = '5432', DB_NAME } = process.env;
 

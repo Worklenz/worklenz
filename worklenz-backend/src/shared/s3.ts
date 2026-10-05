@@ -6,44 +6,12 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
   PutObjectCommandInput,
-  S3Client
 } from "@aws-sdk/client-s3";
 import {isProduction, isTestServer, log_error} from "./utils";
-import {BUCKET, REGION, S3_ACCESS_KEY_ID, S3_ENDPOINT, S3_SECRET_ACCESS_KEY, S3_URL} from "./constants";
+import {BUCKET, S3_URL} from "./constants";
 import {getSignedUrl} from "@aws-sdk/s3-request-presigner";
 import mime from "mime";
-
-const getPublicEndpointFromUrl = () => {
-  try {
-    const url = new URL(S3_URL);
-    return `${url.protocol}//${url.host}`;
-  } catch (error) {
-    console.warn("Error parsing S3_PUBLIC_URL:", error);
-    return undefined;
-  }
-};
-
-const s3Client = new S3Client({
-  region: REGION,
-  credentials: {
-    accessKeyId: S3_ACCESS_KEY_ID || "",
-    secretAccessKey: S3_SECRET_ACCESS_KEY || "",
-  },
-  endpoint: S3_ENDPOINT,
-  forcePathStyle: Boolean(S3_ENDPOINT),
-});
-
-const presignS3Client = S3_ENDPOINT
-  ? new S3Client({
-      region: REGION,
-      credentials: {
-        accessKeyId: S3_ACCESS_KEY_ID || "",
-        secretAccessKey: S3_SECRET_ACCESS_KEY || "",
-      },
-      endpoint: getPublicEndpointFromUrl(),
-      forcePathStyle: true,
-    })
-  : s3Client;
+import {presignS3Client, s3Client} from "./s3-client";
 
 export function getRootDir() {
   if (isTestServer()) return "test-server";

@@ -22,6 +22,8 @@ services:
         condition: service_healthy
       seaweedfs:
         condition: service_healthy
+      configure-seaweedfs:
+        condition: service_completed_successfully
     restart: unless-stopped
     env_file:
       - ./.env
@@ -58,7 +60,7 @@ services:
     restart: unless-stopped
     environment:
       AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-worklenz}}
-      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-change-this-seaweedfs-secret}}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY}}
       S3_BUCKET: ${S3_BUCKET:-${AWS_BUCKET:-worklenz-bucket}}
     volumes:
       - worklenz_seaweedfs_data:/data
@@ -81,15 +83,15 @@ services:
     restart: on-failure
     environment:
       AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-${AWS_ACCESS_KEY_ID:-worklenz}}
-      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:-change-this-seaweedfs-secret}}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-${AWS_SECRET_ACCESS_KEY:?Set S3_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY}}
       AWS_DEFAULT_REGION: ${S3_REGION:-${AWS_REGION:-us-east-1}}
       S3_BUCKET: ${S3_BUCKET:-${AWS_BUCKET:-worklenz-bucket}}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        aws --endpoint-url http://seaweedfs:8333 s3api put-bucket-policy \
-          --bucket "$${S3_BUCKET}" \
-          --policy "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::$${S3_BUCKET}/*\"}]}"
+        if ! aws --endpoint-url http://seaweedfs:8333 s3api create-bucket --bucket "$${S3_BUCKET}"; then
+          aws --endpoint-url http://seaweedfs:8333 s3api head-bucket --bucket "$${S3_BUCKET}"
+        fi
     networks:
       - worklenz
 

@@ -65,6 +65,17 @@ generate_secret() {
     openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | xxd -p -c 64
 }
 
+update_env_value() {
+    local key="$1"
+    local value="$2"
+
+    if grep -q "^${key}=" "$env_file"; then
+        sed -i.bak "s|^${key}=.*|${key}=${value}|" "$env_file"
+    else
+        printf '%s=%s\n' "$key" "$value" >> "$env_file"
+    fi
+}
+
 # Function to auto-generate all secrets in .env file
 auto_generate_secrets() {
     local env_file="$1"
@@ -84,7 +95,7 @@ auto_generate_secrets() {
     sed -i.bak "s|^SESSION_SECRET=.*|SESSION_SECRET=${session_secret}|" "$env_file"
     sed -i.bak "s|^COOKIE_SECRET=.*|COOKIE_SECRET=${cookie_secret}|" "$env_file"
     sed -i.bak "s|^JWT_SECRET=.*|JWT_SECRET=${jwt_secret}|" "$env_file"
-    sed -i.bak "s|^S3_SECRET_ACCESS_KEY=.*|S3_SECRET_ACCESS_KEY=${seaweedfs_secret}|" "$env_file"
+    update_env_value "S3_SECRET_ACCESS_KEY" "$seaweedfs_secret"
 
     # Add Redis password if not present
     if ! grep -q "^REDIS_PASSWORD=" "$env_file"; then
@@ -94,7 +105,7 @@ auto_generate_secrets() {
     fi
 
     # Set the SeaweedFS S3 access key
-    sed -i.bak "s|^S3_ACCESS_KEY_ID=.*|S3_ACCESS_KEY_ID=worklenz|" "$env_file"
+    update_env_value "S3_ACCESS_KEY_ID" "worklenz"
 
     rm -f "$env_file.bak"
 

@@ -172,7 +172,7 @@ export const TASK_DUE_NO_DUE_COLOR = "#a9a9a9";
 export const DEFAULT_PAGE_SIZE = 20;
 
 // S3 Credentials
-export const REGION = process.env.S3_REGION || process.env.AWS_REGION || "us-east-1";
+export const REGION = process.env.S3_REGION || process.env.AWS_REGION;
 export const BUCKET = process.env.S3_BUCKET || process.env.AWS_BUCKET || "your-bucket-name";
 export const S3_ENDPOINT = process.env.S3_ENDPOINT;
 export const S3_URL = process.env.S3_PUBLIC_URL || process.env.S3_URL || "https://your-s3-url";

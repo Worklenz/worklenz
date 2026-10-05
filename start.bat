@@ -14,6 +14,13 @@ echo.
 echo Starting Worklenz Docker Environment...
 echo.
 
+set "SEAWEEDFS_S3_PORT=8333"
+IF EXIST .env (
+    FOR /F "tokens=1,* delims==" %%A IN (.env) DO (
+        IF /I "%%A"=="SEAWEEDFS_S3_PORT" set "SEAWEEDFS_S3_PORT=%%B"
+    )
+)
+
 REM Check for Docker installation
 echo Checking for Docker installation...
 where docker >nul 2>>worklenz_startup.log
@@ -128,7 +135,7 @@ REM Check SeaweedFS
 findstr /C:"seaweedfs" running_services.txt > nul
 IF %ERRORLEVEL% EQU 0 (
     echo [92m^✓[0m SeaweedFS is running
-    echo    SeaweedFS S3 API: http://localhost:8333
+    echo    SeaweedFS S3 API: http://localhost:%SEAWEEDFS_S3_PORT%
     echo SeaweedFS is running >> worklenz_startup.log
 ) ELSE (
     echo [91m^✗[0m SeaweedFS service failed to start

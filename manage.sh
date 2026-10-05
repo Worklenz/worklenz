@@ -115,6 +115,19 @@ generate_secret() {
     fi
 }
 
+update_env_value() {
+    local key="$1"
+    local value="$2"
+    local escaped_value
+    escaped_value=$(printf '%s' "$value" | sed 's/[\\&|]/\\&/g')
+
+    if grep -q "^${key}=" "$ENV_FILE"; then
+        sed -i.bak "s|^${key}=.*|${key}=${escaped_value}|" "$ENV_FILE"
+    else
+        printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+    fi
+}
+
 # ============================================================================
 # SSL Certificate Functions
 # ============================================================================
@@ -618,7 +631,7 @@ auto_configure_env() {
     if is_placeholder "$S3_SECRET_ACCESS_KEY"; then
         print_info "Generating S3_SECRET_ACCESS_KEY (SeaweedFS secret)..."
         local seaweedfs_secret=$(generate_secret | cut -c1-32)
-        sed -i.bak "s/^S3_SECRET_ACCESS_KEY=.*/S3_SECRET_ACCESS_KEY=$seaweedfs_secret/" "$ENV_FILE"
+        update_env_value "S3_SECRET_ACCESS_KEY" "$seaweedfs_secret"
         needs_update=1
     fi
 
@@ -722,7 +735,7 @@ configure_env() {
     sed -i.bak "s/^COOKIE_SECRET=.*/COOKIE_SECRET=$cookie_secret/" "$ENV_FILE"
     sed -i.bak "s/^JWT_SECRET=.*/JWT_SECRET=$jwt_secret/" "$ENV_FILE"
     sed -i.bak "s/^DB_PASSWORD=.*/DB_PASSWORD=$db_password/" "$ENV_FILE"
-    sed -i.bak "s/^S3_SECRET_ACCESS_KEY=.*/S3_SECRET_ACCESS_KEY=$seaweedfs_secret/" "$ENV_FILE"
+    update_env_value "S3_SECRET_ACCESS_KEY" "$seaweedfs_secret"
     sed -i.bak "s/^REDIS_PASSWORD=.*/REDIS_PASSWORD=$redis_password/" "$ENV_FILE"
 
     # Update URLs based on domain

@@ -9,7 +9,6 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
   PutObjectCommandInput,
-  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
@@ -29,64 +28,15 @@ import {
   AZURE_STORAGE_CONTAINER,
   AZURE_STORAGE_URL,
   BUCKET,
-  REGION,
-  S3_ACCESS_KEY_ID,
   S3_ENDPOINT,
-  S3_SECRET_ACCESS_KEY,
   S3_URL,
   STORAGE_PROVIDER,
 } from "./constants";
-
-// S3_ENDPOINT is the private API endpoint used by the backend. S3_PUBLIC_URL
-// is exposed through the S3_URL constant and may use a different hostname.
-const getEndpointFromUrl = () => {
-  try {
-    if (!S3_ENDPOINT) return undefined;
-
-    const url = new URL(S3_ENDPOINT);
-    return `${url.protocol}//${url.host}`;
-  } catch (error) {
-    console.warn("Error parsing S3_ENDPOINT:", error);
-    return undefined;
-  }
-};
-
-const getPublicEndpointFromUrl = () => {
-  try {
-    const url = new URL(S3_URL);
-    return `${url.protocol}//${url.host}`;
-  } catch (error) {
-    console.warn("Error parsing S3_PUBLIC_URL:", error);
-    return undefined;
-  }
-};
-
-// Initialize the S3 client with support for self-hosted S3-compatible storage.
-const s3Client = new S3Client({
-  region: REGION,
-  credentials: {
-    accessKeyId: S3_ACCESS_KEY_ID || "",
-    secretAccessKey: S3_SECRET_ACCESS_KEY || "",
-  },
-  endpoint: getEndpointFromUrl(),
-  forcePathStyle: Boolean(S3_ENDPOINT),
-});
-
-const presignS3Client = S3_ENDPOINT
-  ? new S3Client({
-      region: REGION,
-      credentials: {
-        accessKeyId: S3_ACCESS_KEY_ID || "",
-        secretAccessKey: S3_SECRET_ACCESS_KEY || "",
-      },
-      endpoint: getPublicEndpointFromUrl(),
-      forcePathStyle: true,
-    })
-  : s3Client;
+import {presignS3Client, s3Client} from "./s3-client";
 
 // Log the storage configuration
 console.log(`Storage provider initialized: ${STORAGE_PROVIDER}`);
-console.log(`Using endpoint: ${getEndpointFromUrl() || "AWS default"}`);
+console.log(`Using endpoint: ${S3_ENDPOINT || "AWS default"}`);
 console.log(`Bucket: ${BUCKET}`);
 
 // Initialize Azure Blob Storage Client
