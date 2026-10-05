@@ -12,7 +12,7 @@ exports.up = async (pgm) => {
 
 ALTER TABLE team_members
 ADD COLUMN IF NOT EXISTS reports_to_member_id UUID,
-ADD CONSTRAINT IF NOT EXISTS fk_reports_to_member
+ADD CONSTRAINT fk_reports_to_member
     FOREIGN KEY (reports_to_member_id)
     REFERENCES team_members(id)
     ON DELETE SET NULL;

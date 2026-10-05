@@ -7,5 +7,5 @@
 -- UNIQUE constraint on (user_id, index), which doesn't help this query.
 -- Runs on every Home > To-do page load, plus a 60-second poll per open tab.
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_personal_todo_list_user_dates
+CREATE INDEX IF NOT EXISTS idx_personal_todo_list_user_dates
 ON personal_todo_list(user_id, created_at, updated_at);

@@ -122,6 +122,137 @@ import seatLimitReducer from '@/features/seat-limit/seatLimitSlice';
 // Org Configuration
 import orgConfigReducer from '@/features/org-config/org-config.slice';
 
+import { addonReducers, addonMiddlewares } from 'virtual:addons-registry';
+
+const coreReducers = {
+  // Auth & User
+  auth: authReducer,
+  userReducer: userReducer,
+
+  // Account Setup
+  accountSetupReducer: accountSetupReducer,
+
+  // Home Page
+  homePageReducer: homePageReducer,
+  [homePageApiService.reducerPath]: homePageApiService.reducer,
+  [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
+  [projectsApi.reducerPath]: projectsApi.reducer,
+  [clientPortalApi.reducerPath]: clientPortalApi.reducer,
+  [roadmapApi.reducerPath]: roadmapApi.reducer,
+  [projectWorkloadApi.reducerPath]: projectWorkloadApi.reducer,
+  [scheduleApi.reducerPath]: scheduleApi.reducer,
+  userActivityReducer: userActivityReducer,
+  [userActivityApiService.reducerPath]: userActivityApiService.reducer,
+
+  // Core UI
+  themeReducer: themeReducer,
+  localesReducer: localesReducer,
+  alertsReducer: alertsReducer,
+  navPreferencesReducer: navPreferencesReducer,
+
+  // Projects
+  projectReducer: projectReducer,
+  projectsReducer: projectsReducer,
+  projectMemberReducer: projectMemberReducer,
+  teamMembersReducer: teamMembersReducer,
+  projectViewTaskListColumnsReducer: projectViewTaskListColumnsReducer,
+  phaseReducer: phaseReducer,
+  updatesReducer: updatesReducer,
+  statusReducer: statusReducer,
+  deleteStatusReducer: deleteStatusReducer,
+  bulkActionReducer: bulkActionReducer,
+  projectInsightsReducer: projectInsightsReducer,
+  taskListCustomColumnsReducer: taskListCustomColumnsReducer,
+  boardReducer: boardReducer,
+  projectDrawerReducer: projectDrawerReducer,
+  projectSettingsModalReducer: projectSettingsModalReducer,
+  projectListFieldsReducer: projectListFieldsReducer,
+
+  projectViewReducer: projectViewReducer,
+  projectWorkload: projectWorkloadReducer,
+
+  // Project Lookups
+  projectCategoriesReducer: projectCategoriesReducer,
+  projectStatusesReducer: projectStatusesReducer,
+  projectHealthReducer: projectHealthReducer,
+
+  // Tasks
+  taskReducer: taskReducer,
+  createCardReducer: createCardReducer,
+  priorityReducer: priorityReducer,
+  projectPriorityReducer: projectPriorityReducer,
+  taskLabelsReducer: taskLabelsReducer,
+  taskStatusReducer: taskStatusReducer,
+  importWizardReducer: importWizardReducer,
+  taskDrawerReducer: taskDrawerReducer,
+  enhancedKanbanReducer: enhancedKanbanReducer,
+
+  // Settings & Management
+  memberReducer: memberReducer,
+  clientReducer: clientReducer,
+  jobReducer: jobReducer,
+  teamReducer: teamReducer,
+  billingReducer: billingReducer,
+  categoriesReducer: categoriesReducer,
+  labelReducer: labelReducer,
+
+  // Admin Center
+  adminCenterReducer: adminCenterReducer,
+
+  // Features
+  dateReducer: dateReducer,
+  notificationReducer: notificationReducer,
+  button: buttonReducer,
+  scheduleReducer: scheduleReducer,
+  schedule: scheduleRTKReducer,
+
+  // Reports
+  reportingReducer: reportingReducer,
+  timeLogReducer: timeLogReducer,
+  taskTemplateReducer: taskTemplateReducer,
+  projectReportsTableColumnsReducer: projectReportsTableColumnsReducer,
+  projectReportsReducer: projectReportsReducer,
+  membersReportsReducer: membersReportsReducer,
+  allTasksReportsReducer: allTasksReportsReducer,
+  roadmapReducer: roadmapReducer,
+  groupByFilterDropdownReducer: groupByFilterDropdownReducer,
+  timeReportsOverviewReducer: timeReportsOverviewReducer,
+
+  // Task Management System
+  taskManagement: taskManagementReducer,
+  grouping: groupingReducer,
+  taskManagementSelection: selectionReducer,
+  taskManagementFields: taskManagementFieldsReducer,
+
+  //clients portal
+  clientsPortalReducer: clientsPortalReducer,
+
+  //client view
+  clientViewReducer: clientViewReducer,
+  // Finance
+  projectFinanceRateCardReducer: projectFinanceRateCardReducer,
+  projectFinancesReducer: projectFinancesReducer,
+  financeReducer: financeReducer,
+  financeOverviewReducer: financeOverviewReducer,
+
+  // Seat Limit
+  seatLimitReducer: seatLimitReducer,
+
+  // Org Configuration
+  orgConfigReducer: orgConfigReducer,
+};
+
+const safeAddonReducers: Record<string, (typeof addonReducers)[string]> = {};
+if (addonReducers && typeof addonReducers === 'object') {
+  for (const [key, reducer] of Object.entries(addonReducers)) {
+    if (Object.prototype.hasOwnProperty.call(coreReducers, key)) {
+      console.warn(`[Addon] Addon reducer key "${key}" conflicts with core reducer. Ignoring.`);
+    } else {
+      safeAddonReducers[key] = reducer;
+    }
+  }
+}
+
 export const store = configureStore({
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -134,124 +265,12 @@ export const store = configureStore({
       userActivityApiService.middleware,
       roadmapApi.middleware,
       projectWorkloadApi.middleware,
-      scheduleApi.middleware
+      scheduleApi.middleware,
+      ...addonMiddlewares
     ),
   reducer: {
-    // Auth & User
-    auth: authReducer,
-    userReducer: userReducer,
-
-    // Account Setup
-    accountSetupReducer: accountSetupReducer,
-
-    // Home Page
-    homePageReducer: homePageReducer,
-    [homePageApiService.reducerPath]: homePageApiService.reducer,
-    [personalOverviewApi.reducerPath]: personalOverviewApi.reducer,
-    [projectsApi.reducerPath]: projectsApi.reducer,
-    [clientPortalApi.reducerPath]: clientPortalApi.reducer,
-    [roadmapApi.reducerPath]: roadmapApi.reducer,
-    [projectWorkloadApi.reducerPath]: projectWorkloadApi.reducer,
-    [scheduleApi.reducerPath]: scheduleApi.reducer,
-    userActivityReducer: userActivityReducer,
-    [userActivityApiService.reducerPath]: userActivityApiService.reducer,
-
-    // Core UI
-    themeReducer: themeReducer,
-    localesReducer: localesReducer,
-    alertsReducer: alertsReducer,
-    navPreferencesReducer: navPreferencesReducer,
-
-    // Projects
-    projectReducer: projectReducer,
-    projectsReducer: projectsReducer,
-    projectMemberReducer: projectMemberReducer,
-    teamMembersReducer: teamMembersReducer,
-    projectViewTaskListColumnsReducer: projectViewTaskListColumnsReducer,
-    phaseReducer: phaseReducer,
-    updatesReducer: updatesReducer,
-    statusReducer: statusReducer,
-    deleteStatusReducer: deleteStatusReducer,
-    bulkActionReducer: bulkActionReducer,
-    projectInsightsReducer: projectInsightsReducer,
-    taskListCustomColumnsReducer: taskListCustomColumnsReducer,
-    boardReducer: boardReducer,
-    projectDrawerReducer: projectDrawerReducer,
-    projectSettingsModalReducer: projectSettingsModalReducer,
-    projectListFieldsReducer: projectListFieldsReducer,
-
-    projectViewReducer: projectViewReducer,
-    projectWorkload: projectWorkloadReducer,
-
-    // Project Lookups
-    projectCategoriesReducer: projectCategoriesReducer,
-    projectStatusesReducer: projectStatusesReducer,
-    projectHealthReducer: projectHealthReducer,
-
-    // Tasks
-    taskReducer: taskReducer,
-    createCardReducer: createCardReducer,
-    priorityReducer: priorityReducer,
-    projectPriorityReducer: projectPriorityReducer,
-    taskLabelsReducer: taskLabelsReducer,
-    taskStatusReducer: taskStatusReducer,
-    importWizardReducer: importWizardReducer,
-    taskDrawerReducer: taskDrawerReducer,
-    enhancedKanbanReducer: enhancedKanbanReducer,
-
-    // Settings & Management
-    memberReducer: memberReducer,
-    clientReducer: clientReducer,
-    jobReducer: jobReducer,
-    teamReducer: teamReducer,
-    billingReducer: billingReducer,
-    categoriesReducer: categoriesReducer,
-    labelReducer: labelReducer,
-
-    // Admin Center
-    adminCenterReducer: adminCenterReducer,
-
-    // Features
-    dateReducer: dateReducer,
-    notificationReducer: notificationReducer,
-    button: buttonReducer,
-    scheduleReducer: scheduleReducer,
-    schedule: scheduleRTKReducer,
-
-    // Reports
-    reportingReducer: reportingReducer,
-    timeLogReducer: timeLogReducer,
-    taskTemplateReducer: taskTemplateReducer,
-    projectReportsTableColumnsReducer: projectReportsTableColumnsReducer,
-    projectReportsReducer: projectReportsReducer,
-    membersReportsReducer: membersReportsReducer,
-    allTasksReportsReducer: allTasksReportsReducer,
-    roadmapReducer: roadmapReducer,
-    groupByFilterDropdownReducer: groupByFilterDropdownReducer,
-    timeReportsOverviewReducer: timeReportsOverviewReducer,
-
-    // Task Management System
-    taskManagement: taskManagementReducer,
-    grouping: groupingReducer,
-    taskManagementSelection: selectionReducer,
-    taskManagementFields: taskManagementFieldsReducer,
-
-    //clients portal
-    clientsPortalReducer: clientsPortalReducer,
-
-    //client view
-    clientViewReducer: clientViewReducer,
-    // Finance
-    projectFinanceRateCardReducer: projectFinanceRateCardReducer,
-    projectFinancesReducer: projectFinancesReducer,
-    financeReducer: financeReducer,
-    financeOverviewReducer: financeOverviewReducer,
-
-    // Seat Limit
-    seatLimitReducer: seatLimitReducer,
-
-    // Org Configuration
-    orgConfigReducer: orgConfigReducer,
+    ...coreReducers,
+    ...safeAddonReducers,
   },
 });
 

@@ -58,8 +58,8 @@ export default function verifyGuestViewAccess(
 
       // If user is a guest, check if view type is allowed
       if (isGuest) {
-        // Allowed views for guests: kanban and list (v2/v3)
-        const allowedViews = ['kanban', 'list'];
+        // Guests may view planning data; mutation routes use non-guest access separately.
+        const allowedViews = ['kanban', 'list', 'roadmap', 'workload'];
 
         if (!allowedViews.includes(viewType)) {
           return res.status(403).send(

@@ -14,6 +14,12 @@ import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/r
 
 const authRouter = express.Router();
 
+const isGoogleOAuthConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_ID !== "disabled" &&
+    process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CLIENT_SECRET !== "disabled" &&
+    process.env.GOOGLE_CALLBACK_URL
+);
+
 // Local authentication
 const options = (key: string): passport.AuthenticateOptions => ({
   failureRedirect: `/secure/verify?strategy=${key}`,
@@ -33,6 +39,10 @@ authRouter.post("/verify-captcha", safeControllerFunction(AuthController.verifyC
 
 // Google authentication
 authRouter.get("/google", (req, res, next) => {
+  if (!isGoogleOAuthConfigured) {
+    return res.status(503).json({ message: "Google sign-in is not configured" });
+  }
+
   return passport.authenticate("google", {
     scope: ["email", "profile"],
     state: JSON.stringify({
@@ -45,6 +55,10 @@ authRouter.get("/google", (req, res, next) => {
 });
 
 authRouter.get("/google/verify", (req, res, next) => {
+  if (!isGoogleOAuthConfigured) {
+    return res.status(503).json({ message: "Google sign-in is not configured" });
+  }
+
   let sessionError = "";
   if ((req.session as any).error) {
     sessionError = `?error=${encodeURIComponent((req.session as any).error as string)}`;

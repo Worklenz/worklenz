@@ -7,6 +7,12 @@ exports.shorthands = undefined;
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async (pgm) => {
   pgm.sql(`
+-- Holiday records reference the ISO country code. Older self-hosted schemas
+-- did not seed the countries table, so ensure the required reference exists.
+INSERT INTO countries (code, name, phone, currency)
+VALUES ('LK', 'Sri Lanka', 94, 'LKR')
+ON CONFLICT (code) DO NOTHING;
+
 -- Backfill 2026 Sri Lankan holidays (variable holidays from date-holidays library)
 INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
 VALUES

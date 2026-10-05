@@ -28,6 +28,24 @@ CREATE TABLE IF NOT EXISTS client_portal_services (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Client Relationships (for dual actor support). This table must precede
+-- client_portal_requests because requests reference it.
+CREATE TABLE IF NOT EXISTS client_relationships (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+    organization_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    access_level TEXT DEFAULT 'view' CHECK (access_level IN ('view', 'comment', 'full')),
+    is_active BOOLEAN DEFAULT TRUE,
+    invited_by UUID REFERENCES users(id),
+    invited_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    accepted_at TIMESTAMP WITH TIME ZONE,
+    last_access_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, client_id, organization_team_id)
+);
+
 -- Client Portal Service Requests
 CREATE TABLE IF NOT EXISTS client_portal_requests (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -106,23 +124,6 @@ CREATE TABLE IF NOT EXISTS client_portal_access (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
--- Client Relationships (for dual actor support)
-CREATE TABLE IF NOT EXISTS client_relationships (
-    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-    organization_team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-    access_level TEXT DEFAULT 'view' CHECK (access_level IN ('view', 'comment', 'full')),
-    is_active BOOLEAN DEFAULT TRUE,
-    invited_by UUID REFERENCES users(id),
-    invited_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    accepted_at TIMESTAMP WITH TIME ZONE,
-    last_access_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, client_id, organization_team_id)
 );
 
 -- Client Portal Sessions for separate authentication

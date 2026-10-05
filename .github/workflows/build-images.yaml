@@ -22,6 +22,9 @@ jobs:
           - name: backend
             context: ./worklenz-backend
             container_name: worklenz_backend
+          - name: client-portal
+            context: ./worklenz-client-portal
+            container_name: worklenz_client_portal
     steps:
       - name: Checkout the codebase
         uses: actions/checkout@v4

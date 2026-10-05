@@ -24,15 +24,15 @@ COMMENT ON COLUMN cpt_tasks.phase_sort_order IS 'Sort order when tasks are group
 
 -- 3. Add CHECK constraints to ensure non-negative values
 ALTER TABLE cpt_tasks
-    ADD CONSTRAINT IF NOT EXISTS cpt_tasks_status_sort_order_check
+    ADD CONSTRAINT cpt_tasks_status_sort_order_check
         CHECK (status_sort_order >= 0);
 
 ALTER TABLE cpt_tasks
-    ADD CONSTRAINT IF NOT EXISTS cpt_tasks_priority_sort_order_check
+    ADD CONSTRAINT cpt_tasks_priority_sort_order_check
         CHECK (priority_sort_order >= 0);
 
 ALTER TABLE cpt_tasks
-    ADD CONSTRAINT IF NOT EXISTS cpt_tasks_phase_sort_order_check
+    ADD CONSTRAINT cpt_tasks_phase_sort_order_check
         CHECK (phase_sort_order >= 0);
 
 -- 4. Create indexes for performance optimization

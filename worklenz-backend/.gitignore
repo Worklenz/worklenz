@@ -58,6 +58,7 @@ typings/
 config.json
 .idea
 build
+dist-sdk
 .vscode
 *.code-workspace
 

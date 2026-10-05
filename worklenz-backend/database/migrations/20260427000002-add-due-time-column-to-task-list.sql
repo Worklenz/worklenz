@@ -14,14 +14,13 @@ BEGIN;
 -- Insert DUE_TIME column for each project that doesn't already have it
 -- Default: pinned = false (hidden by default, users can enable it)
 -- Index: 13 (after DUE_DATE which is typically index 12)
-INSERT INTO project_task_list_cols (name, key, index, pinned, project_id, custom_column)
+INSERT INTO project_task_list_cols (name, key, index, pinned, project_id)
 SELECT 
     'Due Time' AS name,
     'DUE_TIME'::WL_TASK_LIST_COL_KEY AS key,
     13 AS index,
     false AS pinned,
-    p.id AS project_id,
-    false AS custom_column
+    p.id AS project_id
 FROM projects p
 WHERE NOT EXISTS (
     SELECT 1 

@@ -13,7 +13,7 @@ exports.up = async (pgm) => {
 -- Version: 2.3.0
 
 ALTER TABLE client_portal_access
-ADD CONSTRAINT IF NOT EXISTS client_portal_access_client_id_key UNIQUE (client_id);
+ADD CONSTRAINT client_portal_access_client_id_key UNIQUE (client_id);
 
   `);
 };

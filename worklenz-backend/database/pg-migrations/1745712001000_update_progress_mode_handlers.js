@@ -11,15 +11,36 @@ exports.up = async (pgm) => {
 -- Date: 2025-04-26
 -- Version: 1.0.0
 
-BEGIN;
+-- Create the type and column when upgrading databases initialized from the
+-- baseline schema. node-pg-migrate wraps this file in a transaction, so this
+-- migration must not issue its own BEGIN/COMMIT.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'progress_mode_type') THEN
+        CREATE TYPE progress_mode_type AS ENUM ('manual', 'weighted', 'time', 'default');
+    END IF;
 
--- Create ENUM type for progress modes
-CREATE TYPE progress_mode_type AS ENUM ('manual', 'weighted', 'time', 'default');
-
--- Alter tasks table to use ENUM type
-ALTER TABLE tasks
-ALTER COLUMN progress_mode TYPE progress_mode_type
-USING progress_mode::text::progress_mode_type;
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'tasks'
+          AND column_name = 'progress_mode'
+    ) THEN
+        ALTER TABLE tasks ADD COLUMN progress_mode progress_mode_type;
+    ELSIF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'tasks'
+          AND column_name = 'progress_mode'
+          AND udt_name <> 'progress_mode_type'
+    ) THEN
+        ALTER TABLE tasks
+            ALTER COLUMN progress_mode TYPE progress_mode_type
+            USING progress_mode::text::progress_mode_type;
+    END IF;
+END $$;
 
 -- Update the on_update_task_progress function to set progress_mode
 CREATE OR REPLACE FUNCTION on_update_task_progress(_body json) RETURNS json
@@ -156,7 +177,6 @@ CREATE TRIGGER reset_progress_on_mode_change
     FOR EACH ROW
     EXECUTE FUNCTION reset_project_progress_values();
 
-COMMIT;
   `);
 };
 

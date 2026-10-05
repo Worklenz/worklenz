@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMediaQuery } from 'react-responsive';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { UserOutlined } from '@/shared/antd-imports';
 import { Form, Card, Input, Flex, Button, Typography, Result } from '@/shared/antd-imports';
 
@@ -182,18 +182,11 @@ const ForgotPasswordPage = () => {
                 >
                   {t('resetPasswordButton', { defaultValue: 'Reset Password' })}
                 </Button>
-                <Typography.Text style={{ textAlign: 'center' }}>{t('orText')}</Typography.Text>
-                <Button
-                  block
-                  type="default"
-                  size="large"
-                  onClick={() => navigate('/auth/login')}
-                  style={{
-                    borderRadius: 4,
-                  }}
-                >
-                  {t('returnToLoginButton', { defaultValue: 'Return to Login' })}
-                </Button>
+                <Flex justify="center">
+                  <Link to="/auth/login">
+                    {t('returnToLoginButton', { defaultValue: 'Return to Login' })}
+                  </Link>
+                </Flex>
               </Flex>
             </Form.Item>
           </Form>

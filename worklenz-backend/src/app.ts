@@ -18,6 +18,7 @@ import authRouter from "./routes/auth";
 import emailTemplatesRouter from "./routes/email-templates";
 import public_router from "./routes/public";
 import clientPortalApiRouter from "./ee/routes/apis/client-portal-api-router";
+import { loadAddonRouters } from "./addons/load-addons";
 import { isInternalServer, isProduction, log_error } from "./shared/utils";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
@@ -552,6 +553,9 @@ const csrfRotation = createCsrfRotation(generateToken);
 app.use("/api/v1", isLoggedIn, apiRouter);
 app.use("/api/imports", isLoggedIn, importsApiRouter);
 app.use("/api/client-portal", clientPortalApiRouter);
+
+// Dynamic Addon routers
+loadAddonRouters(app, isLoggedIn);
 app.use("/secure", authRouter);
 app.use("/public", public_router);
 

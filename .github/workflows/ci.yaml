@@ -1,0 +1,88 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'development'
+  pull_request:
+    branches:
+      - 'main'
+      - 'development'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-check:
+    name: Backend Build & Typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./worklenz-backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: ./worklenz-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript Compile Check
+        run: npm run compile:prod
+
+  frontend-check:
+    name: Frontend Build Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./worklenz-frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ./worklenz-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Frontend
+        run: npm run build
+
+  client-portal-check:
+    name: Client Portal Build Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./worklenz-client-portal
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ./worklenz-client-portal/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Client Portal
+        run: npm run build

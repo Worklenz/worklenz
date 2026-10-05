@@ -1,3 +1,5 @@
+import { getAddonSlotItems } from '@/addons/addon-slots';
+
 export type NavRoutesType = {
   name: string;
   path: string;
@@ -64,4 +66,11 @@ export const navRoutes: NavRoutesType[] = [
     freePlanFeature: true,
     teamLeadOnly: true,
   },
+  ...getAddonSlotItems('navigationItems').map(item => ({
+    name: item.key,
+    path: item.path || `/worklenz/${item.key}`,
+    adminOnly: item.adminOnly ?? true,
+    freePlanFeature: item.freePlanFeature ?? false,
+    guestExcluded: item.guestExcluded ?? true,
+  })),
 ];

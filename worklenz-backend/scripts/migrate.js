@@ -6,7 +6,7 @@
 
 require('dotenv').config();
 
-const { execFileSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -33,10 +33,33 @@ const privateMigrationsDir = path.join(__dirname, '..', 'database', 'pg-migratio
 const args = process.argv.slice(2);
 
 function run(dir) {
-  execFileSync(process.execPath, [bin, '--migrations-dir', dir, ...args], {
-    stdio: 'inherit',
-    env: { ...process.env, DATABASE_URL: databaseUrl },
-  });
+  const result = spawnSync(
+    process.execPath,
+    [bin, '--migrations-dir', dir, ...args],
+    {
+      stdio: ['inherit', 'inherit', 'pipe'],
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      encoding: 'utf-8',
+    }
+  );
+
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+
+  if (result.error) {
+    console.error(`[Migrations] Failed to run migration process:`, result.error.message || result.error);
+    process.exit(1);
+  }
+
+  if (result.signal) {
+    console.error(`[Migrations] Migration process was killed by signal: ${result.signal}`);
+    process.exit(1);
+  }
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
 }
 
 run(migrationsDir);

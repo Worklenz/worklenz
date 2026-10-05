@@ -17,21 +17,33 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS phase_sort_order INTEGER DEFAULT 0;
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS member_sort_order INTEGER DEFAULT 0;
 
 -- Initialize new columns with current sort_order values
-UPDATE tasks SET 
+UPDATE tasks SET
   status_sort_order = sort_order,
   priority_sort_order = sort_order,
   phase_sort_order = sort_order,
   member_sort_order = sort_order
-WHERE status_sort_order = 0 
-   OR priority_sort_order = 0 
-   OR phase_sort_order = 0 
+WHERE status_sort_order = 0
+   OR priority_sort_order = 0
+   OR phase_sort_order = 0
    OR member_sort_order = 0;
 
--- Add constraints to ensure non-negative values
-ALTER TABLE tasks ADD CONSTRAINT IF NOT EXISTS tasks_status_sort_order_check CHECK (status_sort_order >= 0);
-ALTER TABLE tasks ADD CONSTRAINT IF NOT EXISTS tasks_priority_sort_order_check CHECK (priority_sort_order >= 0);
-ALTER TABLE tasks ADD CONSTRAINT IF NOT EXISTS tasks_phase_sort_order_check CHECK (phase_sort_order >= 0);
-ALTER TABLE tasks ADD CONSTRAINT IF NOT EXISTS tasks_member_sort_order_check CHECK (member_sort_order >= 0);
+-- Add constraints to ensure non-negative values. PostgreSQL does not support
+-- ADD CONSTRAINT IF NOT EXISTS, so query the catalog before adding each one.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'tasks'::regclass AND conname = 'tasks_status_sort_order_check') THEN
+    ALTER TABLE tasks ADD CONSTRAINT tasks_status_sort_order_check CHECK (status_sort_order >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'tasks'::regclass AND conname = 'tasks_priority_sort_order_check') THEN
+    ALTER TABLE tasks ADD CONSTRAINT tasks_priority_sort_order_check CHECK (priority_sort_order >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'tasks'::regclass AND conname = 'tasks_phase_sort_order_check') THEN
+    ALTER TABLE tasks ADD CONSTRAINT tasks_phase_sort_order_check CHECK (phase_sort_order >= 0);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = 'tasks'::regclass AND conname = 'tasks_member_sort_order_check') THEN
+    ALTER TABLE tasks ADD CONSTRAINT tasks_member_sort_order_check CHECK (member_sort_order >= 0);
+  END IF;
+END $$;
 
 -- Add indexes for performance (since these will be used for ordering)
 CREATE INDEX IF NOT EXISTS idx_tasks_status_sort_order ON tasks(project_id, status_sort_order);
