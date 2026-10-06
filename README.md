@@ -128,7 +128,7 @@ _**Client Portal**_
 
 ### Requirements
 
-- Node.js version v18 or newer
+- Node.js version v20 or newer
 - PostgreSQL version v15 or newer
 - Docker and Docker Compose (for containerized setup)
 
@@ -203,7 +203,7 @@ docker compose up -d
 For developers who want to run the services individually or customize the setup.
 
 **📋 Prerequisites:**
-- Node.js (version 18 or higher)
+- Node.js (version 20 or higher)
 - PostgreSQL (version 15 or higher)
 - An S3-compatible storage service (SeaweedFS is bundled) or Azure Blob Storage
 
@@ -423,19 +423,18 @@ Found a security vulnerability? Please **do not** open a public issue. Email us 
 
 ## 📈 Analytics
 
-Worklenz uses Google Analytics to better understand how the application is used - helping us prioritize improvements and make smarter product decisions.
+Worklenz uses Google Analytics, Mixpanel, and Microsoft Clarity to understand how the application is used - helping us prioritize improvements and make smarter product decisions.
 
 **What we track:**
-- 📊 Anonymous usage statistics
+- 📊 Usage statistics
 - 🗺️ Page views and navigation patterns
 - 🧩 Feature usage
 - 💻 Browser and device information
 
-**Your privacy matters:**
-- 🔘 Analytics is **opt-in only** - we never collect data without your consent
-- 🙈 No personal information is ever collected
-- 🚪 You can **opt-out at any time** by clearing your browser's local storage for the Worklenz domain, or clicking "Decline" in the analytics notice
-- 📜 Data is stored and handled according to [Google's Privacy Policy](https://policies.google.com/privacy)
+**Privacy and consent:**
+- 🍪 Microsoft Clarity loads only after consent. The cookie banner's "Reject All" / "Accept" choice is stored in your browser's local storage and applies to Clarity only.
+- 📈 Google Analytics (always) and Mixpanel (when `VITE_MIXPANEL_TOKEN` is set) are initialized without waiting for that choice, so declining the banner does **not** disable them.
+- 🔎 Analytics data may include identifiers such as cookies, IP-derived location, and device details. Data is handled according to the providers' policies, including [Google's Privacy Policy](https://policies.google.com/privacy).
 <br/>
 
 ## 🤝 Contributing
