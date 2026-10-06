@@ -1,24 +1,43 @@
+.project-category-dropdown .ant-dropdown-menu {
+  padding: 4px !important;
+  margin-top: 8px !important;
+  overflow: hidden;
+}
+
+.project-category-dropdown .ant-dropdown-menu-item {
+  padding: 0 !important;
+}
+
+.project-category-dropdown-card .ant-card-body {
+  padding: 8px !important;
+}
+
+.project-category-menu .ant-menu-item {
+  display: flex;
+  align-items: center;
+  height: 32px;
+}
 .category-pill-wrapper {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  width: fit-content;
   max-width: 180px;
-  box-sizing: border-box;
-  padding: 4px 10px;
+  height: 22px;
+  padding-inline: 8px;
   border-radius: 24px;
   font-size: 13px;
+  text-transform: capitalize;
+  overflow: hidden;
   cursor: pointer;
-  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 .category-pill-text {
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-align: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .category-pill-icon {
