@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Drawer, Select, Button, message, Spin, List, Avatar, Typography, Flex, Tag } from 'antd';
+import { Drawer, Select, Button, message, Spin, List, Avatar, Typography, Flex, Tag, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
-// import { colors } from '@/styles/colors';
-import { getRoleColor } from '@/types/roles/role.types';
+import { ROLE_DEFINITIONS, getRoleColor } from '@/types/roles/role.types';
 import { UsergroupAddOutlined, UserOutlined } from '@/shared/antd-imports';
 
 interface BulkAssignManagerDrawerProps {
@@ -22,6 +21,16 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
   onAssignmentComplete,
 }) => {
   const { t } = useTranslation('settings/team-members');
+  const { token } = theme.useToken();
+
+  const getRoleLabel = (roleName?: string) => {
+    const definition = ROLE_DEFINITIONS[roleName as keyof typeof ROLE_DEFINITIONS];
+    if (definition) {
+      return t(definition.labelKey, { defaultValue: definition.labelDefaultValue });
+    }
+    return roleName || '';
+  };
+
   const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
   const [selectedTeamLead, setSelectedTeamLead] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -60,7 +69,7 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
 
     setAssigning(true);
     try {
-      const memberIds = selectedMembers.map(member => member.id).filter(Boolean);
+      const memberIds = selectedMembers.map(member => member.id).filter((id): id is string => id != null);
 
       await teamManagementApiService.bulkAssignMembers(selectedTeamLead, memberIds);
 
@@ -143,8 +152,8 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
                     title={
                       <Flex gap={8} align="center">
                         <span>{member.name}</span>
-                        <Tag color={getRoleColor(member.role_name)} style={{ margin: 0 }}>
-                          {member.role_name}
+                        <Tag color={getRoleColor(member.role_name || '')} style={{ margin: 0 }}>
+                          {getRoleLabel(member.role_name)}
                         </Tag>
                       </Flex>
                     }
@@ -155,7 +164,7 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
               style={{
                 maxHeight: '200px',
                 overflowY: 'auto',
-                border: `1px solid #d9d9d9`,
+                border: `1px solid ${token.colorBorderSecondary}`,
                 borderRadius: '6px',
                 padding: '8px',
               }}
@@ -190,9 +199,9 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
             <div
               style={{
                 padding: '1rem',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: token.colorBgLayout,
                 borderRadius: '6px',
-                border: `1px solid #d9d9d9`,
+                border: `1px solid ${token.colorBorderSecondary}`,
               }}
             >
               <Typography.Title level={5} style={{ margin: 0, marginBottom: '0.5rem' }}>
@@ -222,7 +231,7 @@ export const BulkAssignManagerDrawer: React.FC<BulkAssignManagerDrawerProps> = (
               style={{
                 textAlign: 'center',
                 padding: '2rem',
-                color: '#666',
+                color: token.colorTextSecondary,
               }}
             >
               <UserOutlined style={{ fontSize: '2rem', marginBottom: '1rem' }} />

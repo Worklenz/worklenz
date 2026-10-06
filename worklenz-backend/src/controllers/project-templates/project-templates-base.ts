@@ -24,6 +24,43 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   // Case-insensitive check for an existing project name within a team, used when
   // importing a project/template so duplicates fail fast instead of relying on
   // create_project()'s own PROJECT_EXISTS_ERROR check further down the pipeline.
+  protected static async getCustomTemplateAccess(
+    templateId: string,
+    teamId: string | null | undefined
+  ): Promise<{
+    canAccess: boolean;
+    canManage: boolean;
+    scope: string;
+    organizationId: string | null;
+  } | null> {
+    if (!templateId || !teamId) return null;
+
+    const q = `
+      SELECT
+        cpt.team_id,
+        cpt.scope,
+        in_organization(cpt.team_id, $2) AS in_same_organization
+      FROM custom_project_templates cpt
+      WHERE cpt.id = $1
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [templateId, teamId]);
+    if (!result.rowCount) return null;
+
+    const row = result.rows[0];
+    const canManage = row.team_id === teamId;
+    const isOrganizationShared =
+      row.scope === "organization" && row.in_same_organization;
+    const canAccess = canManage || isOrganizationShared;
+
+    return {
+      canAccess,
+      canManage,
+      scope: row.scope,
+      organizationId: null,
+    };
+  }
+
   protected static async findDuplicateProjectName(
     name: string,
     teamId: string | null | undefined

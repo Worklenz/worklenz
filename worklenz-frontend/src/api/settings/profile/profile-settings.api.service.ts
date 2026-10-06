@@ -1,7 +1,7 @@
 import apiClient from '@api/api-client';
 import { API_BASE_URL } from '@/shared/constants';
 import { IServerResponse } from '@/types/common.types';
-import { IProfileSettings } from '@/types/settings/profile.types';
+import { IAppSumoPopupClaim, IProfileSettings } from '@/types/settings/profile.types';
 import { IDigestPreferences, INotificationSettings } from '@/types/settings/notifications.types';
 import {
   IAccountSetupRequest,
@@ -114,6 +114,20 @@ export const profileSettingsApiService = {
   dismissMobileAppBanner: async (): Promise<IServerResponse<null>> => {
     const response = await apiClient.put<IServerResponse<null>>(
       `${rootUrl}/mobile-app-banner-dismissed`
+    );
+    return response.data;
+  },
+
+  /**
+   * Asks the server whether the AppSumo promo popup may be shown now and, if so, records it.
+   * Background call: the silent header keeps the response interceptor from toasting a failure
+   * (the popup falls back to its local gate instead). On a server-side failure the body is null.
+   */
+  claimAppSumoPopup: async (): Promise<IServerResponse<IAppSumoPopupClaim | null>> => {
+    const response = await apiClient.post<IServerResponse<IAppSumoPopupClaim | null>>(
+      `${rootUrl}/appsumo-popup/claim`,
+      undefined,
+      { headers: { 'X-Silent-Request': '1' } }
     );
     return response.data;
   },

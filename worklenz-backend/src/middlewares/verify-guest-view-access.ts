@@ -7,16 +7,16 @@ import { log_error } from "../shared/utils";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
 
 /**
- * Middleware to restrict guest users to only Task List and Board views
+ * Middleware to restrict guest users to read-only project views
  * 
  * Guests can only access:
  * - Task List (v2/v3)
  * - Board/Kanban
+ * - Roadmap/Gantt
+ * - Workload
  * 
  * All other views are forbidden for guests:
- * - Roadmap/Gantt
  * - Schedule
- * - Workload
  * - Reporting
  * 
  * Usage:

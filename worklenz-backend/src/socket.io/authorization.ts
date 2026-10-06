@@ -3,6 +3,9 @@ import { Socket } from "socket.io";
 import { getLoggedInUserIdFromSocket } from "./util";
 import { log_error } from "../shared/utils";
 import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
+import { canUserAccessTaskDetail, canUserEditTask } from "../shared/assignee-task-scope";
+import { ISocketSession } from "../interfaces/socket-session";
+import { IPassportSession } from "../interfaces/passport-session";
 
 /**
  * Verify user has access to a task via their team
@@ -31,7 +34,13 @@ export async function verifyTaskAccessSocket(
       LIMIT 1;
     `;
     const result = await db.query(q, [taskId, userId]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    if (!result.rowCount || result.rowCount <= 0) {
+      return false;
+    }
+
+    const { session } = socket.request as ISocketSession;
+    // Assignee-scope + notification/mention exception (no deep-link signal on sockets)
+    return canUserAccessTaskDetail(userId, taskId, session?.passport?.user as IPassportSession | undefined);
   } catch (error) {
     log_error(`Error verifying task access: ${error}`);
     return false;
@@ -57,7 +66,19 @@ export async function verifyNonGuestTaskAccessSocket(
       LIMIT 1;
     `;
     const result = await db.query(q, [taskId, userId]);
-    return result.rowCount ? result.rowCount > 0 : false;
+    if (!result.rowCount || result.rowCount <= 0) {
+      return false;
+    }
+
+    const { session } = socket.request as ISocketSession;
+    const sessionUser = session?.passport?.user as IPassportSession | undefined;
+
+    // View access (assignee / parent context / notification)
+    const mayAccess = await canUserAccessTaskDetail(userId, taskId, sessionUser);
+    if (!mayAccess) return false;
+
+    // TVR-13: mutations require direct assignee (or exempt); parent-context is read-only
+    return canUserEditTask(userId, taskId, sessionUser);
   } catch (error) {
     log_error(`Error verifying non-guest task access: ${error}`);
     return false;

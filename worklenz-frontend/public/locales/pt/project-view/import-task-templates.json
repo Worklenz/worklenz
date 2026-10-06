@@ -7,5 +7,7 @@
   "templates": "Modelos",
   "remove": "Remover",
   "cancel": "Cancelar",
-  "import": "Importar"
+  "import": "Importar",
+  "subtasksLabel": "subtarefa(s)",
+  "subtaskCountTooltip": "{{count}} subtarefa(s) serão importadas"
 }

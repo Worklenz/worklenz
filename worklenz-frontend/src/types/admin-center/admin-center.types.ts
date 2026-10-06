@@ -100,7 +100,6 @@ export interface IBillingAccountInfo {
   flat_rate_max_users?: number;
   actual_users?: number;
   subscription_id?: string;
-  redeemed_codes_count?: number;
 }
 
 export interface IPricingPlans {

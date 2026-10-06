@@ -34,5 +34,10 @@
   "csvImportSelected": "已选择 CSV 任务导入",
   "csvImportHint": "配置此项目后，映射 CSV 字段并导入任务。",
   "csvImportFooterHint": "将在创建此项目之前映射 CSV 字段。",
-  "continueToCsvImport": "继续 CSV 导入"
+  "continueToCsvImport": "继续 CSV 导入",
+  "customizeNo": "否",
+  "customizeYes": "是，自定义",
+  "customizeFooterQuestion": "创建前要自定义吗？",
+  "customizeNoHint": "立即创建并打开项目",
+  "customizeYesHint": "先设置客户、状态、日期等"
 }

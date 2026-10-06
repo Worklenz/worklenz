@@ -1,8 +1,9 @@
 import React from 'react';
 import { Button, Typography } from '@/shared/antd-imports';
+import type { TranslateFn } from '../types';
 
 interface ImportCompletionContentProps {
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   handleStartNewImport: () => void;
 }
 

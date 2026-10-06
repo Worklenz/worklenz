@@ -12,6 +12,13 @@ import {
 } from "../shared/constants";
 import { getColor, log_error } from "../shared/utils";
 import { SqlHelper } from "../shared/sql-helpers";
+import {
+  AssigneeTaskScope,
+  buildAssigneeScopeFilter,
+  buildAssigneeScopedProgressExpression,
+  buildAssigneeScopeReadonlyExpression,
+  resolveAssigneeTaskScope,
+} from "../shared/assignee-task-scope";
 import TasksControllerBase, {
   GroupBy,
   ITaskGroup,
@@ -222,7 +229,12 @@ export default class TasksControllerV2 extends TasksControllerBase {
     }
   }
 
-  private static getQuery(userId: string, options: ParsedQs, projectId?: string): { query: string; params: any[]; isSubTasks: boolean } {
+  private static getQuery(
+    userId: string,
+    options: ParsedQs,
+    projectId?: string,
+    assigneeScope?: AssigneeTaskScope
+  ): { query: string; params: any[]; isSubTasks: boolean } {
     const queryParams: any[] = [userId]; // $1 is always userId
     let paramOffset = 2; // Start at $2 (after userId)
 
@@ -320,6 +332,44 @@ export default class TasksControllerV2 extends TasksControllerBase {
       queryParams.push(...membersResult.params);
       paramOffset += membersResult.params.length;
     }
+
+    const assigneeScopeMemberParamIndex =
+      assigneeScope?.applyFilter && assigneeScope.teamMemberId
+        ? paramOffset
+        : null;
+    const assigneeScopeResult = buildAssigneeScopeFilter(
+      assigneeScope || { applyFilter: false, teamMemberId: null },
+      "t.id",
+      paramOffset
+    );
+    if (assigneeScopeResult.params.length > 0) {
+      queryParams.push(...assigneeScopeResult.params);
+      paramOffset += assigneeScopeResult.params.length;
+    }
+
+    const assigneeScopeReadonlySelect = assigneeScopeMemberParamIndex
+      ? buildAssigneeScopeReadonlyExpression("t.id", assigneeScopeMemberParamIndex)
+      : "FALSE";
+
+    // TVR-15: when assignee-scope applies, progress % must ignore non-visible subtasks
+    const progressSelect = assigneeScopeMemberParamIndex
+      ? buildAssigneeScopedProgressExpression("t.id", assigneeScopeMemberParamIndex)
+      : `(CASE
+                WHEN EXISTS(SELECT 1
+                            FROM tasks_with_status_view
+                            WHERE tasks_with_status_view.task_id = t.id
+                              AND is_done IS TRUE) THEN 100
+                ELSE t.progress_value
+              END)`;
+    const completeRatioSelect = assigneeScopeMemberParamIndex
+      ? buildAssigneeScopedProgressExpression("t.id", assigneeScopeMemberParamIndex)
+      : `(CASE
+                WHEN EXISTS(SELECT 1
+                            FROM tasks_with_status_view
+                            WHERE tasks_with_status_view.task_id = t.id
+                              AND is_done IS TRUE) THEN 100
+                ELSE COALESCE(t.progress_value, 0)
+              END)`;
 
     const projectsResult = TasksControllerV2.getFilterByProjectsWhereClosure(
       options.projects as string,
@@ -464,6 +514,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       phaseResult.clause,
       labelsResult.clause,
       membersResult.clause,
+      assigneeScopeResult.clause,
       projectsResult.clause,
     ]
       .filter((i) => !!i)
@@ -492,6 +543,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       priorityParamStart += statusesResult.params.length;
       priorityParamStart += labelsResult.params.length;
       priorityParamStart += membersResult.params.length;
+      priorityParamStart += assigneeScopeResult.params.length;
       priorityParamStart += projectsResult.params.length;
       const { clause: inClause } = SqlHelper.buildInClause(priorityIds, priorityParamStart);
       subtaskFilters.push(`subtask.priority_id IN (${inClause})`);
@@ -506,6 +558,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
       phaseParamStart += statusesResult.params.length;
       phaseParamStart += labelsResult.params.length;
       phaseParamStart += membersResult.params.length;
+      phaseParamStart += assigneeScopeResult.params.length;
       phaseParamStart += projectsResult.params.length;
       phaseParamStart += priorityResult.params.length;
       const { clause: inClause } = SqlHelper.buildInClause(phaseIds, phaseParamStart);
@@ -533,6 +586,30 @@ export default class TasksControllerV2 extends TasksControllerBase {
       memberParamStart += labelsResult.params.length;
       const { clause: inClause } = SqlHelper.buildInClause(memberIds, memberParamStart);
       subtaskFilters.push(`subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id IN (${inClause}))`);
+    }
+
+    // Assignee-scope restriction for subtasks (same $N as main filter)
+    if (assigneeScopeResult.clause) {
+      if (assigneeScopeResult.params.length > 0) {
+        let assigneeParamStart = 2;
+        if (projectId) assigneeParamStart++;
+        if (isSubTasks && options.parent_task) assigneeParamStart++;
+        assigneeParamStart += statusesResult.params.length;
+        assigneeParamStart += labelsResult.params.length;
+        assigneeParamStart += membersResult.params.length;
+        subtaskFilters.push(
+          `(
+            subtask.id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $${assigneeParamStart}::UUID)
+            OR subtask.id IN (
+              SELECT parent_task_id FROM tasks
+              WHERE parent_task_id IS NOT NULL
+                AND id IN (SELECT task_id FROM tasks_assignees WHERE team_member_id = $${assigneeParamStart}::UUID)
+            )
+          )`
+        );
+      } else {
+        subtaskFilters.push("1 = 0");
+      }
     }
 
     // Apply search filter to subtasks if present (reuse search parameter)
@@ -564,6 +641,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         priorityParamStart += statusesResult.params.length;
         priorityParamStart += labelsResult.params.length;
         priorityParamStart += membersResult.params.length;
+        priorityParamStart += assigneeScopeResult.params.length;
         priorityParamStart += projectsResult.params.length;
 
         const { clause: inClause } = SqlHelper.buildInClause(priorityIds, priorityParamStart);
@@ -621,6 +699,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         phaseParamStart += statusesResult.params.length;
         phaseParamStart += labelsResult.params.length;
         phaseParamStart += membersResult.params.length;
+        phaseParamStart += assigneeScopeResult.params.length;
         phaseParamStart += projectsResult.params.length;
         phaseParamStart += priorityResult.params.length;
 
@@ -661,6 +740,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.project_id AS project_id,
              t.parent_task_id,
              t.parent_task_id IS NOT NULL AS is_sub_task,
+             ${assigneeScopeReadonlySelect} AS assignee_scope_readonly,
              (SELECT name FROM tasks WHERE id = t.parent_task_id) AS parent_task_name,
              (SELECT CONCAT((SELECT key FROM projects WHERE id = p.project_id), '-', p.task_no)
               FROM tasks p
@@ -690,25 +770,13 @@ export default class TasksControllerV2 extends TasksControllerBase {
              t.status_sort_order,
              t.priority_sort_order,
              t.phase_sort_order,
-             (CASE
-                WHEN EXISTS(SELECT 1
-                            FROM tasks_with_status_view
-                            WHERE tasks_with_status_view.task_id = t.id
-                              AND is_done IS TRUE) THEN 100
-                ELSE t.progress_value
-              END) AS progress_value,
+             ${progressSelect} AS progress_value,
              t.manual_progress,
              t.weight,
              (SELECT use_manual_progress FROM projects WHERE id = t.project_id) AS project_use_manual_progress,
              (SELECT use_weighted_progress FROM projects WHERE id = t.project_id) AS project_use_weighted_progress,
              (SELECT use_time_progress FROM projects WHERE id = t.project_id) AS project_use_time_progress,
-             (CASE
-                WHEN EXISTS(SELECT 1
-                            FROM tasks_with_status_view
-                            WHERE tasks_with_status_view.task_id = t.id
-                              AND is_done IS TRUE) THEN 100
-                ELSE COALESCE(t.progress_value, 0)
-              END) AS complete_ratio,
+             ${completeRatioSelect} AS complete_ratio,
 
              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
              (SELECT name
@@ -862,7 +930,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Add customColumns flag to query params
     req.query.customColumns = "true";
 
-    const { query: q, params, isSubTasks } = TasksControllerV2.getQuery(req.user?.id as string, req.query, req.params.id);
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      req.params.id,
+      req.user
+    );
+    const { query: q, params, isSubTasks } = TasksControllerV2.getQuery(
+      req.user?.id as string,
+      req.query,
+      req.params.id,
+      assigneeScope
+    );
 
     const result = await db.query(q, params);
     const tasks = [...result.rows];
@@ -977,7 +1055,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
     // Add customColumns flag to query params
     req.query.customColumns = "true";
 
-    const { query: q, params } = TasksControllerV2.getQuery(req.user?.id as string, req.query, req.params.id);
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      req.params.id,
+      req.user
+    );
+    const { query: q, params } = TasksControllerV2.getQuery(
+      req.user?.id as string,
+      req.query,
+      req.params.id,
+      assigneeScope
+    );
     const result = await db.query(q, params);
 
     let data: any[] = [];
@@ -1204,16 +1292,28 @@ export default class TasksControllerV2 extends TasksControllerBase {
   public static async getTasksByName(
     searchString: string,
     projectId: string,
-    taskId: string
+    taskId: string,
+    assigneeScope?: AssigneeTaskScope
   ) {
+    const queryParams: unknown[] = [`%${searchString}%`, projectId, taskId];
+    const scopeFilter = buildAssigneeScopeFilter(
+      assigneeScope || { applyFilter: false, teamMemberId: null },
+      "t.id",
+      4
+    );
+    if (scopeFilter.params.length > 0) {
+      queryParams.push(...scopeFilter.params);
+    }
+
     const q = `SELECT id AS value ,
        name AS label,
        CONCAT((SELECT key FROM projects WHERE id = t.project_id), '-', task_no) AS task_key
       FROM tasks t
       WHERE t.name ILIKE $1
         AND t.project_id = $2 AND t.id != $3
+        ${scopeFilter.clause ? `AND ${scopeFilter.clause}` : ""}
       LIMIT 15;`;
-    const result = await db.query(q, [`%${searchString}%`, projectId, taskId]);
+    const result = await db.query(q, queryParams);
 
     return result.rows;
   }
@@ -1233,10 +1333,16 @@ export default class TasksControllerV2 extends TasksControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { projectId, taskId, searchQuery } = req.query;
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      projectId as string,
+      req.user
+    );
     const tasks = await this.getTasksByName(
       searchQuery as string,
       projectId as string,
-      taskId as string
+      taskId as string,
+      assigneeScope
     );
     return res.status(200).send(new ServerResponse(true, tasks));
   }
@@ -1675,7 +1781,17 @@ export default class TasksControllerV2 extends TasksControllerBase {
       await this.refreshProjectTaskProgressValues(req.params.id);
     }
 
-    const { query: q, params, isSubTasks } = TasksControllerV2.getQuery(req.user?.id as string, req.query, req.params.id);
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      req.params.id,
+      req.user
+    );
+    const { query: q, params, isSubTasks } = TasksControllerV2.getQuery(
+      req.user?.id as string,
+      req.query,
+      req.params.id,
+      assigneeScope
+    );
     const result = await db.query(q, params);
     const tasks = [...result.rows];
 
@@ -1791,6 +1907,8 @@ export default class TasksControllerV2 extends TasksControllerBase {
         parent_task_priority_value: task.parent_task_priority_value ?? null,
         parent_task_priority_color: task.parent_task_priority_color || null,
         parent_is_subtask: !!task.parent_is_subtask,
+        // TVR-13: parent shown for context when member is assigned only to a subtask
+        assignee_scope_readonly: !!task.assignee_scope_readonly,
         // Add flag for auto-expansion when filters match descendants
         has_filtered_children: !!task.has_filtered_children,
         // Add indicator fields for frontend icons
@@ -2181,6 +2299,7 @@ export default class TasksControllerV2 extends TasksControllerBase {
         allTasks: filteredTransformedTasks,
         grouping: groupBy,
         totalTasks: filteredTransformedTasks.length,
+        assignee_scope_active: assigneeScope.applyFilter,
       })
     );
   }

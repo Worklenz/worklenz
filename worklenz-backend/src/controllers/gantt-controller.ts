@@ -7,6 +7,10 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
 import moment from "moment";
+import {
+  buildAssigneeScopeFilter,
+  resolveAssigneeTaskScope,
+} from "../shared/assignee-task-scope";
 
 export default class GanttController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -97,7 +101,7 @@ export default class GanttController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getRoadmapTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const projectId = req.query.project_id;
+    const projectId = req.query.project_id as string;
 
     // Roadmap shares the same per-grouping sort columns Task List/Board already
     // use (see update_task_sort_orders_bulk) so reordering a task in either view
@@ -111,6 +115,17 @@ export default class GanttController extends WorklenzControllerBase {
       priority: "t.priority_sort_order",
     };
     const sortColumn = sortColumnByGroupBy[req.query.group_by as string] || "t.phase_sort_order";
+
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      projectId,
+      req.user
+    );
+    const scopeFilter = buildAssigneeScopeFilter(assigneeScope, "t.id", 2);
+    const queryParams: unknown[] = [projectId];
+    if (scopeFilter.params.length > 0) {
+      queryParams.push(...scopeFilter.params);
+    }
 
     const q = `
       SELECT 
@@ -172,10 +187,11 @@ export default class GanttController extends WorklenzControllerBase {
       WHERE t.project_id = $1
         AND t.archived = FALSE
         AND t.parent_task_id IS NULL
+        ${scopeFilter.clause ? `AND ${scopeFilter.clause}` : ""}
       ORDER BY ${sortColumn}, t.created_at;
     `;
     
-    const result = await db.query(q, [projectId]);
+    const result = await db.query(q, queryParams);
 
     // Fetch subtasks for all parent tasks in a single batched query instead of
     // one query per parent (that N+1 pattern made load time scale linearly
@@ -186,6 +202,12 @@ export default class GanttController extends WorklenzControllerBase {
 
     if (result.rows.length > 0) {
       const parentIds = result.rows.map(task => task.id);
+      const subtaskParams: unknown[] = [parentIds];
+      const subtaskScopeFilter = buildAssigneeScopeFilter(assigneeScope, "id", 2);
+      if (subtaskScopeFilter.params.length > 0) {
+        subtaskParams.push(...subtaskScopeFilter.params);
+      }
+
       const subtasksQuery = `
         SELECT
           id,
@@ -195,14 +217,27 @@ export default class GanttController extends WorklenzControllerBase {
           done,
           roadmap_sort_order,
           parent_task_id,
-          CASE WHEN done THEN 100 ELSE 0 END as progress
+          CASE WHEN done THEN 100 ELSE 0 END as progress,
+          (
+            SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(phase_info))), '[]'::JSON)
+            FROM (
+              SELECT 
+                pp.id as phase_id,
+                pp.name as phase_name,
+                pp.color_code as phase_color
+              FROM task_phase tp
+              JOIN project_phases pp ON tp.phase_id = pp.id
+              WHERE tp.task_id = tasks.id
+            ) phase_info
+          ) as phases
         FROM tasks
         WHERE parent_task_id = ANY($1::uuid[])
           AND archived = FALSE
+          ${subtaskScopeFilter.clause ? `AND ${subtaskScopeFilter.clause}` : ""}
         ORDER BY COALESCE(roadmap_sort_order, sort_order, 0), created_at;
       `;
 
-      const subtasksResult = await db.query(subtasksQuery, [parentIds]);
+      const subtasksResult = await db.query(subtasksQuery, subtaskParams);
       const subtasksByParentId = new Map<string, any[]>();
       for (const subtask of subtasksResult.rows) {
         const siblings = subtasksByParentId.get(subtask.parent_task_id) || [];
@@ -220,7 +255,20 @@ export default class GanttController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getProjectPhases(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const projectId = req.query.project_id;
+    const projectId = req.query.project_id as string;
+
+    // TVR-15: phase totals / progress % must use the same assignee-visible subset
+    // as roadmap tasks (not every task in the phase).
+    const assigneeScope = await resolveAssigneeTaskScope(
+      req.user?.id,
+      projectId,
+      req.user
+    );
+    const scopeFilter = buildAssigneeScopeFilter(assigneeScope, "t.id", 2);
+    const queryParams: unknown[] = [projectId];
+    if (scopeFilter.params.length > 0) {
+      queryParams.push(...scopeFilter.params);
+    }
     
     // Single grouped pass instead of 4 correlated per-phase subqueries: one
     // LEFT JOIN chain computed once, with conditional aggregation for each
@@ -241,7 +289,9 @@ export default class GanttController extends WorklenzControllerBase {
         COUNT(t.id) as total_count
       FROM project_phases pp
       LEFT JOIN task_phase tp ON tp.phase_id = pp.id
-      LEFT JOIN tasks t ON t.id = tp.task_id AND t.archived = FALSE
+      LEFT JOIN tasks t ON t.id = tp.task_id
+        AND t.archived = FALSE
+        AND (${scopeFilter.clause || "TRUE"})
       LEFT JOIN task_statuses ts ON t.status_id = ts.id
       LEFT JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
       WHERE pp.project_id = $1
@@ -249,7 +299,7 @@ export default class GanttController extends WorklenzControllerBase {
       ORDER BY pp.sort_index DESC, pp.created_at DESC;
     `;
     
-    const result = await db.query(q, [projectId]);
+    const result = await db.query(q, queryParams);
     
     // Calculate progress percentages for each phase
     const phasesWithProgress = result.rows.map(phase => {
@@ -265,11 +315,15 @@ export default class GanttController extends WorklenzControllerBase {
         start_date: phase.start_date,
         end_date: phase.end_date,
         sort_index: phase.sort_index,
+        todo_count: todoCount,
+        doing_count: doingCount,
+        done_count: doneCount,
         // Calculate progress percentages
         todo_progress: total > 0 ? Math.round((todoCount / total) * 100) : 0,
         doing_progress: total > 0 ? Math.round((doingCount / total) * 100) : 0,
         done_progress: total > 0 ? Math.round((doneCount / total) * 100) : 0,
-        total_tasks: total
+        total_tasks: total,
+        assignee_scope_active: assigneeScope.applyFilter,
       };
     });
     
@@ -467,7 +521,7 @@ export default class GanttController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async reorderPhases(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { project_id, phase_orders } = req.body;
-    
+
     if (!project_id || !Array.isArray(phase_orders)) {
       return res.status(400).send(new ServerResponse(false, null, "Project ID and phase orders array are required"));
     }
@@ -476,7 +530,7 @@ export default class GanttController extends WorklenzControllerBase {
       // Update each phase with its new sort_index
       for (const order of phase_orders) {
         const { phase_id, sort_index } = order;
-        
+
         await db.query(
           `UPDATE project_phases SET sort_index = $1 WHERE id = $2 AND project_id = $3`,
           [sort_index, phase_id, project_id]

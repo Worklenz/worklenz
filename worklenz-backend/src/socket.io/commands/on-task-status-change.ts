@@ -137,6 +137,9 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
 
     const info = await TasksControllerV2.getTaskCompleteRatio(body.parent_task || body.task_id);
 
+    const statusNameResult = await db.query("SELECT name FROM task_statuses WHERE id = $1;", [body.status_id]);
+    const statusName = statusNameResult.rows[0]?.name;
+
     socket.emit(SocketEvents.TASK_STATUS_CHANGE.toString(), {
       id: body.task_id,
       parent_task: body.parent_task,
@@ -146,6 +149,7 @@ export async function on_task_status_change(_io: Server, socket: Socket, data?: 
       completed_count: info?.total_completed,
       total_tasks_count: info?.total_tasks,
       status_id: body.status_id,
+      status_name: statusName,
       completed_at: changeResponse.completed_at,
       statusCategory: changeResponse.status_category,
       completed_deps: canContinue

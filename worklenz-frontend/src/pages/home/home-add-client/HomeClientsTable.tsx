@@ -8,12 +8,12 @@ import {
   Select,
   Table,
   TableProps,
-  Tag,
   theme,
   Typography,
 } from '@/shared/antd-imports';
 import { ClientPortalClient, useGetClientsQuery } from '@/ee/api/client-portal/client-portal-api';
 import dayjs from 'dayjs';
+import PortalStatusTag from '@/ee/components/client-portal/PortalStatusTag';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -124,7 +124,7 @@ const HomeClientsTable: React.FC<HomeClientsTableProps> = ({ onCreateClick }) =>
       dataIndex: 'portal_status',
       render: (_, record) => {
         const portalStatus = getPortalStatus(record, t);
-        return <Tag color={portalStatus.color}>{portalStatus.label}</Tag>;
+        return <PortalStatusTag status={portalStatus.status} label={portalStatus.label} />;
       },
       width: 130,
     },

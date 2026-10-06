@@ -17,7 +17,9 @@
     "back": "返回",
     "backToParent": "返回父任务",
     "toParentTask": "到父任务",
-    "loadingHierarchy": "加载层次结构..."
+    "loadingHierarchy": "加载层次结构...",
+    "previousTask": "上一个任务",
+    "nextTask": "下一个任务"
   },
   "taskInfoTab": {
     "title": "信息",
@@ -39,6 +41,8 @@
       "show-start-date": "显示开始日期",
       "hours": "小时",
       "minutes": "分钟",
+      "hoursMinError": "小时必须为 0 或更大",
+      "minutesRangeError": "分钟必须在 0 到 59 之间",
       "progressValue": "进度值",
       "progressValueTooltip": "设置进度百分比 (0-100%)",
       "progressValueRequired": "请输入进度值",
@@ -47,7 +51,23 @@
       "taskWeightTooltip": "设置此子任务的权重 (百分比)",
       "taskWeightRequired": "请输入任务权重",
       "taskWeightRange": "权重必须在 0 到 100 之间",
+      "customFields": {
+        "empty": "空",
+        "enterNumber": "输入数字",
+        "selectDate": "选择日期",
+        "selectOption": "选择选项",
+        "selectPeople": "选择人员",
+        "updateError": "更新自定义字段失败"
+      },
       "recurring": "重复"
+    },
+    "customFields": {
+      "title": "自定义字段",
+      "autoSaveHint": "离开字段时更改会自动保存。",
+      "addCustomField": "添加自定义字段",
+      "addCustomColumn": "添加自定义列",
+      "showMoreFields": "显示另外 {{count}} 个字段",
+      "hideFields": "隐藏字段"
     },
     "labels": {
       "labelInputPlaceholder": "搜索或创建",
@@ -85,13 +105,16 @@
       "chooseOrDropFileToUpload": "选择或拖放文件上传",
       "uploading": "上传中...",
       "maxFileSizeText": "最大文件大小：{{maxSize}}MB",
-      "upgradeLinkText": "需要更大上传？立即升级"
+      "upgradeLinkText": "需要更大上传？立即升级",
+      "downloadFailed": "文件下载失败",
+      "deleteFailed": "无法删除附件"
     },
     "comments": {
       "title": "评论",
       "addComment": "+ 添加新评论",
       "noComments": "还没有评论。成为第一个评论者！",
       "edit": "编辑",
+      "save": "保存",
       "delete": "删除",
       "confirmDeleteComment": "您确定要删除此评论吗？",
       "edited": "（已编辑）",
@@ -105,6 +128,8 @@
       "maxFilesError": "您最多只能上传 {{count}} 个文件",
       "processFilesError": "处理文件失败",
       "addCommentError": "请添加评论或附加文件",
+      "commentTooLong": "评论过长，请将其缩短至 {{max}} 个字符以内。",
+      "saveCommentError": "保存评论失败，请重试。",
       "enterHint": "Enter 发送  ·  Shift+Enter 换行",
       "fileTooLargeToSend": "评论中的文件超过 25MB 需要 Business 方案。请移除此文件或升级后继续。",
       "historyLockedBoundary": "评论记录在此方案中仅限最近 90 天",
@@ -112,7 +137,10 @@
       "historyLockedBody": "90 天以前的评论仅在 Business 方案中可用。",
       "viewFullComments": "查看评论记录",
       "createdBy": "由 {{user}} 在 {{time}} 创建",
-      "updatedTime": "更新于 {{time}}"
+      "updatedTime": "更新于 {{time}}",
+      "copyLink": "复制链接",
+      "linkCopied": "评论链接已复制",
+      "linkCopyFailed": "复制链接失败"
     },
     "searchInputPlaceholder": "按名称搜索",
     "pendingInvitation": "待处理邀请"
@@ -141,6 +169,7 @@
       "descriptionPlaceholder": "添加描述",
       "logTime": "记录时间",
       "updateTime": "更新",
+      "cancel": "取消",
       "durationHelper": "使用小时和分钟记录总时长。",
       "timeRangeHelper": "通过选择开始和结束时间来记录时长。",
       "selectDateError": "请选择日期",
@@ -152,11 +181,14 @@
       "endTimeAfterStartError": "结束时间必须晚于开始时间",
       "moveToProject": "移至项目",
       "moveToProjectTooltip": "将此工时记录重新分配到其他项目",
+      "selectProject": "搜索项目...",
       "moveToTask": "移至任务",
       "moveToTaskTooltip": "将此工时记录重新分配到其他任务",
+      "selectTask": "选择任务...",
       "backdateLimitError": "工时记录的补录不能超过 {{days}} 天。可记录的最早日期为 {{earliestDate}}。",
       "saveError": "无法保存工时记录，请重试。"
-    }
+    },
+    "rollupLoggedTooltip": "子任务的登录时间总和"
   },
   "taskActivityLogTab": {
     "title": "活动日志",
@@ -175,5 +207,14 @@
     "confirmMarkAsDone": "是，标记为完成",
     "cancelMarkAsDone": "否，保持当前状态",
     "markAsDoneDescription": "您已将进度设置为 100%。您想将任务状态更新为\"完成\"吗？"
+  },
+  "taskAccessDenied": {
+    "title": "无访问权限",
+    "subtitle": "在此项目中，您只能打开分配给您的任务。如需访问，请让项目经理将任务分配给您。",
+    "close": "关闭"
+  },
+  "assigneeScopeReadonly": {
+    "title": "只读",
+    "description": "您被分配到此任务的子任务。您可以查看父任务以了解上下文，但不能编辑它。"
   }
 }

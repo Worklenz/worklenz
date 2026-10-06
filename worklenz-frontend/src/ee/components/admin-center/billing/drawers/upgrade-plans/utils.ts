@@ -1,4 +1,5 @@
 import { PricingData } from './types';
+import type { IPricingTier } from '@/ee/api/admin-center/billing.api.service';
 
 export const calculatePrice = (
   basePrice: number,
@@ -81,7 +82,7 @@ export const getInitialPricingData = (): PricingData => ({
   },
 });
 
-export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
+export const mapTierBasedPricingToFrontend = (tiers: IPricingTier[]): PricingData => {
   const mapped = getInitialPricingData();
 
   // Handle AppSumo promo plans first by grouping them
@@ -94,10 +95,10 @@ export const mapTierBasedPricingToFrontend = (tiers: any[]): PricingData => {
 
   tiers.forEach(tier => {
     const tierName = tier.tier_name;
-    const getPlanId = (tier: any, isAnnual: boolean) =>
+    const getPlanId = (t: IPricingTier, isAnnual: boolean) =>
       isAnnual
-        ? tier.plans?.annual_plan_id || tier.annual_paddle_plan_id || tier.paddle_plan_id || ''
-        : tier.plans?.monthly_plan_id || tier.monthly_paddle_plan_id || tier.paddle_plan_id || '';
+        ? t.plans?.annual_plan_id || ''
+        : t.plans?.monthly_plan_id || '';
 
     switch (tierName) {
       case 'PRO_SMALL':

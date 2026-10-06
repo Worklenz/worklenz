@@ -169,12 +169,14 @@
 
 .theme-light .current-user-comment .ant-comment-content-detail {
   background-color: #e1f3ff;
-  border-color: #c2e4f9;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .theme-dark .current-user-comment .ant-comment-content-detail {
   background-color: #1e3a5f;
-  border-color: #2a4a6d;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Mentions in current user comments */
@@ -291,7 +293,7 @@
 
 .comment-hover-bar {
   position: absolute;
-  top: -52px;
+  bottom: -52px;
   right: 4px;
   display: flex;
   align-items: center;
@@ -324,6 +326,22 @@
   visibility: visible;
   pointer-events: auto;
   transition-delay: 0.35s;
+}
+
+/* Touch / mobile: keep copy-link reachable without hover */
+@media (hover: none), (pointer: coarse) {
+  .comment-hover-bar {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    bottom: -44px;
+    padding: 4px 8px;
+  }
+
+  .comment-hover-bar .quick-reactions,
+  .comment-hover-bar .quick-reactions + .hover-divider {
+    display: none;
+  }
 }
 
 /* ─── Quick emoji reactions in the hover bar ─────────────────────────────── */
@@ -451,20 +469,118 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* ─── Inline edit form inside the bubble ────────────────────────────────── */
+/* ─── Comment Edit UI ───────────────────────────────────────────────────── */
 
-.comment-content-light .ant-input,
-.comment-content-dark .ant-input {
+.comment-edit-container {
+  position: relative;
+  width: fit-content;
+  max-width: 85%;
+  margin-left: auto;
+  padding: 8px 12px;
   border-radius: 8px;
+  box-sizing: border-box;
 }
 
-.comment-content-dark .ant-input {
+.theme-light .comment-edit-container {
+  background-color: #f0f2f5;
+}
+
+.theme-dark .comment-edit-container {
   background-color: #2a2a2a;
-  color: #d1d0d3;
-  border-color: #333;
 }
 
-.comment-content-dark .ant-input:hover,
-.comment-content-dark .ant-input:focus {
-  border-color: #1890ff;
+.comment-edit-input {
+  width: 100%;
+  border: 1px solid transparent;
+}
+
+.comment-edit-input:focus-within {
+  border-color: #1677ff;
+}
+
+/* Edit textarea */
+.comment-edit-input textarea,
+.comment-edit-input .ant-input {
+  width: 100%;
+  min-height: 80px;
+  max-height: 180px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Light mode */
+.theme-light .comment-edit-input textarea,
+.theme-light .comment-edit-input .ant-input {
+  background: #ffffff;
+  color: rgba(0, 0, 0, 0.88);
+  border: 1px solid #d9d9d9;
+}
+
+/* Dark mode */
+.theme-dark .comment-edit-input textarea,
+.theme-dark .comment-edit-input .ant-input {
+  background: #1f1f1f;
+  color: #d1d0d3;
+  border: 1px solid #434343;
+}
+
+/* Focus */
+.comment-edit-input textarea:focus,
+.comment-edit-input .ant-input:focus {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+  outline: none;
+}
+
+/* Borderless edit field — the inline editor is a CustomMentionsInput contentEditable
+   div whose border/background/outline are set via inline styles, so these overrides
+   need !important. Scoped to .comment-edit-input so the main comment composer keeps
+   its border. */
+.comment-edit-input .custom-mentions-wrapper {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.comment-edit-input .custom-mentions-editable,
+.comment-edit-input .custom-mentions-editable:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Save / Cancel container */
+.comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Buttons */
+.comment-edit-actions .ant-btn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* Cancel button */
+.theme-light .comment-edit-actions .ant-btn:not(.ant-btn-primary) {
+  color: #595959;
+  border-color: #d9d9d9;
+  background: #ffffff;
+}
+
+.theme-dark .comment-edit-actions .ant-btn:not(.ant-btn-primary) {
+  color: #d1d0d3;
+  border-color: #434343;
+  background: #1f1f1f;
 }

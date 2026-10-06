@@ -20,6 +20,11 @@ import {
   log_error,
   toMinutes,
 } from "../shared/utils";
+import {
+  buildMultiProjectAssigneeScopeClause,
+  isAssigneeScopeReadonlyForTask,
+  isAssigneeScopeSessionExempt,
+} from "../shared/assignee-task-scope";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { NotificationsService } from "../services/notifications/notifications.service";
@@ -431,6 +436,138 @@ export default class TasksController extends TasksControllerBase {
   }
 
   @HandleExceptions()
+  public static async updateTaskGroup(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse,
+  ): Promise<IWorkLenzResponse> {
+    const userId = req.user?.id as string;
+    const { id: taskId } = req.params;
+    const { group_type, group_value, project_id } = req.body;
+
+    // Validate input
+    if (!taskId || !group_type || !project_id) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Missing required fields: taskId, group_type, project_id")
+      );
+    }
+
+    const validGroupTypes = ['status', 'priority', 'phase'];
+    if (!validGroupTypes.includes(group_type)) {
+      return res.status(400).send(
+        new ServerResponse(false, null, `Invalid group_type: ${group_type}`)
+      );
+    }
+
+    try {
+      // For phase changes, use handle_on_task_phase_change to trigger cascade
+      if (group_type === 'phase') {
+        // Convert group_value to UUID (or null if unmapping)
+        const newPhaseId = group_value === 'null' || !group_value ? null : group_value;
+
+        // Call handle_on_task_phase_change to update task AND cascade to subtasks
+        const phaseChangeQ = `SELECT handle_on_task_phase_change($1, $2) AS result;`;
+        const phaseResult = await db.query(phaseChangeQ, [taskId, newPhaseId]);
+
+        if (!phaseResult.rows[0]) {
+          return res.status(500).send(
+            new ServerResponse(false, null, "Failed to update phase")
+          );
+        }
+
+        const phaseChangeResult = phaseResult.rows[0].result || {};
+        const MAX_CASCADED_PHASE_SOCKET_EMITS = 100;
+        const cascadedSubtasks = Array.isArray(phaseChangeResult.cascaded_subtasks)
+          ? phaseChangeResult.cascaded_subtasks
+          : [];
+
+        // Emit socket event for phase change
+        if (newPhaseId) {
+          // Get phase info for socket event
+          const phaseQ = `SELECT name, color_code FROM project_phases WHERE id = $1;`;
+          const phaseInfoResult = await db.query(phaseQ, [newPhaseId]);
+          const phaseInfo = phaseInfoResult.rows[0];
+
+          IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+            id: newPhaseId,
+            task_id: taskId,
+            color_code: phaseInfo?.color_code || null,
+            name: phaseInfo?.name || null,
+          });
+
+          for (const cascadedTask of cascadedSubtasks.slice(0, MAX_CASCADED_PHASE_SOCKET_EMITS)) {
+            IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+              id: cascadedTask.phase_id,
+              task_id: cascadedTask.task_id,
+              color_code: cascadedTask.phase_color || null,
+              name: cascadedTask.phase_name || null,
+              is_cascaded: true,
+            });
+          }
+        } else {
+          // Phase cleared
+          IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+            id: null,
+            task_id: taskId,
+            color_code: null,
+          });
+
+          for (const cascadedTask of cascadedSubtasks.slice(0, MAX_CASCADED_PHASE_SOCKET_EMITS)) {
+            IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+              id: null,
+              task_id: cascadedTask.task_id,
+              color_code: null,
+              is_cascaded: true,
+            });
+          }
+        }
+
+        if (cascadedSubtasks.length > MAX_CASCADED_PHASE_SOCKET_EMITS) {
+          IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+            id: newPhaseId,
+            task_id: taskId,
+            is_cascaded: true,
+            cascade_truncated: true,
+            cascaded_count: cascadedSubtasks.length,
+          });
+        }
+
+        return res.status(200).send(new ServerResponse(true, { done: true }));
+      }
+
+      // For status/priority changes, use standard update path
+      const updateTaskQ = `SELECT update_task($1) AS task;`;
+      const taskUpdateBody: any = {
+        id: taskId,
+        project_id,
+      };
+
+      // Set the appropriate field based on group_type
+      if (group_type === 'status') {
+        taskUpdateBody.status_id = group_value;
+      } else if (group_type === 'priority') {
+        taskUpdateBody.priority_id = group_value;
+      }
+
+      const result = await db.query(updateTaskQ, [JSON.stringify(taskUpdateBody)]);
+      const [data] = result.rows;
+
+      if (group_type === 'status') {
+        await this.notifyStatusChange(userId, taskId, group_value);
+        IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_STATUS_CHANGE.toString(), data?.task);
+      } else if (group_type === 'priority') {
+        IO.getInstance()?.to(project_id).emit(SocketEvents.TASK_PRIORITY_CHANGE.toString(), data?.task);
+      }
+
+      return res.status(200).send(new ServerResponse(true, { done: true }));
+    } catch (error) {
+      log_error('Update Task Group Error:', error);
+      return res.status(500).send(
+        new ServerResponse(false, null, 'Failed to update task group')
+      );
+    }
+  }
+
+  @HandleExceptions()
   public static async getTasksByProject(
     req: IWorkLenzRequest,
     res: IWorkLenzResponse,
@@ -602,6 +739,12 @@ export default class TasksController extends TasksControllerBase {
     queryParams.push(...searchParams);
     paramOffset += searchParams.length;
 
+    const assigneeScopeClause = buildMultiProjectAssigneeScopeClause(
+      "t.id",
+      2,
+      isAssigneeScopeSessionExempt(req.user)
+    );
+
     const q = `
       SELECT t.id, t.name, t.task_no,
              p.id AS project_id, p.name AS project_name, p.key AS project_key
@@ -610,7 +753,7 @@ export default class TasksController extends TasksControllerBase {
       WHERE p.team_id = $1
         AND t.archived IS FALSE
         AND NOT EXISTS (SELECT 1 FROM archived_projects ap WHERE ap.project_id = p.id AND ap.user_id = $2)
-        ${filterByMember} ${searchQuery}
+        ${filterByMember} ${assigneeScopeClause} ${searchQuery}
       ORDER BY t.updated_at DESC
       LIMIT $${paramOffset} OFFSET $${paramOffset + 1};
     `;
@@ -829,6 +972,13 @@ export default class TasksController extends TasksControllerBase {
     // Ensure task drawer always receives the latest custom column values
     // even if helper transformations overwrite task properties.
     t.custom_column_values = customColumnValues;
+
+    // TVR-13: parent of assigned-only subtask is viewable but not editable
+    t.assignee_scope_readonly = await isAssigneeScopeReadonlyForTask(
+      req.user?.id,
+      t.id,
+      req.user
+    );
 
     data.view_model.task = t;
 

@@ -24,11 +24,12 @@ const EnhancedKanbanCreateSection: React.FC = () => {
   const { t } = useTranslation('kanban-board');
 
   const themeMode = useAppSelector(state => state.themeReducer.mode);
-  const { projectId } = useAppSelector(state => state.projectReducer);
+  const { projectId, project } = useAppSelector(state => state.projectReducer);
   const groupBy = useAppSelector(state => state.enhancedKanbanReducer.groupBy);
   const { statusCategories, status: existingStatuses } = useAppSelector(
     state => state.taskStatusReducer
   );
+  const isGuestProjectMember = Boolean(project?.is_guest);
 
   const dispatch = useAppDispatch();
   const isOwnerorAdmin = useAuthService().isOwnerOrAdmin();
@@ -81,8 +82,12 @@ const EnhancedKanbanCreateSection: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAdding, showCategoryDropdown]);
 
-  // Don't show for priority grouping or if user doesn't have permissions
-  if (groupBy === IGroupBy.PRIORITY || (!isOwnerorAdmin && !isProjectManager)) {
+  // Don't show for priority grouping, guest project members, or users without permissions
+  if (
+    groupBy === IGroupBy.PRIORITY ||
+    isGuestProjectMember ||
+    (!isOwnerorAdmin && !isProjectManager)
+  ) {
     return null;
   }
 

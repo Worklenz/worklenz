@@ -12,8 +12,8 @@ import GanttToolbar from './components/gantt-toolbar/GanttToolbar';
 import ManagePhaseModal from '@components/task-management/ManagePhaseModal';
 import ManageStatusModal from '@components/task-management/ManageStatusModal';
 import PhaseDetailsModal from './components/phase-details-modal/PhaseDetailsModal';
-import { GanttProvider } from './context/gantt-context';
-import { GanttViewMode, GanttGroupingMode } from './types/gantt-types';
+import { GanttViewMode, GanttGroupingMode, PhaseSortMode, GanttTask, GanttPhase } from './types/gantt-types';
+import { getUserSession } from '@/utils/session-helper';
 import {
   roadmapApi,
   useGetRoadmapTasksQuery,
@@ -23,6 +23,7 @@ import {
   transformToGanttTasksByStatus,
   transformToGanttTasksByPriority,
   transformToGanttPhases,
+  sortPhasesForDisplay,
 } from './services/roadmap-api.service';
 import { UnifiedTimelineCalculator } from './utils/unified-timeline-calculator';
 import { formatDateLocal } from './utils/date-utils';
@@ -44,6 +45,7 @@ import { ITaskStatusCreateRequest } from '@/types/tasks/task-status-create-reque
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { SocketEvents } from '@/shared/socket-events';
 import { useResizablePanel } from './hooks/useResizablePanel';
+import { GanttProvider } from './context/gantt-context';
 import './gantt-styles.css';
 import './components/gantt-task-list/gantt-task-list-resize.css';
 
@@ -66,10 +68,14 @@ const ProjectViewGantt: React.FC = React.memo(() => {
     const saved = localStorage.getItem(`roadmap-grouping-${projectId}`);
     return (saved as GanttGroupingMode) || 'phase';
   });
+  const [phaseSortMode, setPhaseSortMode] = useState<PhaseSortMode>(() => {
+    const saved = localStorage.getItem(`roadmap-phase-sort-${projectId}`);
+    return (saved as PhaseSortMode) || 'manual';
+  });
   const [showPhaseModal, setShowPhaseModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPhaseDetailsModal, setShowPhaseDetailsModal] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState<any>(null);
+  const [selectedPhase, setSelectedPhase] = useState<GanttTask | null>(null);
   // Expanded/collapsed state is remembered per grouping mode (Phase/Status/Priority
   // each have their own set of section ids), so switching the grouping toggle or
   // navigating away to another project tab and back restores exactly what the user
@@ -148,13 +154,21 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       switch (groupingMode) {
         case 'phase':
           if (phasesResponse?.body) {
-            const transformedTasks = transformToGanttTasks(apiTasks, phasesResponse.body, projectColor);
-            const result: any[] = [];
+            // Sort after transforming, not before — transformToGanttTasks resolves
+            // each phase's *effective* start_date (its own, or a fallback derived
+            // from child task dates when it has none), which is what the date pill
+            // actually displays. Sorting the raw phases first would miss that
+            // fallback and disagree with what's on screen.
+            const transformedTasks = sortPhasesForDisplay(
+              transformToGanttTasks(apiTasks, phasesResponse.body, projectColor),
+              phaseSortMode
+            );
+            const result: GanttTask[] = [];
 
             // For roadmap view: show phases and their child tasks in timeline
             transformedTasks.forEach(task => {
               if (task.type === 'milestone' || task.is_milestone) {
-                const taskCopy = {
+                const taskCopy: GanttTask = {
                   ...task,
                   start_date: task.start_date ? new Date(task.start_date) : null,
                   end_date: task.end_date ? new Date(task.end_date) : null,
@@ -165,7 +179,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
                 
                 // Add child tasks for timeline display (but not for task list)
                 if (task.children && task.children.length > 0) {
-                  task.children.forEach((child: any) => {
+                  task.children.forEach((child: GanttTask) => {
                     result.push({
                       ...child,
                       start_date: child.start_date ? new Date(child.start_date) : null,
@@ -201,13 +215,13 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           );
           
           // Include both section headers and individual tasks
-          const statusResult: any[] = [];
+          const statusResult: GanttTask[] = [];
           transformedStatusTasks.forEach(group => {
             statusResult.push(group); // Add the status category group (section header)
             
             // Add individual tasks
             if (group.children && group.children.length > 0) {
-              group.children.forEach((task: any) => {
+              group.children.forEach((task: GanttTask) => {
                 statusResult.push({
                   ...task,
                   parent_status_id: group.status,
@@ -227,13 +241,13 @@ const ProjectViewGantt: React.FC = React.memo(() => {
           );
           
           // Include both section headers and individual tasks
-          const priorityResult: any[] = [];
+          const priorityResult: GanttTask[] = [];
           transformedPriorityTasks.forEach(group => {
             priorityResult.push(group); // Add the priority group (section header)
             
             // Add individual tasks
             if (group.children && group.children.length > 0) {
-              group.children.forEach((task: any) => {
+              group.children.forEach((task: GanttTask) => {
                 priorityResult.push({
                   ...task,
                   parent_priority: group.priority,
@@ -249,7 +263,7 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       }
     }
     return [];
-  }, [tasksResponse, phasesResponse, statusCategories, statuses, groupingMode, currentProject, priorities, themeMode])
+  }, [tasksResponse, phasesResponse, statusCategories, statuses, groupingMode, phaseSortMode, currentProject, priorities, themeMode])
 
   // Ids of top-level sections that actually exist right now (phase/status/priority
   // groups) for the active grouping mode. Used below instead of raw `expandedTasks.size`
@@ -374,6 +388,13 @@ const ProjectViewGantt: React.FC = React.memo(() => {
       localStorage.setItem(`roadmap-grouping-${projectId}`, groupingMode);
     }
   }, [groupingMode, projectId]);
+
+  // Save phase sort mode to localStorage when it changes
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem(`roadmap-phase-sort-${projectId}`, phaseSortMode);
+    }
+  }, [phaseSortMode, projectId]);
 
   // On true first-ever visit to a given grouping mode (no saved expand state for it
   // at all. There's always at least one section open by default — if nothing is
@@ -512,6 +533,10 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
     }
     setExpandedTasks(new Set());
   }, [projectId]);
+
+  const handlePhaseSortModeChange = useCallback((mode: PhaseSortMode) => {
+    setPhaseSortMode(mode);
+  }, []);
 
   // Check if all phases are collapsed
   const isAllCollapsed = useMemo(() => {
@@ -730,12 +755,12 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
     }
   }, [refetchTasks, dispatch, projectId]);
 
-  const handlePhaseClick = useCallback((phase: any) => {
+  const handlePhaseClick = useCallback((phase: GanttTask) => {
     // Enrich children with assignees from the raw tasks response
     if (phase.children && tasksResponse?.body) {
       const rawTasks = tasksResponse.body;
-      const enrichedChildren = phase.children.map((child: any) => {
-        const rawTask = rawTasks.find((t: any) => t.id === child.id);
+      const enrichedChildren = phase.children.map((child: GanttTask) => {
+        const rawTask = rawTasks.find(t => t.id === child.id);
         return rawTask ? { ...child, assignees: rawTask.assignees || [] } : child;
       });
       setSelectedPhase({ ...phase, children: enrichedChildren });
@@ -751,7 +776,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
   }, []);
 
   const handlePhaseUpdate = useCallback(
-    (updatedPhase: any) => {
+    (_updatedPhase?: unknown) => {
       refetchTasks();
       refetchPhases();
       // Also refresh the task-management slice so Task List updates immediately
@@ -760,13 +785,24 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         dispatch(fetchTaskGroups(projectId));
       }
     },
-    [refetchTasks, refetchPhases, dispatch, projectId]
+    [dispatch, projectId, refetchPhases, refetchTasks]
   );
 
   const handlePhaseReorder = useCallback(
     async (oldIndex: number, newIndex: number) => {
       if (!projectId || !phasesResponse?.body) {
         message.error('Unable to reorder phases: missing project data');
+        return;
+      }
+
+      // Phase order is date-derived and read-only while in Chronological mode —
+      // drag-reordering only applies to Manual mode's persisted sort_index.
+      if (phaseSortMode === 'chronological') {
+        message.info(
+          t('roadmap.dragDisabledInChronological', {
+            defaultValue: 'Switch to Manual order to drag-reorder phases',
+          })
+        );
         return;
       }
 
@@ -793,11 +829,12 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
           dispatch(fetchTasksV3(projectId));
           dispatch(fetchTaskGroups(projectId));
         }
-      } catch (error: any) {
-        message.error(error?.data?.message || 'Failed to reorder phases');
+      } catch (error: unknown) {
+        const err = error as { data?: { message?: string } };
+        message.error(err?.data?.message || 'Failed to reorder phases');
       }
     },
-    [projectId, phasesResponse?.body, reorderPhases, refetchPhases, refetchTasks, dispatch]
+    [projectId, phasesResponse?.body, phaseSortMode, reorderPhases, refetchPhases, refetchTasks, dispatch, t]
   );
 
   // Persists via the same status-order API the Task List/Board views use
@@ -815,7 +852,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
       reorderedStatuses.splice(newIndex, 0, moved);
 
       const status_order = reorderedStatuses
-        .map((status: any) => status.id)
+        .map(status => status.id)
         .filter((id: string | undefined): id is string => !!id);
 
       try {
@@ -832,8 +869,9 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         // Refresh task-management slice so Task List view reflects the new status order
         dispatch(fetchTasksV3(projectId));
         dispatch(fetchTaskGroups(projectId));
-      } catch (error: any) {
-        message.error(error?.data?.message || 'Failed to update status order');
+      } catch (error: unknown) {
+        const err = error as { data?: { message?: string } };
+        message.error(err?.data?.message || 'Failed to update status order');
       }
     },
     [projectId, statuses, dispatch, refetchTasks]
@@ -843,15 +881,16 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
 
   const handleCreateQuickTask = useCallback(
     (taskName: string, phaseId?: string, startDate?: Date, endDate?: Date, parentTaskId?: string) => {
-      if (!socket || !projectId || !taskName.trim() || !authUser) {
+      const session = getUserSession();
+      if (!socket || !projectId || !taskName.trim() || (!authUser && !session)) {
         return;
       }
 
-      const taskData: any = {
+      const taskData: Record<string, unknown> = {
         project_id: projectId,
         name: taskName.trim(),
-        reporter_id: authUser.id,
-        team_id: authUser.team_id,
+        reporter_id: session?.id || authUser?.id || '',
+        team_id: session?.team_id || '',
         start_date: startDate ? formatDateLocal(startDate) : null,
         end_date: endDate ? formatDateLocal(endDate) : null,
       };
@@ -867,7 +906,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
 
       if (phaseId && phaseId.startsWith('status-')) {
         const statusId = phaseId.replace('status-', '');
-        const matchedStatus = statuses.find((s: any) => s.id === statusId || s.category_id === statusId);
+        const matchedStatus = statuses.find(s => s.id === statusId || s.category_id === statusId);
 
         if (matchedStatus?.id) {
           taskData.status_id = matchedStatus.id;
@@ -887,7 +926,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         };
         const priorityName = priorityNameByValue[priorityValue];
         const matchedPriority = priorities.find(
-          (p: any) => p.name?.toLowerCase() === priorityName?.toLowerCase()
+          p => p.name?.toLowerCase() === priorityName?.toLowerCase()
         );
 
         if (matchedPriority?.id) {
@@ -904,8 +943,8 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
       // consistently elsewhere in the app instead of with a blank status/priority.
       if (!statusAssignedFromSection) {
         const defaultStatus =
-          statuses.find((s: any) => s.default_status) ||
-          statuses.find((s: any) => {
+          statuses.find(s => s.default_status) ||
+          statuses.find(s => {
             const categoryName = (s.category_name || '').toLowerCase();
             return categoryName === 'to do' || categoryName === 'todo';
           });
@@ -915,7 +954,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
       }
 
       if (!priorityAssignedFromSection) {
-        const defaultPriority = priorities.find((p: any) => p.name?.toLowerCase() === 'medium');
+        const defaultPriority = priorities.find(p => p.name?.toLowerCase() === 'medium');
         if (defaultPriority?.id) {
           taskData.priority_id = defaultPriority.id;
         }
@@ -925,7 +964,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
       // a separately-registered background listener — guarantees the new task/subtask
       // (from either the timeline rollover or the task-name column) appears immediately
       // once created, without waiting for the 30s poll or a manual page reload.
-      socket.once(SocketEvents.QUICK_TASK.toString(), (response: any) => {
+      socket.once(SocketEvents.QUICK_TASK.toString(), (response: { error?: boolean; name?: string; message?: string }) => {
         if (response && !response.error) {
           message.success(`Task "${response.name}" created successfully`);
           refetchTasks();
@@ -955,7 +994,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
       }
       if (groupId.startsWith('status-')) {
         const statusId = groupId.replace('status-', '');
-        const matched = statuses.find((s: any) => s.id === statusId || s.category_id === statusId);
+        const matched = statuses.find(s => s.id === statusId || s.category_id === statusId);
         return matched?.id || null;
       }
       if (groupId.startsWith('priority-')) {
@@ -967,7 +1006,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
           0: 'Low',
         };
         const priorityName = priorityNameByValue[priorityValue];
-        const matched = priorities.find((p: any) => p.name?.toLowerCase() === priorityName?.toLowerCase());
+        const matched = priorities.find(p => p.name?.toLowerCase() === priorityName?.toLowerCase());
         return matched?.id || null;
       }
       return null;
@@ -1073,14 +1112,14 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         from_group: sourceBackendId || 'unmapped',
         to_group: targetBackendId || 'unmapped',
         task: { id: taskId, project_id: projectId, status: '', priority: '' },
-        team_id: authUser?.team_id || '',
+        team_id: getUserSession()?.team_id || '',
       });
     },
     [projectId, tasks, dispatch, socket, refetchTasks, refetchPhases, groupingMode, resolveGroupBackendId, authUser]
   );
 
   const handleTaskNameClick = useCallback(
-    (task: any) => {
+    (task: GanttTask) => {
       if (chartRef.current && task.start_date && dateRange) {
         const totalTimeSpan = dateRange.end.getTime() - dateRange.start.getTime();
         const timeFromStart = new Date(task.start_date).getTime() - dateRange.start.getTime();
@@ -1207,6 +1246,8 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
             groupingMode={groupingMode}
             onViewModeChange={handleViewModeChange}
             onGroupingModeChange={handleGroupingModeChange}
+            phaseSortMode={phaseSortMode}
+            onPhaseSortModeChange={handlePhaseSortModeChange}
             dateRange={dateRange}
             onScrollToToday={handleScrollToToday}
             onToggleFullscreen={handleToggleFullscreen}
@@ -1295,6 +1336,7 @@ const newlyCollapsed = new Set(Array.from(previousExpanded).filter(id => !curren
         open={showPhaseModal}
         onClose={handleClosePhaseModal}
         projectId={projectId}
+        enableDates
       />
 
       <ManageStatusModal

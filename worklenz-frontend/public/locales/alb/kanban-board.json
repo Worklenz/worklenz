@@ -1,35 +1,29 @@
 {
   "rename": "Riemërto",
   "renameStatus": "Riemërto Statusin",
+  "renamePhase": "Riemërto Fazën",
   "delete": "Fshi",
   "addTask": "Shto Detyrë",
   "addSectionButton": "Shto Seksion",
   "changeCategory": "Ndrysho kategorinë",
-
   "deleteTooltip": "Fshi",
   "deleteConfirmationTitle": "Jeni i sigurt?",
   "deleteConfirmationOk": "Po",
   "deleteConfirmationCancel": "Anulo",
-
   "deleteTaskTitle": "Fshi Detyrën",
   "deleteTaskContent": "Jeni i sigurt që doni të fshini këtë detyrë? Kjo veprim nuk mund të zhbëhet.",
   "deleteTaskConfirm": "Fshi",
   "deleteTaskCancel": "Anulo",
-
   "deleteStatusTitle": "Fshi Statusin",
   "deleteStatusContent": "Jeni i sigurt që doni të fshini këtë status? Kjo veprim nuk mund të zhbëhet.",
-
   "deletePhaseTitle": "Fshi Fazen",
   "deletePhaseContent": "Jeni i sigurt që doni të fshini këtë fazë? Kjo veprim nuk mund të zhbëhet.",
-
   "dueDate": "Data e përfundimit",
   "cancel": "Anulo",
-
   "today": "Sot",
   "tomorrow": "Nesër",
   "assignToMe": "Cakto mua",
   "archive": "Arkivo",
-
   "newTaskNamePlaceholder": "Shkruaj emrin e detyrës",
   "newSubtaskNamePlaceholder": "Shkruaj emrin e nëndetyrës",
   "untitledSection": "Seksion pa titull",
@@ -48,7 +42,6 @@
     "task2": "Rishikoni me palët e interesuara",
     "task3": "Planifikoni fillimin"
   },
-
   "errorLoadingTasks": "Gabim gjatë ngarkimit të detyrave",
   "noTasksFound": "Nuk u gjetën detyra",
   "loadingFilters": "Duke ngarkuar filtra...",

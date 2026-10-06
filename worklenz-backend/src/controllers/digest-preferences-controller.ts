@@ -6,7 +6,12 @@ import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { ServerResponse } from "../models/server-response";
-import { getBaseUrl } from "../cron_jobs/helpers";
+import { unsubscribeByToken } from "../services/digest-unsubscribe";
+import {
+  buildManagePreferencesUrl as managePreferencesUrl,
+  buildUnsubscribeUrl as unsubscribeUrl,
+  buildViewAllTasksUrl as viewAllTasksUrl,
+} from "../services/digest-urls";
 
 export default class DigestPreferencesController extends WorklenzControllerBase {
 
@@ -103,42 +108,28 @@ export default class DigestPreferencesController extends WorklenzControllerBase 
   /** Public endpoint — no auth required. */
   public static async unsubscribe(req: Request, res: Response): Promise<void> {
     const { token } = req.query as { token?: string };
-    if (!token) {
-      res.status(400).send("Missing token.");
+    const result = await unsubscribeByToken(token);
+
+    if (result === "missing") {
+      res.status(400).type("html").send(DigestPreferencesController.unsubscribePage(
+        "Missing unsubscribe token.",
+        false
+      ));
       return;
     }
 
-    const tokenRow = await db.query(
-      `SELECT user_id, used_at FROM digest_unsubscribe_tokens WHERE token = $1`,
-      [token]
-    );
-
-    if (!tokenRow.rows.length) {
-      res.status(404).send("Invalid or expired unsubscribe link.");
+    if (result === "invalid") {
+      res.status(404).type("html").send(DigestPreferencesController.unsubscribePage(
+        "This unsubscribe link is invalid or has expired.",
+        false
+      ));
       return;
     }
 
-    const { user_id } = tokenRow.rows[0];
-
-    await db.query(
-      `UPDATE user_digest_preferences
-       SET daily_enabled = FALSE,
-           weekly_start_enabled = FALSE,
-           weekly_end_enabled = FALSE,
-           updated_at = CURRENT_TIMESTAMP
-       WHERE user_id = $1`,
-      [user_id]
-    );
-
-    // Mark token used (idempotent — only set on first use)
-    if (!tokenRow.rows[0].used_at) {
-      await db.query(
-        `UPDATE digest_unsubscribe_tokens SET used_at = CURRENT_TIMESTAMP WHERE token = $1`,
-        [token]
-      );
-    }
-
-    res.status(200).send("You have been unsubscribed from all Worklenz task digest emails.");
+    res.status(200).type("html").send(DigestPreferencesController.unsubscribePage(
+      "You have been unsubscribed from all Worklenz task digest emails.",
+      true
+    ));
   }
 
   public static async ensureUnsubscribeToken(userId: string): Promise<string> {
@@ -149,19 +140,52 @@ export default class DigestPreferencesController extends WorklenzControllerBase 
     if (existing.rows.length) return existing.rows[0].token;
 
     const token = crypto.randomBytes(32).toString("hex");
-    await db.query(
+    const inserted = await db.query(
       `INSERT INTO digest_unsubscribe_tokens (user_id, token) VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
+       ON CONFLICT (user_id) DO NOTHING
+       RETURNING token`,
       [userId, token]
     );
-    return token;
+    if (inserted.rows.length) return inserted.rows[0].token;
+
+    const retry = await db.query(
+      `SELECT token FROM digest_unsubscribe_tokens WHERE user_id = $1`,
+      [userId]
+    );
+    return retry.rows[0]?.token ?? token;
   }
 
   public static buildUnsubscribeUrl(token: string): string {
-    return `${getBaseUrl()}/api/v1/digest/unsubscribe?token=${token}`;
+    return unsubscribeUrl(token);
   }
 
   public static buildManagePreferencesUrl(): string {
-    return `${getBaseUrl()}/worklenz/settings/notifications`;
+    return managePreferencesUrl();
+  }
+
+  public static buildViewAllTasksUrl(): string {
+    return viewAllTasksUrl();
+  }
+
+  private static unsubscribePage(message: string, success: boolean): string {
+    const manageUrl = DigestPreferencesController.buildManagePreferencesUrl();
+    const heading = success ? "Unsubscribed" : "Unsubscribe";
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${heading} — Worklenz</title>
+</head>
+<body style="margin:0;padding:40px 20px;font-family:'Helvetica Neue',helvetica,arial,sans-serif;background:#f5f5f5;color:#2b2b2b;">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:8px;padding:32px 28px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
+    <h1 style="font-size:20px;margin:0 0 12px;">${heading}</h1>
+    <p style="font-size:15px;line-height:1.5;margin:0 0 20px;">${message}</p>
+    <p style="font-size:14px;margin:0;">
+      <a href="${manageUrl}" style="color:#1890ff;">Manage notification preferences</a>
+    </p>
+  </div>
+</body>
+</html>`;
   }
 }

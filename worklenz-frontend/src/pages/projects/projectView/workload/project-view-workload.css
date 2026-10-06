@@ -1,3 +1,28 @@
+/* Workload Table View: keep all table text (cells, tags, progress %,
+   pagination controls, and the nested per-member task table) at a consistent
+   12px. antd sets an explicit font-size on several inner component roots
+   (.ant-typography, .ant-table.ant-table-small, .ant-tag, ...) that wins over
+   a plain descendant-selector override by cascade order alone, so !important
+   is needed here to reliably beat those regardless of injection order. The
+   Avatar fallback-letter sizing is excluded since antd computes it dynamically
+   to fit the circle. */
+.workload-table-compact .ant-table,
+.workload-table-compact .ant-table-pagination,
+.workload-table-compact .ant-table :not(.ant-avatar, .ant-avatar *),
+.workload-table-compact .ant-table-pagination :not(.ant-avatar, .ant-avatar *) {
+  font-size: 12px !important;
+}
+
+/* Workload Calendar View: antd's Calendar grid (weekday header, date
+   numbers, month/year selectors, month/week toggle) renders at the default
+   14px via resetComponent on .ant-picker-calendar. This container only ever
+   holds the calendar grid itself (the larger-by-design stats in the side
+   detail panel live outside it), so a blanket 12px override is safe here. */
+.workload-calendar-main .ant-picker-calendar,
+.workload-calendar-main .ant-picker-calendar * {
+  font-size: 12px !important;
+}
+
 /* Workload View Scrollbar Styling */
 .workload-scroll-container {
   position: relative;
@@ -38,4 +63,22 @@
 
 [data-theme="dark"] .workload-scroll-container::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Calendar view: stack the month grid above the day-detail panel instead of
+   side-by-side once there's no room for the panel's fixed 380px width. */
+@media (max-width: 768px) {
+  .workload-calendar-layout {
+    flex-direction: column !important;
+  }
+
+  .workload-calendar-main {
+    overflow-y: visible !important;
+  }
+
+  .workload-calendar-side-panel {
+    width: 100% !important;
+    height: 420px !important;
+    flex-shrink: 1 !important;
+  }
 }

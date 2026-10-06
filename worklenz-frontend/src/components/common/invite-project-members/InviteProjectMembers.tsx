@@ -203,15 +203,38 @@ const InviteProjectMembers = ({ projectId, projectName, prefillEmail }: InvitePr
 
       const successCount = successResults.length;
       const failCount = failedResults.length;
+      const isGuestInvite = values.access === 'guest';
 
       if (successCount > 0 && failCount > 0) {
         const failedEmails = failedResults.map(r => r.email).join(', ');
-        message.warning(`${successCount} invited successfully. Failed: ${failedEmails}`);
+        message.warning(
+          isGuestInvite
+            ? t('partialSuccess', {
+                defaultValue: `${successCount} guest(s) invited successfully. Failed: ${failedEmails}`,
+                count: successCount,
+                emails: failedEmails,
+              })
+            : t('projectInvite_partialSuccess', {
+                defaultValue: `${successCount} project member(s) invited successfully. Failed: ${failedEmails}`,
+                count: successCount,
+                emails: failedEmails,
+              })
+        );
         form.resetFields();
         dispatch(markProjectMembersUpdated());
         dispatch(toggleProjectMemberDrawer());
       } else if (successCount > 0) {
-        message.success(`${successCount} project member(s) invited successfully`);
+        message.success(
+          isGuestInvite
+            ? t('guestInviteSuccess', {
+                defaultValue: `${successCount} guest(s) invited successfully`,
+                count: successCount,
+              })
+            : t('projectInvite_inviteSuccess', {
+                defaultValue: `${successCount} project member(s) invited successfully`,
+                count: successCount,
+              })
+        );
         form.resetFields();
         dispatch(markProjectMembersUpdated());
         dispatch(toggleProjectMemberDrawer());

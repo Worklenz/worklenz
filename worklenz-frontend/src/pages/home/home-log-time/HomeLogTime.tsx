@@ -37,15 +37,73 @@ import {
   setShowTaskDrawer,
   fetchTask,
   setNavigationContext,
+  setTargetDrawerTab,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { Task } from '@/types/task-management.types';
+import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import { decodeHtmlEntities } from '@/utils/html-entities';
+import { toSolidTagColor } from '@/utils/colorUtils';
 import { useResponsive } from '@/hooks/useResponsive';
+import { store } from '@/app/store';
+import { ITaskListStatusChangeResponse } from '@/types/tasks/task-list-status.types';
+import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
+import { ITaskPriority } from '@/types/tasks/taskPriority.types';
+import { ITaskStatus } from '@/types/tasks/taskStatus.types';
+import { TruncatedColoredTag } from '@/components/common/truncated-colored-tag/TruncatedColoredTag';
 import './home-log-time.css';
+
+const patchRecentLogsForTask = (
+  setRecentLogs: React.Dispatch<React.SetStateAction<IRecentTimeLog[]>>,
+  taskId: string,
+  patch: Partial<IRecentTimeLog>
+) => {
+  setRecentLogs(prevLogs =>
+    prevLogs.map(log => (log.task_id === taskId ? { ...log, ...patch } : log))
+  );
+};
+
+const resolveStatusFields = (
+  statusId: string | undefined,
+  statuses: ITaskStatus[] | undefined,
+  colorCode?: string,
+  colorCodeDark?: string,
+  isDone?: boolean,
+  // The socket payload carries the status name; the cache lookup is only a
+  // fallback (project-scoped statuses may not be loaded for this row).
+  payloadName?: string
+): Partial<IRecentTimeLog> => {
+  const name = payloadName || statuses?.find(item => item.id === statusId)?.name;
+  const statusColor = toSolidTagColor(colorCode);
+  const statusColorDark = toSolidTagColor(colorCodeDark);
+
+  return {
+    ...(name ? { status_name: name } : {}),
+    ...(statusColor ? { status_color: statusColor } : {}),
+    ...(statusColorDark ? { status_color_dark: statusColorDark } : {}),
+    ...(isDone !== undefined ? { is_done: isDone } : {}),
+  };
+};
+
+const resolvePriorityFields = (
+  priorityId: string | undefined,
+  priorities: ITaskPriority[],
+  // Prefer the name from the socket payload so this works before the priority
+  // list has loaded.
+  payloadName?: string
+): Partial<IRecentTimeLog> => {
+  const priority = priorities.find(item => item.id === priorityId);
+  const name = payloadName || priority?.name;
+  if (!name && !priority) return {};
+  return {
+    ...(name ? { priority_name: name } : {}),
+    ...(priority?.color_code ? { priority_color: priority.color_code } : {}),
+    ...(priority?.color_code_dark ? { priority_color_dark: priority.color_code_dark } : {}),
+  };
+};
 
 const formatSeconds = (seconds: number): string => {
   const total = Math.max(0, Math.round(seconds || 0));
@@ -109,6 +167,11 @@ const HomeLogTime: React.FC = () => {
 
   const { data: projectListData } = useGetProjectsByTeamQuery();
   const projects = useMemo(() => projectListData?.body || [], [projectListData]);
+  const priorities = useAppSelector(state => state.priorityReducer.priorities);
+
+  useEffect(() => {
+    dispatch(fetchPriorities());
+  }, [dispatch]);
 
   const [selProjectId, setSelProjectId] = useState<string | undefined>(undefined);
   const [selTaskId, setSelTaskId] = useState<string | undefined>(undefined);
@@ -162,31 +225,73 @@ const HomeLogTime: React.FC = () => {
 
   useEffect(() => { refreshData(); }, [refreshData]);
 
-  // Real-time task name updates: Listen to socket events for changes from other sources
+  // Real-time task field updates via socket (status, priority, billable, name)
   useEffect(() => {
     if (!socket) return;
 
+    const getLookupData = () => {
+      const state = store.getState();
+      return {
+        statuses: state.taskDrawerReducer.taskFormViewModel?.statuses,
+        priorities: state.priorityReducer.priorities,
+        drawerPriorities: state.taskDrawerReducer.taskFormViewModel?.priorities,
+      };
+    };
+
     const handleTaskNameChange = (data: { id: string; name: string }) => {
       if (!data?.id || !data.name) return;
+      patchRecentLogsForTask(setRecentLogs, data.id, {
+        task_name: decodeHtmlEntities(data.name),
+      });
+    };
 
-      const decodedName = decodeHtmlEntities(data.name);
-
-      // Update the task name in the recent logs list
-      setRecentLogs(prevLogs =>
-        prevLogs.map(log =>
-          log.task_id === data.id ? { ...log, task_name: decodedName } : log
+    const handleTaskStatusChange = (data: ITaskListStatusChangeResponse) => {
+      if (!data?.id || data.completed_deps === false || data.phase_guard_blocked) return;
+      const { statuses } = getLookupData();
+      patchRecentLogsForTask(
+        setRecentLogs,
+        data.id,
+        resolveStatusFields(
+          data.status_id,
+          statuses,
+          data.color_code,
+          data.color_code_dark,
+          data.statusCategory?.is_done,
+          data.status_name
         )
       );
     };
 
+    const handleTaskPriorityChange = (data: ITaskListPriorityChangeResponse) => {
+      if (!data?.id) return;
+      const { priorities: globalPriorities, drawerPriorities } = getLookupData();
+      const priorityList = globalPriorities?.length ? globalPriorities : drawerPriorities || [];
+      patchRecentLogsForTask(setRecentLogs, data.id, {
+        ...resolvePriorityFields(data.priority_id, priorityList, data.priority_name),
+        ...(data.color_code ? { priority_color: data.color_code } : {}),
+        ...(data.color_code_dark ? { priority_color_dark: data.color_code_dark } : {}),
+      });
+    };
+
+    const handleTaskBillableChange = (data: { id: string; billable: boolean; error?: string }) => {
+      if (!data?.id || data.error) return;
+      patchRecentLogsForTask(setRecentLogs, data.id, { billable: data.billable });
+    };
+
     socket.on(SocketEvents.TASK_NAME_CHANGE.toString(), handleTaskNameChange);
+    socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
+    socket.on(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handleTaskPriorityChange);
+    socket.on(SocketEvents.TASK_BILLABLE_CHANGE.toString(), handleTaskBillableChange);
 
     return () => {
       socket.off(SocketEvents.TASK_NAME_CHANGE.toString(), handleTaskNameChange);
+      socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleTaskStatusChange);
+      socket.off(SocketEvents.TASK_PRIORITY_CHANGE.toString(), handleTaskPriorityChange);
+      socket.off(SocketEvents.TASK_BILLABLE_CHANGE.toString(), handleTaskBillableChange);
     };
   }, [socket]);
 
-  // Real-time task name updates: Sync with Redux state for immediate updates while editing in drawer
+  // Real-time task field updates: sync with Redux while the Task Drawer is open
   const selectedTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
   const taskFormViewModel = useAppSelector(state => state.taskDrawerReducer.taskFormViewModel);
@@ -266,6 +371,42 @@ const HomeLogTime: React.FC = () => {
     );
   }, [selectedTaskId, currentTaskName]);
 
+  // Sync status, priority, and billable from the open Task Drawer
+  const drawerTask = showTaskDrawer ? taskFormViewModel?.task : null;
+  const drawerStatuses = taskFormViewModel?.statuses;
+  const drawerPriorities = taskFormViewModel?.priorities;
+
+  useEffect(() => {
+    if (!showTaskDrawer || !selectedTaskId || !drawerTask || drawerTask.id !== selectedTaskId) return;
+
+    const status = drawerStatuses?.find(item => item.id === drawerTask.status_id);
+    const priorityId = drawerTask.priority_id;
+    const priority =
+      priorities.find(item => item.id === priorityId) ||
+      drawerPriorities?.find(item => item.id === priorityId);
+
+    patchRecentLogsForTask(setRecentLogs, selectedTaskId, {
+      ...(status?.name ? { status_name: status.name } : {}),
+      ...(drawerTask.status_color ? { status_color: toSolidTagColor(drawerTask.status_color) } : {}),
+      ...(drawerTask.status_color_dark ? { status_color_dark: toSolidTagColor(drawerTask.status_color_dark) } : {}),
+      ...(priority?.name ? { priority_name: priority.name } : {}),
+      ...(priority?.color_code ? { priority_color: priority.color_code } : {}),
+      ...(priority?.color_code_dark ? { priority_color_dark: priority.color_code_dark } : {}),
+      ...(drawerTask.billable !== undefined ? { billable: drawerTask.billable } : {}),
+    });
+  }, [
+    showTaskDrawer,
+    selectedTaskId,
+    drawerTask?.status_id,
+    drawerTask?.status_color,
+    drawerTask?.status_color_dark,
+    drawerTask?.priority_id,
+    drawerTask?.billable,
+    drawerStatuses,
+    drawerPriorities,
+    priorities,
+  ]);
+
   useEffect(() => {
     if (!selProjectId) {
       setTasks([]);
@@ -307,10 +448,32 @@ const HomeLogTime: React.FC = () => {
     if (!isFormValid) return;
     setSubmitting(true);
     try {
+      // Persist the actual start clock time — backend stores formatted_start as
+      // created_at, and the task-drawer edit form derives start/end from that.
+      // Sending only the DatePicker value kept "now" (or midnight) and dropped
+      // the Time Range start, so edit showed current time + same duration.
+      let formattedStart: string;
+      if (inputMode === 'Time Range' && startTime) {
+        formattedStart = dayjs(date)
+          .hour(startTime.hour())
+          .minute(startTime.minute())
+          .second(0)
+          .millisecond(0)
+          .toISOString();
+      } else {
+        const now = dayjs().second(0).millisecond(0);
+        formattedStart = dayjs(date)
+          .hour(now.hour())
+          .minute(now.minute())
+          .second(0)
+          .millisecond(0)
+          .toISOString();
+      }
+
       await taskTimeLogsApiService.create({
         id: selTaskId,
         project_id: selProjectId,
-        formatted_start: date.toISOString(),
+        formatted_start: formattedStart,
         seconds_spent: loggedSeconds,
         description: notes || undefined,
       });
@@ -430,6 +593,7 @@ const HomeLogTime: React.FC = () => {
       dispatch(setSelectedTaskId(record.task_id));
       dispatch(fetchTask({ taskId: record.task_id, projectId: record.project_id }));
       dispatch(setProjectId(record.project_id));
+      dispatch(setTargetDrawerTab('timeLog'));
       dispatch(setShowTaskDrawer(true));
     },
     [dispatch, filteredSortedLogs]
@@ -473,17 +637,16 @@ const HomeLogTime: React.FC = () => {
         key: 'status',
         title: t('logTime.statusColumn', { defaultValue: 'Status' }),
         width: '12%',
+        ellipsis: true,
         filters: logStatusFilterOptions,
         filteredValue: selectedLogStatusNames,
         onFilter: (value, record) => record.status_name === value,
         render: (_, record) =>
           record.status_name ? (
-            <Tag
+            <TruncatedColoredTag
+              label={record.status_name}
               color={themeMode === 'dark' ? record.status_color_dark : record.status_color}
-              style={{ margin: 0, fontSize: 11 }}
-            >
-              {record.status_name}
-            </Tag>
+            />
           ) : null,
       },
       {
@@ -535,6 +698,21 @@ const HomeLogTime: React.FC = () => {
         width: '10%',
         render: (_, record) => <span style={{ opacity: 0.5, fontSize: 11 }}>{formatLogDate(record.created_at)}</span>,
       },
+      {
+        key: 'createdTime',
+        title: t('logTime.createdTimeColumn', { defaultValue: 'Created Time' }),
+        width: '10%',
+        render: (_, record) => {
+          if (!record.created_at) {
+            return <span style={{ opacity: 0.5, fontSize: 11 }}>-</span>;
+          }
+          return (
+            <span style={{ fontSize: 11, opacity: 0.75 }}>
+              {dayjs(record.created_at).format('HH:mm')}
+            </span>
+          );
+        },
+      },
     ],
     [
       renderLogSortableTitle,
@@ -560,7 +738,10 @@ const HomeLogTime: React.FC = () => {
     padding: 16,
   };
 
-  const weekMax = Math.max(1, ...weekly.map(d => (d.billable + d.non_billable) / 3600));
+  const weekMax = Math.max(
+    1,
+    ...weekly.map(d => (Number(d.billable) + Number(d.non_billable)) / 3600),
+  );
 
   return (
     <div style={{ padding: 24, height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
@@ -793,8 +974,8 @@ const HomeLogTime: React.FC = () => {
                     <div style={{ width: '100%', textAlign: 'center', fontSize: 11, opacity: 0.45 }}>{t('logTime.noDataYet', { defaultValue: 'No data yet' })}</div>
                   )}
                 {weekly.map((d, i) => {
-                  const billHrs = d.billable / 3600;
-                  const nonHrs = d.non_billable / 3600;
+                  const billHrs = Number(d.billable) / 3600;
+                  const nonHrs = Number(d.non_billable) / 3600;
                   const total = billHrs + nonHrs;
                   const billPct = (billHrs / weekMax) * 100;
                   const nonPct = (nonHrs / weekMax) * 100;

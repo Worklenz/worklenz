@@ -65,7 +65,7 @@ import {
   updateEnhancedKanbanTaskStartDate,
   fetchEnhancedKanbanGroups,
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
-import { fetchBoardTaskGroups } from '@/features/board/board-slice';
+import { fetchBoardTaskGroups, updateSubtask } from '@/features/board/board-slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import {
@@ -80,6 +80,8 @@ import {
   setTaskDescription,
   setTaskEstimation,
   setTaskDrawerStatuses,
+  setTaskPhase,
+  fetchTask,
 } from '@/features/task-drawer/task-drawer.slice';
 import { deselectAll } from '@/features/projects/bulkActions/bulkActionSlice';
 import { useMixpanelTracking } from './useMixpanelTracking';
@@ -680,9 +682,39 @@ export const useTaskSocketHandlers = () => {
             updatedAt: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
+          
+          // Update task-management slice (List View)
           dispatch(updateTask(updatedTask));
 
+          // Update board slice (Board View)
+          dispatch(updateSubtask({ 
+            sectionId: '', 
+            subtask: {
+              id: taskId,
+              phase_name: newPhaseValue,
+              phase_id: data.id,
+            },
+            mode: 'update',
+          }));
+
+          // Update enhanced-kanban slice (Kantt-like Board View)
+          dispatch(updateEnhancedKanbanSubtask({
+            sectionId: '',
+            subtask: {
+              id: taskId,
+              phase_name: newPhaseValue,
+              phase_id: data.id,
+            },
+            mode: 'update',
+          }));
+
+          // Update task drawer if this task is currently open
+          if (state.taskDrawerReducer.selectedTaskId === taskId) {
+            dispatch(setTaskPhase({ phase_id: data.id || null, id: taskId }));
+          }
+
           if (projectId) {
+            // Refetch for consistency (silent mode to avoid flash)
             setTimeout(() => {
               dispatch(fetchTasksV3({ projectId, silent: true }));
               dispatch(fetchEnhancedKanbanGroups(projectId));
@@ -727,7 +759,7 @@ export const useTaskSocketHandlers = () => {
         }
       }
     },
-    [dispatch, currentGroupingV3]
+    [dispatch, currentGroupingV3, projectId]
   );
 
   const handleStartDateChange = useCallback(
@@ -982,6 +1014,16 @@ export const useTaskSocketHandlers = () => {
 
         dispatch(fetchTaskListColumns(parsedData.project_id));
         dispatch(fetchTasksV3(parsedData.project_id));
+
+        const drawerState = store.getState().taskDrawerReducer;
+        if (drawerState.showTaskDrawer && drawerState.selectedTaskId) {
+          dispatch(
+            fetchTask({
+              taskId: drawerState.selectedTaskId,
+              projectId: parsedData.project_id,
+            })
+          );
+        }
       } catch (error) {
         logger.error('Handle Custom Column Created', error);
       }

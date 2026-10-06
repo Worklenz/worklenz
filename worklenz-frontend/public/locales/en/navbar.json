@@ -17,6 +17,8 @@
   "invite": "Invite",
   "inviteTooltip": "Invite team members to join",
   "switchTeamTooltip": "Switch team",
+  "searchTeams": "Search teams...",
+  "noTeamsFound": "No teams found",
   "help": "Help",
   "notificationTooltip": "View notifications",
   "profileTooltip": "View profile",
@@ -71,7 +73,8 @@
     "conflictMessage": "Another timer is running for \"{{taskName}}\" in project \"{{projectName}}\". Do you want to stop it and start this timer?",
     "stopAndStart": "Stop and Start",
     "cancel": "Cancel",
-    "logTime": "Log time"
+    "logTime": "Log time",
+    "openTimeLogPanel": "Open time log for {{taskName}}"
   },
   "account": "Account",
   "billing": "Billing",
@@ -90,5 +93,13 @@
     "addExpense": "Add Expense",
     "addGuest": "Add Guest",
     "inviteMember": "Invite Member"
+  },
+  "whatsNew": {
+    "tag": "What's New",
+    "tooltip": "See what changed in this release",
+    "newBadge": "New",
+    "modalHeading": "What's New — {{title}}",
+    "readFullChangelog": "Read full changelog →",
+    "releaseUnavailable": "This update is no longer available."
   }
 }

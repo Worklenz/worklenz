@@ -103,7 +103,8 @@
     "assignees": "Përfaqësuesit",
     "searchMembers": "Kërko sipas emrit ose email-it…",
     "noMembersFound": "Nuk u gjetën anëtarë",
-    "time": "Koha"
+    "time": "Koha",
+    "markTimeOff": "Shëno Pushim / Leje"
   },
   "homeCalendar": {
     "todayButton": "Sot",
@@ -200,9 +201,9 @@
     "hoursLabel": "Orë",
     "hoursPlaceholder": "0",
     "minutesLabel": "Minuta",
-    "requiredDate": "* Data",
-    "requiredStartTime": "* Koha e Nisjes",
-    "requiredEndTime": "* Koha e Përfundimit",
+    "requiredDate": "Data",
+    "requiredStartTime": "Koha e Nisjes",
+    "requiredEndTime": "Koha e Përfundimit",
     "workDescriptionLabel": "Përshkrimi i Punës",
     "workDescriptionPlaceholder": "Çfarë punove?",
     "submitButton": "Regjistro Kohën",
@@ -398,5 +399,15 @@
     "loadTasksError": "Nuk mund të ngarkohen detyrat dhe valuta e këtij projekti.",
     "successMessage": "Kostoja fikse u shtua detyrës",
     "errorMessage": "Dështoi shtimi i kostos fikse në detyrë"
+  },
+  "timeOff": {
+    "timeOff": "Pushim",
+    "off": "jashtë",
+    "types": {
+      "vacation": "Pushime",
+      "sick": "Sëmurë",
+      "personal": "Personale",
+      "other": "Tjetër"
+    }
   }
 }

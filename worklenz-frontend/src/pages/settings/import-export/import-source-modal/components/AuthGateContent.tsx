@@ -1,16 +1,14 @@
 import React from 'react';
 import { Button, InfoCircleOutlined, Input, Select, Tooltip, Typography } from '@/shared/antd-imports';
 import { validateEmail } from '@/utils/validateEmail';
-import { ClickupTeam } from '../types';
+import type { ClickupTeam, TranslateFn, ThemeToken } from '../types';
 import { isValidDomain, normalizeDomain } from '../utils';
-
-type TranslateFn = (key: string, defaultValueOrOptions?: any, options?: any) => string;
 
 interface AuthGateContentProps {
   lowerKey: string;
   isJira: boolean;
   t: TranslateFn;
-  themeToken: any;
+  themeToken: ThemeToken;
   authError: string | null;
   authLoading: boolean;
   onClose: () => void;

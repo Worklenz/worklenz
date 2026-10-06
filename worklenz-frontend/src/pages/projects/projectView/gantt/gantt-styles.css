@@ -298,51 +298,129 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Dependency handle - a small circular anchor sitting right on the bar's
-   top-left / bottom-right corner, used to drag out a new dependency link.
-   Visibility (opacity/scale) is set inline from React state (isBarHovered) in
-   GanttChart.tsx, NOT from a CSS :hover selector - a bar-scoped `.group:hover`
-   rule previously drove this and was unreliable (handles could read as "stuck
-   visible" depending on where the pointer actually sat), so only static/
-   shared appearance lives here. */
-.gantt-dependency-handle {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.95);
-  border: 1.5px solid rgba(59, 130, 246, 0.9);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-  transform-origin: center;
-  transition:
-    opacity 0.15s ease,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+.gantt-task-bar-hover-zone {
   pointer-events: auto;
-  z-index: 25;
+  overflow: visible;
 }
 
-/* Anchored 6px up/left of the top-left corner (then centered on that point via
-   the translate in GanttChart.tsx), so there's a visible diagonal gap instead
-   of the dot straddling the bar's edge. */
-.gantt-dependency-handle.left {
-  top: -6px;
-  left: -6px;
+.gantt-task-bar-hover-zone.is-hovered {
+  z-index: 50;
 }
 
-/* Anchored 6px down/right of the bottom-right corner, same reasoning. */
-.gantt-dependency-handle.right {
-  bottom: -6px;
-  right: -6px;
+/* Lift the whole row when a task bar is hovered so corner connectors aren't buried */
+.gantt-timeline-task-row:has(.gantt-task-bar-hover-zone.is-hovered) {
+  z-index: 40 !important;
+  overflow: visible;
 }
 
-.gantt-dependency-handle.left:hover {
-  transform: translate(-50%, -50%) scale(1.2) !important;
-  background: rgba(59, 130, 246, 0.15);
+.gantt-timeline-task-row {
+  overflow: visible;
 }
 
-.gantt-dependency-handle.right:hover {
-  transform: translate(50%, 50%) scale(1.2) !important;
-  background: rgba(59, 130, 246, 0.15);
+/* Asana-style interactive task bar on hover */
+.gantt-task-bar--asana-hover {
+  overflow: visible;
+  border-radius: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.gantt-task-bar--asana-hover:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+/* L-shaped dependency connector with dot anchor (Asana pattern) */
+.gantt-dependency-connector {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--gantt-bar-accent, #1890ff);
+  cursor: crosshair;
+  z-index: 60;
+  line-height: 0;
+  width: 28px;
+  height: 28px;
+  transition: opacity 0.15s ease;
+}
+
+.gantt-dependency-connector--start,
+.gantt-dependency-connector--end {
+  /* top/left/right/bottom set inline from TaskBarRow hover zone math */
+}
+
+.gantt-dependency-connector-svg {
+  display: block;
+  overflow: visible;
+}
+
+.gantt-dependency-connector:hover {
+  color: color-mix(in srgb, var(--gantt-bar-accent, #1890ff) 85%, #ffffff);
+}
+
+.gantt-dependency-connector:hover .gantt-dependency-connector-svg circle {
+  transform-origin: center;
+}
+
+.gantt-dependency-connector--start:hover .gantt-dependency-connector-svg circle {
+  transform: scale(1.15);
+}
+
+.gantt-dependency-connector--end:hover .gantt-dependency-connector-svg circle {
+  transform: scale(1.15);
+}
+
+/* Blue end caps with white grip lines (Asana resize handles) */
+.gantt-bar-resize-cap {
+  position: relative;
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gantt-bar-accent, #1890ff);
+  cursor: ew-resize !important;
+  user-select: none;
+  z-index: 30;
+  opacity: 0;
+  transition:
+    width 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.gantt-bar-resize-cap.is-visible {
+  width: 10px;
+  opacity: 1;
+}
+
+.gantt-bar-resize-cap.left {
+  border-radius: 1px 0 0 1px;
+}
+
+.gantt-bar-resize-cap.right {
+  border-radius: 0 1px 1px 0;
+}
+
+.gantt-bar-resize-cap:hover {
+  filter: brightness(1.08);
+}
+
+.gantt-bar-resize-cap-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 10px;
+  pointer-events: none;
+}
+
+.gantt-bar-resize-cap-grip span {
+  display: block;
+  width: 1.5px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1px;
 }
 
 .gantt-dependency-target {
@@ -351,22 +429,17 @@
   box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.2);
 }
 
+.gantt-task-bar.guest-view .gantt-bar-resize-handle,
+.gantt-task-bar.guest-view .gantt-bar-resize-handle:hover,
+.gantt-task-bar.guest-view .gantt-bar-resize-handle:active {
+  cursor: default !important;
+  background: transparent !important;
+}
 .gantt-task-bar.dependency-creating {
   cursor: crosshair !important;
 }
 
-/* Resize handles - renamed to gantt-bar-resize-handle (was gantt-resize-handle)
-   because that name collides with an unrelated class of the same name in
-   gantt-task-list-resize.css (the left task-list panel's width divider). Both
-   files are plain global CSS, so the panel divider's `::before` rule (a 3x40px
-   always-visible grey bar) was leaking onto every task bar's resize handle
-   here — that's what looked like a broken/oversized grip no matter how this
-   file's own .gantt-resize-grip was styled. Do not reuse the old name.
-   The hit-zone stays flush inside the bar edge (0 to 8px inward, never poking
-   outside the bar), matching the Planner/Schedule task card's grip pattern.
-   Its background tint is a direct-hover convenience (only lights up when the
-   pointer is right over this 8px sliver), separate from the grip's own
-   reveal below. */
+/* Legacy invisible edge hit-zones — used only when Asana caps are hidden */
 .gantt-bar-resize-handle {
   position: absolute;
   top: 0;
@@ -397,24 +470,6 @@
 
 .gantt-bar-resize-handle.right {
   right: 0;
-}
-
-/* Resize grip - the visible pill inside the hit-zone above. Height 20px reads
-   as "the same height as the bar" (bar is 24px / h-6) while leaving a 2px
-   margin top/bottom so it clears the bar's own rounded corners. Reveal
-   (opacity/scale) is set inline from isBarHovered in GanttChart.tsx, same
-   reasoning as the dependency handle above. */
-.gantt-resize-grip {
-  width: 7px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 1.5px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-  transform-origin: center;
-  transition:
-    opacity 0.15s ease,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none;
 }
 
 /* Task without dates indicator */
@@ -540,13 +595,90 @@ body.gantt-dragging * {
 .gantt-dependency-lines-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: auto;
-  z-index: 0;
+  pointer-events: none;
+  z-index: 11;
 }
 
-.gantt-dependency-lines-overlay path {
+.gantt-dependency-lines-overlay .gantt-dependency-line-path,
+.gantt-dependency-lines-overlay .gantt-dependency-line-hit {
   cursor: pointer;
   pointer-events: stroke;
+}
+
+.gantt-dependency-lines-overlay .gantt-dependency-line-hit {
+  pointer-events: all;
+}
+
+.gantt-dependency-lines-overlay .gantt-dependency-line-path:hover {
+  opacity: 1 !important;
+  stroke-width: 2px;
+}
+
+.gantt-dependency-remove-control {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  z-index: 12;
+}
+
+.gantt-dependency-remove-tooltip {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.88);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.dark .gantt-dependency-remove-tooltip {
+  background: rgba(31, 31, 31, 0.95);
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.gantt-dependency-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.88);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.gantt-dependency-remove-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 1);
+  transform: scale(1.05);
+}
+
+.gantt-dependency-remove-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dark .gantt-dependency-remove-btn {
+  background: rgba(31, 31, 31, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dark .gantt-dependency-remove-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 1);
+}
+
+.gantt-dependency-line-group {
+  pointer-events: visibleStroke;
 }
 
 /* Enhanced Phase Bar Styles */

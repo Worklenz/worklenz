@@ -7,7 +7,7 @@
   "actionsColumn": "操作",
   "fileIconAlt": "文件图标",
   "emptyText": "暂无文件。",
-  "uploadButton": "上传",
+  "uploadButton": "上传文件",
   "uploaderTitle": "上传文件",
   "filePickerHint": "拖拽文件或点击浏览",
   "uploadHintLimit": "PDF、图片、文档、压缩包。每个文件最大 {{maxSize}} MB。",

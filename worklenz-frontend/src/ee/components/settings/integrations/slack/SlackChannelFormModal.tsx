@@ -127,7 +127,7 @@ export function SlackChannelFormModal({
         setProjects(prev => (append ? [...prev, ...newProjects] : newProjects));
         setProjectsTotal(total);
       } catch (error) {
-        messageApi.error(t('errors.loadProjectsFailed'));
+        messageApi.error(t('errors.loadProjectsFailed', { defaultValue: 'Failed to load projects' }));
       } finally {
         setProjectsLoading(false);
       }

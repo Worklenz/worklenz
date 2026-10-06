@@ -50,6 +50,8 @@ import {
   setSelectedTaskId,
   setShowTaskDrawer,
   resetTaskDrawer,
+  setTargetDrawerTab,
+  TaskDrawerTabKey,
 } from '@/features/task-drawer/task-drawer.slice';
 import { resetState as resetEnhancedKanbanState, initKanbanGroupingFromServer, IGroupBy } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { setProjectId as setInsightsProjectId } from '@/features/projects/insights/project-insights.slice';
@@ -58,6 +60,8 @@ import ProjectViewSkeleton from './project-view-skeleton';
 import { ProjectSetupBanner } from '@/components/projects/project-setup-banner/project-setup-banner';
 import { useTranslation } from 'react-i18next';
 import alertService from '@/services/alerts/alertService';
+import { setProjectId as setDrawerProjectId, setProjectData } from '@/features/project/project-drawer.slice';
+import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
@@ -88,7 +92,7 @@ const ProjectView = React.memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { projectId } = useParams();
   const { t, i18n } = useTranslation('project-view');
 
@@ -496,7 +500,19 @@ const ProjectView = React.memo(() => {
     if (taskid && isInitialized) {
       dispatch(setSelectedTaskId(taskid));
       dispatch(setShowTaskDrawer(true));
+
+      // Apply drawer tab deep-link when the task id changes (e.g. drawer_tab=timeLog).
+      // Do not depend on searchParams broadly — that would re-force the tab on unrelated URL updates.
+      const drawerTab = searchParams.get('drawer_tab');
+      if (
+        drawerTab === 'info' ||
+        drawerTab === 'timeLog' ||
+        drawerTab === 'activityLog'
+      ) {
+        dispatch(setTargetDrawerTab(drawerTab as TaskDrawerTabKey));
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit searchParams
   }, [dispatch, taskid, isInitialized]);
 
   // Optimized pin tab function with better error handling
@@ -716,6 +732,25 @@ const ProjectView = React.memo(() => {
       return () => clearTimeout(timer);
     }
   }, [isInitialized]);
+
+  // Open the project settings modal on arrival when asked to via `open_settings=1`
+  // (e.g. "Customize before creating" from a route that doesn't mount
+  // <ProjectSettingsModal/> itself, like the navbar's global QuickActionButton).
+  // Reuses the project data this page already fetched, mirroring the same
+  // fallback project-view-header.tsx's own "Settings" button uses on a fetch
+  // failure, instead of firing a second fetch for data already in hand.
+  useEffect(() => {
+    if (!projectId || searchParams.get('open_settings') !== '1') return;
+    if (!selectedProject || selectedProject.id !== projectId) return;
+
+    dispatch(setDrawerProjectId(projectId));
+    dispatch(setProjectData(selectedProject));
+    dispatch(openProjectSettingsModal());
+
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('open_settings');
+    setSearchParams(nextParams, { replace: true });
+  }, [projectId, searchParams, selectedProject, dispatch, setSearchParams]);
 
   // Optimized portal elements with better error boundaries
   const portalElements = useMemo(

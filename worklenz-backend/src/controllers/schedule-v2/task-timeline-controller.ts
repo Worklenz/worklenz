@@ -8,6 +8,11 @@ import { getColor } from "../../shared/utils";
 import { SocketEvents } from "../../socket.io/events";
 import { IO } from "../../shared/io";
 
+// Subtasks (no longer excluded — see getTasksForTimeline) roughly double the row
+// count a given filter window returns compared to top-level tasks alone, so this is
+// raised from the original 5000 to preserve the same practical headroom.
+const TASK_TIMELINE_ROW_LIMIT = 10000;
+
 interface ITaskTimelineFilters {
     startDate?: string;
     endDate?: string;
@@ -27,11 +32,30 @@ export default class TaskTimelineController extends WorklenzControllerBase {
     public static async getTasksForTimeline(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
         const { startDate, endDate, memberId, projectId, statusId, priorityId, clientName } = req.query as ITaskTimelineFilters;
 
-        const params: any[] = [req.user?.team_id];
-        let paramIndex = 2;
+        const params: any[] = [req.user?.team_id, req.user?.id];
+        let paramIndex = 3;
 
-        // Build dynamic WHERE clause
-        let whereClause = `WHERE p.team_id = $1 AND t.archived = false`;
+        // Build dynamic WHERE clause. The access predicate mirrors verifyProjectAccess's
+        // role model (owner/admin/team-lead see every project in the team; everyone else
+        // only projects they're an explicit project_members row on) — team_id alone isn't
+        // enough, since a regular member could otherwise pass any other team project's id
+        // via the projectId filter below and read its full task/assignee detail.
+        let whereClause = `
+            WHERE p.team_id = $1
+              AND t.archived = false
+              AND (
+                EXISTS (
+                    SELECT 1 FROM team_members tm
+                    INNER JOIN roles r ON r.id = tm.role_id
+                    WHERE tm.user_id = $2 AND tm.team_id = $1 AND tm.active = TRUE
+                      AND (r.owner = TRUE OR r.admin_role = TRUE)
+                )
+                OR EXISTS (
+                    SELECT 1 FROM project_members pm
+                    INNER JOIN team_members tm2 ON pm.team_member_id = tm2.id
+                    WHERE pm.project_id = p.id AND tm2.user_id = $2 AND tm2.team_id = $1 AND tm2.active = TRUE
+                )
+              )`;
 
         if (startDate) {
             whereClause += ` AND (t.end_date >= $${paramIndex} OR t.end_date IS NULL)`;
@@ -116,6 +140,7 @@ export default class TaskTimelineController extends WorklenzControllerBase {
                 tp.color_code AS priority_color,
                 (SELECT pp.name FROM project_phases pp WHERE pp.id = (SELECT tph.phase_id FROM task_phase tph WHERE tph.task_id = t.id LIMIT 1)) AS phase_name,
                 (SELECT pp.color_code FROM project_phases pp WHERE pp.id = (SELECT tph.phase_id FROM task_phase tph WHERE tph.task_id = t.id LIMIT 1)) AS phase_color,
+                (SELECT pt.name FROM tasks pt WHERE pt.id = t.parent_task_id) AS parent_task_name,
                 COALESCE(
                     (SELECT json_agg(json_build_object(
                         'id', tm.id,
@@ -148,15 +173,25 @@ export default class TaskTimelineController extends WorklenzControllerBase {
             JOIN task_priorities tp ON t.priority_id = tp.id
             LEFT JOIN tasks_assignees ta ON t.id = ta.task_id
             ${whereClause}
-            AND t.parent_task_id IS NULL
             GROUP BY t.id, p.id, p.name, p.color_code, ts.id, ts.name, ts.color_code, stsc.is_done, tp.id, tp.name, tp.color_code
             ORDER BY t.start_date ASC NULLS LAST, t.name ASC
-            LIMIT 5000
+            LIMIT ${TASK_TIMELINE_ROW_LIMIT + 1}
         `;
 
         const result = await db.query(query, params);
 
-        return res.status(200).send(new ServerResponse(true, result.rows));
+        // Fetching one row past the limit lets truncation be detected precisely
+        // (vs. a guess from result.rows.length === LIMIT) without a separate COUNT(*).
+        const truncated = result.rows.length > TASK_TIMELINE_ROW_LIMIT;
+        const rows = truncated ? result.rows.slice(0, TASK_TIMELINE_ROW_LIMIT) : result.rows;
+
+        return res.status(200).send(new ServerResponse(
+            true,
+            rows,
+            truncated
+                ? `Showing the first ${TASK_TIMELINE_ROW_LIMIT} tasks for this range — narrow your filters (project, member, status, or date range) to see the rest.`
+                : null
+        ));
     }
 
     /**

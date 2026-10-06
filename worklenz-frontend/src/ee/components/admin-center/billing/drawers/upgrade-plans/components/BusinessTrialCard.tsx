@@ -226,7 +226,7 @@ export const BusinessTrialCard = ({ onTrialStarted, disabled }: BusinessTrialCar
             <div style={{ textAlign: 'center' }}>
               <Countdown
                 title={<span style={{ color: 'rgba(255,255,255,0.8)' }}>Time Remaining</span>}
-                value={endDate}
+                value={endDate.getTime()}
                 format="D [days] H [hrs]"
                 valueStyle={{ color: 'white', fontSize: 24 }}
               />

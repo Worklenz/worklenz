@@ -26,6 +26,7 @@ import { setProjectId } from '@/features/project/project.slice';
 import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { updateTask } from '@/features/task-management/task-management.slice';
 import { Task } from '@/types/task-management.types';
+import { TruncatedColoredTag } from '@/components/common/truncated-colored-tag/TruncatedColoredTag';
 import '@/pages/time-entries/time-entries.css';
 
 const formatSeconds = (seconds: number): string => {
@@ -43,6 +44,8 @@ export type LogSortField =
   | 'created_at'
   | 'due_date'
   | null;
+
+// Note: 'created_at' is already included in the sort options
 
 // Mirrors the sort-arrow affordance used by the Overview page's priority table
 // and Home > Log Time's Recently Logged table (TasksList.tsx / HomeLogTime.tsx)
@@ -171,14 +174,13 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
         key: 'status',
         title: t('colStatus', { defaultValue: 'Status' }),
         width: '13%',
+        ellipsis: true,
         render: (_, record) =>
           record.status_name ? (
-            <Tag
+            <TruncatedColoredTag
+              label={record.status_name}
               color={themeMode === 'dark' ? record.status_color_dark : record.status_color}
-              style={{ margin: 0, fontSize: 11 }}
-            >
-              {record.status_name}
-            </Tag>
+            />
           ) : null,
       },
       {
@@ -230,6 +232,21 @@ export const TimeEntriesLogTable: React.FC<TimeEntriesLogTableProps> = ({
           return (
             <span style={{ fontSize: 11, color: isOverdue ? '#ff4d4f' : undefined, opacity: isOverdue ? 1 : 0.65 }}>
               {dayjs(record.due_date).format('MMM D')}
+            </span>
+          );
+        },
+      },
+      {
+        key: 'createdAt',
+        title: renderSortableTitle(t('colCreatedTime', { defaultValue: 'Created Time' }), 'created_at'),
+        width: '10%',
+        render: (_, record) => {
+          if (!record.created_at) {
+            return <span style={{ opacity: 0.5, fontSize: 11 }}>-</span>;
+          }
+          return (
+            <span style={{ fontSize: 11, opacity: 0.75 }}>
+              {dayjs(record.created_at).format('HH:mm')}
             </span>
           );
         },

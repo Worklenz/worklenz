@@ -21,7 +21,6 @@ import {
   Typography,
   Input,
   Select,
-  Tag,
   Spin,
   Pagination,
   Dropdown,
@@ -37,6 +36,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import PortalStatusTag from '@/ee/components/client-portal/PortalStatusTag';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { evt_client_portal_share } from '@/shared/worklenz-analytics-events';
 import {
@@ -938,11 +938,7 @@ const ClientsTable = () => {
       dataIndex: 'portal_status',
       render: (_: any, record: any) => {
         const portalStatus = getPortalStatus(record);
-        return (
-          <Tag color={portalStatus.color} style={{ textTransform: 'capitalize' }}>
-            {portalStatus.label}
-          </Tag>
-        );
+        return <PortalStatusTag status={portalStatus.status} label={portalStatus.label} />;
       },
       width: 140,
     },

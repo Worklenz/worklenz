@@ -54,6 +54,7 @@
     "noTasks": "No tasks to show.",
     "addTask": "+ Add task",
     "addTaskButton": "Add Task",
+    "markTimeOff": "Mark Time-Off / Leave",
     "name": "Name",
     "project": "Project",
     "status": "Status",
@@ -199,9 +200,9 @@
     "hoursLabel": "Hours",
     "hoursPlaceholder": "0",
     "minutesLabel": "Minutes",
-    "requiredDate": "* Date",
-    "requiredStartTime": "* Start Time",
-    "requiredEndTime": "* End Time",
+    "requiredDate": "Date",
+    "requiredStartTime": "Start Time",
+    "requiredEndTime": "End Time",
     "workDescriptionLabel": "Work Description",
     "workDescriptionPlaceholder": "What did you work on?",
     "submitButton": "Log Time",
@@ -379,5 +380,15 @@
     "loggedToday": "Logged today",
     "startTimer": "Start timer"
   },
-  "views": "Views"
+  "views": "Views",
+  "timeOff": {
+    "timeOff": "Time Off",
+    "off": "off",
+    "types": {
+      "vacation": "Vacation",
+      "sick": "Sick",
+      "personal": "Personal",
+      "other": "Other"
+    }
+  }
 }

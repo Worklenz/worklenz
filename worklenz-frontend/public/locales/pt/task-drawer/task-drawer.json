@@ -17,7 +17,9 @@
     "back": "Voltar",
     "backToParent": "Voltar à tarefa principal",
     "toParentTask": "à tarefa principal",
-    "loadingHierarchy": "Carregando hierarquia..."
+    "loadingHierarchy": "Carregando hierarquia...",
+    "previousTask": "Tarefa Anterior",
+    "nextTask": "Próxima tarefa"
   },
   "taskInfoTab": {
     "title": "Informações",
@@ -39,6 +41,8 @@
       "show-start-date": "Mostrar data de início",
       "hours": "Horas",
       "minutes": "Minutos",
+      "hoursMinError": "As horas devem ser 0 ou mais",
+      "minutesRangeError": "Os minutos devem estar entre 0 e 59",
       "progressValue": "Valor do progresso",
       "progressValueTooltip": "Definir a porcentagem de progresso (0-100%)",
       "progressValueRequired": "Por favor, insira um valor de progresso",
@@ -47,7 +51,23 @@
       "taskWeightTooltip": "Definir o peso desta subtarefa (porcentagem)",
       "taskWeightRequired": "Por favor, insira um peso da tarefa",
       "taskWeightRange": "O peso deve estar entre 0 e 100",
+      "customFields": {
+        "empty": "Vazio",
+        "enterNumber": "Introduzir número",
+        "selectDate": "Selecionar data",
+        "selectOption": "Selecionar opção",
+        "selectPeople": "Selecionar pessoas",
+        "updateError": "Falha ao atualizar o campo personalizado"
+      },
       "recurring": "Recorrente"
+    },
+    "customFields": {
+      "title": "Campos personalizados",
+      "autoSaveHint": "As alterações são guardadas automaticamente quando sai de um campo.",
+      "addCustomField": "Adicionar um campo personalizado",
+      "addCustomColumn": "Adicionar coluna personalizada",
+      "showMoreFields": "Mostrar mais {{count}} campos",
+      "hideFields": "Ocultar campos"
     },
     "labels": {
       "labelInputPlaceholder": "Pesquisar ou criar",
@@ -85,13 +105,16 @@
       "chooseOrDropFileToUpload": "Escolha ou arraste arquivo para enviar",
       "uploading": "Enviando...",
       "maxFileSizeText": "Tamanho máximo do arquivo: {{maxSize}}MB",
-      "upgradeLinkText": "Precisa de uploads maiores? Faça upgrade"
+      "upgradeLinkText": "Precisa de uploads maiores? Faça upgrade",
+      "downloadFailed": "Não foi possível baixar o arquivo",
+      "deleteFailed": "Não foi possível excluir o anexo"
     },
     "comments": {
       "title": "Comentários",
       "addComment": "+ Adicionar novo comentário",
       "noComments": "Ainda não há comentários. Seja o primeiro a comentar!",
       "edit": "Editar",
+      "save": "Guardar",
       "delete": "Excluir",
       "confirmDeleteComment": "Tem certeza de que deseja excluir este comentário?",
       "edited": "(editado)",
@@ -105,6 +128,8 @@
       "maxFilesError": "Você pode enviar no máximo {{count}} arquivos",
       "processFilesError": "Falha ao processar arquivos",
       "addCommentError": "Por favor, adicione um comentário ou anexe arquivos",
+      "commentTooLong": "O comentário é muito longo. Por favor, reduza para menos de {{max}} caracteres.",
+      "saveCommentError": "Falha ao salvar o comentário. Por favor, tente novamente.",
       "enterHint": "Enter para enviar  ·  Shift+Enter para nova linha",
       "fileTooLargeToSend": "Arquivos acima de 25MB em comentários exigem o plano Business. Remova este arquivo ou faça upgrade para continuar.",
       "historyLockedBoundary": "O histórico de comentários está limitado aos últimos 90 dias neste plano",
@@ -112,7 +137,10 @@
       "historyLockedBody": "Comentários com mais de 90 dias estão disponíveis no plano Business.",
       "viewFullComments": "Ver histórico de comentários",
       "createdBy": "Criado {{time}} por {{user}}",
-      "updatedTime": "Atualizado {{time}}"
+      "updatedTime": "Atualizado {{time}}",
+      "copyLink": "Copiar link",
+      "linkCopied": "Link do comentário copiado",
+      "linkCopyFailed": "Falha ao copiar o link"
     },
     "searchInputPlaceholder": "Pesquisar por nome",
     "pendingInvitation": "Convite pendente"
@@ -159,7 +187,8 @@
       "selectTask": "Selecionar tarefa...",
       "backdateLimitError": "Os registos de tempo não podem ser retroagidos mais de {{days}} dias. A data mais antiga que pode registar é {{earliestDate}}.",
       "saveError": "Não foi possível guardar o registo de tempo. Por favor, tente novamente."
-    }
+    },
+    "rollupLoggedTooltip": "Soma do tempo logado nas subtarefas"
   },
   "taskActivityLogTab": {
     "title": "Registro de atividade",
@@ -178,5 +207,14 @@
     "confirmMarkAsDone": "Sim, marcar como concluída",
     "cancelMarkAsDone": "Não, manter status atual",
     "markAsDoneDescription": "Você definiu o progresso para 100%. Gostaria de atualizar o status da tarefa para \"Concluída\"?"
+  },
+  "taskAccessDenied": {
+    "title": "Sem acesso",
+    "subtitle": "Você só pode abrir tarefas atribuídas a você neste projeto. Peça a um gerente de projeto para atribuí-lo se precisar de acesso.",
+    "close": "Fechar"
+  },
+  "assigneeScopeReadonly": {
+    "title": "Somente leitura",
+    "description": "Você está atribuído a uma subtarefa desta tarefa. Você pode ver a tarefa pai para contexto, mas não pode editá-la."
   }
 }

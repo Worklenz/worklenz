@@ -89,7 +89,7 @@ BEGIN
         WHERE schemaname = 'public' 
         AND matviewname = 'team_member_info_mv'
     ) THEN
-        REFRESH MATERIALIZED VIEW CONCURRENTLY team_member_info_mv;
+        REFRESH MATERIALIZED VIEW team_member_info_mv;
         RAISE NOTICE 'Refreshed team_member_info_mv materialized view';
     END IF;
 END $$;

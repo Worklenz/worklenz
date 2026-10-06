@@ -58,8 +58,30 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         REPORTER: 'reporterColumn',
       };
 
+      const defaultLabels: Record<string, string> = {
+        KEY: 'Key',
+        DESCRIPTION: 'Description',
+        PROGRESS: 'Progress',
+        ASSIGNEES: 'Assignees',
+        LABELS: 'Labels',
+        PHASE: 'Phase',
+        STATUS: 'Status',
+        PRIORITY: 'Priority',
+        TIME_TRACKING: 'Time Tracking',
+        ESTIMATION: 'Estimation',
+        START_DATE: 'Start Date',
+        DUE_DATE: 'Due Date',
+        DUE_TIME: 'Due Time',
+        COMPLETED_DATE: 'Completed Date',
+        CREATED_DATE: 'Created Date',
+        LAST_UPDATED: 'Last Updated',
+        REPORTER: 'Reporter',
+      };
+
       const translationKey = keyMappings[fieldKey];
-      return translationKey ? tTable(translationKey) : fieldKey;
+      return translationKey
+        ? tTable(translationKey, { defaultValue: defaultLabels[fieldKey] })
+        : fieldKey;
     },
     [tTable]
   );

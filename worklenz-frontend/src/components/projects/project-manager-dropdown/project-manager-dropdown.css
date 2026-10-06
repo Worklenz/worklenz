@@ -19,13 +19,22 @@
   color: #999;
 }
 
-.project-manager-container:hover .project-manager-icon {
+.project-manager-container:not(.disabled):hover .project-manager-icon {
   display: block;
 }
 
-.project-manager-container:hover {
+.project-manager-container:not(.disabled):hover {
   border: 1px solid #40a9ff;
   border-radius: 6px;
   transition: 0.25s all;
   min-height: 32px;
+}
+
+.project-manager-container.disabled {
+  cursor: not-allowed;
+}
+
+.project-manager-container.disabled .ant-btn[disabled],
+.project-manager-container.disabled .ant-btn.ant-btn-disabled {
+  cursor: not-allowed;
 }

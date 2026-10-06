@@ -7,6 +7,7 @@
   "my-team-reports": "Meine Team-Berichte",
   "finance": "Finanzen",
   "client-portal": "Kunden",
+  "closePopover": "Popover schließen",
   "clients": "Kunden",
   "teams": "Teams",
   "labels": "Labels",
@@ -16,6 +17,8 @@
   "invite": "Einladen",
   "inviteTooltip": "Teammitglieder zur Teilnahme einladen",
   "switchTeamTooltip": "Team wechseln",
+  "searchTeams": "Teams suchen...",
+  "noTeamsFound": "Keine Teams gefunden",
   "help": "Hilfe",
   "notificationTooltip": "Benachrichtigungen anzeigen",
   "profileTooltip": "Profil anzeigen",
@@ -41,6 +44,7 @@
   "timeEntries": "Zeiterfassung",
   "new": "Neu",
   "quickActions": {
+    "new": "Neu",
     "task": "Aufgabe",
     "logTime": "Zeit erfassen",
     "project": "Projekt",
@@ -69,24 +73,22 @@
     "conflictTitle": "Timer-Konflikt",
     "conflictMessage": "Ein weiterer Timer läuft für \"{{taskName}}\" im Projekt \"{{projectName}}\". Möchten Sie ihn beenden und diesen Timer starten?",
     "stopAndStart": "Beenden und Starten",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "logTime": "Zeit erfassen",
+    "openTimeLogPanel": "Offenes Zeitprotokoll für {{taskName}}"
   },
-  "closePopover": "Popover schließen",
-  "account": "Konto",
-  "billing": "Abrechnung",
   "ownerRole": "Eigentümer",
   "adminRole": "Administrator",
   "teamLeadRole": "Teamleiter",
   "memberRole": "Mitglied",
   "themeToggleOn": "Ein",
   "themeToggleOff": "Aus",
-  "quickActions": {
-    "new": "Neu",
-    "task": "Aufgabe",
-    "logTime": "Zeit erfassen",
-    "project": "Projekt",
-    "client": "Kunde",
-    "addExpense": "Ausgabe hinzufügen",
-    "inviteMember": "Mitglied einladen"
+  "whatsNew": {
+    "tag": "Neuigkeiten",
+    "tooltip": "Sehen Sie, was sich in dieser Version geändert hat",
+    "newBadge": "Neu",
+    "modalHeading": "Neuigkeiten — {{title}}",
+    "readFullChangelog": "Vollständiges Änderungsprotokoll ansehen →",
+    "releaseUnavailable": "Dieses Update ist nicht mehr verfügbar."
   }
 }

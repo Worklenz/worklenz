@@ -27,5 +27,12 @@
   "noTaskTemplatesStep1": "导航到项目并打开它。",
   "noTaskTemplatesStep2": "使用批量编辑选项选择任务。",
   "noTaskTemplatesStep3": "在批量操作栏中点击更多选项并选择创建任务模板。",
-  "noSearchResults": "没有匹配搜索的模板。"
+  "noSearchResults": "没有匹配搜索的模板。",
+  "shareWithOrganization": "与组织共享",
+  "organizationBadge": "组织",
+  "scopeUpdateSuccess": "模板共享设置已更新。",
+  "scopeSharedSuccess": "与组织共享模板。",
+  "scopeUnsharedSuccess": "模板不再与组织共享。",
+  "scopeUpdateError": "更新模板共享失败。",
+  "moreOptions": "更多选项"
 }

@@ -7,10 +7,14 @@ export const APPSUMO_POPUP_IMAGE_URL =
 export const APPSUMO_DRAWER_IMAGE_URL = APPSUMO_POPUP_IMAGE_URL;
 
 /**
- * True if the AppSumo popup was shown more recently than `frequencyDays` ago.
+ * Local pre-check: true if the AppSumo popup was shown more recently than
+ * `frequencyDays` ago in this browser. This is only a cache to skip a request —
+ * localStorage is wiped on logout, so the server (`users.appsumo_popup_last_shown_at`,
+ * via `claimAppSumoPopup`) is the source of truth for the cadence.
  * `frequencyDays` comes from the backend (`user.appsumo_popup_frequency_days`
- * on /secure/verify) so ops can tune the cadence without a frontend deploy;
- * falls back to once-per-day if the backend hasn't provided a value.
+ * on /secure/verify, i.e. APPSUMO_POPUP_FREQUENCY_DAYS) so ops can tune the
+ * cadence without a frontend deploy; falls back to once-per-day if the backend
+ * hasn't provided a value.
  */
 export const hasAppSumoPopupBeenShownRecently = (
   frequencyDays: number = DEFAULT_APPSUMO_POPUP_FREQUENCY_DAYS
@@ -37,8 +41,8 @@ export const hasAppSumoPopupBeenShownRecently = (
 };
 
 /**
- * Stamps the current time so the popup won't be shown again until the
- * configured frequency has elapsed.
+ * Stamps the current time locally when the popup opens (not when it is closed),
+ * so a reload won't re-show it until the configured frequency has elapsed.
  */
 export const markAppSumoPopupShown = (): void => {
   try {

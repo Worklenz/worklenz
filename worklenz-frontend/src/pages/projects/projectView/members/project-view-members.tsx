@@ -4,6 +4,8 @@ import {
   Button,
   Card,
   Flex,
+  Input,
+  message,
   Popover,
   Popconfirm,
   Progress,
@@ -12,7 +14,6 @@ import {
   TableProps,
   Tooltip,
   Typography,
-  Input,
 } from '@/shared/antd-imports';
 
 // Icons
@@ -41,7 +42,7 @@ import EmptyListPlaceholder from '../../../../components/EmptyListPlaceholder';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { evt_project_members_visit } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { getRoleColor } from '@/types/roles/role.types';
+import { getRoleColor, isTeamLeadRole } from '@/types/roles/role.types';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
@@ -66,6 +67,7 @@ const ProjectViewMembers = () => {
   const auth = useAuthService();
   const user = auth.getCurrentSession();
   const isOwnerOrAdmin = auth.isOwnerOrAdmin();
+  const isTeamLead = isTeamLeadRole(auth.role);
   const { trackMixpanelEvent } = useMixpanelTracking();
   const dispatch = useAppDispatch();
 
@@ -79,7 +81,7 @@ const ProjectViewMembers = () => {
   const [pagination, setPagination] = useState<PaginationType>({
     current: 1,
     pageSize: DEFAULT_PAGE_SIZE,
-    field: 'name',
+    field: 'role_level',
     order: 'ascend',
     total: 0,
     pageSizeOptions: ['10', '20', '50', '100'],
@@ -119,15 +121,15 @@ const ProjectViewMembers = () => {
       const offset = (pagination.current - 1) * pagination.pageSize;
       const res = await projectsApiService.getMembers(
         projectId,
-        pagination.current, // index
-        pagination.pageSize, // size             // offset
+        pagination.current,
+        pagination.pageSize,
         pagination.field,
         pagination.order,
         search
       );
       if (res.done) {
         setMembers(res.body);
-        setPagination(p => ({ ...p, total: res.body.total ?? 0 })); // update total from backend, default to 0
+        setPagination(p => ({ ...p, total: res.body.total ?? 0 }));
         if (isOwnerOrAdmin) dispatch(fetchBillingInfo());
       }
     } catch (error) {
@@ -137,23 +139,30 @@ const ProjectViewMembers = () => {
     }
   };
 
-  const deleteMember = async (memberId: string | undefined) => {
+  const deleteMember = async (memberId: string | undefined, memberName?: string) => {
     if (!memberId || !projectId) return;
 
     try {
       const res = await projectMembersApiService.deleteProjectMember(memberId, projectId);
       if (res.done) {
+        message.success(t('removeSuccess', { name: memberName || '', defaultValue: `${memberName || 'Member'} removed from project` }));
         void getProjectMembers();
+      } else {
+        message.error(res.message || 'Failed to remove member');
       }
     } catch (error) {
       logger.error('Error deleting member:', error);
+      message.error(t('removeError', { defaultValue: 'Failed to remove member' }));
     }
   };
 
   // Helper Functions
-  const checkDisabled = (record: IProjectMemberViewModel): boolean => {
-    if (!isOwnerOrAdmin) return true;
-    if (user?.team_member_id === record.team_member_id) return true;
+  const canRemoveMember = (record: IProjectMemberViewModel): boolean => {
+    if (user?.team_member_id === record.team_member_id) return false;
+
+    if (isOwnerOrAdmin) return true;
+
+    if (isTeamLead && (record.access_level || '').toLowerCase() === 'member') return true;
     return false;
   };
 
@@ -167,7 +176,7 @@ const ProjectViewMembers = () => {
       ...prev,
       current: tablePagination.current,
       pageSize: tablePagination.pageSize,
-      field: sorter.order ? sorter.field : 'name',   // reset to default field when sort cancelled
+      field: sorter.order ? sorter.field : 'role_level',   // reset to default field when sort cancelled
       order: sorter.order ?? 'ascend',               // reset to default order when sort cancelled
     }));
   };
@@ -273,51 +282,52 @@ const ProjectViewMembers = () => {
     },
     {
       key: 'access',
-      title: t('accessColumn'),
+      title: t('roleLevelColumn', { defaultValue: 'Role' }),
       dataIndex: 'access',
       sorter: true,
       sortOrder:
-        pagination.order === 'ascend' && pagination.field === 'access'
+        (pagination.order === 'ascend' && (pagination.field === 'access' || pagination.field === 'role_level'))
           ? 'ascend'
-          : pagination.order === 'descend' && pagination.field === 'access'
+          : (pagination.order === 'descend' && (pagination.field === 'access' || pagination.field === 'role_level'))
             ? 'descend'
             : null,
-      render: (_, record: IProjectMemberViewModel) => (
-        <Typography.Text
-          style={{ textTransform: 'capitalize', color: getRoleColor(record.access || '') }}
-        >
-          {record.access}
-        </Typography.Text>
-      ),
+      render: (_, record: IProjectMemberViewModel) => {
+        const access = record.access_level || record.access || '';
+        const displayAccess = access.toLowerCase() === 'owner' ? 'Team Owner' : access;
+        return (
+          <Typography.Text
+            style={{ textTransform: 'capitalize', color: getRoleColor(access) }}
+          >
+            {displayAccess}
+          </Typography.Text>
+        );
+      },
     },
-    ...(isOwnerOrAdmin
-      ? [
-          {
-            key: 'actionBtns',
-            width: 80,
-            render: (record: IProjectMemberViewModel) => (
-              <Flex gap={8} style={{ padding: 0 }} className="action-buttons">
-                <Popconfirm
-                  title={t('deleteConfirmationTitle')}
-                  icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                  okText={t('deleteConfirmationOk')}
-                  cancelText={t('deleteConfirmationCancel')}
-                  onConfirm={() => deleteMember(record.id)}
-                >
-                  <Tooltip title={t('deleteButtonTooltip')}>
-                    <Button
-                      disabled={checkDisabled(record)}
-                      shape="default"
-                      icon={<DeleteOutlined />}
-                      size="small"
-                    />
-                  </Tooltip>
-                </Popconfirm>
-              </Flex>
-            ),
-          },
-        ]
-      : []),
+    {
+      key: 'actionBtns',
+      width: 80,
+      render: (record: IProjectMemberViewModel) => {
+        const canRemove = canRemoveMember(record);
+        if (!canRemove) return null;
+        return (
+          <Flex gap={8} style={{ padding: 0 }}>
+            <Popconfirm
+              title={t('removeConfirmationTitle', { name: record.name || '', defaultValue: `Remove ${record.name || 'Member'}?` })}
+              description={t('removeConfirmationBody', { defaultValue: 'They will lose access to this project. Their assigned tasks will remain but become unassigned.' })}
+              icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
+              okText={t('removeButtonText', { defaultValue: 'Remove' })}
+              cancelText={t('deleteConfirmationCancel')}
+              onConfirm={() => deleteMember(record.id, record.name)}
+              okButtonProps={{ danger: true }}
+            >
+              <Button type="link" danger size="small" icon={<DeleteOutlined />}>
+                {t('removeButtonText', { defaultValue: 'Remove' })}
+              </Button>
+            </Popconfirm>
+          </Flex>
+        );
+      },
+    },
   ];
 
   return (
@@ -356,7 +366,7 @@ const ProjectViewMembers = () => {
                   }
                 }}
               title={
-                <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                <Flex align="center" justify="space-between" style={{ width: '100%' }}>
                   <Typography.Text strong>
                     {t('seatLimitPopoverTitle', { defaultValue: t('seatLimitPopoverTitle') })}
                   </Typography.Text>

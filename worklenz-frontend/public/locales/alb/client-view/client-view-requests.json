@@ -1,0 +1,11 @@
+{
+  "title": "Kërkesat",
+  "table": {
+    "header": {
+      "service": "Shërbimi",
+      "status": "Statusi",
+      "time": "Koha",
+      "lastChat": "Biseda e fundit"
+    }
+  }
+}

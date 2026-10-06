@@ -7,15 +7,24 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { getColor } from "../shared/utils";
 
+// Set once the un.release_id column is found missing (Postgres 42703 =
+// undefined_column) so later requests skip straight to the fallback query
+// instead of re-attempting (and re-failing) the full one. Guards against the
+// migration that adds this column lagging behind a deploy of this code -
+// resets only on server restart, which a real migration-then-deploy triggers
+// anyway.
+let releaseIdColumnMissing = false;
+
 export default class NotificationController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `
+    const buildQuery = (includeReleaseId: boolean) => `
       SELECT un.id,
              un.message,
              un.created_at,
              un.read,
+             ${includeReleaseId ? "un.release_id," : ""}
              (SELECT name FROM teams WHERE id = un.team_id) AS team,
              (SELECT name FROM projects WHERE id = un.project_id) AS project,
              (SELECT color_code FROM projects WHERE id = un.project_id) AS color,
@@ -32,12 +41,25 @@ export default class NotificationController extends WorklenzControllerBase {
 
     `;
 
-    const result = await db.query(q, [req.user?.id, req.query.filter === "Read"]);
+    const params = [req.user?.id, req.query.filter === "Read"];
+
+    let result;
+    if (releaseIdColumnMissing) {
+      result = await db.query(buildQuery(false), params);
+    } else {
+      try {
+        result = await db.query(buildQuery(true), params);
+      } catch (error: any) {
+        if (error?.code !== "42703") throw error;
+        releaseIdColumnMissing = true;
+        result = await db.query(buildQuery(false), params);
+      }
+    }
 
     for (const item of result.rows) {
       item.team_color = getColor(item.team_name);
       item.url = item.project_id ? `/worklenz/projects/${item.project_id}` : null;
-      item.params = { task: item.task_id, tab: "tasks-list" };
+      item.params = { task: item.task_id, tab: "tasks-list", from: "notification" };
       if (item.comment_id) {
         item.params.comment = item.comment_id;
       }

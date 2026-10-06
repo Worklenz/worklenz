@@ -4,11 +4,7 @@ import {
   Progress,
   Tooltip,
   Button,
-  ClockCircleOutlined,
-  CalendarOutlined,
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  CheckCircleOutlined,
+  Skeleton,
   EyeOutlined,
   EyeInvisibleOutlined,
 } from '@/shared/antd-imports';
@@ -21,22 +17,44 @@ import dayjs from 'dayjs';
 interface TotalTimeUtilizationProps {
   totals: IRPTTimeTotals;
   dateRange?: string[];
+  // When false, visibility is controlled entirely by the parent (e.g. a
+  // report settings modal) — the inline "Hide/Show Utilization" button is
+  // hidden and the cards are always rendered. Defaults to true so existing
+  // callers keep their own toggle unchanged.
+  showToggleButton?: boolean;
+  // While true, shows skeleton placeholders instead of `totals` — without
+  // this, the cards render "0h" / "0%" for a moment before the real numbers
+  // arrive, which reads as a bug rather than a loading state.
+  loading?: boolean;
 }
 
-const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dateRange }) => {
+const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({
+  totals,
+  dateRange,
+  showToggleButton = true,
+  loading = false,
+}) => {
   const { t } = useTranslation('time-report');
   const isDark = useAppSelector(state => state.themeReducer.mode) === 'dark';
+  const workPolicySettings = useAppSelector(
+    state => (state.adminCenterReducer as any)?.workPolicySettings
+  );
+  const utilizationMinThreshold =
+    workPolicySettings?.utilization_optimal_min_threshold_percent ?? 90;
+  const utilizationMaxThreshold =
+    workPolicySettings?.utilization_optimal_max_threshold_percent ?? 110;
   const [holidayInfo, setHolidayInfo] = useState<{ count: number; adjustedHours: number } | null>(
     null
   );
   const [isVisible, setIsVisible] = useState(() => {
+    if (!showToggleButton) return true;
     const stored = localStorage.getItem('totalTimeUtilizationVisible');
     return stored !== null ? stored === 'true' : true;
   });
 
   const currentDateRange = useMemo(
     () =>
-      dateRange?.length >= 2
+      dateRange && dateRange.length >= 2 && dateRange[0] && dateRange[1]
         ? {
             from: dayjs(dateRange[0]).format('YYYY-MM-DD'),
             to: dayjs(dateRange[1]).format('YYYY-MM-DD'),
@@ -53,8 +71,10 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
   }, [currentDateRange.from, currentDateRange.to, totals.total_estimated_hours]);
 
   useEffect(() => {
-    localStorage.setItem('totalTimeUtilizationVisible', String(isVisible));
-  }, [isVisible]);
+    if (showToggleButton) {
+      localStorage.setItem('totalTimeUtilizationVisible', String(isVisible));
+    }
+  }, [isVisible, showToggleButton]);
 
   const toggleVisibility = () => {
     setIsVisible(prev => !prev);
@@ -63,17 +83,21 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
   const utilizationData = useMemo(() => {
     const timeLogged = parseFloat(totals.total_time_logs || '0');
     const estimatedHours =
-      holidayInfo?.adjustedHours > 0
+      holidayInfo && holidayInfo.adjustedHours > 0
         ? holidayInfo.adjustedHours
         : parseFloat(totals.total_estimated_hours || '0');
     const utilizationPercent = estimatedHours > 0 ? (timeLogged / estimatedHours) * 100 : 0;
 
     const status =
-      utilizationPercent < 90 ? 'under' : utilizationPercent > 110 ? 'over' : 'optimal';
+      utilizationPercent < utilizationMinThreshold
+        ? 'under'
+        : utilizationPercent > utilizationMaxThreshold
+          ? 'over'
+          : 'optimal';
     const statusConfigs = {
-      under: { color: '#faad14', icon: <ArrowDownOutlined />, text: t('underUtilized') },
-      optimal: { color: '#52c41a', icon: <CheckCircleOutlined />, text: t('optimal') },
-      over: { color: '#ff4d4f', icon: <ArrowUpOutlined />, text: t('overUtilized') },
+      under: { color: '#faad14', text: t('underUtilized') },
+      optimal: { color: '#52c41a', text: t('optimal') },
+      over: { color: '#ff4d4f', text: t('overUtilized') },
     };
 
     const config = statusConfigs[status];
@@ -83,10 +107,9 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
       utilizationPercent: Math.round(utilizationPercent * 100) / 100,
       status,
       statusColor: config.color,
-      statusIcon: config.icon,
       statusText: config.text,
     };
-  }, [totals, t, holidayInfo]);
+  }, [totals, t, holidayInfo, utilizationMinThreshold, utilizationMaxThreshold]);
 
   const colors = useMemo(
     () => ({
@@ -99,12 +122,6 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
         primary: isDark ? '#fff' : '#262626',
         secondary: isDark ? '#bfbfbf' : '#8c8c8c',
         tertiary: isDark ? '#8c8c8c' : '#595959',
-      },
-      icon: {
-        bgBlue: isDark ? '#0f1419' : '#e6f7ff',
-        bgGreen: isDark ? '#0f1b0f' : '#f6ffed',
-        blue: isDark ? '#40a9ff' : '#1890ff',
-        green: isDark ? '#73d13d' : '#52c41a',
       },
       progress: isDark ? '#262626' : '#f5f5f5',
       variance: {
@@ -119,56 +136,60 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
 
   const cardStyle = {
     borderRadius: '8px',
-    flex: 1,
+    flex: '1 1 220px',
+    minWidth: 220,
     boxShadow: colors.card.shadow,
     border: `1px solid ${colors.card.border}`,
     backgroundColor: colors.card.bg,
     transition: 'all 0.3s',
   };
 
-  const IconBox = ({ bg, color, icon }) => (
-    <div
-      style={{
-        width: 48,
-        height: 48,
-        borderRadius: '12px',
-        backgroundColor: bg,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '20px',
-        color,
-      }}
-    >
-      {icon}
-    </div>
+  const MetricCard = ({
+    title,
+    value,
+    valueColor,
+    subtitle,
+    extra,
+  }: {
+    title: React.ReactNode;
+    value: React.ReactNode;
+    valueColor?: string;
+    subtitle: React.ReactNode;
+    extra?: React.ReactNode;
+  }) => (
+    <Card style={cardStyle} styles={{ body: { padding: '20px' } }}>
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={8}
+        style={{ marginBottom: '4px' }}
+      >
+        <div style={{ fontSize: 12, color: colors.text.secondary, fontWeight: 500 }}>{title}</div>
+        {extra}
+      </Flex>
+      <div
+        style={{
+          fontSize: 28,
+          fontWeight: 700,
+          color: valueColor || colors.text.primary,
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </div>
+      <div style={{ fontSize: 11, color: colors.text.tertiary, marginTop: '2px' }}>
+        {subtitle}
+      </div>
+    </Card>
   );
 
-  const MetricCard = ({ icon, iconBg, iconColor, title, value, subtitle }) => (
-    <Card style={cardStyle} styles={{ body: { padding: '20px' } }}>
-      <Flex align="center" gap={12}>
-        <IconBox bg={iconBg} color={iconColor} icon={icon} />
-        <div style={{ flex: 1 }}>
-          <div
-            style={{
-              fontSize: 12,
-              color: colors.text.secondary,
-              fontWeight: 500,
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              marginBottom: '4px',
-            }}
-          >
-            {title}
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: colors.text.primary, lineHeight: 1 }}>
-            {value}
-          </div>
-          <div style={{ fontSize: 11, color: colors.text.tertiary, marginTop: '2px' }}>
-            {subtitle}
-          </div>
-        </div>
-      </Flex>
+  const SkeletonCard = ({ wide }: { wide?: boolean }) => (
+    <Card
+      style={wide ? { ...cardStyle, flex: '2 1 460px', minWidth: 460 } : cardStyle}
+      styles={{ body: { padding: '20px' } }}
+    >
+      <Skeleton active title={false} paragraph={{ rows: 3, width: ['40%', '60%', '80%'] }} />
     </Card>
   );
 
@@ -177,35 +198,40 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
 
   return (
     <div style={{ marginBottom: '16px' }}>
-      <Flex justify="flex-end" style={{ marginBottom: '8px' }}>
-        <Button
-          type="text"
-          size="small"
-          icon={isVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-          onClick={toggleVisibility}
-          style={{ fontSize: '12px', color: colors.text.secondary }}
-        >
-          {isVisible
-            ? t('hideUtilization', { defaultValue: 'Hide Utilization' })
-            : t('showUtilization', { defaultValue: 'Show Utilization' })}
-        </Button>
-      </Flex>
+      {showToggleButton && (
+        <Flex justify="flex-end" style={{ marginBottom: '8px' }}>
+          <Button
+            type="text"
+            size="small"
+            icon={isVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+            onClick={toggleVisibility}
+            style={{ fontSize: '12px', color: colors.text.secondary }}
+          >
+            {isVisible
+              ? t('hideUtilization', { defaultValue: 'Hide Utilization' })
+              : t('showUtilization', { defaultValue: 'Show Utilization' })}
+          </Button>
+        </Flex>
+      )}
 
-      {isVisible && (
-        <Flex gap={16}>
+      {isVisible && loading && (
+        <Flex gap={16} wrap="wrap">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard wide />
+          <SkeletonCard />
+        </Flex>
+      )}
+
+      {isVisible && !loading && (
+        <Flex gap={16} wrap="wrap">
           <MetricCard
-            icon={<ClockCircleOutlined />}
-            iconBg={colors.icon.bgBlue}
-            iconColor={colors.icon.blue}
             title={t('totalTimeLogged')}
             value={`${totals.total_time_logs}h`}
             subtitle={t('acrossAllTeamMembers')}
           />
 
           <MetricCard
-            icon={<CalendarOutlined />}
-            iconBg={colors.icon.bgGreen}
-            iconColor={colors.icon.green}
             title={t('expectedCapacity')}
             value={`${utilizationData.estimatedHours.toFixed(1)}h`}
             subtitle={
@@ -216,55 +242,48 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
           />
 
           <Card
-            style={{ ...cardStyle, borderColor: utilizationData.statusColor, borderWidth: '2px' }}
+            style={{
+              ...cardStyle,
+              flex: '2 1 460px',
+              minWidth: 460,
+              borderColor: utilizationData.statusColor,
+              borderWidth: '2px',
+            }}
             styles={{ body: { padding: '20px' } }}
           >
-            <Flex align="center" gap={12}>
-              <IconBox
-                bg={`${utilizationData.statusColor}${isDark ? '20' : '15'}`}
-                color={utilizationData.statusColor}
-                icon={utilizationData.statusIcon}
-              />
-              <div style={{ flex: 1 }}>
-                <Flex justify="space-between" align="center" style={{ marginBottom: '4px' }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: colors.text.secondary,
-                      fontWeight: 500,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                    }}
-                  >
-                    {t('teamUtilization')}
-                  </div>
-                  <Tooltip title={`${utilizationData.statusText} (${t('targetRange')})`}>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: utilizationData.statusColor,
-                        fontWeight: 600,
-                        backgroundColor: `${utilizationData.statusColor}${isDark ? '20' : '15'}`,
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {utilizationData.statusText}
-                    </div>
-                  </Tooltip>
-                </Flex>
+            <Flex justify="space-between" align="center" style={{ marginBottom: '8px' }}>
+              <div style={{ fontSize: 12, color: colors.text.secondary, fontWeight: 500 }}>
+                {t('teamUtilization')}
+              </div>
+              <Tooltip title={`${utilizationData.statusText} (${t('targetRange')})`}>
                 <div
                   style={{
-                    fontSize: 28,
-                    fontWeight: 700,
+                    fontSize: 10,
                     color: utilizationData.statusColor,
-                    lineHeight: 1,
-                    marginBottom: '8px',
+                    fontWeight: 600,
+                    backgroundColor: `${utilizationData.statusColor}${isDark ? '20' : '15'}`,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    textTransform: 'uppercase',
                   }}
                 >
-                  {utilizationData.utilizationPercent}%
+                  {utilizationData.statusText}
                 </div>
+              </Tooltip>
+            </Flex>
+            <Flex align="center" gap={16}>
+              <div
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: utilizationData.statusColor,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                {utilizationData.utilizationPercent}%
+              </div>
+              <div style={{ flex: 1 }}>
                 <Progress
                   percent={Math.min(utilizationData.utilizationPercent, 150)}
                   strokeColor={{
@@ -281,57 +300,36 @@ const TotalTimeUtilization: React.FC<TotalTimeUtilizationProps> = ({ totals, dat
                   style={{ fontSize: 10, color: colors.text.secondary }}
                 >
                   <span>0%</span>
-                  <span style={{ color: '#52c41a' }}>90% - 110%</span>
+                  <span style={{ color: '#52c41a' }}>
+                    {utilizationMinThreshold}% - {utilizationMaxThreshold}%
+                  </span>
                   <span>150%+</span>
                 </Flex>
               </div>
             </Flex>
           </Card>
 
-          <Card style={cardStyle} styles={{ body: { padding: '20px' } }}>
-            <div style={{ textAlign: 'center' }}>
-              <div
+          <MetricCard
+            title={t('variance')}
+            value={`${isOver ? '+' : ''}${variance}h`}
+            valueColor={isOver ? colors.variance.colNeg : colors.variance.colPos}
+            subtitle={t(isOver ? 'overCapacity' : 'underCapacity')}
+            extra={
+              <span
                 style={{
-                  fontSize: 12,
-                  color: colors.text.secondary,
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  marginBottom: '8px',
-                }}
-              >
-                {t('variance')}
-              </div>
-              <div
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  color: isOver ? colors.variance.colNeg : colors.variance.colPos,
-                  lineHeight: 1,
-                  marginBottom: '4px',
-                }}
-              >
-                {isOver ? '+' : ''}
-                {variance}h
-              </div>
-              <div style={{ fontSize: 11, color: colors.text.tertiary }}>
-                {t(isOver ? 'overCapacity' : 'underCapacity')}
-              </div>
-              <div
-                style={{
-                  marginTop: '8px',
                   padding: '4px 8px',
                   borderRadius: '4px',
                   backgroundColor: isOver ? colors.variance.bgNeg : colors.variance.bgPos,
                   fontSize: 10,
                   color: isOver ? colors.variance.colNeg : colors.variance.colPos,
                   fontWeight: 500,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {t(isOver ? 'considerWorkloadRedistribution' : 'capacityAvailableForNewProjects')}
-              </div>
-            </div>
-          </Card>
+              </span>
+            }
+          />
         </Flex>
       )}
     </div>

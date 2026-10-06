@@ -7,12 +7,27 @@ import {
   reorderTasksInGroup,
 } from '@/features/task-management/task-management.slice';
 import { selectCurrentGrouping } from '@/features/task-management/grouping.slice';
+import {
+  setTaskPhase,
+  setTaskPriority,
+  setTaskStatus,
+} from '@/features/task-drawer/task-drawer.slice';
+import { store } from '@/app/store';
 import { Task, TaskGroup } from '@/types/task-management.types';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { UNMAPPED } from '@/shared/constants';
 import { useParams } from 'react-router-dom';
 import { useAuthService } from '@/hooks/useAuth';
 import logger from '@/utils/errorLogger';
+
+interface TaskSortUpdate {
+  task_id: string;
+  sort_order: number;
+  status_id?: string;
+  priority_id?: string;
+  phase_id?: string;
+}
 
 export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
   const dispatch = useAppDispatch();
@@ -66,6 +81,52 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
     [allTasks]
   );
 
+  // Keep Task Drawer Phase/Status/Priority fields in sync when the open task is dragged
+  const syncOpenTaskDrawerGrouping = useCallback(
+    (taskId: string, targetGroupId: string) => {
+      const state = store.getState();
+      if (state.taskDrawerReducer.selectedTaskId !== taskId) return;
+
+      if (currentGrouping === 'phase') {
+        dispatch(
+          setTaskPhase({
+            phase_id: targetGroupId === UNMAPPED ? null : targetGroupId,
+            id: taskId,
+          })
+        );
+        return;
+      }
+
+      if (currentGrouping === 'status') {
+        const status = state.taskStatusReducer?.status?.find(s => s.id === targetGroupId);
+        dispatch(
+          setTaskStatus({
+            id: taskId,
+            status_id: targetGroupId,
+            parent_task: '',
+            color_code: status?.color_code || '',
+            color_code_dark: status?.color_code_dark || '',
+            complete_ratio: 0,
+          })
+        );
+        return;
+      }
+
+      if (currentGrouping === 'priority') {
+        const priority = state.priorityReducer?.priorities?.find(p => p.id === targetGroupId);
+        dispatch(
+          setTaskPriority({
+            id: taskId,
+            priority_id: targetGroupId,
+            color_code: priority?.color_code || '',
+            color_code_dark: priority?.color_code_dark || '',
+          })
+        );
+      }
+    },
+    [currentGrouping, dispatch]
+  );
+
   // Helper function to emit socket event for persistence
   const emitTaskSortChange = useCallback(
     (taskId: string, sourceGroup: TaskGroup, targetGroup: TaskGroup, insertIndex: number) => {
@@ -81,7 +142,7 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       const teamId = currentSession?.team_id || '';
 
       // Use new bulk update approach - recalculate ALL task orders to prevent duplicates
-      const taskUpdates: any[] = [];
+      const taskUpdates: TaskSortUpdate[] = [];
 
       // Create a copy of all groups
       const updatedGroups = groups.map(g => ({
@@ -98,14 +159,26 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
       targetGroupCopy.taskIds = targetGroupCopy.taskIds.filter(id => id !== taskId);
       targetGroupCopy.taskIds.splice(insertIndex, 0, taskId);
 
-      // Now assign sequential sort orders to ALL tasks across ALL groups
+      // Now assign sequential sort orders to ALL tasks across ALL groups.
+      // Include the active grouping field so cross-group drops persist status/priority/phase
+      // (same pattern as EnhancedKanbanBoardNativeDnD.getAllTaskUpdates).
       let currentSortOrder = 0;
       updatedGroups.forEach(grp => {
         grp.taskIds.forEach(id => {
-          taskUpdates.push({
+          const update: TaskSortUpdate = {
             task_id: id,
             sort_order: currentSortOrder,
-          });
+          };
+
+          if (currentGrouping === 'status') {
+            update.status_id = grp.id;
+          } else if (currentGrouping === 'priority') {
+            update.priority_id = grp.id;
+          } else if (currentGrouping === 'phase' && grp.id !== UNMAPPED) {
+            update.phase_id = grp.id;
+          }
+
+          taskUpdates.push(update);
           currentSortOrder++;
         });
       });
@@ -127,6 +200,19 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
 
       if (socket && connected) {
         socket.emit(SocketEvents.TASK_SORT_ORDER_CHANGE.toString(), socketData);
+
+        // Bulk sort updates cannot clear phase_id; emit an explicit phase clear for Unmapped.
+        if (
+          currentGrouping === 'phase' &&
+          sourceGroup.id !== targetGroup.id &&
+          targetGroup.id === UNMAPPED
+        ) {
+          socket.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+            task_id: taskId,
+            phase_id: null,
+            parent_task: task.parent_task_id || null,
+          });
+        }
         return;
       }
 
@@ -264,10 +350,22 @@ export const useDragAndDrop = (allTasks: Task[], groups: TaskGroup[]) => {
           })
         );
 
+        if (!isSameGroup) {
+          syncOpenTaskDrawerGrouping(activeId as string, overGroup.id);
+        }
+
         emitTaskSortChange(activeId as string, activeGroup, overGroup, insertIndex);
       }
     },
-    [allTasks, dispatch, emitTaskSortChange, getOverGroup, getOverTask, getTaskGroup]
+    [
+      allTasks,
+      dispatch,
+      emitTaskSortChange,
+      getOverGroup,
+      getOverTask,
+      getTaskGroup,
+      syncOpenTaskDrawerGrouping,
+    ]
   );
 
   return {

@@ -8,18 +8,32 @@ dayjs.extend(isoWeek);
 
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Flex, Space, theme, Tooltip } from '@/shared/antd-imports';
-import { ZoomInOutlined, ZoomOutOutlined, ExpandOutlined } from '@ant-design/icons';
+import { Badge, Button, DatePicker, Flex, Space, theme, Tooltip } from '@/shared/antd-imports';
+import {
+  ZoomInOutlined,
+  ZoomOutOutlined,
+  ExpandOutlined,
+  RightOutlined,
+  DownOutlined,
+} from '@ant-design/icons';
 
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { useScheduleSocketHandlers } from '@/hooks/useScheduleSocketHandlers';
+import { useProjectRoomSync } from '@/hooks/useProjectRoomSync';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
 import {
   useFetchProjectsTimelineQuery,
   useUpdateProjectTimelineDatesMutation,
+  useFetchTaskTimelineQuery,
+  useUpdateTaskDatesMutation,
+  TaskTimelineItem,
 } from '@/api/schedule/scheduleApi';
 import { ProjectTimelineItem } from '@/types/schedule/schedule-v2.types';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
+import { setProjectId } from '@/features/project/project.slice';
+import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 
 type TimelineZoom = 'days' | 'weeks' | 'months' | 'quarters' | 'years';
 
@@ -61,9 +75,39 @@ const TOP_HEADER_HEIGHT = 24;
 const UNIT_HEADER_HEIGHT = 34;
 const BAR_HEIGHT = 28;
 
+// Above this many simultaneously-expanded projects, task fetching switches from one
+// GET /tasks request per project (N parallel requests — better for a handful of expands
+// since each project's tasks render progressively as they arrive) to a single batched
+// GET /tasks?projectId=a,b,c... request covering all of them (one round-trip and one
+// backend query-plan instead of N, at the cost of nothing rendering until the whole
+// batch resolves). Individual row expand/collapse is always well under this and stays
+// on the N path; this only matters for the header's "expand all" on a large portfolio.
+// Note: crossing this boundary in either direction unmounts the previous fetcher(s) and
+// mounts the other mode, so every expanded row flashes back to "loading" and re-fetches —
+// acceptable since it only happens right at the 11/12 boundary, not on every toggle.
+const BATCH_EXPAND_THRESHOLD = 12;
+
 // TimelineProjectBarRow always has both dates — undated projects render as a
 // TimelineProjectPlaceholderRow instead (see below) rather than being placed on the grid.
 type DatedProjectTimelineItem = ProjectTimelineItem & { start_date: string; end_date: string };
+
+// One of a project's task rows (only present once that project is expanded) — either a
+// real task or a loading/empty placeholder for the expanded project's task fetch.
+type TimelineTaskSubRow =
+  | { kind: 'task'; task: TaskTimelineItem }
+  | { kind: 'tasksStatus'; projectId: string; status: 'loading' | 'empty' };
+
+// A project and its (possibly empty) task rows, grouped together — both panels render
+// one wrapper div per group (see renderRows below) so the project's own row can be
+// `position: sticky` *within that wrapper*: CSS only pushes a sticky element out of view
+// once its own containing block's bottom edge reaches it, so each project's row needs its
+// task rows nested inside the same wrapper for the "first expanded project stays stuck
+// while its tasks scroll by, then the next expanded project's row takes over" behavior —
+// plain sibling rows with position:sticky wouldn't stack like that.
+interface TimelineProjectGroup {
+  project: ProjectTimelineItem;
+  taskRows: TimelineTaskSubRow[];
+}
 
 // The project column and the date grid are two entirely separate panels (not a
 // position:sticky column inside the scrolling grid) — sticky columns whose scroll
@@ -77,9 +121,18 @@ interface TimelineRowProps {
   borderColor: string;
   cardBg: string;
   highlighted?: boolean;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({ project, borderColor, cardBg, highlighted }) => {
+const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({
+  project,
+  borderColor,
+  cardBg,
+  highlighted,
+  expanded,
+  onToggleExpand,
+}) => {
   const navigate = useNavigate();
   const { t } = useTranslation('schedule');
   const { token } = theme.useToken();
@@ -103,7 +156,7 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({ project, borderCol
         padding: '8px 12px',
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 4,
         background: highlighted ? token.colorPrimaryBg : cardBg,
         transition: 'background .3s',
       }}
@@ -114,7 +167,7 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({ project, borderCol
       <div
         onClick={goToProject}
         title={project.name}
-        style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, cursor: 'pointer' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, cursor: 'pointer', flex: 1 }}
         onMouseEnter={e => {
           const nameEl = e.currentTarget.querySelector('[data-project-name]') as HTMLDivElement | null;
           if (nameEl) nameEl.style.color = token.colorPrimary;
@@ -137,6 +190,32 @@ const TimelineProjectInfoRow: React.FC<TimelineRowProps> = ({ project, borderCol
           </div>
         </div>
       </div>
+
+      {/* Expand/collapse toggle for this project's tasks — a separate click zone from
+          the name cell above, so expanding never also navigates away. Right-aligned at
+          the end of the row rather than leading it. */}
+      <button
+        type="button"
+        onClick={e => {
+          e.stopPropagation();
+          onToggleExpand?.();
+        }}
+        title={expanded ? t('collapse', { defaultValue: 'Collapse' }) : t('expand', { defaultValue: 'Expand' })}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: 4,
+          margin: 0,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: token.colorTextSecondary,
+          flexShrink: 0,
+        }}
+      >
+        {expanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+      </button>
     </div>
   );
 };
@@ -147,6 +226,7 @@ interface TimelineBarRowProps {
   pxPerDay: number;
   totalWidth: number;
   borderColor: string;
+  cardBg: string;
   onDatesChange: (projectId: string, startDate: string, endDate: string) => void;
   highlighted?: boolean;
 }
@@ -171,11 +251,13 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
   pxPerDay,
   totalWidth,
   borderColor,
+  cardBg,
   onDatesChange,
   highlighted,
 }) => {
   const { token } = theme.useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { t } = useTranslation('schedule');
 
   // 'start'/'end' drag an edge handle, resizing just that date; 'move' drags the bar
   // body itself, shifting both dates together by the same delta (duration unchanged).
@@ -282,15 +364,17 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
     <div style={{ minWidth: 170 }}>
       <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{project.name}</div>
       {isOverdue && (
-        <div style={{ fontSize: 12, fontWeight: 700, color: token.colorError, marginBottom: 6 }}>⚠ Overdue</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: token.colorError, marginBottom: 6 }}>
+          ⚠ {t('overdue', { defaultValue: 'Overdue' })}
+        </div>
       )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
         <div>
-          <span style={{ opacity: 0.65 }}>Dates: </span>
+          <span style={{ opacity: 0.65 }}>{t('dates', { defaultValue: 'Dates' })}: </span>
           {startDateStr} - {endDateStr}
         </div>
         <div>
-          <span style={{ opacity: 0.65 }}>Status: </span>
+          <span style={{ opacity: 0.65 }}>{t('status', { defaultValue: 'Status' })}: </span>
           {project.status_name ? (
             <span
               style={{
@@ -309,19 +393,19 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
           )}
         </div>
         <div>
-          <span style={{ opacity: 0.65 }}>Done: </span>
+          <span style={{ opacity: 0.65 }}>{t('done', { defaultValue: 'Done' })}: </span>
           {project.done_count} ({project.done_progress}%)
         </div>
         <div>
-          <span style={{ opacity: 0.65 }}>Doing: </span>
+          <span style={{ opacity: 0.65 }}>{t('doing', { defaultValue: 'Doing' })}: </span>
           {project.doing_count} ({project.doing_progress}%)
         </div>
         <div>
-          <span style={{ opacity: 0.65 }}>Todo: </span>
+          <span style={{ opacity: 0.65 }}>{t('todo', { defaultValue: 'Todo' })}: </span>
           {project.todo_count} ({project.todo_progress}%)
         </div>
         <div>
-          <span style={{ opacity: 0.65 }}>Total tasks: </span>
+          <span style={{ opacity: 0.65 }}>{t('totalTasks', { defaultValue: 'Total tasks' })}: </span>
           {project.total_tasks}
         </div>
       </div>
@@ -338,7 +422,10 @@ const TimelineProjectBarRow: React.FC<TimelineBarRowProps> = ({
         display: 'flex',
         alignItems: 'center',
         borderBottom: `1px solid ${borderColor}`,
-        background: highlighted ? token.colorPrimaryBg : undefined,
+        // Opaque (not the `undefined`/transparent it was before position:sticky was
+        // introduced) — a sticky row needs its own background so task bars scrolling
+        // underneath it don't visibly bleed through.
+        background: highlighted ? token.colorPrimaryBg : cardBg,
         transition: 'background .3s',
       }}
     >
@@ -436,6 +523,7 @@ interface TimelinePlaceholderRowProps {
   pxPerDay: number;
   totalWidth: number;
   borderColor: string;
+  cardBg: string;
   onDatesChange: (projectId: string, startDate: string, endDate: string) => void;
   onHoverRangeChange: (range: { start: Dayjs; end: Dayjs } | null) => void;
 }
@@ -451,6 +539,7 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
   pxPerDay,
   totalWidth,
   borderColor,
+  cardBg,
   onDatesChange,
   onHoverRangeChange,
 }) => {
@@ -493,7 +582,9 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
         position: 'relative',
         borderBottom: `1px solid ${borderColor}`,
         cursor: 'pointer',
-        background: hoverStart ? token.colorFillQuaternary : undefined,
+        // Opaque background for the same reason as TimelineProjectBarRow above — this
+        // row can now be inside a position:sticky wrapper.
+        background: hoverStart ? token.colorFillQuaternary : cardBg,
       }}
     >
       {hoverStart && previewEnd && (
@@ -526,10 +617,369 @@ const TimelineProjectPlaceholderRow: React.FC<TimelinePlaceholderRowProps> = ({
   );
 };
 
+// Non-visual data-fetcher — one instance per expanded project, mounted/unmounted as
+// the project expands/collapses so RTK Query's own subscription lifecycle (and
+// keepUnusedDataFor) handles fetching and dropping the cache for us, rather than the
+// parent trying to call a variable number of query hooks itself (which the rules of
+// hooks don't allow). Reports back up via onTasksChange instead of rendering anything,
+// so the parent stays the single source of truth for the row list both panels share.
+interface TimelineExpandedProjectTasksProps {
+  projectId: string;
+  startDate?: string;
+  endDate?: string;
+  onTasksChange: (projectId: string, tasks: TaskTimelineItem[] | undefined) => void;
+}
+
+const TimelineExpandedProjectTasks: React.FC<TimelineExpandedProjectTasksProps> = ({
+  projectId,
+  startDate,
+  endDate,
+  onTasksChange,
+}) => {
+  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId, startDate, endDate });
+
+  useEffect(() => {
+    onTasksChange(projectId, isLoading ? undefined : (data?.body ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, isLoading, data]);
+
+  // Clears this project's entry (back to "loading") when it collapses or this view
+  // unmounts, rather than leaving stale task data behind for next time it expands.
+  useEffect(() => {
+    return () => onTasksChange(projectId, undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
+  return null;
+};
+
+interface TimelineExpandedProjectsBatchTasksProps {
+  projectIds: string[];
+  startDate?: string;
+  endDate?: string;
+  onTasksChange: (projectId: string, tasks: TaskTimelineItem[] | undefined) => void;
+}
+
+// Used instead of BATCH_EXPAND_THRESHOLD-or-more individual TimelineExpandedProjectTasks
+// instances (see the parent's useBatchFetch) — one GET /tasks?projectId=a,b,c... call
+// covering every expanded project instead of one call each, then splits the flat
+// response back out per project by its project_id before reporting up. Same
+// onTasksChange contract as the single-project fetcher, so the rest of the row/rendering
+// logic doesn't need to know which mode is active.
+const TimelineExpandedProjectsBatchTasks: React.FC<TimelineExpandedProjectsBatchTasksProps> = ({
+  projectIds,
+  startDate,
+  endDate,
+  onTasksChange,
+}) => {
+  // Joined once per render for the query key; effects below key off this string (stable
+  // across re-renders as long as the actual id set doesn't change) rather than the
+  // `projectIds` array reference, which is a new array every render.
+  const projectIdParam = projectIds.join(',');
+  const { data, isLoading } = useFetchTaskTimelineQuery({ projectId: projectIdParam, startDate, endDate });
+
+  useEffect(() => {
+    if (isLoading) return;
+    const tasks = data?.body ?? [];
+    const byProject = new Map<string, TaskTimelineItem[]>();
+    for (const id of projectIdParam.split(',')) byProject.set(id, []);
+    for (const task of tasks) {
+      byProject.get(task.project_id)?.push(task);
+    }
+    byProject.forEach((projectTasks, projectId) => onTasksChange(projectId, projectTasks));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectIdParam, isLoading, data]);
+
+  // Resets every project in this batch back to "loading" once the batch itself unmounts
+  // (everything collapsed, or the expanded count dropped back under the threshold and
+  // the parent switched back to per-project fetching).
+  useEffect(() => {
+    const ids = projectIdParam.split(',');
+    return () => {
+      ids.forEach(id => onTasksChange(id, undefined));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectIdParam]);
+
+  return null;
+};
+
+interface TimelineTaskInfoRowProps {
+  task: TaskTimelineItem;
+  borderColor: string;
+  onClick: () => void;
+}
+
+// Indented one level under its parent project's TimelineProjectInfoRow above it — same
+// row height so it lines up with TimelineTaskBarRow in the date-grid panel. Clicking
+// opens the shared TaskDrawer (same drawer used by the Schedule/Workload Planner tabs
+// and everywhere else in the app) rather than building a bespoke status/edit UI here.
+const TimelineTaskInfoRow: React.FC<TimelineTaskInfoRowProps> = ({ task, borderColor, onClick }) => {
+  const { token } = theme.useToken();
+
+  return (
+    <div
+      onClick={onClick}
+      title={task.name}
+      style={{
+        height: MAIN_ROW_HEIGHT,
+        minHeight: MAIN_ROW_HEIGHT,
+        borderBottom: `1px solid ${borderColor}`,
+        padding: '8px 12px 8px 36px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        cursor: 'pointer',
+      }}
+    >
+      <Badge color={task.status_color || token.colorPrimary} />
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          fontSize: 12,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          textDecoration: task.is_done_status ? 'line-through' : undefined,
+          opacity: task.is_done_status ? 0.6 : 1,
+        }}
+      >
+        {task.name}
+      </div>
+      {task.subtask_count > 0 && (
+        <span style={{ fontSize: 11, opacity: 0.5, flexShrink: 0 }}>
+          {task.completed_subtask_count}/{task.subtask_count}
+        </span>
+      )}
+    </div>
+  );
+};
+
+interface TimelineTaskStatusRowProps {
+  borderColor: string;
+  status: 'loading' | 'empty';
+}
+
+// Placeholder row shown in the left panel while an expanded project's tasks are
+// loading, or once loaded if there are none in the current date range — paired with
+// TimelineTaskStatusBarRow below for the matching spacer in the right panel.
+const TimelineTaskStatusRow: React.FC<TimelineTaskStatusRowProps> = ({ borderColor, status }) => {
+  const { t } = useTranslation('schedule');
+  return (
+    <div
+      style={{
+        height: MAIN_ROW_HEIGHT,
+        minHeight: MAIN_ROW_HEIGHT,
+        borderBottom: `1px solid ${borderColor}`,
+        padding: '8px 12px 8px 36px',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: 12,
+        opacity: 0.45,
+      }}
+    >
+      {status === 'loading'
+        ? t('loadingTasks', { defaultValue: 'Loading tasks…' })
+        : t('noTasksInRange', { defaultValue: 'No tasks in this range' })}
+    </div>
+  );
+};
+
+const TimelineTaskStatusBarRow: React.FC<{ borderColor: string; totalWidth: number }> = ({
+  borderColor,
+  totalWidth,
+}) => (
+  <div
+    style={{
+      height: MAIN_ROW_HEIGHT,
+      minHeight: MAIN_ROW_HEIGHT,
+      width: totalWidth,
+      borderBottom: `1px solid ${borderColor}`,
+    }}
+  />
+);
+
+interface TimelineTaskBarRowProps {
+  task: TaskTimelineItem;
+  rangeStart: Dayjs;
+  pxPerDay: number;
+  totalWidth: number;
+  borderColor: string;
+  onDatesChange: (taskId: string, startDate: string, endDate: string) => void;
+}
+
+const TASK_BAR_HEIGHT = 18;
+
+// Drag-to-reschedule for a single task's bar — adapted from TimelineProjectBarRow's own
+// dragMode/liveRef/mousemove/mouseup implementation just above (same rangeStart/pxPerDay
+// coordinate space, same YYYY-MM-DD commit convention) rather than the heavier per-project
+// Gantt's drag logic, which carries dependency-line/swimlane concerns this row doesn't need.
+const TimelineTaskBarRow: React.FC<TimelineTaskBarRowProps> = ({
+  task,
+  rangeStart,
+  pxPerDay,
+  totalWidth,
+  borderColor,
+  onDatesChange,
+}) => {
+  const { token } = theme.useToken();
+  const themeMode = useAppSelector(state => state.themeReducer.mode);
+  const { t } = useTranslation('schedule');
+
+  const hasDates = !!task.start_date && !!task.end_date;
+
+  const [dragMode, setDragMode] = useState<'start' | 'end' | 'move' | null>(null);
+  const [previewStart, setPreviewStart] = useState<Dayjs | null>(null);
+  const [previewEnd, setPreviewEnd] = useState<Dayjs | null>(null);
+  const liveRef = useRef<{ start: Dayjs; end: Dayjs; startX: number } | null>(null);
+
+  const effectiveStart = previewStart ?? (hasDates ? dayjs(task.start_date as string) : null);
+  const effectiveEnd = previewEnd ?? (hasDates ? dayjs(task.end_date as string) : null);
+
+  const xForDate = (date: string | Dayjs) => dayjs(date).diff(rangeStart, 'day') * pxPerDay;
+
+  const startDateStr = hasDates ? dayjs(task.start_date as string).format('YYYY-MM-DD') : null;
+  const endDateStr = hasDates ? dayjs(task.end_date as string).format('YYYY-MM-DD') : null;
+
+  useEffect(() => {
+    if (!dragMode || !hasDates) return;
+    const onMove = (e: MouseEvent) => {
+      if (!liveRef.current) return;
+      const deltaDays = Math.round((e.clientX - liveRef.current.startX) / pxPerDay);
+      if (dragMode === 'start') {
+        let next = dayjs(task.start_date as string).add(deltaDays, 'day');
+        const maxStart = dayjs(task.end_date as string).subtract(1, 'day');
+        if (next.isAfter(maxStart)) next = maxStart;
+        liveRef.current = { ...liveRef.current, start: next };
+        setPreviewStart(next);
+      } else if (dragMode === 'end') {
+        let next = dayjs(task.end_date as string).add(deltaDays, 'day');
+        const minEnd = dayjs(task.start_date as string).add(1, 'day');
+        if (next.isBefore(minEnd)) next = minEnd;
+        liveRef.current = { ...liveRef.current, end: next };
+        setPreviewEnd(next);
+      } else {
+        const nextStart = dayjs(task.start_date as string).add(deltaDays, 'day');
+        const nextEnd = dayjs(task.end_date as string).add(deltaDays, 'day');
+        liveRef.current = { ...liveRef.current, start: nextStart, end: nextEnd };
+        setPreviewStart(nextStart);
+        setPreviewEnd(nextEnd);
+      }
+    };
+    const onUp = () => {
+      setDragMode(null);
+      const final = liveRef.current;
+      liveRef.current = null;
+      setPreviewStart(null);
+      setPreviewEnd(null);
+      if (!final) return;
+      const newStart = final.start.format('YYYY-MM-DD');
+      const newEnd = final.end.format('YYYY-MM-DD');
+      if (newStart !== startDateStr || newEnd !== endDateStr) {
+        onDatesChange(task.id, newStart, newEnd);
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragMode, hasDates]);
+
+  const startEdgeDrag = (edge: 'start' | 'end') => (e: React.MouseEvent) => {
+    if (!hasDates) return;
+    e.stopPropagation();
+    e.preventDefault();
+    liveRef.current = { start: dayjs(task.start_date as string), end: dayjs(task.end_date as string), startX: e.clientX };
+    setDragMode(edge);
+  };
+
+  const startBarMove = (e: React.MouseEvent) => {
+    if (!hasDates) return;
+    e.stopPropagation();
+    e.preventDefault();
+    liveRef.current = { start: dayjs(task.start_date as string), end: dayjs(task.end_date as string), startX: e.clientX };
+    setDragMode('move');
+  };
+
+  return (
+    <div
+      style={{
+        height: MAIN_ROW_HEIGHT,
+        minHeight: MAIN_ROW_HEIGHT,
+        width: totalWidth,
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center',
+        borderBottom: `1px solid ${borderColor}`,
+      }}
+    >
+      {hasDates && effectiveStart && effectiveEnd ? (
+        <Tooltip
+          title={
+            <div style={{ minWidth: 170 }}>
+              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{task.name}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
+                <div>
+                  <span style={{ opacity: 0.65 }}>{t('dates', { defaultValue: 'Dates' })}: </span>
+                  {startDateStr} - {endDateStr}
+                </div>
+                <div>
+                  <span style={{ opacity: 0.65 }}>{t('status', { defaultValue: 'Status' })}: </span>
+                  {task.status_name || '-'}
+                </div>
+              </div>
+            </div>
+          }
+          open={dragMode ? false : undefined}
+          {...tooltipProps(themeMode, token)}
+        >
+          <div
+            onMouseDown={startBarMove}
+            style={{
+              position: 'absolute',
+              left: xForDate(effectiveStart),
+              width: Math.max(4, xForDate(effectiveEnd) - xForDate(effectiveStart) + pxPerDay),
+              height: TASK_BAR_HEIGHT,
+              borderRadius: 2,
+              background: task.status_color || token.colorPrimary,
+              opacity: task.is_done_status ? 0.55 : 1,
+              boxShadow: `0 0 0 1px ${token.colorBorderSecondary}`,
+              cursor: dragMode === 'move' ? 'grabbing' : 'grab',
+            }}
+          >
+            <div
+              onMouseDown={startEdgeDrag('start')}
+              style={{ position: 'absolute', left: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+            />
+            <div
+              onMouseDown={startEdgeDrag('end')}
+              style={{ position: 'absolute', right: -3, top: 0, bottom: 0, width: EDGE_HANDLE_WIDTH, cursor: 'ew-resize', zIndex: 1 }}
+            />
+          </div>
+        </Tooltip>
+      ) : (
+        <span style={{ paddingLeft: 12, fontSize: 12, opacity: 0.4 }}>
+          {t('noDatesSet', { defaultValue: 'No dates set' })}
+        </span>
+      )}
+    </div>
+  );
+};
+
 const PlannerTimelineView: React.FC = () => {
   const { t } = useTranslation('schedule');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { token } = theme.useToken();
+  const dispatch = useAppDispatch();
+
+  // Live sync: date/status changes made here (or in any other project view) refresh
+  // this view's data via RTK Query cache invalidation — see useScheduleSocketHandlers
+  // for exactly which socket events it listens for.
+  useScheduleSocketHandlers();
 
   const [zoom, setZoom] = useState<TimelineZoom>('months');
   const [filterProjects, setFilterProjects] = useState<string[]>([]);
@@ -537,19 +987,62 @@ const PlannerTimelineView: React.FC = () => {
   const [filterPriorities, setFilterPriorities] = useState<string[]>([]);
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
   const [filterClients, setFilterClients] = useState<string[]>([]);
+  // Portfolio-wide date range filter — narrows both which projects are shown and, once
+  // applied, becomes the visible grid range itself (see rangeStart/rangeEnd below)
+  // instead of the range being auto-derived from the filtered projects' own dates.
+  const [dateFilter, setDateFilter] = useState<[Dayjs, Dayjs] | null>(null);
   const anyFilterActive =
     filterProjects.length > 0 ||
     filterStatuses.length > 0 ||
     filterPriorities.length > 0 ||
     filterCategories.length > 0 ||
-    filterClients.length > 0;
+    filterClients.length > 0 ||
+    !!dateFilter;
   const clearAllFilters = () => {
     setFilterProjects([]);
     setFilterStatuses([]);
     setFilterPriorities([]);
     setFilterCategories([]);
     setFilterClients([]);
+    setDateFilter(null);
   };
+
+  // Which projects are expanded to show their tasks in place, and the tasks fetched for
+  // each — populated by the (non-visual) TimelineExpandedProjectTasks instances rendered
+  // below, one per expanded project id, rather than this component calling a variable
+  // number of query hooks itself. undefined = still loading; [] = loaded, no tasks in range.
+  const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(new Set());
+  const expandedProjectIdsArray = Array.from(expandedProjectIds);
+  const [tasksByProjectId, setTasksByProjectId] = useState<Record<string, TaskTimelineItem[] | undefined>>({});
+  const toggleExpandProject = (projectId: string) => {
+    setExpandedProjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
+  };
+  const handleExpandedTasksChange = (projectId: string, tasks: TaskTimelineItem[] | undefined) => {
+    setTasksByProjectId(prev => (prev[projectId] === tasks ? prev : { ...prev, [projectId]: tasks }));
+  };
+
+  const openTaskDrawer = (task: TaskTimelineItem) => {
+    dispatch(setProjectId(task.project_id));
+    dispatch(setSelectedTaskId(task.id));
+    dispatch(setShowTaskDrawer(true));
+  };
+
+  const [updateTaskDates] = useUpdateTaskDatesMutation();
+  const handleTaskDatesChange = (taskId: string, startDate: string, endDate: string) => {
+    updateTaskDates({ taskId, start_date: startDate, end_date: endDate });
+  };
+
+  // Joins/leaves each expanded project's socket room (same JOIN_OR_LEAVE_PROJECT_ROOM
+  // pattern used by the single-project view — see project-view.tsx) so the date/status
+  // change broadcasts useScheduleSocketHandlers listens for actually reach this client.
+  // Shared with PlannerScheduleView/PlannerWorkloadView via useProjectRoomSync, which
+  // handles the join/leave diffing and reconnect re-join/unmount cleanup.
+  useProjectRoomSync(expandedProjectIds);
 
   // Set by TimelineProjectPlaceholderRow while the mouse hovers an undated project's
   // row, so the date header above can highlight the same two-month window.
@@ -669,9 +1162,17 @@ const PlannerTimelineView: React.FC = () => {
       if (filterPriorities.length && !(p.priority_id && filterPriorities.includes(p.priority_id))) return false;
       if (filterCategories.length && !(p.category_id && filterCategories.includes(p.category_id))) return false;
       if (filterClients.length && !(p.client_id && filterClients.includes(p.client_id))) return false;
+      // Same "exclude if the field needed to match isn't set" idiom as the filters above —
+      // a project with no dates has nothing to compare against a date range.
+      if (dateFilter) {
+        if (!p.start_date || !p.end_date) return false;
+        const pStart = dayjs(p.start_date);
+        const pEnd = dayjs(p.end_date);
+        if (pEnd.isBefore(dateFilter[0], 'day') || pStart.isAfter(dateFilter[1], 'day')) return false;
+      }
       return true;
     });
-  }, [allProjects, filterProjects, filterStatuses, filterPriorities, filterCategories, filterClients]);
+  }, [allProjects, filterProjects, filterStatuses, filterPriorities, filterCategories, filterClients, dateFilter]);
 
   // Only projects with both a start and end date can be placed on the date-driven grid
   // (their position/width comes from those dates); dateless ones can't be, but rather
@@ -709,6 +1210,36 @@ const PlannerTimelineView: React.FC = () => {
     return orderRef.current.filter(id => byId.has(id)).map(id => byId.get(id)!);
   }, [filteredProjects, allProjects]);
 
+  // Header row master toggle — collapses everything only once every currently-visible
+  // project is expanded; otherwise (none or only some expanded) expands the rest.
+  const allExpanded = orderedProjects.length > 0 && expandedProjectIds.size >= orderedProjects.length;
+  const toggleExpandAll = () => {
+    setExpandedProjectIds(allExpanded ? new Set() : new Set(orderedProjects.map(p => p.id)));
+  };
+
+  // Single source of row order shared by BOTH panels (project names on the left, bars on
+  // the right) — each renders this exact same array of groups in the exact same order
+  // instead of each doing its own orderedProjects.map(...). That's deliberate: once
+  // expanding a project can insert a variable number of task rows beneath it, the two
+  // panels HAVE to derive from one shared list or they drift out of alignment (a task's
+  // bar ending up next to the wrong task's name). Every row is MAIN_ROW_HEIGHT tall
+  // regardless of kind, so existing index-based scroll math elsewhere keeps working
+  // unchanged. Grouped by project (rather than one flat row list) so each project's own
+  // row can be rendered as a position:sticky header over its own task rows.
+  const renderRows = useMemo<TimelineProjectGroup[]>(() => {
+    return orderedProjects.map(project => {
+      if (!expandedProjectIds.has(project.id)) return { project, taskRows: [] };
+      const tasks = tasksByProjectId[project.id];
+      const taskRows: TimelineTaskSubRow[] =
+        tasks === undefined
+          ? [{ kind: 'tasksStatus', projectId: project.id, status: 'loading' }]
+          : tasks.length === 0
+            ? [{ kind: 'tasksStatus', projectId: project.id, status: 'empty' }]
+            : tasks.map(task => ({ kind: 'task', task }));
+      return { project, taskRows };
+    });
+  }, [orderedProjects, expandedProjectIds, tasksByProjectId]);
+
   // Briefly highlights a project right after a placeholder-row commit, waiting for
   // orderedProjects to actually contain it before flashing it. Deliberately does not
   // scroll the grid into view — the row is already the one the user just clicked, so
@@ -743,6 +1274,17 @@ const PlannerTimelineView: React.FC = () => {
   const boundaryStepUnit = boundaryUnit === 'isoWeek' ? 'week' : boundaryUnit;
 
   const rangeStart = useMemo(() => {
+    // An active date filter pins the visible range to what the user actually asked for —
+    // rounded only to the current zoom's fine unit (cfg.unit), never the coarser
+    // boundaryUnit/topUnit grouping used below, and with none of the extra unit of
+    // padding or the Years-zoom "at least 3 years back" floor. Those exist to keep
+    // *auto-derived-from-projects* ranges from starting/ending mid-group and to give a
+    // sensible default span with no filter — applying the same rounding to an explicit
+    // 2-month filter is what previously ballooned it out to a 3-year range (e.g.
+    // 2026-08-01–2026-09-30 became "Jan 2025 – Dec 2027" at Months zoom, whose
+    // boundaryUnit is 'year').
+    if (dateFilter) return dateFilter[0].startOf(cfg.unit as any);
+
     const base = projects.length
       ? projects.reduce((min, p) => (dayjs(p.start_date).isBefore(min) ? dayjs(p.start_date) : min), dayjs(projects[0].start_date))
       : today;
@@ -757,9 +1299,11 @@ const PlannerTimelineView: React.FC = () => {
       if (floor.isBefore(start)) start = floor;
     }
     return start;
-  }, [projects, boundaryUnit, boundaryStepUnit, zoom]);
+  }, [projects, boundaryUnit, boundaryStepUnit, zoom, dateFilter, cfg.unit]);
 
   const rangeEnd = useMemo(() => {
+    if (dateFilter) return dateFilter[1].endOf(cfg.unit as any);
+
     const base = projects.length
       ? projects.reduce((max, p) => (dayjs(p.end_date).isAfter(max) ? dayjs(p.end_date) : max), dayjs(projects[0].end_date))
       : today;
@@ -771,7 +1315,7 @@ const PlannerTimelineView: React.FC = () => {
       if (ceiling.isAfter(end)) end = ceiling;
     }
     return end;
-  }, [projects, boundaryUnit, boundaryStepUnit, zoom]);
+  }, [projects, boundaryUnit, boundaryStepUnit, zoom, dateFilter, cfg.unit]);
 
   const totalDays = Math.max(1, rangeEnd.diff(rangeStart, 'day'));
 
@@ -968,6 +1512,32 @@ const PlannerTimelineView: React.FC = () => {
         minHeight: 0,
       }}
     >
+      {/* Non-visual task fetchers, scoped to the same portfolio-wide date filter, report
+          back via handleExpandedTasksChange. Below BATCH_EXPAND_THRESHOLD expanded
+          projects, one TimelineExpandedProjectTasks per project (N parallel requests,
+          progressive per-project rendering); at or above it (typically only via the
+          header's "expand all"), one TimelineExpandedProjectsBatchTasks instead (a
+          single batched request) — see the components above for why. */}
+      {expandedProjectIdsArray.length >= BATCH_EXPAND_THRESHOLD ? (
+        <TimelineExpandedProjectsBatchTasks
+          key="batch"
+          projectIds={expandedProjectIdsArray}
+          startDate={dateFilter ? dateFilter[0].format('YYYY-MM-DD') : undefined}
+          endDate={dateFilter ? dateFilter[1].format('YYYY-MM-DD') : undefined}
+          onTasksChange={handleExpandedTasksChange}
+        />
+      ) : (
+        expandedProjectIdsArray.map(id => (
+          <TimelineExpandedProjectTasks
+            key={id}
+            projectId={id}
+            startDate={dateFilter ? dateFilter[0].format('YYYY-MM-DD') : undefined}
+            endDate={dateFilter ? dateFilter[1].format('YYYY-MM-DD') : undefined}
+            onTasksChange={handleExpandedTasksChange}
+          />
+        ))
+      )}
+
       {/* Filters + date-nav box — boxed toolbar, mirrors the task list view's
           rounded/bordered filter bar (see ImprovedTaskFiltersContainer) and
           PlannerScheduleView's own toolbar box. */}
@@ -983,7 +1553,7 @@ const PlannerTimelineView: React.FC = () => {
       <Flex align="center" gap={8} wrap="wrap" style={{ padding: '10px 12px' }}>
         <PlannerMultiFilterDropdown
           label={t('allProjects', { defaultValue: 'Projects' })}
-          options={allProjects.map(p => ({ value: p.id, label: p.name }))}
+          options={allProjects.map(p => ({ value: p.id, label: p.name || '' }))}
           selected={filterProjects}
           onChange={setFilterProjects}
         />
@@ -1010,6 +1580,16 @@ const PlannerTimelineView: React.FC = () => {
           options={clientOptions}
           selected={filterClients}
           onChange={setFilterClients}
+        />
+        <DatePicker.RangePicker
+          size="small"
+          value={dateFilter}
+          onChange={v => setDateFilter(v && v[0] && v[1] ? [v[0], v[1]] : null)}
+          placeholder={[
+            t('startDate', { defaultValue: 'Start date' }),
+            t('endDate', { defaultValue: 'End date' }),
+          ]}
+          style={{ fontSize: 12 }}
         />
       </Flex>
 
@@ -1136,7 +1716,8 @@ const PlannerTimelineView: React.FC = () => {
               minHeight: UNIT_HEADER_HEIGHT,
               display: 'flex',
               alignItems: 'center',
-              padding: '0 16px',
+              justifyContent: 'space-between',
+              padding: '0 12px 0 16px',
               fontSize: 12,
               fontWeight: 600,
               opacity: 0.45,
@@ -1145,6 +1726,31 @@ const PlannerTimelineView: React.FC = () => {
             }}
           >
             {t('project', { defaultValue: 'Project' })}
+            {/* Master expand/collapse — expands every visible project at once, or
+                collapses everything if any are currently expanded. */}
+            <button
+              type="button"
+              onClick={toggleExpandAll}
+              title={
+                allExpanded
+                  ? t('collapseAll', { defaultValue: 'Collapse all' })
+                  : t('expandAll', { defaultValue: 'Expand all' })
+              }
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 4,
+                margin: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: token.colorTextSecondary,
+                textTransform: 'none',
+              }}
+            >
+              {allExpanded ? <DownOutlined style={{ fontSize: 10 }} /> : <RightOutlined style={{ fontSize: 10 }} />}
+            </button>
           </div>
           <div
             ref={leftBodyScrollRef}
@@ -1160,14 +1766,41 @@ const PlannerTimelineView: React.FC = () => {
                 {t('noDataAvailable', { defaultValue: 'No data available' })}
               </div>
             ) : (
-              orderedProjects.map(project => (
-                <TimelineProjectInfoRow
-                  key={project.id}
-                  project={project}
-                  cardBg={cardBg}
-                  borderColor={borderColor}
-                  highlighted={project.id === focusProjectId}
-                />
+              renderRows.map(group => (
+                // Group wrapper is the sticky containing block: TimelineProjectInfoRow
+                // inside it sticks to top:0 of the scroll container while this group's
+                // own task rows scroll by beneath it, and gets pushed out once this
+                // wrapper's bottom (i.e. the last task row) reaches the top — at which
+                // point the NEXT group's own sticky row takes over. z-index keeps the
+                // stuck row above the task rows still scrolling underneath it.
+                <div key={group.project.id} style={{ position: 'relative' }}>
+                  <div style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+                    <TimelineProjectInfoRow
+                      project={group.project}
+                      cardBg={cardBg}
+                      borderColor={borderColor}
+                      highlighted={group.project.id === focusProjectId}
+                      expanded={expandedProjectIds.has(group.project.id)}
+                      onToggleExpand={() => toggleExpandProject(group.project.id)}
+                    />
+                  </div>
+                  {group.taskRows.map(row =>
+                    row.kind === 'tasksStatus' ? (
+                      <TimelineTaskStatusRow
+                        key={`${row.projectId}-status`}
+                        borderColor={borderColor}
+                        status={row.status}
+                      />
+                    ) : (
+                      <TimelineTaskInfoRow
+                        key={row.task.id}
+                        task={row.task}
+                        borderColor={borderColor}
+                        onClick={() => openTaskDrawer(row.task)}
+                      />
+                    )
+                  )}
+                </div>
               ))
             )}
           </div>
@@ -1303,31 +1936,58 @@ const PlannerTimelineView: React.FC = () => {
               )}
 
               {!isLoading &&
-                orderedProjects.map(project =>
-                  project.start_date && project.end_date ? (
-                    <TimelineProjectBarRow
-                      key={project.id}
-                      project={project as DatedProjectTimelineItem}
-                      rangeStart={rangeStart}
-                      pxPerDay={pxPerDay}
-                      totalWidth={totalWidth}
-                      borderColor={borderColor}
-                      onDatesChange={handleProjectDatesChange}
-                      highlighted={project.id === focusProjectId}
-                    />
-                  ) : (
-                    <TimelineProjectPlaceholderRow
-                      key={project.id}
-                      project={project}
-                      rangeStart={rangeStart}
-                      pxPerDay={pxPerDay}
-                      totalWidth={totalWidth}
-                      borderColor={borderColor}
-                      onDatesChange={handlePlaceholderDatesCommit}
-                      onHoverRangeChange={setHoverPreviewRange}
-                    />
-                  )
-                )}
+                renderRows.map(group => (
+                  // Same sticky-group structure as the left panel's project column —
+                  // deliberately mirrored row-for-row so the sticky project bar here
+                  // stays visually aligned with the sticky project name on the left
+                  // while scrolling, rather than the two panels drifting apart.
+                  <div key={group.project.id} style={{ position: 'relative' }}>
+                    <div style={{ position: 'sticky', top: 0, zIndex: 2 }}>
+                      {group.project.start_date && group.project.end_date ? (
+                        <TimelineProjectBarRow
+                          project={group.project as DatedProjectTimelineItem}
+                          rangeStart={rangeStart}
+                          pxPerDay={pxPerDay}
+                          totalWidth={totalWidth}
+                          borderColor={borderColor}
+                          cardBg={cardBg}
+                          onDatesChange={handleProjectDatesChange}
+                          highlighted={group.project.id === focusProjectId}
+                        />
+                      ) : (
+                        <TimelineProjectPlaceholderRow
+                          project={group.project}
+                          rangeStart={rangeStart}
+                          pxPerDay={pxPerDay}
+                          totalWidth={totalWidth}
+                          borderColor={borderColor}
+                          cardBg={cardBg}
+                          onDatesChange={handlePlaceholderDatesCommit}
+                          onHoverRangeChange={setHoverPreviewRange}
+                        />
+                      )}
+                    </div>
+                    {group.taskRows.map(row =>
+                      row.kind === 'tasksStatus' ? (
+                        <TimelineTaskStatusBarRow
+                          key={`${row.projectId}-status-bar`}
+                          borderColor={borderColor}
+                          totalWidth={totalWidth}
+                        />
+                      ) : (
+                        <TimelineTaskBarRow
+                          key={row.task.id}
+                          task={row.task}
+                          rangeStart={rangeStart}
+                          pxPerDay={pxPerDay}
+                          totalWidth={totalWidth}
+                          borderColor={borderColor}
+                          onDatesChange={handleTaskDatesChange}
+                        />
+                      )
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

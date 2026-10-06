@@ -33,7 +33,10 @@ const BLOCKED_EXTENSIONS = [
   'deb', 'rpm', 'dmg', 'pkg', 'sh', 'ps1', 'dll', 'msi',
 ];
 
-type PendingUploadFile = UploadFile & { errorMessage?: string };
+type PendingUploadFile = Omit<UploadFile, 'status'> & {
+  status?: UploadFile['status'] | 'ready';
+  errorMessage?: string;
+};
 
 const formatFileSize = (bytes?: number): string => {
   if (bytes === undefined || bytes === null) return '--';
@@ -128,7 +131,7 @@ export const UploadFilesModal: React.FC<UploadFilesModalProps> = ({ open, onClos
     return false;
   };
 
-  const handleRemoveFile = (file: PendingUploadFile) => {
+  const handleRemoveFile = (file: UploadFile) => {
     setPendingFiles(prev => prev.filter(item => item.uid !== file.uid));
     return true;
   };
@@ -255,7 +258,7 @@ export const UploadFilesModal: React.FC<UploadFilesModalProps> = ({ open, onClos
         multiple
         beforeUpload={beforeUpload}
         onRemove={handleRemoveFile}
-        fileList={pendingFiles}
+        fileList={pendingFiles as unknown as UploadFile[]}
         disabled={uploading || !projectId}
         showUploadList
         itemRender={(_originNode, file, _fileList, actions) => {

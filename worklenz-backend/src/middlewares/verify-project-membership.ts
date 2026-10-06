@@ -14,7 +14,13 @@ export default function (projectId: string) {
         SELECT 1
         FROM project_members
         WHERE project_id = $1
-          AND team_member_id = (SELECT id FROM team_members WHERE team_id = $2 AND user_id = $3);
+          AND team_member_id = (
+            SELECT id
+            FROM team_members
+            WHERE team_id = $2
+              AND user_id = $3
+              AND active = TRUE
+          );
       `;
       const result = await db.query(q, [projectId, teamId, userId]);
       if (result.rowCount)

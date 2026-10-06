@@ -1,35 +1,29 @@
 {
   "rename": "Umbenennen",
   "renameStatus": "Status umbenennen",
+  "renamePhase": "Phase umbenennen",
   "delete": "Löschen",
   "addTask": "Aufgabe hinzufügen",
   "addSectionButton": "Abschnitt hinzufügen",
   "changeCategory": "Kategorie ändern",
-
   "deleteTooltip": "Löschen",
   "deleteConfirmationTitle": "Sind Sie sicher?",
   "deleteConfirmationOk": "Ja",
   "deleteConfirmationCancel": "Abbrechen",
-
   "deleteTaskTitle": "Aufgabe löschen",
   "deleteTaskContent": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleteTaskConfirm": "Löschen",
   "deleteTaskCancel": "Abbrechen",
-
   "deleteStatusTitle": "Status löschen",
   "deleteStatusContent": "Sind Sie sicher, dass Sie diesen Status löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-
   "deletePhaseTitle": "Phase löschen",
   "deletePhaseContent": "Sind Sie sicher, dass Sie diese Phase löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-
   "dueDate": "Fälligkeitsdatum",
   "cancel": "Abbrechen",
-
   "today": "Heute",
   "tomorrow": "Morgen",
   "assignToMe": "Mir zuweisen",
   "archive": "Archivieren",
-
   "newTaskNamePlaceholder": "Aufgabenname eingeben",
   "newSubtaskNamePlaceholder": "Unteraufgabenname eingeben",
   "untitledSection": "Unbenannter Abschnitt",
@@ -42,14 +36,12 @@
   "noSubtasks": "Keine Unteraufgaben",
   "showSubtasks": "Unteraufgaben anzeigen",
   "hideSubtasks": "Unteraufgaben ausblenden",
-
   "exampleTasks": {
     "prefix": "z.B.",
     "task1": "Projektumfang definieren",
     "task2": "Mit Stakeholdern abstimmen",
     "task3": "Kickoff planen"
   },
-
   "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
   "noTasksFound": "Keine Aufgaben gefunden",
   "loadingFilters": "Filter werden geladen...",

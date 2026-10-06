@@ -17,7 +17,9 @@
     "back": "Kthehu",
     "backToParent": "Kthehu te detyra kryesore",
     "toParentTask": "te detyra kryesore",
-    "loadingHierarchy": "Duke ngarkuar hierarkinë..."
+    "loadingHierarchy": "Duke ngarkuar hierarkinë...",
+    "previousTask": "Detyra e mëparshme",
+    "nextTask": "Detyra tjetër"
   },
   "taskInfoTab": {
     "title": "Informacioni",
@@ -49,7 +51,23 @@
       "taskWeightTooltip": "Vendos peshën e kësaj nëndetyre (përqindje)",
       "taskWeightRequired": "Ju lutemi vendosni një peshë detyre",
       "taskWeightRange": "Pesha duhet të jetë midis 0 dhe 100",
+      "customFields": {
+        "empty": "Bosh",
+        "enterNumber": "Vendos numrin",
+        "selectDate": "Zgjidh datën",
+        "selectOption": "Zgjidh opsionin",
+        "selectPeople": "Zgjidh personat",
+        "updateError": "Përditësimi i fushës së personalizuar dështoi"
+      },
       "recurring": "Përsëritëse"
+    },
+    "customFields": {
+      "title": "Fusha të personalizuara",
+      "autoSaveHint": "Ndryshimet ruhen automatikisht kur largoheni nga një fushë.",
+      "addCustomField": "Shto një fushë të personalizuar",
+      "addCustomColumn": "Shto kolonë të personalizuar",
+      "showMoreFields": "Shfaq {{count}} fusha të tjera",
+      "hideFields": "Fshih fushat"
     },
     "labels": {
       "labelInputPlaceholder": "Kërko ose krijo",
@@ -87,13 +105,16 @@
       "chooseOrDropFileToUpload": "Zgjidh ose lësho skedarin për ta ngarkuar",
       "uploading": "Duke ngarkuar...",
       "maxFileSizeText": "Madhësia maksimale e skedarit: {{maxSize}}MB",
-      "upgradeLinkText": "Të duhen ngarkime më të mëdha? Bëj upgrade"
+      "upgradeLinkText": "Të duhen ngarkime më të mëdha? Bëj upgrade",
+      "downloadFailed": "Shkarkimi i skedarit dështoi",
+      "deleteFailed": "Nuk mund të fshihej bashkëngjitja"
     },
     "comments": {
       "title": "Komentet",
       "addComment": "+ Shto koment të ri",
       "noComments": "Ende pa komente. Bëhu i pari që komentoni!",
       "edit": "Redakto",
+      "save": "Ruaj",
       "delete": "Fshi",
       "confirmDeleteComment": "Jeni i sigurt që dëshironi ta fshini këtë koment?",
       "edited": "(redaktuar)",
@@ -107,6 +128,8 @@
       "maxFilesError": "Mund të ngarkoni maksimumi {{count}} skedarë",
       "processFilesError": "Dështoi në përpunimin e skedarëve",
       "addCommentError": "Ju lutemi shtoni një koment ose bashkëngjitni skedarë",
+      "commentTooLong": "Komenti është shumë i gjatë. Ju lutemi shkurtojeni nën {{max}} karaktere.",
+      "saveCommentError": "Dështoi ruajtja e komentit. Ju lutemi provoni përsëri.",
       "enterHint": "Enter për të dërguar  ·  Shift+Enter për rresht të ri",
       "fileTooLargeToSend": "Skedarët mbi 25MB në komente kërkojnë planin Business. Hiqeni këtë skedar ose bëni upgrade për të vazhduar.",
       "historyLockedBoundary": "Komentet janë të kufizuara në 90 ditët e fundit në këtë plan",
@@ -114,7 +137,10 @@
       "historyLockedBody": "Komentet më të vjetra se 90 ditë janë të disponueshme në planin Business.",
       "viewFullComments": "Shiko historikun e komenteve",
       "createdBy": "Krijuar {{time}} nga {{user}}",
-      "updatedTime": "Përditësuar {{time}}"
+      "updatedTime": "Përditësuar {{time}}",
+      "copyLink": "Kopjo lidhjen",
+      "linkCopied": "Lidhja e komentit u kopjua",
+      "linkCopyFailed": "Kopjimi i lidhjes dështoi"
     },
     "searchInputPlaceholder": "Kërko sipas emrit",
     "pendingInvitation": "Ftesë në pritje"
@@ -143,6 +169,7 @@
       "descriptionPlaceholder": "Shto një përshkrim",
       "logTime": "Regjistro kohën",
       "updateTime": "Përditëso",
+      "cancel": "Anulo",
       "durationHelper": "Regjistro kohën totale me orë dhe minuta.",
       "timeRangeHelper": "Regjistro kohën duke zgjedhur orën e fillimit dhe përfundimit.",
       "selectDateError": "Ju lutemi zgjidhni një datë",
@@ -160,7 +187,8 @@
       "selectTask": "Zgjidh detyrën...",
       "backdateLimitError": "Regjistrimet e kohës nuk mund të datohen më shumë se {{days}} ditë prapa. Data më e hershme që mund të regjistroni është {{earliestDate}}.",
       "saveError": "Regjistrimi i kohës nuk mund të ruhej. Ju lutemi provoni përsëri."
-    }
+    },
+    "rollupLoggedTooltip": "Shuma e kohës së regjistruar në nën-detyrat"
   },
   "taskActivityLogTab": {
     "title": "Regjistri i aktivitetit",
@@ -179,5 +207,14 @@
     "confirmMarkAsDone": "Po, shënoje si të përfunduar",
     "cancelMarkAsDone": "Jo, mbaj gjendjen aktuale",
     "markAsDoneDescription": "Keni vendosur progresin në 100%. Dëshironi ta përditësoni gjendjen e detyrës në \"Përfunduar\"?"
+  },
+  "taskAccessDenied": {
+    "title": "Nuk ka qasje",
+    "subtitle": "Mund të hapni vetëm detyrat e caktuara për ju në këtë projekt. Kërkojini një menaxheri projekti t'ju caktojë nëse ju nevojitet qasje.",
+    "close": "Mbyll"
+  },
+  "assigneeScopeReadonly": {
+    "title": "Vetëm shikim",
+    "description": "Ju jeni caktuar në një nëndetyrë të kësaj detyre. Mund ta shihni prindin për kontekst, por nuk mund ta përpunoni."
   }
 }

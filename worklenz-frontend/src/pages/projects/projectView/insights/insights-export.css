@@ -1,0 +1,94 @@
+/* Scoped light-theme overrides applied ONLY to the insights export subtree
+   (exportRef) while the PDF is being captured. The class is toggled directly
+   on the DOM node during capture, so it never re-renders React, never flips
+   global theme state, and never disturbs the rest of the app UI.
+
+   Strategy: force a white surface + dark text on every element that does NOT
+   already declare its own inline color. This safely restyles all Ant Design
+   dark surfaces (Card / Table / Typography / Progress / etc.) while preserving
+   the intentional status-color pills and accent colors that set their own
+   inline `background-color` / `color`. */
+
+/* Catch-all: white background everywhere except elements with their own
+   inline background (e.g. status-color pills keep their color). */
+.insights-export-light :not([style*='background-color']):not([style*='background']) {
+  background-color: #ffffff !important;
+}
+
+/* Catch-all: dark, readable text everywhere except elements with their own
+   inline color (e.g. skyBlue accents, status text keep their color). */
+.insights-export-light :not([style*='color']) {
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+/* Explicit Ant Design surface overrides (belt-and-suspenders for dark tokens). */
+.insights-export-light .ant-card,
+.insights-export-light .ant-card-head,
+.insights-export-light .ant-card-body {
+  background-color: #ffffff !important;
+  border-color: #f0f0f0 !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+.insights-export-light .ant-table,
+.insights-export-light .ant-table-wrapper,
+.insights-export-light .ant-table-container,
+.insights-export-light .ant-table-content,
+.insights-export-light .ant-table-body,
+.insights-export-light .ant-table-header {
+  background-color: #ffffff !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+.insights-export-light .ant-table-thead > tr > th,
+.insights-export-light .ant-table-cell {
+  background-color: #fafafa !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+  border-color: #f0f0f0 !important;
+}
+
+.insights-export-light .ant-table-tbody > tr > td {
+  background-color: #ffffff !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+  border-color: #f0f0f0 !important;
+}
+
+.insights-export-light .ant-typography,
+.insights-export-light .ant-typography.ant-typography-secondary,
+.insights-export-light .ant-typography-title,
+.insights-export-light .ant-typography-paragraph {
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+.insights-export-light .ant-progress-text {
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+.insights-export-light .ant-progress-bg {
+  background-color: #1890ff !important;
+}
+.insights-export-light .ant-progress-inner {
+  background-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+.insights-export-light .ant-checkbox-inner {
+  background-color: #ffffff !important;
+  border-color: #d9d9d9 !important;
+}
+
+/* --- Custom dark inline backgrounds (computed from themeMode) -> light --- */
+/* tasks-by-members: dark inline thead background */
+.insights-export-light thead[style*='background-color'] {
+  background-color: #f8f7f9 !important;
+}
+/* assigned-tasks-list: dark inline wrapper background */
+.insights-export-light .py-2.pl-12.pr-4 {
+  background-color: #f0f2f5 !important;
+}
+
+/* --- chart.js axis/grid tuned for dark mode -> readable on white --- */
+/* (chart.js renders to a <canvas>; only the surrounding HTML/text is styled) */
+.insights-export-light .ant-typography,
+.insights-export-light text,
+.insights-export-light span {
+  color: rgba(0, 0, 0, 0.88) !important;
+}

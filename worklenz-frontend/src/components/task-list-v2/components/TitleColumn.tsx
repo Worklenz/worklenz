@@ -9,15 +9,17 @@ import {
   MinusCircleOutlined,
   RetweetOutlined,
 } from '@/shared/antd-imports';
-import { Input, Tooltip } from '@/shared/antd-imports';
+import { Button, Input, Tooltip, notification } from '@/shared/antd-imports';
 import type { InputRef } from '@/shared/antd-imports';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { Task } from '@/types/task-management.types';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import {
   toggleTaskExpansion,
   fetchSubTasks,
   selectGroups,
+  duplicateTask,
 } from '@/features/task-management/task-management.slice';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import {
@@ -29,6 +31,9 @@ import {
 import { useTranslation } from 'react-i18next';
 import { getTaskDisplayName } from './TaskRowColumns';
 import TaskContextMenu from './TaskContextMenu';
+import CopyTaskToProjectModal from './CopyTaskToProjectModal';
+import taskDuplicateApiService from '@/api/tasks/task-duplicate.api.service';
+import logger from '@/utils/errorLogger';
 
 interface TitleColumnProps {
   width: string;
@@ -65,9 +70,13 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
     isGuest = false,
   }) => {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
     const { t } = useTranslation('task-list-table');
+    const { t: tDuplicate } = useTranslation('task-duplicate');
     const inputRef = useRef<InputRef>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const [copyToProjectOpen, setCopyToProjectOpen] = useState(false);
+    const [copyToProjectLoading, setCopyToProjectLoading] = useState(false);
     const groups = useAppSelector(selectGroups);
     const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
 
@@ -413,9 +422,65 @@ export const TitleColumn: React.FC<TitleColumnProps> = memo(
               position={contextMenuPosition}
               onClose={handleContextMenuClose}
               canCreateTask={canCreateTask}
+              onCopyToProject={() => {
+                handleContextMenuClose();
+                setCopyToProjectOpen(true);
+              }}
             />,
             document.body
           )}
+
+        <CopyTaskToProjectModal
+          open={copyToProjectOpen}
+          sourceProjectId={projectId}
+          taskTitle={taskDisplayName}
+          hasDependencies={task.has_dependencies || false}
+          confirmLoading={copyToProjectLoading}
+          onCompare={async destinationProjectId => {
+            const response = await taskDuplicateApiService.compare({
+              task_id: task.id,
+              project_id: projectId,
+              destination_project_id: destinationProjectId,
+            });
+            return response.body;
+          }}
+          onClose={() => setCopyToProjectOpen(false)}
+          onConfirm={async (destinationProjectId, confirmedDifferences, includeDependencies) => {
+            setCopyToProjectLoading(true);
+            try {
+              await dispatch(
+                duplicateTask({
+                  taskId: task.id,
+                  projectId,
+                  destinationProjectId,
+                  confirmProjectDifferences: confirmedDifferences,
+                  duplicateOptions: {
+                    subtasks: true,
+                    attachments: true,
+                    dates: true,
+                    dependencies: includeDependencies,
+                    assignees: true,
+                    labels: true,
+                    customFields: true,
+                    subscribers: true,
+                  },
+                })
+              ).unwrap();
+
+              setCopyToProjectOpen(false);
+            } catch (error) {
+              logger.error('Failed to copy task to project:', error);
+              notification.error({
+                message: tDuplicate('copyToProject.error', {
+                  defaultValue: 'Failed to copy task',
+                }),
+                description: typeof error === 'string' ? error : undefined,
+              });
+            } finally {
+              setCopyToProjectLoading(false);
+            }
+          }}
+        />
       </div>
     );
   }

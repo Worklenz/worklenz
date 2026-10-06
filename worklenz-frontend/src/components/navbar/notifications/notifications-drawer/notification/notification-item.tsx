@@ -78,7 +78,7 @@ const NotificationItem = ({
       style={{
         width: 'auto',
         border: notification.color ? `2px solid ${notification.color}4d` : undefined,
-        cursor: notification.url ? 'pointer' : 'default',
+        cursor: notification.url || notification.release_id ? 'pointer' : 'default',
       }}
       onClick={handleNotificationClick}
       className="ant-notification-notice worklenz-notification rounded-4"

@@ -1,0 +1,22 @@
+{
+  "title": "Administrar Departamentos",
+  "nameColumn": "Nombre",
+  "search": "Buscar departamentos",
+  "createDepartmentButton": "Crear Departamento",
+  "createDepartmentDrawerTitle": "Crear Departamento",
+  "updateDepartmentDrawerTitle": "Actualizar Departamento",
+  "nameLabel": "Nombre",
+  "namePlaceholder": "Ingrese el nombre del departamento",
+  "nameRequiredError": "El nombre del departamento es obligatorio",
+  "createButton": "Crear",
+  "updateButton": "Actualizar",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Eliminar",
+  "deleteConfirmationTitle": "¿Estás seguro de que quieres eliminar este departamento?",
+  "deleteConfirmationOk": "Eliminar",
+  "deleteConfirmationCancel": "Cancelar",
+  "fetchDepartmentErrorMessage": "Error al obtener el departamento",
+  "createDepartmentErrorMessage": "Error al crear el departamento",
+  "updateDepartmentErrorMessage": "Error al actualizar el departamento",
+  "pinTooltip": "Fijar en la barra de navegación"
+}

@@ -17,8 +17,8 @@ export interface IProjectViewModel extends IProject {
   phase_label?: string;
   category_name?: string;
   category_color?: string;
-  category_id?: string;
-  health_id?: string;
+  category_id?: string | null;
+  health_id?: string | null;
   task_count?: number;
   members_count?: number;
   progress?: number;
@@ -75,6 +75,8 @@ export interface IProjectViewModel extends IProject {
   auto_assign_task_creator?: boolean;
   restrict_task_creation?: boolean;
   phase_assignees_enabled?: boolean;
+  restrict_tasks_to_assignee?: boolean;
+  auto_assign_subtask_phase?: boolean;
   currency?: string;
   budget?: number;
   calculation_method?: 'hourly' | 'man_days';

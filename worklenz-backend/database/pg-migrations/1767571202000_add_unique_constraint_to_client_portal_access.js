@@ -12,8 +12,15 @@ exports.up = async (pgm) => {
 -- Date: 2025-12-12
 -- Version: 2.3.0
 
-ALTER TABLE client_portal_access
-ADD CONSTRAINT client_portal_access_client_id_key UNIQUE (client_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'client_portal_access'::regclass AND conname = 'client_portal_access_client_id_key'
+    ) THEN
+        ALTER TABLE client_portal_access ADD CONSTRAINT client_portal_access_client_id_key UNIQUE (client_id);
+    END IF;
+END $$;
 
   `);
 };

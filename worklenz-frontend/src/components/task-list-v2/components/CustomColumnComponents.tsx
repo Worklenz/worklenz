@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, memo, useEffect, useRef } from 'react';
-import { Tooltip, Flex, Dropdown, DatePicker, Input, Popover, Button, Typography } from '@/shared/antd-imports';
+import { Tooltip, Flex, Dropdown, DatePicker, Input, Popover, Button, Typography, message } from '@/shared/antd-imports';
 import { PlusOutlined, SettingOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -24,7 +24,7 @@ import {
 } from '@/utils/task-custom-columns';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
 import { LICENSING_SETTINGS } from '@/shared/licensing_settings';
-import { isUserGuest } from '@/lib/project/project-view-constants';
+import { isUserGuest } from '@/lib/project/project-view-guest';
 
 // Add Custom Column Button Component
 export const AddCustomColumnButton: React.FC = memo(() => {
@@ -53,6 +53,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
   const isGrandfathered = !hasBusinessAccess && isLtdUser && customColumnsCount >= LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
@@ -73,9 +74,9 @@ export const AddCustomColumnButton: React.FC = memo(() => {
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [popoverOpen]);
+  }, [popoverOpen, isAppSumoUser, trackAppSumoEvent]);
 
-  const handleModalOpen = useCallback(() => {
+  const handleCreateColumn = useCallback(async () => {
     // Prevent guests from creating custom columns
     if (isGuest) {
       return;
@@ -92,9 +93,89 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       }
       return;
     }
-    dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
-    dispatch(toggleCustomColumnModalOpen(true));
-  }, [dispatch, isFree, hasReachedLimit, isGrandfathered, isGuest]);
+
+    if (isCreating) return;
+    setIsCreating(true);
+
+    try {
+      // Import necessary modules
+      const { nanoid } = await import('@reduxjs/toolkit');
+      const { tasksCustomColumnsService } = await import('@/api/tasks/tasks-custom-columns.service');
+      const { addCustomColumn } = await import('@/features/task-management/task-management.slice');
+      const { SocketEvents } = await import('@/shared/socket-events');
+      
+      const columnKey = nanoid();
+      const defaultFieldTitle = t('customColumns.newColumn', { defaultValue: 'New Column' });
+      const projectId = selectedProject?.id;
+
+      if (!projectId) {
+        message.error(t('customColumns.projectNotFound', { defaultValue: 'Project not found' }));
+        setIsCreating(false);
+        return;
+      }
+
+      const configuration = {
+        field_title: defaultFieldTitle,
+        field_type: 'text',
+        number_type: undefined,
+        decimals: undefined,
+        label: undefined,
+        label_position: undefined,
+        preview_value: undefined,
+        expression: undefined,
+        first_numeric_column_key: undefined,
+        second_numeric_column_key: undefined,
+        selections_list: [],
+        labels_list: [],
+      };
+
+      // Create column in backend
+      const res = await tasksCustomColumnsService.createCustomColumn(projectId, {
+        name: defaultFieldTitle,
+        key: columnKey,
+        field_type: 'text',
+        width: 120,
+        is_visible: true,
+        configuration,
+      });
+
+      if (res.done) {
+        const newColumn: any = {
+          key: columnKey,
+          name: defaultFieldTitle,
+          columnHeader: null, // Will be rendered dynamically
+          width: 120,
+          isVisible: true,
+          custom_column: true,
+          custom_column_obj: {
+            fieldTitle: defaultFieldTitle,
+            fieldType: 'text',
+            labelsList: [],
+            selectionsList: [],
+          },
+          id: res.body.id,
+          uuid: res.body.id,
+          project_id: projectId,
+          pinned: true, // Make column visible by default
+          isEditingHeader: true, // Flag to trigger inline editing
+        };
+
+        dispatch(addCustomColumn(newColumn));
+        
+        // Emit socket event if available
+        if ((window as any).socket) {
+          (window as any).socket.emit(SocketEvents.CUSTOM_COLUMN_CREATED.toString(), JSON.stringify({ project_id: projectId }));
+        }
+        
+        message.success(t('customColumns.columnCreated', { defaultValue: 'Column created. Click on the header to edit.' }));
+      }
+    } catch (error) {
+      console.error('Error creating custom column:', error);
+      message.error(t('customColumns.columnCreationFailed', { defaultValue: 'Failed to create column' }));
+    } finally {
+      setIsCreating(false);
+    }
+  }, [dispatch, isFree, hasReachedLimit, isGrandfathered, isGuest, isCreating, isAppSumoUser, selectedProject, t, trackAppSumoEvent]);
 
   const handleUpgradeNow = useCallback(() => {
     setPopoverOpen(false);
@@ -147,13 +228,13 @@ export const AddCustomColumnButton: React.FC = memo(() => {
       <Tooltip title={!popoverOpen ? tooltipTitle : undefined} placement="top">
         <button
           ref={buttonRef}
-          onClick={handleModalOpen}
-          disabled={isFree || isGuest}
+          onClick={handleCreateColumn}
+          disabled={isFree || isGuest || isCreating}
           className={`
             group relative w-9 h-9 rounded-lg border-2 border-dashed transition-all duration-200
             flex items-center justify-center
             ${
-              isFree || isGuest
+              isFree || isGuest || isCreating
                 ? isDarkMode
                   ? 'border-gray-600 text-gray-500 cursor-not-allowed opacity-50'
                   : 'border-gray-300 text-gray-400 cursor-not-allowed opacity-50'
@@ -165,12 +246,14 @@ export const AddCustomColumnButton: React.FC = memo(() => {
         >
           {isFree ? (
             <CrownOutlined style={{ fontSize: '16px', color: '#faad14' }} />
+          ) : isCreating ? (
+            <div className="animate-spin">⟳</div>
           ) : (
             <PlusOutlined className="text-sm transition-transform duration-200 group-hover:scale-110" />
           )}
 
-          {/* Subtle glow effect on hover - only for non-free and non-guest users */}
-          {!isFree && !isGuest && (
+          {/* Subtle glow effect on hover - only for non-free, non-guest, and non-creating users */}
+          {!isFree && !isGuest && !isCreating && (
             <div
               className={`
               absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200
@@ -190,7 +273,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
 
 AddCustomColumnButton.displayName = 'AddCustomColumnButton';
 
-// Custom Column Header Component
+// Custom Column Header Component with Inline Editing
 export const CustomColumnHeader: React.FC<{
   column: any;
   onSettingsClick: (columnId: string) => void;
@@ -201,9 +284,190 @@ export const CustomColumnHeader: React.FC<{
 }> = ({ column, onSettingsClick, dragListeners, dragAttributes, setDragActivatorRef, isGuest = false }) => {
   const { t } = useTranslation('task-list-table');
   const [isHovered, setIsHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(column.isEditingHeader || false);
+  const [editValue, setEditValue] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const saveInProgressRef = useRef(false);
+  const inputRef = useRef<any>(null);
+  const dispatch = useAppDispatch();
 
   const displayName =
     getTaskCustomFieldDisplayName(column) || t('customColumns.customColumnHeader');
+
+  // Initialize edit value when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setEditValue(displayName);
+      // Focus input after a short delay to ensure it's rendered
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      }, 100);
+    }
+  }, [isEditing, displayName]);
+
+  // Auto-trigger edit mode for newly created columns
+  useEffect(() => {
+    if (column.isEditingHeader) {
+      setIsEditing(true);
+    }
+  }, [column.isEditingHeader]);
+
+  const handleSave = async () => {
+    if (saveInProgressRef.current) return;
+
+    if (!editValue.trim()) {
+      message.error(t('customColumns.columnNameRequired', { defaultValue: 'Column name is required' }));
+      return;
+    }
+
+    const columnId = column.id || column.uuid;
+    const openInitialSetupModal = (columnData: typeof column) => {
+      if (!columnId) return;
+
+      dispatch(
+        setCustomColumnModalAttributes({
+          modalType: 'edit',
+          columnId,
+          columnData,
+          canChangeColumnType: true,
+        })
+      );
+      dispatch(toggleCustomColumnModalOpen(true));
+    };
+
+    if (editValue.trim() === displayName) {
+      setIsEditing(false);
+      if (column.isEditingHeader) {
+        openInitialSetupModal(column);
+      }
+      return;
+    }
+
+    saveInProgressRef.current = true;
+    setIsSaving(true);
+    try {
+      // CRITICAL: Use UUID from id field, never use the key (which is a nanoid)
+      if (!columnId) {
+        message.error(t('customColumns.columnIdNotFound', { defaultValue: 'Column ID not found - please refresh and try again' }));
+        setIsSaving(false);
+        return;
+      }
+      
+      // Import the service
+      const { tasksCustomColumnsService } = await import('@/api/tasks/tasks-custom-columns.service');
+      const { updateCustomColumn } = await import('@/features/task-management/task-management.slice');
+      
+      // Build complete configuration with existing values (convert camelCase to snake_case)
+      const existingConfig = column.custom_column_obj || {};
+      const configuration = {
+        field_title: editValue.trim(),
+        field_type: existingConfig.fieldType || 'text',
+        number_type: existingConfig.numberType || null,
+        decimals: existingConfig.decimals || null,
+        label: existingConfig.label || null,
+        label_position: existingConfig.labelPosition || null,
+        preview_value: existingConfig.previewValue || null,
+        expression: existingConfig.expression || null,
+        first_numeric_column_key: existingConfig.firstNumericColumnKey || null,
+        second_numeric_column_key: existingConfig.secondNumericColumnKey || null,
+        selections_list: existingConfig.selectionsList || [],
+        labels_list: existingConfig.labelsList || [],
+      };
+      
+      // Update backend
+      const response = await tasksCustomColumnsService.updateCustomColumn(columnId, {
+        name: editValue.trim(),
+        field_type: existingConfig.fieldType || 'text',
+        width: Number.parseInt(String(column.width || 120), 10) || 120,
+        is_visible: true,
+        configuration,
+      });
+
+      if (!response.done) {
+        setIsEditing(false);
+        return;
+      }
+
+      // Update the local column immediately so the header reflects the saved name.
+      const updatedColumn = {
+        ...column,
+        name: editValue.trim(),
+        pinned: column.pinned ?? true,
+        custom_column: true,
+        isEditingHeader: false,
+        custom_column_obj: {
+          ...existingConfig,
+          fieldTitle: editValue.trim(),
+        },
+      };
+      dispatch(updateCustomColumn({ key: column.key, column: updatedColumn }));
+
+      message.success(t('customColumns.columnUpdated', { defaultValue: 'Column name updated' }));
+      setIsEditing(false);
+      openInitialSetupModal(updatedColumn);
+    } catch (error) {
+      console.error('Error updating column name:', error);
+      message.error(t('customColumns.updateFailed', { defaultValue: 'Failed to update column name' }));
+    } finally {
+      saveInProgressRef.current = false;
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditValue(displayName);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
+  };
+
+  if (isEditing && !isGuest) {
+    return (
+      <Flex align="center" gap={4} className="w-full px-2" style={{ minWidth: 0 }}>
+        <Input
+          ref={inputRef}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={t('customColumns.enterColumnName', { defaultValue: 'Enter column name' })}
+          size="small"
+          style={{ flex: 1, minWidth: 0 }}
+          disabled={isSaving}
+        />
+        <Tooltip title={t('save', { defaultValue: 'Save' })}>
+          <Button
+            type="text"
+            size="small"
+            icon={<span style={{ color: '#52c41a' }}>✓</span>}
+            onClick={handleSave}
+            loading={isSaving}
+            style={{ padding: '0 4px', minWidth: 24 }}
+          />
+        </Tooltip>
+        <Tooltip title={t('cancel', { defaultValue: 'Cancel' })}>
+          <Button
+            type="text"
+            size="small"
+            icon={<span style={{ color: '#ff4d4f' }}>✕</span>}
+            onClick={handleCancel}
+            disabled={isSaving}
+            style={{ padding: '0 4px', minWidth: 24 }}
+          />
+        </Tooltip>
+      </Flex>
+    );
+  }
 
   return (
     <Flex
@@ -220,7 +484,8 @@ export const CustomColumnHeader: React.FC<{
         {...dragListeners}
         title={displayName}
         className="truncate flex-1 mr-1"
-        style={{ minWidth: 0, cursor: dragListeners ? 'grab' : 'default' }}
+        style={{ minWidth: 0, cursor: dragListeners ? 'grab' : (!isGuest ? 'pointer' : 'default') }}
+        onClick={!isGuest ? () => setIsEditing(true) : undefined}
       >
         {displayName}
       </span>
@@ -442,7 +707,7 @@ export const PeopleCustomColumnCell: React.FC<{
 
   const selectedMembers = useMemo(() => {
     if (!members?.data || !displayedMemberIds.length) return [];
-    return members.data.filter(member => displayedMemberIds.includes(member.id));
+    return members.data.filter(member => !!member.id && displayedMemberIds.includes(member.id));
   }, [members, displayedMemberIds]);
 
   const handleMemberToggle = useCallback(

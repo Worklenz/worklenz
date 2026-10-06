@@ -7,6 +7,7 @@ import { useAppSelector } from '../hooks/useAppSelector';
 import { useAuthService } from '../hooks/useAuth';
 import { TrialExpirationAlert } from '@/components/TrialExpirationAlert/TrialExpirationAlert';
 import { ImportProgressNotifier } from '@/components/imports/ImportProgressNotifier';
+import { TaskExportProgressNotifier } from '@/components/projects/task-export/TaskExportProgressNotifier';
 import { MobileAppBanner } from '@/components/mobile-app/MobileAppBanner';
 import { AppSumoPopup } from '@/components/appsumo-popup/AppSumoPopup';
 import { NAV_RAIL_BG_DARK, NAV_RAIL_BG_LIGHT } from '@/components/nav-rail/nav-rail-constants';
@@ -76,6 +77,7 @@ const AppShellLayout = memo(() => {
   return (
     <Layout className="min-h-screen">
       <ImportProgressNotifier />
+      <TaskExportProgressNotifier />
       <AppSumoPopup
         isAppSumoUser={isAppSumoUser}
         frequencyDays={currentSession?.appsumo_popup_frequency_days}

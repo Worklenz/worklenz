@@ -12,5 +12,31 @@
     "subscribers": "订阅者"
   },
   "duplicate": "复制",
-  "cancel": "取消"
+  "cancel": "取消",
+  "copyToProject": {
+    "title": "将任务复制到项目",
+    "selectProject": "选择目标项目",
+    "confirm": "复制任务",
+    "copyTask": "复制任务",
+    "checkDifferences": "检查差异",
+    "check": "检查差异",
+    "checking": "正在检查差异...",
+    "confirmDifferences": "添加并复制任务",
+    "differencesFound": "目标项目缺少以下列。",
+    "missingPhasesFound": "目标项目缺少以下阶段。",
+    "statusMissing": "状态“{{sourceStatus}}”在目标项目中不存在。任务将被分配到主状态“{{destinationStatus}}”。",
+    "createMissingItems": "创建缺失的列和阶段",
+    "createMissingColumns": "创建缺失的列",
+    "cancel": "取消",
+    "cancelDifferences": "取消复制",
+    "success": "任务复制成功",
+    "openTask": "打开任务",
+    "loadError": "无法加载可访问的项目。",
+    "noProjects": "未找到其他可访问的项目。",
+    "noDifferencesFound": "目标项目包含所有必需的列和阶段。",
+    "copyDependencies": "复制依赖任务",
+    "copyDependenciesDescription": "将此任务复制到目标项目时包括所有相关任务。",
+    "dependenciesInfo": "该任务具有依赖性。相关任务也将被复制到目标项目。",
+    "error": "复制任务失败"
+  }
 }

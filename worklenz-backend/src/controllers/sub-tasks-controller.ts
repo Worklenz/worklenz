@@ -54,7 +54,10 @@ export default class SubTasksController extends WorklenzControllerBase {
                       WHERE project_id = t.project_id
                       ORDER BY task_statuses.name) rec) AS statuses,
               (SELECT name FROM users WHERE id = t.reporter_id) AS reporter,
-              t.completed_at
+              t.completed_at,
+              (SELECT phase_id FROM task_phase WHERE task_id = t.id) AS phase_id,
+              (SELECT pp.name FROM project_phases pp WHERE pp.id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_name,
+              (SELECT pp.color_code FROM project_phases pp WHERE pp.id = (SELECT phase_id FROM task_phase WHERE task_id = t.id)) AS phase_color
         FROM tasks t
                 INNER JOIN task_statuses ts ON ts.id = t.status_id
                 INNER JOIN task_priorities tp ON tp.id = t.priority_id

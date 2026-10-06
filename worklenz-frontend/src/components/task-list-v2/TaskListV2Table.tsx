@@ -82,11 +82,11 @@ import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import TaskRowWithSubtasks from './TaskRowWithSubtasks';
 import TaskGroupHeader from './TaskGroupHeader';
 import OptimizedBulkActionBar from '@/components/task-management/optimized-bulk-action-bar';
-import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import AddTaskRow from './components/AddTaskRow';
 import { AddCustomColumnButton, CustomColumnHeader } from './components/CustomColumnComponents';
 import TaskListSkeleton from './components/TaskListSkeleton';
 import ConvertToSubtaskDrawer from '@/components/task-list-common/convert-to-subtask-drawer/convert-to-subtask-drawer';
+import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import {
   DragHandleColumn,
   CheckboxColumn,
@@ -981,7 +981,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           }
 
           // Map the configuration data structure to the expected format
-          const customColumnObj = column.custom_column_obj || (column as any).configuration;
+          const customColumnObj = (column.custom_column_obj || column.configuration) as Record<string, unknown> | undefined;
 
           // Transform configuration format to custom_column_obj format if needed
           let transformedColumnObj = customColumnObj;
@@ -1004,7 +1004,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           return {
             id: columnId,
             label: column.name || t('customColumns.customColumnHeader'),
-            width: columnWidths[columnId] || `${(column as any).width || defaultWidth}px`,
+            width: columnWidths[columnId] || `${column.width || defaultWidth}px`,
             key: column.key || column.id || 'unknown',
             isSticky: false,
             minWidth: '100px',
@@ -1014,6 +1014,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             isCustom: true,
             name: column.name,
             uuid: column.id,
+            isEditingHeader: column.isEditingHeader,
           };
         }) || [];
 
@@ -1455,6 +1456,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           modalType: 'edit',
           columnId: columnId,
           columnData: columnData,
+          canChangeColumnType: false,
         })
       );
       dispatch(toggleCustomColumnModalOpen(true));
@@ -1531,20 +1533,23 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
           insertAnchor?.groupId === group.id ? (insertAnchor.afterTaskId ?? null) : null,
       };
 
-      let itemsWithAddTask = tasksForVirtuoso;
+      let itemsWithAddTask: Array<(Task & { originalIndex: number }) | AddTaskRowItem> = tasksForVirtuoso;
       if (!isCurrentGroupCollapsed) {
         if (insertAnchor?.groupId === group.id && insertAnchor.afterTaskId) {
           const anchorIndex = tasksForVirtuoso.findIndex(
             task => task.id === insertAnchor.afterTaskId
           );
           if (anchorIndex >= 0) {
-            itemsWithAddTask = [...tasksForVirtuoso];
-            itemsWithAddTask.splice(anchorIndex + 1, 0, addTaskItem as any);
+            const next: Array<(Task & { originalIndex: number }) | AddTaskRowItem> = [
+              ...tasksForVirtuoso,
+            ];
+            next.splice(anchorIndex + 1, 0, addTaskItem);
+            itemsWithAddTask = next;
           } else {
-            itemsWithAddTask = [...tasksForVirtuoso, addTaskItem as any];
+            itemsWithAddTask = [...tasksForVirtuoso, addTaskItem];
           }
         } else {
-          itemsWithAddTask = [...tasksForVirtuoso, addTaskItem as any];
+          itemsWithAddTask = [...tasksForVirtuoso, addTaskItem];
         }
       }
 
@@ -1565,7 +1570,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
     return virtuosoGroups.map(group => group.count);
   }, [virtuosoGroups]);
 
-  const virtuosoItems = useMemo(() => {
+  const virtuosoItems = useMemo<Array<(Task & { originalIndex: number }) | AddTaskRowItem>>(() => {
     return virtuosoGroups.flatMap(group => group.tasks);
   }, [virtuosoGroups]);
 
@@ -2124,7 +2129,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                 );
 
                 if (column.isSticky) {
-                  return headerContent();
+                  return <React.Fragment key={column.id}>{headerContent()}</React.Fragment>;
                 }
 
                 return (
@@ -2422,6 +2427,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                         >
                           {showBefore && activeId && (
                             <DropSpacer
+                              key="drop-before"
                               isVisible={true}
                               visibleColumns={visibleColumns}
                               isDarkMode={isDarkMode}
@@ -2429,6 +2435,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           )}
                            {showInsertDivider && previousItem && canCreateTask && !isGuest && (
                              <InsertTaskDivider
+                               key="insert-divider"
                                isVisible={true}
                                isNearGroupHeader={false}
                                title={t('insertTaskText', { defaultValue: 'Insert Task' })}
@@ -2441,9 +2448,12 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                                }}
                              />
                            )}
-                          {renderTask(index, isFirstInGroup)}
+                          <React.Fragment key={item.id ?? `virtuoso-item-${index}`}>
+                            {renderTask(index, isFirstInGroup)}
+                          </React.Fragment>
                           {isLastInGroup && canCreateTask && !isGuest && (
                             <InsertTaskDivider
+                              key="insert-divider-bottom"
                               isVisible={true}
                               isNearGroupHeader={false}
                               title={t('insertTaskText', { defaultValue: 'Insert Task at Bottom' })}
@@ -2458,6 +2468,7 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
                           )}
                           {showAfter && activeId && (
                             <DropSpacer
+                              key="drop-after"
                               isVisible={true}
                               visibleColumns={visibleColumns}
                               isDarkMode={isDarkMode}
@@ -2533,7 +2544,8 @@ const TaskListV2Section: React.FC<TaskListV2SectionProps> = ({ isGuest = false }
             </div>
           )}
 
-          {/* Custom Column Modal */}
+          {/* Custom Column Modal — the render guard inside CustomColumnModal keeps a
+              single instance visible even though the task drawer also mounts one. */}
           {createPortal(<CustomColumnModal />, document.body, 'custom-column-modal')}
 
           {/* Convert To Subtask Drawer */}

@@ -22,7 +22,12 @@ type TaskListCustomColumnsState = {
   isCustomColumnModalOpen: boolean;
   customColumnModalType: 'create' | 'edit';
   customColumnId: string | null;
+  // Project the modal acts on, carried in state so the (singleton) modal works
+  // regardless of where it's mounted — including surfaces with no :projectId
+  // route param (project list, home) where it's opened from a settings drawer.
+  customColumnModalProjectId: string | null;
   currentColumnData: any | null;
+  canChangeColumnType: boolean;
 
   customFieldType: CustomFieldsTypes;
   customFieldNumberType: CustomFieldNumberTypes;
@@ -42,7 +47,9 @@ const initialState: TaskListCustomColumnsState = {
   isCustomColumnModalOpen: false,
   customColumnModalType: 'create',
   customColumnId: null,
+  customColumnModalProjectId: null,
   currentColumnData: null,
+  canChangeColumnType: false,
 
   customFieldType: 'text',
   customFieldNumberType: 'formatted',
@@ -71,11 +78,17 @@ const taskListCustomColumnsSlice = createSlice({
         modalType: 'create' | 'edit';
         columnId: string | null;
         columnData?: any;
+        canChangeColumnType?: boolean;
+        projectId?: string | null;
       }>
     ) => {
       state.customColumnModalType = action.payload.modalType;
       state.customColumnId = action.payload.columnId;
       state.currentColumnData = action.payload.columnData || null;
+      state.canChangeColumnType = action.payload.canChangeColumnType ?? false;
+      if ('projectId' in action.payload) {
+        state.customColumnModalProjectId = action.payload.projectId ?? null;
+      }
     },
     setCustomFieldType: (state, action: PayloadAction<CustomFieldsTypes>) => {
       state.customFieldType = action.payload;
@@ -134,6 +147,7 @@ const taskListCustomColumnsSlice = createSlice({
       state.labelsList = initialState.labelsList;
       state.selectionsList = initialState.selectionsList;
       state.currentColumnData = initialState.currentColumnData;
+      state.canChangeColumnType = initialState.canChangeColumnType;
     },
   },
 });

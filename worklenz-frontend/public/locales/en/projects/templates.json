@@ -27,5 +27,12 @@
   "noTaskTemplatesStep1": "Navigate to a project and open it.",
   "noTaskTemplatesStep2": "Select tasks using the Bulk Edit option.",
   "noTaskTemplatesStep3": "Click More Options in the bulk action bar and choose Create Task Template.",
-  "noSearchResults": "No templates match your search."
+  "noSearchResults": "No templates match your search.",
+  "shareWithOrganization": "Share with organization",
+  "organizationBadge": "Organization",
+  "scopeUpdateSuccess": "Template sharing updated.",
+  "scopeSharedSuccess": "Template shared with organization.",
+  "scopeUnsharedSuccess": "Template is no longer shared with organization.",
+  "scopeUpdateError": "Failed to update template sharing.",
+  "moreOptions": "More options"
 }

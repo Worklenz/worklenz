@@ -19,9 +19,12 @@
   "noTemplates": "No templates found.",
   "noYourLibrary": "No templates in your library.",
   "previewTemplate": "Preview template",
-  "configureHint": "Status, dates, manager and more are set inside the project after creation.",
+  "configureHint": "You can customize status, client, manager, dates and more before creating.",
   "blankFooterHint": "No template selected - will create blank.",
   "templateFooterHint": "Selected template will be used for this project.",
+  "customizeFooterQuestion": "Want to customize before creating?",
+  "customizeNoHint": "Create now and open the project",
+  "customizeYesHint": "Set client, status, dates and more first",
   "cancel": "Cancel",
   "createProject": "Create project",
   "createBlank": "Create blank",
@@ -34,5 +37,7 @@
   "csvImportSelected": "CSV task import selected",
   "csvImportHint": "Map CSV fields and import tasks after configuring this project.",
   "csvImportFooterHint": "You will map CSV fields before this project is created.",
-  "continueToCsvImport": "Continue to CSV import"
+  "continueToCsvImport": "Continue to CSV import",
+  "customizeNo": "No",
+  "customizeYes": "Yes, customize"
 }

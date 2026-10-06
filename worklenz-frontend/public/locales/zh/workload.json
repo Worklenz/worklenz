@@ -2,59 +2,66 @@
   "chartView": "图表视图",
   "calendarView": "日历视图",
   "tableView": "表格视图",
-  "noWorkloadData": "无工作负载数据",
+  "noWorkloadData": "暂无工作负载数据",
   "noMembersFound": "未找到团队成员",
   "errorLoadingData": "加载工作负载数据时出错",
   "retry": "重试",
   "refreshData": "刷新数据",
-
   "overview": {
     "teamMembers": "团队成员",
     "teamMembersTooltip": {
-      "title": "团队组成与分配状态",
-      "memberStatusLabel": "成员状态:",
-      "totalMembersLabel": "总成员数:",
-      "overallocatedLabel": "超负荷:",
-      "underutilizedLabel": "未充分利用:",
-      "optimalLabel": "最佳:"
+      "title": "团队构成与分配状态",
+      "memberStatusLabel": "成员状态：",
+      "totalMembersLabel": "会员总数：",
+      "overallocatedLabel": "过度分配：",
+      "underutilizedLabel": "未充分利用：",
+      "optimalLabel": "最佳："
     },
-    "totalWorkload": "总工作负载",
+    "totalWorkload": "总工作量",
     "totalWorkloadTooltip": {
-      "title": "所有团队成员的总预估工作负载",
-      "includesLabel": "包括:",
-      "estimatedHoursLabel": "预估工时:",
-      "actualHoursLoggedLabel": "实际记录工时:",
-      "progressLabel": "进度:"
+      "title": "所有团队成员的预计总工作量",
+      "includesLabel": "包括：",
+      "estimatedHoursLabel": "预计时间：",
+      "actualHoursLoggedLabel": "实际记录时间：",
+      "progressLabel": "进展："
     },
     "hours": "小时",
     "averageUtilization": "平均利用率",
-    "averageUtilizationTooltip": {
-      "averageLabel": "平均:",
-      "membersLabel": "成员数:",
-      "totalAssignedLabel": "总分配:",
-      "totalCapacityLabel": "总容量:"
-    },
+    "tasks": "任务",
     "criticalTasks": "关键任务",
-    "criticalTasksTooltip": {
-      "criticalTasksLabel": "关键任务:",
-      "totalTasksLabel": "总任务数:",
-      "criticalPercentageLabel": "关键百分比:"
-    },
-    "totalTasks": "共 {{count}} 个任务"
+    "totalTasksLabel": "任务总数",
+    "totalTasks": "共 {{count}} 个任务",
+    "criticalTasksTooltip": "需要立即关注的高优先级任务。\n\n任务明细:\n• 关键任务: {{criticalTasks}}\n• 总任务: {{totalTasks}}\n• 关键百分比: {{criticalPercentage}}%",
+    "teamMembersTooltipTitle": "团队构成与分配状态",
+    "memberStatusLabel": "成员状态：",
+    "totalMembersStat": "成员总数：{{count}}",
+    "overallocatedStat": "超负荷：{{count}}（利用率 >100%）",
+    "underutilizedStat": "利用不足：{{count}}（利用率 <{{threshold}}%）",
+    "optimalStat": "最佳：{{count}}",
+    "totalWorkloadTooltipTitle": "所有团队成员的预计总工作量",
+    "includesLabel": "包括：",
+    "estimatedHoursStat": "预计工时：{{hours}} 小时",
+    "actualHoursLoggedStat": "已记录实际工时：{{hours}} 小时",
+    "progressStat": "进度：{{percent}}%",
+    "averageStat": "平均值：{{percent}}%",
+    "membersStat": "成员数：{{count}}",
+    "totalAssignedStat": "已分配总计：{{hours}} 小时",
+    "totalCapacityStat": "总容量：{{hours}} 小时",
+    "criticalTasksStat": "关键任务：{{count}}",
+    "totalTasksStat": "任务总数：{{count}}",
+    "criticalPercentageStat": "关键百分比：{{percent}}%"
   },
-
   "chart": {
     "capacity": "容量",
     "allocated": "已分配",
     "utilization": "利用率",
     "barChart": "柱状图",
     "comparison": "对比",
-    "sortByName": "按名称排序",
-    "sortByWorkload": "按工作负载排序",
+    "sortByName": "按姓名排序",
+    "sortByWorkload": "按工作量排序",
     "sortByUtilization": "按利用率排序",
     "memberDetails": "成员详情"
   },
-
   "calendar": {
     "tasks": "任务",
     "more": "更多",
@@ -81,7 +88,6 @@
     "defaultPriority": "中等",
     "defaultStatus": "进行中"
   },
-
   "table": {
     "member": "成员",
     "capacity": "容量",
@@ -96,43 +102,41 @@
     "taskName": "任务名称",
     "project": "项目",
     "duration": "持续时间",
-    "estimatedHours": "预估工时",
+    "estimatedHours": "预计工时",
     "priority": "优先级",
     "progress": "进度",
-    "noStart": "无开始",
-    "noEnd": "无结束",
+    "noStart": "无开始日期",
+    "noEnd": "无结束日期",
     "currentProject": "当前项目",
     "unknown": "未知",
     "defaultPriority": "中等",
-    "defaultStatus": "待处理",
+    "defaultStatus": "待办",
     "hours": "小时",
-    "currentCapacityLabel": "当前容量:",
-    "allocatedLabel": "已分配:",
-    "utilizationLabel": "利用率:",
-    "statusLabel": "状态:"
+    "currentCapacityLabel": "当前容量：",
+    "allocatedLabel": "分配：",
+    "utilizationLabel": "利用率：",
+    "statusLabel": "状态：",
+    "noTasksAssigned": "此项目中尚未分配给该成员的任务。",
+    "noTasksAssignedForPeriod": "在 {{startDate}} - {{endDate}} 期间，此项目中没有分配给该成员的任务。"
   },
-
   "export": {
-    "taskName": "任务名称",
-    "startDate": "开始日期",
-    "endDate": "结束日期",
-    "priority": "优先级",
-    "status": "状态",
-    "progress": "进度 (%)",
-    "memberLabel": "成员:",
-    "emailLabel": "邮箱:",
-    "capacityLabel": "容量:",
-    "allocatedLabel": "已分配:",
-    "utilizationLabel": "利用率:",
-    "statusLabel": "状态:"
+    "startDateHeader": "开始日期",
+    "endDateHeader": "结束日期",
+    "progressHeader": "进度 (%)",
+    "taskFallback": "任务 {{id}}",
+    "defaultPriority": "普通",
+    "memberLabel": "成员：{{name}}",
+    "emailLabel": "邮箱：{{email}}",
+    "capacityLabel": "容量：{{value}}",
+    "allocatedLabel": "已分配：{{value}}",
+    "utilizationLabel": "利用率：{{value}}%",
+    "statusLabel": "状态：{{value}}"
   },
-
   "status": {
     "overallocated": "超负荷",
-    "underutilized": "未充分利用",
+    "underutilized": "利用不足",
     "optimal": "最佳"
   },
-
   "actions": {
     "viewDetails": "查看详情",
     "adjustCapacity": "调整容量",
@@ -140,22 +144,20 @@
     "exportWorkload": "导出工作负载",
     "reassign": "重新分配"
   },
-
   "modal": {
     "reassignTask": "重新分配任务",
     "task": "任务",
     "currentAssignee": "当前负责人"
   },
-
   "filters": {
-    "title": "工作负载过滤器",
-    "filters": "过滤器",
-    "timeScale": "时间范围",
+    "title": "工作负载筛选",
+    "filters": "筛选",
+    "timeScale": "时间刻度",
     "daily": "每日",
     "weekly": "每周",
     "monthly": "每月",
     "workingDays": "工作日",
-    "workingHoursPerDay": "每日工作小时",
+    "workingHoursPerDay": "每日工作小时数",
     "monday": "星期一",
     "tuesday": "星期二",
     "wednesday": "星期三",
@@ -165,8 +167,8 @@
     "sunday": "星期日",
     "showWeekends": "显示周末",
     "showOverallocated": "仅显示超负荷",
-    "showUnderutilized": "仅显示未充分利用",
-    "clearAll": "清除所有过滤器",
+    "showUnderutilized": "仅显示利用不足",
+    "clearAll": "清除所有筛选",
     "dateRanges": "日期范围",
     "today": "今天",
     "yesterday": "昨天",
@@ -175,15 +177,14 @@
     "thisMonth": "本月",
     "lastMonth": "上月",
     "thisQuarter": "本季度",
-    "last7Days": "最近7天",
-    "last30Days": "最近30天",
-    "last90Days": "最近90天",
+    "last7Days": "最近 7 天",
+    "last30Days": "最近 30 天",
+    "last90Days": "最近 90 天",
     "custom": "自定义范围",
     "refresh": "刷新",
     "export": "导出",
     "settings": "设置"
   },
-
   "common": {
     "cancel": "取消",
     "save": "保存",
@@ -191,18 +192,17 @@
     "enterCapacityValue": "请输入容量值",
     "capacityRangeError": "必须在 1 到 24 小时之间"
   },
-
   "calculations": {
-    "utilizationFormula": "利用率 = (已分配工时 \u00f7 周容量) \u00d7 100",
-    "weeklyCapacityFormula": "周容量 = 每日小时 \u00d7 每周工作天数",
-    "utilizationTooltip": "{{utilization}}% 利用率\n\n计算:\n\u2022 已分配工时: {{assignedHours}}h\n\u2022 周容量: {{weeklyCapacity}}h ({{dailyHours}}h \u00d7 {{workingDays}} 天)\n\u2022 公式: ({{assignedHours}} \u00f7 {{weeklyCapacity}}) \u00d7 100 = {{utilization}}%",
-    "capacityTooltip": "周容量: {{weeklyCapacity}} 小时\n\n基于组织设置:\n\u2022 每日小时: {{dailyHours}}h\n\u2022 工作天数: {{workingDays}} 每周\n\u2022 公式: {{dailyHours}}h \u00d7 {{workingDays}} 天 = {{weeklyCapacity}}h",
+    "utilizationFormula": "利用率 = (已分配工时 ÷ 每周容量) × 100",
+    "weeklyCapacityFormula": "每周容量 = 每日工时 × 每周工作日数",
+    "utilizationTooltip": "利用率 {{utilization}}%\n\n计算方式：\n• 已分配工时：{{assignedHours}} 小时\n• 每周容量：{{weeklyCapacity}} 小时（{{dailyHours}} 小时 × {{workingDays}} 天）\n• 公式：({{assignedHours}} ÷ {{weeklyCapacity}}) × 100 = {{utilization}}%",
+    "capacityTooltip": "每周容量：{{weeklyCapacity}} 小时\n\n基于组织设置：\n• 每日工时：{{dailyHours}} 小时\n• 工作日：每周 {{workingDays}} 天\n• 公式：{{dailyHours}} 小时 × {{workingDays}} 天 = {{weeklyCapacity}} 小时",
     "statusTooltip": {
-      "overallocated": "超负荷 (>100% 利用率)\n\n该成员分配的工作量超过其可用容量。建议重新分配任务或调整容量。",
-      "underutilized": "未充分利用 (<{{threshold}}% 利用率)\n\n该成员有额外的工作容量。建议分配更多任务以优化资源利用率。",
-      "optimal": "最佳利用率 ({{threshold}}-100%)\n\n该成员在分配任务和可用容量之间保持了健康的工作负载平衡。"
+      "overallocated": "超负荷（利用率 >100%）\n\n该成员分配的工作量超过其可用容量。请考虑重新分配任务或调整容量。",
+      "underutilized": "利用不足（利用率 <{{threshold}}%）\n\n该成员还有容量承接更多工作。请考虑分配更多任务以优化资源利用率。",
+      "optimal": "利用率最佳（{{threshold}}%-100%）\n\n该成员在已分配任务与可用容量之间保持良好平衡。"
     },
-    "workingDaysInfo": "基于组织计划的工作天数:\n{{workingDaysList}}",
-    "averageUtilizationTooltip": "团队平均: {{average}}%\n\n从 {{memberCount}} 名团队成员计算:\n\u2022 总已分配工时: {{totalAssigned}}h\n\u2022 总团队容量: {{totalCapacity}}h\n\u2022 公式: ({{totalAssigned}} \u00f7 {{totalCapacity}}) \u00d7 100 = {{average}}%"
+    "workingDaysInfo": "根据组织日程安排的工作日：\n{{workingDaysList}}",
+    "averageUtilizationTooltip": "团队平均值：{{average}}%\n\n根据 {{memberCount}} 名团队成员计算：\n• 已分配工时总计：{{totalAssigned}} 小时\n• 团队总容量：{{totalCapacity}} 小时\n• 公式：({{totalAssigned}} ÷ {{totalCapacity}}) × 100 = {{average}}%"
   }
 }

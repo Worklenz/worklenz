@@ -57,7 +57,7 @@ export interface PlanTier {
   limits: {
     projects: number | 'unlimited';
     users: number | 'unlimited';
-    storage: number;
+    storage: number | 'unlimited';
   };
   pricing: {
     basePlan?: {

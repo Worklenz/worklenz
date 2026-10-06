@@ -29,6 +29,7 @@ interface IProjectGroup {
   name: string;
   color: string;
   projects: IRPTProject[];
+  projectCount: number;
   totalTasks: number;
   completedTasks: number;
   todoTasks: number;
@@ -131,6 +132,7 @@ const ProjectsGroupedView = () => {
       name: translateGroupName(group.group_name), // Translate backend keys to localized strings
       color: group.group_color,
       projects: group.projects,
+      projectCount: group.project_count,
       totalTasks: group.total_tasks,
       completedTasks: group.done_tasks,
       todoTasks: group.todo_tasks,
@@ -312,8 +314,8 @@ const ProjectsGroupedView = () => {
               <Flex align="center" gap={8}>
                 <Badge color={group.color} />
                 <Typography.Text strong>
-                  {group.name} ({group.projects.length}{' '}
-                  {group.projects.length === 1 ? t('projectText') : t('projectsText')})
+                  {group.name} ({group.projectCount}{' '}
+                  {group.projectCount === 1 ? t('projectText') : t('projectsText')})
                 </Typography.Text>
               </Flex>
               <Flex align="center" gap={16}>

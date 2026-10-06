@@ -2,49 +2,57 @@
   "chartView": "Diagrammansicht",
   "calendarView": "Kalenderansicht",
   "tableView": "Tabellenansicht",
-  "noWorkloadData": "Keine Arbeitsbelastungsdaten verf\u00fcgbar",
+  "noWorkloadData": "Keine Arbeitsbelastungsdaten verfügbar",
   "noMembersFound": "Keine Teammitglieder gefunden",
   "errorLoadingData": "Fehler beim Laden der Arbeitsbelastungsdaten",
   "retry": "Wiederholen",
   "refreshData": "Daten aktualisieren",
-
   "overview": {
     "teamMembers": "Teammitglieder",
     "teamMembersTooltip": {
       "title": "Teamzusammensetzung und Zuweisungsstatus",
       "memberStatusLabel": "Mitgliederstatus:",
-      "totalMembersLabel": "Gesamtmitglieder:",
-      "overallocatedLabel": "\u00dcberlastet:",
-      "underutilizedLabel": "Unterausgelastet:",
+      "totalMembersLabel": "Gesamtzahl der Mitglieder:",
+      "overallocatedLabel": "Überlastet:",
+      "underutilizedLabel": "Nicht ausgelastet:",
       "optimalLabel": "Optimal:"
     },
-    "totalWorkload": "Gesamtarbeitsbelastung",
+    "totalWorkload": "Gesamte Arbeitsbelastung",
     "totalWorkloadTooltip": {
-      "title": "Gesamte gesch\u00e4tzte Arbeitsbelastung aller Teammitglieder",
+      "title": "Geschätzte Gesamtarbeitsbelastung aller Teammitglieder",
       "includesLabel": "Beinhaltet:",
-      "estimatedHoursLabel": "Gesch\u00e4tzte Stunden:",
-      "actualHoursLoggedLabel": "Tats\u00e4chlich gebuchte Stunden:",
+      "estimatedHoursLabel": "Geschätzte Stunden:",
+      "actualHoursLoggedLabel": "Tatsächlich protokollierte Stunden:",
       "progressLabel": "Fortschritt:"
     },
     "hours": "Stunden",
     "averageUtilization": "Durchschnittliche Auslastung",
-    "averageUtilizationTooltip": {
-      "averageLabel": "Durchschnitt:",
-      "membersLabel": "Mitglieder:",
-      "totalAssignedLabel": "Gesamt zugewiesen:",
-      "totalCapacityLabel": "Gesamtkapazit\u00e4t:"
-    },
+    "tasks": "Aufgaben",
     "criticalTasks": "Kritische Aufgaben",
-    "criticalTasksTooltip": {
-      "criticalTasksLabel": "Kritische Aufgaben:",
-      "totalTasksLabel": "Gesamtaufgaben:",
-      "criticalPercentageLabel": "Kritischer Prozentsatz:"
-    },
-    "totalTasks": "{{count}} Gesamtaufgaben"
+    "totalTasksLabel": "Aufgaben gesamt",
+    "totalTasks": "{{count}} Aufgaben gesamt",
+    "criticalTasksTooltip": "Aufgaben mit hoher Priorität, die sofortige Aufmerksamkeit erfordern.\n\nAufgabenübersicht:\n• Kritische Aufgaben: {{criticalTasks}}\n• Gesamte Aufgaben: {{totalTasks}}\n• Kritischer Prozentsatz: {{criticalPercentage}}%",
+    "teamMembersTooltipTitle": "Teamzusammensetzung und Zuweisungsstatus",
+    "memberStatusLabel": "Mitgliederstatus:",
+    "totalMembersStat": "Mitglieder gesamt: {{count}}",
+    "overallocatedStat": "Überlastet: {{count}} (>100% Auslastung)",
+    "underutilizedStat": "Unterausgelastet: {{count}} (<{{threshold}}% Auslastung)",
+    "optimalStat": "Optimal: {{count}}",
+    "totalWorkloadTooltipTitle": "Geschätzte Gesamtarbeitsbelastung aller Teammitglieder",
+    "includesLabel": "Beinhaltet:",
+    "estimatedHoursStat": "Geschätzte Stunden: {{hours}}h",
+    "actualHoursLoggedStat": "Erfasste Ist-Stunden: {{hours}}h",
+    "progressStat": "Fortschritt: {{percent}}%",
+    "averageStat": "Durchschnitt: {{percent}}%",
+    "membersStat": "Mitglieder: {{count}}",
+    "totalAssignedStat": "Zugewiesen gesamt: {{hours}}h",
+    "totalCapacityStat": "Kapazität gesamt: {{hours}}h",
+    "criticalTasksStat": "Kritische Aufgaben: {{count}}",
+    "totalTasksStat": "Aufgaben gesamt: {{count}}",
+    "criticalPercentageStat": "Kritischer Prozentsatz: {{percent}}%"
   },
-
   "chart": {
-    "capacity": "Kapazit\u00e4t",
+    "capacity": "Kapazität",
     "allocated": "Zugewiesen",
     "utilization": "Auslastung",
     "barChart": "Balkendiagramm",
@@ -54,18 +62,17 @@
     "sortByUtilization": "Nach Auslastung sortieren",
     "memberDetails": "Mitgliederdetails"
   },
-
   "calendar": {
     "tasks": "Aufgaben",
     "more": "mehr",
     "totalTasks": "{{count}} Aufgaben",
     "totalHours": "{{hours}} Stunden",
-    "dayDetails": "Details f\u00fcr {{date}}",
+    "dayDetails": "Details für {{date}}",
     "utilization": "Auslastung",
     "assignedTasks": "Zugewiesene Aufgaben",
-    "teamAvailability": "Teamverf\u00fcgbarkeit",
-    "noTasksScheduled": "Keine Aufgaben f\u00fcr diesen Tag geplant",
-    "taskSummary": "Aufgaben\u00fcbersicht",
+    "teamAvailability": "Teamverfügbarkeit",
+    "noTasksScheduled": "Keine Aufgaben für diesen Tag geplant",
+    "taskSummary": "Aufgabenübersicht",
     "task": "Aufgabe",
     "tasks_plural": "Aufgaben",
     "member": "Mitglied",
@@ -74,18 +81,17 @@
     "planned": "geplant",
     "unscheduled": "Nicht geplant",
     "hoursAssigned": "{{hours}}h zugewiesen",
-    "capacityHours": "{{hours}}h Kapazit\u00e4t",
+    "capacityHours": "{{hours}}h Kapazität",
     "unknownMember": "Unbekannt",
     "currentProject": "Aktuelles Projekt",
     "unknownInitial": "U",
     "defaultPriority": "Mittel",
     "defaultStatus": "In Bearbeitung"
   },
-
   "table": {
     "member": "Mitglied",
-    "capacity": "Kapazit\u00e4t",
-    "dailyCapacityLabel": "T\u00e4gliche Kapazit\u00e4t (Stunden)",
+    "capacity": "Kapazität",
+    "dailyCapacityLabel": "Tageskapazität (Stunden)",
     "allocated": "Zugewiesen",
     "utilization": "Auslastung",
     "status": "Status",
@@ -96,8 +102,8 @@
     "taskName": "Aufgabenname",
     "project": "Projekt",
     "duration": "Dauer",
-    "estimatedHours": "Gesch\u00e4tzte Stunden",
-    "priority": "Priorit\u00e4t",
+    "estimatedHours": "Geschätzte Stunden",
+    "priority": "Priorität",
     "progress": "Fortschritt",
     "noStart": "Kein Start",
     "noEnd": "Kein Ende",
@@ -106,53 +112,49 @@
     "defaultPriority": "Mittel",
     "defaultStatus": "Zu erledigen",
     "hours": "Stunden",
-    "currentCapacityLabel": "Aktuelle Kapazit\u00e4t:",
-    "allocatedLabel": "Zugewiesen:",
-    "utilizationLabel": "Auslastung:",
-    "statusLabel": "Status:"
+    "currentCapacityLabel": "Aktuelle Kapazität:",
+    "allocatedLabel": "Zugeteilt:",
+    "utilizationLabel": "Nutzung:",
+    "statusLabel": "Status:",
+    "noTasksAssigned": "Diesem Mitglied sind in diesem Projekt noch keine Aufgaben zugewiesen.",
+    "noTasksAssignedForPeriod": "Diesem Mitglied sind in diesem Projekt für {{startDate}} - {{endDate}} keine Aufgaben zugewiesen."
   },
-
   "export": {
-    "taskName": "Aufgabenname",
-    "startDate": "Startdatum",
-    "endDate": "Enddatum",
-    "priority": "Priorit\u00e4t",
-    "status": "Status",
-    "progress": "Fortschritt (%)",
-    "memberLabel": "Mitglied:",
-    "emailLabel": "E-Mail:",
-    "capacityLabel": "Kapazit\u00e4t:",
-    "allocatedLabel": "Zugewiesen:",
-    "utilizationLabel": "Auslastung:",
-    "statusLabel": "Status:"
+    "startDateHeader": "Startdatum",
+    "endDateHeader": "Enddatum",
+    "progressHeader": "Fortschritt (%)",
+    "taskFallback": "Aufgabe {{id}}",
+    "defaultPriority": "Normal",
+    "memberLabel": "Mitglied: {{name}}",
+    "emailLabel": "E-Mail: {{email}}",
+    "capacityLabel": "Kapazität: {{value}}",
+    "allocatedLabel": "Zugewiesen: {{value}}",
+    "utilizationLabel": "Auslastung: {{value}}%",
+    "statusLabel": "Status: {{value}}"
   },
-
   "status": {
-    "overallocated": "\u00dcberlastet",
+    "overallocated": "Überlastet",
     "underutilized": "Unterausgelastet",
     "optimal": "Optimal"
   },
-
   "actions": {
     "viewDetails": "Details anzeigen",
-    "adjustCapacity": "Kapazit\u00e4t anpassen",
+    "adjustCapacity": "Kapazität anpassen",
     "reassignTasks": "Aufgaben neu zuweisen",
     "exportWorkload": "Arbeitsbelastung exportieren",
     "reassign": "Neu zuweisen"
   },
-
   "modal": {
     "reassignTask": "Aufgabe neu zuweisen",
     "task": "Aufgabe",
-    "currentAssignee": "Aktueller Zugewiesener"
+    "currentAssignee": "Aktueller Zuständiger"
   },
-
   "filters": {
     "title": "Arbeitsbelastungsfilter",
     "filters": "Filter",
     "timeScale": "Zeitskala",
-    "daily": "T\u00e4glich",
-    "weekly": "W\u00f6chentlich",
+    "daily": "Täglich",
+    "weekly": "Wöchentlich",
     "monthly": "Monatlich",
     "workingDays": "Arbeitstage",
     "workingHoursPerDay": "Arbeitsstunden pro Tag",
@@ -164,10 +166,10 @@
     "saturday": "Samstag",
     "sunday": "Sonntag",
     "showWeekends": "Wochenenden anzeigen",
-    "showOverallocated": "Nur \u00dcberlastete anzeigen",
+    "showOverallocated": "Nur Überlastete anzeigen",
     "showUnderutilized": "Nur Unterausgelastete anzeigen",
-    "clearAll": "Alle Filter l\u00f6schen",
-    "dateRanges": "Datumsbereiche",
+    "clearAll": "Alle Filter zurücksetzen",
+    "dateRanges": "Zeiträume",
     "today": "Heute",
     "yesterday": "Gestern",
     "thisWeek": "Diese Woche",
@@ -178,31 +180,29 @@
     "last7Days": "Letzte 7 Tage",
     "last30Days": "Letzte 30 Tage",
     "last90Days": "Letzte 90 Tage",
-    "custom": "Benutzerdefinierter Bereich",
+    "custom": "Benutzerdefinierter Zeitraum",
     "refresh": "Aktualisieren",
     "export": "Exportieren",
     "settings": "Einstellungen"
   },
-
   "common": {
     "cancel": "Abbrechen",
     "save": "Speichern",
-    "close": "Schlie\u00dfen",
-    "enterCapacityValue": "Bitte geben Sie einen Kapazit\u00e4tswert ein",
+    "close": "Schließen",
+    "enterCapacityValue": "Bitte geben Sie einen Kapazitätswert ein",
     "capacityRangeError": "Muss zwischen 1 und 24 Stunden liegen"
   },
-
   "calculations": {
-    "utilizationFormula": "Auslastung = (Zugewiesene Stunden \u00f7 Wochenkapazit\u00e4t) \u00d7 100",
-    "weeklyCapacityFormula": "Wochenkapazit\u00e4t = T\u00e4gliche Stunden \u00d7 Arbeitstage pro Woche",
-    "utilizationTooltip": "{{utilization}}% Auslastung\n\nBerechnung:\n\u2022 Zugewiesene Stunden: {{assignedHours}}h\n\u2022 Wochenkapazit\u00e4t: {{weeklyCapacity}}h ({{dailyHours}}h \u00d7 {{workingDays}} Tage)\n\u2022 Formel: ({{assignedHours}} \u00f7 {{weeklyCapacity}}) \u00d7 100 = {{utilization}}%",
-    "capacityTooltip": "Wochenkapazit\u00e4t: {{weeklyCapacity}} Stunden\n\nBasierend auf Organisationseinstellungen:\n\u2022 T\u00e4gliche Stunden: {{dailyHours}}h\n\u2022 Arbeitstage: {{workingDays}} pro Woche\n\u2022 Formel: {{dailyHours}}h \u00d7 {{workingDays}} Tage = {{weeklyCapacity}}h",
+    "utilizationFormula": "Auslastung = (Zugewiesene Stunden ÷ Wöchentliche Kapazität) × 100",
+    "weeklyCapacityFormula": "Wöchentliche Kapazität = Tagesstunden × Arbeitstage pro Woche",
+    "utilizationTooltip": "{{utilization}}% Auslastung\n\nBerechnung:\n• Zugewiesene Stunden: {{assignedHours}}h\n• Wöchentliche Kapazität: {{weeklyCapacity}}h ({{dailyHours}}h × {{workingDays}} Tage)\n• Formel: ({{assignedHours}} ÷ {{weeklyCapacity}}) × 100 = {{utilization}}%",
+    "capacityTooltip": "Wöchentliche Kapazität: {{weeklyCapacity}} Stunden\n\nBasierend auf den Organisationseinstellungen:\n• Tagesstunden: {{dailyHours}}h\n• Arbeitstage: {{workingDays}} pro Woche\n• Formel: {{dailyHours}}h × {{workingDays}} Tage = {{weeklyCapacity}}h",
     "statusTooltip": {
-      "overallocated": "\u00dcberlastet (>100% Auslastung)\n\nDieses Mitglied hat mehr zugewiesene Arbeit als seine verf\u00fcgbare Kapazit\u00e4t. Erw\u00e4gen Sie eine Umverteilung von Aufgaben oder eine Kapazit\u00e4tsanpassung.",
-      "underutilized": "Unterausgelastet (<{{threshold}}% Auslastung)\n\nDieses Mitglied hat Kapazit\u00e4t f\u00fcr zus\u00e4tzliche Arbeit. Erw\u00e4gen Sie, weitere Aufgaben zuzuweisen, um die Ressourcennutzung zu optimieren.",
-      "optimal": "Optimale Auslastung ({{threshold}}-100%)\n\nDieses Mitglied hat ein gesundes Gleichgewicht zwischen zugewiesenen Aufgaben und verf\u00fcgbarer Kapazit\u00e4t."
+      "overallocated": "Überlastet (>100% Auslastung)\n\nDieses Mitglied hat mehr zugewiesene Arbeit als verfügbare Kapazität. Erwägen Sie, Aufgaben umzuverteilen oder die Kapazität anzupassen.",
+      "underutilized": "Unterausgelastet (<{{threshold}}% Auslastung)\n\nDieses Mitglied hat Kapazität für zusätzliche Arbeit. Erwägen Sie, mehr Aufgaben zuzuweisen, um die Ressourcennutzung zu optimieren.",
+      "optimal": "Optimale Auslastung ({{threshold}}-100%)\n\nDieses Mitglied hat ein ausgewogenes Verhältnis zwischen zugewiesenen Aufgaben und verfügbarer Kapazität."
     },
     "workingDaysInfo": "Arbeitstage basierend auf dem Organisationsplan:\n{{workingDaysList}}",
-    "averageUtilizationTooltip": "Teamdurchschnitt: {{average}}%\n\nBerechnet aus {{memberCount}} Teammitgliedern:\n\u2022 Gesamt zugewiesene Stunden: {{totalAssigned}}h\n\u2022 Gesamte Teamkapazit\u00e4t: {{totalCapacity}}h\n\u2022 Formel: ({{totalAssigned}} \u00f7 {{totalCapacity}}) \u00d7 100 = {{average}}%"
+    "averageUtilizationTooltip": "Team-Durchschnitt: {{average}}%\n\nBerechnet aus {{memberCount}} Teammitgliedern:\n• Zugewiesene Stunden gesamt: {{totalAssigned}}h\n• Team-Kapazität gesamt: {{totalCapacity}}h\n• Formel: ({{totalAssigned}} ÷ {{totalCapacity}}) × 100 = {{average}}%"
   }
 }

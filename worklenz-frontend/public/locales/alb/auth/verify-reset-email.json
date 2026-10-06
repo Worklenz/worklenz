@@ -10,5 +10,7 @@
   "passwordRequired": "Ju lutemi vendosni fjalëkalimin e ri",
   "returnToLoginButton": "Kthehu te Hyrja",
   "confirmPasswordRequired": "Ju lutemi konfirmoni fjalëkalimin e ri",
-  "passwordMismatch": "Fjalëkalimet nuk përputhen"
+  "passwordMismatch": "Fjalëkalimet nuk përputhen",
+  "successTitle": "Fjalëkalimi u rivendos me sukses",
+  "successMessage": "Fjalëkalimi juaj u përditësua. Tani mund të identifikoheni me fjalëkalimin e ri."
 }

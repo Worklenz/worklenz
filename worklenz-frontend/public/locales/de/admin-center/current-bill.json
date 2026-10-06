@@ -17,7 +17,6 @@
   "billStatus": "Rechnungsstatus",
   "perUserValue": "Pro Benutzer Wert",
   "users": "Benutzer",
-
   "amount": "Betrag",
   "invoices": "Rechnungen",
   "transactionId": "Transaktions-ID",
@@ -28,16 +27,13 @@
   "appsumoBusinessUnlockTitle": "Business-Plan mit 5 AppSumo-Codes freischalten",
   "appsumoBusinessUnlockDescription": "Lösen Sie {{required}} AppSumo-Codes ein, um Business-Plan-Funktionen automatisch freizuschalten. Sie haben {{count}} von {{required}} Codes eingelöst.",
   "redeemAnotherCode": "Weiteren Code einlösen",
-
   "totalSeats": "Gesamte Plätze",
   "availableSeats": "Verfügbare Plätze",
   "addMoreSeats": "Weitere Plätze hinzufügen",
-
   "drawerTitle": "Gutscheincode einlösen",
   "label": "Gutscheincode",
   "drawerPlaceholder": "Geben Sie Ihren Gutscheincode ein",
   "redeemSubmit": "Einreichen",
-
   "modalTitle": "Wählen Sie den besten Plan für Ihr Team",
   "seatLabel": "Anzahl der Plätze",
   "freePlan": "Kostenloser Plan",
@@ -46,13 +42,11 @@
   "business": "Business",
   "tag": "Am beliebtesten",
   "enterprise": "Enterprise",
-
   "freeSubtitle": "kostenlos für immer",
   "freeUsers": "Ideal für die persönliche Nutzung",
   "freeText01": "100MB Speicher",
   "freeText02": "3 Projekte",
   "freeText03": "5 Teammitglieder",
-
   "startupSubtitle": "PAUSCHALPREIS / Monat",
   "startupUsers": "Bis zu 15 Benutzer",
   "startupText01": "25GB Speicher",
@@ -60,27 +54,20 @@
   "startupText03": "Zeitplan",
   "startupText04": "Berichterstattung",
   "startupText05": "Projekte abonnieren",
-
   "businessSubtitle": "Benutzer / Monat",
   "businessUsers": "16 - 200 Benutzer",
-
   "enterpriseUsers": "200 - 500+ Benutzer",
-
   "footerTitle": "Bitte geben Sie uns eine Kontaktnummer, unter der wir Sie erreichen können.",
   "footerLabel": "Kontaktnummer",
   "footerButton": "Kontaktieren Sie uns",
-
   "redeemCodePlaceHolder": "Geben Sie Ihren Gutscheincode ein",
   "submit": "Einreichen",
-
   "trialPlan": "Kostenlose Testversion",
   "trialExpireDate": "Gültig bis {{trial_expire_date}}",
   "trialExpired": "Ihre kostenlose Testversion ist {{trial_expire_string}} abgelaufen",
   "trialInProgress": "Ihre kostenlose Testversion läuft {{trial_expire_string}} ab",
-
   "required": "Dieses Feld ist erforderlich",
   "invalidCode": "Ungültiger Code",
-
   "selectPlan": "Wählen Sie den besten Plan für Ihr Team",
   "changeSubscriptionPlan": "Ändern Sie Ihren Abonnementplan",
   "noOfSeats": "Anzahl der Plätze",
@@ -98,24 +85,48 @@
   "subscribeToProjects": "Projekte abonnieren",
   "billedAnnually": "Jährlich abgerechnet",
   "billedMonthly": "Monatlich abgerechnet",
-
   "pausePlan": "Plan pausieren",
   "resumePlan": "Plan fortsetzen",
   "changePlan": "Plan ändern",
   "cancelPlan": "Plan kündigen",
-
   "perMonthPerUser": "pro Benutzer/Monat",
   "viewInvoice": "Rechnung anzeigen",
   "switchToFreePlan": "Wechsel zum kostenlosen Plan",
-
   "expirestoday": "heute",
   "expirestomorrow": "morgen",
   "expiredDayAgo": "vor {{days}} Tag",
   "expiredDaysAgo": "vor {{days}} Tagen",
-
   "continueWith": "Fortfahren mit {{plan}}",
   "changeToPlan": "Wechseln zu {{plan}}",
-
+  "creditPlan": "Kreditplan",
+  "customPlan": "Benutzerdefinierter Plan",
+  "planValidTill": "Ihr Plan ist gültig bis {{date}}",
+  "purchaseSeatsText": "Um fortzufahren, müssen Sie zusätzliche Sitzplätze erwerben.",
+  "currentSeatsText": "Sie haben derzeit {{seats}} Plätze zur Verfügung.",
+  "selectSeatsText": "Bitte wählen Sie die Anzahl der zusätzlich zu erwerbenden Sitzplätze aus.",
+  "purchase": "Kaufen",
+  "contactSales": "Kontaktieren Sie den Vertrieb",
+  "submitSuccess": "Code erfolgreich eingelöst!",
+  "submitSuccessDescription": "Ihr Konto wurde mit den neuen Guthaben aktualisiert.",
+  "percentUsed": "% Used",
+  "sizeUnits": {
+    "bytes": "Bytes",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB",
+    "tb": "TB"
+  },
+  "seatPerMonth": "Sitzplatz / Monat",
+  "totalPrice": "Total $",
+  "tryForFree": "Kostenlos testen",
+  "subscriptionUpdateSuccess": "Abonnement erfolgreich aktualisiert!",
+  "paymentProcessorError": "Der Zahlungsprozessor konnte nicht geladen werden",
+  "seatsLabel": "Sitzplätze:",
+  "requiredField": "*",
+  "purchaseSeatsTextSingle": "Um fortzufahren, müssen Sie einen zusätzlichen Sitzplatz erwerben.",
+  "singleUserNote": "Sie haben derzeit 1 Sitzplatz frei.",
+  "selectSeatsTextSingle": "Bitte wählen Sie die Anzahl der zusätzlich zu erwerbenden Sitzplätze aus.",
+  "phoneNumberPattern": "07xxxxxxxxx",
   "pricingModel": "Preismodell",
   "flatRate": "Pauschalrate",
   "perUser": "Pro Benutzer",
@@ -125,21 +136,20 @@
   "switchTo": "Wechseln zu",
   "pricing": "Preisgestaltung",
   "managementUrl": "Verwaltungs-URL",
+  "openManagementUrl": "Öffnen Sie die Verwaltungs-URL",
   "updateCardDetails": "Kartendaten aktualisieren",
-
   "upgradeToUnlockFeatures": "Upgrade für Premium-Funktionen",
   "currentPlanLimits": "Aktueller Plan beinhaltet:",
   "planFeatures": "Plan-Funktionen",
   "teamSizeLimit": "Teamgrößenbegrenzung",
   "storageLimit": "Speicherbegrenzung",
   "projectLimit": "Projektbegrenzung",
-
   "billingCyclePreference": "Abrechnungszyklus",
   "annualSavings": "Sparen Sie mit jährlicher Abrechnung",
   "monthlyBilling": "Monatlich",
   "yearlyBilling": "Jährlich",
-
   "planComparison": "Pläne vergleichen",
   "currentUsage": "Aktuelle Nutzung",
-  "planRecommendation": "Empfohlen für Ihre Teamgröße"
+  "planRecommendation": "Empfohlen für Ihre Teamgröße",
+  "appsumoBusinessUnlockProgress": "{{count}} von {{required}} AppSumo-Codes eingelöst. Lösen Sie {{required}}-Codes ein, um Businessplan-Funktionen freizuschalten."
 }

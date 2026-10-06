@@ -19,6 +19,7 @@
   "weeklyEndTitle": "每周结束摘要",
   "weeklyEndDescription": "每周五发送。回顾已完成任务、逾期情况和下周展望。",
   "channelLabel": "渠道",
+  "channelEmail": "电子邮件",
   "timeLabel": "发送时间",
   "saveDigestPreferences": "保存通知偏好设置",
   "digestPreferencesSaved": "您的通知偏好设置已保存"

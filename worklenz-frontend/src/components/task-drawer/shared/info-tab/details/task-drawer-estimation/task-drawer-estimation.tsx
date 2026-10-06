@@ -63,13 +63,13 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
   };
 
   return (
-    <Form.Item name="timeEstimation" label={t('taskInfoTab.details.time-estimation')}>
+    <Form.Item name="timeEstimation" label={t('taskInfoTab.details.time-estimation', { defaultValue: 'Time Estimation' })}>
       <Flex gap={8} ref={estimationGroupRef}>
         <Form.Item
           name={'hours'}
           label={
             <Typography.Text style={{ color: colors.lightGray, fontSize: 12 }}>
-              {t('taskInfoTab.details.hours')}
+              {t('taskInfoTab.details.hours', { defaultValue: 'Hours' })}
             </Typography.Text>
           }
           style={{ marginBottom: 36 }}
@@ -79,7 +79,13 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
             {
               validator: (_, value) => {
                 if (value === undefined || value === null || value >= 0) return Promise.resolve();
-                return Promise.reject(new Error(t('taskInfoTab.details.hoursMinError')));
+                return Promise.reject(
+                  new Error(
+                    t('taskInfoTab.details.hoursMinError', {
+                      defaultValue: 'Hours must be 0 or greater',
+                    })
+                  )
+                );
               },
             },
           ]}
@@ -87,7 +93,7 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
           <InputNumber
             min={0}
             precision={0}
-            placeholder={t('taskInfoTab.details.hours')}
+            placeholder={t('taskInfoTab.details.hours', { defaultValue: 'Hours' })}
             onFocus={handleEstimationFocus}
             onBlur={handleTimeEstimationBlur}
             disabled={disabled}
@@ -97,7 +103,7 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
           name={'minutes'}
           label={
             <Typography.Text style={{ color: colors.lightGray, fontSize: 12 }}>
-              {t('taskInfoTab.details.minutes')}
+              {t('taskInfoTab.details.minutes', { defaultValue: 'Minutes' })}
             </Typography.Text>
           }
           style={{ marginBottom: 36 }}
@@ -106,8 +112,15 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
           rules={[
             {
               validator: (_, value) => {
-                if (value === undefined || value === null || (value >= 0 && value <= 59)) return Promise.resolve();
-                return Promise.reject(new Error(t('taskInfoTab.details.minutesRangeError')));
+                if (value === undefined || value === null || (value >= 0 && value <= 59))
+                  return Promise.resolve();
+                return Promise.reject(
+                  new Error(
+                    t('taskInfoTab.details.minutesRangeError', {
+                      defaultValue: 'Minutes must be between 0 and 59',
+                    })
+                  )
+                );
               },
             },
           ]}
@@ -116,7 +129,7 @@ const TaskDrawerEstimation = ({ t, task, form, disabled = false }: TaskDrawerEst
             min={0}
             max={59}
             precision={0}
-            placeholder={t('taskInfoTab.details.minutes')}
+            placeholder={t('taskInfoTab.details.minutes', { defaultValue: 'Minutes' })}
             onFocus={handleEstimationFocus}
             onBlur={handleTimeEstimationBlur}
             disabled={disabled}

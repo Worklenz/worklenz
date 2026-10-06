@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_clients_invite_slug
   ON clients (invite_slug)
   WHERE invite_slug IS NOT NULL;
 
--- ADD CONSTRAINT to ensure slug format (lowercase alphanumeric and hyphens only)
+-- Add constraint to ensure slug format (lowercase alphanumeric and hyphens only)
 -- Drop constraint if exists, then add it
 DO $$
 BEGIN
@@ -37,7 +37,7 @@ EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
--- ADD CONSTRAINT for minimum length (at least 3 characters)
+-- Add constraint for minimum length (at least 3 characters)
 DO $$
 BEGIN
     ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_invite_slug_length;
@@ -47,7 +47,7 @@ EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
--- ADD CONSTRAINT for maximum length (max 50 characters)
+-- Add constraint for maximum length (max 50 characters)
 DO $$
 BEGIN
     ALTER TABLE clients DROP CONSTRAINT IF EXISTS clients_invite_slug_max_length;

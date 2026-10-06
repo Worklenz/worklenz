@@ -34,5 +34,10 @@
   "csvImportSelected": "Importimi i detyrave CSV është zgjedhur",
   "csvImportHint": "Hartoni fushat CSV dhe importoni detyrat pasi të konfiguroni këtë projekt.",
   "csvImportFooterHint": "Do të hartoni fushat CSV para se të krijohet ky projekt.",
-  "continueToCsvImport": "Vazhdo te importimi CSV"
+  "continueToCsvImport": "Vazhdo te importimi CSV",
+  "customizeNo": "Jo",
+  "customizeYes": "Po, personalizo",
+  "customizeFooterQuestion": "Dëshironi ta personalizoni përpara krijimit?",
+  "customizeNoHint": "Krijo tani dhe hap projektin",
+  "customizeYesHint": "Vendos klientin, statusin, datat dhe më shumë së pari"
 }

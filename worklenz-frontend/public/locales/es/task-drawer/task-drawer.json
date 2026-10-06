@@ -17,7 +17,9 @@
     "back": "Volver",
     "backToParent": "Volver a la tarea principal",
     "toParentTask": "a la tarea principal",
-    "loadingHierarchy": "Cargando jerarquía..."
+    "loadingHierarchy": "Cargando jerarquía...",
+    "previousTask": "Tarea anterior",
+    "nextTask": "Siguiente tarea"
   },
   "taskInfoTab": {
     "title": "Información",
@@ -39,6 +41,8 @@
       "show-start-date": "Mostrar fecha de inicio",
       "hours": "Horas",
       "minutes": "Minutos",
+      "hoursMinError": "Las horas deben ser 0 o más",
+      "minutesRangeError": "Los minutos deben estar entre 0 y 59",
       "progressValue": "Valor de progreso",
       "progressValueTooltip": "Establecer el porcentaje de progreso (0-100%)",
       "progressValueRequired": "Por favor ingrese un valor de progreso",
@@ -47,7 +51,23 @@
       "taskWeightTooltip": "Establecer el peso de esta subtarea (porcentaje)",
       "taskWeightRequired": "Por favor ingrese un peso de tarea",
       "taskWeightRange": "El peso debe estar entre 0 y 100",
+      "customFields": {
+        "empty": "Vacío",
+        "enterNumber": "Introducir número",
+        "selectDate": "Seleccionar fecha",
+        "selectOption": "Seleccionar opción",
+        "selectPeople": "Seleccionar personas",
+        "updateError": "Error al actualizar el campo personalizado"
+      },
       "recurring": "Recurrente"
+    },
+    "customFields": {
+      "title": "Campos personalizados",
+      "autoSaveHint": "Los cambios se guardan automáticamente al salir de un campo.",
+      "addCustomField": "Añadir un campo personalizado",
+      "addCustomColumn": "Añadir columna personalizada",
+      "showMoreFields": "Mostrar {{count}} campos más",
+      "hideFields": "Ocultar campos"
     },
     "labels": {
       "labelInputPlaceholder": "Buscar o crear",
@@ -85,13 +105,16 @@
       "chooseOrDropFileToUpload": "Elige o arrastra archivo para subir",
       "uploading": "Subiendo...",
       "maxFileSizeText": "Tamaño máximo de archivo: {{maxSize}}MB",
-      "upgradeLinkText": "¿Necesitas cargas más grandes? Actualiza"
+      "upgradeLinkText": "¿Necesitas cargas más grandes? Actualiza",
+      "downloadFailed": "No se pudo descargar el archivo",
+      "deleteFailed": "No se pudo eliminar el adjunto"
     },
     "comments": {
       "title": "Comentarios",
       "addComment": "+ Añadir nuevo comentario",
       "noComments": "Aún no hay comentarios. ¡Sé el primero en comentar!",
       "edit": "Editar",
+      "save": "Guardar",
       "delete": "Eliminar",
       "confirmDeleteComment": "¿Estás seguro de que quieres eliminar este comentario?",
       "edited": "(editado)",
@@ -105,6 +128,8 @@
       "maxFilesError": "Solo puedes subir un máximo de {{count}} archivos",
       "processFilesError": "Error al procesar archivos",
       "addCommentError": "Por favor añade un comentario o adjunta archivos",
+      "commentTooLong": "El comentario es demasiado largo. Por favor, acórtalo a menos de {{max}} caracteres.",
+      "saveCommentError": "No se pudo guardar el comentario. Por favor, inténtalo de nuevo.",
       "enterHint": "Enter para enviar  ·  Shift+Enter para nueva línea",
       "fileTooLargeToSend": "Los archivos de más de 25MB en comentarios requieren el plan Business. Quita este archivo o actualiza para continuar.",
       "historyLockedBoundary": "El historial de comentarios está limitado a los últimos 90 días en este plan",
@@ -112,7 +137,10 @@
       "historyLockedBody": "Los comentarios de más de 90 días están disponibles en el plan Business.",
       "viewFullComments": "Ver historial de comentarios",
       "createdBy": "Creado {{time}} por {{user}}",
-      "updatedTime": "Actualizado {{time}}"
+      "updatedTime": "Actualizado {{time}}",
+      "copyLink": "Copiar enlace",
+      "linkCopied": "Enlace del comentario copiado",
+      "linkCopyFailed": "No se pudo copiar el enlace"
     },
     "searchInputPlaceholder": "Buscar por nombre",
     "pendingInvitation": "Invitación pendiente"
@@ -153,11 +181,14 @@
       "endTimeAfterStartError": "La hora de finalización debe ser posterior a la de inicio",
       "moveToProject": "Mover al proyecto",
       "moveToProjectTooltip": "Reasignar este registro de tiempo a un proyecto diferente",
+      "selectProject": "Buscar proyecto...",
       "moveToTask": "Mover a la tarea",
       "moveToTaskTooltip": "Reasignar este registro de tiempo a una tarea diferente",
+      "selectTask": "Seleccionar tarea...",
       "backdateLimitError": "Los registros de tiempo no pueden retrocederse más de {{days}} días. La fecha más antigua que puedes registrar es {{earliestDate}}.",
       "saveError": "No se pudo guardar el registro de tiempo. Por favor, inténtalo de nuevo."
-    }
+    },
+    "rollupLoggedTooltip": "Suma de tiempo conectado en subtareas"
   },
   "taskActivityLogTab": {
     "title": "Registro de actividad",
@@ -176,5 +207,14 @@
     "confirmMarkAsDone": "Sí, marcar como completada",
     "cancelMarkAsDone": "No, mantener estado actual",
     "markAsDoneDescription": "Has establecido el progreso al 100%. ¿Te gustaría actualizar el estado de la tarea a \"Completada\"?"
+  },
+  "taskAccessDenied": {
+    "title": "Sin acceso",
+    "subtitle": "Solo puedes abrir tareas asignadas a ti en este proyecto. Pide a un gestor de proyecto que te asigne si necesitas acceso.",
+    "close": "Cerrar"
+  },
+  "assigneeScopeReadonly": {
+    "title": "Solo lectura",
+    "description": "Estás asignado a una subtarea de esta tarea. Puedes ver la tarea principal como contexto, pero no editarla."
   }
 }

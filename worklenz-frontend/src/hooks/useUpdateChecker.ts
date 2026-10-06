@@ -50,7 +50,7 @@ export function useUpdateChecker(options: UseUpdateCheckerOptions = {}): UseUpda
     try {
       const hasUpdates = await serviceWorkerCheckUpdates();
       const latestVersion = localStorage.getItem(LATEST_VERSION_STORAGE_KEY);
-      setHasUpdate(hasUpdates);
+      setHasUpdate(Boolean(hasUpdates));
       setLastChecked(new Date());
 
       // Show notification if update found and user hasn't dismissed it

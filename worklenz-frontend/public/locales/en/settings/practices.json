@@ -1,0 +1,22 @@
+{
+  "title": "Manage Practices",
+  "nameColumn": "Name",
+  "search": "Search practices",
+  "createPracticeButton": "Create Practice",
+  "createPracticeDrawerTitle": "Create Practice",
+  "updatePracticeDrawerTitle": "Update Practice",
+  "nameLabel": "Name",
+  "namePlaceholder": "Enter practice name",
+  "nameRequiredError": "Practice name is required",
+  "createButton": "Create",
+  "updateButton": "Update",
+  "editTooltip": "Edit",
+  "deleteTooltip": "Delete",
+  "deleteConfirmationTitle": "Are you sure to delete this practice?",
+  "deleteConfirmationOk": "Delete",
+  "deleteConfirmationCancel": "Cancel",
+  "fetchPracticeErrorMessage": "Failed to fetch practice",
+  "createPracticeErrorMessage": "Failed to create practice",
+  "updatePracticeErrorMessage": "Failed to update practice",
+  "pinTooltip": "Pin to navbar"
+}

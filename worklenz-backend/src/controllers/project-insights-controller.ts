@@ -9,6 +9,13 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import {formatDuration, getColor} from "../shared/utils";
 import moment from "moment";
 
+/**
+ * Project Insights / Overview dashboard APIs.
+ *
+ * TVR-18 / TVR-1: intentionally does NOT apply `restrict_tasks_to_assignee`.
+ * Insights/Overview dashboards are out of scope this pass — see
+ * `ASSIGNEE_SCOPE_EXCLUDED_SURFACES` in shared/assignee-task-scope.ts.
+ */
 export default class ProjectInsightsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {

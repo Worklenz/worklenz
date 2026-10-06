@@ -27,5 +27,12 @@
   "noTaskTemplatesStep1": "Navega a un proyecto y ábrelo.",
   "noTaskTemplatesStep2": "Selecciona tareas usando la opción Edición por Lotes.",
   "noTaskTemplatesStep3": "Haz clic en Más Opciones en la barra de acciones por lotes y elige Crear Plantilla de Tarea.",
-  "noSearchResults": "No hay plantillas que coincidan con tu búsqueda."
+  "noSearchResults": "No hay plantillas que coincidan con tu búsqueda.",
+  "shareWithOrganization": "Compartir con la organización",
+  "organizationBadge": "Organización",
+  "scopeUpdateSuccess": "Compartición de plantilla actualizada.",
+  "scopeSharedSuccess": "Plantilla compartida con la organización.",
+  "scopeUnsharedSuccess": "La plantilla ya no se comparte con la organización.",
+  "scopeUpdateError": "Error al actualizar la compartición de la plantilla.",
+  "moreOptions": "Más opciones"
 }

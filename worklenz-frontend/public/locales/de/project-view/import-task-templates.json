@@ -7,5 +7,7 @@
   "templates": "Vorlagen",
   "remove": "Entfernen",
   "cancel": "Abbrechen",
-  "import": "Importieren"
+  "import": "Importieren",
+  "subtasksLabel": "Teilaufgabe(n)",
+  "subtaskCountTooltip": "{{count}} Unteraufgabe(n) werden importiert"
 }

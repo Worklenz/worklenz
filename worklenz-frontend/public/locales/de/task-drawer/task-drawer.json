@@ -17,7 +17,9 @@
     "back": "Zurück",
     "backToParent": "Zurück zur übergeordneten Aufgabe",
     "toParentTask": "zur übergeordneten Aufgabe",
-    "loadingHierarchy": "Hierarchie wird geladen..."
+    "loadingHierarchy": "Hierarchie wird geladen...",
+    "previousTask": "Vorherige Aufgabe",
+    "nextTask": "Nächste Aufgabe"
   },
   "taskInfoTab": {
     "title": "Info",
@@ -39,6 +41,8 @@
       "show-start-date": "Startdatum anzeigen",
       "hours": "Stunden",
       "minutes": "Minuten",
+      "hoursMinError": "Stunden müssen 0 oder größer sein",
+      "minutesRangeError": "Minuten müssen zwischen 0 und 59 liegen",
       "progressValue": "Fortschrittswert",
       "progressValueTooltip": "Setzen Sie den Fortschrittsprozentsatz (0-100%)",
       "progressValueRequired": "Bitte geben Sie einen Fortschrittswert ein",
@@ -47,7 +51,23 @@
       "taskWeightTooltip": "Setzen Sie das Gewicht dieser Unteraufgabe (Prozentsatz)",
       "taskWeightRequired": "Bitte geben Sie ein Aufgabengewicht ein",
       "taskWeightRange": "Gewicht muss zwischen 0 und 100 liegen",
+      "customFields": {
+        "empty": "Leer",
+        "enterNumber": "Zahl eingeben",
+        "selectDate": "Datum auswählen",
+        "selectOption": "Option auswählen",
+        "selectPeople": "Personen auswählen",
+        "updateError": "Benutzerdefiniertes Feld konnte nicht aktualisiert werden"
+      },
       "recurring": "Wiederkehrend"
+    },
+    "customFields": {
+      "title": "Benutzerdefinierte Felder",
+      "autoSaveHint": "Änderungen werden automatisch gespeichert, wenn Sie ein Feld verlassen.",
+      "addCustomField": "Benutzerdefiniertes Feld hinzufügen",
+      "addCustomColumn": "Benutzerdefinierte Spalte hinzufügen",
+      "showMoreFields": "{{count}} weitere Felder anzeigen",
+      "hideFields": "Felder ausblenden"
     },
     "labels": {
       "labelInputPlaceholder": "Suchen oder erstellen",
@@ -85,13 +105,16 @@
       "chooseOrDropFileToUpload": "Datei zum Hochladen auswählen oder ablegen",
       "uploading": "Wird hochgeladen...",
       "maxFileSizeText": "Maximale Dateigröße: {{maxSize}}MB",
-      "upgradeLinkText": "Größere Uploads benötigt? Upgrade"
+      "upgradeLinkText": "Größere Uploads benötigt? Upgrade",
+      "downloadFailed": "Datei konnte nicht heruntergeladen werden",
+      "deleteFailed": "Anhang konnte nicht gelöscht werden"
     },
     "comments": {
       "title": "Kommentare",
       "addComment": "+ Neuen Kommentar hinzufügen",
       "noComments": "Noch keine Kommentare. Seien Sie der Erste, der kommentiert!",
       "edit": "Bearbeiten",
+      "save": "Speichern",
       "delete": "Löschen",
       "confirmDeleteComment": "Sind Sie sicher, dass Sie diesen Kommentar löschen möchten?",
       "edited": "(bearbeitet)",
@@ -105,6 +128,8 @@
       "maxFilesError": "Sie können maximal {{count}} Dateien hochladen",
       "processFilesError": "Dateien konnten nicht verarbeitet werden",
       "addCommentError": "Bitte fügen Sie einen Kommentar hinzu oder hängen Sie Dateien an",
+      "commentTooLong": "Der Kommentar ist zu lang. Bitte kürzen Sie ihn auf unter {{max}} Zeichen.",
+      "saveCommentError": "Kommentar konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
       "enterHint": "Enter zum Senden  ·  Shift+Enter für neue Zeile",
       "fileTooLargeToSend": "Dateien über 25MB in Kommentaren erfordern den Business-Plan. Entfernen Sie diese Datei oder führen Sie ein Upgrade durch.",
       "historyLockedBoundary": "Kommentare sind in diesem Plan auf die letzten 90 Tage begrenzt",
@@ -112,7 +137,10 @@
       "historyLockedBody": "Kommentare älter als 90 Tage sind im Business-Plan verfügbar.",
       "viewFullComments": "Kommentarverlauf anzeigen",
       "createdBy": "Erstellt {{time}} von {{user}}",
-      "updatedTime": "Aktualisiert {{time}}"
+      "updatedTime": "Aktualisiert {{time}}",
+      "copyLink": "Link kopieren",
+      "linkCopied": "Kommentarlink kopiert",
+      "linkCopyFailed": "Link konnte nicht kopiert werden"
     },
     "searchInputPlaceholder": "Nach Name suchen",
     "pendingInvitation": "Ausstehende Einladung"
@@ -141,6 +169,7 @@
       "descriptionPlaceholder": "Beschreibung hinzufügen",
       "logTime": "Zeit protokollieren",
       "updateTime": "Aktualisieren",
+      "cancel": "Abbrechen",
       "durationHelper": "Gesamtzeit mit Stunden und Minuten erfassen.",
       "timeRangeHelper": "Zeit durch Auswahl von Start- und Endzeit erfassen.",
       "selectDateError": "Bitte wählen Sie ein Datum",
@@ -158,7 +187,8 @@
       "selectTask": "Aufgabe auswählen...",
       "backdateLimitError": "Zeiterfassungen können nicht weiter als {{days}} Tage zurückdatiert werden. Das früheste mögliche Datum ist {{earliestDate}}.",
       "saveError": "Die Zeiterfassung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
-    }
+    },
+    "rollupLoggedTooltip": "Summe der angemeldeten Zeit für Unteraufgaben"
   },
   "taskActivityLogTab": {
     "title": "Aktivitätsprotokoll",
@@ -177,5 +207,14 @@
     "confirmMarkAsDone": "Ja, als erledigt markieren",
     "cancelMarkAsDone": "Nein, aktuellen Status beibehalten",
     "markAsDoneDescription": "Sie haben den Fortschritt auf 100% gesetzt. Möchten Sie den Aufgabenstatus auf \"Erledigt\" aktualisieren?"
+  },
+  "taskAccessDenied": {
+    "title": "Kein Zugriff",
+    "subtitle": "In diesem Projekt können Sie nur Aufgaben öffnen, die Ihnen zugewiesen sind. Bitten Sie einen Projektmanager, Sie zuzuweisen, wenn Sie Zugriff benötigen.",
+    "close": "Schließen"
+  },
+  "assigneeScopeReadonly": {
+    "title": "Nur Anzeige",
+    "description": "Ihnen ist eine Unteraufgabe dieser Aufgabe zugewiesen. Sie können die übergeordnete Aufgabe zur Orientierung ansehen, aber nicht bearbeiten."
   }
 }

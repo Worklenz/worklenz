@@ -11,11 +11,20 @@ exports.up = async (pgm) => {
 -- Description: Adds a column to team_members to establish a reporting hierarchy
 
 ALTER TABLE team_members
-ADD COLUMN IF NOT EXISTS reports_to_member_id UUID,
-ADD CONSTRAINT fk_reports_to_member
-    FOREIGN KEY (reports_to_member_id)
-    REFERENCES team_members(id)
-    ON DELETE SET NULL;
+ADD COLUMN IF NOT EXISTS reports_to_member_id UUID;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'team_members'::regclass AND conname = 'fk_reports_to_member'
+    ) THEN
+        ALTER TABLE team_members ADD CONSTRAINT fk_reports_to_member
+            FOREIGN KEY (reports_to_member_id)
+            REFERENCES team_members(id)
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_reports_to_member_id ON team_members(reports_to_member_id);
 

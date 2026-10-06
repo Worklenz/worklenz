@@ -347,7 +347,9 @@ export class DynamicCSSLoader {
     const promise = new Promise<void>((resolve, reject) => {
       const link = document.createElement('link');
       link.rel = critical ? 'stylesheet' : 'preload';
-      link.as = critical ? undefined : 'style';
+      if (!critical) {
+        link.as = 'style';
+      }
       link.href = href;
       link.media = media;
 

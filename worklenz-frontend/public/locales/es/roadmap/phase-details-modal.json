@@ -31,6 +31,12 @@
   },
   "tasksInPhase": {
     "title": "Tasks in this Phase",
-    "noTasks": "No tasks in this phase"
+    "noTasks": "No tasks in this phase",
+    "priority": "Prioridad",
+    "assignees": "Asignados",
+    "dueDate": "Fecha de vencimiento",
+    "startDate": "Fecha de inicio",
+    "noAssignees": "Sin asignar",
+    "noDueDate": "Sin fecha de vencimiento"
   }
 }

@@ -31,7 +31,23 @@
       "taskWeightTooltip": "Establecer el peso de esta subtarea (porcentaje)",
       "taskWeightRequired": "Por favor, introduzca un peso de tarea",
       "taskWeightRange": "El peso debe estar entre 0 y 100",
+      "customFields": {
+        "empty": "Vacío",
+        "enterNumber": "Introducir número",
+        "selectDate": "Seleccionar fecha",
+        "selectOption": "Seleccionar opción",
+        "selectPeople": "Seleccionar personas",
+        "updateError": "Error al actualizar el campo personalizado"
+      },
       "recurring": "Recurrente"
+    },
+    "customFields": {
+      "title": "Campos personalizados",
+      "autoSaveHint": "Los cambios se guardan automáticamente al salir de un campo.",
+      "addCustomField": "Añadir un campo personalizado",
+      "addCustomColumn": "Añadir columna personalizada",
+      "showMoreFields": "Mostrar {{count}} campos más",
+      "hideFields": "Ocultar campos"
     },
     "labels": {
       "labelInputPlaceholder": "Buscar o crear",

@@ -17,6 +17,15 @@ interface UpdateProjectPayload {
 }
 
 export const projectsApiService = {
+  getMyProjectsToTasks: async (): Promise<
+    IServerResponse<Array<Pick<IProjectViewModel, 'id' | 'name' | 'color_code'>>>
+  > => {
+    const response = await apiClient.get<
+      IServerResponse<Array<Pick<IProjectViewModel, 'id' | 'name' | 'color_code'>>>
+    >(`${rootUrl}/my-task-projects`);
+    return response.data;
+  },
+
   getProjects: async (
     index: number,
     size: number,

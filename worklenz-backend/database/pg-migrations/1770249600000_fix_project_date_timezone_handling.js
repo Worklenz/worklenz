@@ -303,7 +303,11 @@ LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
 LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
 WHERE COALESCE(p.client_portal_visible, FALSE) = TRUE;
 
-GRANT SELECT ON client_portal_projects_view TO worklenz_client;
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'worklenz_client') THEN
+        GRANT SELECT ON client_portal_projects_view TO worklenz_client;
+    END IF;
+END $$;
   `);
 };
 

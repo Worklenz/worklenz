@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Avatar,
   Button,
+  CalendarOutlined,
   Drawer,
   Flex,
   Form,
@@ -18,12 +19,16 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
 import { colors } from '@/styles/colors';
 import { jobTitlesApiService } from '@/api/settings/job-titles/job-titles.api.service';
+import { departmentsApiService } from '@/api/settings/departments/departments.api.service';
+import { practicesApiService } from '@/api/settings/practices/practices.api.service';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { teamManagementApiService } from '@/api/team-management/team-management.api.service';
 import { toggleUpdateMemberDrawer } from '../../features/settings/member/memberSlice';
 import { formatDateTimeWithLocale } from '@/utils/format-date-time-with-locale';
 import { calculateTimeDifference } from '@/utils/calculate-time-difference';
 import { IJobTitle } from '@/types/job.types';
+import { IDepartment } from '@/types/department.types';
+import { IPractice } from '@/types/practice.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
 import { ITeamMemberCreateRequest } from '@/types/teamMembers/team-member-create-request';
 import logger from '@/utils/errorLogger';
@@ -51,6 +56,7 @@ type UpdateMemberDrawerProps = {
     teamLeadId: string | null,
     teamLeadName: string | null
   ) => void;
+  onManageTimeOff?: (member: { id: string; name: string; email?: string }) => void;
   initialRoleName?: string;
 };
 
@@ -61,6 +67,7 @@ const UpdateMemberDrawer = ({
   onRoleUpdate,
   onJobTitleUpdate,
   onTeamLeadUpdate,
+  onManageTimeOff,
   initialRoleName,
 }: UpdateMemberDrawerProps) => {
   const { t } = useTranslation('settings/team-members');
@@ -73,6 +80,8 @@ const UpdateMemberDrawer = ({
   const [resentSuccess, setResentSuccess] = useState(false);
   const [jobTitles, setJobTitles] = useState<IJobTitle[]>([]);
   const [selectedJobTitle, setSelectedJobTitle] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<IDepartment[]>([]);
+  const [practices, setPractices] = useState<IPractice[]>([]);
   const [teamMember, setTeamMember] = useState<ITeamMemberViewModel | null>(null);
   const [teamLeads, setTeamLeads] = useState<ITeamMemberViewModel[]>([]);
   const [loadingTeamLeads, setLoadingTeamLeads] = useState(false);
@@ -154,9 +163,33 @@ const UpdateMemberDrawer = ({
       }
     } catch (error) {
       logger.error('Error fetching job titles:', error);
-      message.error(t('jobTitlesFetchError'));
+      message.error(t('jobTitlesFetchError', { defaultValue: 'Failed to fetch job titles' }));
     } finally {
       setJobTitlesLoading(false);
+    }
+  };
+
+  const getDepartments = async () => {
+    try {
+      const res = await departmentsApiService.getDepartments(1, 100, null, null, null);
+      if (res.done) {
+        setDepartments(res.body.data || []);
+      }
+    } catch (error) {
+      logger.error('Error fetching departments:', error);
+      message.error(t('departmentsFetchError', { defaultValue: 'Failed to fetch departments' }));
+    }
+  };
+
+  const getPractices = async () => {
+    try {
+      const res = await practicesApiService.getPractices(1, 100, null, null, null);
+      if (res.done) {
+        setPractices(res.body.data || []);
+      }
+    } catch (error) {
+      logger.error('Error fetching practices:', error);
+      message.error(t('practicesFetchError', { defaultValue: 'Failed to fetch practices' }));
     }
   };
 
@@ -234,6 +267,8 @@ const UpdateMemberDrawer = ({
       if (!isOwnerEditingOwnDetails) {
         const body: ITeamMemberCreateRequest = {
           job_title: form.getFieldValue('jobTitle'),
+          department_id: form.getFieldValue('departmentId'),
+          practice_id: form.getFieldValue('practiceId'),
           emails: [teamMember.email],
           is_admin: accessValue === 'admin' || accessValue === 'owner',
           role_name:
@@ -251,12 +286,21 @@ const UpdateMemberDrawer = ({
           throw new Error(res.message || t('updateError'));
         }
       } else {
-        // For owner, just update job title via the job_title field if it changed
+        // For owner, only update the non-privileged fields (job title, department,
+        // practice) they're allowed to touch on their own account; role/admin stay put.
         const currentJobTitle = teamMember?.job_title;
         const newJobTitle = form.getFieldValue('jobTitle');
-        if (newJobTitle !== currentJobTitle) {
+        const newDepartmentId = form.getFieldValue('departmentId');
+        const newPracticeId = form.getFieldValue('practiceId');
+        const basicInfoChanged =
+          newJobTitle !== currentJobTitle ||
+          newDepartmentId !== teamMember?.department_id ||
+          newPracticeId !== teamMember?.practice_id;
+        if (basicInfoChanged) {
           const body: ITeamMemberCreateRequest = {
             job_title: newJobTitle,
+            department_id: newDepartmentId,
+            practice_id: newPracticeId,
             emails: [teamMember.email],
             is_admin: false,
             role_name: ROLE_NAMES.OWNER,
@@ -370,6 +414,8 @@ const UpdateMemberDrawer = ({
       form.setFieldsValue({
         name: teamMember.name,
         jobTitle: teamMember.job_title,
+        departmentId: teamMember.department_id || null,
+        practiceId: teamMember.practice_id || null,
         access: accessLevel,
         manager: teamMember.reports_to_member_id || null,
       });
@@ -387,8 +433,10 @@ const UpdateMemberDrawer = ({
 
         if (!isMountedRef.current) return;
 
-        // Load job titles and team leads in parallel (don't wait for them)
+        // Load job titles, departments, practices, and team leads in parallel (don't wait for them)
         getJobTitles(1, false);
+        getDepartments();
+        getPractices();
         getTeamLeads();
       }
     };
@@ -474,11 +522,11 @@ const UpdateMemberDrawer = ({
           />
         </Form.Item>
 
-        <Form.Item label={t('jobTitleLabel')} name="jobTitle" initialValue={null}>
+        <Form.Item label={t('jobTitleLabel', { defaultValue: 'Job Title' })} name="jobTitle" initialValue={null}>
           <Select
             optionLabelProp="label"
             size="middle"
-            placeholder={t('jobTitlePlaceholder')}
+            placeholder={t('jobTitlePlaceholder', { defaultValue: 'Select or search job title (Optional)' })}
             showSearch
             disabled={
               isOwnAccount
@@ -520,6 +568,64 @@ const UpdateMemberDrawer = ({
           />
         </Form.Item>
 
+        <Form.Item
+          label={t('departmentLabel', { defaultValue: 'Department' })}
+          name="departmentId"
+          initialValue={null}
+        >
+          <Select
+            allowClear
+            optionLabelProp="label"
+            size="middle"
+            placeholder={t('departmentPlaceholder', { defaultValue: 'Select department' })}
+            showSearch
+            disabled={
+              isOwnAccount
+                ? !canEditOwnAccount
+                : !(
+                    currentUserRole === ROLE_NAMES.OWNER ||
+                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
+                  )
+            }
+            filterOption={(input, option) =>
+              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+            }
+            options={departments.map(department => ({
+              label: department.name,
+              value: department.id,
+            }))}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label={t('practiceLabel', { defaultValue: 'Practice' })}
+          name="practiceId"
+          initialValue={null}
+        >
+          <Select
+            allowClear
+            optionLabelProp="label"
+            size="middle"
+            placeholder={t('practicePlaceholder', { defaultValue: 'Select practice' })}
+            showSearch
+            disabled={
+              isOwnAccount
+                ? !canEditOwnAccount
+                : !(
+                    currentUserRole === ROLE_NAMES.OWNER ||
+                    (currentUserRole === ROLE_NAMES.ADMIN && canManageTarget)
+                  )
+            }
+            filterOption={(input, option) =>
+              (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+            }
+            options={practices.map(practice => ({
+              label: practice.name,
+              value: practice.id,
+            }))}
+          />
+        </Form.Item>
+
         {!isOwnerEditingOwnDetails && (
           <Form.Item
             label={
@@ -555,8 +661,8 @@ const UpdateMemberDrawer = ({
           <Form.Item
             label={
               <Flex align="center" gap={4}>
-                <span>{t('managerLabel')}</span>
-                <Tooltip title={t('managerTooltip')}>
+                <span>{t('managerLabel', { defaultValue: 'Manager' })}</span>
+                <Tooltip title={t('managerTooltip', { defaultValue: 'Assign a Team Lead to manage this member. Only Members can be assigned to managers.' })}>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {t('optionalFieldLabel', { defaultValue: '(Optional)' })}
                   </Typography.Text>
@@ -568,7 +674,7 @@ const UpdateMemberDrawer = ({
           >
             <Select
               allowClear
-              placeholder={t('selectManagerPlaceholder')}
+              placeholder={t('selectManagerPlaceholder', { defaultValue: 'Select a Team Lead as manager' })}
               loading={loadingTeamLeads}
               disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
               showSearch
@@ -584,7 +690,7 @@ const UpdateMemberDrawer = ({
                   <Spin size="small" />
                 ) : (
                   <Typography.Text type="secondary" style={{ padding: 8, display: 'block' }}>
-                    {t('noTeamLeadsAvailable')}
+                    {t('noTeamLeadsAvailable', { defaultValue: 'No team leads available' })}
                   </Typography.Text>
                 )
               }
@@ -600,7 +706,7 @@ const UpdateMemberDrawer = ({
               htmlType="submit"
               disabled={isOwnAccount ? !canEditOwnAccount : !canManageTarget}
             >
-              {t('updateButton')}
+              {t('updateButton', { defaultValue: 'Save Changes' })}
             </Button>
             <Button
               type="dashed"
@@ -609,18 +715,33 @@ const UpdateMemberDrawer = ({
               onClick={resendInvitation}
               disabled={!isResendAvailable}
             >
-              {t('resendInvitationButton')}
+              {t('resendInvitationButton', { defaultValue: 'Resend Invitation Email' })}
+            </Button>
+            <Button
+              icon={<CalendarOutlined />}
+              style={{ width: '100%' }}
+              onClick={() => {
+                if (teamMember?.id) {
+                  onManageTimeOff?.({
+                    id: teamMember.id,
+                    name: teamMember.name || '',
+                    email: teamMember.email,
+                  });
+                }
+              }}
+            >
+              {t('manageTimeOff', { defaultValue: 'Manage Time Off' })}
             </Button>
             <Flex vertical style={{ marginBlockStart: 8 }}>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
-                {t('addedText')}
+                {t('addedText', { defaultValue: 'Added ' })}
                 {''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.created_at || '')}>
                   {calculateTimeDifference(teamMember?.created_at || '', t('justNow', { defaultValue: 'Just now' }))}
                 </Tooltip>
               </Typography.Text>
               <Typography.Text style={{ fontSize: 12, color: colors.lightGray }}>
-                {t('updatedText')}
+                {t('updatedText', { defaultValue: 'Updated ' })}
                 {''}
                 <Tooltip title={formatDateTimeWithLocale(teamMember?.updated_at || '')}>
                   {calculateTimeDifference(teamMember?.updated_at || '', t('justNow', { defaultValue: 'Just now' }))}

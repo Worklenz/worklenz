@@ -63,8 +63,9 @@ export const teamMembersApiService = {
     return response.data;
   },
 
-  delete: async (id: string): Promise<IServerResponse<any>> => {
-    const response = await apiClient.delete<IServerResponse<any>>(`${rootUrl}/${id}`);
+  delete: async (id: string, email?: string): Promise<IServerResponse<unknown>> => {
+    const query = email ? `?email=${encodeURIComponent(email)}` : '';
+    const response = await apiClient.delete<IServerResponse<unknown>>(`${rootUrl}/${id}${query}`);
     return response.data;
   },
 

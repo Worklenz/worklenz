@@ -31,12 +31,12 @@ export function SlackChannelTable({
   const columns: TableColumnsType<ISlackChannelConfig> = useMemo(
     () => [
       {
-        title: t('table.project'),
+        title: t('table.project', { defaultValue: 'Project' }),
         dataIndex: 'projectName',
         key: 'projectName',
       },
       {
-        title: t('table.slackChannel'),
+        title: t('table.slackChannel', { defaultValue: 'Slack Channel' }),
         dataIndex: 'slackChannelName',
         key: 'slackChannelName',
         render: (text: string) => (
@@ -46,7 +46,7 @@ export function SlackChannelTable({
         ),
       },
       {
-        title: t('table.notifications'),
+        title: t('table.notifications', { defaultValue: 'Notifications' }),
         dataIndex: 'notificationTypes',
         key: 'notificationTypes',
         render: (types: string[] | undefined | null) => (
@@ -63,7 +63,7 @@ export function SlackChannelTable({
         ),
       },
       {
-        title: t('table.status'),
+        title: t('table.status', { defaultValue: 'Status' }),
         dataIndex: 'isActive',
         key: 'status',
         render: (isActive: boolean) => (
@@ -75,7 +75,7 @@ export function SlackChannelTable({
         ),
       },
       {
-        title: t('table.actions'),
+        title: t('table.actions', { defaultValue: 'Actions' }),
         key: 'actions',
         render: (_: unknown, record: ISlackChannelConfig) => (
           <div className="flex gap-2">
@@ -85,14 +85,14 @@ export function SlackChannelTable({
                   type="text"
                   icon={<EditOutlined />}
                   onClick={() => onEdit(record)}
-                  aria-label={t('table.editConfig', { channel: record.slackChannelName })}
+                  aria-label={t('table.editConfig', { defaultValue: 'Edit {{channel}}', channel: record.slackChannelName })}
                 />
                 <Button
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
                   onClick={() => onDelete(record.id)}
-                  aria-label={t('table.deleteConfig', { channel: record.slackChannelName })}
+                  aria-label={t('table.deleteConfig', { defaultValue: 'Delete {{channel}}', channel: record.slackChannelName })}
                 />
               </>
             ) : (
@@ -100,7 +100,7 @@ export function SlackChannelTable({
                 type="link"
                 icon={<ReloadOutlined />}
                 onClick={() => onReactivate(record.id)}
-                aria-label={t('table.reactivateConfig', { channel: record.slackChannelName })}
+                aria-label={t('table.reactivateConfig', { defaultValue: 'Reactivate {{channel}}', channel: record.slackChannelName })}
               >
                 {t('table.reactivate', { defaultValue: 'Reactivate' })}
               </Button>
@@ -118,7 +118,7 @@ export function SlackChannelTable({
       dataSource={channels}
       rowKey="id"
       loading={loading}
-      aria-label={t('table.channelConfigs')}
+      aria-label={t('table.channelConfigs', { defaultValue: 'Slack Channel Configurations' })}
       pagination={channels.length > 10 ? { pageSize: 10 } : false}
     />
   );

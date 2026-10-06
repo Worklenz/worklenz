@@ -41,10 +41,10 @@
   "labelsSelectorInputTip": "¡Presiona enter para crear!",
   "addTaskText": "Agregar tarea",
   "addSubTaskText": "Agregar subtarea",
+  "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
   "addSubTaskInputPlaceholder": "Escribe el nombre de la subtarea y presiona Enter para guardar",
   "noTasksInGroup": "No hay tareas en este grupo",
   "dropTaskHere": "Soltar tarea aquí",
-  "addTaskInputPlaceholder": "Escribe tu tarea y presiona enter",
   "openButton": "Abrir",
   "okButton": "Aceptar",
   "noLabelsFound": "No se encontraron etiquetas",
@@ -67,7 +67,12 @@
     "convertToSubTask": "Convertir en subtarea",
     "convertToTask": "Convertir en tarea",
     "delete": "Eliminar",
-    "searchByNameInputPlaceholder": "Buscar por nombre"
+    "searchByNameInputPlaceholder": "Buscar por nombre",
+    "deleteConfirmTitle": "Eliminar tarea",
+    "deleteConfirmMessage": "¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.",
+    "deleteSubtaskConfirmMessage": "¿Está seguro de que desea eliminar esta subtarea? Esta acción no se puede deshacer.",
+    "deleteConfirmOk": "Eliminar",
+    "deleteConfirmCancel": "Cancelar"
   },
   "setDueDate": "Establecer fecha de vencimiento",
   "setStartDate": "Establecer fecha de inicio",
@@ -132,8 +137,12 @@
       "updateSuccessMessage": "Columna personalizada actualizada exitosamente",
       "deleteSuccessMessage": "Columna personalizada eliminada exitosamente",
       "deleteErrorMessage": "Error al eliminar la columna personalizada",
+      "deleteErrorMissingId": "No se puede eliminar la columna: falta el UUID",
+      "hideFromTaskList": "Ocultar de la lista de tareas",
+      "showInTaskList": "Mostrar en la lista de tareas",
       "createErrorMessage": "Error al crear la columna personalizada",
-      "updateErrorMessage": "Error al actualizar la columna personalizada"
+      "updateErrorMessage": "Error al actualizar la columna personalizada",
+      "typeCannotBeChanged": "El tipo de columna no se puede cambiar después de la creación."
     },
     "fieldTypes": {
       "people": "Personas",
@@ -195,5 +204,11 @@
     "conflictTitle": "Temporizador Ya En Ejecución",
     "conflictMessage": "Tiene un temporizador ejecutándose para \"{{taskName}}\" en el proyecto \"{{projectName}}\". ¿Le gustaría detener ese temporizador e iniciar uno nuevo para esta tarea?",
     "stopAndStart": "Detener e Iniciar Nuevo Temporizador"
+  },
+  "errors": {
+    "taskNotCompleted": "La tarea no está completada",
+    "completeTaskDependencies": "Por favor, completa las dependencias de la tarea antes de continuar",
+    "incompleteDependencies": "Dependencias incompletas!",
+    "someDependenciesNotCompleted": "Algunas tareas no se actualizaron. Asegúrese de que todas las tareas dependientes estén completas antes de continuar."
   }
 }

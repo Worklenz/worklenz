@@ -54,6 +54,7 @@
     "title": "Verbinden Sie Ihren Slack-Arbeitsbereich",
     "description": "Integrieren Sie Slack mit Ihrem Worklenz-Team, um Echtzeit-Benachrichtigungen zu erhalten, Aufgaben aus Slack zu erstellen und Ihr Team auf beiden Plattformen synchron zu halten."
   },
+  "upgradeRequired": "Auf Business-Plan upgraden",
   "features": {
     "notifications": {
       "title": "Echtzeit-Benachrichtigungen",
@@ -72,12 +73,17 @@
     "project": "Projekt",
     "slackChannel": "Slack-Kanal",
     "notifications": "Benachrichtigungen",
+    "status": "Status",
+    "statusActive": "Aktiv",
+    "statusInactive": "Inaktiv",
     "active": "Aktiv",
     "actions": "Aktionen",
     "channelConfigs": "Slack-Kanal-Konfigurationen",
     "toggleStatus": "Status für {{channel}} umschalten",
     "editConfig": "Konfiguration für {{channel}} bearbeiten",
-    "deleteConfig": "Konfiguration für {{channel}} löschen"
+    "deleteConfig": "Konfiguration für {{channel}} löschen",
+    "reactivate": "Reaktivieren",
+    "reactivateConfig": "{{channel}} reaktivieren"
   },
   "modal": {
     "configureChannel": "Slack-Kanal konfigurieren",
@@ -89,6 +95,7 @@
     "notificationTypes": "Benachrichtigungstypen",
     "selectNotificationTypes": "Benachrichtigungstypen auswählen",
     "refreshChannels": "Aktualisieren",
+    "scrollForMore": "Weiter scrollen...",
     "notificationOptions": {
       "taskCreated": "Aufgabe erstellt",
       "taskUpdated": "Aufgabe aktualisiert",

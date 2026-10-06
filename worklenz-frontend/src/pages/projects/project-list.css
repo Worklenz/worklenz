@@ -36,6 +36,18 @@
   flex-direction: column;
 }
 
+/* In group view the card body must stretch to fill the viewport height,
+   matching the list view's table scroll height behaviour */
+.project-card.ant-card.project-card--group {
+  min-height: calc(100vh - 180px);
+}
+
+.project-card.ant-card.project-card--group .ant-card-body {
+  height: calc(100vh - 180px);
+  overflow: hidden;
+  padding: 0;
+}
+
 /* Group view scroll container — scrollbar stays inside the card */
 .project-group-scroll-container {
   flex: 1;
@@ -44,6 +56,11 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: 12px 24px 0 24px;
+}
+
+/* Make group view pagination footer look identical to the list view table pagination */
+.project-card--group .ant-table-pagination.ant-table-pagination-right {
+  margin: 0 !important;
 }
 
 /* remove the border after the tabs in project view  */

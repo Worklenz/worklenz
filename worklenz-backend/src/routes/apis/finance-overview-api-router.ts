@@ -1,5 +1,6 @@
 import express from "express";
 import FinanceOverviewController from "../../controllers/finance-overview-controller";
+import FinanceReportsController from "../../ee/controllers/finance-reports-controller";
 import teamLeadFinanceValidator from "../../middlewares/validators/team-lead-finance-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
@@ -37,6 +38,42 @@ financeOverviewApiRouter.get(
     "/fixed-costs",
     teamLeadFinanceValidator,
     safeControllerFunction(FinanceOverviewController.getTeamFixedCosts)
+);
+
+financeOverviewApiRouter.get(
+    "/budgets",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getBudgets)
+);
+
+financeOverviewApiRouter.get(
+    "/invoices",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getInvoices)
+);
+
+financeOverviewApiRouter.get(
+    "/billable-time",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getBillableTime)
+);
+
+financeOverviewApiRouter.get(
+    "/utilization",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getUtilization)
+);
+
+financeOverviewApiRouter.get(
+    "/profitability",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getProfitability)
+);
+
+financeOverviewApiRouter.get(
+    "/forecasts",
+    teamLeadFinanceValidator,
+    safeControllerFunction(FinanceReportsController.getForecasts)
 );
 
 export default financeOverviewApiRouter;

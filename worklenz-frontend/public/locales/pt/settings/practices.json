@@ -1,0 +1,22 @@
+{
+  "title": "Gerenciar Práticas",
+  "nameColumn": "Nome",
+  "search": "Pesquisar práticas",
+  "createPracticeButton": "Criar Prática",
+  "createPracticeDrawerTitle": "Criar Prática",
+  "updatePracticeDrawerTitle": "Atualizar Prática",
+  "nameLabel": "Nome",
+  "namePlaceholder": "Digite o nome da prática",
+  "nameRequiredError": "O nome da prática é obrigatório",
+  "createButton": "Criar",
+  "updateButton": "Atualizar",
+  "editTooltip": "Editar",
+  "deleteTooltip": "Excluir",
+  "deleteConfirmationTitle": "Tem certeza de que deseja excluir esta prática?",
+  "deleteConfirmationOk": "Excluir",
+  "deleteConfirmationCancel": "Cancelar",
+  "fetchPracticeErrorMessage": "Falha ao buscar a prática",
+  "createPracticeErrorMessage": "Falha ao criar a prática",
+  "updatePracticeErrorMessage": "Falha ao atualizar a prática",
+  "pinTooltip": "Fixar na barra de navegação"
+}

@@ -1,5 +1,13 @@
 {
   "title": "E paautorizuar!",
   "subtitle": "Nuk jeni të autorizuar të hyni në këtë faqe",
+  "commentAccessTitle": "Ju duhet qasje për të parë këtë koment",
+  "commentAccessContactAdmin": "Ju nuk jeni të ftuar në këtë projekt. Ju lutemi, kontaktoni administratorin ose pronarin e projektit për të kërkuar qasje.",
+  "commentAccessDenied": "Ju nuk jeni të ftuar në këtë projekt. Ju lutemi, kontaktoni administratorin ose pronarin e projektit për të kërkuar qasje.",
+  "invalidCommentLink": "Kjo lidhje e komentit është e pavlefshme.",
+  "commentNotFound": "Ky koment nuk mund të gjendej.",
+  "commentLinkOpenFailed": "Lidhja e komentit nuk mund të hapet. Ju lutemi provoni përsëri ose hapni komentin nga detyra.",
+  "unableToOpenComment": "Nuk mund të hapet komenti",
+  "openingComment": "Po hap komentin...",
   "button": "Kthehu në Faqen Kryesore"
 }

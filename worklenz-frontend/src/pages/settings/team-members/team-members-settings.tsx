@@ -1,4 +1,5 @@
 import {
+  CalendarOutlined,
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleFilled,
@@ -36,6 +37,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import UpdateMemberDrawer from '@/components/settings/update-member-drawer';
 import { BulkAssignManagerDrawer } from '@/components/settings/bulk-assign-manager-drawer';
+import TimeOffCalendar from '@/components/schedule/task-timeline/TimeOffCalendar';
 import {
   toggleInviteMemberDrawer,
   toggleUpdateMemberDrawer,
@@ -62,6 +64,99 @@ import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import './team-members-settings.css';
 
+// Maps a role name to its sort level: Owner (1) → Admin (2) → Team Lead (3) → everyone
+// else (4). Must stay in sync with the role_level CASE in
+// worklenz-backend/src/controllers/team-members-controller.ts (get()) — unknown/custom
+// roles fall back to level 4 there, so mirror that fallback here to keep the inline
+// re-sort (sortTeamMembersByRole) consistent with a fresh server fetch.
+const ROLE_LEVELS: Record<string, number> = {
+  Owner: 1,
+  Admin: 2,
+  'Team Lead': 3,
+  Member: 4,
+};
+
+const getRoleLevel = (roleName?: string): number => ROLE_LEVELS[roleName ?? ''] ?? 4;
+
+// Prefer the server-computed role_level (handles custom admin roles); fall back to
+// deriving it from the role name for optimistic rows that predate a refetch.
+const resolveRoleLevel = (member: ITeamMemberViewModel): number =>
+  typeof member.role_level === 'number' ? member.role_level : getRoleLevel(member.role_name);
+
+// Re-sorts members by role level (Owner → Admin → Team Lead → others), keeping names
+// alphabetical within each group regardless of direction — mirrors the backend ORDER BY.
+const sortTeamMembersByRole = (
+  data: ITeamMemberViewModel[],
+  order: 'asc' | 'desc'
+): ITeamMemberViewModel[] => {
+  const dir = order === 'desc' ? -1 : 1;
+  return [...data].sort((a, b) => {
+    const levelDiff = (resolveRoleLevel(a) - resolveRoleLevel(b)) * dir;
+    if (levelDiff !== 0) return levelDiff;
+    return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
+  });
+};
+
+// Generic inline re-sort used after optimistic row edits. Mirrors the server-side
+// ORDER BY for each sortable column (see fieldMapping in the backend get()) so a
+// changed value lands on the right spot until the reconciling refetch lands.
+// Role-level sorting keeps the name tiebreaker pinned to ASC (see above).
+const sortMembersByField = (
+  data: ITeamMemberViewModel[],
+  field: string,
+  order: 'asc' | 'desc'
+): ITeamMemberViewModel[] => {
+  if (field === 'role_level') {
+    return sortTeamMembersByRole(data, order);
+  }
+
+  const dir = order === 'desc' ? -1 : 1;
+  return [...data].sort((a, b) => {
+    switch (field) {
+      case 'projects_count':
+        return (Number(a.projects_count || 0) - Number(b.projects_count || 0)) * dir;
+      case 'email':
+        return (a.email || '').toLowerCase().localeCompare((b.email || '').toLowerCase()) * dir;
+      case 'name':
+      default:
+        return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase()) * dir;
+    }
+  });
+};
+
+const TEAM_MEMBERS_SORT_STORAGE_KEY = 'teamMembersSortPreference';
+
+// Only these fields can be sorted via the column headers. Anything else in the
+// persisted preference (e.g. a stale value from a previously sortable column) is
+// rejected so the table never loads into an unsortable/invisible sort state.
+const SORTABLE_FIELDS = ['role_level', 'name', 'email', 'projects_count'];
+
+const readTeamMembersSortPreference = (): { field: string; order: string } | null => {
+  try {
+    const raw = localStorage.getItem(TEAM_MEMBERS_SORT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { field?: unknown; order?: unknown };
+    if (
+      typeof parsed.field === 'string' &&
+      (parsed.order === 'asc' || parsed.order === 'desc') &&
+      SORTABLE_FIELDS.includes(parsed.field)
+    ) {
+      return { field: parsed.field, order: parsed.order };
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+  return null;
+};
+
+const writeTeamMembersSortPreference = (field: string, order: string): void => {
+  try {
+    localStorage.setItem(TEAM_MEMBERS_SORT_STORAGE_KEY, JSON.stringify({ field, order }));
+  } catch {
+    // Ignore storage write errors
+  }
+};
+
 const TeamMembersSettings = () => {
   const { t } = useTranslation('settings/team-members');
   const { t: tCommon } = useTranslation('common');
@@ -73,7 +168,7 @@ const TeamMembersSettings = () => {
   const refreshTeamMembers = useAppSelector(state => state.memberReducer.refreshTeamMembers);
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
 
-  useDocumentTitle(t('title', { defaultValue: t('title') }));
+  useDocumentTitle(t('title', { defaultValue: 'Team Members' }));
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -84,13 +179,22 @@ const TeamMembersSettings = () => {
   const [isBulkAssignDrawerVisible, setBulkAssignDrawerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSeatLimitPopoverOpen, setIsSeatLimitPopoverOpen] = useState(false);
+  const [timeOffModalVisible, setTimeOffModalVisible] = useState(false);
+  const [timeOffTargetMember, setTimeOffTargetMember] = useState<{
+    id: string;
+    name: string;
+    email?: string;
+  } | null>(null);
   const { trackAppSumoEvent } = useAppSumoTracking();
   const isAppSumoUser = billingInfo?.subscription_type?.toLowerCase().includes('appsumo') ?? false;
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: DEFAULT_PAGE_SIZE,
-    field: 'name',
-    order: 'asc',
+  const [pagination, setPagination] = useState(() => {
+    const savedSort = readTeamMembersSortPreference();
+    return {
+      current: 1,
+      pageSize: DEFAULT_PAGE_SIZE,
+      field: savedSort?.field ?? 'role_level',
+      order: savedSort?.order ?? 'asc',
+    };
   });
   const [seatLimitModalOpen, setSeatLimitModalOpen] = useState(false);
   const [seatLimitData, setSeatLimitData] = useState<{
@@ -158,7 +262,7 @@ const TeamMembersSettings = () => {
             const inviteRes = await teamMembersApiService.createTeamMember(inviteData);
             if (inviteRes.done) {
               message.success(t('memberDeactivatedInviteSent', {
-                defaultValue: t('memberDeactivatedInviteSent')
+                defaultValue: 'Member deactivated. Invitation sent successfully.'
               }));
               localStorage.removeItem('pendingTeamInvite');
             }
@@ -183,7 +287,7 @@ const TeamMembersSettings = () => {
             );
             await Promise.all(invitePromises);
             message.success(t('memberDeactivatedProjectInviteSent', {
-              defaultValue: t('memberDeactivatedProjectInviteSent'),
+              defaultValue: 'Member deactivated. Project invitation sent for {projectName}.',
               projectName: inviteData.projectName,
             }));
             localStorage.removeItem('pendingProjectInvite');
@@ -235,13 +339,27 @@ const TeamMembersSettings = () => {
   };
 
   const handleRoleUpdate = useCallback((memberId: string, newRoleName: string) => {
-    setModel(prevModel => ({
-      ...prevModel,
-      data: prevModel.data?.map(member =>
-        member.id === memberId ? { ...member, role_name: newRoleName } : member
-      ),
-    }));
-  }, []);
+    setModel(prevModel => {
+      const data = (prevModel.data ?? []).map(member =>
+        member.id === memberId
+          // Drop the stale server role_level so the sort falls back to the name
+          // mapping for this row until the reconciling refetch lands.
+          ? { ...member, role_name: newRoleName, role_level: undefined }
+          : member
+      );
+      return {
+        ...prevModel,
+        data: pagination.field === 'role_level' ? sortTeamMembersByRole(data, pagination.order as 'asc' | 'desc') : data,
+      };
+    });
+    // The optimistic reorder above uses the name-based fallback for the edited row
+    // (a custom admin role can't be levelled from its name) and only touches the
+    // current page. Under a role sort, reconcile with the server for the authoritative
+    // role_level and cross-page position.
+    if (pagination.field === 'role_level') {
+      void getTeamMembers();
+    }
+  }, [pagination.field, pagination.order, getTeamMembers]);
 
   const handleJobTitleUpdate = useCallback((memberId: string, newJobTitle: string) => {
     setModel(prevModel => ({
@@ -252,24 +370,29 @@ const TeamMembersSettings = () => {
     }));
   }, []);
 
-  // NEW: updates the team lead columns in the table row immediately after
-  // the drawer saves, without waiting for a full getTeamMembers() refetch
+  // Updates the team lead columns in the table row immediately after the drawer
+  // saves, without waiting for a full getTeamMembers() refetch.
   const handleTeamLeadUpdate = useCallback(
     (memberId: string, teamLeadId: string | null, teamLeadName: string | null) => {
-      setModel(prevModel => ({
-        ...prevModel,
-        data: prevModel.data?.map(member =>
+      setModel(prevModel => {
+        const data = prevModel.data?.map(member =>
           member.id === memberId
-            ? {
+            ? ({
                 ...member,
                 reports_to_member_id: teamLeadId,
                 current_team_lead_name: teamLeadName,
-              }
+              } as ITeamMemberViewModel)
             : member
-        ),
-      }));
+        );
+        return {
+          ...prevModel,
+          data: data
+            ? sortMembersByField(data, pagination.field ?? 'role_level', pagination.order as 'asc' | 'desc')
+            : data,
+        };
+      });
     },
-    []
+    [pagination.field, pagination.order]
   );
 
   const handleRefresh = useCallback(() => {
@@ -322,22 +445,47 @@ const TeamMembersSettings = () => {
 
   const handleTableChange = useCallback(
     (newPagination: any, filters: any, sorter: any) => {
-      let field = 'name';
-      if (sorter.field) {
-        field = Array.isArray(sorter.field) ? sorter.field[0] : sorter.field;
+      if (sorter.order) {
+        // Column-header sort event (ascend / descend). Every sortable column uses
+        // sortDirections ['ascend', 'descend', 'ascend'], so a header click always
+        // toggles between the two directions and cycles BACK to ascending instead of
+        // emitting a null (toggled-off) order — which, with a controlled sortOrder,
+        // would otherwise silently freeze the column on the last direction.
+        const field = (Array.isArray(sorter.field) ? sorter.field[0] : sorter.field) as string;
+        const order = sorter.order === 'ascend' ? 'asc' : 'desc';
+        const isNewSort = field !== pagination.field || order !== pagination.order;
+
+        if (isNewSort) {
+          // A genuine header sort → persist it and restart from the first page so
+          // the new order is visible immediately instead of a stale deep page.
+          writeTeamMembersSortPreference(field, order);
+          setPagination(prev => ({ ...prev, current: 1, field, order }));
+          return;
+        }
+
+        // The sorter matches the current sort, so this is really a pagination /
+        // page-size change (antd re-reports the active sorter on every change).
+        // Keep the same sort and just forward the requested page.
+        setPagination(prev => ({
+          ...prev,
+          current: newPagination.current,
+          pageSize: newPagination.pageSize,
+          field,
+          order,
+        }));
+        return;
       }
 
-      const order = sorter.order ? (sorter.order === 'ascend' ? 'asc' : 'desc') : pagination.order;
-
+      // Not a sort event → keep the current sort and just forward the requested page.
       setPagination(prev => ({
         ...prev,
         current: newPagination.current,
         pageSize: newPagination.pageSize,
-        field: field,
-        order: order,
+        field: pagination.field ?? 'role_level',
+        order: pagination.order ?? 'asc',
       }));
     },
-    [pagination]
+    [pagination.field, pagination.order]
   );
 
   useEffect(() => {
@@ -388,15 +536,26 @@ const TeamMembersSettings = () => {
 
   const handleMemberNameUpdate = useCallback(
     (memberId: string, newName: string) => {
-      setModel(prevModel => ({
-        ...prevModel,
-        data: prevModel.data?.map(member =>
+      let isPaginated = false;
+      setModel(prevModel => {
+        isPaginated = (prevModel.total ?? 0) > (prevModel.data?.length ?? 0);
+        const data = (prevModel.data ?? []).map(member =>
           member.id === memberId ? { ...member, name: newName } : member
-        ),
-      }));
+        );
+        return {
+          ...prevModel,
+          data: sortMembersByField(data, pagination.field ?? 'role_level', pagination.order as 'asc' | 'desc'),
+        };
+      });
       setSelectedMemberName(currentName => (selectedMemberId === memberId ? newName : currentName));
+      // A rename only moves the row when the list is ordered by name (directly, or
+      // as the role-sort tiebreaker). Reconcile the global order with the server
+      // for a paginated list in those cases; other sorts are unaffected.
+      if (isPaginated && (pagination.field === 'name' || pagination.field === 'role_level')) {
+        void getTeamMembers();
+      }
     },
-    [selectedMemberId]
+    [selectedMemberId, pagination.field, pagination.order, getTeamMembers]
   );
 
   const getActionMenuItems = useCallback(
@@ -417,14 +576,29 @@ const TeamMembersSettings = () => {
       const menuItems = [
         {
           key: 'edit',
-          label: t('editTooltip'),
+          label: t('editTooltip', { defaultValue: 'Edit member' }),
           icon: <EditOutlined />,
           disabled: !canEdit,
           onClick: () => canEdit && record.id && handleMemberClick(record.id, record.role_name, record.name),
         },
         {
+          key: 'time-off',
+          label: t('manageTimeOff', { defaultValue: 'Manage Time Off' }),
+          icon: <CalendarOutlined />,
+          onClick: () => {
+            if (record.id) {
+              setTimeOffTargetMember({
+                id: record.id,
+                name: record.name || '',
+                email: record.email,
+              });
+              setTimeOffModalVisible(true);
+            }
+          },
+        },
+        {
           key: 'status',
-          label: record.active ? t('deactivateTooltip') : t('activateTooltip'),
+          label: record.active ? t('deactivateTooltip', { defaultValue: 'Deactivate member' }) : t('activateTooltip', { defaultValue: 'Activate member' }),
           icon: <UserSwitchOutlined />,
           disabled: !canDeactivateOrDelete,
           onClick: () => {
@@ -435,7 +609,7 @@ const TeamMembersSettings = () => {
         },
         {
           key: 'delete',
-          label: t('deleteTooltip'),
+          label: t('deleteTooltip', { defaultValue: 'Delete member' }),
           icon: <DeleteOutlined />,
           disabled: !canDeactivateOrDelete,
           danger: true,
@@ -452,14 +626,22 @@ const TeamMembersSettings = () => {
     [t, canManageUser, handleMemberClick, effectiveRole, currentUser?.team_member_id]
   );
 
+  const getColumnSortOrder = (field: string): 'ascend' | 'descend' | null =>
+    pagination.field === field
+      ? pagination.order === 'asc'
+        ? 'ascend'
+        : 'descend'
+      : null;
+
   const columns: TableProps['columns'] = useMemo(
     () => [
       {
         key: 'name',
         dataIndex: 'name',
-        title: t('nameColumn'),
-        defaultSortOrder: 'ascend',
+        title: t('nameColumn', { defaultValue: 'Name' }),
         sorter: true,
+        sortDirections: ['ascend', 'descend', 'ascend'],
+        sortOrder: getColumnSortOrder('name'),
         render: (_, record: ITeamMemberViewModel) => {
           const isPending = record.pending_invitation;
           const isTargetOwner = record.role_name?.toLowerCase() === 'owner';
@@ -492,7 +674,7 @@ const TeamMembersSettings = () => {
                   <Tooltip
                     title={
                       isPending
-                        ? t('pendingInvitationText', { defaultValue: t('pendingInvitationText') })
+                        ? t('pendingInvitationText', { defaultValue: '(Invitation pending)' })
                         : undefined
                     }
                     mouseEnterDelay={0.6}
@@ -510,7 +692,7 @@ const TeamMembersSettings = () => {
                   {canEdit ? (
                     <Tooltip
                       title={t('renameMemberTooltip', {
-                        defaultValue: t('renameMemberTooltip'),
+                        defaultValue: 'Rename member',
                       })}
                     >
                       <Button
@@ -528,12 +710,12 @@ const TeamMembersSettings = () => {
                 </Flex>
 
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  {record.job_title || t('jobTitleEmpty', { defaultValue: t('jobTitleEmpty') })}
+                  {record.job_title || t('jobTitleEmpty', { defaultValue: 'Select a job title' })}
                 </Typography.Text>
 
                 {!record.active && (
                   <Typography.Text style={{ color: colors.vibrantOrange, fontWeight: 500 }}>
-                    {t('deactivatedText')}
+                    {t('deactivatedText', { defaultValue: '(Currently deactivated)' })}
                   </Typography.Text>
                 )}
               </Flex>
@@ -546,8 +728,10 @@ const TeamMembersSettings = () => {
       {
         key: 'projects_count',
         dataIndex: 'projects_count',
-        title: t('projectsColumn'),
+        title: t('projectsColumn', { defaultValue: 'Projects' }),
         sorter: true,
+        sortDirections: ['ascend', 'descend', 'ascend'],
+        sortOrder: getColumnSortOrder('projects_count'),
         onCell: (record: ITeamMemberViewModel) => ({
           onClick: () => canManageUser(record.role_name) && handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: canManageUser(record.role_name) ? 'pointer' : 'default' },
@@ -559,8 +743,10 @@ const TeamMembersSettings = () => {
       {
         key: 'email',
         dataIndex: 'email',
-        title: t('emailColumn'),
+        title: t('emailColumn', { defaultValue: 'Email' }),
         sorter: true,
+        sortDirections: ['ascend', 'descend', 'ascend'],
+        sortOrder: getColumnSortOrder('email'),
         onCell: (record: ITeamMemberViewModel) => ({
           onClick: () => canManageUser(record.role_name) && handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: canManageUser(record.role_name) ? 'pointer' : 'default' },
@@ -570,7 +756,7 @@ const TeamMembersSettings = () => {
             <Typography.Text>{record.email}</Typography.Text>
             {record.pending_invitation && (
               <Typography.Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                {t('pendingInvitationText')}
+                {t('pendingInvitationText', { defaultValue: '(Invitation pending)' })}
               </Typography.Text>
             )}
           </div>
@@ -578,9 +764,14 @@ const TeamMembersSettings = () => {
       },
       {
         key: 'role_name',
-        dataIndex: 'role_name',
-        title: t('teamAccessColumn'),
+        // dataIndex is role_level (not role_name) so the header sorter emits the
+        // role_level field, which the backend maps to the Owner → Admin → Team Lead →
+        // others level ordering (mirrors sortTeamMembersByRole above).
+        dataIndex: 'role_level',
+        title: t('teamAccessColumn', { defaultValue: 'Team Access' }),
         sorter: true,
+        sortDirections: ['ascend', 'descend', 'ascend'],
+        sortOrder: getColumnSortOrder('role_level'),
         onCell: (record: ITeamMemberViewModel) => ({
           onClick: () => canManageUser(record.role_name) && handleMemberClick(record.id || '', record.role_name, record.name),
           style: { cursor: canManageUser(record.role_name) ? 'pointer' : 'default' },
@@ -600,7 +791,7 @@ const TeamMembersSettings = () => {
       },
       {
         key: 'team_lead_assignment',
-        title: t('teamLeadColumn', { defaultValue: t('teamLeadColumn') }),
+        title: t('teamLeadColumn', { defaultValue: 'Team Lead' }),
         render: (_, record: ITeamMemberViewModel) => {
           if (
             record.role_name === 'Team Lead' ||
@@ -636,7 +827,7 @@ const TeamMembersSettings = () => {
 
           return (
             <Typography.Text type="secondary" style={{ fontSize: '12px' }}>
-              {t('unassignedText', { defaultValue: t('unassignedText') })}
+              {t('unassignedText', { defaultValue: 'Unassigned' })}
             </Typography.Text>
           );
         },
@@ -658,15 +849,15 @@ const TeamMembersSettings = () => {
                   ...item,
                   label: (
                     <Popconfirm
-                      title={t('confirmActivateTitle')}
+                      title={t('confirmActivateTitle', { defaultValue: 'Are you sure you want to change this member\'s status?' })}
                       icon={<ExclamationCircleFilled style={{ color: colors.vibrantOrange }} />}
-                      okText={t('okText')}
-                      cancelText={t('cancelText')}
+                      okText={t('okText', { defaultValue: 'Yes, proceed' })}
+                      cancelText={t('cancelText', { defaultValue: 'No, cancel' })}
                       onConfirm={() => canManage && handleStatusChange(record)}
                       disabled={!canManage}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                        {record.active ? t('deactivateTooltip') : t('activateTooltip')}
+                        {record.active ? t('deactivateTooltip', { defaultValue: 'Deactivate member' }) : t('activateTooltip', { defaultValue: 'Activate member' })}
                       </div>
                     </Popconfirm>
                   ),
@@ -679,15 +870,15 @@ const TeamMembersSettings = () => {
                   ...item,
                   label: (
                     <Popconfirm
-                      title={t('confirmDeleteTitle')}
+                      title={t('confirmDeleteTitle', { defaultValue: 'Are you sure you want to delete this member?' })}
                       icon={<ExclamationCircleFilled />}
-                      okText={t('okText')}
-                      cancelText={t('cancelText')}
+                      okText={t('okText', { defaultValue: 'Yes, proceed' })}
+                      cancelText={t('cancelText', { defaultValue: 'No, cancel' })}
                       onConfirm={() => canManage && record.id && handleDeleteMember(record)}
                       disabled={!canManage}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-                        {t('deleteTooltip')}
+                        {t('deleteTooltip', { defaultValue: 'Delete member' })}
                       </div>
                     </Popconfirm>
                   ),
@@ -716,6 +907,7 @@ const TeamMembersSettings = () => {
       handleStatusChange,
       handleDeleteMember,
       handleMemberClick,
+      pagination,
     ]
   );
 
@@ -725,30 +917,36 @@ const TeamMembersSettings = () => {
         style={{ width: '100%' }}
         title={
           <Flex justify="space-between" align="center">
-            <Typography.Title level={4} style={{ margin: 0 }}>
-              {model.total} {model.total !== 1 ? t('membersCountPlural') : t('memberCount')}
-            </Typography.Title>
+              <Typography.Title level={4} style={{ margin: 0 }}>
+                {model.total}{' '}
+                {t('membersCount', {
+                  count: model.total,
+                  defaultValue: 'Members',
+                  defaultValue_one: 'Member',
+                  defaultValue_other: 'Members',
+                })}
+              </Typography.Title>
             <Flex
               gap={8}
               align="center"
               justify="flex-end"
-              style={{ width: '100%', maxWidth: 500 }}
+              style={{ width: '100%', maxWidth: 620 }}
             >
               <Flex align="center" gap={4}>
                 <Typography.Text type="secondary" style={{ fontSize: 13 }}>
                   {totalAvailableSeats && totalAvailableSeats > 0
                     ? t('seatUsageWithLimitText', {
-                        defaultValue: t('seatUsageWithLimitText'),
+                        defaultValue: '{{used}} of {{total}} seats used',
                         used: Math.min(totalUsedSeats, totalAvailableSeats),
                         total: totalAvailableSeats,
                       })
                     : totalUsedSeats >= 0
                       ? t('seatUsageText', {
-                          defaultValue: t('seatUsageText'),
+                          defaultValue: '{{used}} seats used',
                           used: totalUsedSeats,
                         })
                       : t('seatUsageLoading', {
-                          defaultValue: t('seatUsageLoading'),
+                          defaultValue: 'Loading seat usage...',
                         })}
                 </Typography.Text>
                 {isSeatUsageOverLimit && (
@@ -762,7 +960,7 @@ const TeamMembersSettings = () => {
                   </Tooltip>
                 )}
               </Flex>
-              <Tooltip title={t('pinTooltip')}>
+              <Tooltip title={t('pinTooltip', { defaultValue: 'Refresh member list' })}>
                 <Button
                   shape="circle"
                   icon={<SyncOutlined spin={isLoading} />}
@@ -773,9 +971,9 @@ const TeamMembersSettings = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder={t('searchPlaceholder', {
-                  defaultValue: t('searchPlaceholder'),
+                  defaultValue: 'Search members by name',
                 })}
-                style={{ maxWidth: 250 }}
+                style={{ maxWidth: 320, width: '100%' }}
                 suffix={<SearchOutlined />}
               />
               <Popover
@@ -794,14 +992,14 @@ const TeamMembersSettings = () => {
                   }
                 }}
                 title={
-                  <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                  <Flex align="center" justify="space-between" style={{ width: '100%' }}>
                     <Typography.Text strong>
-                      {t('seatLimitPopoverTitle', { defaultValue: t('seatLimitPopoverTitle') })}
+                      {t('seatLimitPopoverTitle', { defaultValue: 'Seat Limit Reached' })}
                     </Typography.Text>
                     <Button
                       type="text"
                       size="small"
-                      aria-label={t('closePopover', { defaultValue: t('closePopover') })}
+                      aria-label={t('closePopover', { defaultValue: 'Close popover' })}
                       onClick={event => {
                         event.stopPropagation();
                         setIsSeatLimitPopoverOpen(false);
@@ -815,7 +1013,7 @@ const TeamMembersSettings = () => {
                   <Flex vertical gap={12} style={{ maxWidth: 280 }}>
                     <Typography.Text>
                       {t('workspaceSeatLimitPopoverBody', {
-                        defaultValue: t('workspaceSeatLimitPopoverBody'),
+                        defaultValue: 'Your workspace is using {{used}} of {{total}} available seats. Upgrade your plan to add more members.',
                         used: totalUsedSeats,
                         total: totalAvailableSeats,
                       })}
@@ -831,7 +1029,7 @@ const TeamMembersSettings = () => {
                         dispatch(toggleUpgradeModal());
                       }}
                     >
-                      {t('seatLimitPopoverCta', { defaultValue: t('seatLimitPopoverCta') })}
+                      {t('seatLimitPopoverCta', { defaultValue: 'Upgrade Now' })}
                     </Button>
                   </Flex>
                 }
@@ -856,17 +1054,15 @@ const TeamMembersSettings = () => {
                       }
                     }}
                   >
-                    {t('addMoreSeats', { defaultValue: t('addMoreSeats') })}
+                    {t('addMoreSeats', { defaultValue: 'Add More Seats' })}
                   </Button>
                 </Tooltip>
               </Popover>
-              <Tooltip title={t('pinTooltip')} trigger={'hover'}>
-                <PinRouteToNavbarButton
-                  name={t('title')}
-                  path="/worklenz/settings/team-members"
-                  adminOnly={false}
-                />
-              </Tooltip>
+              <PinRouteToNavbarButton
+                name={t('title', { defaultValue: 'Team Members' })}
+                path="/worklenz/settings/team-members"
+                adminOnly={false}
+              />
             </Flex>
           </Flex>
         }
@@ -903,7 +1099,7 @@ const TeamMembersSettings = () => {
             total: model.total,
             showTotal: (total, range) =>
               t('paginationTotal', {
-                defaultValue: t('paginationTotal'),
+                defaultValue: '{{start}}-{{end}} of {{total}} items',
                 start: range[0],
                 end: range[1],
                 total,
@@ -940,7 +1136,7 @@ const TeamMembersSettings = () => {
               fontWeight: 500,
             }}
           >
-            {t('bulk_assign_team_lead')} ({selectedMembers.length})
+            {t('bulk_assign_team_lead', { defaultValue: 'Assign Team Lead' })} ({selectedMembers.length})
           </Button>
         </div>
       )}
@@ -959,10 +1155,31 @@ const TeamMembersSettings = () => {
           onRoleUpdate={handleRoleUpdate}
           onJobTitleUpdate={handleJobTitleUpdate}
           onTeamLeadUpdate={handleTeamLeadUpdate}
+          onManageTimeOff={member => {
+            setTimeOffTargetMember(member);
+            setTimeOffModalVisible(true);
+          }}
           initialRoleName={selectedMemberRole || undefined}
         />,
         document.body
       )}
+
+      <TimeOffCalendar
+        members={
+          timeOffTargetMember
+            ? [timeOffTargetMember]
+            : (model.data || [])
+                .filter(m => Boolean(m.id))
+                .map(m => ({ id: m.id!, name: m.name || '', email: m.email }))
+        }
+        visible={timeOffModalVisible}
+        onClose={() => {
+          setTimeOffModalVisible(false);
+          setTimeOffTargetMember(null);
+        }}
+        preselectedMemberId={timeOffTargetMember?.id || null}
+        showEntriesTable={true}
+      />
 
       {seatLimitData && (
         <SeatLimitModal

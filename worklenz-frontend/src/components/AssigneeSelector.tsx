@@ -18,6 +18,7 @@ import {
   toggleProjectMemberDrawer,
 } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { updateEnhancedKanbanTaskAssignees } from '@/features/enhanced-kanban/enhanced-kanban.slice';
+import type { ITaskAssigneesUpdateResponse } from '@/types/tasks/task-assignee-update-response';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 
@@ -137,7 +138,7 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   // real ack with no listener left to receive it.
   useEffect(() => {
     if (!socket || !task?.id) return;
-    const handleAssigneesUpdate = (data: { id?: string } & Record<string, unknown>) => {
+    const handleAssigneesUpdate = (data: ITaskAssigneesUpdateResponse) => {
       if (data?.id !== task.id) return;
       dispatch(updateEnhancedKanbanTaskAssignees(data));
       onAssigneesChanged?.(data);
@@ -382,9 +383,12 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         // Custom trigger: clone the element and inject onClick so it works even
         // when the child calls stopPropagation (e.g. AvatarGroup)
         <span ref={buttonRef} style={{ display: 'inline-flex', cursor: 'pointer' }}>
-          {React.cloneElement(triggerElement as React.ReactElement, {
-            onClick: handleDropdownToggle,
-          })}
+          {React.cloneElement(
+            triggerElement as React.ReactElement<{ onClick?: React.MouseEventHandler }>,
+            {
+              onClick: handleDropdownToggle,
+            }
+          )}
         </span>
       ) : (
         <button

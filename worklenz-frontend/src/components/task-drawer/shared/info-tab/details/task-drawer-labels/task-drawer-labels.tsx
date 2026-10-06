@@ -222,7 +222,7 @@ const TaskDrawerLabels = ({ task, t, isGuest = false }: TaskDrawerLabelsProps) =
 
 
   return (
-    <Form.Item name="labels" label={t('taskInfoTab.details.labels')}>
+    <Form.Item name="labels" label={t('taskInfoTab.details.labels', { defaultValue: 'Labels' })}>
       <Flex gap={8} wrap="wrap" align="center">
         {task?.labels?.map((label, index) => (
           <Tag

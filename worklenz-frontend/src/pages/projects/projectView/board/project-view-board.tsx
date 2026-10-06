@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 import TaskListFilters from '../taskList/task-list-filters/task-list-filters';
 import { Flex, Skeleton } from '@/shared/antd-imports';
@@ -18,6 +19,7 @@ import {
   DragOverEvent,
   DragStartEvent,
   closestCenter,
+  CollisionDetection,
   DragOverlay,
   MouseSensor,
   TouchSensor,
@@ -47,14 +49,18 @@ import { checkTaskDependencyStatus } from '@/utils/check-task-dependency-status'
 import debounce from 'lodash-es/debounce';
 import { ITaskListPriorityChangeResponse } from '@/types/tasks/task-list-priority.types';
 import { updateTaskPriority as updateBoardTaskPriority } from '@/features/board/board-slice';
+import { ITaskListGroup } from '@/types/tasks/taskList.types';
 
-interface DroppableContainer {
-  id: UniqueIdentifier;
-  data: {
-    current?: {
-      type?: string;
-    };
+interface ActiveDragItem {
+  type?: 'task' | 'section' | string;
+  id?: UniqueIdentifier;
+  sectionId?: string;
+  sortable?: {
+    index: number;
+    [key: string]: unknown;
   };
+  task?: IProjectTask;
+  [key: string]: unknown;
 }
 
 const ProjectViewBoard = () => {
@@ -75,13 +81,13 @@ const ProjectViewBoard = () => {
   const { statusCategories, loading: loadingStatusCategories } = useAppSelector(
     state => state.taskStatusReducer
   );
-  const [activeItem, setActiveItem] = useState<any>(null);
+  const [activeItem, setActiveItem] = useState<ActiveDragItem | null>(null);
 
   // Store the original source group ID when drag starts
   const originalSourceGroupIdRef = useRef<string | null>(null);
   const lastOverId = useRef<UniqueIdentifier | null>(null);
   const recentlyMovedToNewContainer = useRef(false);
-  const [clonedItems, setClonedItems] = useState<any>(null);
+  const [clonedItems, setClonedItems] = useState<ITaskListGroup[] | null>(null);
   const isDraggingRef = useRef(false);
 
   // Update loading state based on all loading conditions
@@ -128,16 +134,13 @@ const ProjectViewBoard = () => {
     })
   );
 
-  const collisionDetectionStrategy = useCallback(
-    (args: {
-      active: { id: UniqueIdentifier; data: { current?: { type?: string } } };
-      droppableContainers: DroppableContainer[];
-    }) => {
+  const collisionDetectionStrategy: CollisionDetection = useCallback(
+    args => {
       if (activeItem?.type === 'section') {
         return closestCenter({
           ...args,
           droppableContainers: args.droppableContainers.filter(
-            (container: DroppableContainer) => container.data.current?.type === 'section'
+            container => container.data.current?.type === 'section'
           ),
         });
       }
@@ -150,7 +153,7 @@ const ProjectViewBoard = () => {
 
       if (overId !== null) {
         const overContainer = args.droppableContainers.find(
-          (container: DroppableContainer) => container.id === overId
+          container => container.id === overId
         );
 
         if (overContainer?.data.current?.type === 'section') {
@@ -160,7 +163,7 @@ const ProjectViewBoard = () => {
             overId = closestCenter({
               ...args,
               droppableContainers: args.droppableContainers.filter(
-                (container: DroppableContainer) =>
+                container =>
                   container.id !== overId && container.data.current?.type === 'task'
               ),
             })[0]?.id;
@@ -168,11 +171,11 @@ const ProjectViewBoard = () => {
         }
 
         lastOverId.current = overId;
-        return [{ id: overId }];
+        return overId ? [{ id: overId }] : [];
       }
 
       if (recentlyMovedToNewContainer.current) {
-        lastOverId.current = activeItem?.id;
+        lastOverId.current = activeItem?.id ?? null;
       }
 
       return lastOverId.current ? [{ id: lastOverId.current }] : [];

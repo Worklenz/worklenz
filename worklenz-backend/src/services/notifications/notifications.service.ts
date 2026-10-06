@@ -133,7 +133,10 @@ export class NotificationsService {
     }
 
     if (receiver.task_id) {
-      const params: Record<string, string> = { task: receiver.task_id };
+      const params: Record<string, string> = {
+        task: receiver.task_id,
+        from: "notification",
+      };
       if (receiver.comment_id) {
         params.comment = receiver.comment_id;
       }
@@ -256,7 +259,7 @@ export class NotificationsService {
     projectId?: string,
   ) {
     for (const member of members) {
-      sendInvitationEmail(
+      void sendInvitationEmail(
         !member.is_new,
         user,
         !member.is_new ? member.name : member.team_member_id,
@@ -264,7 +267,7 @@ export class NotificationsService {
         member.team_member_user_id,
         member.name || member.email?.split("@")[0],
         projectId,
-      );
+      ).catch(log_error);
 
       if (member.team_member_id) {
         NotificationsService.sendInvitation(

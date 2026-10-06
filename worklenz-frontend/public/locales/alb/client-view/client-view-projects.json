@@ -1,0 +1,12 @@
+{
+  "title": "{{items}} Projektet",
+  "table": {
+    "header": {
+      "name": "Emri",
+      "status": "Statusi",
+      "taskProgress": "Progresi i Detyrave",
+      "lastUpdates": "Përditësimet e fundit",
+      "members": "Anëtarë"
+    }
+  }
+}

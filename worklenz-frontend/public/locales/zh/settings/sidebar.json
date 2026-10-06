@@ -45,8 +45,8 @@
   "account-deletion-search": "删除账户 移除账户 危险区域 注销账户",
   "team-hierarchy": "团队层次结构",
   "team-hierarchy-search": "层级 组织架构 汇报结构 经理 组织树",
+  "guest-members": "访客成员",
+  "guest-members-search": "访客 外部用户 临时 访问",
   "mobile-app": "移动应用",
-  "mobile-app-search": "ios android 手机 移动端 下载 二维码 应用商店 谷歌应用",
-  "configuration": "配置",
-  "configuration-search": "配置 设置 工作区 组织 配置管理"
+  "mobile-app-search": "ios android 手机 移动端 下载 二维码 应用商店 谷歌应用"
 }

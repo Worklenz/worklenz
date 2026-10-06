@@ -310,25 +310,18 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
 };
 
 // Route segments nested under /worklenz/projects/ that the rail itself
-// covers (every item except the index 'all-projects') — derived from the
-// surface definition above so MainLayout/AppShellLayout's width/background
-// matching for these pages can't silently drift out of sync with the rail's
-// actual routes the way a hardcoded path list already has once.
+// covers — derived from the surface definition above so MainLayout/AppShellLayout's
+// width/background matching for these pages can't silently drift out of sync with
+// the rail's actual routes the way a hardcoded path list already has once.
 export const PROJECTS_RAIL_SUB_ROUTES: ReadonlySet<string> = new Set(
-  PROJECTS_NAV_SURFACE.groups
-    .flatMap(group => group.items.map(item => item.key))
-    .filter(key => key !== PROJECTS_NAV_SURFACE.defaultItemKey)
+  PROJECTS_NAV_SURFACE.groups.flatMap(group => group.items.map(item => item.key))
 );
 
 // ─── Finance ────────────────────────────────────────────────────────────────
-// All items route to the shared "Coming soon" placeholder for now (see
-// FinancePage/ComingSoonPage) — same non-`soon` treatment as Projects: real,
-// navigable routes, just not built out yet. Labels use a dedicated
-// 'finance-sidebar' namespace (public/locales/*/finance-sidebar.json).
-// Invoices intentionally has no badgeSelector yet — no real invoice-count
-// data exists behind this placeholder, and per the sidebar personalization
-// spec (docs/sidebar-personalization-build-spec.md §3.5) badges must resolve
-// from a live selector, never a hardcoded number.
+// Overview and Expenses already shipped; the remaining rail items are the
+// portfolio report pages (Profitability, Budgets, Invoices, Billable Time,
+// Utilization, Forecasts). Labels use a dedicated 'finance-sidebar' namespace
+// (public/locales/*/finance-sidebar.json).
 export const FINANCE_NAV_SURFACE: NavSurface = {
   key: 'finance',
   defaultItemKey: 'overview',
@@ -381,13 +374,11 @@ export const FINANCE_NAV_SURFACE: NavSurface = {
   ],
 };
 
-// Mirrors PROJECTS_RAIL_SUB_ROUTES above — every Finance item except the
-// index ('overview') so MainLayout/AppShellLayout can detect Finance's own
-// SimpleRailLayout sub-routes the same way.
+// Mirrors PROJECTS_RAIL_SUB_ROUTES above — every Finance rail sub-route so
+// MainLayout/AppShellLayout can detect Finance's own SimpleRailLayout
+// sub-routes the same way.
 export const FINANCE_RAIL_SUB_ROUTES: ReadonlySet<string> = new Set(
-  FINANCE_NAV_SURFACE.groups
-    .flatMap(group => group.items.map(item => item.key))
-    .filter(key => key !== FINANCE_NAV_SURFACE.defaultItemKey)
+  FINANCE_NAV_SURFACE.groups.flatMap(group => group.items.map(item => item.key))
 );
 
 // ─── Team Lead Reports ──────────────────────────────────────────────────────

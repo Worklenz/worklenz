@@ -10,7 +10,7 @@ import {
   Tooltip,
   Typography,
 } from '@/shared/antd-imports';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { RootState } from '@/app/store';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
@@ -37,35 +37,56 @@ const Users: React.FC = () => {
     order: 'desc',
     searchTerm: '',
   });
+  const [inputSearchTerm, setInputSearchTerm] = useState('');
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  const fetchRequestId = useRef(0);
 
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
 
   const fetchUsers = async () => {
+    const currentRequestId = ++fetchRequestId.current;
     setIsLoading(true);
     try {
       const res = await adminCenterApiService.getOrganizationUsers(requestParams);
+      if (currentRequestId !== fetchRequestId.current) return;
       if (res.done) {
         setUsers(res.body.data ?? []);
         setRequestParams(prev => ({ ...prev, total: res.body.total ?? 0 }));
       }
     } catch (error) {
+      if (currentRequestId !== fetchRequestId.current) return;
       logger.error('Error fetching users', error);
     } finally {
-      setIsLoading(false);
+      if (currentRequestId === fetchRequestId.current) {
+        setIsLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRequestParams(prev => {
+        if (prev.searchTerm === inputSearchTerm && prev.page === 1) return prev;
+        return { ...prev, searchTerm: inputSearchTerm, page: 1 };
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [inputSearchTerm]);
 
   const columns: TableProps<IOrganizationUser>['columns'] = [
     {
       title: t('user'),
       dataIndex: 'user',
       key: 'user',
-      render: (_, record) => (
-        <Flex gap={8} align="center">
-          <SingleAvatar avatarUrl={record.avatar_url} name={record.name} />
-          <Typography.Text>{record.name}</Typography.Text>
-        </Flex>
-      ),
+      render: (_, record) => {
+        const displayName = record.name || record.email || '-';
+        return (
+          <Flex gap={8} align="center">
+            <SingleAvatar avatarUrl={record.avatar_url} name={record.name} email={record.email} />
+            <Typography.Text>{displayName}</Typography.Text>
+          </Flex>
+        );
+      },
     },
     {
       title: t('email'),
@@ -91,7 +112,7 @@ const Users: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [requestParams.searchTerm, requestParams.page, requestParams.pageSize]);
+  }, [requestParams.searchTerm, requestParams.page, requestParams.pageSize, refreshCounter]);
 
   return (
     <div style={{ width: '100%' }}>
@@ -119,21 +140,28 @@ const Users: React.FC = () => {
               <Button
                 shape="circle"
                 icon={<SyncOutlined spin={isLoading} />}
-                onClick={() => fetchUsers()}
+                onClick={() => {
+                  setRequestParams(prev => {
+                    if (prev.searchTerm === inputSearchTerm) return { ...prev };
+                    return { ...prev, searchTerm: inputSearchTerm, page: 1 };
+                  });
+                  setRefreshCounter(c => c + 1);
+                }}
               />
             </Tooltip>
             <Input
               placeholder={t('placeholder')}
               suffix={<SearchOutlined />}
               type="text"
-              value={requestParams.searchTerm}
-              onChange={e => setRequestParams(prev => ({ ...prev, searchTerm: e.target.value }))}
+              value={inputSearchTerm}
+              onChange={e => setInputSearchTerm(e.target.value)}
             />
           </Flex>
         }
       />
       <Card>
         <Table
+          rowKey={record => record.email || record.user_id || ''}
           rowClassName="users-table-row"
           size="small"
           columns={columns}

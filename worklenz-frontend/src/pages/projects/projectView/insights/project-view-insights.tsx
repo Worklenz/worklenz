@@ -16,6 +16,7 @@ import {
   setProjectId,
 } from '@/features/projects/insights/project-insights.slice';
 import { format } from 'date-fns';
+import './insights-export.css';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import logo from '@/assets/images/worklenz-light-mode.png';
@@ -88,46 +89,98 @@ const ProjectViewInsights = () => {
   const exportPdf = async (projectName: string | null, activeSegment: string | '') => {
     if (!exportRef.current) return;
     const element = exportRef.current;
-    const canvas = await html2canvas(element);
-    const imgData = canvas.toDataURL('image/png');
+
+    // Temporarily disable overflow/height constraints so html2canvas captures the
+    // full, unscrolled content (charts + tables) instead of only the visible viewport.
+    const scrollables = element.querySelectorAll(
+      '.overflow-y-auto, .overflow-x-auto, .overflow-y-scroll, .overflow-x-scroll, [style*="overflow"], [style*="height: calc"], [style*="max-height"]'
+    );
+    const originalStyles = new Map<Element, string>();
+    scrollables.forEach(el => {
+      originalStyles.set(el, el.getAttribute('style') || '');
+      (el as HTMLElement).style.overflow = 'visible';
+      (el as HTMLElement).style.height = 'auto';
+      (el as HTMLElement).style.maxHeight = 'none';
+    });
+
+    let imgData = '';
+    try {
+      // Scope a light theme to the captured subtree only by toggling a CSS class
+      // directly on the DOM node (no React re-render / remount). This avoids
+      // flipping global theme state or localStorage, and never disturbs the rest
+      // of the app UI.
+      element.classList.add('insights-export-light');
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      await new Promise<void>(resolve => setTimeout(resolve, 60));
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        scrollX: 0,
+        scrollY: 0,
+        backgroundColor: '#ffffff',
+      });
+      imgData = canvas.toDataURL('image/png');
+    } catch (captureError) {
+      console.error('exportPdf capture failed', captureError);
+      return;
+    } finally {
+      scrollables.forEach(el => {
+        const original = originalStyles.get(el);
+        if (original) {
+          el.setAttribute('style', original);
+        } else {
+          el.removeAttribute('style');
+        }
+      });
+      element.classList.remove('insights-export-light');
+    }
 
     const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
     const bufferX = 5;
     const bufferY = 28;
     const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth() - 2 * bufferX;
+    const pdfWidth = pageWidth - 2 * bufferX;
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    const renderPdf = (logoEl?: HTMLImageElement) => {
+      if (logoEl && logoEl.complete && logoEl.naturalWidth > 0) {
+        pdf.addImage(logoEl, 'PNG', pageWidth / 2 - 12, 5, 30, 6.5);
+      }
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0, 0.85);
+      pdf.text(
+        [`Insights - ${projectName} - ${activeSegment}`, format(new Date(), 'yyyy-MM-dd')],
+        pageWidth / 2,
+        17,
+        { align: 'center' }
+      );
+
+      // Split the tall image across A4 pages contiguously (no overlap/clipping).
+      pdf.addImage(imgData, 'PNG', bufferX, bufferY, pdfWidth, pdfHeight);
+      let heightLeft = pdfHeight - (pageHeight - bufferY);
+      let position = bufferY - pageHeight;
+      while (heightLeft > 0) {
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', bufferX, position, pdfWidth, pdfHeight);
+        position -= pageHeight;
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${activeSegment} ${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    };
 
     const logoImg = new Image();
     logoImg.src = logo;
-    logoImg.onload = () => {
-      pdf.addImage(logoImg, 'PNG', pdf.internal.pageSize.getWidth() / 2 - 12, 5, 30, 6.5);
-
-      pdf.setFontSize(14);
-      pdf.setTextColor(0, 0, 0, 0.85);
-      pdf.text(
-        [`Insights - ${projectName} - ${activeSegment}`, format(new Date(), 'yyyy-MM-dd')],
-        pdf.internal.pageSize.getWidth() / 2,
-        17,
-        { align: 'center' }
-      );
-
-      pdf.addImage(imgData, 'PNG', bufferX, bufferY, pdfWidth, pdfHeight);
-      pdf.save(`${activeSegment} ${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    };
-
-    logoImg.onerror = error => {
-      pdf.setFontSize(14);
-      pdf.setTextColor(0, 0, 0, 0.85);
-      pdf.text(
-        [`Insights - ${projectName} - ${activeSegment}`, format(new Date(), 'yyyy-MM-dd')],
-        pdf.internal.pageSize.getWidth() / 2,
-        17,
-        { align: 'center' }
-      );
-      pdf.addImage(imgData, 'PNG', bufferX, bufferY, pdfWidth, pdfHeight);
-      pdf.save(`${activeSegment} ${format(new Date(), 'yyyy-MM-dd')}.pdf`);
-    };
+    if (logoImg.complete) {
+      renderPdf(logoImg);
+    } else {
+      logoImg.onload = () => renderPdf(logoImg);
+      logoImg.onerror = () => renderPdf();
+    }
   };
 
   useEffect(() => {

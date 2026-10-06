@@ -41,10 +41,10 @@
   "labelsSelectorInputTip": "Pressione enter para criar!",
   "addTaskText": "Adicionar Tarefa",
   "addSubTaskText": "+ Adicionar Subtarefa",
+  "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
   "addSubTaskInputPlaceholder": "Digite o nome da subtarefa e pressione Enter para salvar",
   "noTasksInGroup": "Nenhuma tarefa neste grupo",
   "dropTaskHere": "Soltar tarefa aqui",
-  "addTaskInputPlaceholder": "Digite sua tarefa e pressione enter",
   "openButton": "Abrir",
   "okButton": "Ok",
   "noLabelsFound": "Nenhuma etiqueta encontrada",
@@ -67,7 +67,12 @@
     "convertToSubTask": "Converter em Subtarefa",
     "convertToTask": "Converter em Tarefa",
     "delete": "Excluir",
-    "searchByNameInputPlaceholder": "Buscar por nome"
+    "searchByNameInputPlaceholder": "Buscar por nome",
+    "deleteConfirmTitle": "Excluir tarefa",
+    "deleteConfirmMessage": "Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.",
+    "deleteSubtaskConfirmMessage": "Tem certeza de que deseja excluir esta subtarefa? Esta ação não pode ser desfeita.",
+    "deleteConfirmOk": "Excluir",
+    "deleteConfirmCancel": "Cancelar"
   },
   "setDueDate": "Definir data de vencimento",
   "setStartDate": "Definir data de início",
@@ -132,8 +137,12 @@
       "updateSuccessMessage": "Coluna personalizada atualizada com sucesso",
       "deleteSuccessMessage": "Coluna personalizada excluída com sucesso",
       "deleteErrorMessage": "Falha ao excluir a coluna personalizada",
+      "deleteErrorMissingId": "Não é possível excluir a coluna: UUID ausente",
+      "hideFromTaskList": "Ocultar da lista de tarefas",
+      "showInTaskList": "Mostrar na lista de tarefas",
       "createErrorMessage": "Falha ao criar a coluna personalizada",
-      "updateErrorMessage": "Falha ao atualizar a coluna personalizada"
+      "updateErrorMessage": "Falha ao atualizar a coluna personalizada",
+      "typeCannotBeChanged": "O tipo de coluna não pode ser alterado após a criação."
     },
     "fieldTypes": {
       "people": "Pessoas",
@@ -195,5 +204,11 @@
     "conflictTitle": "Temporizador Já Em Execução",
     "conflictMessage": "Você tem um temporizador executando para \"{{taskName}}\" no projeto \"{{projectName}}\". Gostaria de parar esse temporizador e iniciar um novo para esta tarefa?",
     "stopAndStart": "Parar e Iniciar Novo Temporizador"
+  },
+  "errors": {
+    "taskNotCompleted": "Tarefa não está concluída",
+    "completeTaskDependencies": "Por favor, complete as dependências da tarefa antes de prosseguir",
+    "incompleteDependencies": "Dependências incompletas!",
+    "someDependenciesNotCompleted": "Algumas tarefas não foram atualizadas. Certifique-se de que todas as tarefas dependentes sejam concluídas antes de continuar."
   }
 }

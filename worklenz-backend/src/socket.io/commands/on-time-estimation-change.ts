@@ -6,6 +6,7 @@ import { SocketEvents } from "../events";
 import { getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates } from "../util";
 import { getTaskDetails, logTotalMinutes } from "../../services/activity-logs/activity-logs.service";
 import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
+import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 
 /**
  * Recursively updates all ancestor tasks' progress when a subtask changes
@@ -80,7 +81,11 @@ export async function on_time_estimation_change(io: Server, socket: Socket, data
     const body = JSON.parse(data as string);
 
     // Enforce restrict_task_creation: restricted users cannot modify tasks.
-    if (await isTaskCreationRestrictedForTask(getLoggedInUserIdFromSocket(socket), body.task_id)) {
+    const userId = getLoggedInUserIdFromSocket(socket);
+    if (await isTaskCreationRestrictedForTask(userId, body.task_id)) {
+      return;
+    }
+    if (await isAssigneeScopeEditRestrictedForTask(userId, body.task_id)) {
       return;
     }
 

@@ -7,8 +7,14 @@ import {
   setSelectedTaskId,
   setShowTaskDrawer,
   setTargetCommentId,
+  setTaskAccessFrom,
 } from '@/features/task-drawer/task-drawer.slice';
 import { setProjectId } from '@/features/project/project.slice';
+
+const parseAccessFrom = (value: string | null): 'notification' | 'mention' | null => {
+  if (value === 'notification' || value === 'mention') return value;
+  return null;
+};
 
 /**
  * A custom hook that synchronizes the task drawer state with the URL.
@@ -20,7 +26,9 @@ const useTaskDrawerUrlSync = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useParams();
   const dispatch = useAppDispatch();
-  const { showTaskDrawer, selectedTaskId } = useAppSelector(state => state.taskDrawerReducer);
+  const { showTaskDrawer, selectedTaskId, taskAccessFrom } = useAppSelector(
+    state => state.taskDrawerReducer
+  );
   const { projectId } = useAppSelector(state => state.projectReducer);
   const routeProjectId = params.projectId || params.id;
 
@@ -43,9 +51,12 @@ const useTaskDrawerUrlSync = () => {
       newParams.delete('task');
       newParams.delete('task_project');
       newParams.delete('comment');
+      newParams.delete('from');
 
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
+
+      dispatch(setTaskAccessFrom(null));
 
       // Reset the flags after a short delay
       setTimeout(() => {
@@ -53,7 +64,7 @@ const useTaskDrawerUrlSync = () => {
         shouldIgnoreUrlChange.current = false;
       }, 300); // Increased timeout to ensure proper cleanup
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, dispatch]);
 
   // Check for task ID in URL when it changes
   useEffect(() => {
@@ -62,6 +73,7 @@ const useTaskDrawerUrlSync = () => {
 
     const taskIdFromUrl = searchParams.get('task');
     const projectIdFromUrl = searchParams.get('task_project');
+    const accessFrom = parseAccessFrom(searchParams.get('from'));
     const resolvedProjectId = projectId || projectIdFromUrl || routeProjectId;
 
     // Only process URL changes if:
@@ -80,14 +92,21 @@ const useTaskDrawerUrlSync = () => {
       lastProcessedTaskId.current = taskIdFromUrl;
       dispatch(setProjectId(resolvedProjectId));
       dispatch(setSelectedTaskId(taskIdFromUrl));
+      dispatch(setTaskAccessFrom(accessFrom));
       dispatch(setShowTaskDrawer(true));
 
       // If there's a comment ID in the URL, store it so TaskComments can scroll to it
       const commentIdFromUrl = searchParams.get('comment');
       dispatch(setTargetCommentId(commentIdFromUrl || null));
 
-      // Fetch task data
-      dispatch(fetchTask({ taskId: taskIdFromUrl, projectId: resolvedProjectId }));
+      // Fetch task data (pass from= for TVR-12 notification/mention exception)
+      dispatch(
+        fetchTask({
+          taskId: taskIdFromUrl,
+          projectId: resolvedProjectId,
+          from: accessFrom,
+        })
+      );
     }
 
   }, [searchParams, showTaskDrawer, projectId, routeProjectId, selectedTaskId, dispatch]);
@@ -116,6 +135,9 @@ const useTaskDrawerUrlSync = () => {
       if (projectId) {
         newParams.set('task_project', projectId);
       }
+      if (taskAccessFrom) {
+        newParams.set('from', taskAccessFrom);
+      }
 
       // Update the URL without triggering a navigation
       setSearchParams(newParams, { replace: true });
@@ -125,7 +147,7 @@ const useTaskDrawerUrlSync = () => {
         shouldIgnoreUrlChange.current = false;
       }, 100);
     }
-  }, [showTaskDrawer, selectedTaskId, projectId, searchParams, setSearchParams]);
+  }, [showTaskDrawer, selectedTaskId, projectId, taskAccessFrom, searchParams, setSearchParams]);
 
   // Separate effect to handle URL clearing when drawer is closed
   useEffect(() => {

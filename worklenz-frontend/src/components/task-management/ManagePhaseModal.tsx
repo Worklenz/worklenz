@@ -11,13 +11,16 @@ interface ManagePhaseModalProps {
   open: boolean;
   onClose: () => void;
   projectId?: string;
+  // Forwarded to ManagePhaseContent — see its own doc comment. Only the
+  // Roadmap tab passes this.
+  enableDates?: boolean;
 }
 
 /**
  * Standalone Modal wrapper around ManagePhaseContent, kept for call sites
  * that still want the phase manager as a popup (e.g. Gantt, task filters).
  */
-const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, projectId }) => {
+const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, projectId, enableDates }) => {
   const { t } = useTranslation('phases-drawer');
   const isDarkMode = useAppSelector(state => state.themeReducer?.mode === 'dark');
   const { project } = useAppSelector(state => state.projectReducer);
@@ -71,7 +74,7 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
       className={`${isDarkMode ? 'dark-modal' : ''} phase-manage-modal`}
       destroyOnClose
     >
-      {open && <ManagePhaseContent projectId={projectId} />}
+      {open && <ManagePhaseContent projectId={projectId} enableDates={enableDates} />}
     </Modal>
   );
 };

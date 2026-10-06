@@ -83,7 +83,7 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
               )}
 
               <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
-                ${perUserAnnualPrice || (parseFloat(displayedAnnualTotal) / 12).toFixed(2)}
+                ${perUserAnnualPrice || (parseFloat(displayedAnnualTotal || '0') / 12).toFixed(2)}
               </Typography.Title>
               <Typography.Text
                 style={{
@@ -157,7 +157,7 @@ export const PlanPriceDisplay: React.FC<PlanPriceDisplayProps> = ({
               )}
 
               <Typography.Title level={2} style={{ fontSize: '28px', margin: 0, lineHeight: 1.2 }}>
-                ${(parseFloat(displayedAnnualTotal) / 12).toFixed(2)}
+                ${(parseFloat(displayedAnnualTotal || '0') / 12).toFixed(2)}
               </Typography.Title>
               <Typography.Text
                 style={{

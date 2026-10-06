@@ -34,5 +34,10 @@
   "csvImportSelected": "Importação de tarefas CSV selecionada",
   "csvImportHint": "Mapeie os campos CSV e importe tarefas depois de configurar este projeto.",
   "csvImportFooterHint": "Você mapeará os campos CSV antes que este projeto seja criado.",
-  "continueToCsvImport": "Continuar para a importação CSV"
+  "continueToCsvImport": "Continuar para a importação CSV",
+  "customizeNo": "Não",
+  "customizeYes": "Sim, personalizar",
+  "customizeFooterQuestion": "Deseja personalizar antes de criar?",
+  "customizeNoHint": "Criar agora e abrir o projeto",
+  "customizeYesHint": "Defina cliente, status, datas e mais primeiro"
 }

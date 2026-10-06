@@ -6,6 +6,13 @@ import { DATE_RANGES, TASK_PRIORITY_COLOR_ALPHA } from "../../shared/constants";
 import { formatDuration, formatLogText, getColor, int } from "../../shared/utils";
 import { isTeamLead } from "../../shared/team-permissions";
 
+/**
+ * Workspace reporting base.
+ *
+ * TVR-18 / TVR-1: reporting aggregates intentionally do NOT apply
+ * `restrict_tasks_to_assignee`. Out of scope this pass — see
+ * `ASSIGNEE_SCOPE_EXCLUDED_SURFACES` in shared/assignee-task-scope.ts.
+ */
 export default abstract class ReportingControllerBase extends WorklenzControllerBase {
   protected static getPercentage(n: number, total: number) {
     return +(n ? (n / total) * 100 : 0).toFixed();

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Card, Flex, Spin, Typography } from '@/shared/antd-imports';
+import { Flex, Typography } from '@/shared/antd-imports';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthService } from '@/hooks/useAuth';
@@ -49,18 +49,11 @@ const LoggingOutPage = () => {
     void logout();
   }, [auth]);
 
-  const cardStyles = {
-    width: '100%',
-    boxShadow: 'none',
-  };
-
   return (
-    <Card style={cardStyles}>
-      <Flex vertical align="center" justify="center" gap="middle">
-        <WorklenzLogoLoader />
-        <Typography.Title level={3}>{t('loggingOut')}</Typography.Title>
-      </Flex>
-    </Card>
+    <Flex vertical align="center" justify="center" gap="middle">
+      <WorklenzLogoLoader />
+      <Typography.Title level={3}>{t('loggingOut')}</Typography.Title>
+    </Flex>
   );
 };
 

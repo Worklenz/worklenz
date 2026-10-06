@@ -3,11 +3,12 @@
   "home": "首页",
   "projects": "项目",
   "planner": "计划",
-  "my-team-reports": "我的团队报告",
   "reporting": "报告",
-  "clients": "客户",
+  "my-team-reports": "我的团队报告",
   "finance": "财务",
   "client-portal": "客户",
+  "closePopover": "关闭弹出层",
+  "clients": "客户",
   "teams": "团队",
   "labels": "标签",
   "jobTitles": "职位",
@@ -16,6 +17,8 @@
   "invite": "邀请",
   "inviteTooltip": "邀请团队成员加入",
   "switchTeamTooltip": "切换团队",
+  "searchTeams": "搜索团队...",
+  "noTeamsFound": "未找到团队",
   "help": "帮助",
   "notificationTooltip": "查看通知",
   "profileTooltip": "查看个人资料",
@@ -41,6 +44,7 @@
   "timeEntries": "时间记录",
   "new": "新建",
   "quickActions": {
+    "new": "新建",
     "task": "任务",
     "logTime": "记录时间",
     "project": "项目",
@@ -69,25 +73,22 @@
     "conflictTitle": "计时器冲突",
     "conflictMessage": "另一个计时器正在运行，用于项目\"{{projectName}}\"中的\"{{taskName}}\"。您想停止它并启动此计时器吗？",
     "stopAndStart": "停止并启动",
-    "cancel": "取消"
+    "cancel": "取消",
+    "logTime": "记录时间",
+    "openTimeLogPanel": "{{taskName}} 的打开时间日志"
   },
-  "closePopover": "关闭弹出层",
-  "account": "账户",
-  "billing": "账单",
   "ownerRole": "所有者",
   "adminRole": "管理员",
   "teamLeadRole": "团队负责人",
   "memberRole": "成员",
   "themeToggleOn": "开",
   "themeToggleOff": "关",
-  "quickActions": {
-    "new": "新建",
-    "task": "任务",
-    "logTime": "记录时间",
-    "project": "项目",
-    "client": "客户",
-    "addExpense": "添加费用",
-    "addGuest": "添加访客",
-    "inviteMember": "邀请成员"
+  "whatsNew": {
+    "tag": "新功能",
+    "tooltip": "查看此版本的更新内容",
+    "newBadge": "新",
+    "modalHeading": "新功能 — {{title}}",
+    "readFullChangelog": "查看完整更新日志 →",
+    "releaseUnavailable": "此更新已不可用。"
   }
 }

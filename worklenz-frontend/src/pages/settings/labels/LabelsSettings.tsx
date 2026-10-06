@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import PinRouteToNavbarButton from '@/components/PinRouteToNavbarButton';
 import { useTranslation } from 'react-i18next';
-import { ITaskLabel } from '@/types/label.type';
+import { ITaskLabel } from '@/types/tasks/taskLabel.types';
 import { labelsApiService } from '@/api/taskAttributes/labels/labels.api.service';
 import CustomColorLabel from '@components/task-list-common/labelsSelector/custom-color-label';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
@@ -169,7 +169,7 @@ const LabelsSettings = () => {
   };
 
   // table columns
-  const columns: TableProps['columns'] = [
+  const columns: TableProps<ITaskLabel>['columns'] = [
     {
       key: 'label',
       title: t('labelColumn', 'Label'),

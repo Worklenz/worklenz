@@ -48,7 +48,7 @@ import ProjectStatusIcon from '@/components/common/project-status-icon/project-s
 import { formatDate } from '@/utils/timeUtils';
 import { toggleSaveAsTemplateDrawer, openSaveAsTemplateDrawer } from '@/features/projects/projectsSlice';
 import SaveProjectAsTemplate from '@/components/save-project-as-template/save-project-as-template';
-import { fetchProjectData, setProjectId } from '@/features/project/project-drawer.slice';
+import { fetchProjectData, setProjectId, setProjectData } from '@/features/project/project-drawer.slice';
 import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
 import { ITaskCreateRequest } from '@/types/tasks/task-create-request.types';
@@ -69,7 +69,7 @@ import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
 import { isFreeUser } from '@/ee/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
-import { isUserGuest } from '@/lib/project/project-view-constants';
+import { isUserGuest } from '@/lib/project/project-view-guest';
 import styles from './project-view-header.module.css';
 
 const ProjectViewHeader = memo(() => {
@@ -201,10 +201,14 @@ const ProjectViewHeader = memo(() => {
         })
         .catch(error => {
           logger.error('Failed to fetch project data from project view:', error);
+          // Fall back to already-loaded project view data so members still see manager, etc.
+          if (selectedProject) {
+            dispatch(setProjectData(selectedProject));
+          }
           dispatch(openProjectSettingsModal());
         });
     }
-  }, [dispatch, selectedProject?.id]);
+  }, [dispatch, selectedProject]);
 
   const handleCreateTask = useCallback(() => {
     if (!selectedProject?.id || !currentSession?.id || !socket) return;

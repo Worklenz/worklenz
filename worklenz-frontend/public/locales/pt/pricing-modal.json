@@ -17,7 +17,8 @@
       "basePlan": "Preço base fixo com usuários incluídos mais custos adicionais por usuário. Ideal para equipes maiores (6+ usuários) com cobrança previsível."
     },
     "autoPerUser": "Usando automaticamente preços por usuário para {{count}} usuário{{s}}",
-    "autoBase": "Usando automaticamente preços do plano base para {{count}} usuário{{s}}"
+    "autoBase": "Usando automaticamente preços do plano base para {{count}} usuário{{s}}",
+    "additionalUserCharge": "Inclui {{included}} usuários. Cada usuário adicional custa ${{price}}/mês."
   },
   "teamSize": {
     "label": "Tamanho da Equipe",
@@ -39,6 +40,37 @@
         "Suporte da comunidade"
       ],
       "forever": "Para sempre"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Para equipes profissionais",
+      "features": [
+        "✓ Projetos e tarefas ilimitados",
+        "Gerenciamento avançado de tarefas",
+        "Gráficos de Gantt",
+        "Controle de tempo",
+        "Campos personalizados",
+        "Suporte por e-mail"
+      ],
+      "payPerUser": "Pague por usuário (1-5 usuários)",
+      "usersIncluded": "{{count}} Usuários incluídos",
+      "maxUsers": "Até {{count}} usuários no máximo"
+    },
+    "business": {
+      "name": "Empresarial",
+      "description": "Para organizações em crescimento",
+      "features": [
+        "Tudo em Pró",
+        "Relatórios avançados",
+        "Fluxos de trabalho personalizados",
+        "Acesso à API",
+        "✓ Suporte prioritário",
+        "Integrações avançadas"
+      ],
+      "payPerUser": "Pague por usuário (1-5 usuários)",
+      "usersIncluded": "{{count}} Usuários incluídos",
+      "maxUsers": "Até {{count}} usuários no máximo",
+      "maxUsersAppSumo": "Até 50 usuários no máximo (AppSumo especial)"
     },
     "proSmall": {
       "name": "Pro Pequeno",
@@ -171,13 +203,17 @@
     "unlimited": "Ilimitado"
   },
   "tips": {
-    "switchAnytime": "💡 Dica: Você pode alternar entre modelos de preços a qualquer momento nas suas configurações de cobrança"
+    "switchAnytime": "💡 Dica: Você pode alternar entre modelos de preços a qualquer momento nas suas configurações de cobrança",
+    "smallTeamPricing": "💰 Equipes pequenas obtêm melhores taxas por usuário",
+    "annualDiscount": "💸 Economize até 30% com faturamento anual",
+    "freeUpgrade": "🚀 Usuários gratuitos podem atualizar a qualquer momento"
   },
   "errors": {
     "loadingData": "Erro ao carregar dados de preços",
     "loadingPlansRetry": "Falha ao carregar os planos de preços. Atualize a página.",
-    "calculando": "Calculando preços...",
-    "selectedPlan": "Plano selecionado: {{plan}}"
+    "calculating": "Calculando preços...",
+    "selectedPlan": "Plano selecionado: {{plan}}",
+    "calculando": "Calculando preços..."
   },
   "accessibility": {
     "availablePlans": "Planos Disponíveis",
@@ -222,6 +258,54 @@
       "complete": "Concluir"
     }
   },
+  "ui": {
+    "loading": "Carregando opções de preços...",
+    "selectTeamSize": "Selecione o tamanho da sua equipe",
+    "chooseBilling": "Escolha a frequência de cobrança",
+    "planSelected": "Plano selecionado",
+    "totalCost": "Custo total",
+    "perUserCost": "Custo por usuário",
+    "included": "Incluído",
+    "popular": "Mais Popular",
+    "recommended": "Recomendado",
+    "currentPlan": "Plano Atual",
+    "upgrade": "Atualizar",
+    "downgrade": "Downgrade",
+    "change": "Mudar Plano",
+    "specialOffer": "Oferta Especial",
+    "limitedTime": "Tempo limitado",
+    "saveAmount": "Economize ${{amount}}",
+    "freeForever": "Gratis para sempre",
+    "noCommitment": "Sem compromisso, cancele a qualquer momento",
+    "instantActivation": "Ativação instantânea",
+    "supportIncluded": "Suporte incluído"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "Gestão de tarefas",
+      "projectTracking": "Acompanhamento de projetos",
+      "teamCollaboration": "Colaboração em Equipe",
+      "fileSharing": "Compartilhamento de arquivos",
+      "basicReporting": "Relatórios Básicos",
+      "mobileApp": "Acesso a aplicativos móveis"
+    },
+    "advanced": {
+      "ganttCharts": "Gráficos de Gantt",
+      "timeTracking": "Controle de tempo",
+      "advancedReporting": "Relatórios avançados",
+      "customFields": "Campos personalizados",
+      "apiAccess": "Acesso à API",
+      "prioritySupport": "Suporte prioritário"
+    },
+    "enterprise": {
+      "sso": "Logon único (SSO)",
+      "advancedSecurity": "Segurança Avançada",
+      "customIntegrations": "Integrações personalizadas",
+      "dedicatedSupport": "Suporte Dedicado",
+      "onPremise": "Implantação no local",
+      "slaSupport": "Suporte de SLA"
+    }
+  },
   "appsumo": {
     "exclusiveTitle": "🎉 AppSumo Exclusivo: 70% DE DESCONTO nos Planos Business!",
     "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m restantes",
@@ -243,6 +327,12 @@
     "perYear": "/ano",
     "perMonth": "/mês",
     "forUsers": " para {{count}} usuário{{s}}"
+  },
+  "ribbon": {
+    "recommended": "Recomendado",
+    "popular": "Mais Popular",
+    "bestValue": "Melhor Valor",
+    "appsumoSpecial": "Especial AppSumo"
   },
   "customFields": {
     "upgradeModalHeadline": "Capture cada detalhe com campos personalizados ilimitados",
