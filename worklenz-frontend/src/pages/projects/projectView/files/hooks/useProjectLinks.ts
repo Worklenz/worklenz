@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import projectLinksApiService from '@/api/projects/project-links.api.service';
-import { DEFAULT_PAGE_SIZE } from '@/shared/constants';
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/shared/constants';
 import logger from '@/utils/errorLogger';
 import type { ICreateLinkBody, IProjectLink, IUpdateLinkBody } from '@/types/projects/project-links.types';
 
@@ -12,7 +12,7 @@ export const useProjectLinks = (active: boolean) => {
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [pageIndex, setPageIndex] = useState(1);
-  const [pageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const fetchLinks = useCallback(async () => {
     if (!projectId || !active) return;
@@ -20,8 +20,14 @@ export const useProjectLinks = (active: boolean) => {
       setLoading(true);
       const res = await projectLinksApiService.list(projectId, pageIndex, pageSize);
       if (res.done && res.body) {
-        setLinks(res.body.data || []);
+        const rows = res.body.data || [];
+        setLinks(rows);
         setTotal(res.body.total || 0);
+        // If the current page is now empty (e.g. after deletions), fall back to the last valid page.
+        if (rows.length === 0 && pageIndex > 1) {
+          const lastPage = Math.max(1, Math.ceil((res.body.total || 0) / pageSize));
+          setPageIndex(lastPage);
+        }
       }
     } catch (e) {
       logger.error('Error fetching project links', e);
@@ -34,13 +40,30 @@ export const useProjectLinks = (active: boolean) => {
     void fetchLinks();
   }, [fetchLinks]);
 
+  const goToPage = useCallback(
+    (page: number, size: number = pageSize) => {
+      if (size !== pageSize) {
+        setPageSize(size);
+      }
+      setPageIndex(page);
+    },
+    [pageSize]
+  );
+
   const addLink = async (body: ICreateLinkBody): Promise<boolean> => {
     if (!projectId) return false;
     try {
       const res = await projectLinksApiService.create(projectId, body);
       if (res.done && res.body) {
-        setLinks(prev => [res.body as IProjectLink, ...prev]);
-        setTotal(prev => prev + 1);
+        // New links are ordered by created_at DESC, so show them on the first page.
+        // If we're already on page 1 the effect won't re-trigger, so fetch manually;
+        // otherwise let the page change drive the refetch to avoid a stale-closure fetch.
+        if (pageIndex === 1) {
+          await fetchLinks();
+        } else {
+          setLoading(true);
+          setPageIndex(1);
+        }
         return true;
       }
     } catch (e) {
@@ -54,9 +77,7 @@ export const useProjectLinks = (active: boolean) => {
     try {
       const res = await projectLinksApiService.update(projectId, linkId, body);
       if (res.done) {
-        setLinks(prev =>
-          prev.map(l => (l.id === linkId ? { ...l, ...body, updated_at: new Date().toISOString() } : l))
-        );
+        await fetchLinks();
         return true;
       }
     } catch (e) {
@@ -70,8 +91,7 @@ export const useProjectLinks = (active: boolean) => {
     try {
       const res = await projectLinksApiService.delete(projectId, linkId);
       if (res.done) {
-        setLinks(prev => prev.filter(l => l.id !== linkId));
-        setTotal(prev => Math.max(0, prev - 1));
+        await fetchLinks();
         return true;
       }
     } catch (e) {
@@ -86,10 +106,12 @@ export const useProjectLinks = (active: boolean) => {
     total,
     pageIndex,
     pageSize,
-    setPageIndex,
+    setPageIndex: goToPage,
+    setPageSize,
     fetchLinks,
     addLink,
     editLink,
     removeLink,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
   };
 };

@@ -1,16 +1,24 @@
 #!/bin/bash
 
-# Script to set environment variables for Docker deployment
+# Update the root environment file used by Docker Compose.
 # Usage: ./update-docker-env.sh [hostname] [use_ssl]
 
-# Default hostname if not provided
-DEFAULT_HOSTNAME="localhost"
-HOSTNAME=${1:-$DEFAULT_HOSTNAME}
+set -e
 
-# Check if SSL should be used
-USE_SSL=${2:-false}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/.env"
+ENV_EXAMPLE="$SCRIPT_DIR/.env.example"
+WORKLENZ_HOST="${1:-localhost}"
+USE_SSL="${2:-false}"
 
-# Set protocol prefixes based on SSL flag
+if [ ! -f "$ENV_FILE" ]; then
+  if [ ! -f "$ENV_EXAMPLE" ]; then
+    echo "Error: .env.example was not found in $SCRIPT_DIR" >&2
+    exit 1
+  fi
+  cp "$ENV_EXAMPLE" "$ENV_FILE"
+fi
+
 if [ "$USE_SSL" = "true" ]; then
   HTTP_PREFIX="https://"
   WS_PREFIX="wss://"
@@ -19,123 +27,50 @@ else
   WS_PREFIX="ws://"
 fi
 
-# Frontend URLs
-FRONTEND_URL="${HTTP_PREFIX}${HOSTNAME}:5000"
-MINIO_DASHBOARD_URL="${HTTP_PREFIX}${HOSTNAME}:9001"
+update_env_value() {
+  local key="$1"
+  local value="$2"
 
-# Create or overwrite frontend .env.development file
-mkdir -p worklenz-frontend
-cat > worklenz-frontend/.env.development << EOL
-# API Connection
-VITE_API_URL=http://localhost:3000
-VITE_SOCKET_URL=ws://localhost:3000
+  if grep -q "^${key}=" "$ENV_FILE"; then
+    sed -i.bak "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+  else
+    printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+  fi
+}
 
-# Application Environment
-VITE_APP_TITLE=Worklenz
-VITE_APP_ENV=development
+generate_secret_if_needed() {
+  local key="$1"
+  local current_value
+  current_value="$(sed -n "s/^${key}=//p" "$ENV_FILE" | head -n 1)"
 
-# Mixpanel
-VITE_MIXPANEL_TOKEN=
+  if [ -z "$current_value" ] || [[ "$current_value" == CHANGE_THIS* ]]; then
+    update_env_value "$key" "$(openssl rand -hex 32)"
+  fi
+}
 
-# Recaptcha
-VITE_ENABLE_RECAPTCHA=false
-VITE_RECAPTCHA_SITE_KEY=
+S3_BUCKET_VALUE="$(sed -n 's/^S3_BUCKET=//p' "$ENV_FILE" | head -n 1)"
+S3_BUCKET_VALUE="${S3_BUCKET_VALUE:-worklenz-bucket}"
+SEAWEEDFS_PORT_VALUE="$(sed -n 's/^SEAWEEDFS_S3_PORT=//p' "$ENV_FILE" | head -n 1)"
+SEAWEEDFS_PORT_VALUE="${SEAWEEDFS_PORT_VALUE:-8333}"
 
-# Session ID
-VITE_WORKLENZ_SESSION_ID=worklenz-session-id
-EOL
+update_env_value "DOMAIN" "$WORKLENZ_HOST"
+update_env_value "VITE_API_URL" "${HTTP_PREFIX}${WORKLENZ_HOST}:3000"
+update_env_value "VITE_SOCKET_URL" "${WS_PREFIX}${WORKLENZ_HOST}:3000"
+update_env_value "FRONTEND_URL" "${HTTP_PREFIX}${WORKLENZ_HOST}:5000"
+update_env_value "SERVER_CORS" "${HTTP_PREFIX}${WORKLENZ_HOST}:5000"
+update_env_value "SOCKET_IO_CORS" "${HTTP_PREFIX}${WORKLENZ_HOST}:5000"
+update_env_value "S3_ENDPOINT" "http://seaweedfs:8333"
+update_env_value "S3_PUBLIC_URL" "${HTTP_PREFIX}${WORKLENZ_HOST}:${SEAWEEDFS_PORT_VALUE}/${S3_BUCKET_VALUE}"
 
-# Create frontend .env.production file
-cat > worklenz-frontend/.env.production << EOL
-# API Connection
-VITE_API_URL=${HTTP_PREFIX}${HOSTNAME}:3000
-VITE_SOCKET_URL=${WS_PREFIX}${HOSTNAME}:3000
+generate_secret_if_needed "SESSION_SECRET"
+generate_secret_if_needed "COOKIE_SECRET"
+generate_secret_if_needed "JWT_SECRET"
+generate_secret_if_needed "DB_PASSWORD"
+generate_secret_if_needed "S3_SECRET_ACCESS_KEY"
 
-# Application Environment
-VITE_APP_TITLE=Worklenz
-VITE_APP_ENV=production
+rm -f "$ENV_FILE.bak"
 
-# Mixpanel
-VITE_MIXPANEL_TOKEN=
-
-# Recaptcha
-VITE_ENABLE_RECAPTCHA=false
-VITE_RECAPTCHA_SITE_KEY=
-
-# Session ID
-VITE_WORKLENZ_SESSION_ID=worklenz-session-id
-EOL
-
-# Create backend environment file
-mkdir -p worklenz-backend
-cat > worklenz-backend/.env << EOL
-# Server
-NODE_ENV=production
-PORT=3000
-SESSION_NAME=worklenz.sid
-SESSION_SECRET=$(openssl rand -base64 48)
-COOKIE_SECRET=$(openssl rand -base64 48)
-
-# CORS
-SOCKET_IO_CORS=${FRONTEND_URL}
-SERVER_CORS=${FRONTEND_URL}
-
-
-# Google Login
-GOOGLE_CLIENT_ID="your_google_client_id"
-GOOGLE_CLIENT_SECRET="your_google_client_secret"
-GOOGLE_CALLBACK_URL="${FRONTEND_URL}/secure/google/verify"
-LOGIN_FAILURE_REDIRECT="${FRONTEND_URL}/auth/authenticating"
-LOGIN_SUCCESS_REDIRECT="${FRONTEND_URL}/auth/authenticating"
-
-# Database
-DB_HOST=db
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=password
-DB_NAME=worklenz_db
-DB_MAX_CLIENTS=50
-USE_PG_NATIVE=true
-
-# Storage Configuration
-STORAGE_PROVIDER=s3
-AWS_REGION=us-east-1
-AWS_BUCKET=worklenz-bucket
-AWS_ACCESS_KEY_ID=minioadmin
-AWS_SECRET_ACCESS_KEY=minioadmin
-S3_URL=http://minio:9000
-
-# Backend Directories
-BACKEND_PUBLIC_DIR=./public
-BACKEND_VIEWS_DIR=./views
-
-# Host
-HOSTNAME=${HOSTNAME}
-FRONTEND_URL=${FRONTEND_URL}
-
-# Email
-SOURCE_EMAIL=no-reply@example.com
-
-# Notifications
-SLACK_WEBHOOK=
-
-# Other Settings
-COMMIT_BUILD_IMMEDIATELY=true
-
-# JWT Secret
-JWT_SECRET=$(openssl rand -base64 48)
-EOL
-
-echo "Environment configuration updated for ${HOSTNAME} with" $([ "$USE_SSL" = "true" ] && echo "HTTPS/WSS" || echo "HTTP/WS")
-echo "Created/updated environment files:"
-echo "- worklenz-frontend/.env.development (development)"
-echo "- worklenz-frontend/.env.production (production build)"
-echo "- worklenz-backend/.env"
-echo
-echo "To run with Docker Compose, use: docker-compose up -d"
-echo
-echo "Frontend URL: ${FRONTEND_URL}"
-echo "API URL: ${HTTP_PREFIX}${HOSTNAME}:3000"
-echo "Socket URL: ${WS_PREFIX}${HOSTNAME}:3000"
-echo "MinIO Dashboard URL: ${MINIO_DASHBOARD_URL}"
-echo "CORS is configured to allow requests from: ${FRONTEND_URL}"
+echo "Environment configuration updated in $ENV_FILE"
+echo "Frontend URL: ${HTTP_PREFIX}${WORKLENZ_HOST}:5000"
+echo "API URL: ${HTTP_PREFIX}${WORKLENZ_HOST}:3000"
+echo "SeaweedFS S3 URL: ${HTTP_PREFIX}${WORKLENZ_HOST}:${SEAWEEDFS_PORT_VALUE}/${S3_BUCKET_VALUE}"

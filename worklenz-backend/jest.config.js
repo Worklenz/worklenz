@@ -5,7 +5,7 @@
 
 module.exports = {
   // All imported modules in your tests should be mocked automatically
-  automock: true,
+  automock: false,
 
   // Stop running tests after `n` failures
   // bail: 0,
@@ -106,9 +106,9 @@ module.exports = {
   // rootDir: undefined,
 
   // A list of paths to directories that Jest should use to search for files in
-  // roots: [
-  //   "<rootDir>"
-  // ],
+  roots: [
+    "<rootDir>/src"
+  ],
 
   // Allows you to use a custom runner instead of Jest's default test runner
   // runner: "jest-runner",
@@ -141,7 +141,7 @@ module.exports = {
   // ],
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
-  testPathIgnorePatterns: ["\\\\node_modules\\\\"],
+  testPathIgnorePatterns: ["\\\\node_modules\\\\", "<rootDir>/build/"],
 
   // The regexp pattern or array of patterns that Jest uses to detect test files
   // testRegex: [],
@@ -164,7 +164,10 @@ module.exports = {
   transform: {
     "^.+\\.(ts|tsx)$": [
       "babel-jest",
-      { presets: ["@babel/preset-env", "@babel/preset-typescript"] },
+      {
+        presets: ["@babel/preset-env", "@babel/preset-typescript"],
+        plugins: [["@babel/plugin-proposal-decorators", { legacy: true }]],
+      },
     ],
     "^.+\\.(js|jsx)$": ["babel-jest", { presets: ["@babel/preset-env"] }],
   },

@@ -19,8 +19,23 @@
  *
  * Safe to re-run (truncates and re-seeds each time).
  *
- * Usage:  node scripts/migrate-bootstrap.js
+ * Usage:  node scripts/migrate-bootstrap.js [--before <migration-name>]
+ *
+ * --before records only migrations that sort before the named migration. This
+ * is useful when bootstrapping a database with an existing schema while
+ * allowing a newly introduced migration to run normally.
  */
+
+const args = process.argv.slice(2);
+const beforeMigration = args[0] === '--before' ? args[1] : undefined;
+
+if (
+  (args.length !== 0 && args.length !== 2) ||
+  (args.length === 2 && (!beforeMigration || beforeMigration.startsWith('-')))
+) {
+  console.error('Usage: node scripts/migrate-bootstrap.js [--before <migration-name>]');
+  process.exit(1);
+}
 
 require('dotenv').config();
 
@@ -46,11 +61,20 @@ const pool = new Pool({
 });
 
 // Collect names sorted by filename (= timestamp order, same as node-pg-migrate)
-const names = fs
+const allNames = fs
   .readdirSync(MIGRATIONS_DIR)
   .filter(f => f.endsWith('.js'))
   .map(f => f.replace(/\.js$/, ''))
   .sort();
+
+if (beforeMigration && !allNames.includes(beforeMigration)) {
+  console.error(`Migration not found: ${beforeMigration}`);
+  process.exit(1);
+}
+
+const names = beforeMigration
+  ? allNames.filter(name => name < beforeMigration)
+  : allNames;
 
 // Extract the Unix-ms timestamp prefix from a migration name like
 // "1740787200000_split_client_address_fields"
