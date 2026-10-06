@@ -27,5 +27,12 @@
   "noTaskTemplatesStep1": "Navegue até um projeto e abra-o.",
   "noTaskTemplatesStep2": "Selecione tarefas usando a opção Edição em Massa.",
   "noTaskTemplatesStep3": "Clique em Mais Opções na barra de ações em massa e escolha Criar Modelo de Tarefa.",
-  "noSearchResults": "Nenhum modelo corresponde à sua pesquisa."
+  "noSearchResults": "Nenhum modelo corresponde à sua pesquisa.",
+  "shareWithOrganization": "Partilhar com a organização",
+  "organizationBadge": "Organização",
+  "scopeUpdateSuccess": "Partilha do modelo atualizada.",
+  "scopeSharedSuccess": "Modelo compartilhado com a organização.",
+  "scopeUnsharedSuccess": "O modelo não é mais compartilhado com a organização.",
+  "scopeUpdateError": "Falha ao atualizar a partilha do modelo.",
+  "moreOptions": "Mais opções"
 }

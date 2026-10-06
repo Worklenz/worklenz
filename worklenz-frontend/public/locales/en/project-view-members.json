@@ -5,12 +5,13 @@
   "tasksColumn": "Tasks",
   "taskProgressColumn": "Task Progress",
   "accessColumn": "Access",
+  "roleLevelColumn": "Role",
   "fileIconAlt": "File icon",
-  "deleteConfirmationTitle": "Are you sure?",
-  "deleteConfirmationOk": "Yes",
   "deleteConfirmationCancel": "Cancel",
   "refreshButtonTooltip": "Refresh members",
-  "deleteButtonTooltip": "Remove from project",
+  "removeButtonText": "Remove",
+  "removeConfirmationTitle": "Remove {{name}}?",
+  "removeConfirmationBody": "They will lose access to this project. Their assigned tasks will remain but become unassigned.",
   "seatUsageText": "{{used}} seats used",
   "seatUsageWithLimitText": "{{used}} of {{total}} seats used",
   "seatLimitPopoverTitle": "Seat Limit Reached",
@@ -24,5 +25,7 @@
   "emptyText": "There are no attachments in the project.",
   "searchPlaceholder": "Search members",
   "invite": "Invite",
-  "Invite": "Invite"
+  "Invite": "Invite",
+  "removeSuccess": "{{name}} removed from project",
+  "removeError": "Failed to remove member"
 }

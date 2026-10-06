@@ -28,6 +28,7 @@
     "startToFinishDependency": "Start-to-Finish dependency",
     "dependencyType": "Dependency type",
     "removeDependency": "Remove",
+    "removeDependencyTooltip": "Remove dependency",
     "circularDependencyError": "This would create a circular dependency.",
     "dependencyCreatedSuccessfully": "Dependency created successfully.",
     "dependencyRemovedSuccessfully": "Dependency removed successfully.",
@@ -56,7 +57,11 @@
     "collapseAll": "Collapse All",
     "today": "Today",
     "fullscreen": "Fullscreen",
-    "noDate": "No Date"
+    "noDate": "No Date",
+    "viewBy": "View by",
+    "sortBy": "Sort by",
+    "sortManual": "Manual",
+    "sortChronological": "Chronological"
   },
   "viewMode": {
     "day": "Day",
@@ -76,12 +81,15 @@
     "taskNameColumn": "Task Name",
     "addNewPhase": "Add New Phase",
     "addNewStatus": "Add New Status",
-    "noTasksAvailable": "No tasks available"
+    "noTasksAvailable": "No tasks available",
+    "setDates": "Set dates",
+    "clickToEditDates": "Click to edit dates"
   },
   "roadmap": {
     "phasesAndTasks": "Phases & Tasks",
     "tasksCount": "tasks",
-    "complete": "complete"
+    "complete": "complete",
+    "dragDisabledInChronological": "Switch to Manual order to drag-reorder phases"
   },
   "unscheduledTasksTitle": "Unscheduled tasks",
   "noUnscheduledTasks": "No unscheduled tasks available."

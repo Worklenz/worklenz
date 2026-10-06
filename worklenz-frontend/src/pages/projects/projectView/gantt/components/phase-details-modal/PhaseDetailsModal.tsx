@@ -80,14 +80,23 @@ const PhaseDetailsModal: React.FC<PhaseDetailsModalProps> = ({
     // Prefer backend-provided aggregates on the phase milestone when available
     const hasBackendAggregates =
       typeof (localPhase as any).total_tasks === 'number' &&
-      typeof (localPhase as any).done_progress === 'number';
+      (typeof (localPhase as any).done_count === 'number' ||
+        typeof (localPhase as any).done_progress === 'number');
 
     if (hasBackendAggregates) {
       const totalTasks = (localPhase as any).total_tasks as number;
-      const completedTasks = (localPhase as any).done_progress as number;
+      // Prefer absolute done_count; done_progress is a percentage (0–100).
+      const completedTasks =
+        typeof (localPhase as any).done_count === 'number'
+          ? ((localPhase as any).done_count as number)
+          : Math.round((totalTasks * ((localPhase as any).done_progress as number)) / 100);
       const pendingTasks = Math.max(0, totalTasks - completedTasks);
       const completionPercentage =
-        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        typeof (localPhase as any).done_progress === 'number'
+          ? ((localPhase as any).done_progress as number)
+          : totalTasks > 0
+            ? Math.round((completedTasks / totalTasks) * 100)
+            : 0;
 
       // Overdue requires child task dates; fall back to 0 if children not loaded
       let overdueTasks = 0;

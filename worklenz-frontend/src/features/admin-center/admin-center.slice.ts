@@ -1,6 +1,11 @@
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import { createSelector } from '@reduxjs/toolkit';
 import dayjs from 'dayjs';
+import isBetween from 'dayjs/plugin/isBetween';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+dayjs.extend(isBetween);
+dayjs.extend(isSameOrBefore);
 import {
   IBillingAccountInfo,
   IBillingAccountStorage,
@@ -44,6 +49,7 @@ interface adminCenterState {
   holidays: IHolidayCalendarEvent[];
   loadingHolidays: boolean;
   holidaysDateRange: { from: string; to: string } | null;
+  holidaysCountryCode: string | null;
 }
 
 const initialState: adminCenterState = {
@@ -67,6 +73,7 @@ const initialState: adminCenterState = {
   holidays: [],
   loadingHolidays: false,
   holidaysDateRange: null,
+  holidaysCountryCode: null,
 };
 
 export const fetchBillingInfo = createAsyncThunk('adminCenter/fetchBillingInfo', async () => {
@@ -146,27 +153,37 @@ export const fetchHolidays = createAsyncThunk(
   ) => {
     const state = getState() as { adminCenterReducer: adminCenterState };
     const currentRange = state.adminCenterReducer.holidaysDateRange;
+    const cachedCountryCode = state.adminCenterReducer.holidaysCountryCode;
 
     // Get country code from holiday settings if not provided in params
     const countryCode =
-      params.country_code || state.adminCenterReducer.holidaySettings?.country_code;
+      params.country_code || state.adminCenterReducer.holidaySettings?.country_code || null;
 
-    // Check if we already have data for this range (cache hit)
+    // Check if we already have data for this range AND country (cache hit)
     if (
       currentRange &&
       currentRange.from === params.from_date &&
       currentRange.to === params.to_date &&
+      cachedCountryCode === countryCode &&
       state.adminCenterReducer.holidays.length > 0
     ) {
-      return { holidays: state.adminCenterReducer.holidays, dateRange: currentRange };
+      return {
+        holidays: state.adminCenterReducer.holidays,
+        dateRange: currentRange,
+        countryCode,
+      };
     }
 
     const { holidayApiService } = await import('@/api/holiday/holiday.api.service');
     const res = await holidayApiService.getCombinedHolidays({
       ...params,
-      country_code: countryCode,
+      country_code: countryCode || undefined,
     });
-    return { holidays: res.body, dateRange: { from: params.from_date, to: params.to_date } };
+    return {
+      holidays: res.body,
+      dateRange: { from: params.from_date, to: params.to_date },
+      countryCode,
+    };
   }
 );
 
@@ -204,6 +221,7 @@ const adminCenterSlice = createSlice({
     clearHolidaysCache: state => {
       state.holidays = [];
       state.holidaysDateRange = null;
+      state.holidaysCountryCode = null;
     },
     setOrganizationLogo: (state, action: { payload: string | null }) => {
       if (state.organization) {
@@ -291,6 +309,11 @@ const adminCenterSlice = createSlice({
         state.organization.state_code = action.payload.state_code;
         state.organization.auto_sync_holidays = action.payload.auto_sync_holidays;
       }
+      // Clear holidays cache when country settings change
+      // This will force a refetch of holidays with the new country
+      state.holidays = [];
+      state.holidaysDateRange = null;
+      state.holidaysCountryCode = null;
     });
 
     builder.addCase(fetchCountriesWithStates.pending, (state, action) => {
@@ -312,6 +335,7 @@ const adminCenterSlice = createSlice({
       if (action.payload.holidays !== state.holidays) {
         state.holidays = action.payload.holidays;
         state.holidaysDateRange = action.payload.dateRange;
+        state.holidaysCountryCode = action.payload.countryCode;
       }
       state.loadingHolidays = false;
     });
@@ -335,8 +359,8 @@ export const {
 // Selectors for optimized access
 export const selectHolidaysByDateRange = createSelector(
   [
-    (state: any) => state.adminCenterReducer.holidays,
-    (state: any, dateRange: { from: string; to: string }) => dateRange,
+    (state: { adminCenterReducer: adminCenterState }) => state.adminCenterReducer.holidays,
+    (_state: { adminCenterReducer: adminCenterState }, dateRange: { from: string; to: string }) => dateRange,
   ],
   (holidays, dateRange) => {
     if (!holidays || holidays.length === 0) return [];
@@ -350,8 +374,8 @@ export const selectHolidaysByDateRange = createSelector(
 
 export const selectWorkingDaysInRange = createSelector(
   [
-    (state: any) => state.adminCenterReducer.holidays,
-    (state: any, params: { from: string; to: string; workingDays: string[] }) => params,
+    (state: { adminCenterReducer: adminCenterState }) => state.adminCenterReducer.holidays,
+    (_state: { adminCenterReducer: adminCenterState }, params: { from: string; to: string; workingDays: string[] }) => params,
   ],
   (holidays, { from, to, workingDays }) => {
     const start = dayjs(from);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 
@@ -21,20 +21,27 @@ import {
   message,
   theme,
 } from '@/shared/antd-imports';
-import { SettingOutlined, SearchOutlined } from '@ant-design/icons';
+import { SettingOutlined, SearchOutlined, BranchesOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
 import CustomAvatar from '@/components/CustomAvatar';
-import { useFetchScheduleMembersQuery, useFetchTaskTimelineQuery, scheduleApi } from '@/api/schedule/scheduleApi';
+import {
+  useFetchScheduleMembersQuery,
+  useFetchTaskTimelineQuery,
+  useFetchDailyCapacityQuery,
+  scheduleApi,
+} from '@/api/schedule/scheduleApi';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { getWorking, toggleSettingsDrawer } from '@/features/schedule/scheduleSlice';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { fetchProjectPriorities } from '@/features/projects/priority/projectPrioritySlice';
 import PlannerMultiFilterDropdown from '@/features/schedule/PlannerMultiFilterDropdown';
+import SubtaskBreadcrumbLabel from '@/features/schedule/components/SubtaskBreadcrumbLabel';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useProjectRoomSync, projectIdsFromTasks, hasParentSubtaskOverlap } from '@/hooks/useProjectRoomSync';
 import { useAuthService } from '@/hooks/useAuth';
 import { getUserSession } from '@/utils/session-helper';
 import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/task-drawer.slice';
@@ -53,7 +60,7 @@ const RANGE_CFG: Record<RangeKey, { label: string; spanDays: number }> = {
   month: { label: 'Month', spanDays: 28 },
 };
 
-const WEEKDAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY_KEYS = ['mondayShort', 'tuesdayShort', 'wednesdayShort', 'thursdayShort', 'fridayShort', 'saturdayShort', 'sundayShort'] as const;
 
 const capColor = (pct: number) => (pct > 100 ? '#ff4d4f' : pct >= 80 ? '#faad14' : '#52c41a');
 
@@ -125,6 +132,9 @@ interface WlTask {
   statusColor?: string;
   phaseName?: string;
   assigneeNames?: string[];
+  isSubTask?: boolean;
+  parentTaskName?: string;
+  parentTaskId?: string | null;
 }
 
 // Flat, no-task-attached commitment — see Section 3/9.3 of the build spec. There is no
@@ -188,6 +198,8 @@ const PlannerWorkloadView: React.FC = () => {
   const { socket } = useSocket();
   const currentSession = useAuthService().getCurrentSession();
   const timeZone = getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const weekdayShort = useMemo(() => WEEKDAY_KEYS.map(k => t(k, { defaultValue: k.replace('Short', '') })), [t]);
 
   const bg = themeWiseColor('#fff', '#141414', themeMode);
   const cardBg = themeWiseColor('#fff', '#1f1f1f', themeMode);
@@ -438,6 +450,53 @@ const PlannerWorkloadView: React.FC = () => {
     { skip: !startDate || !endDate }
   );
 
+  const { data: capacityResponse } = useFetchDailyCapacityQuery(
+    {
+      startDate: startDate || '',
+      endDate: endDate || '',
+    },
+    { skip: !startDate || !endDate }
+  );
+
+  const memberCapacityMap = useMemo(() => {
+    const map = new Map<string, any>();
+    const memberCapList: any[] = capacityResponse?.body || [];
+    memberCapList.forEach(m => {
+      m.daily_capacity?.forEach((c: any) => {
+        const key = `${m.team_member_id}_${c.date}`;
+        map.set(key, c);
+      });
+    });
+    return map;
+  }, [capacityResponse]);
+
+  const memberPeriodCapacity = useCallback(
+    (memberId: string, dateStrs: string[]) => {
+      let totalEffective = 0;
+      let totalBase = 0;
+      dateStrs.forEach(dStr => {
+        const cap = memberCapacityMap.get(`${memberId}_${dStr}`);
+        if (cap) {
+          totalEffective += cap.working_hours;
+          totalBase += cap.base_hours ?? (isWorkingDay(dayjs(dStr)) ? workingHours : 0);
+        } else if (isWorkingDay(dayjs(dStr))) {
+          totalEffective += workingHours;
+          totalBase += workingHours;
+        }
+      });
+      return { totalEffective, totalBase };
+    },
+    [memberCapacityMap, isWorkingDay, workingHours]
+  );
+
+  // Surface the backend's truncation notice (the timeline query caps out at a fixed
+  // row count) instead of letting tasks silently vanish from view with no indication.
+  useEffect(() => {
+    if (taskTimelineResp?.message) {
+      message.warning(taskTimelineResp.message, 8);
+    }
+  }, [taskTimelineResp?.message]);
+
   const wlTasks: WlTask[] = useMemo(() => {
     const raw = taskTimelineResp?.body || [];
     const out: WlTask[] = [];
@@ -453,21 +512,30 @@ const PlannerWorkloadView: React.FC = () => {
           projectId: task.project_id,
           day,
           title: task.name,
-          estHours: task.total_minutes ? Math.round((task.total_minutes / 60) * 10) / 10 : null,
+          estHours: task.total_minutes != null ? Math.round((task.total_minutes / 60) * 10) / 10 : null,
           color: task.project_color || projectById[task.project_id]?.color || token.colorPrimary,
           multiAssignee: assignees.length > 1,
           statusName: task.status_name,
           statusColor: task.status_color,
           phaseName: task.phase_name,
           assigneeNames: assignees.map((x: any) => x.name).filter(Boolean),
+          isSubTask: !!task.parent_task_id,
+          parentTaskName: task.parent_task_name,
+          parentTaskId: task.parent_task_id ?? null,
         });
       });
     });
     return out;
   }, [taskTimelineResp, projectById, token.colorPrimary]);
 
+  // Keeps this view's socket room membership in sync with the projects currently
+  // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
+  // elsewhere — actually reach it instead of only showing up after a hard refresh.
+  const loadedProjectIds = useMemo(() => projectIdsFromTasks(taskTimelineResp?.body || []), [taskTimelineResp]);
+  useProjectRoomSync(loadedProjectIds);
+
   const refreshAfterMutation = () => {
-    dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'Workload', 'MemberProjects']));
+    dispatch(scheduleApi.util.invalidateTags(['TaskTimeline', 'Workload', 'MemberProjects', 'Capacity', 'TimeOff']));
   };
 
   // ── Calculations (Section 6 of the build spec) ──
@@ -491,14 +559,14 @@ const PlannerWorkloadView: React.FC = () => {
   // ── Backend writes — reuses the same socket calls PlannerScheduleView /
   // PlannerAddTaskModal already use for task scheduling, so Workload's grid stays in
   // sync with Schedule instead of maintaining a parallel write path. ──
-  const emitReschedule = (taskId: string, newDay: string) => {
+  const emitReschedule = (taskId: string, newDay: string, parentTaskId: string | null = null) => {
     socket?.emit(
       SocketEvents.TASK_START_DATE_CHANGE.toString(),
-      JSON.stringify({ task_id: taskId, start_date: newDay, parent_task: null, time_zone: timeZone })
+      JSON.stringify({ task_id: taskId, start_date: newDay, parent_task: parentTaskId, time_zone: timeZone })
     );
     socket?.emit(
       SocketEvents.TASK_END_DATE_CHANGE.toString(),
-      JSON.stringify({ task_id: taskId, end_date: newDay, parent_task: null, time_zone: timeZone })
+      JSON.stringify({ task_id: taskId, end_date: newDay, parent_task: parentTaskId, time_zone: timeZone })
     );
   };
 
@@ -517,8 +585,15 @@ const PlannerWorkloadView: React.FC = () => {
 
   // Schedules an existing unassigned task onto a cell — same date/assignee socket calls
   // as PlannerAddTaskModal's "Assign Unassigned Task" mode uses in Schedule.
-  const scheduleTask = (taskId: string, projectId: string, memberId: string, day: string, title: string) => {
-    emitReschedule(taskId, day);
+  const scheduleTask = (
+    taskId: string,
+    projectId: string,
+    memberId: string,
+    day: string,
+    title: string,
+    parentTaskId: string | null = null
+  ) => {
+    emitReschedule(taskId, day, parentTaskId);
     emitAssigneeChange(taskId, projectId, memberId, 0);
     const who = wlMembers.find(m => m.id === memberId)?.name || 'member';
     showToast(`Scheduled "${title}" to ${who}`, () => {
@@ -529,9 +604,9 @@ const PlannerWorkloadView: React.FC = () => {
   };
 
   const rescheduleTask = (wl: WlTask, newDay: string) => {
-    emitReschedule(wl.taskId, newDay);
+    emitReschedule(wl.taskId, newDay, wl.parentTaskId ?? null);
     showToast(`Moved "${wl.title}" to ${dayjs(newDay).format('MMM D')}`, () => {
-      emitReschedule(wl.taskId, wl.day);
+      emitReschedule(wl.taskId, wl.day, wl.parentTaskId ?? null);
       setTimeout(refreshAfterMutation, 400);
     });
     setTimeout(refreshAfterMutation, 500);
@@ -591,7 +666,8 @@ const PlannerWorkloadView: React.FC = () => {
 
   // ── Grid rows ──
   const memberUtilPct = (memberId: string) => {
-    const cap = visibleDateStrs.length * workingHours;
+    const { totalEffective } = memberPeriodCapacity(memberId, visibleDateStrs);
+    const cap = totalEffective;
     return cap ? (rowLoad('member', memberId, visibleDateStrs) / cap) * 100 : 0;
   };
 
@@ -635,6 +711,7 @@ const PlannerWorkloadView: React.FC = () => {
     fallbackEst,
     visibleDateStrs,
     workingHours,
+    memberCapacityMap,
   ]);
 
   const loading = membersLoading || projectsLoading;
@@ -661,12 +738,21 @@ const PlannerWorkloadView: React.FC = () => {
             ⚠ {t('exceedsWorkingHours', { defaultValue: 'Exceeds working hours' })} ({hours.toFixed(1)}h / {workingHours}h)
           </div>
         )}
-        <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{wl.title}</div>
+        <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>
+          {wl.isSubTask && '↳ '}
+          {wl.title}
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
           <div>
             <span style={{ opacity: 0.65 }}>{t('project', { defaultValue: 'Project' })}: </span>
             {p?.name || '-'}
           </div>
+          {wl.isSubTask && (
+            <div>
+              <span style={{ opacity: 0.65 }}>{t('subtaskOf', { defaultValue: 'Subtask of' })}: </span>
+              {wl.parentTaskName || '-'}
+            </div>
+          )}
           <div>
             <span style={{ opacity: 0.65 }}>{t('estHoursPerDay', { defaultValue: 'Estimated Hours' })}: </span>
             <span style={{ color: overCapacity ? '#ff4d4f' : undefined, fontWeight: overCapacity ? 700 : undefined }}>
@@ -780,6 +866,7 @@ const PlannerWorkloadView: React.FC = () => {
           )}
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {wl.isSubTask && '↳ '}
           {wl.title}
         </div>
       </div>
@@ -830,8 +917,8 @@ const PlannerWorkloadView: React.FC = () => {
   const renderMeter = (axis: Axis, rowKey: string, dateStrs: string[], meterColor?: string) => {
     const load = rowLoad(axis, rowKey, dateStrs);
     if (axis === 'member') {
-      const days = dateStrs.length;
-      const cap = days * workingHours;
+      const { totalEffective, totalBase } = memberPeriodCapacity(rowKey, dateStrs);
+      const cap = totalEffective;
       const pct = cap ? Math.round((load / cap) * 100) : 0;
       const free = cap - load;
       const color = capColor(pct);
@@ -847,8 +934,8 @@ const PlannerWorkloadView: React.FC = () => {
                 })}
               </div>
               <div style={{ marginTop: 6 }}>
-                {load}h {t('scheduled', { defaultValue: 'scheduled' })} ÷ {cap}h {t('capacity', { defaultValue: 'capacity' })} ({days}{' '}
-                {t('days', { defaultValue: 'days' })} × {workingHours}h) = <b>{pct}%</b>
+                {load}h {t('scheduled', { defaultValue: 'scheduled' })} ÷ {cap}h {t('capacity', { defaultValue: 'capacity' })}
+                {totalBase !== cap ? ` (base: ${totalBase}h)` : ''} = <b>{pct}%</b>
               </div>
               <div style={{ marginTop: 4, opacity: 0.85 }}>
                 {free >= 0
@@ -860,10 +947,8 @@ const PlannerWorkloadView: React.FC = () => {
         >
           <div style={{ textAlign: 'center', width: '100%', cursor: 'default' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color }}>{pct}%</div>
-            <div style={{ fontSize: 12, opacity: 0.55 }}>
-              {free >= 0
-                ? t('freeHours', { defaultValue: '{{hours}}h free', hours: free })
-                : t('overHours', { defaultValue: '{{hours}}h over', hours: -free })}
+            <div style={{ fontSize: 12, opacity: 0.6 }}>
+              {load}h / {cap}h
             </div>
           </div>
         </Tooltip>
@@ -1002,20 +1087,20 @@ const PlannerWorkloadView: React.FC = () => {
         {groupToggle}
         <PlannerMultiFilterDropdown
           label={t('allProjectStatuses', { defaultValue: 'Project Status' })}
-          options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name }))}
+          options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name || '' }))}
           selected={filterStatuses}
           onChange={setFilterStatuses}
         />
         <PlannerMultiFilterDropdown
           label={t('allProjectPriorities', { defaultValue: 'Project Priority' })}
-          options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name }))}
+          options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name || '' }))}
           selected={filterPriorities}
           onChange={setFilterPriorities}
         />
         {group === 'members' && (
           <PlannerMultiFilterDropdown
             label={t('allUtilLevels', { defaultValue: 'Utilization' })}
-            options={UTIL_LEVELS.map(l => ({ value: l.value, label: l.label }))}
+            options={UTIL_LEVELS.map(l => ({ value: l.value, label: t('util' + l.value.charAt(0).toUpperCase() + l.value.slice(1), { defaultValue: l.label }) }))}
             selected={filterUtilLevels}
             onChange={setFilterUtilLevels}
           />
@@ -1047,6 +1132,19 @@ const PlannerWorkloadView: React.FC = () => {
               }}
             />
             {t('projectBlock', { defaultValue: 'Project block' })}
+          </span>
+          <span>
+            <span
+              style={{
+                display: 'inline-block',
+                width: 9,
+                height: 9,
+                borderRadius: 2,
+                marginRight: 4,
+                background: 'repeating-linear-gradient(45deg, #faad14 0 2px, #faad1440 2px 4px)',
+              }}
+            />
+            {t('timeOffOrHoliday', { defaultValue: 'Time off / Holiday' })}
           </span>
         </div>
       </Flex>
@@ -1154,7 +1252,7 @@ const PlannerWorkloadView: React.FC = () => {
                     }}
                   >
                     <div style={{ fontSize: 11, fontWeight: 600, color: d.date.isSame(dayjs(), 'day') ? token.colorPrimary : undefined }}>
-                      {WEEKDAY[(d.date.day() + 6) % 7]} {d.date.date()}
+                      {weekdayShort[(d.date.day() + 6) % 7]} {d.date.date()}
                     </div>
                     <div style={{ fontSize: 12, opacity: 0.45 }}>{d.date.format('MMM')}</div>
                   </div>
@@ -1190,7 +1288,27 @@ const PlannerWorkloadView: React.FC = () => {
                         b => (row.axis === 'member' ? b.memberId : b.projectId) === row.key && dateStr >= b.startDay && dateStr <= b.endDay
                       );
                       const used = dayLoad(row.axis, row.key, dateStr);
-                      const over = row.axis === 'member' && used > workingHours;
+                      const dayCapInfo = row.axis === 'member' ? memberCapacityMap.get(`${row.key}_${dateStr}`) : null;
+                      const effectiveDayCap = dayCapInfo ? dayCapInfo.working_hours : (isWorkingDay(dayjs(dateStr)) ? workingHours : 0);
+                      const isFullDayTimeOff = Boolean(
+                        dayCapInfo?.is_time_off && dayCapInfo?.is_full_day_time_off !== false && dayCapInfo?.working_hours === 0
+                      );
+                      const isHoliday = Boolean(dayCapInfo?.is_holiday);
+                      const isPartialTimeOff = Boolean(
+                        dayCapInfo?.is_time_off && (dayCapInfo?.is_full_day_time_off === false || (dayCapInfo.time_off_hours && dayCapInfo.working_hours > 0))
+                      );
+                      const over = row.axis === 'member' && used > effectiveDayCap;
+                      // Parent tasks and their subtasks carry independent, additive estimates
+                      // (never rolled up) — so both counting toward the day total is correct,
+                      // not a bug. This just surfaces the combination to the PM rather than
+                      // silently altering the total. Only meaningful per-person.
+                      const dayHasParentSubtaskOverlap =
+                        row.axis === 'member' &&
+                        hasParentSubtaskOverlap(
+                          dayTasks,
+                          wl => wl.taskId,
+                          wl => wl.parentTaskId
+                        );
                       return (
                         <div
                           key={d.offset}
@@ -1207,7 +1325,11 @@ const PlannerWorkloadView: React.FC = () => {
                             minWidth: 90,
                             borderRight: `1px solid ${borderColor}`,
                             padding: '6px 5px',
-                            background: over ? 'rgba(255,77,79,.06)' : undefined,
+                            background: over
+                              ? 'rgba(255,77,79,.06)'
+                              : isFullDayTimeOff
+                                ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                : undefined,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 4,
@@ -1215,6 +1337,17 @@ const PlannerWorkloadView: React.FC = () => {
                             cursor: 'pointer',
                           }}
                         >
+                          {dayHasParentSubtaskOverlap && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                              <Tooltip
+                                title={t('includesParentAndSubtask', {
+                                  defaultValue: 'Includes parent + subtask of the same task — hours are counted separately',
+                                })}
+                              >
+                                <BranchesOutlined style={{ fontSize: 12, color: token.colorWarning }} />
+                              </Tooltip>
+                            </div>
+                          )}
                           {dayTasks.length === 0 && dayBlocks.length === 0 && (
                             <div
                               className="planner-add-hint"
@@ -1253,6 +1386,21 @@ const PlannerWorkloadView: React.FC = () => {
                               {`+ ${t('addNew', { defaultValue: 'Add new' })}`}
                             </div>
                           )}
+                          {isFullDayTimeOff && (
+                            <div style={{ fontSize: 11, color: '#fa8c16', fontWeight: 600, textAlign: 'center' }}>
+                              🔵 {t('timeOff', { defaultValue: 'Time Off' })}
+                            </div>
+                          )}
+                          {isHoliday && effectiveDayCap === 0 && !isFullDayTimeOff && (
+                            <div style={{ fontSize: 11, color: '#faad14', fontWeight: 600, textAlign: 'center' }}>
+                              🎉 {t('holiday', { defaultValue: 'Holiday' })}
+                            </div>
+                          )}
+                          {isPartialTimeOff && (
+                            <div style={{ fontSize: 10, color: '#fa8c16', fontWeight: 600, textAlign: 'center' }}>
+                              {dayCapInfo.time_off_hours}h {t('timeOff', { defaultValue: 'Time Off' })}
+                            </div>
+                          )}
                           {used > 0 && (
                             <div
                               style={{
@@ -1264,7 +1412,7 @@ const PlannerWorkloadView: React.FC = () => {
                                 textAlign: 'center',
                               }}
                             >
-                              {row.axis === 'member' ? `${used}h / ${workingHours}h` : `${used}h`}
+                              {row.axis === 'member' ? `${used}h / ${effectiveDayCap}h` : `${used}h`}
                             </div>
                           )}
                         </div>
@@ -1296,22 +1444,29 @@ const PlannerWorkloadView: React.FC = () => {
                   {days.map(d => {
                     const dateStr = d.date.format('YYYY-MM-DD');
                     const totalDay = Math.round(wlMembers.reduce((s, m) => s + dayLoad('member', m.id, dateStr), 0) * 10) / 10;
+                    const totalCapDay = wlMembers.reduce((s, m) => {
+                      const c = memberCapacityMap.get(`${m.id}_${dateStr}`);
+                      return s + (c ? c.working_hours : (isWorkingDay(d.date) ? workingHours : 0));
+                    }, 0);
                     return (
-                      <div key={d.offset} style={{ flex: 1, minWidth: 90, borderRight: `1px solid ${borderColor}`, padding: '16px 5px', textAlign: 'center' }}>
-                        <span style={{ fontSize: 12, fontWeight: 700 }}>{totalDay}h</span>
+                      <div key={d.offset} style={{ flex: 1, minWidth: 90, borderRight: `1px solid ${borderColor}`, padding: '12px 5px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 12, fontWeight: 700 }}>{totalDay}h</div>
+                        <div style={{ fontSize: 11, opacity: 0.5 }}>/ {totalCapDay}h</div>
                       </div>
                     );
                   })}
                   <div style={{ ...stickyRightStyle, background: totalRowBg, padding: '10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {(() => {
                       const totalLoad = wlMembers.reduce((s, m) => s + rowLoad('member', m.id, visibleDateStrs), 0);
-                      const totalCap = wlMembers.length * visibleDateStrs.length * workingHours;
+                      const totalCap = wlMembers.reduce((s, m) => s + memberPeriodCapacity(m.id, visibleDateStrs).totalEffective, 0);
                       const pct = totalCap ? Math.round((totalLoad / totalCap) * 100) : 0;
                       const color = capColor(pct);
                       return (
                         <div style={{ textAlign: 'center' }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color }}>{pct}%</div>
-                          <div style={{ fontSize: 12, opacity: 0.6 }}>{Math.round(totalLoad * 10) / 10}h</div>
+                          <div style={{ fontSize: 12, opacity: 0.7 }}>
+                            {Math.round(totalLoad * 10) / 10}h / {totalCap}h
+                          </div>
                         </div>
                       );
                     })()}
@@ -1368,8 +1523,8 @@ const PlannerWorkloadView: React.FC = () => {
           projects={wlProjects}
           fallbackEst={fallbackEst}
           onClose={() => setAddPopover(null)}
-          onScheduleTask={(taskId, projectId, memberId, day, title) => {
-            scheduleTask(taskId, projectId, memberId, day, title);
+          onScheduleTask={(taskId, projectId, memberId, day, title, parentTaskId) => {
+            scheduleTask(taskId, projectId, memberId, day, title, parentTaskId ?? null);
           }}
           onAddBlock={block => addBlock(block)}
         />
@@ -1508,7 +1663,14 @@ const WorkloadAddPopover: React.FC<{
   projects: WlProject[];
   fallbackEst: number;
   onClose: () => void;
-  onScheduleTask: (taskId: string, projectId: string, memberId: string, day: string, title: string) => void;
+  onScheduleTask: (
+    taskId: string,
+    projectId: string,
+    memberId: string,
+    day: string,
+    title: string,
+    parentTaskId?: string | null
+  ) => void;
   onAddBlock: (block: Omit<WlBlock, 'id'>) => void;
 }> = ({ ctx, members, projects, fallbackEst, onClose, onScheduleTask, onAddBlock }) => {
   const { t } = useTranslation('schedule');
@@ -1547,7 +1709,7 @@ const WorkloadAddPopover: React.FC<{
         statuses: null,
         members: null,
         projects: null,
-        isSubtasksInclude: false,
+        isSubtasksInclude: true,
       } as any)
       .then(res => {
         if (cancelled) return;
@@ -1785,7 +1947,9 @@ const WorkloadAddPopover: React.FC<{
                         >
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
                             {u.task_key && <span style={{ opacity: 0.5, flexShrink: 0 }}>{u.task_key}</span>}
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <SubtaskBreadcrumbLabel isSubTask={u.is_sub_task} parentTaskName={u.parent_task_name} name={u.name} />
+                            </span>
                           </span>
                           <span style={{ opacity: 0.5, flexShrink: 0, fontSize: 11 }}>
                             {hours > 0 ? `${Math.round(hours * 10) / 10}h` : `${fallbackEst}h default`}
@@ -1874,7 +2038,14 @@ const WorkloadAddPopover: React.FC<{
               const item = unschedTasks.find(u => u.id === selUnsched);
               if (item) {
                 const memberId = ctx.axis === 'member' ? ctx.rowKey : otherAxisVal;
-                onScheduleTask(item.id, taskProjectId, memberId, taskDate.format('YYYY-MM-DD'), item.name);
+                onScheduleTask(
+                  item.id,
+                  taskProjectId,
+                  memberId,
+                  taskDate.format('YYYY-MM-DD'),
+                  item.name,
+                  item.parent_task_id
+                );
               }
             } else {
               const memberId = ctx.axis === 'member' ? ctx.rowKey : otherAxisVal;

@@ -96,8 +96,9 @@ export default class TeamsController extends WorklenzControllerBase {
       try {
         const userQuery = `SELECT deserialize_user($1) AS user;`;
         const userResult = await db.query(userQuery, [req.user.id]);
-        if (userResult.rows.length && userResult.rows[0]?.user) {
-          req.user = userResult.rows[0].user;
+        const refreshedUser = userResult.rows[0]?.user;
+        if (refreshedUser) {
+          req.user = refreshedUser;
         }
       } catch (error) {
         console.error('Failed to refresh user session after team activation:', error);

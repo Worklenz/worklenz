@@ -26,6 +26,59 @@ const calculateWorkingDaysPerWeek = (workingDays: any): number => {
   return Object.values(days).filter(Boolean).length;
 };
 
+// The backend embeds each member's tasks as a UNION of one row per assigned
+// task plus one row per distinct day time was logged against that task, so a
+// task logged on 3 different days produces 4 raw entries for the same task.
+// This collapses that back down to one entry per task_id, preferring the
+// 'task' row (has the real assignment dates) over a 'time_log' row.
+export const normalizeMemberTasks = (rawTasks: any, member: any): ITaskAllocation[] => {
+  if (!Array.isArray(rawTasks)) return [];
+
+  const memberId = member?.project_member_id || member?.team_member_id || member?.user_id || '';
+  const grouped = new Map<string, any[]>();
+
+  rawTasks.forEach((task: any, index: number) => {
+    const taskId = task.task_id || `task-${index}`;
+    const group = grouped.get(taskId);
+    if (group) group.push(task);
+    else grouped.set(taskId, [task]);
+  });
+
+  const result: ITaskAllocation[] = [];
+  grouped.forEach((rows, taskId) => {
+    // Use the real assignment row for name/dates/status/priority when present,
+    // otherwise the first logged-time row. Sum hours across every logged-time
+    // row for this task instead of keeping only one — a task logged on
+    // several days must not lose all but one day's hours.
+    const base = rows.find(r => r.entry_type === 'task') || rows[0];
+    const actualHours = rows
+      .filter(r => r.entry_type === 'time_log')
+      .reduce((sum, r) => sum + (r.logged_hours ? parseFloat(r.logged_hours) : 0), 0);
+
+    result.push({
+      id: `${memberId}-task-${taskId}`,
+      taskId,
+      taskName: base.task_name || `Task ${taskId}`,
+      projectId: member?.project_id || 'current-project',
+      projectName: 'Current Project',
+      memberId,
+      memberName: member?.name || '',
+      estimatedHours: actualHours || 4,
+      actualHours,
+      startDate: base.start_date ? String(base.start_date).split('T')[0] : '',
+      endDate: base.end_date ? String(base.end_date).split('T')[0] : '',
+      priority: base.priority_name || 'Medium',
+      priorityColor: base.priority_color || '#1890ff',
+      status: base.status_name || 'In Progress',
+      statusColor: base.status_color || '#52c41a',
+      completionPercentage: 0,
+      entryType: base.entry_type,
+    });
+  });
+
+  return result;
+};
+
 // Transform backend data to frontend interface
 const transformToWorkloadData = (data: any): IWorkloadData => {
   // Add null checks for the data parameter
@@ -58,6 +111,7 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
       weeklyCapacity: weeklyCapacity,
       expectedCapacity: weeklyCapacity, // Alias for compatibility with components
       currentWorkload: calculateMemberWorkload(member, safeTasks),
+      tasks: normalizeMemberTasks(member.tasks, member),
       utilizationPercentage: calculateUtilization(
         member,
         safeTasks,
@@ -66,6 +120,7 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
       ),
       isOverallocated: false, // Will be calculated
       isUnderutilized: false, // Will be calculated
+      hasAnyAssignment: member.has_any_assignment ?? true,
     };
   });
 
@@ -192,7 +247,7 @@ const transformToWorkloadData = (data: any): IWorkloadData => {
           allocations.reduce((sum, alloc) => {
             // Only count estimated hours from planned tasks, not time logs
             // Time logs have actualHours > 0 and estimatedHours = actualHours
-            if (alloc.actualHours > 0 && alloc.estimatedHours === alloc.actualHours) {
+            if ((alloc.actualHours ?? 0) > 0 && alloc.estimatedHours === alloc.actualHours) {
               // This is a time log entry, don't count as estimated work
               return sum;
             }
@@ -373,91 +428,65 @@ const projectWorkloadApi = createApi({
       keepUnusedDataFor: 10 * 60, // 10 minutes cache
     }),
 
-    // Derived endpoint for consolidated workload data
     getProjectWorkload: builder.query<
       IWorkloadData,
       { projectId: string; startDate?: string; endDate?: string }
     >({
-      queryFn: async ({ projectId, startDate, endDate }, { dispatch, getState }) => {
+      queryFn: async ({ projectId, startDate, endDate }, _api, _extraOptions, baseQuery) => {
         try {
-          console.log('getProjectWorkload called with:', { projectId, startDate, endDate });
-
-          // Use RTK Query's built-in query dispatching with proper error handling
-          const chartDatesPromise = dispatch(
-            projectWorkloadApi.endpoints.getWorkloadChartDates.initiate({
-              projectId,
-              startDate,
-              endDate,
-            })
-          );
-          const membersPromise = dispatch(
-            projectWorkloadApi.endpoints.getWorkloadMembers.initiate({
-              projectId,
-              startDate,
-              endDate,
-            })
-          );
-          const tasksPromise = dispatch(
-            projectWorkloadApi.endpoints.getWorkloadTasksByMember.initiate({
-              projectId,
-              params: { startDate, endDate },
-            })
-          );
-
-          // Wait for all promises to resolve
           const [chartDatesResult, membersResult, tasksResult] = await Promise.all([
-            chartDatesPromise,
-            membersPromise,
-            tasksPromise,
+            baseQuery({
+              url: `/workload-gannt/chart-dates/${projectId}`,
+              method: 'GET',
+              params: { timeZone: 'UTC', start_date: startDate, end_date: endDate },
+            }),
+            baseQuery({
+              url: `/workload-gannt/workload-members/${projectId}`,
+              method: 'GET',
+              params: {
+                start_date: startDate,
+                end_date: endDate,
+              },
+            }),
+            baseQuery({
+              url: `/workload-gannt/workload-tasks-by-member/${projectId}`,
+              method: 'GET',
+              params: { startDate, endDate },
+            }),
           ]);
 
-          console.log('API Results:', {
-            chartDates: chartDatesResult,
-            members: membersResult,
-            tasks: tasksResult,
-          });
-
-          // Check for errors in any of the requests
           if (chartDatesResult.error) {
-            console.error('Chart dates API error:', chartDatesResult.error);
             return { error: chartDatesResult.error };
           }
           if (membersResult.error) {
-            console.error('Members API error:', membersResult.error);
             return { error: membersResult.error };
           }
           if (tasksResult.error) {
-            console.error('Tasks API error:', tasksResult.error);
             return { error: tasksResult.error };
           }
 
-          // Validate that we have data
-          if (!chartDatesResult.data || !membersResult.data || !tasksResult.data) {
-            const error = {
-              status: 'FETCH_ERROR',
-              error: 'One or more API calls returned no data',
+          const chartData = chartDatesResult.data as { body?: unknown } | undefined;
+          const memberData = membersResult.data as { body?: unknown[] } | undefined;
+          const taskData = tasksResult.data as { body?: unknown[] } | undefined;
+
+          if (!chartData || !memberData || !taskData) {
+            return {
+              error: {
+                status: 'FETCH_ERROR',
+                error: 'One or more API calls returned no data',
+              },
             };
-            console.error('Missing data error:', error);
-            return { error };
           }
 
-          // Validate and prepare data for transformation
           const transformData = {
-            chartDates: chartDatesResult.data?.body || null,
-            members: membersResult.data?.body || [],
-            tasks: tasksResult.data?.body || [],
+            chartDates: chartData.body ?? null,
+            members: memberData.body ?? [],
+            tasks: taskData.body ?? [],
           };
 
-          console.log('Transform data:', transformData);
-
-          // Transform data to match our interface
           const workloadData = transformToWorkloadData(transformData);
-
-          console.log('Transformed workload data:', workloadData);
-
           return { data: workloadData };
-        } catch (error) {
-          console.error('Error in getProjectWorkload:', error);
+        } catch (error: unknown) {
           return {
             error: {
               status: 'FETCH_ERROR',

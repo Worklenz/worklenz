@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { reportingProjectsApiService } from '@/api/reporting/reporting-projects.api.service';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { DEFAULT_PAGE_SIZE, FILTER_INDEX_KEY } from '@/shared/constants';
@@ -180,12 +181,12 @@ export const fetchMoreProjectsForGroupedView = createAsyncThunk(
 export const fetchGroupedProjects = createAsyncThunk(
   'projectReports/fetchGroupedProjects',
   async (_, { getState, rejectWithValue }) => {
-    const state = (getState() as any).projectReportsReducer;
+    const state = (getState() as { projectReportsReducer: ProjectReportsState }).projectReportsReducer;
     const teams = selectedTeams(state);
 
     // If teams have been loaded but none are selected, return empty result immediately
     if (state.teams.length > 0 && teams.length === 0) {
-      return { groups: [], total_groups: 0 };
+      return { groups: [], total_groups: 0, total: 0 };
     }
 
     const params = {
@@ -226,16 +227,21 @@ export const fetchGroupedProjects = createAsyncThunk(
     try {
       const response = await reportingProjectsApiService.getProjectsGrouped(params);
       // Ensure we return a valid structure even if response.body is null
-      return response.body || { groups: [], total_groups: 0 };
-    } catch (error: any) {
+      return response.body || { groups: [], total_groups: 0, total: 0 };
+    } catch (error: unknown) {
       // ── Fix: Return a rejected value with a user-friendly message instead of
       // letting the raw axios timeout error bubble up and crash the component.
       // The rejected case in extraReducers sets isLoading = false so the UI
       // recovers cleanly (shows empty state instead of a frozen spinner).
-      const message =
-        error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')
-          ? 'Search request timed out. Please try a more specific name.'
-          : error?.message || 'Failed to fetch grouped projects';
+      let message = 'Failed to fetch grouped projects';
+      if (axios.isAxiosError(error)) {
+        message =
+          error.code === 'ECONNABORTED' || error.message?.includes('timeout')
+            ? 'Search request timed out. Please try a more specific name.'
+            : error.message || message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
       return rejectWithValue(message);
     }
   }
@@ -246,7 +252,7 @@ export const fetchGroupedProjects = createAsyncThunk(
 export const fetchProjectDataForCurrentView = createAsyncThunk(
   'projectReports/fetchProjectDataForCurrentView',
   async (_, { getState, dispatch }) => {
-    const state = (getState() as any).projectReportsReducer;
+    const state = (getState() as { projectReportsReducer: ProjectReportsState }).projectReportsReducer;
 
     if (state.viewMode === 'grouped') {
       return dispatch(fetchGroupedProjects());
@@ -597,7 +603,7 @@ const projectReportsSlice = createSlice({
         state.groupedProjects = action.payload?.groups || [];
         state.totalGroups = action.payload?.total_groups || 0;
         // Use total project count from backend (accurate with filters applied)
-        state.total = action.payload?.total_groups || 0;
+        state.total = action.payload?.total || 0;
       })
       // ── Fix: handle both rejectWithValue (our friendly message) and unexpected
       // runtime errors so isLoading is always cleared and the UI can recover.

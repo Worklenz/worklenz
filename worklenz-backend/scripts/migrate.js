@@ -10,14 +10,31 @@ const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const { DB_USER, DB_PASSWORD, DB_HOST, DB_PORT = '5432', DB_NAME } = process.env;
+const {
+  DB_USER,
+  DB_PASSWORD,
+  DB_HOST,
+  DB_PORT = '5432',
+  DB_NAME,
+  MIGRATION_DB_USER,
+  MIGRATION_DB_PASSWORD,
+  MIGRATION_DB_HOST,
+  MIGRATION_DB_PORT,
+  MIGRATION_DB_NAME,
+} = process.env;
 
-if (!DB_USER || !DB_NAME) {
-  console.error('Missing required DB env vars (DB_USER, DB_NAME, DB_HOST, DB_PASSWORD).');
+const migrationDbUser = MIGRATION_DB_USER || DB_USER;
+const migrationDbPassword = MIGRATION_DB_PASSWORD ?? DB_PASSWORD;
+const migrationDbHost = MIGRATION_DB_HOST || DB_HOST || 'localhost';
+const migrationDbPort = MIGRATION_DB_PORT || DB_PORT;
+const migrationDbName = MIGRATION_DB_NAME || DB_NAME;
+
+if (!migrationDbUser || !migrationDbName) {
+  console.error('Missing migration database credentials (MIGRATION_DB_USER/DB_USER and MIGRATION_DB_NAME/DB_NAME).');
   process.exit(1);
 }
 
-const databaseUrl = `postgresql://${DB_USER}:${encodeURIComponent(DB_PASSWORD || '')}@${DB_HOST || 'localhost'}:${DB_PORT}/${DB_NAME}`;
+const databaseUrl = `postgresql://${migrationDbUser}:${encodeURIComponent(migrationDbPassword || '')}@${migrationDbHost}:${migrationDbPort}/${migrationDbName}`;
 
 // Invoke the underlying JS entrypoint directly with `node` rather than the
 // .bin/node-pg-migrate shim - on Windows that shim has no extension, which
@@ -30,18 +47,28 @@ const migrationsDir = path.join(__dirname, '..', 'database', 'pg-migrations');
 // schema and are skipped entirely when this directory is absent.
 const privateMigrationsDir = path.join(__dirname, '..', 'database', 'pg-migrations-private');
 
-const args = process.argv.slice(2);
+const userArgs = process.argv.slice(2);
 
 function run(dir) {
-  const result = spawnSync(
-    process.execPath,
-    [bin, '--migrations-dir', dir, ...args],
-    {
-      stdio: ['inherit', 'inherit', 'pipe'],
-      env: { ...process.env, DATABASE_URL: databaseUrl },
-      encoding: 'utf-8',
-    }
-  );
+  const defaultArgs = ['--migrations-dir', dir];
+
+  // Allow unrun migrations from feature branches merged out of timestamp order
+  // to run without failing checkOrder positional assertion.
+  if (!userArgs.includes('--check-order') && !userArgs.includes('--no-check-order')) {
+    defaultArgs.push('--no-check-order');
+  }
+
+  // Run each migration in its own transaction so newly added enum values can be
+  // safely committed and used across consecutive pending migrations.
+  if (!userArgs.includes('--single-transaction') && !userArgs.includes('--no-single-transaction')) {
+    defaultArgs.push('--no-single-transaction');
+  }
+
+  const result = spawnSync(process.execPath, [bin, ...defaultArgs, ...userArgs], {
+    stdio: ['inherit', 'inherit', 'pipe'],
+    env: { ...process.env, DATABASE_URL: databaseUrl },
+    encoding: 'utf-8',
+  });
 
   if (result.stderr) {
     process.stderr.write(result.stderr);
@@ -64,6 +91,6 @@ function run(dir) {
 
 run(migrationsDir);
 
-if ((args[0] === 'up' || args[0] === 'down') && fs.existsSync(privateMigrationsDir)) {
+if ((userArgs[0] === 'up' || userArgs[0] === 'down') && fs.existsSync(privateMigrationsDir)) {
   run(privateMigrationsDir);
 }

@@ -1,11 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { IAccountSetupSurveyData } from '@/types/account-setup/survey.types';
 
-interface Task {
-  id: number;
-  value: string;
-}
-
 interface Email {
   id: number;
   value: string;
@@ -15,9 +10,11 @@ interface AccountSetupState {
   organizationName: string;
   projectName: string;
   templateId: string | null;
-  tasks: Task[];
   teamMembers: Email[];
   currentStep: number;
+  // surveyData/surveySubStep are no longer collected by the account-setup wizard
+  // (see OrganizationStep -> ProjectStep -> MembersStep). They're kept here because
+  // SurveyPromptModal still reuses this slice for its own, separately-triggered survey.
   surveyData: IAccountSetupSurveyData;
   surveySubStep: number;
 }
@@ -26,7 +23,6 @@ const initialState: AccountSetupState = {
   organizationName: '',
   projectName: '',
   templateId: null,
-  tasks: [{ id: 0, value: '' }],
   teamMembers: [{ id: 0, value: '' }],
   currentStep: 0,
   surveyData: {},
@@ -45,9 +41,6 @@ const accountSetupSlice = createSlice({
     },
     setTemplateId: (state, action: PayloadAction<string | null>) => {
       state.templateId = action.payload;
-    },
-    setTasks: (state, action: PayloadAction<Task[]>) => {
-      state.tasks = action.payload;
     },
     setTeamMembers: (state, action: PayloadAction<Email[]>) => {
       state.teamMembers = action.payload;
@@ -73,7 +66,6 @@ export const {
   setOrganizationName,
   setProjectName,
   setTemplateId,
-  setTasks,
   setTeamMembers,
   setCurrentStep,
   setSurveyData,

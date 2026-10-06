@@ -50,6 +50,7 @@ interface StatusItemProps {
   onRename: (id: string, name: string) => void;
   onDelete: (id: string) => void;
   onColorChange: (id: string, color: string) => void;
+  disabled?: boolean;
 }
 
 interface CategorySectionProps {
@@ -66,6 +67,7 @@ interface CategorySectionProps {
   // Lifted state for controlling which category's add form is open
   activeAddCategoryId: string | null;
   onSetActiveAddCategory: (categoryId: string | null) => void;
+  disabled?: boolean;
 }
 
 // Sortable Status Item Component (compact with hover actions)
@@ -75,6 +77,7 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   onRename,
   onDelete,
   onColorChange,
+  disabled = false,
 }) => {
   const { t } = useTranslation('task-list-filters');
   const { token } = theme.useToken();
@@ -92,12 +95,14 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   }, [status.color_code]);
 
   const handleColorChangeComplete = useCallback(() => {
+    if (disabled) return;
     setPickerOpen(false);
     onColorChange(id, colorRef.current);
-  }, [id, onColorChange]);
+  }, [id, onColorChange, disabled]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
+    disabled,
   });
 
   const style: React.CSSProperties = {
@@ -114,11 +119,15 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
   };
 
   const handleSave = useCallback(() => {
+    if (disabled) {
+      setIsEditing(false);
+      return;
+    }
     if (editName.trim() && editName.trim() !== status.name) {
       onRename(id, editName.trim());
     }
     setIsEditing(false);
-  }, [editName, id, onRename, status.name]);
+  }, [editName, id, onRename, status.name, disabled]);
 
   const handleCancel = useCallback(() => {
     setEditName(status.name || '');
@@ -151,14 +160,15 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        {...attributes}
-        {...listeners}
+        {...(disabled ? {} : attributes)}
+        {...(disabled ? {} : listeners)}
         style={{
           flexShrink: 0,
           display: 'flex',
-          cursor: 'grab',
+          cursor: disabled ? 'not-allowed' : 'grab',
           color: token.colorTextTertiary,
         }}
+        aria-disabled={disabled}
       >
         <HolderOutlined style={{ fontSize: 13 }} />
       </div>
@@ -166,10 +176,17 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
       <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
         <ColorPicker
           value={color}
-          open={pickerOpen}
-          onOpenChange={setPickerOpen}
-          onChange={value => setColor(value.toHexString())}
+          open={disabled ? false : pickerOpen}
+          onOpenChange={open => {
+            if (disabled) return;
+            setPickerOpen(open);
+          }}
+          onChange={value => {
+            if (disabled) return;
+            setColor(value.toHexString());
+          }}
           size="small"
+          disabled={disabled}
           disabledAlpha
           panelRender={panel => (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -185,7 +202,7 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
               width: 12,
               height: 12,
               borderRadius: 3,
-              cursor: 'pointer',
+              cursor: disabled ? 'not-allowed' : 'pointer',
               backgroundColor: color,
               border: `1px solid ${token.colorBorderSecondary}`,
             }}
@@ -194,7 +211,7 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        {isEditing ? (
+        {isEditing && !disabled ? (
           <Input
             ref={inputRef}
             value={editName}
@@ -208,9 +225,16 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
           />
         ) : (
           <Text
-            style={{ fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
-            onClick={() => setIsEditing(true)}
-            title={t('rename')}
+            style={{
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+            }}
+            onClick={() => {
+              if (disabled) return;
+              setIsEditing(true);
+            }}
+            title={disabled ? undefined : t('rename')}
             ellipsis
           >
             {status.name}
@@ -218,25 +242,29 @@ const SortableStatusItem: React.FC<StatusItemProps & { id: string }> = ({
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 2, opacity: isHovered || isEditing ? 1 : 0 }}>
-        <Tooltip title={t('rename')}>
-          <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined style={{ fontSize: 12 }} />}
-            onClick={() => setIsEditing(true)}
-          />
-        </Tooltip>
-        <Tooltip title={t('delete')}>
-          <Button
-            type="text"
-            size="small"
-            danger
-            icon={<DeleteOutlined style={{ fontSize: 12 }} />}
-            onClick={() => onDelete(id)}
-          />
-        </Tooltip>
-      </div>
+      {!disabled && (
+        <div style={{ display: 'flex', gap: 2, opacity: isHovered || isEditing ? 1 : 0 }}>
+          <Tooltip title={t('rename')}>
+            <Button
+              type="text"
+              size="small"
+              icon={<EditOutlined style={{ fontSize: 12 }} />}
+              onClick={() => setIsEditing(true)}
+              aria-label={t('rename')}
+            />
+          </Tooltip>
+          <Tooltip title={t('delete')}>
+            <Button
+              type="text"
+              size="small"
+              danger
+              icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+              onClick={() => onDelete(id)}
+              aria-label={t('delete')}
+            />
+          </Tooltip>
+        </div>
+      )}
     </div>
   );
 };
@@ -255,13 +283,14 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   localStatuses,
   activeAddCategoryId,
   onSetActiveAddCategory,
+  disabled = false,
 }) => {
   const { t } = useTranslation('task-list-filters');
   const { token } = theme.useToken();
   const [newStatusName, setNewStatusName] = useState('');
 
   // Derived from lifted state — only this category's form is open when IDs match
-  const showAddForm = activeAddCategoryId === category.id;
+  const showAddForm = !disabled && activeAddCategoryId === category.id;
 
   const { setNodeRef, isOver } = useDroppable({
     id: `category-${category.id}`,
@@ -269,15 +298,17 @@ const CategorySection: React.FC<CategorySectionProps> = ({
       type: 'category',
       categoryId: category.id,
     },
+    disabled,
   });
 
   const handleCreateStatus = useCallback(() => {
+    if (disabled) return;
     if (newStatusName.trim()) {
       onCreateStatus(category.id, newStatusName.trim());
       setNewStatusName('');
       onSetActiveAddCategory(null);
     }
-  }, [newStatusName, category.id, onCreateStatus, onSetActiveAddCategory]);
+  }, [newStatusName, category.id, onCreateStatus, onSetActiveAddCategory, disabled]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -291,8 +322,13 @@ const CategorySection: React.FC<CategorySectionProps> = ({
     [handleCreateStatus, onSetActiveAddCategory]
   );
 
+  const handleOpenAddForm = useCallback(() => {
+    if (disabled) return;
+    onSetActiveAddCategory(category.id);
+  }, [disabled, onSetActiveAddCategory, category.id]);
+
   // Check if we should show cross-category drop placeholder
-  const shouldShowPlaceholder = dragOverCategory === category.id && activeId;
+  const shouldShowPlaceholder = !disabled && dragOverCategory === category.id && activeId;
   const draggedStatus = activeId
     ? localStatuses.find((s: IKanbanTaskStatus) => s.id === activeId)
     : null;
@@ -339,8 +375,14 @@ const CategorySection: React.FC<CategorySectionProps> = ({
           type="text"
           size="small"
           icon={<PlusOutlined style={{ fontSize: 11 }} />}
-          onClick={() => onSetActiveAddCategory(category.id)}
-          style={{ fontSize: 12, color: token.colorTextSecondary }}
+          onClick={handleOpenAddForm}
+          disabled={disabled}
+          aria-label={t('addStatus')}
+          style={{
+            fontSize: 12,
+            color: token.colorTextSecondary,
+            cursor: disabled ? 'not-allowed' : undefined,
+          }}
         >
           {t('addStatus')}
         </Button>
@@ -381,6 +423,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                     onRename={onRename}
                     onDelete={onDelete}
                     onColorChange={onColorChange}
+                    disabled={disabled}
                   />
                 </React.Fragment>
               ))}
@@ -455,8 +498,10 @@ const CategorySection: React.FC<CategorySectionProps> = ({
             <Button
               type="link"
               size="small"
-              onClick={() => onSetActiveAddCategory(category.id)}
-              style={{ fontSize: 12 }}
+              onClick={handleOpenAddForm}
+              disabled={disabled}
+              aria-label={t('addStatus')}
+              style={{ fontSize: 12, cursor: disabled ? 'not-allowed' : undefined }}
             >
               {t('addStatus')}
             </Button>
@@ -469,6 +514,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
 interface ManageStatusContentProps {
   projectId?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -476,7 +522,7 @@ interface ManageStatusContentProps {
  * so it can be embedded directly inside the project settings modal's sidebar
  * as well as rendered inside a standalone Modal wrapper elsewhere.
  */
-const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) => {
+const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId, disabled = false }) => {
   const { t } = useTranslation('task-list-filters');
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
@@ -535,7 +581,7 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
 
   const handleCategoryChange = useCallback(
     async (id: string, categoryId: string, insertIndex?: number) => {
-      if (!finalProjectId) return;
+      if (disabled || !finalProjectId) return;
 
       // Find the status being moved and its current category
       const statusToMove = localStatuses.find(s => s.id === id) as IKanbanTaskStatus;
@@ -641,15 +687,21 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         dispatch(fetchStatuses(finalProjectId));
       }
     },
-    [finalProjectId, dispatch, localStatuses, statusCategories, t]
+    [finalProjectId, dispatch, localStatuses, statusCategories, t, disabled]
   );
 
   const handleDragStart = useCallback((event: any) => {
+    if (disabled) return;
     setActiveId(event.active.id);
-  }, []);
+  }, [disabled]);
 
   const handleDragOver = useCallback(
     (event: DragOverEvent) => {
+      if (disabled) {
+        setDragOverCategory(null);
+        setDragOverIndex(null);
+        return;
+      }
       const { over, active } = event;
 
       if (!over || !active) {
@@ -717,7 +769,7 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         setDragOverIndex(null);
       }
     },
-    [statusesByCategory, localStatuses]
+    [statusesByCategory, localStatuses, disabled]
   );
 
   const handleDragEnd = useCallback(
@@ -728,7 +780,7 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
       setDragOverCategory(null);
       setDragOverIndex(null);
 
-      if (!over || !finalProjectId) {
+      if (disabled || !over || !finalProjectId) {
         return;
       }
 
@@ -805,12 +857,12 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         return newItems;
       });
     },
-    [finalProjectId, dispatch, handleCategoryChange, localStatuses, statusesByCategory]
+    [finalProjectId, dispatch, handleCategoryChange, localStatuses, statusesByCategory, disabled]
   );
 
   const handleCreateStatus = useCallback(
     async (categoryId: string, name: string) => {
-      if (!name.trim() || !finalProjectId) return;
+      if (disabled || !name.trim() || !finalProjectId) return;
 
       try {
         // Find the highest order_index in the same category to add to the bottom
@@ -841,12 +893,12 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         console.error('Error creating status:', error);
       }
     },
-    [finalProjectId, dispatch, localStatuses]
+    [finalProjectId, dispatch, localStatuses, disabled]
   );
 
   const handleRenameStatus = useCallback(
     async (id: string, name: string) => {
-      if (!finalProjectId || !name.trim()) return;
+      if (disabled || !finalProjectId || !name.trim()) return;
 
       try {
         // Find the current status to get its category_id (required by backend validator)
@@ -866,12 +918,12 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         console.error('Error renaming status:', error);
       }
     },
-    [finalProjectId, dispatch, localStatuses]
+    [finalProjectId, dispatch, localStatuses, disabled]
   );
 
   const handleDeleteStatus = useCallback(
     async (id: string) => {
-      if (!finalProjectId) return;
+      if (disabled || !finalProjectId) return;
 
       Modal.confirm({
         title: t('deleteStatus'),
@@ -892,12 +944,12 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         },
       });
     },
-    [localStatuses, finalProjectId, dispatch, t]
+    [localStatuses, finalProjectId, dispatch, t, disabled]
   );
 
   const handleColorChange = useCallback(
     async (id: string, colorCode: string) => {
-      if (!finalProjectId) return;
+      if (disabled || !finalProjectId) return;
       try {
         // 1. Optimistic update in local state
         setLocalStatuses(prev =>
@@ -920,11 +972,11 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
         dispatch(fetchStatuses(finalProjectId));
       }
     },
-    [finalProjectId, dispatch]
+    [finalProjectId, dispatch, disabled]
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }} aria-disabled={disabled}>
       {/* Info Banner */}
       <div
         style={{
@@ -961,8 +1013,9 @@ const ManageStatusContent: React.FC<ManageStatusContentProps> = ({ projectId }) 
               activeId={activeId}
               dragOverIndex={dragOverIndex}
               localStatuses={localStatuses}
-              activeAddCategoryId={activeAddCategoryId}
+              activeAddCategoryId={disabled ? null : activeAddCategoryId}
               onSetActiveAddCategory={setActiveAddCategoryId}
+              disabled={disabled}
             />
           ))}
         </div>

@@ -1,0 +1,22 @@
+{
+  "title": "Praktiken verwalten",
+  "nameColumn": "Name",
+  "search": "Praktiken suchen",
+  "createPracticeButton": "Praktik erstellen",
+  "createPracticeDrawerTitle": "Praktik erstellen",
+  "updatePracticeDrawerTitle": "Praktik aktualisieren",
+  "nameLabel": "Name",
+  "namePlaceholder": "Namen der Praktik eingeben",
+  "nameRequiredError": "Der Name der Praktik ist erforderlich",
+  "createButton": "Erstellen",
+  "updateButton": "Aktualisieren",
+  "editTooltip": "Bearbeiten",
+  "deleteTooltip": "Löschen",
+  "deleteConfirmationTitle": "Möchten Sie diese Praktik wirklich löschen?",
+  "deleteConfirmationOk": "Löschen",
+  "deleteConfirmationCancel": "Abbrechen",
+  "fetchPracticeErrorMessage": "Praktik konnte nicht abgerufen werden",
+  "createPracticeErrorMessage": "Praktik konnte nicht erstellt werden",
+  "updatePracticeErrorMessage": "Praktik konnte nicht aktualisiert werden",
+  "pinTooltip": "An Navigationsleiste anheften"
+}

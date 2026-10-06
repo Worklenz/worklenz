@@ -24,7 +24,7 @@ export async function on_task_priority_change(_io: Server, socket: Socket, data?
     const q = `UPDATE tasks SET priority_id = $2 WHERE id = $1;`;
     await db.query(q, [body.task_id, body.priority_id]);
 
-    const q2 = "SELECT value FROM task_priorities WHERE id = $1;";
+    const q2 = "SELECT name, value FROM task_priorities WHERE id = $1;";
     const result = await db.query(q2, [body.priority_id]);
     const [d] = result.rows;
 
@@ -37,6 +37,7 @@ export async function on_task_priority_change(_io: Server, socket: Socket, data?
       color_code: d.color_code,
       color_code_dark: d.color_code_dark,
       priority_id: body.priority_id,
+      priority_name: d.name,
       priority_value: parseInt(d.value) || 0
     });
 

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ProgressProps } from '@/shared/antd-imports';
+import type { ProgressProps } from 'antd';
 
 type WorkloadStatus = 'available' | 'normal' | 'fully-allocated' | 'overallocated';
 

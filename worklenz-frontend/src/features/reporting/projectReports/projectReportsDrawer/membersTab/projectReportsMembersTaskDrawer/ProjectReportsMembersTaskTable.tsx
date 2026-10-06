@@ -27,15 +27,28 @@ import { setProjectId } from '@/features/project/project.slice';
 
 const TaskDrawer = lazy(() => import('@components/task-drawer/task-drawer'));
 
-type ProjectReportsMembersTasksTableProps = {
-  tasksData: any[];
-  loading?: boolean;
-};
-
 interface ReportingTaskRecord {
   id: string;
   project_id: string;
+  name?: string;
+  sub_tasks_count?: number | string;
+  project_color?: string;
+  project_name?: string;
+  status_color?: string;
+  status_name?: string;
+  priority_color?: string;
+  priority_name?: string;
+  end_date?: string | null;
+  completed_at?: string | null;
+  estimated_string?: string;
+  time_spent_string?: string;
+  overlogged_time?: string;
 }
+
+type ProjectReportsMembersTasksTableProps = {
+  tasksData: ReportingTaskRecord[];
+  loading?: boolean;
+};
 
 const ProjectReportsMembersTasksTable = ({
   tasksData,
@@ -60,7 +73,7 @@ const ProjectReportsMembersTasksTable = ({
     [dispatch]
   );
 
-  const columns: TableColumnsType = [
+  const columns: TableColumnsType<ReportingTaskRecord> = [
     {
       key: 'task',
       title: <CustomTableTitle title={t('taskColumn')} />,

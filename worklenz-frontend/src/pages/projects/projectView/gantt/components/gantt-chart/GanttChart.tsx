@@ -11,7 +11,7 @@ import React, {
 } from 'react';
 import ReactDOM from 'react-dom';
 import { Input, Button, Empty, Spin, message, theme } from '@/shared/antd-imports';
-import { RightOutlined } from '@ant-design/icons';
+import { RightOutlined, CloseOutlined } from '@ant-design/icons';
 import { ITaskDependency, IDependencyType } from '@/types/tasks/task-dependency.types';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { taskDependenciesApiService } from '@/api/tasks/task-dependencies.api.service';
@@ -92,6 +92,176 @@ interface DependencyLineSegment {
   y2: number;
   type: 'finish_to_start';
 }
+
+interface PathPoint {
+  x: number;
+  y: number;
+}
+
+interface HoveredDependencyControl {
+  line: DependencyLineSegment;
+  mid: { x: number; y: number; angle: number };
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Extra hit area around task bars so corner dependency connectors stay hoverable. */
+const HOVER_CONTROL_SLOP = 22;
+const TASK_BAR_HEIGHT_PX = 24;
+
+interface DependencyPathResult {
+  d: string;
+  points: PathPoint[];
+}
+
+/** Build orthogonal dependency path with optional lane index for de-overlapping shared sources/targets. */
+const buildDependencyPath = (
+  startX: number,
+  y1: number,
+  endX: number,
+  y2: number,
+  laneIndex = 0,
+  laneCount = 1
+): DependencyPathResult => {
+  const gapX = Math.abs(endX - startX);
+  const isBackward = endX < startX;
+  const LANE_X_STEP = 22;
+  const LANE_MIDY_STEP = 14;
+  const baseStepOut = Math.min(Math.max(24, gapX * 0.22), 80);
+  const stepOutStart = baseStepOut + laneIndex * LANE_X_STEP;
+  const reverseLane = laneCount > 1 ? laneCount - 1 - laneIndex : 0;
+  const stepOutEnd = baseStepOut + reverseLane * (LANE_X_STEP * 0.65);
+  const laneOffset = laneCount > 1 ? laneIndex - (laneCount - 1) / 2 : 0;
+
+  const elbowX1 = isBackward ? startX - stepOutStart : startX + stepOutStart;
+  const elbowX2 = isBackward ? endX + stepOutEnd : endX - stepOutEnd;
+
+  if (Math.abs(y2 - y1) < 4) {
+    const spreadY = laneOffset * 12;
+    const points = [
+      { x: startX, y: y1 + spreadY },
+      { x: elbowX1, y: y1 + spreadY },
+      { x: endX, y: y2 + spreadY },
+    ];
+    return {
+      d: `M ${points[0].x} ${points[0].y} H ${elbowX1} H ${endX}`,
+      points,
+    };
+  }
+
+  const midY = (y1 + y2) / 2 + laneOffset * LANE_MIDY_STEP;
+
+  const points = [
+    { x: startX, y: y1 },
+    { x: elbowX1, y: y1 },
+    { x: elbowX1, y: midY },
+    { x: elbowX2, y: midY },
+    { x: elbowX2, y: y2 },
+    { x: endX, y: y2 },
+  ];
+
+  return {
+    d: `M ${startX} ${y1} H ${elbowX1} V ${midY} H ${elbowX2} V ${y2} H ${endX}`,
+    points,
+  };
+};
+
+/** Point at a given arc-length along a polyline, with tangent angle in degrees. */
+const interpolateAlongPath = (
+  points: PathPoint[],
+  distance: number
+): { x: number; y: number; angle: number } => {
+  if (points.length === 0) {
+    return { x: 0, y: 0, angle: 0 };
+  }
+  if (points.length === 1) {
+    return { x: points[0].x, y: points[0].y, angle: 0 };
+  }
+
+  let traveled = 0;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const from = points[i];
+    const to = points[i + 1];
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    if (length === 0) continue;
+
+    if (traveled + length >= distance) {
+      const t = (distance - traveled) / length;
+      return {
+        x: from.x + (to.x - from.x) * t,
+        y: from.y + (to.y - from.y) * t,
+        angle: (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI,
+      };
+    }
+    traveled += length;
+  }
+
+  const last = points[points.length - 1];
+  const prev = points[points.length - 2];
+  return {
+    x: last.x,
+    y: last.y,
+    angle: (Math.atan2(last.y - prev.y, last.x - prev.x) * 180) / Math.PI,
+  };
+};
+
+const getPolylineLength = (points: PathPoint[]): number => {
+  let total = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    total += Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y);
+  }
+  return total;
+};
+
+/** Half-length along the path and half-height perpendicular — arrow is symmetric around mid. */
+const DEPENDENCY_ARROW_LENGTH = 7;
+const DEPENDENCY_ARROW_HEIGHT = 5;
+
+/** Filled chevron aligned to the path tangent at the midpoint. */
+const buildArrowPathAtMid = (mid: { x: number; y: number; angle: number }): string => {
+  const rad = (mid.angle * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const len = DEPENDENCY_ARROW_LENGTH;
+  const h = DEPENDENCY_ARROW_HEIGHT;
+
+  const tipX = mid.x + cos * len;
+  const tipY = mid.y + sin * len;
+  const backX = mid.x - cos * len;
+  const backY = mid.y - sin * len;
+  const perpX = -sin * h;
+  const perpY = cos * h;
+
+  const x1 = backX + perpX;
+  const y1 = backY + perpY;
+  const x2 = backX - perpX;
+  const y2 = backY - perpY;
+
+  return `M ${x1} ${y1} L ${tipX} ${tipY} L ${x2} ${y2} Z`;
+};
+
+/**
+ * Invisible hit area around the midpoint arrow. Kept deliberately larger than the
+ * visible chevron so the click target stays comfortable on dense roadmaps even
+ * though the drawn arrow is small — the padding here restores the ~14x11 half-size
+ * the hit path had before the arrow was slimmed down.
+ */
+const buildArrowHitPathAtMid = (mid: { x: number; y: number; angle: number }): string => {
+  const rad = (mid.angle * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const len = DEPENDENCY_ARROW_LENGTH + 7;
+  const h = DEPENDENCY_ARROW_HEIGHT + 6;
+
+  const tipX = mid.x + cos * len;
+  const tipY = mid.y + sin * len;
+  const backX = mid.x - cos * len;
+  const backY = mid.y - sin * len;
+  const perpX = -sin * h;
+  const perpY = cos * h;
+
+  return `M ${backX + perpX} ${backY + perpY} L ${tipX} ${tipY} L ${backX - perpX} ${backY - perpY} Z`;
+};
 
 // Utility function to add alpha channel to hex color
 const addAlphaToHex = (hex: string, alpha: number): string => {
@@ -219,6 +389,7 @@ interface TaskBarRowProps {
   ) => void;
   onDependencyDragMove?: (position: { x: number; y: number }) => void;
   onDependencyDragEnd?: () => void;
+  canCreateTask?: boolean;
   dependencySourceTaskId?: string | null;
   dependencyTargetTaskId?: string | null;
   expandedTasks?: Set<string>;
@@ -242,6 +413,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
     onDependencyDragStart,
     onDependencyDragMove,
     onDependencyDragEnd,
+    canCreateTask = true,
     dependencySourceTaskId,
     dependencyTargetTaskId,
     expandedTasks,
@@ -550,6 +722,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
     const handleDependencyMouseDown = useCallback(
       (e: React.MouseEvent, type: 'finish_to_start' | 'start_to_finish') => {
+        if (!canCreateTask) return;
         e.stopPropagation();
         e.preventDefault();
 
@@ -572,7 +745,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         document.addEventListener('mousemove', handleDependencyMouseMove);
         document.addEventListener('mouseup', handleDependencyMouseUp);
       },
-      [handleDependencyMouseMove, handleDependencyMouseUp, onDependencyDragStart, task.id]
+      [canCreateTask, handleDependencyMouseMove, handleDependencyMouseUp, onDependencyDragStart, task.id]
     );
 
     // Cleanup effect to remove body classes and event listeners on unmount
@@ -589,6 +762,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
     const handleMouseDown = useCallback(
       (e: React.MouseEvent, type: 'left' | 'right' | 'drag') => {
+        if (!canCreateTask) return;
         e.stopPropagation();
         e.preventDefault();
 
@@ -613,7 +787,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
         document.addEventListener('mousemove', handleMouseMove);
         document.addEventListener('mouseup', handleMouseUp);
       },
-      [effectiveStart, effectiveEnd, handleMouseMove, handleMouseUp]
+      [canCreateTask, effectiveStart, effectiveEnd, handleMouseMove, handleMouseUp]
     );
 
     const renderMilestone = () => {
@@ -747,6 +921,40 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
 
       // For tasks without dates, show a hover preview and placeholder
       if (!effectiveStart || !effectiveEnd) {
+        // For guests without edit permissions, show a read-only placeholder bar
+        if (!onTaskDateUpdate) {
+          const getDurationText = () => {
+            switch (viewMode) {
+              case 'day':
+              case 'week':
+                return '3 days';
+              case 'month':
+                return '3 months';
+              case 'quarter':
+                return '3 quarters';
+              case 'year':
+                return '3 years';
+              default:
+                return '3 days';
+            }
+          };
+
+          return (
+            <div className="absolute inset-0 gantt-task-preview-container group">
+              {/* Guest-view placeholder: show task name and default duration hint */}
+              <div
+                className="px-2 py-1 mt-1 rounded bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs font-medium whitespace-nowrap overflow-hidden text-ellipsis cursor-default"
+                title={t('task.undatedTaskReadOnly', 'Task without dates (read-only for guests)', {
+                  name: task.name,
+                  duration: getDurationText()
+                })}
+              >
+                {task.name} ({getDurationText()})
+              </div>
+            </div>
+          );
+        }
+
         const getDurationText = () => {
           switch (viewMode) {
             case 'day':
@@ -881,35 +1089,107 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
       }
 
       const showHoverControls = isBarHovered || isCreatingDependency || isDragging || !!isResizing;
+      const handlePointerEvents = showHoverControls ? 'auto' : 'none';
+      const accentColor = token.colorPrimary;
 
       return (
         <div
-          className={`absolute top-1/2 h-6 rounded-sm flex items-center text-xs text-white font-medium shadow-sm group gantt-task-bar ${
-            isCreatingDependency
-              ? 'dependency-creating cursor-crosshair'
-              : isDragging
-                ? 'dragging cursor-move'
-                : isResizing
-                  ? 'resizing'
-                  : 'cursor-grab hover:cursor-grab'
-          }`}
+          className={`gantt-task-bar-hover-zone${showHoverControls ? ' is-hovered' : ''}`}
           onMouseEnter={() => setIsBarHovered(true)}
           onMouseLeave={() => setIsBarHovered(false)}
           style={{
-            left: `${left}px`,
-            width: `${width}px`,
-            backgroundColor: task.color || '#6b7280',
-            opacity: isResizing || isDragging ? 0.8 : 1,
-            transform: `translateY(-50%) ${isDragging ? 'scale(1.05)' : 'scale(1)'}`,
-            zIndex: isDragging || isResizing ? 999 : 1,
-            boxShadow: isDragging || isResizing ? '0 4px 12px rgba(0,0,0,0.3)' : undefined,
+            position: 'absolute',
+            top: '50%',
+            left: `${left - HOVER_CONTROL_SLOP}px`,
+            width: `${width + HOVER_CONTROL_SLOP * 2}px`,
+            height: `${TASK_BAR_HEIGHT_PX + HOVER_CONTROL_SLOP * 2}px`,
+            transform: 'translateY(-50%)',
+            zIndex: isDragging || isResizing ? 999 : showHoverControls ? 50 : 1,
+            ['--gantt-bar-accent' as string]: accentColor,
           }}
-          title={t('task.taskTitle', '{{name}} - {{startDate}} to {{endDate}}', {
-            name: task.name,
-            startDate: tempDates.start?.toLocaleDateString() || t('common.noStart', 'No start'),
-            endDate: tempDates.end?.toLocaleDateString() || t('common.noEnd', 'No end'),
-          })}
         >
+          {/* Asana-style dependency connectors — on hover zone so they sit above adjacent rows */}
+          <button
+            type="button"
+            className="gantt-dependency-connector gantt-dependency-connector--start"
+            style={{
+              opacity: showHoverControls ? 1 : 0,
+              pointerEvents: handlePointerEvents,
+              top: `${(TASK_BAR_HEIGHT_PX + HOVER_CONTROL_SLOP * 2) / 2 - TASK_BAR_HEIGHT_PX / 2 - 16}px`,
+              left: `${HOVER_CONTROL_SLOP - 14}px`,
+            }}
+            onMouseDown={e => handleDependencyMouseDown(e, 'start_to_finish')}
+            title={t('task.startToFinishDependency', 'Start-to-Finish dependency')}
+            aria-label={t('task.startToFinishDependency', 'Start-to-Finish dependency')}
+          >
+            <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" className="gantt-dependency-connector-svg">
+              <path
+                d="M12 19V9H4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="4" cy="9" r="4" fill="currentColor" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            className="gantt-dependency-connector gantt-dependency-connector--end"
+            style={{
+              opacity: showHoverControls ? 1 : 0,
+              pointerEvents: handlePointerEvents,
+              bottom: `${(TASK_BAR_HEIGHT_PX + HOVER_CONTROL_SLOP * 2) / 2 - TASK_BAR_HEIGHT_PX / 2 - 16}px`,
+              right: `${HOVER_CONTROL_SLOP - 14}px`,
+            }}
+            onMouseDown={e => handleDependencyMouseDown(e, 'finish_to_start')}
+            title={t('task.finishToStartDependency', 'Finish-to-Start dependency')}
+            aria-label={t('task.finishToStartDependency', 'Finish-to-Start dependency')}
+          >
+            <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true" className="gantt-dependency-connector-svg">
+              <path
+                d="M16 9V19H24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <circle cx="24" cy="19" r="4" fill="currentColor" />
+            </svg>
+          </button>
+
+          <div
+            className={`absolute top-1/2 h-6 flex items-stretch text-xs font-medium shadow-sm group gantt-task-bar ${
+              showHoverControls ? 'gantt-task-bar--asana-hover' : 'rounded-sm'
+            } ${
+              isCreatingDependency
+                ? 'dependency-creating cursor-crosshair'
+                : isDragging
+                  ? 'dragging cursor-move'
+                  : isResizing
+                    ? 'resizing'
+                    : 'cursor-grab hover:cursor-grab'
+            }`}
+            style={{
+              left: `${HOVER_CONTROL_SLOP}px`,
+              width: `${width}px`,
+              backgroundColor: showHoverControls ? token.colorBgContainer : task.color || '#6b7280',
+              color: showHoverControls ? token.colorText : '#ffffff',
+              border: showHoverControls ? `2px solid ${accentColor}` : undefined,
+              opacity: isResizing || isDragging ? 0.8 : 1,
+              transform: `translateY(-50%) ${isDragging ? 'scale(1.05)' : 'scale(1)'}`,
+              boxShadow: isDragging || isResizing ? '0 4px 12px rgba(0,0,0,0.3)' : undefined,
+              ['--gantt-bar-accent' as string]: accentColor,
+            }}
+            title={t('task.taskTitle', '{{name}} - {{startDate}} to {{endDate}}', {
+              name: task.name,
+              startDate: tempDates.start?.toLocaleDateString() || t('common.noStart', 'No start'),
+              endDate: tempDates.end?.toLocaleDateString() || t('common.noEnd', 'No end'),
+            })}
+          >
           {/* Live date readout shown while dragging/resizing, matching Planner Timeline's drag tooltip */}
           {(isDragging || isResizing) && (
             <div
@@ -940,53 +1220,48 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
             </div>
           )}
 
-          {/* Dependency handles - visibility driven by isBarHovered state, not CSS :hover,
-              so they can never get stuck showing on a bar the mouse isn't actually over. */}
-          <span
-            className="gantt-dependency-handle left"
-            style={{
-              opacity: showHoverControls ? 1 : 0,
-              transform: `translate(-50%, -50%) scale(${showHoverControls ? 1 : 0.3})`,
-            }}
-            onMouseDown={e => handleDependencyMouseDown(e, 'start_to_finish')}
-            title={t('task.startToFinishDependency', 'Start-to-Finish dependency')}
-          />
-          <span
-            className="gantt-dependency-handle right"
-            style={{
-              opacity: showHoverControls ? 1 : 0,
-              transform: `translate(50%, 50%) scale(${showHoverControls ? 1 : 0.3})`,
-            }}
-            onMouseDown={e => handleDependencyMouseDown(e, 'finish_to_start')}
-            title={t('task.finishToStartDependency', 'Finish-to-Start dependency')}
-          />
-
-          {/* Left resize handle - grip stays fully inside the bar's own height, never
-              taller than the bar itself, matching the Planner/Schedule task card grip. */}
+          {/* Left resize cap — Asana-style blue end bar with grip lines */}
           <div
-            className="gantt-bar-resize-handle left"
+            className={`gantt-bar-resize-cap left ${showHoverControls ? 'is-visible' : ''}`}
+            style={{ pointerEvents: handlePointerEvents }}
             onMouseDown={e => handleMouseDown(e, 'left')}
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
             }}
             title={t('task.resizeStartDate', 'Resize start date')}
+            role="separator"
+            aria-orientation="vertical"
           >
-            <div
-              className="gantt-resize-grip"
-              style={{
-                opacity: showHoverControls ? 1 : 0,
-                transform: `scale(${showHoverControls ? 1 : 0.4}, ${showHoverControls ? 1 : 0.5})`,
-              }}
-            />
+            <span className="gantt-bar-resize-cap-grip" aria-hidden="true">
+              <span />
+              <span />
+            </span>
           </div>
+
+          {/* Fallback edge hit-zone when caps are hidden */}
+          {!showHoverControls && (
+            <div
+              className="gantt-bar-resize-handle left"
+              onMouseDown={e => handleMouseDown(e, 'left')}
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              title={t('task.resizeStartDate', 'Resize start date')}
+            />
+          )}
 
           {/* Task content area - draggable */}
           <div
             className={`flex-1 flex items-center px-2 min-w-0 h-full ${
-              isDragging ? 'cursor-move' : 'cursor-pointer hover:cursor-grab'
+              isDragging
+                ? 'cursor-move'
+                : canCreateTask
+                  ? 'cursor-pointer hover:cursor-grab'
+                  : 'cursor-pointer'
             }`}
-            onMouseDown={e => handleMouseDown(e, 'drag')}
+            onMouseDown={canCreateTask ? e => handleMouseDown(e, 'drag') : undefined}
             onMouseEnter={() => {
               // Highlight dates when hovering over task
               if (setHighlightedDateRange && effectiveStart && effectiveEnd) {
@@ -1011,7 +1286,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
               }
             }}
             style={{ userSelect: 'none' }}
-            title={t('task.dragToMove', 'Click to open task details, drag to move')}
+            title={canCreateTask ? t('task.dragToMove', 'Click to open task details, drag to move') : undefined}
           >
             {/* Task name */}
             <div className="truncate flex-1 select-none flex items-center gap-2">
@@ -1045,24 +1320,37 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
             />
           )}
 
-          {/* Right resize handle */}
+          {/* Right resize cap */}
           <div
-            className="gantt-bar-resize-handle right"
+            className={`gantt-bar-resize-cap right ${showHoverControls ? 'is-visible' : ''}`}
+            style={{ pointerEvents: handlePointerEvents }}
             onMouseDown={e => handleMouseDown(e, 'right')}
             onClick={e => {
               e.stopPropagation();
               e.preventDefault();
             }}
             title={t('task.resizeEndDate', 'Resize end date')}
+            role="separator"
+            aria-orientation="vertical"
           >
-            <div
-              className="gantt-resize-grip"
-              style={{
-                opacity: showHoverControls ? 1 : 0,
-                transform: `scale(${showHoverControls ? 1 : 0.4}, ${showHoverControls ? 1 : 0.5})`,
-              }}
-            />
+            <span className="gantt-bar-resize-cap-grip" aria-hidden="true">
+              <span />
+              <span />
+            </span>
           </div>
+
+          {!showHoverControls && (
+            <div
+              className="gantt-bar-resize-handle right"
+              onMouseDown={e => handleMouseDown(e, 'right')}
+              onClick={e => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+              title={t('task.resizeEndDate', 'Resize end date')}
+            />
+          )}
+        </div>
         </div>
       );
     };
@@ -1088,7 +1376,7 @@ const TaskBarRow: React.FC<TaskBarRowProps> = memo(
                     <path
                       d={d}
                       stroke={token.colorPrimary}
-                      strokeWidth={3}
+                      strokeWidth={2}
                       strokeLinecap="round"
                       fill="none"
                       opacity={0.95}
@@ -1361,6 +1649,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     // Get timeline calculator, grouping mode, highlighted date range, and shouldScroll from context
     const contextValue = useGanttContext();
     const { timelineCalculator, groupingMode, setHighlightedDateRange, shouldScroll } = contextValue;
+    const totalWidth = timelineCalculator ? timelineCalculator.getTotalWidth() : 0;
     // State for popover task creation
     const [taskPopover, setTaskPopover] = useState<{
       taskName: string;
@@ -1392,9 +1681,9 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     const [isCreatingDependency, setIsCreatingDependency] = useState(false);
     const [dependencyLines, setDependencyLines] = useState<DependencyLineSegment[]>([]);
     const [removedDependencyIds, setRemovedDependencyIds] = useState<Set<string>>(new Set());
-    const [selectedDependency, setSelectedDependency] = useState<DependencyLineSegment | null>(null);
-    const [selectedDependencyPosition, setSelectedDependencyPosition] = useState<{ x: number; y: number } | null>(null);
+    const [hoveredDependencyControl, setHoveredDependencyControl] = useState<HoveredDependencyControl | null>(null);
     const [isDeletingDependency, setIsDeletingDependency] = useState(false);
+    const dependencyHoverClearTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const dependencySourceTaskIdRef = useRef<string | null>(null);
     const dependencyTargetTaskIdRef = useRef<string | null>(null);
     const dependencyDragPositionRef = useRef<{ x: number; y: number } | null>(null);
@@ -1678,7 +1967,8 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
           const source = positions.get(task.id);
           if (source) {
             dependencies.forEach(dep => {
-              const dependencyId = dep.id || `${task.id}-${dep.related_task_id}`;
+              const dependencyId = dep.id;
+              if (!dependencyId || !UUID_REGEX.test(dependencyId)) return;
               if (removedDependencyIds.has(dependencyId) || seenDependencyIds.has(dependencyId)) return;
               const target = positions.get(dep.related_task_id);
               if (!target) return;
@@ -1711,16 +2001,175 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
     }, [tasks, removedDependencyIds]);
 
     useLayoutEffect(() => {
-      if (!chartContainerRef.current) return;
+      const chartEl = chartContainerRef.current;
+      if (!chartEl || !timelineCalculator || totalWidth === 0) {
+        setDependencyLines([]);
+        return;
+      }
 
-      computeDependencyLines();
+      let cancelled = false;
+      let pendingRafId: number | null = null;
+
+      const scheduleCompute = () => {
+        if (cancelled) return;
+        if (pendingRafId !== null) cancelAnimationFrame(pendingRafId);
+        pendingRafId = requestAnimationFrame(() => {
+          pendingRafId = null;
+          if (cancelled) return;
+          computeDependencyLines();
+          // Second frame catches post-paint layout (container width measure, pxPerDay stretch, slide-in).
+          requestAnimationFrame(() => {
+            if (!cancelled) computeDependencyLines();
+          });
+        });
+      };
+
+      scheduleCompute();
+
       const resizeObserver = new ResizeObserver(() => {
-        computeDependencyLines();
+        scheduleCompute();
+      });
+      resizeObserver.observe(chartEl);
+
+      // Watch for style attribute changes on task bars — this fires on every
+      // mousemove during drag/resize (TaskBarRow updates its .gantt-task-bar's
+      // left/width style via tempDates), so dependency lines track the bar in
+      // real-time instead of only updating after the drag ends.
+      const mutationObserver = new MutationObserver(mutations => {
+        const hasBarStyleChange = mutations.some(m => {
+          if (m.type !== 'attributes' || m.attributeName !== 'style') return false;
+          const el = m.target as Element;
+          return el.classList.contains('gantt-task-bar') || el.classList.contains('gantt-phase-bar');
+        });
+        if (!hasBarStyleChange) return;
+        scheduleCompute();
+      });
+      mutationObserver.observe(chartEl, {
+        attributes: true,
+        attributeFilter: ['style'],
+        subtree: true,
       });
 
-      resizeObserver.observe(chartContainerRef.current);
-      return () => resizeObserver.disconnect();
-    }, [computeDependencyLines, tasks, dateRange, viewMode, groupingMode, expandedTasks, removedDependencyIds]);
+      const handleAnimationEnd = (event: Event) => {
+        const target = event.target as HTMLElement;
+        if (target.classList?.contains('gantt-task-slide-in')) {
+          scheduleCompute();
+        }
+      };
+      chartEl.addEventListener('animationend', handleAnimationEnd);
+
+      return () => {
+        cancelled = true;
+        resizeObserver.disconnect();
+        mutationObserver.disconnect();
+        chartEl.removeEventListener('animationend', handleAnimationEnd);
+        if (pendingRafId !== null) cancelAnimationFrame(pendingRafId);
+      };
+    }, [
+      computeDependencyLines,
+      tasks,
+      dateRange,
+      viewMode,
+      groupingMode,
+      expandedTasks,
+      removedDependencyIds,
+      timelineCalculator,
+      totalWidth,
+      animatingTasks,
+    ]);
+
+    useEffect(() => {
+      return () => {
+        if (dependencyHoverClearTimeoutRef.current) {
+          clearTimeout(dependencyHoverClearTimeoutRef.current);
+        }
+      };
+    }, []);
+
+    const clearHoveredDependencyControl = useCallback(() => {
+      if (dependencyHoverClearTimeoutRef.current) {
+        clearTimeout(dependencyHoverClearTimeoutRef.current);
+        dependencyHoverClearTimeoutRef.current = null;
+      }
+      setHoveredDependencyControl(null);
+    }, []);
+
+    const scheduleClearHoveredDependencyControl = useCallback(() => {
+      if (dependencyHoverClearTimeoutRef.current) {
+        clearTimeout(dependencyHoverClearTimeoutRef.current);
+      }
+      dependencyHoverClearTimeoutRef.current = setTimeout(() => {
+        setHoveredDependencyControl(null);
+        dependencyHoverClearTimeoutRef.current = null;
+      }, 120);
+    }, []);
+
+    const handleDependencyLineMouseEnter = useCallback(
+      (line: DependencyLineSegment, mid: { x: number; y: number; angle: number }) => {
+        if (dependencyHoverClearTimeoutRef.current) {
+          clearTimeout(dependencyHoverClearTimeoutRef.current);
+          dependencyHoverClearTimeoutRef.current = null;
+        }
+        setHoveredDependencyControl({ line, mid });
+      },
+      []
+    );
+
+    const resolveDependencyId = useCallback(async (line: DependencyLineSegment): Promise<string | null> => {
+      if (UUID_REGEX.test(line.dependencyId)) {
+        return line.dependencyId;
+      }
+
+      try {
+        const depsRes = await taskDependenciesApiService.getTaskDependencies(line.sourceTaskId);
+        const match = depsRes.body?.find(dep => dep.related_task_id === line.targetTaskId);
+        return match?.id ?? null;
+      } catch (error) {
+        console.error('Failed to resolve dependency id:', error);
+        return null;
+      }
+    }, []);
+
+    const handleRemoveDependency = useCallback(
+      async (line: DependencyLineSegment) => {
+        setIsDeletingDependency(true);
+        try {
+          const dependencyId = await resolveDependencyId(line);
+          if (!dependencyId) {
+            message.error(
+              t('task.failedToRemoveDependency', { defaultValue: 'Failed to remove dependency.' })
+            );
+            return;
+          }
+
+          const res = await taskDependenciesApiService.deleteTaskDependency(dependencyId);
+          if (res.done) {
+            message.success(
+              t('task.dependencyRemovedSuccessfully', {
+                defaultValue: 'Dependency removed successfully.',
+              })
+            );
+            setRemovedDependencyIds(prev => new Set(prev).add(dependencyId));
+            clearHoveredDependencyControl();
+            if (onRefresh) {
+              onRefresh();
+            }
+          } else {
+            message.error(
+              t('task.failedToRemoveDependency', { defaultValue: 'Failed to remove dependency.' })
+            );
+          }
+        } catch (error) {
+          console.error('Failed to delete dependency:', error);
+          message.error(
+            t('task.failedToRemoveDependency', { defaultValue: 'Failed to remove dependency.' })
+          );
+        } finally {
+          setIsDeletingDependency(false);
+        }
+      },
+      [t, onRefresh, clearHoveredDependencyControl, resolveDependencyId]
+    );
 
     const columnsCount = useMemo(() => {
       // Defer to the same timelineCalculator instance the header (GanttTimeline) reads its
@@ -1768,13 +2217,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
       [dateRange, timelineCalculator]
     );
 
-    // totalWidth comes directly from timelineCalculator — the exact same value the header
-    // (GanttTimeline.tsx) uses, since both read from the same calculator instance built
-    // once in ProjectViewGantt.tsx with a single pxPerDay (already stretched to fill a wide
-    // container there, if applicable). Neither panel computes its own column width/count
-    // independently anymore, which is what used to let them drift apart at Week/Month zoom.
-    const totalWidth = timelineCalculator ? timelineCalculator.getTotalWidth() : 0;
-
+    // totalWidth is derived once above from the shared timelineCalculator instance.
     const effectiveColumnsCount = columnsCount;
 
     // Representative single column width for features that don't need per-column
@@ -2206,7 +2649,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
           } gantt-chart-scroll`}
           style={{ backgroundColor: token.colorBgContainer }}
           onScroll={onScroll}
-          onClick={() => setSelectedDependency(null)}
+          onClick={() => clearHoveredDependencyControl()}
         >
           <div
             ref={setChartContainerRef}
@@ -2262,71 +2705,6 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                   />
                 );
               })}
-            </div>
-            <div className="gantt-dependency-lines-overlay">
-              <svg width="100%" height="100%" preserveAspectRatio="none">
-                {(() => {
-                  const sourceCounts = new Map<string, number>();
-                  const targetCounts = new Map<string, number>();
-
-                  dependencyLines.forEach(line => {
-                    sourceCounts.set(line.sourceTaskId, (sourceCounts.get(line.sourceTaskId) || 0) + 1);
-                    targetCounts.set(line.targetTaskId, (targetCounts.get(line.targetTaskId) || 0) + 1);
-                  });
-
-                  const sourceIndexMap = new Map<string, number>();
-                  const targetIndexMap = new Map<string, number>();
-
-                  return dependencyLines.map((line, index) => {
-                    const sourceGroupIndex = sourceIndexMap.get(line.sourceTaskId) || 0;
-                    sourceIndexMap.set(line.sourceTaskId, sourceGroupIndex + 1);
-
-                    const targetGroupIndex = targetIndexMap.get(line.targetTaskId) || 0;
-                    targetIndexMap.set(line.targetTaskId, targetGroupIndex + 1);
-
-                    const sourceCount = sourceCounts.get(line.sourceTaskId) || 1;
-                    const targetCount = targetCounts.get(line.targetTaskId) || 1;
-                    const offsetStep = 10;
-                    const sourceOffset = (sourceGroupIndex - (sourceCount - 1) / 2) * offsetStep;
-                    const targetOffset = (targetGroupIndex - (targetCount - 1) / 2) * offsetStep;
-
-                    const y1 = line.y1 + sourceOffset;
-                    const y2 = line.y2 + targetOffset;
-                    const gapX = Math.abs(line.x2 - line.x1);
-                    const horizontalGap = Math.min(Math.max(24, gapX * 0.22), gapX * 0.5);
-
-                    const isBackward = line.x2 < line.x1;
-                    const startX = line.x1;
-                    const targetX = line.x2;
-                    const firstBendX = line.x1 + (isBackward ? -horizontalGap : horizontalGap);
-                    const secondBendX = line.x2 - (isBackward ? -horizontalGap : horizontalGap);
-
-                    // Smooth cubic-bezier S-curve instead of a right-angle elbow polyline,
-                    // using the same step-out positions as control points. Control points
-                    // stay within [startX, targetX] (clamped to gapX * 0.5) so the curve
-                    // never overshoots and loops back on itself near the endpoints.
-                    const d = `M ${startX} ${y1} C ${firstBendX} ${y1}, ${secondBendX} ${y2}, ${targetX} ${y2}`;
-
-                    return (
-                      <path
-                        key={`dependency-line-${index}`}
-                        d={d}
-                        stroke={token.colorPrimary}
-                        strokeWidth={2}
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        opacity={0.9}
-                        onClick={e => {
-                          e.stopPropagation();
-                          setSelectedDependency(line);
-                          setSelectedDependencyPosition({ x: e.clientX, y: e.clientY });
-                        }}
-                      />
-                    );
-                  });
-                })()}
-              </svg>
             </div>
             <div className="relative z-10">
               {finalTasks.map((item, index) => {
@@ -2492,7 +2870,7 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                         (`isExpanded && isPhase ? 'border-b-0' : ''`) exactly. */}
                     <div
                       key={item.id}
-                      className={`relative transition-colors border-b border-gray-100 dark:border-gray-700 ${
+                      className={`gantt-timeline-task-row relative transition-colors border-b border-gray-100 dark:border-gray-700 ${
                         isPhase && isExpanded ? 'border-b-0' : ''
                       } ${isPhase ? 'cursor-pointer' : ''} ${animationClass}`}
                       onClick={showCreateOverlay ? handleRowClick : undefined}
@@ -2533,13 +2911,14 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                           animationClass=""
                           onPhaseClick={isPhase ? onPhaseClick : undefined}
                           onTaskClick={!isPhase ? onTaskClick : undefined}
-                          onTaskDateUpdate={handleTaskDateUpdate}
+                          onTaskDateUpdate={canCreateTask ? handleTaskDateUpdate : undefined}
                           calculateDateFromPosition={calculateDateFromPosition}
                           timelineCalculator={timelineCalculator}
                           setHighlightedDateRange={setHighlightedDateRange}
-                          onDependencyDragStart={handleDependencyDragStart}
-                          onDependencyDragMove={handleDependencyDragMove}
-                          onDependencyDragEnd={handleDependencyDragEnd}
+                          canCreateTask={canCreateTask}
+                          onDependencyDragStart={canCreateTask ? handleDependencyDragStart : undefined}
+                          onDependencyDragMove={canCreateTask ? handleDependencyDragMove : undefined}
+                          onDependencyDragEnd={canCreateTask ? handleDependencyDragEnd : undefined}
                           dependencySourceTaskId={dependencySourceTaskId}
                           dependencyTargetTaskId={dependencyTargetTaskId}
                           expandedTasks={expandedTasks}
@@ -2686,13 +3065,14 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                                   animationClass=""
                                   onPhaseClick={undefined}
                                   onTaskClick={onTaskClick}
-                                  onTaskDateUpdate={handleTaskDateUpdate}
+                                  onTaskDateUpdate={canCreateTask ? handleTaskDateUpdate : undefined}
                                   calculateDateFromPosition={calculateDateFromPosition}
                                   timelineCalculator={timelineCalculator}
                                   setHighlightedDateRange={setHighlightedDateRange}
-                                  onDependencyDragStart={handleDependencyDragStart}
-                                  onDependencyDragMove={handleDependencyDragMove}
-                                  onDependencyDragEnd={handleDependencyDragEnd}
+                                  canCreateTask={canCreateTask}
+                                  onDependencyDragStart={canCreateTask ? handleDependencyDragStart : undefined}
+                                  onDependencyDragMove={canCreateTask ? handleDependencyDragMove : undefined}
+                                  onDependencyDragEnd={canCreateTask ? handleDependencyDragEnd : undefined}
                                   dependencySourceTaskId={dependencySourceTaskId}
                                   dependencyTargetTaskId={dependencyTargetTaskId}
                                   expandedTasks={expandedTasks}
@@ -2713,68 +3093,135 @@ const GanttChart = forwardRef<HTMLDivElement, GanttChartProps>(
                 </div>
               )}
             </div>
+            {/* Dependency lines render above row border-b lines (z-10 task rows) so
+                horizontal grid borders don't cut through the connector and look like
+                two separate segments. pointer-events:none on the shell — only paths
+                capture clicks so task bars underneath stay interactive. */}
+            <div className="gantt-dependency-lines-overlay">
+              <svg width="100%" height="100%" preserveAspectRatio="none" style={{ overflow: 'visible' }}>
+                {(() => {
+                  const sourceCounts = new Map<string, number>();
+                  const targetCounts = new Map<string, number>();
+
+                  dependencyLines.forEach(line => {
+                    sourceCounts.set(line.sourceTaskId, (sourceCounts.get(line.sourceTaskId) || 0) + 1);
+                    targetCounts.set(line.targetTaskId, (targetCounts.get(line.targetTaskId) || 0) + 1);
+                  });
+
+                  const sortedLines = [...dependencyLines].sort((a, b) => {
+                    if (a.sourceTaskId !== b.sourceTaskId) {
+                      return a.sourceTaskId.localeCompare(b.sourceTaskId);
+                    }
+                    if (a.y2 !== b.y2) {
+                      return a.y2 - b.y2;
+                    }
+                    return a.targetTaskId.localeCompare(b.targetTaskId);
+                  });
+
+                  const sourceIndexMap = new Map<string, number>();
+                  const targetIndexMap = new Map<string, number>();
+
+                  return sortedLines.map((line, index) => {
+                    const sourceGroupIndex = sourceIndexMap.get(line.sourceTaskId) || 0;
+                    sourceIndexMap.set(line.sourceTaskId, sourceGroupIndex + 1);
+
+                    const targetGroupIndex = targetIndexMap.get(line.targetTaskId) || 0;
+                    targetIndexMap.set(line.targetTaskId, targetGroupIndex + 1);
+
+                    const sourceCount = sourceCounts.get(line.sourceTaskId) || 1;
+                    const targetCount = targetCounts.get(line.targetTaskId) || 1;
+                    const offsetStep = 14;
+                    const sourceOffset = (sourceGroupIndex - (sourceCount - 1) / 2) * offsetStep;
+                    const targetOffset = (targetGroupIndex - (targetCount - 1) / 2) * offsetStep;
+
+                    const startX = line.x1;
+                    const endX = line.x2;
+                    const y1 = line.y1 + sourceOffset;
+                    const y2 = line.y2 + targetOffset;
+
+                    const { d, points } = buildDependencyPath(
+                      startX,
+                      y1,
+                      endX,
+                      y2,
+                      sourceGroupIndex,
+                      sourceCount
+                    );
+                    const mid = interpolateAlongPath(points, getPolylineLength(points) / 2);
+                    const arrowD = buildArrowPathAtMid(mid);
+                    const arrowHitD = buildArrowHitPathAtMid(mid);
+                    const isHovered = hoveredDependencyControl?.line.dependencyId === line.dependencyId;
+                    const strokeColor = isHovered ? token.colorPrimaryActive : token.colorPrimary;
+
+                    return (
+                      <g
+                        key={`dependency-line-${line.dependencyId}`}
+                        className="gantt-dependency-line-group"
+                        onMouseEnter={() => handleDependencyLineMouseEnter(line, mid)}
+                        onMouseLeave={scheduleClearHoveredDependencyControl}
+                      >
+                        <path
+                          d={d}
+                          stroke={strokeColor}
+                          strokeWidth={isHovered ? 2 : 1.5}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          opacity={isHovered ? 1 : 0.9}
+                          className="gantt-dependency-line-path"
+                        />
+                        <path
+                          d={arrowHitD}
+                          fill="transparent"
+                          stroke="none"
+                          className="gantt-dependency-line-hit"
+                        />
+                        <path
+                          d={arrowD}
+                          fill={strokeColor}
+                          stroke={strokeColor}
+                          strokeWidth={0.5}
+                          strokeLinejoin="round"
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      </g>
+                    );
+                  });
+                })()}
+              </svg>
+              {hoveredDependencyControl && (
+                <div
+                  className="gantt-dependency-remove-control"
+                  style={{
+                    left: `${hoveredDependencyControl.mid.x}px`,
+                    top: `${hoveredDependencyControl.mid.y}px`,
+                  }}
+                  onMouseEnter={() =>
+                    handleDependencyLineMouseEnter(
+                      hoveredDependencyControl.line,
+                      hoveredDependencyControl.mid
+                    )
+                  }
+                  onMouseLeave={scheduleClearHoveredDependencyControl}
+                  onClick={e => e.stopPropagation()}
+                >
+                  <span className="gantt-dependency-remove-tooltip">
+                    {t('task.removeDependencyTooltip', { defaultValue: 'Remove dependency' })}
+                  </span>
+                  <button
+                    type="button"
+                    className="gantt-dependency-remove-btn"
+                    aria-label={t('task.removeDependencyTooltip', { defaultValue: 'Remove dependency' })}
+                    disabled={isDeletingDependency}
+                    onClick={() => handleRemoveDependency(hoveredDependencyControl.line)}
+                  >
+                    <CloseOutlined />
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {selectedDependency && selectedDependencyPosition && (
-          (() => {
-            const sourceTask = taskMap.get(selectedDependency.sourceTaskId);
-            const targetTask = taskMap.get(selectedDependency.targetTaskId);
-            if (!sourceTask || !targetTask) return null;
-
-            return (
-              <div
-                className="gantt-dependency-popover"
-                style={{
-                  left: `${selectedDependencyPosition.x + 12}px`,
-                  top: `${selectedDependencyPosition.y + 12}px`,
-                }}
-                onClick={e => e.stopPropagation()}
-              >
-                <h4>{`${sourceTask.name} → ${targetTask.name}`}</h4>
-                <p>{t('task.dependencyType', 'Dependency type')}: Finish-to-Start</p>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                  onClick={async () => {
-                    if (!selectedDependency) return;
-                    setIsDeletingDependency(true);
-                    try {
-                      const res = await taskDependenciesApiService.deleteTaskDependency(
-                        selectedDependency.dependencyId
-                      );
-                      if (res.done) {
-                        message.success(
-                          t('task.dependencyRemovedSuccessfully', 'Dependency removed successfully.')
-                        );
-                        setRemovedDependencyIds(prev => new Set(prev).add(selectedDependency.dependencyId));
-                        setSelectedDependency(null);
-                        if (onRefresh) {
-                          onRefresh();
-                        }
-                      } else {
-                        console.error('Failed to delete dependency:', res);
-                        message.error(
-                          t('task.failedToRemoveDependency', 'Failed to remove dependency.')
-                        );
-                      }
-                    } catch (error) {
-                      console.error('Failed to delete dependency:', error);
-                      message.error(
-                        t('task.failedToRemoveDependency', 'Failed to remove dependency.')
-                      );
-                    } finally {
-                      setIsDeletingDependency(false);
-                    }
-                  }}
-                  disabled={isDeletingDependency}
-                >
-                  {t('task.removeDependency', 'Remove')}
-                </button>
-              </div>
-            );
-          })()
-        )}
 
         {/* Task Creation Popover */}
         {taskPopover && taskPopover.visible && (

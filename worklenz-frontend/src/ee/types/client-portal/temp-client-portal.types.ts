@@ -5,8 +5,8 @@ export type TempClientPortalClientType = {
   id: string;
   name: string;
   assigned_projects_count: number;
-  projects: any[];
-  team_members: any[];
+  projects: Array<{ id?: string; name?: string; color_code?: string; status?: string } | string>;
+  team_members: Array<{ id?: string; name?: string; email?: string; avatar_url?: string }>;
 };
 
 // temp type for requests object this shold be replaced with actual type ========================

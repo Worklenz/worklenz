@@ -45,12 +45,14 @@ import {
 } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import ManageStatusModal from '@/components/task-management/ManageStatusModal';
 import ManagePhaseModal from '@/components/task-management/ManagePhaseModal';
+import AssigneeScopeIndicator from '@/components/task-management/assignee-scope-indicator';
 import { useAuthService } from '@/hooks/useAuth';
 import useIsProjectManager from '@/hooks/useIsProjectManager';
 import { FieldsDropdown } from './fields-dropdown';
 import { FilterDropdown } from './filter-dropdown';
 import { SearchFilter } from './search-filter';
 import { SortDropdown } from './sort-dropdown';
+import { FilteredTaskExportButton } from './filtered-task-export-button';
 import { FilterSection, ImprovedTaskFiltersProps } from './types';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 
@@ -573,6 +575,15 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
     return count + (searchValue ? 1 : 0) + sortFieldsCount + taskManagementSortCount;
   }, [filterSections, searchValue, sortFields, taskManagementSortField, position]);
 
+  /** Filters that gate the Export button (excludes sort / groupBy). */
+  const hasActiveFiltersForExport = useMemo(() => {
+    const filterCount = filterSections.reduce(
+      (acc, section) => (section.id === 'groupBy' ? acc : acc + section.selectedValues.length),
+      0
+    );
+    return filterCount + (searchValue ? 1 : 0) > 0;
+  }, [filterSections, searchValue]);
+
   useEffect(() => {
     if (activeFiltersCount !== calculatedActiveFiltersCount) {
       setActiveFiltersCount(calculatedActiveFiltersCount);
@@ -915,6 +926,8 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 ml-auto min-w-0 shrink-0">
+          <AssigneeScopeIndicator />
+
           {activeFiltersCount > 0 && (
             <div className="flex items-center gap-1.5">
               <span className={`text-xs ${themeClasses.secondaryText}`}>
@@ -940,6 +953,12 @@ const ImprovedTaskFiltersContainer: React.FC<ImprovedTaskFiltersProps> = ({
               </button>
             </div>
           )}
+
+          <FilteredTaskExportButton
+            position={position}
+            hasActiveFilters={hasActiveFiltersForExport}
+            isDarkMode={isDarkMode}
+          />
 
           <label className="flex items-center gap-1.5 cursor-pointer">
             <input

@@ -1,3 +1,4 @@
+import Holidays from "date-holidays";
 import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import db from "../config/db";
@@ -9,6 +10,59 @@ import {
   IUpdateHolidayRequest,
   IImportCountryHolidaysRequest,
 } from "../interfaces/holiday.interface";
+import { log_error } from "../shared/utils";
+
+const COUNTRY_HOLIDAY_POPULATE_START_YEAR = 2020;
+const COUNTRY_HOLIDAY_POPULATE_END_YEAR = 2050;
+
+interface DateHolidayEntry {
+  type?: string;
+  start?: Date | string;
+  name?: string;
+}
+
+const insertPublicHolidaysForCountry = async (
+  countryCode: string,
+  startYear = COUNTRY_HOLIDAY_POPULATE_START_YEAR,
+  endYear = COUNTRY_HOLIDAY_POPULATE_END_YEAR
+): Promise<number> => {
+  const hd = new Holidays();
+  hd.init(countryCode);
+  hd.setLanguages("en");
+
+  let totalPopulated = 0;
+  const insertQuery = `
+    INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (country_code, name, date) DO NOTHING
+  `;
+
+  for (let year = startYear; year <= endYear; year++) {
+    const holidays = hd.getHolidays(year) as DateHolidayEntry[];
+
+    if (!holidays?.length) {
+      continue;
+    }
+
+    const publicHolidays = holidays.filter(holiday => holiday.type === "public");
+
+    for (const holiday of publicHolidays) {
+      if (!holiday.start) {
+        continue;
+      }
+
+      const date = new Date(holiday.start);
+      const dateStr = date.toISOString().split("T")[0];
+      const name = holiday.name || "Unknown Holiday";
+      const description = holiday.type || "Public Holiday";
+
+      await db.query(insertQuery, [countryCode, name, description, dateStr, true]);
+      totalPopulated++;
+    }
+  }
+
+  return totalPopulated;
+};
 
 export default class HolidayController extends WorklenzControllerBase {
   @HandleExceptions()
@@ -23,14 +77,14 @@ export default class HolidayController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getOrganizationHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { year } = req.query;
-    const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : "";
+    const yearFilter = year ? `AND EXTRACT(YEAR FROM oh.date) = $2` : "";
     const params = year ? [req.user?.owner_id, year] : [req.user?.owner_id];
 
     const q = `SELECT oh.id, oh.organization_id, oh.holiday_type_id, oh.name, oh.description, 
-                      oh.date, oh.is_recurring, oh.created_at, oh.updated_at,
+                      oh.date, oh.is_recurring, oh.is_auto_synced, oh.created_at, oh.updated_at,
                       ht.name as holiday_type_name, ht.color_code
                FROM organization_holidays oh
-               JOIN holiday_types ht ON oh.holiday_type_id = ht.id
+               LEFT JOIN holiday_types ht ON oh.holiday_type_id = ht.id
                WHERE oh.organization_id = (
                  SELECT id FROM organizations WHERE user_id = $1
                ) ${yearFilter}
@@ -44,10 +98,10 @@ export default class HolidayController extends WorklenzControllerBase {
   public static async createOrganizationHoliday(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { name, description, date, holiday_type_id, is_recurring = false }: ICreateHolidayRequest = req.body;
 
-    const q = `INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
+    const q = `INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring, is_auto_synced)
                VALUES (
                  (SELECT id FROM organizations WHERE user_id = $1),
-                 $2, $3, $4, $5, $6
+                 $2, $3, $4, $5, $6, FALSE
                )
                RETURNING id;`;
     
@@ -126,8 +180,9 @@ export default class HolidayController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getCountryHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { country_code, year } = req.query;
-    
+    const country_code = req.params.country_code;
+    const { year } = req.query;
+
     if (!country_code) {
       return res.status(400).send(new ServerResponse(false, "Country code is required"));
     }
@@ -135,11 +190,12 @@ export default class HolidayController extends WorklenzControllerBase {
     const yearFilter = year ? `AND EXTRACT(YEAR FROM date) = $2` : "";
     const params = year ? [country_code, year] : [country_code];
 
+    // GET stays read-only; population happens via POST /populate (populateCountryHolidays).
     const q = `SELECT id, country_code, name, description, date, is_recurring, created_at, updated_at
                FROM country_holidays
                WHERE country_code = $1 ${yearFilter}
                ORDER BY date;`;
-    
+
     const result = await db.query(q, params);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -196,8 +252,8 @@ export default class HolidayController extends WorklenzControllerBase {
     }
 
     // Import holidays to organization
-    const importQ = `INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
-                     VALUES ($1, $2, $3, $4, $5, $6)
+    const importQ = `INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring, is_auto_synced)
+                     VALUES ($1, $2, $3, $4, $5, $6, TRUE)
                      ON CONFLICT (organization_id, date) DO NOTHING`;
 
     let importedCount = 0;
@@ -232,12 +288,15 @@ export default class HolidayController extends WorklenzControllerBase {
       return res.status(400).send(new ServerResponse(false, "Year and month are required"));
     }
 
-    // Get the organization's country to determine which source to use
-    const orgCountryQ = `SELECT c.code FROM organizations o 
-                         JOIN countries c ON o.country = c.id 
-                         WHERE o.user_id = $1;`;
-    const orgCountryResult = await db.query(orgCountryQ, [req.user?.owner_id]);
-    const countryCode = orgCountryResult.rows[0]?.code;
+    // Use holiday settings country — organizations.country can differ and would
+    // filter the wrong country_holidays rows.
+    const settingsQ = `SELECT ohs.country_code
+                       FROM organization_holiday_settings ohs
+                       WHERE ohs.organization_id = (
+                         SELECT id FROM organizations WHERE user_id = $1
+                       )`;
+    const settingsResult = await db.query(settingsQ, [req.user?.owner_id]);
+    const countryCode = settingsResult.rows[0]?.country_code ?? null;
 
     // For Sri Lanka, only use country_holidays (unified source)
     // For other countries, include both organization and country holidays
@@ -254,7 +313,7 @@ export default class HolidayController extends WorklenzControllerBase {
                 ht.name as holiday_type_name, ht.color_code,
                 'organization' as source
          FROM organization_holidays oh
-         JOIN holiday_types ht ON oh.holiday_type_id = ht.id
+         LEFT JOIN holiday_types ht ON oh.holiday_type_id = ht.id
          WHERE oh.organization_id = (
            SELECT id FROM organizations WHERE user_id = $1
          )
@@ -278,120 +337,91 @@ export default class HolidayController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async populateCountryHolidays(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // Get the organization's selected country
-    const orgQ = `SELECT id, country FROM organizations WHERE user_id = $1;`;
-    const orgResult = await db.query(orgQ, [req.user?.owner_id]);
-    const organization = orgResult.rows[0];
-    
-    if (!organization) {
-      return res.status(404).send(new ServerResponse(false, "Organization not found"));
+    // Get the organization holiday settings to determine which country was selected
+    const settingsQ = `SELECT country_code FROM organization_holiday_settings 
+                       WHERE organization_id = (SELECT id FROM organizations WHERE user_id = $1)`;
+    const settingsResult = await db.query(settingsQ, [req.user?.owner_id]);
+
+    if (settingsResult.rows.length === 0 || !settingsResult.rows[0].country_code) {
+      return res.status(400).send(new ServerResponse(false, "No country selected in holiday settings"));
     }
 
-    if (!organization.country) {
-      return res.status(400).send(new ServerResponse(false, "Organization has no country selected"));
-    }
+    const countryCode = settingsResult.rows[0].country_code as string;
 
-    const organizationId = organization.id;
+    // Check if holidays already exist for this country
+    const existingQ = `SELECT COUNT(*) as count FROM country_holidays WHERE country_code = $1`;
+    const existingResult = await db.query(existingQ, [countryCode]);
+    const existingCount = parseInt(existingResult.rows[0]?.count || "0", 10);
 
-    // Get the country code from organizations table
-    const countryCodeQ = `SELECT code FROM countries WHERE id = $1;`;
-    const countryCodeResult = await db.query(countryCodeQ, [organization.country]);
-    const countryCode = countryCodeResult.rows[0]?.code;
-
-    if (!countryCode) {
-      return res.status(400).send(new ServerResponse(false, "Invalid country selected for organization"));
-    }
-
-    // Check if this organization has recently populated holidays (within last hour)
-    const recentPopulationCheck = `
-      SELECT COUNT(*) as count
-      FROM organization_holidays 
-      WHERE organization_id = $1
-      AND created_at > NOW() - INTERVAL '1 hour'
-    `;
-    
-    const recentResult = await db.query(recentPopulationCheck, [organizationId]);
-    const recentCount = parseInt(recentResult.rows[0]?.count || '0');
-    
-    // If there are recent holidays added, skip population
-    if (recentCount > 10) {
+    // If holidays already exist, skip population
+    if (existingCount > 0) {
       return res.status(200).send(new ServerResponse(true, {
         success: true,
-        message: "Holidays were recently populated, skipping to avoid duplicates",
+        message: `${existingCount} holidays already exist for country ${countryCode}`,
         total_populated: 0,
-        recently_populated: true
+        already_populated: true
       }));
     }
 
-    // Get default holiday type (Public Holiday)
-    const typeQ = `SELECT id FROM holiday_types WHERE name = 'Public Holiday' LIMIT 1`;
-    const typeResult = await db.query(typeQ);
-    const holidayTypeId = typeResult.rows[0]?.id;
-
-    if (!holidayTypeId) {
-      return res.status(404).send(new ServerResponse(false, "Default holiday type not found"));
-    }
-
-    let totalPopulated = 0;
-    const errors = [];
+    // Guard concurrent first-hit population (UNIQUE (country_code, name, date) also exists).
+    const lockClient = await db.connect();
+    const lockKey = `populate-country-holidays-${countryCode}`;
+    let lockAcquired = false;
 
     try {
-      // For Sri Lanka, use the country_holidays table (populated by migration)
-      // instead of inserting into organization_holidays to avoid duplicates
-      if (countryCode === 'LK') {
+      const lockResult = await lockClient.query(
+        "SELECT pg_try_advisory_lock(hashtext($1)) AS locked;",
+        [lockKey]
+      );
+      lockAcquired = Boolean(lockResult.rows[0]?.locked);
+
+      if (!lockAcquired) {
         return res.status(200).send(new ServerResponse(true, {
-          success: true,
-          message: "Sri Lanka holidays are managed via country_holidays table. Use getHolidayCalendar to view them.",
+          success: false,
+          message: `Holiday population for ${countryCode} is already in progress`,
           total_populated: 0,
-          note: "Sri Lanka country holidays are displayed automatically in the calendar view"
+          already_populated: false,
+          in_progress: true,
+          country_code: countryCode
         }));
       }
 
-      // Use date-holidays for other countries
-      const Holidays = require("date-holidays");
-      const hd = new Holidays(countryCode);
-      
-      for (let year = 2020; year <= 2050; year++) {
-        const holidays = hd.getHolidays(year);
-        
-        for (const holiday of holidays) {
-          if (!holiday.date || typeof holiday.date !== "object") {
-            continue;
-          }
-          
-          const dateStr = holiday.date.toISOString().split("T")[0];
-          const name = holiday.name || "Unknown Holiday";
-          const description = holiday.type || "Public Holiday";
-          
-          const query = `
-            INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            ON CONFLICT (organization_id, date) DO NOTHING
-          `;
-          
-          await db.query(query, [
-            organizationId,
-            holidayTypeId,
-            name,
-            description,
-            dateStr,
-            true
-          ]);
-          
-          totalPopulated++;
+      // Re-check after acquiring the lock in case another request finished while we waited.
+      const recheckResult = await db.query(existingQ, [countryCode]);
+      const recheckCount = parseInt(recheckResult.rows[0]?.count || "0", 10);
+      if (recheckCount > 0) {
+        return res.status(200).send(new ServerResponse(true, {
+          success: true,
+          message: `${recheckCount} holidays already exist for country ${countryCode}`,
+          total_populated: 0,
+          already_populated: true,
+          country_code: countryCode
+        }));
+      }
+
+      const totalPopulated = await insertPublicHolidaysForCountry(countryCode);
+
+      return res.status(200).send(new ServerResponse(true, {
+        success: totalPopulated > 0,
+        message: `Successfully populated ${totalPopulated} holidays for ${countryCode}`,
+        total_populated: totalPopulated,
+        country_code: countryCode
+      }));
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(new ServerResponse(false, {
+        message: `Error populating holidays: ${error instanceof Error ? error.message : "Unknown error"}`,
+        country_code: countryCode
+      }));
+    } finally {
+      if (lockAcquired) {
+        try {
+          await lockClient.query("SELECT pg_advisory_unlock(hashtext($1));", [lockKey]);
+        } catch (unlockError) {
+          log_error(unlockError);
         }
       }
-    } catch (error: any) {
-      errors.push(`${countryCode}: ${error?.message || "Unknown error"}`);
+      lockClient.release();
     }
-
-    return res.status(200).send(new ServerResponse(true, {
-      success: totalPopulated > 0 || countryCode === 'LK',
-      message: countryCode === 'LK' 
-        ? "Sri Lanka country holidays are automatically available"
-        : `Populated ${totalPopulated} holidays`,
-      total_populated: totalPopulated,
-      errors: errors.length > 0 ? errors : undefined
-    }));
   }
 } 

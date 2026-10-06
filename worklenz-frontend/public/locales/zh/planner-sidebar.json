@@ -1,5 +1,10 @@
 {
+  "getMobileApp": "获取手机应用",
+  "helpSupport": "帮助与支持",
   "schedule": "日程",
+  "settingsTooltip": "设置",
   "timeline": "时间线",
+  "trialDaysLeft": "试用期还剩 {{count}} 天",
+  "upgradeToPro": "升级到专业版",
   "workload": "工作量"
 }

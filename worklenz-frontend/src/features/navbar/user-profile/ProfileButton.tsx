@@ -32,11 +32,12 @@ import { selectCurrentProject } from '@/app/selectors';
 
 import { getRole } from '@/utils/session-helper';
 import { RoleName } from '@/types/roles/role.types';
+import { useAuthService } from '@/hooks/useAuth';
+import { isSessionGuest } from '@/utils/guest-session';
 
 import './profile-dropdown.css';
 import './profile-button.css';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { useAuthService } from '@/hooks/useAuth';
 import { useAuthStatus } from '@/hooks/useAuthStatus';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useTooltipTheme } from '@/hooks/useTooltipTheme';
@@ -52,6 +53,8 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
   const { tooltipProps } = useTooltipTheme();
   const currentSession = useAppSelector((state: RootState) => state.userReducer);
   const currentProject = useAppSelector(selectCurrentProject);
+  const authService = useAuthService();
+  const authSession = authService.getCurrentSession();
   const { isLicenseExpired } = useAuthStatus();
   const { trackMixpanelEvent } = useMixpanelTracking();
   const dispatch = useAppDispatch();
@@ -68,11 +71,16 @@ const ProfileButton = ({ isOwnerOrAdmin }: ProfileButtonProps) => {
     Member: 'memberRole',
   };
   const roleTranslationKey = role === 'Unknown' ? undefined : ROLE_TRANSLATION_KEY[role];
-  const profileRole = currentProject?.project?.is_guest
-    ? t('guestRole', { defaultValue: 'Guest' })
-    : roleTranslationKey
-      ? t(roleTranslationKey, { defaultValue: roleTranslationKey })
-      : role;
+  // Prefer localStorage session (full auth payload) over userReducer, which
+  // historically omitted is_guest and caused guests to display as Member.
+  const profileRole =
+    isSessionGuest(authSession) ||
+    isSessionGuest(currentSession) ||
+    Boolean(currentProject?.project?.is_guest)
+      ? t('guestRole', { defaultValue: 'Guest' })
+      : roleTranslationKey
+        ? t(roleTranslationKey, { defaultValue: roleTranslationKey })
+        : role;
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const isDark = themeMode === 'dark';
   const [mobileModalOpen, setMobileModalOpen] = useState(false);

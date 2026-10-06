@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Flex, Form, Input, Modal, Select, Typography, Tabs } from '@/shared/antd-imports';
-import { App } from 'antd';
+import { Button, Flex, Form, Input, Modal, Select, Typography, Tabs, message } from '@/shared/antd-imports';
 import { SearchOutlined, CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { projectMembersApiService } from '@/api/project-members/project-members.api.service';
@@ -27,7 +26,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   const [form] = Form.useForm<FormValues>();
   const { t } = useTranslation('settings/team-members');
-  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [projectOptions, setProjectOptions] = useState<ProjectOption[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -41,6 +39,7 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   const [linkExpiry, setLinkExpiry] = useState<string>('');
   const [hasActiveLink, setHasActiveLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const selectedProjectId = Form.useWatch('projectId', form);
 
   // Fetch projects when modal opens
   useEffect(() => {
@@ -195,7 +194,7 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
             })
           );
         } else {
-          message.error(res.message || t('Failed to generate link', {
+          message.error(res.message || t('inviteLinkGenerateError', {
             defaultValue: 'Failed to generate invitation link',
           }));
         }
@@ -206,20 +205,32 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
         setInvitationLink(res.body.invitation_url);
         setLinkExpiry(res.body.expires_at);
         setHasActiveLink(true);
-        
-        // Copy to clipboard
-        await navigator.clipboard.writeText(res.body.invitation_url);
-        setLinkCopied(true);
-        message.success(
-          t('Invitation link copied to clipboard', {
-            defaultValue: 'Invitation link copied to clipboard',
-          })
-        );
-        
-        setTimeout(() => setLinkCopied(false), 2000);
+
+        // Copy to clipboard. Some browsers (notably Safari) revoke the
+        // user-activation needed for clipboard access once an awaited
+        // network call yields control back to the event loop, so a
+        // clipboard failure here must not be treated as a link-generation
+        // failure - the link above was already generated successfully.
+        try {
+          await navigator.clipboard.writeText(res.body.invitation_url);
+          setLinkCopied(true);
+          message.success(
+            t('inviteLinkCopied', {
+              defaultValue: 'Invitation link copied to clipboard',
+            })
+          );
+          setTimeout(() => setLinkCopied(false), 2000);
+        } catch (clipboardError) {
+          console.error('Error copying invitation link to clipboard:', clipboardError);
+          message.warning(
+            t('inviteLinkGeneratedCopyFailed', {
+              defaultValue: 'Invitation link generated, but could not be copied automatically. Please copy it manually.',
+            })
+          );
+        }
       } else {
         message.error(
-          t('Failed to generate invitation link', {
+          t('inviteLinkGenerateError', {
             defaultValue: 'Failed to generate invitation link',
           })
         );
@@ -227,9 +238,9 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
     } catch (error: any) {
       console.error('Error generating invitation link:', error);
       message.error(
-        error?.response?.data?.message || 
-        error?.message || 
-        t('Failed to generate invitation link', {
+        error?.response?.data?.message ||
+        error?.message ||
+        t('inviteLinkGenerateError', {
           defaultValue: 'Failed to generate invitation link',
         })
       );
@@ -244,16 +255,11 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
     try {
       await navigator.clipboard.writeText(invitationLink);
       setLinkCopied(true);
-      message.success(
-        t('linkCopied', {
-          defaultValue: 'Link copied to clipboard',
-        })
-      );
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (error) {
       console.error('Error copying to clipboard:', error);
       message.error(
-        t('copyFailed', {
+        t('projectInvite_linkCopyFailed', {
           defaultValue: 'Failed to copy link',
         })
       );
@@ -278,92 +284,99 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   };
 
   const handleFormSubmit = async (values: FormValues) => {
+    const emailList = (values.emails || [])
+      .map(email => String(email).trim())
+      .filter(Boolean);
+
+    if (emailList.length === 0) {
+      message.error(
+        t('projectInvite_emailRequired', {
+          defaultValue: 'Please enter at least one email address',
+        })
+      );
+      return;
+    }
+
+    if (!values.projectId) {
+      message.error(
+        t('projectRequired', {
+          defaultValue: 'Please select a project first',
+        })
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
-      const emailList = values.emails || [];
-
-      if (emailList.length === 0) {
-        message.error(
-          t('emailRequired', {
-            defaultValue: 'Please enter at least one email address',
-          })
-        );
-        setLoading(false);
-        return;
-      }
-
-      if (!values.projectId) {
-        message.error(
-          t('projectRequired', {
-            defaultValue: 'Please select a project',
-          })
-        );
-        setLoading(false);
-        return;
-      }
-
-      // Invite each email as a guest to the selected project
-      const invitePromises = emailList.map(async email => {
-        try {
-          const body = {
-            email: email.trim(),
-            project_id: values.projectId,
-            role_name: ROLE_NAMES.MEMBER,
-            is_admin: false,
-            access_level: 'GUEST',
-          };
-          const result = await projectMembersApiService.inviteByEmail(body);
-
-          if (!result.done && result.body?.error_code === 'GUEST_LIMIT_EXCEEDED') {
-            return {
+      const results = await Promise.all(
+        emailList.map(async email => {
+          try {
+            const result = await projectMembersApiService.inviteByEmail({
               email,
-              success: false,
-              error: t('guestLimitExceeded', {
-                defaultValue: 'Guest limit exceeded for this plan',
-              }),
-            };
+              project_id: values.projectId,
+              role_name: ROLE_NAMES.MEMBER,
+              is_admin: false,
+              access_level: 'GUEST',
+            });
+
+            if (!result.done && result.body?.error_code === 'GUEST_LIMIT_EXCEEDED') {
+              return {
+                email,
+                success: false,
+                error: t('guestLimitExceeded', {
+                  defaultValue: 'Guest limit exceeded for this plan',
+                }),
+              };
+            }
+
+            return { email, success: Boolean(result.done), error: result.message };
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            return { email, success: false, error: errorMessage };
           }
+        })
+      );
 
-          return { email, success: result.done, error: result.message };
-        } catch (error: any) {
-          return { email, success: false, error: error.message || 'Unknown error' };
-        }
-      });
-
-      const results = await Promise.all(invitePromises);
-
-      const successResults = results.filter(r => r.success);
-      const failedResults = results.filter(r => !r.success);
-
+      const successResults = results.filter(result => result.success);
+      const failedResults = results.filter(result => !result.success);
       const successCount = successResults.length;
-      const failCount = failedResults.length;
 
-      if (successCount > 0 && failCount > 0) {
-        const failedEmails = failedResults.map(r => r.email).join(', ');
+      if (successCount > 0 && failedResults.length > 0) {
+        const failedEmails = failedResults.map(result => result.email).join(', ');
         message.warning(
           t('partialSuccess', {
             defaultValue: `${successCount} guest(s) invited successfully. Failed: ${failedEmails}`,
+            count: successCount,
+            emails: failedEmails,
           })
         );
         form.resetFields();
         onClose();
-      } else if (successCount > 0) {
+        return;
+      }
+
+      if (successCount > 0) {
         message.success(
           t('guestInviteSuccess', {
             defaultValue: `${successCount} guest(s) invited successfully`,
+            count: successCount,
           })
         );
         form.resetFields();
         onClose();
-      } else {
-        const failedEmails = failedResults.map(r => `${r.email}: ${r.error}`).join('; ');
-        message.error(
-          t('guestInviteFailed', {
-            defaultValue: `Failed to invite guests: ${failedEmails}`,
-          })
-        );
+        return;
       }
+
+      const failedEmails = failedResults
+        .map(result => `${result.email}: ${result.error}`)
+        .join('; ');
+      message.error(
+        t('guestInviteFailed', {
+          defaultValue: `Failed to invite guests: ${failedEmails}`,
+          emails: failedEmails,
+        })
+      );
     } catch (error) {
       console.error('Error inviting guests:', error);
       message.error(
@@ -435,6 +448,13 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
             {t('guestEmailLabel', { defaultValue: 'Guest Email Addresses' })}
           </Typography.Text>
         }
+        extra={
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {t('guestEmailHint', {
+              defaultValue: 'Separate multiple emails with commas, spaces, or semicolons',
+            })}
+          </Typography.Text>
+        }
         rules={[
           {
             validator: (_, value) => {
@@ -445,7 +465,7 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
                   : [];
               if (!normalizedEmails.length) {
                 return Promise.reject(
-                  t('emailRequired', { defaultValue: 'Please enter at least one email address' })
+                  t('projectInvite_emailRequired', { defaultValue: 'Please enter at least one email address' })
                 );
               }
               const hasInvalidEmail = normalizedEmails.some(
@@ -453,7 +473,7 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
               );
               if (hasInvalidEmail) {
                 return Promise.reject(
-                  t('emailInvalid', { defaultValue: 'Please enter valid email addresses' })
+                  t('projectInvite_emailInvalid', { defaultValue: 'Please enter valid email addresses' })
                 );
               }
               return Promise.resolve();
@@ -461,27 +481,20 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
           },
         ]}
       >
-        <Flex vertical gap={4}>
-          <Select
-            mode="tags"
-            style={{ width: '100%' }}
-            placeholder={t('guestEmailPlaceholder', {
-              defaultValue: 'Enter guest email addresses',
-            })}
-            onChange={handleEmailChange}
-            notFoundContent={
-              <Typography.Text type="secondary">
-                {t('noResultFound', { defaultValue: 'No results found' })}
-              </Typography.Text>
-            }
-            tokenSeparators={[',', ' ', ';']}
-          />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('guestEmailHint', {
-              defaultValue: 'Separate multiple emails with commas, spaces, or semicolons',
-            })}
-          </Typography.Text>
-        </Flex>
+        <Select
+          mode="tags"
+          style={{ width: '100%' }}
+          placeholder={t('guestEmailPlaceholder', {
+            defaultValue: 'Enter guest email addresses',
+          })}
+          onChange={handleEmailChange}
+          notFoundContent={
+            <Typography.Text type="secondary">
+              {t('noResultFound', { defaultValue: 'No results found' })}
+            </Typography.Text>
+          }
+          tokenSeparators={[',', ' ', ';']}
+        />
       </Form.Item>
 
       <Flex
@@ -510,35 +523,37 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   // Link invitation tab content
   const linkTabContent = (
     <Flex vertical gap={16}>
-      <Form.Item
-        label={
-          <Typography.Text strong>
-            {t('selectProjectLabel', { defaultValue: 'Select Project' })}
-          </Typography.Text>
-        }
-        style={{ marginBottom: 0 }}
-      >
-        <Select
-          showSearch
-          placeholder={t('searchProjectPlaceholder', { defaultValue: 'Search for a project...' })}
-          suffixIcon={<SearchOutlined />}
-          options={projectOptions}
-          loading={searchLoading}
-          onSearch={handleProjectSearch}
-          onChange={handleProjectChange}
-          value={form.getFieldValue('projectId')}
-          filterOption={false}
-          notFoundContent={
-            <Typography.Text type="secondary">
-              {t('noProjectsFound', { defaultValue: 'No projects found' })}
+      <Form form={form} component={false}>
+        <Form.Item
+          name="projectId"
+          label={
+            <Typography.Text strong>
+              {t('selectProjectLabel', { defaultValue: 'Select Project' })}
             </Typography.Text>
           }
-        />
-      </Form.Item>
+          style={{ marginBottom: 0 }}
+        >
+          <Select
+            showSearch
+            placeholder={t('searchProjectPlaceholder', { defaultValue: 'Search for a project...' })}
+            suffixIcon={<SearchOutlined />}
+            options={projectOptions}
+            loading={searchLoading}
+            onSearch={handleProjectSearch}
+            onChange={handleProjectChange}
+            filterOption={false}
+            notFoundContent={
+              <Typography.Text type="secondary">
+                {t('noProjectsFound', { defaultValue: 'No projects found' })}
+              </Typography.Text>
+            }
+          />
+        </Form.Item>
+      </Form>
 
       <div>
         <Typography.Text strong>
-          {t('Your Invite Link', {
+          {t('yourInviteLink', {
             defaultValue: 'Your Invite Link',
           })}
         </Typography.Text>
@@ -551,11 +566,11 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
                   defaultValue: 'Select a project first',
                 })
               : hasActiveLink && isLinkExpired(linkExpiry)
-                ? t('Link expired - click Generate Link', {
-                    defaultValue: 'Link expired - click Generate Link',
+                ? t('linkExpiredPlaceholder', {
+                    defaultValue: 'Link expired',
                   })
-                : t('No active invitation link', {
-                    defaultValue: 'No active invitation link',
+                : t('noActiveInviteLink', {
+                    defaultValue: 'No active invite link',
                   })
           }
           style={{ marginTop: 8 }}
@@ -576,7 +591,10 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
             type="secondary"
             style={{ fontSize: 12, marginTop: 4, display: 'block' }}
           >
-            {t('This link will automatically expire in')} {formatExpiryDate(linkExpiry)}.
+            {t('linkExpiryText', {
+              defaultValue: 'This link will automatically expire in {{days}}.',
+              days: formatExpiryDate(linkExpiry),
+            })}
           </Typography.Text>
         )}
       </div>
@@ -607,14 +625,14 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
   const tabItems = [
     {
       key: 'email',
-      label: t('Invite with Email', {
+      label: t('inviteWithEmailTab', {
         defaultValue: 'Invite with Email',
       }),
       children: emailTabContent,
     },
     {
       key: 'link',
-      label: t('Invite with Link', {
+      label: t('inviteWithLinkTab', {
         defaultValue: 'Invite with Link',
       }),
       children: linkTabContent,
@@ -630,13 +648,13 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
       }
       open={open}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       width={500}
       footer={
         activeTab === 'email' ? (
           <Flex justify="end" gap={8}>
             <Button onClick={onClose}>
-              {t('cancelButton', { defaultValue: 'Cancel' })}
+              {t('cancel', { defaultValue: 'Cancel' })}
             </Button>
             <Button type="primary" onClick={() => form.submit()} loading={loading}>
               {t('inviteGuestButton', { defaultValue: 'Invite Guest' })}
@@ -645,25 +663,25 @@ const AddGuestModal = ({ open, onClose }: AddGuestModalProps) => {
         ) : (
           <Flex justify="end" gap={8}>
             <Button onClick={onClose}>
-              {t('cancelButton', { defaultValue: 'Cancel' })}
+              {t('cancel', { defaultValue: 'Cancel' })}
             </Button>
             <Button
               type="primary"
               loading={linkLoading}
               onClick={handleGenerateLink}
               icon={linkCopied ? <CheckOutlined /> : <CopyOutlined />}
-              disabled={!form.getFieldValue('projectId')}
+              disabled={!selectedProjectId}
             >
               {linkCopied
-                ? t('Copied!', {
+                ? t('projectInvite_copiedShort', {
                     defaultValue: 'Copied!',
                   })
                 : hasActiveLink && !isLinkExpired(linkExpiry)
-                  ? t('Copy Link', {
+                  ? t('copyLink', {
                       defaultValue: 'Copy Link',
                     })
-                  : t('Generate & Copy Link', {
-                      defaultValue: 'Generate & Copy Link',
+                  : t('generateAndCopyLink', {
+                      defaultValue: 'Generate and Copy Link',
                     })}
             </Button>
           </Flex>

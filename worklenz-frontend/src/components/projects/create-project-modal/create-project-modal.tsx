@@ -24,7 +24,10 @@ import type { InputRef } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { projectColors } from '@/lib/project/project-constants';
-import { useCreateProjectMutation } from '@/api/projects/projects.v1.api.service';
+import {
+  projectsApi,
+  useCreateProjectMutation,
+} from '@/api/projects/projects.v1.api.service';
 import { projectTemplatesApiService } from '@/api/project-templates/project-templates.api.service';
 import { fetchProjectStatuses } from '@/features/projects/lookups/projectStatuses/projectStatusesSlice';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
@@ -32,14 +35,12 @@ import {
   IWorklenzTemplate,
   ICustomTemplate,
 } from '@/types/project-templates/project-templates.types';
-import { projectsApi } from '@/api/projects/projects.v1.api.service';
 import homePageApi from '@/api/home-page/home-page.api.service';
 import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import logger from '@/utils/errorLogger';
 import { TemplatePreviewDrawer } from './template-preview-drawer';
-import { getTemplateIcon } from './template-icon';
 import ImportSourceModal from '@/pages/settings/import-export/ImportSourceModal';
 import './create-project-modal.css';
 import { decodeHtmlEntities } from '@/utils/html-entities';
@@ -218,8 +219,10 @@ export const CreateProjectModal = ({
   const [previewTemplateName, setPreviewTemplateName] = useState<string | undefined>(undefined);
   const [previewTemplateType, setPreviewTemplateType] = useState<'worklenz' | 'custom'>('worklenz');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
-  const [createProject, { isLoading: isCreating }] = useCreateProjectMutation();
+  const [createProject, { isLoading: isCreatingBlank }] = useCreateProjectMutation();
+  const isCreating = isCreatingBlank || isCreatingProject;
   const nameInputRef = useRef<InputRef>(null);
   const hasLoadedTemplates = useRef(false);
 
@@ -304,6 +307,7 @@ export const CreateProjectModal = ({
       setActiveTab('templates');
       setIsCsvImportSelected(false);
       setIsCsvImportOpen(false);
+      setIsCreatingProject(false);
       form.resetFields();
       hasLoadedTemplates.current = false;
       setTimeout(() => nameInputRef.current?.focus(), 100);
@@ -339,21 +343,51 @@ export const CreateProjectModal = ({
     );
   }, [selectedTemplateId, selectedTemplateType, templates, customTemplates, t]);
 
-  const createConfiguredProjectForImport = useCallback(async (): Promise<string> => {
-    const name = projectName.trim();
+  const finishCreate = useCallback(
+    (newProjectId: string, options?: { reloadOnNavigate?: boolean; showSetupBanner?: boolean }) => {
+      const reloadOnNavigate = options?.reloadOnNavigate ?? false;
+      const showSetupBanner = options?.showSetupBanner ?? true;
 
-    if (selectedTemplateId) {
+      dispatch(homePageApi.util.invalidateTags(['teamProjects']));
+      onClose();
+
+      if (onProjectCreated) {
+        onProjectCreated(newProjectId);
+        return;
+      }
+
+      const setupQuery = showSetupBanner ? '&new_project=1' : '';
+      navigate(
+        `/worklenz/projects/${newProjectId}?tab=tasks-list&pinned_tab=tasks-list${setupQuery}`
+      );
+      if (reloadOnNavigate) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
+      }
+    },
+    [dispatch, navigate, onClose, onProjectCreated]
+  );
+
+  const createFromTemplate = useCallback(
+    async (name: string, color: string): Promise<string> => {
+      if (!selectedTemplateId) {
+        throw new Error(
+          t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+        );
+      }
+
       const response =
         selectedTemplateType === 'custom'
           ? await projectTemplatesApiService.createFromCustomTemplate({
               template_id: selectedTemplateId,
               project_name: name || undefined,
-              color_code: selectedColor,
+              color_code: color,
             })
           : await projectTemplatesApiService.createFromWorklenzTemplate({
               template_id: selectedTemplateId,
               project_name: name || undefined,
-              color_code: selectedColor,
+              color_code: color,
             });
 
       if (response.done && response.body.project_id) {
@@ -367,204 +401,177 @@ export const CreateProjectModal = ({
         response.message ||
           t('createError', { defaultValue: 'Failed to create project. Please try again.' })
       );
-    }
+    },
+    [dispatch, selectedTemplateId, selectedTemplateType, t, trackMixpanelEvent]
+  );
 
-    const csrfToken = await ensureCsrfToken();
-    if (!csrfToken) {
-      throw new Error(
-        t('csrfError', { defaultValue: 'Security token missing. Please refresh and try again.' })
-      );
-    }
-
-    const projectModel: IProjectViewModel = {
-      name,
-      color_code: selectedColor,
-      status_id: defaultStatusId,
-    };
-    let response = await createProject(projectModel);
-    const responseError = 'error' in response ? (response.error as ApiErrorWithStatus) : undefined;
-
-    if (responseError?.status === 403) {
-      const refreshedToken = await refreshCsrfToken();
-      if (!refreshedToken) {
+  const createBlankProject = useCallback(
+    async (projectModel: IProjectViewModel): Promise<string> => {
+      const csrfToken = await ensureCsrfToken();
+      if (!csrfToken) {
         throw new Error(
           t('csrfError', { defaultValue: 'Security token missing. Please refresh and try again.' })
         );
       }
-      response = await createProject(projectModel);
+
+      const response = await createProject(projectModel);
+      const responseError = 'error' in response ? (response.error as ApiErrorWithStatus) : undefined;
+
+      if (responseError?.status === 403) {
+        throw new Error(
+          t('csrfError', {
+            defaultValue: 'Security token missing. Please refresh and try again.',
+          })
+        );
+      }
+
+      if (response.data?.done && response.data.body.id) {
+        trackMixpanelEvent(evt_projects_create);
+        dispatch(homePageApi.util.invalidateTags(['teamProjects']));
+        return response.data.body.id;
+      }
+
+      throw new Error(
+        response.data?.message ||
+          t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+      );
+    },
+    [createProject, dispatch, t, trackMixpanelEvent]
+  );
+
+  const createConfiguredProjectForImport = useCallback(async (): Promise<string> => {
+    const name = projectName.trim();
+
+    if (selectedTemplateId) {
+      return createFromTemplate(name, selectedColor);
     }
 
-    if (response.data?.done && response.data.body.id) {
-      trackMixpanelEvent(evt_projects_create);
-      dispatch(homePageApi.util.invalidateTags(['teamProjects']));
-      return response.data.body.id;
-    }
-
-    throw new Error(
-      response.data?.message ||
-        t('createError', { defaultValue: 'Failed to create project. Please try again.' })
-    );
+    return createBlankProject({
+      name,
+      color_code: selectedColor,
+      status_id: defaultStatusId,
+    });
   }, [
-    createProject,
+    createBlankProject,
+    createFromTemplate,
     defaultStatusId,
-    dispatch,
     projectName,
     selectedColor,
     selectedTemplateId,
-    selectedTemplateType,
-    t,
-    trackMixpanelEvent,
   ]);
 
-  const handleCreate = useCallback(async () => {
+  const handleCreateDirect = useCallback(async () => {
     const name = projectName.trim();
-    // Allow creation without name when template is selected (will be auto-generated)
     if (!name && !selectedTemplateId) return;
 
     setError(null);
-
-    if (isCsvImportSelected) {
-      setIsCsvImportOpen(true);
-      return;
-    }
-
-    // Always keeps the Planner/Home "New Task" project dropdown (a separate RTK Query
-    // slice, homePageApi) in sync — projectsApi's own tag invalidation above only reaches
-    // its own cache. When onProjectCreated is provided, skips navigate/reload entirely:
-    // those callers render this modal inline inside their own in-progress form, and
-    // jumping to the new project's page (or hard-reloading, for the blank-project path)
-    // would silently discard whatever the user had already typed there. Without the
-    // prop, behavior is unchanged from before — the original "Create Project" entry
-    // points still navigate to (and, for a blank project, reload onto) the new project.
-    const finishCreate = (newProjectId: string, reloadOnNavigate: boolean) => {
-      dispatch(homePageApi.util.invalidateTags(['teamProjects']));
-      onClose();
-      if (onProjectCreated) {
-        onProjectCreated(newProjectId);
-        return;
-      }
-      navigate(
-        `/worklenz/projects/${newProjectId}?tab=tasks-list&pinned_tab=tasks-list&new_project=1`
-      );
-      if (reloadOnNavigate) {
-        setTimeout(() => {
-          window.location.reload();
-        }, 100);
-      }
-    };
+    setIsCreatingProject(true);
 
     try {
       if (selectedTemplateId) {
-        // Handle custom templates differently
-        if (selectedTemplateType === 'custom') {
-          const res = await projectTemplatesApiService.createFromCustomTemplate({
-            template_id: selectedTemplateId,
-            project_name: name || undefined,
-            color_code: selectedColor,
-          });
-          if (res.done && res.body.project_id) {
-            trackMixpanelEvent(evt_projects_create);
-            dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
-            finishCreate(res.body.project_id, false);
-          } else {
-            setError(
-              res.message ||
-                t('createError', { defaultValue: 'Failed to create project. Please try again.' })
-            );
-          }
-          return;
-        }
-
-        // Handle Worklenz templates
-        const res = await projectTemplatesApiService.createFromWorklenzTemplate({
-          template_id: selectedTemplateId,
-          project_name: name || undefined,
-          color_code: selectedColor,
-        });
-        if (res.done && res.body.project_id) {
-          trackMixpanelEvent(evt_projects_create);
-          dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
-          finishCreate(res.body.project_id, false);
-        } else {
-          setError(
-            res.message ||
-              t('createError', { defaultValue: 'Failed to create project. Please try again.' })
-          );
-        }
+        const projectId = await createFromTemplate(name, selectedColor);
+        finishCreate(projectId, { showSetupBanner: true });
         return;
       }
 
-      const csrfToken = await ensureCsrfToken();
-      if (!csrfToken) {
-        setError(
-          t('csrfError', { defaultValue: 'Security token missing. Please refresh and try again.' })
-        );
-        return;
-      }
-
-      const projectModel: IProjectViewModel = {
+      const projectId = await createBlankProject({
         name,
         color_code: selectedColor,
         status_id: defaultStatusId,
-      };
-
-      const response = await createProject(projectModel);
-
-      if (response?.data?.done) {
-        trackMixpanelEvent(evt_projects_create);
-        finishCreate(response.data.body.id, true);
-        return;
-      }
-
-      const responseError =
-        'error' in response ? (response.error as ApiErrorWithStatus) : undefined;
-
-      if (responseError?.status === 403) {
-        const newToken = await refreshCsrfToken();
-        if (!newToken) {
-          setError(
-            t('csrfError', {
-              defaultValue: 'Security token missing. Please refresh and try again.',
-            })
-          );
-          return;
-        }
-        const retryResponse = await createProject(projectModel);
-        if (retryResponse?.data?.done) {
-          trackMixpanelEvent(evt_projects_create);
-          finishCreate(retryResponse.data.body.id, true);
-        } else {
-          setError(
-            retryResponse?.data?.message ??
-              t('createError', { defaultValue: 'Failed to create project. Please try again.' })
-          );
-        }
-        return;
-      }
-
-      setError(
-        response?.data?.message ??
-          t('createError', { defaultValue: 'Failed to create project. Please try again.' })
-      );
+      });
+      finishCreate(projectId, { reloadOnNavigate: true, showSetupBanner: true });
     } catch (err) {
       logger.error('Error creating project', err);
-      setError(t('createError', { defaultValue: 'Failed to create project. Please try again.' }));
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+      );
+    } finally {
+      setIsCreatingProject(false);
     }
   }, [
-    projectName,
-    selectedTemplateId,
-    selectedTemplateType,
-    selectedColor,
-    onProjectCreated,
+    createBlankProject,
+    createFromTemplate,
     defaultStatusId,
-    createProject,
+    finishCreate,
+    projectName,
+    selectedColor,
+    selectedTemplateId,
+    t,
+  ]);
+
+  const handleCustomizeClick = useCallback(async () => {
+    const name = projectName.trim();
+    if (!name && !selectedTemplateId) return;
+
+    setError(null);
+    setIsCreatingProject(true);
+
+    try {
+      const projectId = selectedTemplateId
+        ? await createFromTemplate(name, selectedColor)
+        : await createBlankProject({
+            name,
+            color_code: selectedColor,
+            status_id: defaultStatusId,
+          });
+
+      dispatch(projectsApi.util.invalidateTags([{ type: 'Projects', id: 'LIST' }]));
+
+      // Bug fix #3: When onProjectCreated is provided (inline usage in task modals),
+      // respect the contract used by finishCreate: call the callback and stop.
+      // Do NOT open the full-screen settings modal on top of the in-progress task form.
+      if (onProjectCreated) {
+        onProjectCreated(projectId);
+        onClose();
+        return;
+      }
+
+      onClose();
+      // Navigate to the project's own page rather than dispatching
+      // openProjectSettingsModal() directly: this component is reachable from
+      // routes that don't mount <ProjectSettingsModal/> (e.g. the navbar's
+      // global QuickActionButton, present on every authenticated route via
+      // AppShellLayout). project-view-header.tsx always mounts the modal, so
+      // routing there first guarantees `open_settings=1` has somewhere to
+      // open into instead of silently no-oping and leaving Redux state
+      // pointed at a modal nothing is rendering.
+      navigate(`/worklenz/projects/${projectId}?open_settings=1`);
+    } catch (err) {
+      logger.error('Error creating project for customization', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('createError', { defaultValue: 'Failed to create project. Please try again.' })
+      );
+    } finally {
+      setIsCreatingProject(false);
+    }
+  }, [
+    createBlankProject,
+    createFromTemplate,
+    defaultStatusId,
     dispatch,
     navigate,
     onClose,
+    onProjectCreated,
+    projectName,
+    selectedColor,
+    selectedTemplateId,
     t,
-    trackMixpanelEvent,
-    isCsvImportSelected,
   ]);
+
+  const handleCreateDirectClick = useCallback(() => {
+    void handleCreateDirect();
+  }, [handleCreateDirect]);
+
+  const handleCsvContinue = useCallback(() => {
+    const name = projectName.trim();
+    if (!name) return;
+    setError(null);
+    setIsCsvImportOpen(true);
+  }, [projectName]);
 
   const canCreate = isCsvImportSelected
     ? projectName.trim().length > 0 && !!defaultStatusId
@@ -594,10 +601,14 @@ export const CreateProjectModal = ({
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Enter' && canCreate && !isCreating) {
-        handleCreate();
+        if (isCsvImportSelected) {
+          handleCsvContinue();
+          return;
+        }
+        handleCreateDirectClick();
       }
     },
-    [handleCreate, canCreate, isCreating]
+    [canCreate, handleCreateDirectClick, handleCsvContinue, isCreating, isCsvImportSelected]
   );
 
   return (
@@ -695,7 +706,7 @@ export const CreateProjectModal = ({
                 <InfoCircleOutlined />{' '}
                 {t('configureHint', {
                   defaultValue:
-                    'Status, dates, manager and more are set inside the project after creation.',
+                    'You can customize status, client, manager, dates and more before creating.',
                 })}
               </Typography.Text>
             </aside>
@@ -829,8 +840,8 @@ export const CreateProjectModal = ({
                             template={{
                               id: template.id,
                               name: template.name,
-                              task_count: 0,
-                              phase_count: 0,
+                              task_count: template.task_count,
+                              phase_count: template.phase_count,
                             }}
                             selected={
                               selectedTemplateId === template.id &&
@@ -894,56 +905,86 @@ export const CreateProjectModal = ({
             align="center"
             className="create-project-footer"
             style={{ borderColor: token.colorBorderSecondary }}
+            gap={12}
+            wrap="wrap"
           >
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {selectedTemplateId
-                ? t('templateFooterHint', {
-                    defaultValue: 'Selected template will be used for this project.',
+              {isCsvImportSelected
+                ? t('csvImportFooterHint', {
+                    defaultValue: 'You will map CSV fields before this project is created.',
                   })
-                : isCsvImportSelected
-                  ? t('csvImportFooterHint', {
-                      defaultValue: 'You will map CSV fields before this project is created.',
-                    })
-                  : t('blankFooterHint', {
-                      defaultValue: 'No template selected - will create blank.',
-                    })}
+                : t('customizeFooterQuestion', {
+                    defaultValue: 'Want to customize before creating?',
+                  })}
             </Typography.Text>
-            <Flex gap={8}>
+            <Flex gap={8} wrap="wrap">
               <Button onClick={onClose} disabled={isCreating}>
                 {t('cancel', { defaultValue: 'Cancel' })}
               </Button>
-              <Tooltip
-                title={
-                  !canCreate
-                    ? isCsvImportSelected
+              {isCsvImportSelected ? (
+                <Tooltip
+                  title={
+                    !canCreate
                       ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
-                      : selectedTemplateId
-                        ? undefined
-                        : t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
-                    : undefined
-                }
-              >
-                <Button
-                  type="primary"
-                  onClick={handleCreate}
-                  loading={isCreating}
-                  disabled={!canCreate}
-                  aria-label={
-                    isCsvImportSelected
-                      ? t('continueToCsvImport', { defaultValue: 'Continue to CSV import' })
-                      : selectedTemplateId
-                        ? t('createFromTemplate', { defaultValue: 'Create from template' })
-                        : t('createBlank', { defaultValue: 'Create blank' })
+                      : undefined
                   }
                 >
-                  {isCsvImportSelected
-                    ? t('continueToCsvImport', { defaultValue: 'Continue to CSV import' })
-                    : selectedTemplateId
-                      ? t('createProject', { defaultValue: 'Create project' })
-                      : t('createBlank', { defaultValue: 'Create blank' })}{' '}
-                  <ArrowRightOutlined />
-                </Button>
-              </Tooltip>
+                  <Button
+                    type="primary"
+                    onClick={handleCsvContinue}
+                    loading={isCreating}
+                    disabled={!canCreate}
+                    aria-label={t('continueToCsvImport', {
+                      defaultValue: 'Continue to CSV import',
+                    })}
+                  >
+                    {t('continueToCsvImport', { defaultValue: 'Continue to CSV import' })}{' '}
+                    <ArrowRightOutlined />
+                  </Button>
+                </Tooltip>
+              ) : (
+                <>
+                  <Tooltip
+                    title={
+                      !canCreate
+                        ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
+                        : t('customizeNoHint', {
+                            defaultValue: 'Create now and open the project',
+                          })
+                    }
+                  >
+                    <Button
+                      onClick={handleCreateDirectClick}
+                      loading={isCreating}
+                      disabled={!canCreate}
+                      aria-label={t('customizeNo', { defaultValue: 'No' })}
+                    >
+                      {t('customizeNo', { defaultValue: 'No' })}
+                    </Button>
+                  </Tooltip>
+                  <Tooltip
+                    title={
+                      !canCreate
+                        ? t('nameRequired', { defaultValue: 'Enter a project name to continue.' })
+                        : t('customizeYesHint', {
+                            defaultValue: 'Set client, status, dates and more first',
+                          })
+                    }
+                  >
+                    <Button
+                      type="primary"
+                      onClick={() => {
+                        void handleCustomizeClick();
+                      }}
+                      loading={isCreating}
+                      disabled={!canCreate}
+                      aria-label={t('customizeYes', { defaultValue: 'Yes, customize' })}
+                    >
+                      {t('customizeYes', { defaultValue: 'Yes, customize' })}
+                    </Button>
+                  </Tooltip>
+                </>
+              )}
             </Flex>
           </Flex>
         </Form>
@@ -957,6 +998,7 @@ export const CreateProjectModal = ({
         onClose={() => setPreviewOpen(false)}
         onUseTemplate={id => {
           setSelectedTemplateId(id);
+          setSelectedTemplateType(previewTemplateType);
           setPreviewOpen(false);
         }}
       />

@@ -18,8 +18,15 @@ interface DailyCapacityData {
   available_hours: number;
   utilization_percent: number;
   is_time_off: boolean;
+  is_holiday?: boolean;
   is_weekend: boolean;
   status: 'available' | 'normal' | 'fully-allocated' | 'overallocated' | 'unavailable';
+  base_hours?: number;
+  holiday_hours?: number;
+  time_off_hours?: number;
+  effective_working_hours?: number;
+  is_full_day_time_off?: boolean;
+  time_off_type?: string | null;
   projects: Array<{
     project_id: string;
     project_name: string;
@@ -46,6 +53,28 @@ const DayAllocationCell = ({
   const dispatch = useAppDispatch();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
 
+  // Use capacity data if available, otherwise show empty/unavailable state
+  const effectiveData: DailyCapacityData = capacityData || {
+    date: '',
+    working_hours: 0,
+    allocated_hours: 0,
+    available_hours: 0,
+    utilization_percent: 0,
+    is_time_off: false,
+    is_holiday: false,
+    is_weekend: isWeekend,
+    status: 'unavailable' as const,
+    projects: [],
+  };
+
+  const isFullDayTimeOff =
+    (effectiveData.is_time_off &&
+      effectiveData.is_full_day_time_off !== false &&
+      effectiveData.working_hours === 0) ||
+    (Boolean(effectiveData.is_holiday) && effectiveData.working_hours === 0);
+
+  const isInteractive = !effectiveData.is_weekend && !isFullDayTimeOff;
+
   const handleClick = () => {
     if (isInteractive && memberId) {
       // Set selected member and date before opening drawer
@@ -56,18 +85,6 @@ const DayAllocationCell = ({
       dispatch(setSelectedDateRange(null));
       dispatch(toggleScheduleDrawer());
     }
-  };
-
-  // Use capacity data if available, otherwise show empty/unavailable state
-  const effectiveData = capacityData || {
-    working_hours: 0,
-    allocated_hours: 0,
-    available_hours: 0,
-    utilization_percent: 0,
-    is_time_off: false,
-    is_weekend: isWeekend,
-    status: 'unavailable' as const,
-    projects: [],
   };
 
   const getStatusColors = () => {
@@ -115,59 +132,41 @@ const DayAllocationCell = ({
 
   const colors = getStatusColors();
 
-  const tooltipContent = effectiveData.is_time_off ? (
-    <div style={{ minWidth: 200 }}>
-      <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
-        {memberName} - {date}
-      </div>
-      <div style={{ color: '#faad14', fontSize: '14px' }}>🔵 Time Off</div>
-    </div>
-  ) : effectiveData.is_weekend ? (
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <span>Weekend</span>
-    </div>
-  ) : (
+  const tooltipContent = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 200 }}>
       {memberName && (
         <div style={{ fontWeight: 'bold', marginBottom: 4 }}>
           {memberName} - {date}
         </div>
       )}
-      <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #ddd' }} />
-      <span>Working Hours: {effectiveData.working_hours}h</span>
-      <span>Allocated: {effectiveData.allocated_hours.toFixed(1)}h</span>
-      <span>Available: {effectiveData.available_hours.toFixed(1)}h</span>
-      <span>Utilization: {effectiveData.utilization_percent.toFixed(0)}%</span>
-      {/* <span>
-        <strong>Status: {effectiveData.status.replace('-', ' ').toUpperCase()}</strong>
-      </span> */}
-
-      {/* {effectiveData.projects && effectiveData.projects.length > 0 && (
+      {effectiveData.is_holiday && (
+        <div style={{ color: '#faad14', fontWeight: 600 }}>
+          🎉 Holiday {effectiveData.holiday_hours ? `(${effectiveData.holiday_hours}h)` : ''}
+        </div>
+      )}
+      {effectiveData.is_time_off && (
+        <div style={{ color: '#1890ff', fontWeight: 600 }}>
+          🔵 Time Off {effectiveData.time_off_hours ? `(${effectiveData.time_off_hours}h)` : ''}
+          {effectiveData.time_off_type ? ` - ${effectiveData.time_off_type}` : ''}
+        </div>
+      )}
+      {effectiveData.is_weekend && <span>Weekend</span>}
+      {!effectiveData.is_weekend && (
         <>
           <hr style={{ margin: '4px 0', border: 'none', borderTop: '1px solid #ddd' }} />
-          <div style={{ fontWeight: 'bold', marginTop: 4, marginBottom: 4 }}>
-            Projects:
-          </div>
-          {effectiveData.projects.map(project => (
-            <div key={project.project_id} style={{ marginLeft: 8, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{
-                display: 'inline-block',
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                backgroundColor: project.color_code,
-              }} />
-              <span style={{ fontSize: '12px' }}>
-                {project.project_name}: {project.allocated_hours.toFixed(1)}h
-              </span>
-            </div>
-          ))}
+          <span>
+            Working Hours: {effectiveData.working_hours}h
+            {effectiveData.base_hours && effectiveData.base_hours !== effectiveData.working_hours
+              ? ` (Base: ${effectiveData.base_hours}h)`
+              : ''}
+          </span>
+          <span>Allocated: {effectiveData.allocated_hours.toFixed(1)}h</span>
+          <span>Available: {effectiveData.available_hours.toFixed(1)}h</span>
+          <span>Utilization: {effectiveData.utilization_percent.toFixed(0)}%</span>
         </>
-      )} */}
+      )}
     </div>
   );
-
-  const isInteractive = !effectiveData.is_weekend && !effectiveData.is_time_off;
 
   return (
     <div
@@ -226,29 +225,42 @@ const DayAllocationCell = ({
             />
           )}
 
-          {/* Time-off indicator */}
-          {effectiveData.is_time_off && <div style={{ fontSize: '24px' }}>🔵</div>}
+          {/* Full-day Time-off indicator */}
+          {isFullDayTimeOff && effectiveData.is_time_off && <div style={{ fontSize: '24px' }}>🔵</div>}
+          {isFullDayTimeOff && !effectiveData.is_time_off && effectiveData.is_holiday && <div style={{ fontSize: '20px' }}>🎉</div>}
 
           {/* Weekend indicator */}
-          {effectiveData.is_weekend && !effectiveData.is_time_off && (
+          {effectiveData.is_weekend && (
             <div style={{ fontSize: '16px', color: colors.text }}>-</div>
           )}
 
           {/* Capacity display */}
           {isInteractive && (
             <>
-              {/* <span
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '11px',
-                  fontWeight: effectiveData.status === 'overallocated' ? 'bold' : 'normal',
-                  color: colors.text,
-                }}
-              >
-                {effectiveData.utilization_percent.toFixed(0)}%
-              </span> */}
+              {effectiveData.is_time_off && Boolean(effectiveData.time_off_hours) && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    color: '#fa8c16',
+                    marginBottom: 2,
+                  }}
+                >
+                  {effectiveData.time_off_hours}h off
+                </span>
+              )}
+              {effectiveData.is_holiday && Boolean(effectiveData.holiday_hours) && (
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    color: '#faad14',
+                    marginBottom: 2,
+                  }}
+                >
+                  {effectiveData.holiday_hours}h hol
+                </span>
+              )}
               <span
                 style={{
                   fontSize: '12px',

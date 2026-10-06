@@ -9,6 +9,8 @@
   "dragToReorderPhases": "Tërhiq fazat për t'i rirenditur. Çdo fazë mund të ketë një ngjyrë të ndryshme.",
   "enterNewPhaseName": "Shkruaj emrin e fazës së re...",
   "addPhase": "Shto Fazë",
+  "startDate": "Data e fillimit",
+  "endDate": "Data e përfundimit",
   "noPhasesFound": "Nuk u gjetën faza",
   "no": "Asnjë",
   "found": "u gjet",

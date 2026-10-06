@@ -53,6 +53,10 @@ export interface ICustomTemplate {
   color_code?: string;
   selected?: boolean;
   created_at?: string;
+  task_count?: number;
+  phase_count?: number;
+  scope?: 'team' | 'organization';
+  can_manage?: boolean;
 }
 
 export interface IAccountSetupRequest {

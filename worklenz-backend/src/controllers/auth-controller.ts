@@ -18,6 +18,8 @@ import FileConstants from "../shared/file-constants";
 import axios from "axios";
 import { log_error } from "../shared/utils";
 import { DEFAULT_ERROR_MESSAGE } from "../shared/constants";
+import { getAppSumoPopupFrequencyDays } from "../shared/appsumo-popup";
+import TokenService from "../services/token-service";
 
 export default class AuthController extends WorklenzControllerBase {
   /** This just send ok response to the client when the request came here through the sign-up-validator */
@@ -60,17 +62,10 @@ export default class AuthController extends WorklenzControllerBase {
 
     if (user) {
       user.build_v = FileConstants.getRelease();
-      user.appsumo_popup_frequency_days = AuthController.getAppSumoPopupFrequencyDays();
+      user.appsumo_popup_frequency_days = getAppSumoPopupFrequencyDays();
     }
 
     return res.status(200).send(new AuthResponse(title, req.isAuthenticated(), user || null, auth_error, message));
-  }
-
-  /** How often (in days) the AppSumo promo popup should reappear for a dismissed user.
-   * Backend-configurable via APPSUMO_POPUP_FREQUENCY_DAYS so it can be tuned without a frontend deploy. */
-  private static getAppSumoPopupFrequencyDays(): number {
-    const parsed = parseInt(process.env.APPSUMO_POPUP_FREQUENCY_DAYS || "", 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
   }
 
   public static logout(req: IWorkLenzRequest, res: IWorkLenzResponse) {
@@ -109,11 +104,14 @@ export default class AuthController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data) {
-      // Compare the current password
-      if (bcrypt.compareSync(currentPassword, data.password)) {
+      // Google/Apple-only accounts have no existing password to verify against -
+      // let them set an initial password directly instead of comparing against NULL.
+      const hasExistingPassword = !!data.password;
 
-        // Prevent reusing the same password
-        const isSamePassword = bcrypt.compareSync(newPassword, data.password);
+      if (!hasExistingPassword || bcrypt.compareSync(currentPassword, data.password)) {
+
+        // Prevent reusing the same password (only meaningful if one already exists)
+        const isSamePassword = hasExistingPassword && bcrypt.compareSync(newPassword, data.password);
         if (isSamePassword) {
           return res.status(200).send(new ServerResponse(false, null, "New password must be different from your current password."));
         }
@@ -145,7 +143,10 @@ export default class AuthController extends WorklenzControllerBase {
     const GENERIC_SUCCESS_MESSAGE = "If an account with that email exists, a password reset link has been sent to your email.";
 
     // Timing attack mitigation: enforce a minimum response time so response duration
-    // cannot be used to determine whether an account exists.
+    // cannot be used to determine whether an account exists. The outbound email send
+    // below is intentionally NOT awaited before responding - SMTP/API latency is far
+    // more variable than the DB writes and would otherwise leak account existence
+    // through timing even with this floor in place.
     const MIN_RESPONSE_MS = 800;
     const requestStart = Date.now();
     const sendGenericResponse = async () => {
@@ -156,7 +157,7 @@ export default class AuthController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(true, null, GENERIC_SUCCESS_MESSAGE));
     };
 
-    const q = `SELECT id, email, google_id, apple_id, password FROM users WHERE LOWER(email) = $1;`;
+    const q = `SELECT id FROM users WHERE LOWER(email) = $1 AND is_deleted = FALSE;`;
     const result = await db.query(q, [normalizedEmail]);
 
     if (!result.rowCount) {
@@ -165,53 +166,57 @@ export default class AuthController extends WorklenzControllerBase {
 
     const [data] = result.rows;
 
-    // For OAuth-only accounts (Google/Apple), don't send reset email
-    if (data?.google_id || data?.apple_id) {
-      log_error(`Password reset attempted for OAuth account: ${normalizedEmail}`, null);
+    // Create a reset/create-password token for any existing, non-deleted account,
+    // regardless of whether it currently has a password or is Google/Apple-linked.
+    // This lets Google/Apple-only users set a password for the first time, and lets
+    // accounts with both a password and a linked OAuth provider reset their password
+    // as normal. The response below stays generic either way, so this reveals nothing
+    // new to the requester - only the actual account owner's inbox receives anything.
+    let userIdBase64: string;
+    let token: string;
+
+    try {
+      userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
+
+      // Generate a cryptographically random URL-safe token (hex, no special chars)
+      token = TokenService.generateSecureToken();
+      // Store SHA-256 hash of the token in DB (never store raw token)
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+      // Invalidate all previous unused tokens for this user
+      await db.query(
+        `UPDATE password_reset_tokens
+         SET is_used = TRUE
+         WHERE user_id = $1 AND is_used = FALSE`,
+        [data.id]
+      );
+
+      // Opportunistically clean up expired tokens to keep the table lean
+      await db.query(
+        `DELETE FROM password_reset_tokens
+         WHERE expires_at < NOW() - INTERVAL '7 days'`
+      );
+
+      // Store the token hash in the database with 1 hour expiration
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+
+      await db.query(
+        `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
+         VALUES ($1, $2, $3)`,
+        [data.id, tokenHash, expiresAt]
+      );
+    } catch (error) {
+      // Log error internally but don't expose to client
+      log_error(`Failed to create password reset token for: ${normalizedEmail}`, error);
       return sendGenericResponse();
     }
 
-    // Only send reset email if account exists and has a password
-    if (data?.password) {
-      try {
-        const userIdBase64 = Buffer.from(data.id, "utf8").toString("base64");
-
-        // Generate a cryptographically random URL-safe token (hex, no special chars)
-        const token = crypto.randomBytes(32).toString("hex");
-        // Store SHA-256 hash of the token in DB (never store raw token)
-        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-
-        // Invalidate all previous unused tokens for this user
-        await db.query(
-          `UPDATE password_reset_tokens
-           SET is_used = TRUE
-           WHERE user_id = $1 AND is_used = FALSE`,
-          [data.id]
-        );
-
-        // Opportunistically clean up expired tokens to keep the table lean
-        await db.query(
-          `DELETE FROM password_reset_tokens
-           WHERE expires_at < NOW() - INTERVAL '7 days'`
-        );
-
-        // Store the token hash in the database with 1 hour expiration
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 1);
-
-        await db.query(
-          `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at)
-           VALUES ($1, $2, $3)`,
-          [data.id, tokenHash, expiresAt]
-        );
-
-        // Send raw token in email URL (hex only, completely URL-safe)
-        await sendResetEmail(email, userIdBase64, token);
-      } catch (error) {
-        // Log error internally but don't expose to client
-        log_error(`Failed to send password reset email for: ${normalizedEmail}`, error);
-      }
-    }
+    // Fire the email off in the background - errors are caught and logged, never
+    // surfaced to the client, and never allowed to delay the response.
+    sendResetEmail(normalizedEmail as string, userIdBase64, token).catch((error) => {
+      log_error(`Failed to send password reset email for: ${normalizedEmail}`, error);
+    });
 
     return sendGenericResponse();
   }

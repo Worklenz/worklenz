@@ -1,0 +1,22 @@
+{
+  "title": "管理部门",
+  "nameColumn": "名称",
+  "search": "搜索部门",
+  "createDepartmentButton": "创建部门",
+  "createDepartmentDrawerTitle": "创建部门",
+  "updateDepartmentDrawerTitle": "更新部门",
+  "nameLabel": "名称",
+  "namePlaceholder": "输入部门名称",
+  "nameRequiredError": "部门名称为必填项",
+  "createButton": "创建",
+  "updateButton": "更新",
+  "editTooltip": "编辑",
+  "deleteTooltip": "删除",
+  "deleteConfirmationTitle": "您确定要删除此部门吗？",
+  "deleteConfirmationOk": "删除",
+  "deleteConfirmationCancel": "取消",
+  "fetchDepartmentErrorMessage": "获取部门失败",
+  "createDepartmentErrorMessage": "创建部门失败",
+  "updateDepartmentErrorMessage": "更新部门失败",
+  "pinTooltip": "固定到导航栏"
+}

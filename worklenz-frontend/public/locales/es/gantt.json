@@ -28,6 +28,7 @@
     "startToFinishDependency": "Dependencia Inicio-Fin",
     "dependencyType": "Tipo de dependencia",
     "removeDependency": "Eliminar",
+    "removeDependencyTooltip": "Eliminar dependencia",
     "circularDependencyError": "Esto crearía una dependencia circular.",
     "dependencyCreatedSuccessfully": "Dependencia creada con éxito.",
     "dependencyRemovedSuccessfully": "Dependencia eliminada con éxito.",
@@ -56,7 +57,11 @@
     "collapseAll": "Contraer todo",
     "today": "Hoy",
     "fullscreen": "Pantalla completa",
-    "noDate": "Sin fecha"
+    "noDate": "Sin fecha",
+    "viewBy": "Ver por",
+    "sortBy": "Ordenar por",
+    "sortManual": "manuales",
+    "sortChronological": "Cronológico"
   },
   "viewMode": {
     "day": "Día",
@@ -76,12 +81,15 @@
     "taskNameColumn": "Nombre de tarea",
     "addNewPhase": "Agregar nueva fase",
     "addNewStatus": "Agregar nuevo estado",
-    "noTasksAvailable": "No hay tareas disponibles"
+    "noTasksAvailable": "No hay tareas disponibles",
+    "setDates": "Establecer fechas",
+    "clickToEditDates": "Haga clic para editar fechas"
   },
   "roadmap": {
     "phasesAndTasks": "Fases y tareas",
     "tasksCount": "tareas",
-    "complete": "completado"
+    "complete": "completado",
+    "dragDisabledInChronological": "Cambiar a orden manual para arrastrar y reordenar fases"
   },
   "unscheduledTasksTitle": "Tareas sin programar",
   "noUnscheduledTasks": "No hay tareas sin programar disponibles."

@@ -17,6 +17,13 @@ const LAST_WEEK = "LAST_WEEK";
 const LAST_MONTH = "LAST_MONTH";
 const LAST_QUARTER = "LAST_QUARTER";
 
+/**
+ * Legacy / workspace reporting endpoints.
+ *
+ * TVR-18 / TVR-1: intentionally does NOT apply `restrict_tasks_to_assignee`.
+ * Reports are out of scope this pass — see `ASSIGNEE_SCOPE_EXCLUDED_SURFACES`
+ * in shared/assignee-task-scope.ts.
+ */
 export default class ReportingController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async create(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {

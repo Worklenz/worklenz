@@ -5,7 +5,6 @@ import {
   Input,
   Modal,
   Popconfirm,
-  Segmented,
   Space,
   Table,
   TableProps,
@@ -26,6 +25,7 @@ import {
   CloseCircleTwoTone,
   ClockCircleOutlined,
 } from '@/shared/antd-imports';
+import PillToggle from '@/pages/home/PillToggle';
 import { FilePreviewModal } from '@/components/common/FilePreviewModal';
 import { ProjectLinksTab } from './components/ProjectLinksTab';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -116,7 +116,10 @@ const ProjectViewFiles = () => {
   const maxFileSizeMb = hasBusinessAccess ? 250 : 25;
   const { projectId, refreshTimestamp } = useAppSelector(state => state.projectReducer);
   const storageInfo = useAppSelector(state => state.adminCenterReducer.storageInfo);
-  type PendingUploadFile = UploadFile & { errorMessage?: string };
+  type PendingUploadFile = Omit<UploadFile, 'status'> & {
+    status?: UploadFile['status'] | 'ready';
+    errorMessage?: string;
+  };
 
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -420,7 +423,7 @@ const ProjectViewFiles = () => {
     return false;
   };
 
-  const handleRemoveFile = (file: PendingUploadFile) => {
+  const handleRemoveFile = (file: UploadFile) => {
     setPendingFiles(prev => prev.filter(item => item.uid !== file.uid));
     return true;
   };
@@ -827,23 +830,14 @@ const ProjectViewFiles = () => {
       style={{ width: '100%' }}
       title={
         <Flex justify="space-between" align="center" wrap gap={8}>
-          <Segmented
-            options={[
-              {
-                label: t('projectFilesTab', { defaultValue: 'Project Files' }),
-                value: 'project',
-              },
-              {
-                label: t('taskAttachmentsTab', { defaultValue: 'Task Attachments' }),
-                value: 'task',
-              },
-              {
-                label: t('linksTab', { defaultValue: 'Links' }),
-                value: 'links',
-              },
-            ]}
+          <PillToggle<'project' | 'task' | 'links'>
             value={activeTab}
-            onChange={v => setActiveTab(v as 'project' | 'task' | 'links')}
+            onChange={v => setActiveTab(v)}
+            options={[
+              { value: 'project', label: t('projectFilesTab', { defaultValue: 'Project Files' }) },
+              { value: 'task', label: t('taskAttachmentsTab', { defaultValue: 'Task Attachments' }) },
+              { value: 'links', label: t('linksTab', { defaultValue: 'Links' }) },
+            ]}
           />
 
           {activeTab === 'project' && (
@@ -851,7 +845,7 @@ const ProjectViewFiles = () => {
               <Input
                 allowClear
                 placeholder={t('searchPlaceholder', { defaultValue: 'Search files...' })}
-                style={{ width: 280, maxWidth: '100%' }}
+                style={{ width: 220, maxWidth: '100%', height: 30, fontSize: 12 }}
                 onChange={e => handleSearch(e.target.value)}
                 value={searchValue}
                 suffix={<SearchOutlined style={{ color: 'rgba(0,0,0,.45)' }} />}
@@ -860,10 +854,11 @@ const ProjectViewFiles = () => {
               <Button
                 type="primary"
                 icon={<ImportOutlined />}
+                style={{ height: 30, fontSize: 12 }}
                 onClick={openUploader}
                 disabled={!projectId}
               >
-                {t('uploadButton', { defaultValue: 'Upload' })}
+                {t('uploadButton', { defaultValue: 'Upload File' })}
               </Button>
             </Space>
           )}
@@ -872,6 +867,7 @@ const ProjectViewFiles = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
+              style={{ height: 30, fontSize: 12 }}
               onClick={() => setLinkAddModalOpen(true)}
               disabled={!projectId}
             >
@@ -1055,7 +1051,7 @@ const ProjectViewFiles = () => {
           multiple
           beforeUpload={beforeUpload}
           onRemove={handleRemoveFile}
-          fileList={pendingFiles}
+          fileList={pendingFiles as unknown as UploadFile[]}
           disabled={uploading}
           showUploadList
           itemRender={(originNode, file, _fileList, actions) => {

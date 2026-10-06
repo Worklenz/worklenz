@@ -1,0 +1,337 @@
+{
+  "upgradeNowButton": "Actualizar ahora",
+  "comingSoonTag": "Próximamente",
+  "clientPortalMockups": {
+    "requests": {
+      "statusAccepted": "Aceptado",
+      "statusPending": "Pendiente",
+      "statusRejected": "Rechazado"
+    },
+    "services": {
+      "statusActive": "Activo"
+    }
+  },
+  "cards": {
+    "finance": {
+      "overview": {
+        "title": "Resumen financiero",
+        "description": "Presupuesto, costo real y variación acumulados en todos los proyectos en un solo lugar.",
+        "features": [
+          "Presupuesto versus costo real por proyecto",
+          "Variación y utilización de toda la cartera",
+          "Proyectos que necesitan atención, marcados automáticamente",
+          "Exportable a Excel"
+        ]
+      },
+      "expenses": {
+        "title": "Gastos",
+        "description": "Todos los costos fijos agregados a las tareas del proyecto en todo su equipo, rastreados en un solo lugar.",
+        "features": [
+          "Registre los costos fijos en cualquier tarea",
+          "Ver gasto por proyecto y asignado",
+          "Incluido en el resumen financiero de cada proyecto.",
+          "Historial de gastos exportable"
+        ]
+      },
+      "profitability": {
+        "title": "Rentabilidad",
+        "description": "Vea los márgenes de beneficio por proyecto y equipo tan pronto como se lance esta función.",
+        "features": [
+          "Ingresos versus costo por proyecto",
+          "Tendencias del margen de beneficio a lo largo del tiempo",
+          "Desglose de la rentabilidad a nivel de equipo",
+          "Informes de rentabilidad listos para exportar"
+        ]
+      },
+      "budgets": {
+        "title": "Presupuestos",
+        "description": "Establezca presupuestos por proyecto y realice un seguimiento del gasto en comparación con ellos en tiempo real.",
+        "features": [
+          "Planificación del presupuesto del proyecto.",
+          "Seguimiento de gastos en tiempo real",
+          "Alertas de exceso de presupuesto",
+          "Presupuesto frente a informes reales"
+        ]
+      },
+      "invoices": {
+        "title": "Facturas",
+        "description": "Genere, envíe y realice un seguimiento de las facturas de los clientes sin salir de Worklenz.",
+        "features": [
+          "Cree facturas a partir del seguimiento del tiempo y los gastos",
+          "Seguimiento de facturas pagadas, pendientes y vencidas",
+          "Portal de facturación de cara al cliente",
+          "Estado de pago de un vistazo"
+        ]
+      },
+      "billableTime": {
+        "title": "Tiempo Facturable",
+        "description": "Realice un seguimiento de las horas facturables y no facturables en cada proyecto y compañero de equipo.",
+        "features": [
+          "Desglose facturable versus no facturable",
+          "Ingresos por horas facturables",
+          "Tarifas facturables por compañero de equipo",
+          "Hojas de horas exportables para facturación"
+        ]
+      },
+      "utilization": {
+        "title": "Utilización",
+        "description": "Vea en qué medida se asigna el tiempo de su equipo a los proyectos activos.",
+        "features": [
+          "Utilización del equipo por semana o mes",
+          "Compañeros de equipo sobre y sub asignados",
+          "Planificación de capacidad de un vistazo",
+          "Tendencias de utilización a lo largo del tiempo"
+        ]
+      },
+      "forecasts": {
+        "title": "Pronósticos",
+        "description": "Proyecte ingresos y costos futuros en función de su cartera activa.",
+        "features": [
+          "Previsión de ingresos y costes",
+          "Márgenes de beneficio proyectados",
+          "Proyecciones basadas en tuberías",
+          "Tendencias de pronóstico mes a mes"
+        ]
+      },
+      "generic": {
+        "title": "Finanzas",
+        "description": "Realice un seguimiento de la rentabilidad, los presupuestos, las facturas y los gastos de cada proyecto en un solo lugar.",
+        "features": [
+          "Seguimiento de la rentabilidad del proyecto",
+          "Presupuestos y previsiones",
+          "Seguimiento de facturación y gastos",
+          "Informes de utilización y tiempo facturables"
+        ]
+      }
+    },
+    "planner": {
+      "schedule": {
+        "title": "Programación",
+        "description": "Vea la agenda de todo su equipo y asigne trabajo de un vistazo.",
+        "features": [
+          "Cuadrícula de programación semanal y mensual para todo el equipo",
+          "Programación de arrastrar para asignar",
+          "Los conflictos de capacidad se marcan automáticamente",
+          "Actualizaciones en tiempo real a medida que se asigna el trabajo"
+        ]
+      },
+      "timeline": {
+        "title": "Cronología",
+        "description": "Planifique cada proyecto en una línea de tiempo ampliable.",
+        "features": [
+          "Cronogramas de proyectos estilo Gantt",
+          "Arrastre para ajustar las fechas de inicio y finalización",
+          "Vista de dependencia entre proyectos",
+          "Zoom de días a años"
+        ]
+      },
+      "workload": {
+        "title": "Carga de Trabajo",
+        "description": "Equilibre la capacidad de su equipo antes de comprometerlos demasiado.",
+        "features": [
+          "Horas asignadas por persona frente a horas disponibles",
+          "Alertas de asignación excesiva o insuficiente",
+          "Planificación de capacidad en proyectos activos",
+          "Tendencias de la carga de trabajo a lo largo del tiempo"
+        ]
+      }
+    },
+    "clientPortal": {
+      "clients": {
+        "title": "Clientes",
+        "description": "Ofrezca a los clientes un portal de marca para realizar un seguimiento del progreso del proyecto, compartir archivos y mantenerse informados.",
+        "features": [
+          "Portal de clientes de marca para compartir el progreso del proyecto",
+          "Solicitudes, aprobaciones y mensajes de clientes",
+          "Facturación de cara al cliente",
+          "Cuentas de clientes ilimitadas"
+        ]
+      },
+      "requests": {
+        "title": "Solicitudes",
+        "description": "Permita que los clientes envíen y realicen un seguimiento de las solicitudes de servicio sin salir de su portal.",
+        "features": [
+          "Solicitudes de servicio enviadas por el cliente",
+          "Aceptar, rechazar o dar seguimiento en un solo lugar",
+          "Seguimiento del estado desde el envío hasta la finalización",
+          "Vinculado directamente al servicio que se solicitó"
+        ]
+      },
+      "services": {
+        "title": "Servicios",
+        "description": "Publica los servicios que los clientes pueden solicitar y controla lo que pueden ver.",
+        "features": [
+          "Un catálogo de servicios solicitables.",
+          "Controles de visibilidad por servicio",
+          "Volumen de solicitudes por servicio",
+          "Asigne un propietario de servicio a su equipo"
+        ]
+      },
+      "chats": {
+        "title": "Mensajes",
+        "description": "Envíe mensajes a los clientes directamente desde el mismo portal que utilizan para todo lo demás.",
+        "features": [
+          "Mensajería directa con clientes.",
+          "Un hilo de conversación por cliente",
+          "Historial de conversaciones con capacidad de búsqueda",
+          "Notificaciones cuando un cliente responde"
+        ]
+      },
+      "invoices": {
+        "title": "Facturas",
+        "description": "Cree, envíe y realice un seguimiento de las facturas de los clientes sin salir de Worklenz.",
+        "features": [
+          "Cree facturas a partir del seguimiento del tiempo y los gastos",
+          "Seguimiento de facturas pagadas, pendientes y vencidas",
+          "Portal de facturación de cara al cliente",
+          "Estado de pago de un vistazo"
+        ]
+      },
+      "ticketing": {
+        "title": "Tickets",
+        "description": "Permita que los clientes generen y realicen un seguimiento de los tickets de soporte directamente desde su portal.",
+        "features": [
+          "Tickets de soporte enviados por el cliente",
+          "Seguimiento y actualizaciones del estado del ticket",
+          "Notas internas y tareas",
+          "Etiquetado de prioridad y SLA"
+        ]
+      },
+      "settings": {
+        "title": "Configuración del Portal",
+        "description": "Personaliza tu portal de clientes con tu propia marca.",
+        "features": [
+          "Sube tu propio logo",
+          "Encabezado con marca en todo el portal",
+          "Identidad visual consistente para los clientes.",
+          "Detalles de la empresa que los clientes pueden ver"
+        ]
+      }
+    }
+  },
+  "financeMockups": {
+    "overview": {
+      "paginationText": "{{from}}-{{to}} de {{total}}",
+      "perPageText": "{{count}} / página"
+    },
+    "profitability": {
+      "totalRevenue": "Ingresos totales",
+      "totalCost": "Costo total",
+      "netProfit": "Beneficio neto",
+      "avgMargin": "Promedio Margen",
+      "marginByProjectCard": "Margen de beneficio por proyecto"
+    },
+    "budgets": {
+      "totalBudget": "Presupuesto total",
+      "spent": "gastado",
+      "remaining": "restante",
+      "overBudget": "Por encima del presupuesto",
+      "budgetVsSpendCard": "Presupuesto versus gasto por proyecto"
+    },
+    "invoices": {
+      "totalInvoiced": "Total facturado",
+      "paid": "Pagado",
+      "pending": "Pendiente",
+      "overdue": "Vencido",
+      "invoicesCard": "Facturas",
+      "invoiceNoColumn": "Factura #",
+      "clientColumn": "Cliente",
+      "amountColumn": "Cantidad",
+      "statusColumn": "Estado"
+    },
+    "billableTime": {
+      "billableHours": "Horas facturables",
+      "nonBillableHours": "Horas no facturables",
+      "billablePercent": "% facturable",
+      "billableRevenue": "Ingresos facturables",
+      "byTeamMemberCard": "Tiempo facturable por miembro del equipo",
+      "teamMemberColumn": "Miembro del equipo",
+      "billableHoursColumn": "Horas facturables"
+    },
+    "utilization": {
+      "avgUtilization": "Promedio Utilización",
+      "teamSize": "Tamaño del Equipo",
+      "overutilized": "sobreutilizado",
+      "underutilized": "Subutilizado",
+      "byTeamMemberCard": "Utilización por miembro del equipo",
+      "teamMemberColumn": "Miembro del equipo"
+    },
+    "forecasts": {
+      "forecastedRevenue": "Ingresos previstos",
+      "forecastedCost": "Costo previsto",
+      "projectedMargin": "Margen proyectado",
+      "forecastWindow": "Ventana de pronóstico",
+      "revenueTrendCard": "Tendencia de previsión de ingresos"
+    },
+    "expenses": {
+      "pageTitle": "Gastos del Proyecto",
+      "pageSubtitle": "Todos los costos fijos añadidos a las tareas de proyecto de tu equipo.",
+      "projectColumn": "Proyecto",
+      "taskColumn": "Tarea",
+      "amountColumn": "Cantidad",
+      "assigneeColumn": "Asignado",
+      "dateColumn": "Fecha",
+      "rowsPerPage": "Filas por página: {{count}}"
+    }
+  },
+  "ticketingMockup": {
+    "openTickets": "Entradas abiertas",
+    "inProgress": "En progreso",
+    "resolvedToday": "Resuelto hoy",
+    "avgResponseTime": "Promedio Tiempo de respuesta",
+    "ticketsCard": "Entradas",
+    "ticketNoColumn": "Boleto #",
+    "clientColumn": "Cliente",
+    "subjectColumn": "Asunto",
+    "priorityColumn": "Prioridad",
+    "statusColumn": "Estado",
+    "priorityHigh": "Alto",
+    "priorityMedium": "Media",
+    "priorityLow": "Bajo",
+    "statusOpen": "Abrir",
+    "statusResolved": "Resuelto"
+  },
+  "plannerMockup": {
+    "chrome": {
+      "daysOption": "Días",
+      "weeksOption": "Semanas",
+      "monthsOption": "Meses",
+      "quartersOption": "Cuartos",
+      "yearsOption": "Años",
+      "dayOption": "Día",
+      "weekOption": "Semana",
+      "monthOption": "Mes",
+      "membersOption": "Miembros",
+      "projectsOption": "Proyectos",
+      "priority": "Prioridad",
+      "category": "Categoría",
+      "projectStatus": "Estado del Proyecto",
+      "projectPriority": "Prioridad del Proyecto",
+      "taskLegend": "Tarea",
+      "projectBlockLegend": "Bloque de proyecto"
+    },
+    "schedule": {
+      "scheduledHours": "Horas programadas",
+      "membersScheduled": "Miembros programados",
+      "unassignedHours": "Horas no asignadas",
+      "overbookedMembers": "Miembros con overbooking",
+      "memberColumn": "Miembro",
+      "thisWeekCard": "Esta semana"
+    },
+    "timeline": {
+      "activeProjects": "Proyectos activos",
+      "onTrack": "En camino",
+      "atRisk": "En Riesgo",
+      "avgCompletion": "Promedio Finalización",
+      "projectTimelineCard": "Cronograma del proyecto"
+    },
+    "workload": {
+      "totalCapacity": "Capacidad Total",
+      "allocatedHours": "Horas Asignadas",
+      "availableHours": "Horas disponibles",
+      "overallocatedMembers": "Miembros sobreasignados",
+      "utilColumn": "UTIL",
+      "teamTotalRow": "Total del equipo"
+    }
+  }
+}

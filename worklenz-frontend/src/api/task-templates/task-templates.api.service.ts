@@ -3,7 +3,6 @@ import apiClient from '../api-client';
 import { IServerResponse } from '@/types/common.types';
 import {
   ITaskTemplateGetResponse,
-  ITaskTemplateImportRow,
   ITaskTemplatesGetResponse,
   ITaskTemplateTask,
 } from '@/types/settings/task-templates.types';
@@ -11,54 +10,6 @@ import { ITask } from '@/types/tasks/task.types';
 import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 
 const rootUrl = `${API_BASE_URL}/task-templates`;
-
-/**
- * Flattens a nested ITaskTemplateTask[] (up to 3 levels deep) into a flat
- * ITaskTemplateImportRow[] that the import_tasks_from_template DB function understands.
- *
- * Level 1 (parent tasks):   parent_task_name = null
- * Level 2 (subtasks):       parent_task_name = parent task name
- * Level 3 (sub-subtasks):   parent_task_name = level-2 subtask name
- *
- * The DB function resolves parent UUIDs by name in insertion order, so the flat
- * array must list parents before their children at every level.
- */
-function flattenTasksForImport(tasks: ITaskTemplateTask[]): ITaskTemplateImportRow[] {
-  const rows: ITaskTemplateImportRow[] = [];
-
-  for (const task of tasks) {
-    // Level 1 — parent task
-    rows.push({
-      name: task.name,
-      total_minutes: task.total_minutes ?? 0,
-      parent_task_name: null,
-    });
-
-    if (task.sub_tasks && task.sub_tasks.length > 0) {
-      for (const subtask of task.sub_tasks) {
-        // Level 2 — subtask of parent
-        rows.push({
-          name: subtask.name,
-          total_minutes: subtask.total_minutes ?? 0,
-          parent_task_name: task.name,
-        });
-
-        // Level 3 — sub-subtask of subtask
-        if (subtask.sub_tasks && subtask.sub_tasks.length > 0) {
-          for (const grandchild of subtask.sub_tasks) {
-            rows.push({
-              name: grandchild.name,
-              total_minutes: grandchild.total_minutes ?? 0,
-              parent_task_name: subtask.name,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  return rows;
-}
 
 /**
  * Converts IProjectTask[] (from Redux task management state) into the
@@ -73,6 +24,7 @@ export function buildTemplateTasksPayload(
 ): ITaskTemplateTask[] {
   return projectTasks.map(task => {
     const templateTask: ITaskTemplateTask = {
+      id: task.id,
       name: task.name || '',
       total_minutes: task.total_minutes ?? 0,
     };
@@ -80,12 +32,14 @@ export function buildTemplateTasksPayload(
     if (includeSubtasks && task.sub_tasks && task.sub_tasks.length > 0) {
       templateTask.sub_tasks = task.sub_tasks.map(subtask => {
         const subtaskEntry = {
+          id: subtask.id,
           name: subtask.name || '',
           total_minutes: subtask.total_minutes ?? 0,
           // Level-3: include grandchildren if present
           ...(subtask.sub_tasks && subtask.sub_tasks.length > 0
             ? {
                 sub_tasks: subtask.sub_tasks.map(grandchild => ({
+                  id: grandchild.id,
                   name: grandchild.name || '',
                   total_minutes: grandchild.total_minutes ?? 0,
                 })),
@@ -135,18 +89,31 @@ export const taskTemplatesApiService = {
     return response.data;
   },
 
+  updateTemplateScope: async (
+    id: string,
+    scope: 'team' | 'organization'
+  ): Promise<IServerResponse<{ id: string; scope: string }>> => {
+    const response = await apiClient.patch<IServerResponse<{ id: string; scope: string }>>(
+      `${rootUrl}/${id}/scope`,
+      { scope },
+      { headers: { 'X-Silent-Request': '1' } }
+    );
+    return response.data;
+  },
+
   /**
    * Import tasks from a template into a project.
-   * Accepts the nested ITaskTemplateTask[] (up to 3 levels) and flattens it
-   * before sending so the DB function receives the correct flat format.
+   * Sends the nested ITaskTemplateTask[] (up to 3 levels) as-is; the DB function
+   * walks the sub_tasks nesting directly, so parent/child links never depend on
+   * name matching.
    */
   importTemplate: async (
     id: string,
+    templateId: string,
     tasks: ITaskTemplateTask[]
   ): Promise<IServerResponse<ITask>> => {
-    const url = `${rootUrl}/import/${id}`;
-    const flatRows = flattenTasksForImport(tasks);
-    const response = await apiClient.post<IServerResponse<ITask>>(url, flatRows);
+    const url = `${rootUrl}/import/${id}?templateId=${templateId}`;
+    const response = await apiClient.post<IServerResponse<ITask>>(url, tasks);
     return response.data;
   },
 };

@@ -9,12 +9,19 @@ export interface ITeamMemberViewModel extends ITeamMember {
   taskCount?: number;
   job_title?: string;
   team_access?: string;
+  department_id?: string;
+  department_name?: string;
+  practice_id?: string;
+  practice_name?: string;
   email?: string;
   task_count?: number;
   projects_count?: number;
   project_names?: string;
   project_name?: string;
   role_name?: string;
+  // Numeric role rank from the server (Owner 1 → Admin 2 → Team Lead 3 → other 4).
+  // Prefer this over deriving from role_name so custom admin roles sort correctly.
+  role_level?: number;
   tasks?: ITask[];
   is_admin?: boolean;
   show_handles?: boolean;

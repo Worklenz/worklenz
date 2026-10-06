@@ -3,10 +3,12 @@
   "home": "Inicio",
   "projects": "Proyectos",
   "planner": "Planificador",
+  "reporting": "Reports",
   "my-team-reports": "Informes de Mi Equipo",
-  "clients": "Clientes",
   "finance": "Finanzas",
   "client-portal": "Clientes",
+  "closePopover": "Cerrar ventana emergente",
+  "clients": "Clientes",
   "teams": "Equipos",
   "labels": "Etiquetas",
   "jobTitles": "Cargos",
@@ -15,6 +17,8 @@
   "invite": "Invitar",
   "inviteTooltip": "Invitar miembros al equipo",
   "switchTeamTooltip": "Cambiar equipo",
+  "searchTeams": "Buscar equipos...",
+  "noTeamsFound": "No se encontraron equipos",
   "help": "Ayuda",
   "notificationTooltip": "Ver notificaciones",
   "profileTooltip": "Ver perfil",
@@ -40,13 +44,14 @@
   "timeEntries": "Registros de Tiempo",
   "new": "Nuevo",
   "quickActions": {
+    "new": "Nuevo",
     "task": "Tarea",
     "logTime": "Registrar tiempo",
     "project": "Proyecto",
     "client": "Cliente",
-    "addExpense": "Agregar Gasto",
-    "addGuest": "Agregar Invitado",
-    "inviteMember": "Invitar Miembro"
+    "addExpense": "Agregar gasto",
+    "addGuest": "Agregar invitado",
+    "inviteMember": "Invitar miembro"
   },
   "billing": "Facturación",
   "account": "Cuenta",
@@ -68,25 +73,22 @@
     "conflictTitle": "Conflicto de Temporizador",
     "conflictMessage": "Otro temporizador está ejecutándose para \"{{taskName}}\" en proyecto \"{{projectName}}\". ¿Deseas detenerlo e iniciar este temporizador?",
     "stopAndStart": "Detener e Iniciar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "logTime": "Registrar tiempo",
+    "openTimeLogPanel": "Abrir registro de tiempo para {{taskName}}"
   },
-  "reporting": "Reports",
-  "closePopover": "Cerrar ventana emergente",
-  "account": "Cuenta",
-  "billing": "Facturación",
   "ownerRole": "Propietario",
   "adminRole": "Administrador",
   "teamLeadRole": "Líder de Equipo",
   "memberRole": "Miembro",
   "themeToggleOn": "Sí",
   "themeToggleOff": "No",
-  "quickActions": {
-    "new": "Nuevo",
-    "task": "Tarea",
-    "logTime": "Registrar tiempo",
-    "project": "Proyecto",
-    "client": "Cliente",
-    "addExpense": "Agregar gasto",
-    "inviteMember": "Invitar miembro"
+  "whatsNew": {
+    "tag": "Novedades",
+    "tooltip": "Consulta qué ha cambiado en esta versión",
+    "newBadge": "Nuevo",
+    "modalHeading": "Novedades — {{title}}",
+    "readFullChangelog": "Ver registro de cambios completo →",
+    "releaseUnavailable": "Esta actualización ya no está disponible."
   }
 }

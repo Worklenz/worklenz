@@ -41,8 +41,8 @@
   "labelsSelectorInputTip": "按回车键创建！",
   "addTaskText": "+ 添加任务",
   "addSubTaskText": "+ 添加子任务",
-  "addSubTaskInputPlaceholder": "输入子任务名称并按回车保存",
   "addTaskInputPlaceholder": "输入任务并按回车键",
+  "addSubTaskInputPlaceholder": "输入子任务名称并按回车保存",
   "noTasksInGroup": "此组中没有任务",
   "dropTaskHere": "将任务拖到这里",
   "openButton": "打开",
@@ -67,7 +67,12 @@
     "convertToSubTask": "转换为子任务",
     "convertToTask": "转换为任务",
     "delete": "删除",
-    "searchByNameInputPlaceholder": "按名称搜索"
+    "searchByNameInputPlaceholder": "按名称搜索",
+    "deleteConfirmTitle": "删除任务",
+    "deleteConfirmMessage": "您确定要删除此任务吗？此操作无法撤销。",
+    "deleteSubtaskConfirmMessage": "您确定要删除该子任务吗？此操作无法撤消。",
+    "deleteConfirmOk": "删除",
+    "deleteConfirmCancel": "取消"
   },
   "setDueDate": "设置截止日期",
   "setStartDate": "设置开始日期",
@@ -132,8 +137,12 @@
       "updateSuccessMessage": "自定义列更新成功",
       "deleteSuccessMessage": "自定义列删除成功",
       "deleteErrorMessage": "删除自定义列失败",
+      "deleteErrorMissingId": "无法删除列：缺少 UUID",
+      "hideFromTaskList": "从任务列表中隐藏",
+      "showInTaskList": "在任务列表中显示",
       "createErrorMessage": "创建自定义列失败",
-      "updateErrorMessage": "更新自定义列失败"
+      "updateErrorMessage": "更新自定义列失败",
+      "typeCannotBeChanged": "创建后无法更改列类型。"
     },
     "fieldTypes": {
       "people": "人员",
@@ -195,5 +204,11 @@
     "conflictTitle": "计时器已在运行",
     "conflictMessage": "您在项目\"{{projectName}}\"中的\"{{taskName}}\"任务正在运行计时器。您是否要停止该计时器并为此任务启动新的计时器？",
     "stopAndStart": "停止并启动新计时器"
+  },
+  "errors": {
+    "taskNotCompleted": "任务未完成",
+    "completeTaskDependencies": "请先完成任务依赖项，然后再继续",
+    "incompleteDependencies": "不完整的依赖关系！",
+    "someDependenciesNotCompleted": "部分任务未更新。请确保所有相关任务均已完成，然后再继续。"
   }
 }

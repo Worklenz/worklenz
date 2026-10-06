@@ -218,22 +218,7 @@ export async function getActiveGuestCount(teamId: string): Promise<number> {
       FROM team_members tm
       WHERE tm.team_id = $1::UUID
         AND tm.active = true
-        AND EXISTS(
-          SELECT 1
-          FROM project_members pm_guest
-          WHERE pm_guest.team_member_id = tm.id
-            AND pm_guest.project_access_level_id = (
-                SELECT id FROM project_access_levels WHERE key = 'GUEST'
-            )
-        )
-        AND NOT EXISTS(
-          SELECT 1
-          FROM project_members pm_non_guest
-          WHERE pm_non_guest.team_member_id = tm.id
-            AND pm_non_guest.project_access_level_id != (
-                SELECT id FROM project_access_levels WHERE key = 'GUEST'
-            )
-        );
+        AND tm.is_guest = true;
     `;
     const result = await db.query(q, [teamId]);
     return parseInt(result.rows[0]?.active_guests) || 0;

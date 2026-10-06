@@ -1,0 +1,22 @@
+{
+  "title": "Menaxho Praktikat",
+  "nameColumn": "Emri",
+  "search": "Kërko praktika",
+  "createPracticeButton": "Krijo Praktikë",
+  "createPracticeDrawerTitle": "Krijo Praktikë",
+  "updatePracticeDrawerTitle": "Përditëso Praktikën",
+  "nameLabel": "Emri",
+  "namePlaceholder": "Shkruani emrin e praktikës",
+  "nameRequiredError": "Emri i praktikës është i detyrueshëm",
+  "createButton": "Krijo",
+  "updateButton": "Përditëso",
+  "editTooltip": "Përpuno",
+  "deleteTooltip": "Fshi",
+  "deleteConfirmationTitle": "Jeni i sigurt që doni ta fshini këtë praktikë?",
+  "deleteConfirmationOk": "Fshi",
+  "deleteConfirmationCancel": "Anulo",
+  "fetchPracticeErrorMessage": "Marrja e praktikës dështoi",
+  "createPracticeErrorMessage": "Krijimi i praktikës dështoi",
+  "updatePracticeErrorMessage": "Përditësimi i praktikës dështoi",
+  "pinTooltip": "Fiksoje në menynë kryesore"
+}

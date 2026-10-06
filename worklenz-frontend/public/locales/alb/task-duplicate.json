@@ -12,5 +12,31 @@
     "subscribers": "Abonentët"
   },
   "duplicate": "Dyfisho",
-  "cancel": "Anulo"
+  "cancel": "Anulo",
+  "copyToProject": {
+    "title": "Kopjo detyrën në projekt",
+    "selectProject": "Zgjidh një projekt destinacioni",
+    "confirm": "Kopjo detyrën",
+    "copyTask": "Kopjo detyrën",
+    "checkDifferences": "Kontrolloni Dallimet",
+    "check": "Kontrollo ndryshimet",
+    "checking": "Po kontrollohen ndryshimet...",
+    "confirmDifferences": "Shto dhe kopjo detyrën",
+    "differencesFound": "Këto kolona mungojnë në projektin e destinacionit.",
+    "missingPhasesFound": "Këto faza mungojnë në projektin e destinacionit.",
+    "statusMissing": "Statusi \"{{sourceStatus}}\" nuk është në projektin e destinacionit. Detyra do t'i caktohet statusit kryesor \"{{destinationStatus}}\".",
+    "createMissingItems": "Krijo kolonat dhe fazat që mungojnë",
+    "createMissingColumns": "Krijo kolonat që mungojnë",
+    "cancel": "Anulo",
+    "cancelDifferences": "Anulo kopjimin",
+    "success": "Detyra u kopjua me sukses",
+    "openTask": "Hap detyrën",
+    "loadError": "Projektet e aksesueshme nuk mund të ngarkohen.",
+    "noProjects": "Nuk u gjetën projekte të tjera të aksesueshme.",
+    "noDifferencesFound": "Projekti i destinacionit ka të gjitha kolonat dhe fazat e nevojshme.",
+    "copyDependencies": "Kopjoni detyrat e varësisë",
+    "copyDependenciesDescription": "Përfshini të gjitha detyrat e varura kur kopjoni këtë detyrë në projektin e destinacionit.",
+    "dependenciesInfo": "Kjo detyrë ka varësi. Detyrat e varura do të kopjohen gjithashtu në projektin e destinacionit.",
+    "error": "Kopjimi i detyrës dështoi"
+  }
 }

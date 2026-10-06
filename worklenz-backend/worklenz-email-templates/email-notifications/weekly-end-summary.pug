@@ -52,7 +52,7 @@ html(lang='en')
                           if completed.totalCount > completed.tasks.length
                             p.task-meta
                               | + #{completed.totalCount - completed.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Still Due This Week
                     if stillDue && stillDue.tasks && stillDue.tasks.length
@@ -74,7 +74,7 @@ html(lang='en')
                           if stillDue.totalCount > stillDue.tasks.length
                             p.task-meta
                               | + #{stillDue.totalCount - stillDue.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Became Overdue This Week
                     if becameOverdue && becameOverdue.tasks && becameOverdue.tasks.length
@@ -96,7 +96,7 @@ html(lang='en')
                           if becameOverdue.totalCount > becameOverdue.tasks.length
                             p.task-meta
                               | + #{becameOverdue.totalCount - becameOverdue.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- All-Time Overdue (count card only)
                     if allTimeOverdueCount && allTimeOverdueCount > 0
@@ -104,7 +104,7 @@ html(lang='en')
                         td
                           h4.section-header ASSIGNED TO ME — ALL-TIME OVERDUE (#{allTimeOverdueCount} tasks)
                           p(style='color:#555;') These tasks were overdue before this week.
-                          a(href=managePreferencesUrl style='color:#1890ff;') View #{allTimeOverdueCount} overdue #{allTimeOverdueCount === 1 ? 'task' : 'tasks'} in Worklenz
+                          a(href=viewAllTasksUrl style='color:#1890ff;') View #{allTimeOverdueCount} overdue #{allTimeOverdueCount === 1 ? 'task' : 'tasks'} in Worklenz
 
                     //- Assigned by me — Completed This Week
                     if assignedByMeCompleted && assignedByMeCompleted.tasks && assignedByMeCompleted.tasks.length
@@ -128,7 +128,7 @@ html(lang='en')
                           if assignedByMeCompleted.totalCount > assignedByMeCompleted.tasks.length
                             p.task-meta
                               | + #{assignedByMeCompleted.totalCount - assignedByMeCompleted.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Assigned by me — Became Overdue This Week
                     if assignedByMeBecameOverdue && assignedByMeBecameOverdue.tasks && assignedByMeBecameOverdue.tasks.length
@@ -152,7 +152,7 @@ html(lang='en')
                           if assignedByMeBecameOverdue.totalCount > assignedByMeBecameOverdue.tasks.length
                             p.task-meta
                               | + #{assignedByMeBecameOverdue.totalCount - assignedByMeBecameOverdue.tasks.length} more.&nbsp;
-                              a(href=managePreferencesUrl style='color:#1890ff') View all in Worklenz.
+                              a(href=viewAllTasksUrl style='color:#1890ff') View all in Worklenz.
 
                     //- Admin team overview table (weekly end columns)
                     if adminOverview && adminOverview.length
@@ -189,7 +189,7 @@ html(lang='en')
 
                     tr
                       td(style='padding-top:20px')
-                        a(href=managePreferencesUrl style='display:inline-block;background:#1890ff;color:#fff;padding:8px 20px;border-radius:4px;text-decoration:none;font-size:14px;') View my full task list in Worklenz
+                        a(href=viewAllTasksUrl style='display:inline-block;background:#1890ff;color:#fff;padding:8px 20px;border-radius:4px;text-decoration:none;font-size:14px;') View my full task list in Worklenz
 
             tr
               td

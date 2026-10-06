@@ -29,5 +29,7 @@
   "role": "Rolle",
   "owner": "Besitzer",
   "admin": "Administrator",
-  "member": "Mitglied"
+  "member": "Mitglied",
+  "cannotChangeOwnerRole": "Die Eigentümerrolle kann nicht geändert werden",
+  "pendingInvitation": "Ausstehende Einladung"
 }

@@ -4,6 +4,7 @@ import {
   IRPTOverviewProjectInfo,
   IRPTOverviewProjectMember,
   IRPTProjectsViewModel,
+  IRPTProject,
 } from '@/types/reporting/reporting.types';
 import apiClient from '../api-client';
 import { API_BASE_URL } from '@/shared/constants';
@@ -112,9 +113,10 @@ export const reportingProjectsApiService = {
         done_tasks: number;
         doing_tasks: number;
         todo_tasks: number;
-        projects: any[];
+        projects: IRPTProject[];
       }>;
       total_groups: number;
+      total?: number;
     }>
   > => {
     const q = toQueryString(params);

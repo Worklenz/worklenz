@@ -1,5 +1,10 @@
 {
+  "getMobileApp": "Obtener la app móvil",
+  "helpSupport": "Ayuda y soporte",
   "schedule": "Horario",
+  "settingsTooltip": "Configuración",
   "timeline": "Cronología",
+  "trialDaysLeft": "Quedan {{count}} días de prueba",
+  "upgradeToPro": "Actualizar a Pro",
   "workload": "Carga de Trabajo"
 }

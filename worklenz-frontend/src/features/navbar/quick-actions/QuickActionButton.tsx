@@ -8,6 +8,7 @@ import {
   ClockCircleOutlined,
   UserAddOutlined,
   UsergroupAddOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { theme } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -22,6 +23,7 @@ import { AddExpenseModal } from '@/components/expenses/AddExpenseModal';
 import { CreateProjectModal } from '@/components/projects/create-project-modal/create-project-modal';
 import HomeAddTaskModal from '@/pages/home/task-list/HomeAddTaskModal';
 import AddGuestModal from '@/components/common/add-guest/AddGuestModal';
+import TimeOffCalendar from '@/components/schedule/task-timeline/TimeOffCalendar';
 import { IMyTask } from '@/types/home/my-tasks.types';
 import {
   setSelectedTaskId,
@@ -63,6 +65,8 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
+  const [timeOffOpen, setTimeOffOpen] = useState(false);
+  const currentSession = authService.getCurrentSession();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,17 +80,19 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   }, []);
 
   const ALL_ITEMS = useMemo<QuickActionItem[]>(() => [
-    { key: 'new-task',    label: t('quickActions.task', { defaultValue: 'New Task' }),        icon: <CheckSquareOutlined /> },
-    { key: 'log-time',    label: t('quickActions.logTime', { defaultValue: 'Log Time' }),    icon: <ClockCircleOutlined /> },
-    { key: 'new-project', label: t('quickActions.project', { defaultValue: 'New Project' }),     icon: <ProjectOutlined /> },
-    { key: 'new-client',  label: t('quickActions.client', { defaultValue: 'New Client' }),      icon: <UserOutlined /> },
-    { key: 'add-expense', label: t('quickActions.addExpense', { defaultValue: 'Add Expense' }), icon: <DollarOutlined /> },
-    { key: 'add-guest',   label: t('quickActions.addGuest', { defaultValue: 'Add Guest' }), icon: <UsergroupAddOutlined /> },
+    { key: 'new-task',      label: t('quickActions.task', { defaultValue: 'New Task' }),        icon: <CheckSquareOutlined /> },
+    { key: 'log-time',      label: t('quickActions.logTime', { defaultValue: 'Log Time' }),    icon: <ClockCircleOutlined /> },
+    { key: 'mark-time-off', label: t('quickActions.markTimeOff', { defaultValue: 'Mark Time Off' }), icon: <CalendarOutlined /> },
+    { key: 'new-project',   label: t('quickActions.project', { defaultValue: 'New Project' }),     icon: <ProjectOutlined /> },
+    { key: 'new-client',    label: t('quickActions.client', { defaultValue: 'New Client' }),      icon: <UserOutlined /> },
+    { key: 'add-expense',   label: t('quickActions.addExpense', { defaultValue: 'Add Expense' }), icon: <DollarOutlined /> },
+    { key: 'add-guest',     label: t('quickActions.addGuest', { defaultValue: 'Add Guest' }), icon: <UsergroupAddOutlined /> },
   ], [t]);
 
   const MEMBER_ITEMS = useMemo<QuickActionItem[]>(() => [
-    { key: 'new-task',    label: t('quickActions.task', { defaultValue: 'New Task' }),    icon: <CheckSquareOutlined /> },
-    { key: 'log-time',    label: t('quickActions.logTime', { defaultValue: 'Log Time' }), icon: <ClockCircleOutlined /> },
+    { key: 'new-task',      label: t('quickActions.task', { defaultValue: 'New Task' }),    icon: <CheckSquareOutlined /> },
+    { key: 'log-time',      label: t('quickActions.logTime', { defaultValue: 'Log Time' }), icon: <ClockCircleOutlined /> },
+    { key: 'mark-time-off', label: t('quickActions.markTimeOff', { defaultValue: 'Mark Time Off' }), icon: <CalendarOutlined /> },
   ], [t]);
 
   // Hide the New button for guest users after all hooks have run.
@@ -109,6 +115,9 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
         break;
       case 'log-time':
         setLogTimeOpen(true);
+        break;
+      case 'mark-time-off':
+        setTimeOffOpen(true);
         break;
       case 'add-expense':
         setExpenseOpen(true);
@@ -278,6 +287,19 @@ const QuickActionButton: React.FC<QuickActionButtonProps> = ({
       <AddGuestModal
         open={guestModalOpen}
         onClose={() => setGuestModalOpen(false)}
+      />
+
+      <TimeOffCalendar
+        members={[
+          {
+            id: currentSession?.team_member_id || '',
+            name: currentSession?.name || '',
+            email: currentSession?.email,
+          },
+        ].filter(m => !!m.id)}
+        visible={timeOffOpen}
+        onClose={() => setTimeOffOpen(false)}
+        preselectedMemberId={currentSession?.team_member_id || null}
       />
     </div>
   );

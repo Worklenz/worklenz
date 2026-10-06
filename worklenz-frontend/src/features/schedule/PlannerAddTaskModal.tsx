@@ -28,6 +28,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { scheduleApi, useFetchScheduleMembersQuery } from '@/api/schedule/scheduleApi';
+import SubtaskBreadcrumbLabel from '@/features/schedule/components/SubtaskBreadcrumbLabel';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
 import { IProject } from '@/types/project/project.types';
 import { IMyTask } from '@/types/home/my-tasks.types';
@@ -172,7 +173,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
         statuses: null,
         members: null,
         projects: null,
-        isSubtasksInclude: false,
+        isSubtasksInclude: true,
       })
       .then(res => {
         if (cancelled) return;
@@ -212,7 +213,13 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
 
   const timeZone = getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const scheduleAndAssign = (taskId: string, projectId: string, dateStr: string, estHours: number) => {
+  const scheduleAndAssign = (
+    taskId: string,
+    projectId: string,
+    dateStr: string,
+    estHours: number,
+    parentTaskId: string | null = null
+  ) => {
     const assigneeIds = selectedAssignees.length
       ? selectedAssignees
       : currentSession?.team_member_id
@@ -259,7 +266,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
     socket?.on(SocketEvents.TASK_START_DATE_CHANGE.toString(), onStartDateAck);
     socket?.emit(
       SocketEvents.TASK_START_DATE_CHANGE.toString(),
-      JSON.stringify({ task_id: taskId, start_date: dateStr, parent_task: null, time_zone: timeZone })
+      JSON.stringify({ task_id: taskId, start_date: dateStr, parent_task: parentTaskId, time_zone: timeZone })
     );
 
     const onEndDateAck = (data: IProjectTask) => {
@@ -271,7 +278,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
     socket?.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), onEndDateAck);
     socket?.emit(
       SocketEvents.TASK_END_DATE_CHANGE.toString(),
-      JSON.stringify({ task_id: taskId, end_date: dateStr, parent_task: null, time_zone: timeZone })
+      JSON.stringify({ task_id: taskId, end_date: dateStr, parent_task: parentTaskId, time_zone: timeZone })
     );
 
     const onEstimationAck = (data: { id?: string }) => {
@@ -287,7 +294,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
         task_id: taskId,
         total_hours: Math.floor(estHours || 0),
         total_minutes: Math.round(((estHours || 0) % 1) * 60),
-        parent_task: null,
+        parent_task: parentTaskId,
       })
     );
 
@@ -324,7 +331,13 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
         return;
       }
       setSubmitting(true);
-      scheduleAndAssign(selectedUnassignedTask.id, values.project_id, dateStr, values.est_hours);
+      scheduleAndAssign(
+        selectedUnassignedTask.id,
+        values.project_id,
+        dateStr,
+        values.est_hours,
+        selectedUnassignedTask.parent_task_id
+      );
       return;
     }
 
@@ -357,7 +370,7 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
           return;
         }
 
-        if (!task) return;
+        if (!task || !task.id || !task.project_id) return;
         scheduleAndAssign(task.id, task.project_id, dateStr, values.est_hours);
       }
     );
@@ -517,7 +530,11 @@ const PlannerAddTaskModal = ({ open, defaultDate, defaultMemberId, onClose }: Pl
                             <span style={{ opacity: 0.5, fontWeight: 400, flexShrink: 0 }}>{task.task_key}</span>
                           )}
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {task.name}
+                            <SubtaskBreadcrumbLabel
+                              isSubTask={task.is_sub_task}
+                              parentTaskName={task.parent_task_name}
+                              name={task.name}
+                            />
                           </span>
                         </div>
                       );

@@ -673,7 +673,7 @@ BEGIN
     INSERT INTO projects (name, key, notes, color_code, team_id, client_id, owner_id, status_id, health_id, priority_id, start_date,
                           end_date, folder_id, category_id, estimated_working_days, estimated_man_days, hours_per_day,
                           use_manual_progress, use_weighted_progress, use_time_progress, auto_assign_task_creator,
-                          restrict_task_creation)
+                          restrict_task_creation, phase_assignees_enabled, restrict_tasks_to_assignee)
     VALUES (_project_name, (_body ->> 'key')::TEXT, (_body ->> 'notes')::TEXT, (_body ->> 'color_code')::TEXT, _team_id,
             _client_id, _user_id, (_body ->> 'status_id')::UUID, (_body ->> 'health_id')::UUID,
             COALESCE((_body ->> 'priority_id')::UUID, (SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1)),
@@ -684,7 +684,9 @@ BEGIN
             COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
             COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
             COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
-            COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE))
+            COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'phase_assignees_enabled')::BOOLEAN, FALSE),
+            COALESCE((_body ->> 'restrict_tasks_to_assignee')::BOOLEAN, FALSE))
     RETURNING id INTO _project_id;
 
     -- log record
@@ -882,6 +884,45 @@ BEGIN
         );
 END
 $$;
+
+ALTER TABLE team_members
+    ADD COLUMN IF NOT EXISTS is_guest BOOLEAN NOT NULL DEFAULT FALSE;
+
+CREATE OR REPLACE FUNCTION sync_team_member_guest_status() RETURNS TRIGGER
+    LANGUAGE plpgsql
+AS
+$$
+DECLARE
+    _team_member_id UUID;
+BEGIN
+    _team_member_id = COALESCE(NEW.team_member_id, OLD.team_member_id);
+
+    UPDATE team_members
+    SET is_guest = EXISTS(
+        SELECT 1
+        FROM project_members pm
+        JOIN project_access_levels pal ON pal.id = pm.project_access_level_id
+        JOIN projects p ON p.id = pm.project_id
+        WHERE pm.team_member_id = _team_member_id
+          AND p.team_id = team_members.team_id
+          AND pal.key = 'GUEST'
+    )
+    WHERE id = _team_member_id;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+
+    RETURN NEW;
+END
+$$;
+
+DROP TRIGGER IF EXISTS trigger_sync_team_member_guest_status ON project_members;
+CREATE TRIGGER trigger_sync_team_member_guest_status
+AFTER INSERT OR UPDATE OF project_access_level_id, project_id, team_member_id OR DELETE
+ON project_members
+FOR EACH ROW
+EXECUTE FUNCTION sync_team_member_guest_status();
 
 CREATE OR REPLACE FUNCTION create_project_template(_body json) RETURNS json
     LANGUAGE plpgsql
@@ -1368,36 +1409,99 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION create_task_template(_name text, _team_id uuid, _tasks json) RETURNS json
+CREATE OR REPLACE FUNCTION create_task_template(_name text, _team_id uuid, _tasks json)
+    RETURNS json
     LANGUAGE plpgsql
 AS
 $$
 DECLARE
-    _template_id UUID;
-    _task        JSON;
+    _template_id   UUID;
+    _task          JSON;
+    _subtask       JSON;
+    _grandchild    JSON;
+    _parent_name   TEXT;
+    _subtask_name  TEXT;
 BEGIN
-
-    -- check whether the project name is already in
-    IF EXISTS(
-        SELECT name FROM task_templates WHERE LOWER(name) = LOWER(_name)
-                                    AND team_id = _team_id
-    )
-    THEN
+    IF EXISTS (
+        SELECT 1 FROM task_templates
+        WHERE LOWER(name) = LOWER(_name) AND team_id = _team_id
+    ) THEN
         RAISE 'TASK_TEMPLATE_EXISTS_ERROR:%', _name;
     END IF;
 
-    INSERT INTO task_templates (name, team_id) VALUES (_name, _team_id) RETURNING id INTO _template_id;
+    INSERT INTO task_templates (name, team_id)
+    VALUES (_name, _team_id)
+    RETURNING id INTO _template_id;
 
-    -- insert tasks for task templates
     FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS(_tasks)
-        LOOP
-            INSERT INTO task_templates_tasks (template_id, name, total_minutes) VALUES (_template_id, (_task ->> 'name')::TEXT, (SELECT total_minutes FROM tasks WHERE id = (_task ->> 'id')::UUID)::NUMERIC);
-        END LOOP;
+    LOOP
+        _parent_name := TRIM((_task ->> 'name')::TEXT);
 
-    RETURN JSON_BUILD_OBJECT(
-        'id', _template_id,
-        'template_name', _name
+        -- Level 1: parent task (parent_task_name = NULL)
+        INSERT INTO task_templates_tasks (template_id, name, total_minutes, parent_task_name)
+        VALUES (
+            _template_id,
+            _parent_name,
+            COALESCE(
+                CASE WHEN (_task ->> 'id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                     THEN (SELECT t.total_minutes FROM tasks t
+                           JOIN projects p ON p.id = t.project_id
+                           WHERE t.id = (_task ->> 'id')::UUID AND p.team_id = _team_id)
+                     ELSE NULL END,
+                (_task ->> 'total_minutes')::NUMERIC,
+                0
+            ),
+            NULL
         );
+
+        -- Level 2: subtasks of the parent
+        IF (_task -> 'sub_tasks') IS NOT NULL AND JSON_ARRAY_LENGTH(_task -> 'sub_tasks') > 0 THEN
+            FOR _subtask IN SELECT * FROM JSON_ARRAY_ELEMENTS(_task -> 'sub_tasks')
+            LOOP
+                _subtask_name := TRIM((_subtask ->> 'name')::TEXT);
+
+                INSERT INTO task_templates_tasks (template_id, name, total_minutes, parent_task_name)
+                VALUES (
+                    _template_id,
+                    _subtask_name,
+                    COALESCE(
+                        CASE WHEN (_subtask ->> 'id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                             THEN (SELECT t.total_minutes FROM tasks t
+                                   JOIN projects p ON p.id = t.project_id
+                                   WHERE t.id = (_subtask ->> 'id')::UUID AND p.team_id = _team_id)
+                             ELSE NULL END,
+                        (_subtask ->> 'total_minutes')::NUMERIC,
+                        0
+                    ),
+                    _parent_name
+                );
+
+                -- Level 3: sub-subtasks of the subtask
+                IF (_subtask -> 'sub_tasks') IS NOT NULL AND JSON_ARRAY_LENGTH(_subtask -> 'sub_tasks') > 0 THEN
+                    FOR _grandchild IN SELECT * FROM JSON_ARRAY_ELEMENTS(_subtask -> 'sub_tasks')
+                    LOOP
+                        INSERT INTO task_templates_tasks (template_id, name, total_minutes, parent_task_name)
+                        VALUES (
+                            _template_id,
+                            TRIM((_grandchild ->> 'name')::TEXT),
+                            COALESCE(
+                                CASE WHEN (_grandchild ->> 'id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+                                     THEN (SELECT t.total_minutes FROM tasks t
+                                           JOIN projects p ON p.id = t.project_id
+                                           WHERE t.id = (_grandchild ->> 'id')::UUID AND p.team_id = _team_id)
+                                     ELSE NULL END,
+                                (_grandchild ->> 'total_minutes')::NUMERIC,
+                                0
+                            ),
+                            _subtask_name
+                        );
+                    END LOOP;
+                END IF;
+            END LOOP;
+        END IF;
+    END LOOP;
+
+    RETURN JSON_BUILD_OBJECT('id', _template_id, 'template_name', _name);
 END
 $$;
 
@@ -1679,7 +1783,10 @@ BEGIN
                                            ELSE TRUE
                                            END                                                             AS setup_completed,
                                        is_owner(nd.id, nd.active_team)                                     AS owner,
-                                       is_admin(nd.id, nd.active_team)                                     AS is_admin
+                                       is_admin(nd.id, nd.active_team)                                     AS is_admin,
+                                       (COALESCE(tm.is_guest, FALSE) = TRUE
+                                           AND NOT is_owner(nd.id, nd.active_team)
+                                           AND NOT is_admin(nd.id, nd.active_team))                         AS is_guest
                                 FROM notification_data nd
                                          CROSS JOIN alerts_data ad
                                          LEFT JOIN timezones tz ON tz.id = nd.timezone
@@ -5043,54 +5150,110 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION import_tasks_from_template(_project_id uuid, _user_id uuid, _tasks json) RETURNS json
+CREATE OR REPLACE FUNCTION import_tasks_from_template(_project_id uuid, _user_id uuid, _tasks json)
+    RETURNS json
     LANGUAGE plpgsql
 AS
 $$
 DECLARE
-    _task     JSON;
-    _max_sort INT;
-    _task_id_new UUID;
+    _task                JSON;
+    _subtask             JSON;
+    _grandchild          JSON;
+    _max_sort            INT;
+    _task_id_new         UUID;
+    _subtask_id_new      UUID;
+    _grandchild_id_new   UUID;
+    _default_status_id   UUID;
+    _default_priority_id UUID;
+    _team_id             UUID;
 BEGIN
+    SELECT COALESCE((SELECT MAX(sort_order) FROM tasks WHERE project_id = _project_id), 0)
+    INTO _max_sort;
 
-    SELECT COALESCE((SELECT MAX(sort_order) FROM tasks WHERE project_id = _project_id), 0) INTO _max_sort;
+    SELECT team_id INTO _team_id FROM projects WHERE id = _project_id;
 
-    -- insert tasks for task templates
+    SELECT id INTO _default_status_id
+    FROM task_statuses
+    WHERE project_id = _project_id
+      AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
+    LIMIT 1;
+
+    SELECT id INTO _default_priority_id
+    FROM task_priorities WHERE value = 1;
+
     FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS(_tasks)
-        LOOP
-            _max_sort = _max_sort + 1;
-            INSERT INTO tasks (name, priority_id, project_id, reporter_id, status_id,
-                               sort_order, roadmap_sort_order,
-                               status_sort_order, priority_sort_order, phase_sort_order, member_sort_order,
-                               total_minutes)
-            VALUES (TRIM((_task ->> 'name')::TEXT),
-                    (SELECT id FROM task_priorities WHERE value = 1),
-                    _project_id,
-                    _user_id,
+    LOOP
+        _max_sort := _max_sort + 1;
 
-                       -- This should be came from client side later
-                    (SELECT id
-                     FROM task_statuses
-                     WHERE project_id = _project_id::UUID
-                       AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
-                     LIMIT 1),
-                    _max_sort, _max_sort,
-                    _max_sort, _max_sort, _max_sort, _max_sort,
-                    (_task ->> 'total_minutes')::NUMERIC) RETURNING id INTO _task_id_new;
+        INSERT INTO tasks (
+            name, priority_id, project_id, reporter_id, status_id,
+            sort_order, roadmap_sort_order,
+            status_sort_order, priority_sort_order, phase_sort_order, member_sort_order,
+            total_minutes
+        )
+        VALUES (
+            TRIM((_task ->> 'name')::TEXT),
+            _default_priority_id, _project_id, _user_id, _default_status_id,
+            _max_sort, _max_sort, _max_sort, _max_sort, _max_sort, _max_sort,
+            COALESCE((_task ->> 'total_minutes')::NUMERIC, 0)
+        )
+        RETURNING id INTO _task_id_new;
 
-            INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, project_id)
+        INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, project_id)
+        VALUES (_task_id_new, _team_id, 'status', _user_id, 'update', NULL, _default_status_id, _project_id);
+
+        IF (_task -> 'sub_tasks') IS NOT NULL AND JSON_ARRAY_LENGTH(_task -> 'sub_tasks') > 0 THEN
+            FOR _subtask IN SELECT * FROM JSON_ARRAY_ELEMENTS(_task -> 'sub_tasks')
+            LOOP
+                _max_sort := _max_sort + 1;
+
+                INSERT INTO tasks (
+                    name, priority_id, project_id, reporter_id, status_id,
+                    parent_task_id,
+                    sort_order, roadmap_sort_order,
+                    status_sort_order, priority_sort_order, phase_sort_order, member_sort_order,
+                    total_minutes
+                )
                 VALUES (
-                        _task_id_new,
-                        (SELECT team_id FROM projects WHERE id = _project_id),
-                        'status',
-                        _user_id,
-                        'update',
-                        NULL,
-                        (SELECT id FROM task_statuses WHERE project_id = _project_id::UUID AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)LIMIT 1),
-                        _project_id
-                        );
+                    TRIM((_subtask ->> 'name')::TEXT),
+                    _default_priority_id, _project_id, _user_id, _default_status_id,
+                    _task_id_new,
+                    _max_sort, _max_sort, _max_sort, _max_sort, _max_sort, _max_sort,
+                    COALESCE((_subtask ->> 'total_minutes')::NUMERIC, 0)
+                )
+                RETURNING id INTO _subtask_id_new;
 
-        END LOOP;
+                INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, project_id)
+                VALUES (_subtask_id_new, _team_id, 'status', _user_id, 'update', NULL, _default_status_id, _project_id);
+
+                IF (_subtask -> 'sub_tasks') IS NOT NULL AND JSON_ARRAY_LENGTH(_subtask -> 'sub_tasks') > 0 THEN
+                    FOR _grandchild IN SELECT * FROM JSON_ARRAY_ELEMENTS(_subtask -> 'sub_tasks')
+                    LOOP
+                        _max_sort := _max_sort + 1;
+
+                        INSERT INTO tasks (
+                            name, priority_id, project_id, reporter_id, status_id,
+                            parent_task_id,
+                            sort_order, roadmap_sort_order,
+                            status_sort_order, priority_sort_order, phase_sort_order, member_sort_order,
+                            total_minutes
+                        )
+                        VALUES (
+                            TRIM((_grandchild ->> 'name')::TEXT),
+                            _default_priority_id, _project_id, _user_id, _default_status_id,
+                            _subtask_id_new,
+                            _max_sort, _max_sort, _max_sort, _max_sort, _max_sort, _max_sort,
+                            COALESCE((_grandchild ->> 'total_minutes')::NUMERIC, 0)
+                        )
+                        RETURNING id INTO _grandchild_id_new;
+
+                        INSERT INTO task_activity_logs (task_id, team_id, attribute_type, user_id, log_type, old_value, new_value, project_id)
+                        VALUES (_grandchild_id_new, _team_id, 'status', _user_id, 'update', NULL, _default_status_id, _project_id);
+                    END LOOP;
+                END IF;
+            END LOOP;
+        END IF;
+    END LOOP;
 
     RETURN JSON_BUILD_OBJECT('id', _project_id);
 END;
@@ -5104,8 +5267,10 @@ BEGIN
     RETURN EXISTS (
         SELECT 1
         FROM teams t1
-        JOIN teams t2 ON t1.user_id = t2.user_id
-        WHERE t1.id = _team_id_in AND t2.id = _team_id
+        JOIN teams t2 ON t1.organization_id = t2.organization_id
+        WHERE t1.id = _team_id_in
+          AND t2.id = _team_id
+          AND t1.organization_id IS NOT NULL
     );
 END;
 $$;
@@ -5977,7 +6142,13 @@ BEGIN
         use_weighted_progress    = COALESCE((_body ->> 'use_weighted_progress')::BOOLEAN, FALSE),
         use_time_progress        = COALESCE((_body ->> 'use_time_progress')::BOOLEAN, FALSE),
         auto_assign_task_creator = COALESCE((_body ->> 'auto_assign_task_creator')::BOOLEAN, FALSE),
-        restrict_task_creation   = COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE)
+        restrict_task_creation   = COALESCE((_body ->> 'restrict_task_creation')::BOOLEAN, FALSE),
+        phase_assignees_enabled  = COALESCE((_body ->> 'phase_assignees_enabled')::BOOLEAN, FALSE),
+        restrict_tasks_to_assignee = CASE
+            WHEN (_body::JSONB) ? 'restrict_tasks_to_assignee'
+            THEN COALESCE((_body ->> 'restrict_tasks_to_assignee')::BOOLEAN, FALSE)
+            ELSE restrict_tasks_to_assignee
+        END
     WHERE id = (_body ->> 'id')::UUID
       AND team_id = _team_id
     RETURNING id INTO _project_id;
@@ -6594,39 +6765,74 @@ DECLARE
 END
 $$;
 
-CREATE OR REPLACE FUNCTION update_task_template(_id uuid, _name text, _tasks json, _team_id uuid) RETURNS json
+CREATE OR REPLACE FUNCTION update_task_template(_id uuid, _name text, _tasks json, _team_id uuid)
+    RETURNS json
     LANGUAGE plpgsql
 AS
 $$
 DECLARE
-    _task JSON;
-
+    _task          JSON;
+    _subtask       JSON;
+    _grandchild    JSON;
+    _parent_name   TEXT;
+    _subtask_name  TEXT;
 BEGIN
-
-    -- check whether the project name is already in
-    IF EXISTS(
-        SELECT name FROM task_templates WHERE LOWER(name) = LOWER(_name)
-                                    AND team_id = _team_id AND id != _id
-    )
-    THEN
+    IF EXISTS (
+        SELECT 1 FROM task_templates
+        WHERE LOWER(name) = LOWER(_name) AND team_id = _team_id AND id != _id
+    ) THEN
         RAISE 'TASK_TEMPLATE_EXISTS_ERROR:%', _name;
     END IF;
 
     UPDATE task_templates SET name = _name, updated_at = NOW() WHERE id = _id;
 
-    -- delete all existing tasks for the selected template
     DELETE FROM task_templates_tasks WHERE template_id = _id;
 
-    -- insert tasks for task templates
     FOR _task IN SELECT * FROM JSON_ARRAY_ELEMENTS(_tasks)
-        LOOP
-            INSERT INTO task_templates_tasks (template_id, name) VALUES (_id, (_task ->> 'name')::TEXT);
-        END LOOP;
+    LOOP
+        _parent_name := TRIM((_task ->> 'name')::TEXT);
 
-    RETURN JSON_BUILD_OBJECT(
-        'id', _id,
-        'template_name', _name
+        -- Level 1
+        INSERT INTO task_templates_tasks (template_id, name, total_minutes, parent_task_name)
+        VALUES (
+            _id,
+            _parent_name,
+            COALESCE((_task ->> 'total_minutes')::NUMERIC, 0),
+            NULL
         );
+
+        -- Level 2
+        IF (_task -> 'sub_tasks') IS NOT NULL AND JSON_ARRAY_LENGTH(_task -> 'sub_tasks') > 0 THEN
+            FOR _subtask IN SELECT * FROM JSON_ARRAY_ELEMENTS(_task -> 'sub_tasks')
+            LOOP
+                _subtask_name := TRIM((_subtask ->> 'name')::TEXT);
+
+                INSERT INTO task_templates_tasks (template_id, name, total_minutes, parent_task_name)
+                VALUES (
+                    _id,
+                    _subtask_name,
+                    COALESCE((_subtask ->> 'total_minutes')::NUMERIC, 0),
+                    _parent_name
+                );
+
+                -- Level 3
+                IF (_subtask -> 'sub_tasks') IS NOT NULL AND JSON_ARRAY_LENGTH(_subtask -> 'sub_tasks') > 0 THEN
+                    FOR _grandchild IN SELECT * FROM JSON_ARRAY_ELEMENTS(_subtask -> 'sub_tasks')
+                    LOOP
+                        INSERT INTO task_templates_tasks (template_id, name, total_minutes, parent_task_name)
+                        VALUES (
+                            _id,
+                            TRIM((_grandchild ->> 'name')::TEXT),
+                            COALESCE((_grandchild ->> 'total_minutes')::NUMERIC, 0),
+                            _subtask_name
+                        );
+                    END LOOP;
+                END IF;
+            END LOOP;
+        END IF;
+    END LOOP;
+
+    RETURN JSON_BUILD_OBJECT('id', _id, 'template_name', _name);
 END
 $$;
 

@@ -57,16 +57,25 @@ export interface ProjectPhaseResponse {
   start_date: string | null;
   end_date: string | null;
   sort_index: number;
+  todo_count?: number;
+  doing_count?: number;
+  done_count?: number;
   todo_progress: number;
   doing_progress: number;
   done_progress: number;
   total_tasks: number;
+  assignee_scope_active?: boolean;
 }
 
 // Roadmap-only display ordering — never persisted, never touches sort_index.
 // 'manual' returns phase milestones in their existing (backend drag-order) sequence.
-// 'chronological' sorts by each milestone's already-resolved `start_date`. Undated
-// milestones sort last, preserving their relative order (stable sort).
+// 'chronological' sorts by each milestone's already-resolved `start_date` (set by
+// transformToGanttTasks to the phase's own date, or — when the phase has none — a
+// fallback derived from its child tasks' dates, which is what the UI actually
+// displays). Sorting post-transform, rather than on the raw phase rows, keeps this
+// in sync with what's on screen. Undated milestones (including the synthetic
+// "Unmapped" one, always last pre-sort) sort last, keeping their relative order
+// (stable sort) among themselves.
 export const sortPhasesForDisplay = (milestones: GanttTask[], mode: PhaseSortMode): GanttTask[] => {
   if (mode !== 'chronological') return milestones;
 
@@ -137,8 +146,7 @@ export const roadmapApi = createApi({
     },
     credentials: 'include',
   }),
-  // No tagTypes: cache invalidation is driven by explicit refetch() calls
-  // (mutations, socket events) in ProjectViewGantt rather than RTK Query tags.
+  tagTypes: ['RoadmapTasks'],
   endpoints: builder => ({
     getRoadmapTasks: builder.query<
       IServerResponse<RoadmapTasksResponse[]>,
@@ -151,6 +159,9 @@ export const roadmapApi = createApi({
         });
         return `${rootUrl}/roadmap-tasks?${params.toString()}`;
       },
+      providesTags: (_result, _error, { projectId }) => [
+        { type: 'RoadmapTasks', id: projectId },
+      ],
       // Data is kept for a short window so switching tabs and back (or a
       // focus event) doesn't force a full refetch; mutations/socket events
       // already trigger explicit refetch() calls from ProjectViewGantt.
@@ -314,6 +325,9 @@ export const transformToGanttTasks = (
       todo_progress: phase.todo_progress,
       doing_progress: phase.doing_progress,
       done_progress: phase.done_progress,
+      todo_count: phase.todo_count,
+      doing_count: phase.doing_count,
+      done_count: phase.done_count,
       total_tasks: phase.total_tasks,
       // No-date tasks are kept here (not filtered out) so they still show up under
       // their phase — the timeline bar handles the missing-dates case on its own.
@@ -563,24 +577,37 @@ const transformTask = (task: RoadmapTasksResponse, level: number = 0, projectCol
     // Normalize completion: if backend marks task as done, force 100% progress
     progress: task.done ? 100 : task.progress,
     dependencies: task.dependencies.map(dep => dep.related_task_id),
-    dependencyType: (task.dependencies[0]?.dependency_type as any) || 'blocked_by',
-    parent_id: task.parent_task_id,
-    children: task.subtasks.map(subtask => ({
-      id: subtask.id,
-      name: subtask.name,
-      start_date: subtask.start_date ? new Date(subtask.start_date) : null,
-      end_date: subtask.end_date ? new Date(subtask.end_date) : null,
-      // Normalize completion for subtasks as well
-      progress: subtask.done ? 100 : subtask.progress,
-      parent_id: subtask.parent_task_id,
-      level: level + 1,
-      type: 'task',
-      phase_id: subtask.phase_id, // Subtasks might still use direct phase_id
+    dependencyRecords: task.dependencies.map(dep => ({
+      id: dep.id,
+      task_id: task.id,
+      related_task_id: dep.related_task_id,
+      dependency_type: (dep.dependency_type as GanttTask['dependencyType']) || 'blocked_by',
     })),
+    dependencyType: (task.dependencies[0]?.dependency_type as GanttTask['dependencyType']) || 'blocked_by',
+    parent_id: task.parent_task_id,
+    children: task.subtasks.map(subtask => {
+      const subtaskPhaseId = subtask.phase_id ?? null;
+      return {
+        id: subtask.id,
+        name: subtask.name,
+        start_date: subtask.start_date ? new Date(subtask.start_date) : null,
+        end_date: subtask.end_date ? new Date(subtask.end_date) : null,
+        // Normalize completion for subtasks as well
+        progress: subtask.done ? 100 : subtask.progress,
+        parent_id: subtask.parent_task_id,
+        level: level + 1,
+        type: 'task',
+        phase_id: subtaskPhaseId,
+      };
+    }),
     level,
     expanded: true,
     color: projectColor || task.status_color || task.priority_color,
-    assignees: task.assignees.map(a => a.assignee_name),
+    assignees: task.assignees.map(a => ({
+      team_member_id: a.team_member_id,
+      assignee_name: a.assignee_name,
+      avatar_url: a.avatar_url,
+    })),
     priority: task.priority_name,
     status: task.status_name,
     phase_id: taskPhaseId,
@@ -603,6 +630,9 @@ export const transformToGanttPhases = (apiPhases: ProjectPhaseResponse[]): Gantt
     todo_progress: phase.todo_progress,
     doing_progress: phase.doing_progress,
     done_progress: phase.done_progress,
+    todo_count: phase.todo_count,
+    doing_count: phase.doing_count,
+    done_count: phase.done_count,
     total_tasks: phase.total_tasks,
   }));
 };

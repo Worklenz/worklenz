@@ -48,12 +48,12 @@ export const RecurringTasksFilters: React.FC<RecurringTasksFiltersProps> = ({
 
   const projectOptions = (projectsData?.body?.data || []).map(p => ({
     value: p.id as string,
-    label: p.name as string,
+    label: (p.name || p.id || '') as string,
   }));
 
   const memberOptions = members.map(m => ({
     value: m.id as string,
-    label: m.name as string,
+    label: (m.name || m.email || m.id || '') as string,
   }));
 
   const recurTypeOptions = [

@@ -4,8 +4,13 @@
   "cancelText": "Anulo",
   "saveText": "Ruaj",
   "templateNameText": "Emri i Shabllonit",
+  "templateNameRequired": "Kërkohet emri i shabllonit",
   "selectedTasks": "Detyrat e Përzgjedhura",
   "removeTask": "Hiq",
   "cancelButton": "Anulo",
-  "saveButton": "Ruaj"
+  "saveButton": "Ruaj",
+  "includeSubtasks": "Përfshi hierarkinë e nëndetyrës",
+  "subtasksLabel": "nëndetyrë(t)",
+  "subtaskCount": "{{count}} nëndetyrë(t)",
+  "subtaskHierarchyInfo": "Kur zgjidhet, nëndetyrat ruhen nën detyrën e tyre mëmë. Kur nuk është zgjedhur, nën-detyrat ruhen si detyra kryesore të veçanta."
 }

@@ -48,6 +48,7 @@ export const tasksCustomColumnsService = {
       width: number;
       is_visible: boolean;
       configuration: any;
+      lock_field_type?: boolean;
     }
   ): Promise<IServerResponse<any>> => {
     const response = await apiClient.put(`/api/v1/custom-columns/${columnId}`, columnData);

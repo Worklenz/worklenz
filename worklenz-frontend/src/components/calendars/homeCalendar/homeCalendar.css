@@ -434,3 +434,32 @@
 .home-calendar-dark .home-calendar-view-toggle-btn {
   border-color: #303030;
 }
+
+/* ── Time-off indicators ──────────────────────────────────────── */
+.home-calendar__indicators {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home-calendar__time-off-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--ant-colorWarningBg, #fff7e6);
+  color: var(--ant-colorWarning, #d46b08);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  border: 0;
+  cursor: pointer;
+}
+
+.home-calendar__time-off-pill:focus-visible {
+  outline: 2px solid var(--ant-colorPrimary, #1677ff);
+  outline-offset: 1px;
+}

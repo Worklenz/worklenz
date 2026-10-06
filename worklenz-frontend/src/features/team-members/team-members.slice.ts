@@ -64,7 +64,7 @@ export const updateTeamMember = createAsyncThunk(
 
 export const deleteTeamMember = createAsyncThunk(
   'teamMembers/delete',
-  async ({ id, email }: { id: string; email: string }) => {
+  async ({ id, email }: { id: string; email?: string }) => {
     const response = await teamMembersApiService.delete(id, email);
     return response;
   }

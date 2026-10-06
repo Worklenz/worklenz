@@ -15,7 +15,8 @@
     "hide-start-date": "隐藏开始日期",
     "show-start-date": "显示开始日期",
     "hours": "小时",
-    "minutes": "分钟"
+    "minutes": "分钟",
+    "recurring": "重复"
   },
   "description": {
     "title": "描述",

@@ -103,7 +103,8 @@
     "assignees": "Zugewiesene",
     "searchMembers": "Nach Name oder E-Mail suchen…",
     "noMembersFound": "Keine Mitglieder gefunden",
-    "time": "Zeit"
+    "time": "Zeit",
+    "markTimeOff": "Abwesenheit / Urlaub markieren"
   },
   "homeCalendar": {
     "todayButton": "Heute",
@@ -200,9 +201,9 @@
     "hoursLabel": "Stunden",
     "hoursPlaceholder": "0",
     "minutesLabel": "Minuten",
-    "requiredDate": "* Datum",
-    "requiredStartTime": "* Startzeit",
-    "requiredEndTime": "* Endzeit",
+    "requiredDate": "Datum",
+    "requiredStartTime": "Startzeit",
+    "requiredEndTime": "Endzeit",
     "workDescriptionLabel": "Arbeitsbeschreibung",
     "workDescriptionPlaceholder": "Woran haben Sie gearbeitet?",
     "submitButton": "Zeit erfassen",
@@ -398,5 +399,15 @@
     "loadTasksError": "Aufgaben und Währung für dieses Projekt konnten nicht geladen werden.",
     "successMessage": "Fixkosten zur Aufgabe hinzugefügt",
     "errorMessage": "Fehler beim Hinzufügen von Fixkosten zur Aufgabe"
+  },
+  "timeOff": {
+    "timeOff": "Abwesenheit",
+    "off": "frei",
+    "types": {
+      "vacation": "Urlaub",
+      "sick": "Krank",
+      "personal": "Persönlich",
+      "other": "Sonstiges"
+    }
   }
 }

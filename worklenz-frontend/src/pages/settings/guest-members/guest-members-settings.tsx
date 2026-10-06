@@ -48,12 +48,20 @@ interface IGuestMemberViewModel extends ITeamMemberViewModel {
 
 const GuestMembersSettings = () => {
   const { t } = useTranslation('settings/guest-members');
-  const { t: tCommon } = useTranslation('common');
   const dispatch = useAppDispatch();
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
 
   useDocumentTitle(t('title', { defaultValue: 'Guest Members' }));
+
+  const getLocalizedAccessLevel = useCallback(
+    (accessLevelKey?: string) => {
+      if (!accessLevelKey) return null;
+      const normalizedKey = accessLevelKey.trim().toUpperCase();
+      return t(`accessLevels.${normalizedKey}`, { defaultValue: accessLevelKey });
+    },
+    [t]
+  );
 
   const [model, setModel] = useState<ITeamMembersViewModel>({ total: 0, data: [] });
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -81,7 +89,7 @@ const GuestMembersSettings = () => {
         setModel(res.body);
       } else {
         // Handle error response from API
-        message.error(res.message || 'Failed to fetch guest members');
+        message.error(res.message || t('fetchFailed', { defaultValue: 'Failed to fetch guest members' }));
         setModel({ total: 0, data: [] });
       }
     } catch (error: unknown) {
@@ -109,19 +117,15 @@ const GuestMembersSettings = () => {
         record.email || ''
       );
 
+      // Success and failure toasts are emitted globally by the api-client
+      // interceptor from the ServerResponse message; don't toast again here
+      // (see issue 2176 — duplicate messages).
       if (res.done) {
         await getGuestMembers();
         dispatch(fetchBillingInfo());
-        message.success(
-          record.active
-            ? t('guestDeactivatedSuccess', { defaultValue: 'Guest member deactivated successfully' })
-            : t('guestActivatedSuccess', { defaultValue: 'Guest member activated successfully' })
-        );
-      } else {
-        message.error(res.message || t('actionFailed', { defaultValue: 'Action failed' }));
       }
     } catch (error) {
-      message.error(t('errorOccurred', { defaultValue: 'An error occurred' }));
+      // Network/unexpected errors are surfaced by the api-client error interceptor.
     } finally {
       setIsLoading(false);
     }
@@ -131,20 +135,16 @@ const GuestMembersSettings = () => {
     if (!record.id) return;
     try {
       setIsLoading(true);
-      
-      // Delete guest member
+
+      // Delete guest member. Toasts are handled globally by the api-client
+      // interceptor (see issue 2176 — avoid duplicate messages).
       const res = await projectMembersApiService.deleteGuestMember(record.id);
       if (res.done) {
         await getGuestMembers();
         dispatch(fetchBillingInfo());
-        message.success(
-          t('guestDeletedSuccess', { defaultValue: 'Guest member removed successfully' })
-        );
-      } else {
-        message.error(res.message || t('actionFailed', { defaultValue: 'Action failed' }));
       }
     } catch (error) {
-      message.error(t('errorOccurred', { defaultValue: 'An error occurred' }));
+      // Network/unexpected errors are surfaced by the api-client error interceptor.
     } finally {
       setIsLoading(false);
     }
@@ -287,11 +287,18 @@ const GuestMembersSettings = () => {
         dataIndex: 'team_access',
         title: t('teamAccessColumn', { defaultValue: 'Team Access' }),
         sorter: true,
-        render: (_, record: IGuestMemberViewModel) => (
-          <Typography.Text type="secondary">
-            {record.team_access ? `${record.team_access} Access` : t('teamAccessEmpty', { defaultValue: 'Guest Access' })}
-          </Typography.Text>
-        ),
+        render: (_, record: IGuestMemberViewModel) => {
+          const accessLevelKey = record.team_access || '';
+          const localizedAccess = getLocalizedAccessLevel(accessLevelKey);
+
+          return (
+            <Typography.Text type="secondary">
+              {localizedAccess
+                ? t('teamAccessValue', { access: localizedAccess, defaultValue: '{{access}} Access' })
+                : t('teamAccessEmpty', { defaultValue: 'Guest Access' })}
+            </Typography.Text>
+          );
+        },
       },
       {
         key: 'actionBtns',
@@ -366,7 +373,11 @@ const GuestMembersSettings = () => {
 
   return (
     <Flex vertical gap={16}>
-      <PinRouteToNavbarButton />
+      <PinRouteToNavbarButton
+        name="guest-members"
+        path="/worklenz/settings/guest-members"
+        adminOnly={true}
+      />
 
       <Card
         style={{ width: '100%' }}
@@ -414,7 +425,7 @@ const GuestMembersSettings = () => {
             pageSize: pagination.pageSize,
             total: model.total,
             showSizeChanger: true,
-            showTotal: total => `Total ${total} items`,
+            showTotal: total => t('totalText', { count: total, defaultValue: 'Total {{count}} items' }),
             pageSizeOptions: PAGE_SIZE_OPTIONS,
           }}
           onChange={handleTableChange}

@@ -1,0 +1,11 @@
+{
+  "title": "请求",
+  "table": {
+    "header": {
+      "service": "服务",
+      "status": "状态",
+      "time": "时间",
+      "lastChat": "最后一次聊天"
+    }
+  }
+}

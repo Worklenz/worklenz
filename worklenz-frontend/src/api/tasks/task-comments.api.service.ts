@@ -21,6 +21,13 @@ const taskCommentsApiService = {
     return response.data;
   },
 
+  resolveShortLink: async (
+    commentId: string
+  ): Promise<IServerResponse<{ comment_id: string; task_id: string; project_id: string }>> => {
+    const response = await apiClient.get(`${API_BASE_URL}/task-comments/resolve/${commentId}`);
+    return response.data;
+  },
+
   update: async (id: string, body: ITaskComment): Promise<IServerResponse<ITaskComment>> => {
     const response = await apiClient.put(`${API_BASE_URL}/task-comments/${id}`, body);
     return response.data;
@@ -33,10 +40,13 @@ const taskCommentsApiService = {
     return response.data;
   },
 
-  download: async (id: string, filename: string): Promise<IServerResponse<any>> => {
-    const response = await apiClient.get(
-      `${API_BASE_URL}/task-comments/download?id=${id}&file=${encodeURIComponent(filename)}`
-    );
+  download: async (
+    id: string,
+    filename: string
+  ): Promise<IServerResponse<{ url: string; expires_in: number } | string>> => {
+    const response = await apiClient.get<
+      IServerResponse<{ url: string; expires_in: number } | string>
+    >(`${API_BASE_URL}/task-comments/download?id=${id}&file=${encodeURIComponent(filename)}`);
     return response.data;
   },
 

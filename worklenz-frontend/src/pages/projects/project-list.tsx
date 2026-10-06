@@ -696,7 +696,9 @@ const ProjectList: React.FC = () => {
         </div>
       </div>
 
-      <Card className="project-card">
+      <Card
+        className={`project-card${isListView ? '' : ' project-card--group'}`}
+      >
         {isListView ? (
           <>
             <div ref={tableWrapperRef} style={TABLE_WRAPPER_STYLE}>

@@ -7,7 +7,7 @@
   "actionsColumn": "Ações",
   "fileIconAlt": "Ícone do Arquivo",
   "emptyText": "Ainda não há arquivos.",
-  "uploadButton": "Enviar",
+  "uploadButton": "Enviar Arquivo",
   "uploaderTitle": "Enviar Arquivos",
   "filePickerHint": "Arraste & Solte arquivos ou clique para navegar",
   "uploadHintLimit": "PDF, imagens, documentos e arquivos. Máx. {{maxSize}} MB por arquivo.",

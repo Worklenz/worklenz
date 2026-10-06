@@ -42,6 +42,7 @@ const LicenseExpired = () => {
   const session = authService?.getCurrentSession();
   const subscriptionType = (session?.subscription_type as ISUBSCRIPTION_TYPE) || ISUBSCRIPTION_TYPE.TRIAL;
   const isDark = themeMode === 'dark';
+  const isOwnerOrAdmin = authService?.isOwnerOrAdmin() ?? false;
 
   useEffect(() => {
     dispatch(fetchTeams());
@@ -282,39 +283,54 @@ const iconCircleBorder = isDark ? 'rgba(24,144,255,0.4)'  : '#91caff';
             ))}
           </div>
 
-          {/* Upgrade Now */}
-          <button
-            onClick={handleUpgrade}
-            disabled={isContactingSupport}
-            style={{
-              width: '100%',
-              height: 48,
-              borderRadius: 10,
-              border: 'none',
-              background: '#1677ff',
-boxShadow: '0 4px 16px rgba(22,119,255,0.35)',
-              color: '#ffffff',
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: isContactingSupport ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              marginBottom: 10,
-              transition: 'opacity 0.2s ease',
-              opacity: isContactingSupport ? 0.7 : 1,
-            }}
-            onMouseEnter={e => { if (!isContactingSupport) (e.currentTarget as HTMLElement).style.opacity = '0.9'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
-          >
-          <span style={{ fontSize: 17, lineHeight: 1 }}>🚀</span>
-<span>{getUpgradeText()}</span>
+          {/* Upgrade Now — owners/admins only */}
+          {isOwnerOrAdmin ? (
+            <button
+              onClick={handleUpgrade}
+              disabled={isContactingSupport}
+              style={{
+                width: '100%',
+                height: 48,
+                borderRadius: 10,
+                border: 'none',
+                background: '#1677ff',
+                boxShadow: '0 4px 16px rgba(22,119,255,0.35)',
+                color: '#ffffff',
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: isContactingSupport ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                marginBottom: 10,
+                transition: 'opacity 0.2s ease',
+                opacity: isContactingSupport ? 0.7 : 1,
+              }}
+              onMouseEnter={e => { if (!isContactingSupport) (e.currentTarget as HTMLElement).style.opacity = '0.9'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+            >
+              <span style={{ fontSize: 17, lineHeight: 1 }}>🚀</span>
+              <span>{getUpgradeText()}</span>
+            </button>
+          ) : (
+            <Paragraph
+              style={{
+                textAlign: 'center',
+                marginBottom: 10,
+                fontSize: 14,
+                color: subtitleColor,
+              }}
+            >
+              {t('license-expired-contact-owner', {
+                defaultValue:
+                  "Your team's subscription has expired. Please contact your team owner to renew.",
+              })}
+            </Paragraph>
+          )}
 
-          </button>
-
-          {/* Continue with Free Plan */}
-          <button
+          {/* Continue with Free Plan — owners/admins only */}
+          {isOwnerOrAdmin && <button
             onClick={() => navigate('/worklenz/admin-center/billing')}
             style={{
               width: '100%',
@@ -335,7 +351,7 @@ boxShadow: '0 4px 16px rgba(22,119,255,0.35)',
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'}
           >
             {t('switch-to-free-plan') || 'Continue with Free Plan'}
-          </button>
+          </button>}
 
           {/* OR SWITCH TEAM */}
           {teamsList && teamsList.length > 0 && (

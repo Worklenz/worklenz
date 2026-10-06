@@ -195,18 +195,20 @@ export default class AdminCenterController extends WorklenzControllerBase {
                                           ORDER BY created_at DESC
                                           LIMIT 1)
                                       )) AS last_logged
-                                FROM team_member_info_view outer_tmiv
-                                WHERE outer_tmiv.team_id IN (SELECT id
-                                                            FROM teams
-                                                            WHERE teams.user_id = $1) ${searchQuery}
-                                GROUP BY email
-                                ORDER BY email LIMIT $2 OFFSET $3) t) AS data
-                  FROM (SELECT DISTINCT email
-                        FROM team_member_info_view outer_tmiv
-                        WHERE outer_tmiv.team_id IN
-                              (SELECT id
-                              FROM teams
-                              WHERE teams.user_id = $1) ${searchQuery}) AS total) rec;`;
+                                 FROM team_member_info_view outer_tmiv
+                                 WHERE outer_tmiv.team_id IN (SELECT id
+                                                             FROM teams
+                                                             WHERE teams.user_id = $1)
+                                   ${searchQuery}
+                                 GROUP BY email
+                                 ORDER BY email LIMIT $2 OFFSET $3) t) AS data
+                   FROM (SELECT DISTINCT email
+                         FROM team_member_info_view outer_tmiv
+                         WHERE outer_tmiv.team_id IN
+                               (SELECT id
+                               FROM teams
+                               WHERE teams.user_id = $1)
+                           ${searchQuery}) AS total) rec;`;
     const result = await db.query(q, [req.user?.owner_id, size, offset, ...searchParams]);
     const [data] = result.rows;
 
@@ -1535,9 +1537,10 @@ export default class AdminCenterController extends WorklenzControllerBase {
 
     const organizationId = orgResult.rows[0].id;
 
-    // Check if settings already exist
-    const checkQ = `SELECT id FROM organization_holiday_settings WHERE organization_id = $1;`;
+    // Check if settings already exist (also capture previous country for cleanup)
+    const checkQ = `SELECT id, country_code FROM organization_holiday_settings WHERE organization_id = $1;`;
     const checkResult = await db.query(checkQ, [organizationId]);
+    const previousCountryCode = checkResult.rows[0]?.country_code as string | null | undefined;
 
     let result;
     if (checkResult.rows.length > 0) {
@@ -1569,65 +1572,56 @@ export default class AdminCenterController extends WorklenzControllerBase {
       ]);
     }
 
-    // If auto_sync_holidays is enabled and country is Sri Lanka, populate holidays
+    // When country changes, remove previously auto-synced official holidays from
+    // organization_holidays so they no longer appear alongside the new country's holidays.
+    // Manual holidays (is_auto_synced = FALSE) are always kept, even when they share a
+    // name/date with an official holiday (e.g. Christmas Day). Legacy synced rows were
+    // flagged by the 20260921120000 migration.
+    if (previousCountryCode && previousCountryCode !== country_code) {
+      try {
+        const cleanupQ = `
+          DELETE FROM organization_holidays
+          WHERE organization_id = $1
+            AND is_auto_synced = TRUE
+        `;
+        await db.query(cleanupQ, [organizationId]);
+      } catch (error) {
+        console.error("Error cleaning up previous country holidays:", error);
+      }
+    }
+
+    // Official holidays live in country_holidays and are merged at read time.
+    // Only ensure Sri Lankan country_holidays are populated — do not copy them
+    // into organization_holidays (that caused Poya days to stick after country change).
     if (auto_sync_holidays && country_code === "LK") {
       try {
-        // Get the default holiday type (Public Holiday)
-        const typeQ = `SELECT id FROM holiday_types WHERE name = 'Public Holiday' LIMIT 1`;
-        const typeResult = await db.query(typeQ);
-        const holidayTypeId = typeResult.rows[0]?.id;
+        const {
+          HolidayDataProvider,
+        } = require("../services/holiday-data-provider");
 
-        if (!holidayTypeId) {
-          console.warn("Default holiday type 'Public Holiday' not found");
-        } else {
-          // Import the holiday data provider
-          const {
-            HolidayDataProvider,
-          } = require("../services/holiday-data-provider");
+        const currentYear = new Date().getFullYear();
+        const years = [currentYear, currentYear + 1];
 
-          // Get current year and next year to ensure we have recent data
-          const currentYear = new Date().getFullYear();
-          const years = [currentYear, currentYear + 1];
+        for (const year of years) {
+          const sriLankanHolidays =
+            await HolidayDataProvider.getSriLankanHolidays(year);
 
-          for (const year of years) {
-            const sriLankanHolidays =
-              await HolidayDataProvider.getSriLankanHolidays(year);
+          for (const holiday of sriLankanHolidays) {
+            const insertCountryQuery = `
+              INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
+              VALUES ($1, $2, $3, $4, $5)
+              ON CONFLICT (country_code, name, date) DO NOTHING
+            `;
 
-            for (const holiday of sriLankanHolidays) {
-              // Insert into organization_holidays so they show in the calendar
-              const insertOrgQuery = `
-                INSERT INTO organization_holidays (organization_id, holiday_type_id, name, description, date, is_recurring)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (organization_id, date) DO NOTHING
-              `;
-
-              await db.query(insertOrgQuery, [
-                organizationId,
-                holidayTypeId,
-                holiday.name,
-                holiday.description,
-                holiday.date,
-                holiday.is_recurring,
-              ]);
-
-              // Also store in country_holidays for reference
-              const insertCountryQuery = `
-                INSERT INTO country_holidays (country_code, name, description, date, is_recurring)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (country_code, name, date) DO NOTHING
-              `;
-
-              await db.query(insertCountryQuery, [
-                "LK",
-                holiday.name,
-                holiday.description,
-                holiday.date,
-                holiday.is_recurring,
-              ]);
-            }
+            await db.query(insertCountryQuery, [
+              "LK",
+              holiday.name,
+              holiday.description,
+              holiday.date,
+              holiday.is_recurring,
+            ]);
           }
         }
-
       } catch (error) {
         // Log error but don't fail the settings update
         console.error("Error syncing Sri Lankan holidays:", error);

@@ -4,7 +4,6 @@ import {
   Card,
   Divider,
   Flex,
-  Form,
   Select,
   Switch,
   TimePicker,
@@ -20,7 +19,10 @@ import { IDigestPreferences, INotificationSettings } from '@/types/settings/noti
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import logger from '@/utils/errorLogger';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { evt_settings_notifications_visit } from '@/shared/worklenz-analytics-events';
+import {
+  evt_settings_notifications_update,
+  evt_settings_notifications_visit,
+} from '@/shared/worklenz-analytics-events';
 
 const DEFAULT_DAILY_TIME = '09:00';
 const DEFAULT_WEEKLY_START_TIME = '08:00';
@@ -42,6 +44,7 @@ interface SettingsToggleRowProps {
   disabled: boolean;
   subTextStyle: React.CSSProperties;
   children?: React.ReactNode;
+  alwaysShowChildren?: boolean;
 }
 
 const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
@@ -52,6 +55,7 @@ const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
   disabled,
   subTextStyle,
   children,
+  alwaysShowChildren = false,
 }) => (
   <Flex vertical gap={8}>
     <Flex gap={10} align="center">
@@ -61,7 +65,7 @@ const SettingsToggleRow: React.FC<SettingsToggleRowProps> = ({
       </Typography.Title>
     </Flex>
     <Typography.Text style={subTextStyle}>{description}</Typography.Text>
-    {checked && children}
+    {(checked || alwaysShowChildren) && children}
   </Flex>
 );
 
@@ -76,6 +80,7 @@ interface DigestRowProps {
   subTextStyle: React.CSSProperties;
   channelLabel: string;
   timeLabel: string;
+  channelEmailLabel: string;
 }
 
 const DigestRow: React.FC<DigestRowProps> = ({
@@ -89,6 +94,7 @@ const DigestRow: React.FC<DigestRowProps> = ({
   subTextStyle,
   channelLabel,
   timeLabel,
+  channelEmailLabel,
 }) => (
   <SettingsToggleRow
     title={title}
@@ -97,6 +103,7 @@ const DigestRow: React.FC<DigestRowProps> = ({
     onChange={onToggle}
     disabled={disabled}
     subTextStyle={subTextStyle}
+    alwaysShowChildren
   >
     <Flex gap={16} align="center" wrap="wrap" style={{ marginTop: 4 }}>
       <Flex gap={6} align="center">
@@ -122,7 +129,7 @@ const DigestRow: React.FC<DigestRowProps> = ({
           size="small"
           disabled
           style={{ width: 90 }}
-          options={[{ value: 'email', label: 'Email' }]}
+          options={[{ value: 'email', label: channelEmailLabel }]}
         />
       </Flex>
     </Flex>
@@ -131,7 +138,6 @@ const DigestRow: React.FC<DigestRowProps> = ({
 
 const NotificationsSettings = () => {
   const { t } = useTranslation('settings/notifications');
-  const [form] = Form.useForm();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { trackMixpanelEvent } = useMixpanelTracking();
 
@@ -243,6 +249,7 @@ const NotificationsSettings = () => {
       const res = await profileSettingsApiService.updateDigestPreferences(payload);
       if (res.done) {
         setDigestPrefs(res.body ?? payload);
+        trackMixpanelEvent(evt_settings_notifications_update);
         message.success(
           t('digestPreferencesSaved', { defaultValue: 'Your notification preferences have been saved' })
         );
@@ -252,7 +259,7 @@ const NotificationsSettings = () => {
     } finally {
       setIsSavingDigest(false);
     }
-  }, [digestPrefs, dailyTime, weeklyStartTime, weeklyEndTime, t]);
+  }, [digestPrefs, dailyTime, weeklyStartTime, weeklyEndTime, t, trackMixpanelEvent]);
 
   useEffect(() => {
     trackMixpanelEvent(evt_settings_notifications_visit);
@@ -349,6 +356,7 @@ const NotificationsSettings = () => {
           subTextStyle={subTextStyle}
           channelLabel={t('channelLabel', { defaultValue: 'Channel' })}
           timeLabel={t('timeLabel', { defaultValue: 'Send at' })}
+          channelEmailLabel={t('channelEmail', { defaultValue: 'Email' })}
         />
 
         <Divider style={{ marginBlock: 12 }} />
@@ -367,6 +375,7 @@ const NotificationsSettings = () => {
           subTextStyle={subTextStyle}
           channelLabel={t('channelLabel', { defaultValue: 'Channel' })}
           timeLabel={t('timeLabel', { defaultValue: 'Send at' })}
+          channelEmailLabel={t('channelEmail', { defaultValue: 'Email' })}
         />
 
         <Divider style={{ marginBlock: 12 }} />
@@ -385,6 +394,7 @@ const NotificationsSettings = () => {
           subTextStyle={subTextStyle}
           channelLabel={t('channelLabel', { defaultValue: 'Channel' })}
           timeLabel={t('timeLabel', { defaultValue: 'Send at' })}
+          channelEmailLabel={t('channelEmail', { defaultValue: 'Email' })}
         />
 
         <Flex justify="flex-end" style={{ marginTop: 20 }}>

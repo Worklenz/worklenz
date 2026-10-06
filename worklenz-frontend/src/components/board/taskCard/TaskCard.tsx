@@ -123,7 +123,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
 
   const handleDelete = () => {
     if (!task.id) return;
-    dispatch(deleteTask(task.id)); // Call delete function with taskId
+    dispatch(deleteTask({ taskId: task.id })); // Call delete function with taskId
   };
 
   const items: MenuProps['items'] = [
@@ -153,7 +153,7 @@ const TaskCard: React.FC<taskProps> = ({ task }) => {
     },
   ];
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,

@@ -12,6 +12,12 @@ exports.up = async (pgm) => {
 -- Version: v2.2.2
 -- Date: 2025-01-21
 
+-- Drop views if they exist to avoid column renaming or dependency errors
+DROP VIEW IF EXISTS team_lead_time_logs CASCADE;
+DROP VIEW IF EXISTS team_lead_member_performance CASCADE;
+DROP VIEW IF EXISTS team_lead_member_stats CASCADE;
+DROP VIEW IF EXISTS team_lead_managed_members CASCADE;
+
 -- View for team lead managed members (based on reports_to_member_id hierarchy)
 CREATE OR REPLACE VIEW team_lead_managed_members AS
 WITH RECURSIVE subordinates AS (

@@ -22,6 +22,7 @@ import { IDependencyType, ITaskDependency } from '@/types/tasks/task-dependency.
 import { ITaskViewModel } from '@/types/tasks/task.types';
 import { taskDependenciesApiService } from '@/api/tasks/task-dependencies.api.service';
 import { tasksApiService } from '@/api/tasks/tasks.api.service';
+import { roadmapApi } from '@/pages/projects/projectView/gantt/services/roadmap-api.service';
 import './dependencies-table.css';
 
 interface DependenciesTableProps {
@@ -51,8 +52,12 @@ const DependenciesTable = ({
   const [loadingTaskList, setLoadingTaskList] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const invalidateRoadmapTasks = () => {
+    if (!projectId) return;
+    dispatch(roadmapApi.util.invalidateTags([{ type: 'RoadmapTasks', id: projectId }]));
+  };
+
   const handleAddDependency = async (taskId: string) => {
-    console.log('taskId', taskId);
     if (!task.id) return;
 
     try {
@@ -67,6 +72,7 @@ const DependenciesTable = ({
         setIsDependencyInputShow(false);
         setTaskList([]);
         setSearchTerm('');
+        invalidateRoadmapTasks();
 
         // Update Redux state with dependency status
         dispatch(
@@ -106,6 +112,7 @@ const DependenciesTable = ({
       const res = await taskDependenciesApiService.deleteTaskDependency(dependencyId);
       if (res.done) {
         refreshTaskDependencies();
+        invalidateRoadmapTasks();
 
         // Update Redux state with dependency status
         // Check if there are any remaining dependencies

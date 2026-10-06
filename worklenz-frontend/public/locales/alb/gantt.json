@@ -28,6 +28,7 @@
     "startToFinishDependency": "Dependencë Nisje-Përfundim",
     "dependencyType": "Lloji i dependencës",
     "removeDependency": "Hiq",
+    "removeDependencyTooltip": "Hiq varësinë",
     "circularDependencyError": "Kjo do të krijonte një dependencë rrethor.",
     "dependencyCreatedSuccessfully": "Dependenca u krijua me sukses.",
     "dependencyRemovedSuccessfully": "Dependenca u hoq me sukses.",
@@ -56,7 +57,11 @@
     "collapseAll": "Mblidh të gjitha",
     "today": "Sot",
     "fullscreen": "Ekran i plotë",
-    "noDate": "Pa datë"
+    "noDate": "Pa datë",
+    "viewBy": "Shiko nga",
+    "sortBy": "Rendit sipas",
+    "sortManual": "Manuale",
+    "sortChronological": "Kronologjike"
   },
   "viewMode": {
     "day": "Ditë",
@@ -76,12 +81,15 @@
     "taskNameColumn": "Emri i detyrës",
     "addNewPhase": "Shto fazë të re",
     "addNewStatus": "Shto status të ri",
-    "noTasksAvailable": "Nuk ka detyra të disponueshme"
+    "noTasksAvailable": "Nuk ka detyra të disponueshme",
+    "setDates": "Vendosni data",
+    "clickToEditDates": "Klikoni për të modifikuar datat"
   },
   "roadmap": {
     "phasesAndTasks": "Fazat dhe detyrat",
     "tasksCount": "detyra",
-    "complete": "e përfunduar"
+    "complete": "e përfunduar",
+    "dragDisabledInChronological": "Kalo te Rendi manual për të tërhequr-rirenditur fazat"
   },
   "unscheduledTasksTitle": "Detyra të paplanifikuara",
   "noUnscheduledTasks": "Nuk ka detyra të paplanifikuara të disponueshme."

@@ -13,6 +13,8 @@ import {
   message,
   notification,
   theme,
+  Switch,
+  Tag,
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
@@ -20,6 +22,7 @@ import {
   FolderOutlined,
   ImportOutlined,
   MoreOutlined,
+  GlobalOutlined,
 } from '@/shared/antd-imports';
 import type { MenuProps } from '@/shared/antd-imports';
 
@@ -37,8 +40,28 @@ import { ITaskTemplatesGetResponse } from '@/types/settings/task-templates.types
 import { ProjectTemplateRenameModal } from '@/components/project-templates/project-template-rename-modal';
 import { ProjectTemplatePreviewModal } from '@/components/project-templates/project-template-preview-modal';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
+import { getRole } from '@/utils/session-helper';
+import { isAdminRole } from '@/types/roles/role.types';
 
 type TemplatesTab = 'project' | 'task';
+
+const OrganizationBadge: React.FC<{ label: string }> = ({ label }) => {
+  const { token } = theme.useToken();
+
+  return (
+    <Tag
+      icon={<GlobalOutlined />}
+      style={{
+        margin: 0,
+        color: token.colorPrimary,
+        background: token.colorPrimaryBg,
+        borderColor: token.colorPrimaryBorder,
+      }}
+    >
+      {label}
+    </Tag>
+  );
+};
 
 const gridStyle: React.CSSProperties = {
   display: 'grid',
@@ -64,6 +87,9 @@ interface ProjectTemplateCardProps {
   onUse: () => void;
   onRename: () => void;
   onDelete: () => void;
+  onScopeChange: (scope: 'team' | 'organization') => void;
+  scopeUpdating?: boolean;
+  canChangeScope?: boolean;
   t: (key: string, opts?: Record<string, unknown>) => string;
 }
 
@@ -73,10 +99,15 @@ const ProjectTemplateCard: React.FC<ProjectTemplateCardProps> = ({
   onUse,
   onRename,
   onDelete,
+  onScopeChange,
+  scopeUpdating = false,
+  canChangeScope = false,
   t,
 }) => {
   const { token } = theme.useToken();
   const color = template.color_code;
+  const canManage = template.can_manage !== false;
+  const isOrganizationScope = template.scope === 'organization';
 
   const menuItems: MenuProps['items'] = [
     {
@@ -91,28 +122,60 @@ const ProjectTemplateCard: React.FC<ProjectTemplateCardProps> = ({
       icon: <EyeOutlined />,
       onClick: onPreview,
     },
-    {
-      key: 'rename',
-      label: t('renameToolTip'),
-      icon: <EditOutlined />,
-      onClick: onRename,
-    },
-    {
-      key: 'delete',
-      label: t('deleteToolTip'),
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => {
-        Modal.confirm({
-          title: t('confirmText'),
-          okText: t('okText'),
-          okType: 'danger',
-          cancelText: t('cancelText'),
-          centered: true,
-          onOk: onDelete,
-        });
-      },
-    },
+    ...(canManage && canChangeScope
+      ? [
+          {
+            key: 'scope',
+            label: (
+              <Flex
+                justify="space-between"
+                align="center"
+                gap={16}
+                onClick={event => event.stopPropagation()}
+                onKeyDown={event => event.stopPropagation()}
+                role="presentation"
+              >
+                <span>{t('shareWithOrganization')}</span>
+                <Switch
+                  size="small"
+                  checked={isOrganizationScope}
+                  loading={scopeUpdating}
+                  onChange={checked =>
+                    onScopeChange(checked ? 'organization' : 'team')
+                  }
+                  aria-label={t('shareWithOrganization')}
+                />
+              </Flex>
+            ),
+          },
+        ]
+      : []),
+    ...(canManage
+      ? [
+          {
+            key: 'rename',
+            label: t('renameToolTip'),
+            icon: <EditOutlined />,
+            onClick: onRename,
+          },
+          {
+            key: 'delete',
+            label: t('deleteToolTip'),
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: t('confirmText'),
+                okText: t('okText'),
+                okType: 'danger',
+                cancelText: t('cancelText'),
+                centered: true,
+                onOk: onDelete,
+              });
+            },
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -140,14 +203,24 @@ const ProjectTemplateCard: React.FC<ProjectTemplateCardProps> = ({
           </Typography.Text>
         </Flex>
         <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-          <Button size="small" type="text" icon={<MoreOutlined />} />
+          <Button
+            size="small"
+            type="text"
+            icon={<MoreOutlined />}
+            aria-label={t('moreOptions')}
+          />
         </Dropdown>
       </Flex>
-      {template.created_at && (
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {calculateTimeGap(template.created_at)}
-        </Typography.Text>
-      )}
+      <Flex gap={8} align="center" wrap>
+        {isOrganizationScope && (
+          <OrganizationBadge label={t('organizationBadge')} />
+        )}
+        {template.created_at && (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {calculateTimeGap(template.created_at)}
+          </Typography.Text>
+        )}
+      </Flex>
     </Card>
   );
 };
@@ -156,51 +229,109 @@ interface TaskTemplateCardProps {
   template: ITaskTemplatesGetResponse;
   onEdit: () => void;
   onDelete: () => void;
+  onScopeChange: (scope: 'team' | 'organization') => void;
+  scopeUpdating?: boolean;
+  canChangeScope?: boolean;
   t: (key: string, opts?: Record<string, unknown>) => string;
 }
 
-const TaskTemplateCard: React.FC<TaskTemplateCardProps> = ({ template, onEdit, onDelete, t }) => {
+const TaskTemplateCard: React.FC<TaskTemplateCardProps> = ({
+  template,
+  onEdit,
+  onDelete,
+  onScopeChange,
+  scopeUpdating = false,
+  canChangeScope = false,
+  t,
+}) => {
+  const canManage = template.can_manage !== false;
+  const isOrganizationScope = template.scope === 'organization';
+
   const menuItems: MenuProps['items'] = [
-    {
-      key: 'edit',
-      label: t('editToolTip'),
-      icon: <EditOutlined />,
-      onClick: onEdit,
-    },
-    {
-      key: 'delete',
-      label: t('deleteToolTip'),
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => {
-        Modal.confirm({
-          title: t('confirmText'),
-          okText: t('okText'),
-          okType: 'danger',
-          cancelText: t('cancelText'),
-          centered: true,
-          onOk: onDelete,
-        });
-      },
-    },
+    ...(canManage && canChangeScope
+      ? [
+          {
+            key: 'scope',
+            label: (
+              <Flex
+                justify="space-between"
+                align="center"
+                gap={16}
+                onClick={event => event.stopPropagation()}
+                onKeyDown={event => event.stopPropagation()}
+                role="presentation"
+              >
+                <span>{t('shareWithOrganization')}</span>
+                <Switch
+                  size="small"
+                  checked={isOrganizationScope}
+                  loading={scopeUpdating}
+                  onChange={checked =>
+                    onScopeChange(checked ? 'organization' : 'team')
+                  }
+                  aria-label={t('shareWithOrganization')}
+                />
+              </Flex>
+            ),
+          },
+        ]
+      : []),
+    ...(canManage
+      ? [
+          {
+            key: 'edit',
+            label: t('editToolTip'),
+            icon: <EditOutlined />,
+            onClick: onEdit,
+          },
+          {
+            key: 'delete',
+            label: t('deleteToolTip'),
+            icon: <DeleteOutlined />,
+            danger: true,
+            onClick: () => {
+              Modal.confirm({
+                title: t('confirmText'),
+                okText: t('okText'),
+                okType: 'danger',
+                cancelText: t('cancelText'),
+                centered: true,
+                onOk: onDelete,
+              });
+            },
+          },
+        ]
+      : []),
   ];
 
   return (
-    <Card size="small" bodyStyle={{ padding: 16 }}>
+    <Card size="small" bodyStyle={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <Flex justify="space-between" align="flex-start" gap={8}>
         <Flex vertical gap={2} style={{ minWidth: 0 }}>
           <Typography.Text strong ellipsis={{ tooltip: decodeHtmlEntities(template.name) }} style={{ fontSize: 14 }}>
             {decodeHtmlEntities(template.name)}
           </Typography.Text>
-          {template.created_at && (
-            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              {calculateTimeGap(template.created_at)}
-            </Typography.Text>
-          )}
         </Flex>
-        <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
-          <Button size="small" type="text" icon={<MoreOutlined />} />
-        </Dropdown>
+        {canManage && (
+          <Dropdown menu={{ items: menuItems }} trigger={['click']} placement="bottomRight">
+            <Button
+              size="small"
+              type="text"
+              icon={<MoreOutlined />}
+              aria-label={t('moreOptions')}
+            />
+          </Dropdown>
+        )}
+      </Flex>
+      <Flex gap={8} align="center" wrap>
+        {isOrganizationScope && (
+          <OrganizationBadge label={t('organizationBadge')} />
+        )}
+        {template.created_at && (
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {calculateTimeGap(template.created_at)}
+          </Typography.Text>
+        )}
       </Flex>
     </Card>
   );
@@ -274,10 +405,12 @@ const TemplatesPage: React.FC = () => {
   const [previewTemplateName, setPreviewTemplateName] = useState('');
   const [previewInitialStep, setPreviewInitialStep] = useState<'preview' | 'confirm'>('preview');
   const [importing, setImporting] = useState(false);
+  const [scopeUpdatingId, setScopeUpdatingId] = useState<string | null>(null);
 
   // Task template drawer state
   const [taskTemplateId, setTaskTemplateId] = useState<string | null>(null);
   const [showTaskDrawer, setShowTaskDrawer] = useState(false);
+  const canChangeScope = isAdminRole(getRole());
 
   const fetchProjectTemplates = useCallback(async () => {
     try {
@@ -322,6 +455,67 @@ const TemplatesPage: React.FC = () => {
     } catch (error) {
       logger.error('Failed to delete project template:', error);
       message.error(t('deleteProjectTemplateError'));
+    }
+  };
+
+  const getScopeSuccessMessage = (scope: 'team' | 'organization') =>
+    scope === 'organization'
+      ? t('scopeSharedSuccess', { defaultValue: 'Template shared with organization.' })
+      : t('scopeUnsharedSuccess', { defaultValue: 'Template is no longer shared with organization.' });
+
+  const handleScopeChange = async (
+    templateId: string,
+    scope: 'team' | 'organization'
+  ) => {
+    try {
+      setScopeUpdatingId(templateId);
+      const res = await projectTemplatesApiService.updateTemplateScope(
+        templateId,
+        scope
+      );
+      if (res.done) {
+        message.success(getScopeSuccessMessage(scope));
+        setProjectTemplates(prev =>
+          prev.map(template =>
+            template.id === templateId ? { ...template, scope } : template
+          )
+        );
+      } else {
+        message.error((res as { message?: string }).message ?? t('scopeUpdateError'));
+      }
+    } catch (error) {
+      logger.error('Failed to update template scope:', error);
+      message.error(t('scopeUpdateError'));
+    } finally {
+      setScopeUpdatingId(null);
+    }
+  };
+
+  const handleTaskTemplateScopeChange = async (
+    templateId: string,
+    scope: 'team' | 'organization'
+  ) => {
+    try {
+      setScopeUpdatingId(templateId);
+      const res = await taskTemplatesApiService.updateTemplateScope(
+        templateId,
+        scope
+      );
+      if (res.done) {
+        message.success(getScopeSuccessMessage(scope));
+        setTaskTemplates(prev =>
+          prev.map(template =>
+            template.id === templateId ? { ...template, scope } : template
+          )
+        );
+      } else {
+        message.error((res as { message?: string }).message ?? t('scopeUpdateError'));
+      }
+    } catch (error) {
+      logger.error('Failed to update task template scope:', error);
+      message.error(t('scopeUpdateError'));
+    } finally {
+      setScopeUpdatingId(null);
     }
   };
 
@@ -454,6 +648,11 @@ const TemplatesPage: React.FC = () => {
                 onUse={() => openPreview(tpl, 'confirm')}
                 onRename={() => openRename(tpl)}
                 onDelete={() => tpl.id && handleDeleteProjectTemplate(tpl.id)}
+                onScopeChange={scope =>
+                  tpl.id && handleScopeChange(tpl.id, scope)
+                }
+                scopeUpdating={scopeUpdatingId === tpl.id}
+                canChangeScope={canChangeScope}
                 t={t}
               />
             ))}
@@ -470,15 +669,20 @@ const TemplatesPage: React.FC = () => {
         )
       ) : (
         <div style={gridStyle}>
-          {filteredTaskTemplates.map(tpl => (
-            <TaskTemplateCard
-              key={tpl.id}
-              template={tpl}
-              onEdit={() => tpl.id && setTaskTemplateId(tpl.id)}
-              onDelete={() => tpl.id && handleDeleteTaskTemplate(tpl.id)}
-              t={t}
-            />
-          ))}
+            {filteredTaskTemplates.map(tpl => (
+              <TaskTemplateCard
+                key={tpl.id}
+                template={tpl}
+                onEdit={() => tpl.id && setTaskTemplateId(tpl.id)}
+                onDelete={() => tpl.id && handleDeleteTaskTemplate(tpl.id)}
+                onScopeChange={scope =>
+                  tpl.id && handleTaskTemplateScopeChange(tpl.id, scope)
+                }
+                scopeUpdating={scopeUpdatingId === tpl.id}
+                canChangeScope={canChangeScope}
+                t={t}
+              />
+            ))}
         </div>
       )}
 

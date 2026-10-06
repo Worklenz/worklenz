@@ -7,6 +7,41 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 
 export default class TasktemplatesController extends WorklenzControllerBase {
+  protected static async getTaskTemplateAccess(
+    templateId: string | null | undefined,
+    teamId: string | null | undefined
+  ): Promise<{
+    canAccess: boolean;
+    canManage: boolean;
+    scope: string;
+  } | null> {
+    if (!templateId || !teamId) return null;
+
+    const q = `
+      SELECT
+        tt.team_id,
+        tt.scope,
+        in_organization(tt.team_id, $2) AS in_same_organization
+      FROM task_templates tt
+      WHERE tt.id = $1
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [templateId, teamId]);
+    if (!result.rowCount) return null;
+
+    const row = result.rows[0];
+    const canManage = row.team_id === teamId;
+    const isOrganizationShared =
+      row.scope === "organization" && row.in_same_organization;
+    const canAccess = canManage || isOrganizationShared;
+
+    return {
+      canAccess,
+      canManage,
+      scope: row.scope,
+    };
+  }
+
   @HandleExceptions({
     raisedExceptions: {
         "TASK_TEMPLATE_EXISTS_ERROR": `A template with the name "{0}" already exists. Please choose a different name.`
@@ -22,7 +57,23 @@ export default class TasktemplatesController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async get(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name, created_at FROM task_templates WHERE team_id = $1 ORDER BY name;`;
+    const q = `
+      SELECT
+        tt.id,
+        tt.name,
+        tt.created_at,
+        tt.scope,
+        (tt.team_id = $1) AS can_manage
+      FROM task_templates tt
+      WHERE (
+        tt.team_id = $1
+        OR (
+          tt.scope = 'organization'
+          AND in_organization(tt.team_id, $1)
+        )
+      )
+      ORDER BY tt.name;
+    `;
     const result = await db.query(q, [req.user?.team_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -30,6 +81,13 @@ export default class TasktemplatesController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {id} = req.params;
+    const access = await TasktemplatesController.getTaskTemplateAccess(
+      id,
+      req.user?.team_id
+    );
+    if (!access?.canAccess) {
+      return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
 
     // Fetch all task rows for this template (parent tasks, subtasks, and sub-subtasks)
     const q = `
@@ -138,6 +196,13 @@ export default class TasktemplatesController extends WorklenzControllerBase {
   public static async update(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {name, tasks} = req.body;
     const {id} = req.params;
+    const access = await TasktemplatesController.getTaskTemplateAccess(
+      id,
+      req.user?.team_id
+    );
+    if (!access?.canManage) {
+      return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
 
     const q = `SELECT update_task_template($1, $2, $3, $4);`;
     const result = await db.query(q, [id, name, JSON.stringify(tasks), req.user?.team_id]);
@@ -148,14 +213,56 @@ export default class TasktemplatesController extends WorklenzControllerBase {
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {id} = req.params;
 
-    const q = `DELETE FROM task_templates WHERE id = $1;`;
-    const result = await db.query(q, [id]);
+    const q = `DELETE FROM task_templates WHERE id = $1 AND team_id = $2 RETURNING id;`;
+    const result = await db.query(q, [id, req.user?.team_id]);
+    if (!result.rowCount) {
+      return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
     return res.status(200).send(new ServerResponse(true, result.rows, "Template deleted."));
   }
 
   @HandleExceptions()
-  public static async import(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+  public static async updateScope(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const {id} = req.params;
+    const {scope} = req.body;
+    const teamId = req.user?.team_id;
+
+    if (!id || !teamId) {
+      return res.status(400).send(new ServerResponse(false, {}, "Invalid request."));
+    }
+
+    if (!["team", "organization"].includes(scope)) {
+      return res.status(400).send(new ServerResponse(false, {}, "Invalid scope value."));
+    }
+
+    const q = `
+      UPDATE task_templates
+      SET scope = $1, updated_at = NOW()
+      WHERE id = $2 AND team_id = $3
+      RETURNING id, scope;
+    `;
+    const result = await db.query(q, [scope, id, teamId]);
+    if (!result.rowCount) {
+      return res.status(404).send(new ServerResponse(false, {}, "Template not found."));
+    }
+
+    return res.status(200).send(
+      new ServerResponse(true, result.rows[0], "Template scope updated successfully.")
+    );
+  }
+
+  @HandleExceptions()
+  public static async import(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const {id} = req.params; // project id to import tasks into
+    const {templateId} = req.query as { templateId?: string };
+
+    const access = await TasktemplatesController.getTaskTemplateAccess(
+      templateId,
+      req.user?.team_id
+    );
+    if (!access?.canAccess) {
+      return res.status(404).send(new ServerResponse(false, null, "Template not found"));
+    }
 
     const q = `SELECT import_tasks_from_template($1, $2, $3);`;
     const result = await db.query(q, [id, req.user?.id, JSON.stringify(req.body)]);

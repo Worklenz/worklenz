@@ -7,7 +7,7 @@
   "actionsColumn": "Veprimet",
   "fileIconAlt": "Ikona e skedarit",
   "emptyText": "Nuk ka skedarë ende.",
-  "uploadButton": "Ngarko",
+  "uploadButton": "Ngarko Skedar",
   "uploaderTitle": "Ngarko Skedarë",
   "filePickerHint": "Tërhiq & Lësho skedarët ose kliko për të shfletuar",
   "uploadHintLimit": "PDF, imazhe, dokumente, arkiva. Maksimumi {{maxSize}} MB për skedar.",

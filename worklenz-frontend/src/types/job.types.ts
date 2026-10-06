@@ -8,3 +8,8 @@ export interface IJobTitlesViewModel {
   total?: number;
   data?: IJobTitle[];
 }
+
+export interface JobType {
+  jobId: string;
+  jobTitle: string;
+}

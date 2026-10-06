@@ -83,22 +83,26 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({
               <button
                 key={option.value}
                 onClick={() => handleSurveyDataChange('organization_type', option.value)}
-                className={`p-2 rounded border transition-all duration-200 text-left hover:shadow-sm ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                className="p-2 rounded border transition-all duration-200 text-left hover:shadow-sm"
                 style={{
-                  backgroundColor: isSelected ? undefined : token?.colorBgContainer,
-                  borderColor: isSelected ? undefined : token?.colorBorder,
+                  backgroundColor: isSelected ? token?.colorPrimaryBg : token?.colorBgContainer,
+                  borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
                 }}
               >
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                    className="w-3 h-3 rounded-full border flex items-center justify-center"
+                    style={{
+                      borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
+                      backgroundColor: isSelected ? token?.colorPrimary : undefined,
+                    }}
                   >
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-base">{option.icon}</span>
                   <span
-                    className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
-                    style={{ color: isSelected ? undefined : token?.colorText }}
+                    className="font-medium text-xs"
+                    style={{ color: isSelected ? token?.colorPrimary : token?.colorText }}
                   >
                     {option.label}
                   </span>
@@ -121,22 +125,26 @@ const AboutYouPage: React.FC<SurveyPageProps> = ({
               <button
                 key={option.value}
                 onClick={() => handleSurveyDataChange('user_role', option.value)}
-                className={`p-2 rounded border transition-all duration-200 text-left hover:shadow-sm ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                className="p-2 rounded border transition-all duration-200 text-left hover:shadow-sm"
                 style={{
-                  backgroundColor: isSelected ? undefined : token?.colorBgContainer,
-                  borderColor: isSelected ? undefined : token?.colorBorder,
+                  backgroundColor: isSelected ? token?.colorPrimaryBg : token?.colorBgContainer,
+                  borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
                 }}
               >
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                    className="w-3 h-3 rounded-full border flex items-center justify-center"
+                    style={{
+                      borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
+                      backgroundColor: isSelected ? token?.colorPrimary : undefined,
+                    }}
                   >
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-base">{option.icon}</span>
                   <span
-                    className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
-                    style={{ color: isSelected ? undefined : token?.colorText }}
+                    className="font-medium text-xs"
+                    style={{ color: isSelected ? token?.colorPrimary : token?.colorText }}
                   >
                     {option.label}
                   </span>
@@ -225,15 +233,19 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({
               <button
                 key={option.value}
                 onClick={() => onUseCaseClick(option.value)}
-                className={`p-2 rounded border transition-all duration-200 text-left hover:shadow-sm ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                className="p-2 rounded border transition-all duration-200 text-left hover:shadow-sm"
                 style={{
-                  backgroundColor: isSelected ? undefined : token?.colorBgContainer,
-                  borderColor: isSelected ? undefined : token?.colorBorder,
+                  backgroundColor: isSelected ? token?.colorPrimaryBg : token?.colorBgContainer,
+                  borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
                 }}
               >
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`w-3 h-3 rounded border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                    className="w-3 h-3 rounded border flex items-center justify-center"
+                    style={{
+                      borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
+                      backgroundColor: isSelected ? token?.colorPrimary : undefined,
+                    }}
                   >
                     {isSelected && (
                       <svg width="10" height="10" fill="white" viewBox="0 0 20 20">
@@ -247,8 +259,8 @@ const YourNeedsPage: React.FC<SurveyPageProps> = ({
                   </div>
                   <div className="flex-1">
                     <span
-                      className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
-                      style={{ color: isSelected ? undefined : token?.colorText }}
+                      className="font-medium text-xs"
+                      style={{ color: isSelected ? token?.colorPrimary : token?.colorText }}
                     >
                       {option.label}
                     </span>
@@ -332,22 +344,26 @@ const DiscoveryPage: React.FC<SurveyPageProps> = ({
               <button
                 key={option.value}
                 onClick={() => handleSurveyDataChange('how_heard_about', option.value)}
-                className={`p-2 rounded border transition-all duration-200 hover:shadow-sm ${isSelected ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+                className="p-2 rounded border transition-all duration-200 hover:shadow-sm"
                 style={{
-                  backgroundColor: isSelected ? undefined : token?.colorBgContainer,
-                  borderColor: isSelected ? undefined : token?.colorBorder,
+                  backgroundColor: isSelected ? token?.colorPrimaryBg : token?.colorBgContainer,
+                  borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
                 }}
               >
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`w-3 h-3 rounded-full border flex items-center justify-center ${isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'}`}
+                    className="w-3 h-3 rounded-full border flex items-center justify-center"
+                    style={{
+                      borderColor: isSelected ? token?.colorPrimary : token?.colorBorder,
+                      backgroundColor: isSelected ? token?.colorPrimary : undefined,
+                    }}
                   >
                     {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
                   </div>
                   <span className="text-base">{option.icon}</span>
                   <span
-                    className={`font-medium text-xs ${isSelected ? 'text-blue-600 dark:text-blue-400' : ''}`}
-                    style={{ color: isSelected ? undefined : token?.colorText }}
+                    className="font-medium text-xs"
+                    style={{ color: isSelected ? token?.colorPrimary : token?.colorText }}
                   >
                     {option.label}
                   </span>

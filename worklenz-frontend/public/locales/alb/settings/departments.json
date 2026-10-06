@@ -1,0 +1,22 @@
+{
+  "title": "Menaxho Departamentet",
+  "nameColumn": "Emri",
+  "search": "Kërko departamente",
+  "createDepartmentButton": "Krijo Departament",
+  "createDepartmentDrawerTitle": "Krijo Departament",
+  "updateDepartmentDrawerTitle": "Përditëso Departamentin",
+  "nameLabel": "Emri",
+  "namePlaceholder": "Shkruani emrin e departamentit",
+  "nameRequiredError": "Emri i departamentit është i detyrueshëm",
+  "createButton": "Krijo",
+  "updateButton": "Përditëso",
+  "editTooltip": "Përpuno",
+  "deleteTooltip": "Fshi",
+  "deleteConfirmationTitle": "Jeni i sigurt që doni ta fshini këtë departament?",
+  "deleteConfirmationOk": "Fshi",
+  "deleteConfirmationCancel": "Anulo",
+  "fetchDepartmentErrorMessage": "Marrja e departamentit dështoi",
+  "createDepartmentErrorMessage": "Krijimi i departamentit dështoi",
+  "updateDepartmentErrorMessage": "Përditësimi i departamentit dështoi",
+  "pinTooltip": "Fiksoje në menynë kryesore"
+}

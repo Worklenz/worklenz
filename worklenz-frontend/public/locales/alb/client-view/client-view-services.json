@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} Shërbimet",
+  "requestButton": "Bëni një kërkesë",
+  "modal": {
+    "title": "Bëni një kërkesë",
+    "submitButton": "Paraqit"
+  },
+  "uploadLogoText": "Kliko ose drag dhe heqeni këtu për të ngarkuar",
+  "uploadLogoAltText": "Mbështetje për një ngarkim të vetëm ose me shumicë. Ndaloni rreptësisht ngarkimin e të dhënave të kompanisë ose skedarëve të tjerë të grupit"
+}

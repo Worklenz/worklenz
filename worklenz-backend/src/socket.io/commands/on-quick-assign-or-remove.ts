@@ -10,6 +10,7 @@ import {logMemberAssignment} from "../../services/activity-logs/activity-logs.se
 import { ExternalNotificationsService } from "../../services/external-notifications.service";
 import { log_error } from "../../shared/utils";
 import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
+import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 
 export interface ITaskAssignee {
   team_member_id?: string;
@@ -67,6 +68,15 @@ export async function on_quick_assign_or_remove(_io: Server, socket: Socket, dat
       socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
         error: true,
         message: "Task assignment is restricted to Admins and Team Leads only."
+      });
+      return;
+    }
+
+    // TVR-13: parent-context viewers cannot change assignees on the parent
+    if (await isAssigneeScopeEditRestrictedForTask(userId, body.task_id)) {
+      socket.emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
+        error: true,
+        message: "This task is read-only.",
       });
       return;
     }

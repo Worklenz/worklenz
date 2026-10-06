@@ -117,7 +117,7 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
   private static async sendMail(config: IMailConfig) {
     const subject = config.message.replace(HTML_TAG_REGEXP, "");
-    const taskUrl = `${getBaseUrl()}/worklenz/projects/${config.projectId}?tab=tasks-list&task=${config.taskId}&focus=comments`;
+    const taskUrl = `${getBaseUrl()}/worklenz/projects/${config.projectId}?tab=tasks-list&task=${config.taskId}&from=notification&focus=comments`;
     const settingsUrl = `${getBaseUrl()}/worklenz/settings/notifications`;
 
     const data: ICommentEmailNotification = {
@@ -730,18 +730,68 @@ export default class TaskCommentsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async download(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT CONCAT($2::TEXT, '/', team_id, '/', project_id, '/', task_id, '/', comment_id, '/', id, '.', type) AS key
-               FROM task_comment_attachments
-               WHERE id = $1;`;
-    const result = await db.query(q, [req.query.id, getRootDir()]);
-    const [data] = result.rows;
+    const attachmentId = req.query.id as string | undefined;
+    const filename = (req.query.file as string | undefined) || "download";
+    const teamId = req.user?.team_id;
 
-    if (data?.key) {
-      const url = await createPresignedUrlWithClient(data.key, req.query.file as string);
-      return res.status(200).send(new ServerResponse(true, url));
+    if (!attachmentId || !teamId) {
+      return res.status(400).send(new ServerResponse(false, null, "Attachment ID is required"));
     }
 
-    return res.status(200).send(new ServerResponse(true, null));
+    const q = `
+      SELECT team_id, project_id, task_id, comment_id, id, type
+      FROM task_comment_attachments
+      WHERE id = $1 AND team_id = $2;
+    `;
+    const result = await db.query(q, [attachmentId, teamId]);
+    const [data] = result.rows;
+
+    if (!data) {
+      return res.status(404).send(new ServerResponse(false, null, "Attachment not found"));
+    }
+
+    const key = getTaskAttachmentKey(
+      data.team_id,
+      data.project_id,
+      data.task_id,
+      data.comment_id,
+      data.id,
+      data.type
+    );
+    const url = await createPresignedUrlWithClient(key, filename);
+    return res.status(200).send(new ServerResponse(true, { url, expires_in: 3600 }));
   }
 
-} 
+  /**
+   * Resolves a comment short link to its task + project IDs.
+   * Used by /worklenz/c/:commentId redirects.
+   */
+  @HandleExceptions()
+  public static async resolveShortLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const commentId = req.params.id;
+    const q = `
+      SELECT tc.id AS comment_id,
+             t.id AS task_id,
+             t.project_id
+      FROM task_comments tc
+      INNER JOIN tasks t ON t.id = tc.task_id
+      WHERE tc.id = $1
+      LIMIT 1;
+    `;
+    const result = await db.query(q, [commentId]);
+    const [row] = result.rows;
+
+    if (!row?.task_id || !row?.project_id) {
+      return res.status(404).send(new ServerResponse(false, null, "Comment not found"));
+    }
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        comment_id: row.comment_id,
+        task_id: row.task_id,
+        project_id: row.project_id,
+      })
+    );
+  }
+
+}

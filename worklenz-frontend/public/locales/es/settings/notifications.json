@@ -1,5 +1,5 @@
 {
-  "title": "Notificaciones",
+  "title": "Configuración de notificaciones",
   "generalSectionTitle": "Notificaciones generales",
   "generalSectionDescription": "Se aplica de inmediato al activarlo, sin necesidad de guardar por separado.",
   "emailTitle": "Enviarme notificaciones por correo electrónico",
@@ -19,8 +19,8 @@
   "weeklyEndTitle": "Resumen de fin de semana",
   "weeklyEndDescription": "Enviado cada viernes. Revisión de tareas completadas, atrasadas y perspectiva de la próxima semana.",
   "channelLabel": "Canal",
+  "channelEmail": "Correo",
   "timeLabel": "Enviar a las",
   "saveDigestPreferences": "Guardar preferencias de notificación",
-  "digestPreferencesSaved": "Tus preferencias de notificación han sido guardadas",
-  "title": "Configuración de notificaciones"
+  "digestPreferencesSaved": "Tus preferencias de notificación han sido guardadas"
 }

@@ -27,6 +27,7 @@ import { tasksCustomColumnsService } from '@/api/tasks/tasks-custom-columns.serv
 import logger from '@/utils/errorLogger';
 import { DEFAULT_TASK_NAME } from '@/shared/constants';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
+import { IDuplicateOptions } from '@/types/tasks/task-duplicate.types';
 import { decodeHtmlEntities } from '@/utils/html-entities';
 import { resolveTaskProgress } from './task-progress';
 
@@ -361,7 +362,6 @@ export const fetchTasksV3 = createAsyncThunk(
             estimated: task.timeTracking?.estimated || 0,
             logged: task.timeTracking?.logged || 0,
           },
-          customFields: {},
           custom_column_values: task.custom_column_values || {},
           createdAt: task.createdAt || task.created_at || now,
           updatedAt: task.updatedAt || task.updated_at || now,
@@ -507,13 +507,23 @@ export const duplicateTask = createAsyncThunk(
       projectId,
       taskId,
       duplicateOptions,
-    }: { projectId: string; taskId: string; duplicateOptions: any },
+      destinationProjectId,
+      confirmProjectDifferences,
+    }: {
+      projectId: string;
+      taskId: string;
+      duplicateOptions: IDuplicateOptions;
+      destinationProjectId?: string;
+      confirmProjectDifferences?: boolean;
+    },
     { rejectWithValue }
   ) => {
     try {
       const response = await duplicateTaskApiService.duplicate({
         task_id: taskId,
         project_id: projectId,
+        destination_project_id: destinationProjectId,
+        confirm_project_differences: confirmProjectDifferences,
         options: duplicateOptions,
       });
       return response;

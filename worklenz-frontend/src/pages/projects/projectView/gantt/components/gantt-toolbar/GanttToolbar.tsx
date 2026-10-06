@@ -1,14 +1,17 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Button, Space, theme } from '@/shared/antd-imports';
 import { ZoomInOutlined, ZoomOutOutlined, ExpandOutlined } from '@ant-design/icons';
-import { GanttViewMode, GanttGroupingMode } from '../../types/gantt-types';
+import { GanttViewMode, GanttGroupingMode, PhaseSortMode } from '../../types/gantt-types';
 import { useTranslation } from 'react-i18next';
+import AssigneeScopeIndicator from '@/components/task-management/assignee-scope-indicator';
 
 interface GanttToolbarProps {
   viewMode: GanttViewMode;
   groupingMode: GanttGroupingMode;
   onViewModeChange: (mode: GanttViewMode) => void;
   onGroupingModeChange: (mode: GanttGroupingMode) => void;
+  phaseSortMode: PhaseSortMode;
+  onPhaseSortModeChange: (mode: PhaseSortMode) => void;
   dateRange?: { start: Date; end: Date };
   onScrollToToday?: () => void;
   onToggleFullscreen?: () => void;
@@ -68,31 +71,79 @@ function PillToggleGroup<T extends string>({ value, options, onChange }: PillTog
 const ZOOM_ORDER: GanttViewMode[] = ['day', 'week', 'month'];
 
 const GanttToolbar: React.FC<GanttToolbarProps> = memo(
-  ({ viewMode, groupingMode, onViewModeChange, onGroupingModeChange, onScrollToToday, onToggleFullscreen }) => {
+  ({
+    viewMode,
+    groupingMode,
+    onViewModeChange,
+    onGroupingModeChange,
+    phaseSortMode,
+    onPhaseSortModeChange,
+    onScrollToToday,
+    onToggleFullscreen,
+  }) => {
     const { t } = useTranslation('gantt');
     const { token } = theme.useToken();
+    const [isTodaySelected, setIsTodaySelected] = useState(false);
 
     const zoomIndex = ZOOM_ORDER.indexOf(viewMode);
 
     const handleZoomIn = () => {
-      if (zoomIndex > 0) onViewModeChange(ZOOM_ORDER[zoomIndex - 1]);
+      if (zoomIndex > 0) {
+        setIsTodaySelected(false);
+        onViewModeChange(ZOOM_ORDER[zoomIndex - 1]);
+      }
     };
+
     const handleZoomOut = () => {
-      if (zoomIndex < ZOOM_ORDER.length - 1) onViewModeChange(ZOOM_ORDER[zoomIndex + 1]);
+      if (zoomIndex < ZOOM_ORDER.length - 1) {
+        setIsTodaySelected(false);
+        onViewModeChange(ZOOM_ORDER[zoomIndex + 1]);
+      }
+    };
+
+    const handleTodayClick = () => {
+      setIsTodaySelected(true);
+      onScrollToToday?.();
     };
 
     return (
       <div className="p-1.5 bg-white dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#303030] rounded-md shadow-sm flex justify-between items-center">
-        {/* Grouping Mode Selector */}
-        <PillToggleGroup
-          value={groupingMode}
-          onChange={onGroupingModeChange}
-          options={[
-            { label: t('grouping.phase', { defaultValue: 'Phase' }), value: 'phase' },
-            { label: t('grouping.status', { defaultValue: 'Status' }), value: 'status' },
-            { label: t('grouping.priority', { defaultValue: 'Priority' }), value: 'priority' },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <AssigneeScopeIndicator />
+          {/* Grouping Mode Selector */}
+          <span style={{ fontSize: 12, fontWeight: 500, color: token.colorTextSecondary }}>
+            {t('toolbar.viewBy', { defaultValue: 'View by' })}
+          </span>
+          <PillToggleGroup
+            value={groupingMode}
+            onChange={mode => {
+              setIsTodaySelected(false);
+              onGroupingModeChange(mode);
+            }}
+            options={[
+              { label: t('grouping.phase', { defaultValue: 'Phase' }), value: 'phase' },
+              { label: t('grouping.status', { defaultValue: 'Status' }), value: 'status' },
+              { label: t('grouping.priority', { defaultValue: 'Priority' }), value: 'priority' },
+            ]}
+          />
+
+          {/* Phase sort mode — only meaningful when grouped by Phase */}
+          {groupingMode === 'phase' && (
+            <>
+              <span style={{ fontSize: 12, fontWeight: 500, color: token.colorTextSecondary }}>
+                {t('toolbar.sortBy', { defaultValue: 'Sort by' })}
+              </span>
+              <PillToggleGroup
+                value={phaseSortMode}
+                onChange={onPhaseSortModeChange}
+                options={[
+                  { label: t('toolbar.sortManual', { defaultValue: 'Manual' }), value: 'manual' },
+                  { label: t('toolbar.sortChronological', { defaultValue: 'Chronological' }), value: 'chronological' },
+                ]}
+              />
+            </>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           {/* Zoom in/out + fullscreen — same circular icon-button style as Planner > Timeline.
@@ -134,15 +185,16 @@ const GanttToolbar: React.FC<GanttToolbarProps> = memo(
             }}
           >
             <button
-              onClick={onScrollToToday}
+              onClick={handleTodayClick}
               style={{
                 padding: '5px 12px',
                 border: 'none',
                 cursor: 'pointer',
                 fontSize: 12,
                 fontWeight: 500,
-                background: 'transparent',
-                color: token.colorText,
+                background: isTodaySelected ? token.colorPrimary : 'transparent',
+                color: isTodaySelected ? token.colorTextLightSolid : token.colorText,
+                transition: 'all .15s',
                 whiteSpace: 'nowrap',
               }}
             >

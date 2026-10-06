@@ -6,8 +6,9 @@ import {
   Button,
   Space,
   Popover,
+  message,
 } from '@/shared/antd-imports';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, LinkOutlined } from '@ant-design/icons';
 import { Comment } from '@ant-design/compatible';
 import dayjs from 'dayjs';
 
@@ -370,6 +371,30 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
   }, [targetCommentId, loading, dispatch]);
 
 
+  // ─── Copy Comment Link ────────────────────────────────────────────────────
+
+  const copyCommentLink = async (commentId?: string) => {
+    if (!commentId) return;
+
+    try {
+      const commentLink = `${window.location.origin}/worklenz/c/${commentId}`;
+
+      await navigator.clipboard.writeText(commentLink);
+      message.success(
+        t('taskInfoTab.comments.linkCopied', {
+          defaultValue: 'Comment link copied',
+        })
+      );
+    } catch (error) {
+      logger.error('Error copying comment link', error);
+      message.error(
+        t('taskInfoTab.comments.linkCopyFailed', {
+          defaultValue: 'Failed to copy link',
+        })
+      );
+    }
+  };
+
   // ─── Reactions ────────────────────────────────────────────────────────────
 
   const handleReactionClick = async (item: ITaskCommentViewModel, reactionType: ReactionType) => {
@@ -474,9 +499,21 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
             detail: { taskId: resolvedTaskId },
           })
         );
+      } else {
+        message.error(
+          res.message ||
+            t('taskInfoTab.comments.saveCommentError', {
+              defaultValue: 'Failed to save comment. Please try again.',
+            })
+        );
       }
     } catch (e) {
       logger.error('Error updating comment', e);
+      message.error(
+        t('taskInfoTab.comments.saveCommentError', {
+          defaultValue: 'Failed to save comment. Please try again.',
+        })
+      );
     } finally {
       setEditLoading(false);
     }
@@ -689,6 +726,25 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                               ))}
                             </div>
 
+                            {/* Copy Link Button */}
+                            <div className={`hover-divider theme-${themeMode}`} />
+                            <Tooltip
+                              title={t('taskInfoTab.comments.copyLink', {
+                                defaultValue: 'Copy Link',
+                              })}
+                            >
+                              <Button
+                                type="text"
+                                size="small"
+                                icon={<LinkOutlined />}
+                                className="hover-action-btn comment-copy-link-btn"
+                                aria-label={t('taskInfoTab.comments.copyLink', {
+                                  defaultValue: 'Copy Link',
+                                })}
+                                onClick={() => copyCommentLink(item.id)}
+                              />
+                            </Tooltip>
+
                             {/* Edit + Delete (own comments only) */}
                             {isUserComment && (
                               <>
@@ -752,18 +808,25 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                               })}
                             </p>
                           ) : isEditing ? (
-                            <div>
-                              <div style={{ position: 'relative' }}>
+                            <div className="comment-edit-container">
+                              <div className="comment-edit-input">
                                 <CustomMentionsInput
                                   value={editContent}
                                   onChange={(val: string) => setEditContent(val)}
                                   onSelect={(option: MentionOption) => {
                                     const member = members.find(m => m.id === option.key);
                                     if (!member) return;
+
                                     setEditSelectedMembers(prev =>
                                       prev.some(p => p.team_member_id === member.id)
                                         ? prev
-                                        : [...prev, { team_member_id: member.id!, name: member.name! }]
+                                        : [
+                                          ...prev,
+                                          {
+                                            team_member_id: member.id!,
+                                            name: member.name!,
+                                          },
+                                        ]
                                     );
                                   }}
                                   options={mentionOptions}
@@ -774,24 +837,41 @@ const TaskComments = ({ taskId, t, isGuest = false }: { taskId?: string; t: TFun
                                   })}
                                   filterOption={(input: string, option: MentionOption) => {
                                     if (!input) return true;
-                                    return option.label.toLowerCase().includes(input.toLowerCase());
+
+                                    return option.label
+                                      .toLowerCase()
+                                      .includes(input.toLowerCase());
                                   }}
-                                  style={{ minHeight: 60, maxHeight: 150, borderRadius: 4 }}
+                                  style={{
+                                    width: '100%',
+                                    minHeight: 60,
+                                    maxHeight: 200,
+                                    borderRadius: 6,
+                                  }}
                                 />
                               </div>
-                              <Space style={{ marginTop: 8 }}>
+
+                              <div className="comment-edit-actions">
                                 <Button
                                   size="small"
                                   type="primary"
                                   loading={editLoading}
                                   onClick={() => saveEdit(item)}
                                 >
-                                  {t('taskInfoTab.comments.save', { defaultValue: 'Save' })}
+                                  {t('taskInfoTab.comments.save', {
+                                    defaultValue: 'Save',
+                                  })}
                                 </Button>
-                                <Button size="small" onClick={cancelEdit}>
-                                  {t('taskInfoTab.comments.cancel', { defaultValue: 'Cancel' })}
+
+                                <Button
+                                  size="small"
+                                  onClick={cancelEdit}
+                                >
+                                  {t('taskInfoTab.comments.cancel', {
+                                    defaultValue: 'Cancel',
+                                  })}
                                 </Button>
-                              </Space>
+                              </div>
                             </div>
                           ) : (
                             <>

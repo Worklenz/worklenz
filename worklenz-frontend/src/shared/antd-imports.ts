@@ -166,6 +166,7 @@ export {
   DisconnectOutlined,
   ArrowRightOutlined,
   DownloadOutlined,
+  ExportOutlined,
   LikeOutlined,
   LikeTwoTone,
   SmileOutlined,

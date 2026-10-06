@@ -12,8 +12,8 @@ const TEMPLATES_BASE = "../../worklenz-email-templates";
 
 router.get("/task-assignee-change", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   const sampleData = {
-    "name": "Dinindu Wanniarachchi",
-    "email": "dinindu.office@gmail.com",
+    "name": "Jane Wanniarachchi",
+    "email": "jane@example.com",
     "team_member_id": "e3f95f03-5ea7-4cf7-9f61-123c55d8f6d9",
     "teams": [
       {
@@ -27,13 +27,13 @@ router.get("/task-assignee-change", (req: IWorkLenzRequest, res: IWorkLenzRespon
             "tasks": [
               {
                 "name": "Soloman's Island Project - SIM Registration + Central DB + KYC",
-                "updater_name": "Dinindu",
-                "members": "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan"
+                "updater_name": "Jane",
+                "members": "Jane, Jane Wanniarachchi, Pasindu Ishan"
               },
               {
                 "name": "Theory everyone send half sure.",
-                "updater_name": "Dinindu",
-                "members": "Dinindu Wanniarachchi"
+                "updater_name": "Jane",
+                "members": "Jane Wanniarachchi"
               }
             ]
           }
@@ -64,11 +64,11 @@ router.get("/daily-digest", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
           tasks: [
             {
               name: "Soloman's Island Project - SIM Registration + Central DB + KYC",
-              members: "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan"
+              members: "Jane, Jane Wanniarachchi, Pasindu Ishan"
             },
             {
               name: "Theory everyone send half sure.",
-              members: "Dinindu Wanniarachchi"
+              members: "Jane Wanniarachchi"
             }
           ]
         }
@@ -83,9 +83,9 @@ router.get("/daily-digest", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   ];
 
   const sampleData = {
-    greeting: "Hi Dinindu",
+    greeting: "Hi Jane",
     note: "Here's your Monday update!",
-    email: "dinindu.office@gmail.com",
+    email: "jane@example.com",
     recently_assigned: teams,
     overdue: teams,
     recently_completed: teams
@@ -93,18 +93,106 @@ router.get("/daily-digest", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   res.render(`${TEMPLATES_BASE}/email-notifications/daily-digest`, sampleData);
 });
 
+router.get("/daily-task-reminder", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+  const sampleTask = {
+    name: "Prepare weekly status report",
+    taskUrl: "http://localhost:4200/worklenz/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
+    projectName: "Allen LLC",
+    workspaceName: "Automation",
+    priorityName: "High",
+    dueDate: "2026-08-31",
+    daysOverdue: 2,
+    assigneeName: "Jane Smith",
+    weekdayLabel: "Tuesday",
+  };
+  res.render(`${TEMPLATES_BASE}/email-notifications/daily-task-reminder`, {
+    userName: "Jane",
+    workspaceCount: 2,
+    dueToday: { tasks: [sampleTask], totalCount: 1 },
+    upcoming: { tasks: [], totalCount: 0 },
+    overdue: { tasks: [sampleTask], totalCount: 1 },
+    assignedByMeDueToday: { tasks: [], totalCount: 0 },
+    assignedByMeOverdue: { tasks: [], totalCount: 0 },
+    adminOverview: [],
+    managePreferencesUrl: "/worklenz/settings/notifications",
+    viewAllTasksUrl: "/worklenz/my-tasks",
+    unsubscribeUrl: "/public/digest/unsubscribe?token=sample",
+  });
+});
+
+router.get("/weekly-start-summary", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+  const sampleTask = {
+    name: "Prepare weekly status report",
+    taskUrl: "http://localhost:4200/worklenz/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
+    projectName: "Allen LLC",
+    workspaceName: "Automation",
+    priorityName: "High",
+    weekdayLabel: "Tuesday",
+    daysOverdue: 1,
+    assigneeName: "Jane Smith",
+  };
+  res.render(`${TEMPLATES_BASE}/email-notifications/weekly-start-summary`, {
+    userName: "Jane",
+    workspaceCount: 2,
+    dueToday: { tasks: [sampleTask], totalCount: 1 },
+    dueThisWeek: { tasks: [sampleTask], totalCount: 1 },
+    overdue: { tasks: [], totalCount: 0 },
+    assignedByMeDueToday: { tasks: [], totalCount: 0 },
+    assignedByMeDueThisWeek: { tasks: [], totalCount: 0 },
+    assignedByMeOverdue: { tasks: [], totalCount: 0 },
+    adminOverview: [{
+      workspaceName: "Automation",
+      teams: [{ teamName: "Automation", dueToday: 3, dueThisWeek: 8, overdue: 2, memberCount: 5 }],
+      totals: { dueToday: 3, dueThisWeek: 8, overdue: 2, memberCount: 5 },
+    }],
+    managePreferencesUrl: "/worklenz/settings/notifications",
+    viewAllTasksUrl: "/worklenz/my-tasks",
+    unsubscribeUrl: "/public/digest/unsubscribe?token=sample",
+  });
+});
+
+router.get("/weekly-end-summary", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
+  const sampleTask = {
+    name: "Prepare weekly status report",
+    taskUrl: "http://localhost:4200/worklenz/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
+    projectName: "Allen LLC",
+    workspaceName: "Automation",
+    completedDay: "Wednesday",
+    dueDate: "2026-08-28",
+    assigneeName: "Jane Smith",
+  };
+  res.render(`${TEMPLATES_BASE}/email-notifications/weekly-end-summary`, {
+    userName: "Jane",
+    workspaceCount: 2,
+    completed: { tasks: [sampleTask], totalCount: 1 },
+    stillDue: { tasks: [], totalCount: 0 },
+    becameOverdue: { tasks: [], totalCount: 0 },
+    allTimeOverdueCount: 4,
+    assignedByMeCompleted: { tasks: [], totalCount: 0 },
+    assignedByMeBecameOverdue: { tasks: [], totalCount: 0 },
+    adminOverview: [{
+      workspaceName: "Automation",
+      teams: [{ teamName: "Automation", completed: 12, overdueThisWeek: 2, allTimeOverdue: 4, dueNextWeek: 6 }],
+      totals: { completed: 12, overdueThisWeek: 2, allTimeOverdue: 4, dueNextWeek: 6 },
+    }],
+    managePreferencesUrl: "/worklenz/settings/notifications",
+    viewAllTasksUrl: "/worklenz/my-tasks",
+    unsubscribeUrl: "/public/digest/unsubscribe?token=sample",
+  });
+});
+
 router.get("/task-moved-to-done", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
 
   const task = {
     name: "Soloman's Island Project - SIM Registration + Central DB + KYC",
-    members: "Dinindu, Dinindu Wanniarachchi, Pasindu Ishan",
+    members: "Jane, Jane Wanniarachchi, Pasindu Ishan",
     url: "http://localhost:4200/worklenz/projects/6de9c9df-2193-4212-8d64-9dfc36a83ed2?tab=tasks-list&task=f8b3fc45-a28b-4d8f-985e-9e43f8577aa8",
     team_name: "Automation",
     project_name: "Allen LLC"
   };
 
   const sampleData: ITaskMovedToDoneRecord = {
-    greeting: "Hi Dinindu",
+    greeting: "Hi Jane",
     summary: "Great news! a task just got completed!",
     settings_url: "/settings",
     task
@@ -116,13 +204,13 @@ router.get("/project-daily-digest", (req: IWorkLenzRequest, res: IWorkLenzRespon
   const sampleData: IProjectDigest = {
     id: "",
     name: "Worklenz",
-    team_name: "Ceydigital",
-    greeting: `Hi Dinindu`,
+    team_name: "Acme Inc",
+    greeting: `Hi Jane`,
     due_tomorrow: [],
     settings_url: "/",
     project_url: "/",
     subscribers: [],
-    summary: `Here's the "Worklenz" summary | Ceydigital`,
+    summary: `Here's the "Worklenz" summary | Acme Inc`,
     today_completed: [
       {
         id: "abc123",
@@ -138,9 +226,9 @@ router.get("/project-daily-digest", (req: IWorkLenzRequest, res: IWorkLenzRespon
 
 router.get("/task-comment", (req: IWorkLenzRequest, res: IWorkLenzResponse) => {
   const data: ICommentEmailNotification = {
-    greeting: "Hi Dinindu",
-    summary: `"Dinindu Office" added a new comment on "Email Notifications"`,
-    team: "Ceydigital",
+    greeting: "Hi Jane",
+    summary: `"Jane Smith" added a new comment on "Email Notifications"`,
+    team: "Acme Inc",
     project_name: "Worklenz",
     comment: "Any updates on this?",
     task: "Email Notifications",

@@ -56,7 +56,7 @@ export const usePricingCalculations = (
           }
         } else {
           const basePrice = parseFloat(planData.monthly_base_price || '0');
-          const includedUsers = parseInt(planData.included_users) || 0;
+          const includedUsers = parseInt(planData.included_users || '0') || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const extraUserCost = extraUsers * parseFloat(planData.monthly_per_user_price || '0');
           finalPrice = basePrice + extraUserCost;
@@ -69,7 +69,7 @@ export const usePricingCalculations = (
           }
         } else {
           const basePrice = parseFloat(planData.monthly_base_price || '0');
-          const includedUsers = parseInt(planData.included_users) || 0;
+          const includedUsers = parseInt(planData.included_users || '0') || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const extraUserCost = extraUsers * parseFloat(planData.monthly_per_user_price || '0');
           finalPrice = basePrice + extraUserCost;
@@ -126,7 +126,7 @@ export const usePricingCalculations = (
           finalPrice = parseFloat(pricingData.enterprise.annual_base_price || '0');
         } else {
           const baseAnnualPrice = parseFloat(planData.annual_base_price || '0');
-          const includedUsers = parseInt(planData.included_users) || 0;
+          const includedUsers = parseInt(planData.included_users || '0') || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const extraUserCost = extraUsers * parseFloat(planData.annual_per_user_price || '0') * 12;
           finalPrice = baseAnnualPrice + extraUserCost;
@@ -136,7 +136,7 @@ export const usePricingCalculations = (
           finalPrice = parseFloat(planData.annual_base_price || '0');
         } else {
           const baseAnnualPrice = parseFloat(planData.annual_base_price || '0');
-          const includedUsers = parseInt(planData.included_users) || 0;
+          const includedUsers = parseInt(planData.included_users || '0') || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const extraUserCost = extraUsers * parseFloat(planData.annual_per_user_price || '0') * 12;
           finalPrice = baseAnnualPrice + extraUserCost;

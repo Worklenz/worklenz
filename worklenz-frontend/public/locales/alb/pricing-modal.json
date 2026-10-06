@@ -15,14 +15,18 @@
     "explanation": {
       "perUser": "Paguani vetëm për përdoruesit aktivë. I përsosur për ekipe të vogla (1-5 përdorues) me çmime fleksibile që rriten me ekipin tuaj.",
       "basePlan": "Çmim bazë i fiksuar me përdorues të përfshirë plus kosto shtesë për përdorues. Ideal për ekipe më të mëdha (6+ përdorues) me faturim të parashikueshëm."
-    }
+    },
+    "autoPerUser": "Duke përdorur automatikisht çmimin për përdorues për {{count}} përdorues{{s}}",
+    "autoBase": "Duke përdorur automatikisht çmimin e planit bazë për {{count}} përdorues{{s}}",
+    "additionalUserCharge": "Përfshin përdoruesit {{included}}. Çdo përdorues shtesë është {{price}} $/muaj."
   },
   "teamSize": {
     "label": "Madhësia e Ekipit",
     "help": "Zgjidhni madhësinë aktuale ose të pritur të ekipit tuaj",
     "user": "përdorues",
     "users": "përdorues",
-    "helpDescription": "Shkruani numrin e përdoruesve në ekipin tuaj (1-500)"
+    "helpDescription": "Shkruani numrin e përdoruesve në ekipin tuaj (1-500)",
+    "placeholder": "Zgjidhni madhësinë e ekipit"
   },
   "plans": {
     "free": {
@@ -36,6 +40,37 @@
         "Mbështetja e komunitetit"
       ],
       "forever": "Për gjithmonë"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Për ekipet profesionale",
+      "features": [
+        "✓ Projekte dhe detyra të pakufizuara",
+        "Menaxhimi i avancuar i detyrave",
+        "Grafikët Gantt",
+        "Ndjekje kohe",
+        "Fushat e personalizuara",
+        "Mbështetje me email"
+      ],
+      "payPerUser": "Pagesa për përdorues (1-5 përdorues)",
+      "usersIncluded": "{{count}} Përdoruesit e përfshirë",
+      "maxUsers": "Deri në {{count}} Përdoruesit Max"
+    },
+    "business": {
+      "name": "Biznes",
+      "description": "Për organizatat në rritje",
+      "features": [
+        "Gjithçka në Pro",
+        "Raportim i avancuar",
+        "Rrjedha pune të personalizuara",
+        "Qasja në API",
+        "✓ Mbështetje me prioritet",
+        "Integrime të avancuara"
+      ],
+      "payPerUser": "Pagesa për përdorues (1-5 përdorues)",
+      "usersIncluded": "{{count}} Përdoruesit e përfshirë",
+      "maxUsers": "Deri në {{count}} Përdoruesit Max",
+      "maxUsersAppSumo": "Maksimumi deri në 50 përdorues (AppSumo Special)"
     },
     "proSmall": {
       "name": "Pro i Vogël",
@@ -168,7 +203,10 @@
     "unlimited": "E pakufizuar"
   },
   "tips": {
-    "switchAnytime": "💡 Këshillë: Mund të ndryshoni midis modeleve të çmimeve në çdo kohë nga cilësimet tuaja të faturimit"
+    "switchAnytime": "💡 Këshillë: Mund të ndryshoni midis modeleve të çmimeve në çdo kohë nga cilësimet tuaja të faturimit",
+    "smallTeamPricing": "💰 Ekipet e vogla marrin tarifa më të mira për përdorues",
+    "annualDiscount": "💸 Kurseni deri në 30% me faturimin vjetor",
+    "freeUpgrade": "🚀 Përdoruesit falas mund të përmirësojnë në çdo kohë"
   },
   "errors": {
     "loadingData": "Gabim në ngarkimin e të dhënave të çmimeve",
@@ -218,6 +256,82 @@
       "payment": "Pagesa",
       "complete": "Përfundo"
     }
+  },
+  "ui": {
+    "loading": "Po ngarkon opsionet e çmimeve...",
+    "selectTeamSize": "Zgjidhni madhësinë e ekipit tuaj",
+    "chooseBilling": "Zgjidhni frekuencën e faturimit",
+    "planSelected": "Plani i zgjedhur",
+    "totalCost": "Kostoja totale",
+    "perUserCost": "Kostoja për përdorues",
+    "included": "Të përfshira",
+    "popular": "Më i Popullarizuar",
+    "recommended": "I Rekomanduar",
+    "currentPlan": "Plani Aktual",
+    "upgrade": "Përmirëso",
+    "downgrade": "Ulje",
+    "change": "Ndrysho Planin",
+    "specialOffer": "Ofertë Speciale",
+    "limitedTime": "Kohë e kufizuar",
+    "saveAmount": "Kurseni {{amount}} $",
+    "freeForever": "Falas Përgjithmonë",
+    "noCommitment": "Asnjë angazhim, anuloni në çdo kohë",
+    "instantActivation": "Aktivizimi i menjëhershëm",
+    "supportIncluded": "Mbështetja e përfshirë"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "Menaxhimi i Detyrave",
+      "projectTracking": "Ndjekja e projektit",
+      "teamCollaboration": "Bashkëpunimi i Ekipit",
+      "fileSharing": "Ndarja e skedarëve",
+      "basicReporting": "Raportimi bazë",
+      "mobileApp": "Qasja në aplikacionin celular"
+    },
+    "advanced": {
+      "ganttCharts": "Grafikët Gantt",
+      "timeTracking": "Gjurmimi i kohës",
+      "advancedReporting": "Raportimi i avancuar",
+      "customFields": "Fusha të personalizuara",
+      "apiAccess": "Qasja në API",
+      "prioritySupport": "Mbështetja prioritare"
+    },
+    "enterprise": {
+      "sso": "Hyrja e vetme (SSO)",
+      "advancedSecurity": "Siguri e avancuar",
+      "customIntegrations": "Integrime të personalizuara",
+      "dedicatedSupport": "Mbështetje e përkushtuar",
+      "onPremise": "Vendosja në Premisë",
+      "slaSupport": "Mbështetje SLA"
+    }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo Ekskluzive: 70% ZBRITJE në planet e biznesit!",
+    "timeRemaining": "{{days}}d {{hours}}h {{minutes}}m të mbetura",
+    "urgency": {
+      "finalHours": "ORËT FINAL",
+      "urgent": "URGJENTE",
+      "limitedTime": "KOHË E KUFIZUAR"
+    },
+    "specialPricing": "🎯 Çmim special për anëtarët e marrëveshjes së përjetshme të AppSumo",
+    "businessUsers": "💪 Planet e biznesit mbështesin deri në 50 përdorues (normalisht 25)",
+    "lifetimeTitle": "Anëtar i marrëveshjes së përjetshme të AppSumo",
+    "discountExpired": "Periudha jote e zbritjes prej 70% ka skaduar, por prapë mund të përmirësosh në planet e biznesit me çmimin standard.",
+    "watchOffers": "💡 Shiko për fushatat e ardhshme dhe ofertat speciale!",
+    "discountApplied": "Aplikohet 70% zbritje në AppSumo"
+  },
+  "billing": {
+    "billedAnnually": "(faturohet çdo vit)",
+    "billedMonthly": "(faturohet çdo muaj)",
+    "perYear": "/year",
+    "perMonth": "/month",
+    "forUsers": "për {{count}} përdorues{{s}}"
+  },
+  "ribbon": {
+    "recommended": "I Rekomanduar",
+    "popular": "Më i Popullarizuar",
+    "bestValue": "Vlera më e Mirë",
+    "appsumoSpecial": "AppSumo Special"
   },
   "customFields": {
     "upgradeModalHeadline": "Kapni çdo detaj me fusha të personalizuara të pakufizuara",

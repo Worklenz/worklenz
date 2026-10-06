@@ -60,6 +60,14 @@
   "filterActive": "Filter aktiv",
   "clearAll": "Alle löschen",
   "clearing": "Wird gelöscht...",
+  "exportFiltered": "Exportieren",
+  "exportFilteredTooltip": "Gefilterte Aufgaben als CSV exportieren",
+  "exportFilteredEmpty": "Keine Aufgaben entsprechen den aktuellen Filtern",
+  "exportFilteredSuccessTitle": "Export heruntergeladen",
+  "exportFilteredSuccessMessage": "Die CSV-Datei der gefilterten Aufgaben wurde heruntergeladen.",
+  "exportFilteredFailedTitle": "Export fehlgeschlagen",
+  "exportFilteredFailedMessage": "Gefilterte Aufgaben konnten nicht exportiert werden. Bitte versuchen Sie es erneut.",
+  "exportFilteredBusinessPlanTooltip": "Der Aufgabenexport erfordert den Business-Plan. Upgraden Sie, um zu exportieren.",
   "cancel": "Abbrechen",
   "search": "Suchen",
   "groupedBy": "Gruppiert nach",
@@ -87,5 +95,7 @@
   "ascendingOrder": "Aufsteigend",
   "descendingOrder": "Absteigend",
   "currentSort": "Aktuelle Sortierung: {{field}} {{order}}",
-  "apply": "Anwenden"
+  "apply": "Anwenden",
+  "showingYourTasksOnly": "Showing your tasks only",
+  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
 }

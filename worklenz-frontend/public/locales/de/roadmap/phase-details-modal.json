@@ -31,6 +31,12 @@
   },
   "tasksInPhase": {
     "title": "Tasks in this Phase",
-    "noTasks": "No tasks in this phase"
+    "noTasks": "No tasks in this phase",
+    "priority": "Priorität",
+    "assignees": "Zugewiesene",
+    "dueDate": "Fälligkeitsdatum",
+    "startDate": "Startdatum",
+    "noAssignees": "Nicht zugewiesen",
+    "noDueDate": "Kein Fälligkeitsdatum"
   }
 }

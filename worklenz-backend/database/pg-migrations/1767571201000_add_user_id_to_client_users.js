@@ -28,8 +28,16 @@ WHERE user_id IS NOT NULL;
 ALTER TABLE client_users ALTER COLUMN password_hash DROP NOT NULL;
 
 -- Add check constraint to ensure either user_id OR password_hash exists (not both null)
-ALTER TABLE client_users ADD CONSTRAINT client_users_auth_check
-CHECK (user_id IS NOT NULL OR password_hash IS NOT NULL);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'client_users'::regclass AND conname = 'client_users_auth_check'
+    ) THEN
+        ALTER TABLE client_users ADD CONSTRAINT client_users_auth_check
+            CHECK (user_id IS NOT NULL OR password_hash IS NOT NULL);
+    END IF;
+END $$;
 
 -- Add comments for documentation
 COMMENT ON COLUMN client_users.user_id IS 'Links to Worklenz user for single sign-on. NULL for standalone client portal accounts.';

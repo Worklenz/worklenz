@@ -97,7 +97,7 @@ const TaskDrawerBillable = ({ task = null, disabled = false }: TaskDrawerBillabl
             }
           }}
           title={
-            <Flex align="center" justify="space-between" style={{ width: 240 }}>
+            <Flex align="center" justify="space-between" style={{ width: '100%' }}>
               <Typography.Text strong>
                 {t('projectFinanceTitle', { defaultValue: t('projectFinanceTitle') })}
               </Typography.Text>

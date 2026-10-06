@@ -1,8 +1,11 @@
 import { Server, Socket } from "socket.io";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
-import { log_error } from "../util";
+import { getLoggedInUserIdFromSocket, log_error } from "../util";
 import { verifyNonGuestTaskAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import { canUserEditTask } from "../../shared/assignee-task-scope";
+import { ISocketSession } from "../../interfaces/socket-session";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 interface SubtaskSortUpdate {
   task_id: string;
@@ -38,9 +41,10 @@ interface SubtaskSortOrderChangeRequest {
  *
  * Access control
  * ──────────────
- * Verified against parent_task_id before any mutation.  Every UPDATE is
- * also scoped to AND parent_task_id = $3, so a tampered subtask UUID from
- * another project simply matches no rows.
+ * Parent may be assignee-scope read-only (TVR-13). View access on the parent
+ * is enough; each reordered subtask must still be editable by the requester.
+ * Every UPDATE is also scoped to AND parent_task_id = $3, so a tampered
+ * subtask UUID from another project simply matches no rows.
  */
 export async function on_subtask_sort_order_change(
   _io: Server,
@@ -57,11 +61,27 @@ export async function on_subtask_sort_order_change(
     }
 
     // ── Access control ────────────────────────────────────────────────────────
-    const hasAccess = await verifyNonGuestTaskAccessSocket(socket, parent_task_id);
-    if (!hasAccess) {
+    // Guests cannot reorder subtasks (they cannot mutate tasks at all).
+    // For non-guests: parent must be viewable and editable; each moved subtask must be editable.
+    const hasParentAccess = await verifyNonGuestTaskAccessSocket(socket, parent_task_id);
+    if (!hasParentAccess) {
       logUnauthorizedSocketAccess(socket, "SUBTASK_SORT_ORDER_CHANGE", "task", parent_task_id);
       socket.emit(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), { done: false });
       return;
+    }
+
+    const userId = getLoggedInUserIdFromSocket(socket);
+    const { session } = socket.request as ISocketSession;
+    const sessionUser = session?.passport?.user as IPassportSession | undefined;
+
+    // Each moved subtask must be editable (assigned / exempt)
+    for (const update of subtask_updates) {
+      const mayEditSubtask = await canUserEditTask(userId, update.task_id, sessionUser);
+      if (!mayEditSubtask) {
+        logUnauthorizedSocketAccess(socket, "SUBTASK_SORT_ORDER_CHANGE", "task", update.task_id);
+        socket.emit(SocketEvents.SUBTASK_SORT_ORDER_CHANGE.toString(), { done: false });
+        return;
+      }
     }
 
     // ── Determine safe sort_order values ──────────────────────────────────────

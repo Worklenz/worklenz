@@ -15,6 +15,9 @@ import { SocketEvents } from "../socket.io/events";
 import { IO } from "../shared/io";
 import { getCurrentProjectsCount, getFreePlanSettings } from "../ee/shared/paddle-utils";
 import { ActivityLoggingService } from "../services/activity-logging.service";
+import { NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE } from "../shared/guest-access-sql";
+import { hasTeamAdminPrivileges } from "../shared/team-permissions";
+
 
 export default class ProjectsController extends WorklenzControllerBase {
 
@@ -158,10 +161,20 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async getMyProjectsToTasks(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const q = `SELECT id, name, color_code
-               FROM projects
-               WHERE team_id = $1
-                 AND is_member_of_project(projects.id, $2, $1)`;
+    const q = `SELECT p.id, p.name, p.color_code
+               FROM projects p
+               ${NON_GUEST_ACCESS_JOIN('$2')}
+               -- For non-admins, require explicit project membership
+               LEFT JOIN project_members pm ON pm.project_id = p.id 
+                 AND pm.team_member_id = (SELECT id FROM team_members WHERE user_id = $2 AND team_id = p.team_id)
+               WHERE p.team_id = $1
+                 AND ${NON_GUEST_ACCESS_PREDICATE}
+                 AND (
+                   r.owner = TRUE 
+                   OR r.admin_role = TRUE
+                   OR pm.id IS NOT NULL
+                 )
+               ORDER BY p.name ASC`;
     const result = await db.query(q, [req.user?.team_id, req.user?.id || null]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -439,7 +452,8 @@ export default class ProjectsController extends WorklenzControllerBase {
     const fieldMapping: Record<string, string> = {
       'name': 'name',
       'email': 'email',
-      'access': 'access',
+      'access': 'role_level',
+      'role_level': 'role_level',
       'job_title': 'job_title',
       'all_tasks_count': 'all_tasks_count',
       'completed_tasks_count': 'completed_tasks_count',
@@ -687,21 +701,29 @@ export default class ProjectsController extends WorklenzControllerBase {
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id)) AS all_tasks_count,
                (SELECT COUNT(*) FROM tasks WHERE archived IS FALSE AND project_id = project_members.project_id AND id IN (SELECT task_id FROM tasks_assignees WHERE tasks_assignees.project_member_id = project_members.id) AND status_id IN (SELECT id FROM task_statuses WHERE category_id = (SELECT id FROM sys_task_status_categories WHERE is_done IS TRUE))) AS completed_tasks_count,
                EXISTS(SELECT email FROM email_invitations WHERE team_member_id = project_members.team_member_id AND email_invitations.team_id = $2) AS pending_invitation,
-               COALESCE((SELECT name FROM project_access_levels WHERE id = project_members.project_access_level_id),
-                        COALESCE((SELECT name FROM roles WHERE id = tm.role_id), 'Member')) AS access,
-               (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title
-        FROM project_members
-        INNER JOIN team_members tm ON project_members.team_member_id = tm.id
-        LEFT JOIN users u ON tm.user_id = u.id
-        WHERE project_id = $1
-        ${search ? searchFilter : ""}
+                COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access,
+                COALESCE(pal.name, (SELECT name FROM roles WHERE id = tm.role_id), 'Member') AS access_level,
+               (SELECT name FROM job_titles WHERE id = tm.job_title_id) AS job_title,
+                 CASE
+                   WHEN (SELECT name FROM roles WHERE id = tm.role_id) = 'Team Lead' THEN 3
+                   WHEN (SELECT owner FROM roles WHERE id = tm.role_id) = true THEN 1
+                   WHEN (SELECT admin_role FROM roles WHERE id = tm.role_id) = true THEN 2
+                   WHEN pal.key = 'GUEST' THEN 5
+                   ELSE 4
+                 END AS role_level
+         FROM project_members
+         INNER JOIN team_members tm ON project_members.team_member_id = tm.id
+         LEFT JOIN users u ON tm.user_id = u.id
+         LEFT JOIN project_access_levels pal ON project_members.project_access_level_id = pal.id
+         WHERE project_id = $1
+         ${search ? searchFilter : ""}
       )
       SELECT
         (SELECT COUNT(*) FROM filtered_members) AS total,
         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t))), '[]'::JSON)
            FROM (
              SELECT * FROM filtered_members
-             ORDER BY ${safeSortField} ${safeSortOrder}
+             ORDER BY ${safeSortField} ${safeSortOrder}${safeSortField === 'role_level' ? ", name ASC" : ""}
              LIMIT $3 OFFSET $4) t) AS data
     `;
 
@@ -759,28 +781,33 @@ export default class ProjectsController extends WorklenzControllerBase {
              projects.restrict_task_creation,
              projects.phase_assignees_enabled,
              to_jsonb(projects)->>'worklenz_id' AS worklenz_id,
+             projects.restrict_tasks_to_assignee,
+             projects.auto_assign_subtask_phase,
              (SELECT task_list_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS task_list_group_by,
              (SELECT board_group_by FROM project_members WHERE project_id = $1 AND team_member_id = (SELECT id FROM team_members WHERE user_id = $3 AND team_id = $2 LIMIT 1)) AS board_group_by,
 
-             (SELECT COALESCE(ROW_TO_JSON(pm), '{}'::JSON)
+             (SELECT COALESCE(ROW_TO_JSON(pm), NULL)
                     FROM (SELECT team_member_id AS id,
-                                (SELECT COALESCE(ROW_TO_JSON(pmi), '{}'::JSON)
+                                (SELECT ROW_TO_JSON(pmi)
                                   FROM (SELECT name,
                                               email,
                                               avatar_url
                                         FROM team_member_info_view tmiv
                                         WHERE tmiv.team_member_id = pm.team_member_id
-                                          AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = $1)) pmi) AS project_manager_info,
+                                          AND tmiv.team_id = (SELECT team_id FROM projects WHERE id = $1)
+                                        LIMIT 1) pmi) AS project_manager_info,
                                 EXISTS(SELECT email
                                         FROM email_invitations
                                         WHERE team_member_id = pm.team_member_id
                                           AND email_invitations.team_id = (SELECT team_id
                                                                           FROM team_member_info_view
-                                                                          WHERE team_member_id = pm.team_member_id)) AS pending_invitation,
+                                                                          WHERE team_member_id = pm.team_member_id
+                                                                          LIMIT 1)) AS pending_invitation,
                                 (SELECT active FROM team_members WHERE id = pm.team_member_id)
                           FROM project_members pm
                           WHERE project_id = $1
-                            AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')) pm) AS project_manager
+                            AND project_access_level_id = (SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER')
+                          LIMIT 1) pm) AS project_manager
       FROM projects
              LEFT JOIN sys_project_statuses sps ON projects.status_id = sps.id
              LEFT JOIN sys_project_priorities tp ON projects.priority_id = tp.id
@@ -790,11 +817,16 @@ export default class ProjectsController extends WorklenzControllerBase {
     const result = await db.query(q, [req.params.id, req.user?.team_id ?? null, req.user?.id ?? null]);
     const [data] = result.rows;
 
-    if (data && data.project_manager) {
-      data.project_manager.name = data.project_manager.project_manager_info.name;
-      data.project_manager.email = data.project_manager.project_manager_info.email;
-      data.project_manager.avatar_url = data.project_manager.project_manager_info.avatar_url;
+    if (data?.project_manager?.id) {
+      const info = data.project_manager.project_manager_info;
+      if (info && typeof info === "object") {
+        data.project_manager.name = info.name;
+        data.project_manager.email = info.email;
+        data.project_manager.avatar_url = info.avatar_url;
+      }
       data.project_manager.color_code = getColor(data.project_manager.name);
+    } else if (data) {
+      data.project_manager = null;
     }
 
     // FIX: Format dates consistently like tasks to avoid timezone issues
@@ -809,12 +841,16 @@ export default class ProjectsController extends WorklenzControllerBase {
       // Add is_guest flag to indicate if current user is a guest
       const isGuestQuery = `
         SELECT 1
-        FROM project_members pm
-        INNER JOIN project_access_levels pal ON pm.project_access_level_id = pal.id
-        INNER JOIN team_members tm ON pm.team_member_id = tm.id
-        WHERE pm.project_id = $1 
+        FROM team_members tm
+        WHERE tm.team_id = (SELECT team_id FROM projects WHERE id = $1)
           AND tm.user_id = $2 
-          AND pal.key = 'GUEST'
+          AND tm.is_guest = TRUE
+          AND EXISTS (
+            SELECT 1
+            FROM project_members pm
+            WHERE pm.project_id = $1
+              AND pm.team_member_id = tm.id
+          )
         LIMIT 1;
       `;
 
@@ -862,6 +898,17 @@ export default class ProjectsController extends WorklenzControllerBase {
     req.body.team_member_id = req.body.project_manager ? req.body.project_manager.id : null;
     req.body.priority_id = req.body.priority_id || null;
 
+    // Project Privacy: only Owner/Admin may change restrict_tasks_to_assignee.
+    // Strip the field for Project Managers / Team Leads so other settings saves cannot alter it.
+    const canUpdateProjectPrivacy = hasTeamAdminPrivileges(req.user);
+    const hasRestrictTasksToAssignee = Object.prototype.hasOwnProperty.call(
+      req.body,
+      "restrict_tasks_to_assignee"
+    );
+    if (hasRestrictTasksToAssignee && !canUpdateProjectPrivacy) {
+      delete req.body.restrict_tasks_to_assignee;
+    }
+
     // FIX: Format dates consistently like tasks - parse as date-only strings to avoid timezone issues
     if (req.body.start_date) {
       req.body.start_date = req.body.start_date.toString().split('T')[0];
@@ -883,6 +930,30 @@ export default class ProjectsController extends WorklenzControllerBase {
               AND team_id = $3
           `,
           [Boolean(req.body.phase_assignees_enabled), req.params.id, req.user?.team_id || null]
+        );
+      }
+
+      if (Object.prototype.hasOwnProperty.call(req.body, 'auto_assign_subtask_phase')) {
+        await db.query(
+          `
+            UPDATE projects
+            SET auto_assign_subtask_phase = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [Boolean(req.body.auto_assign_subtask_phase), req.params.id, req.user?.team_id || null]
+        );
+      }
+
+      if (canUpdateProjectPrivacy && hasRestrictTasksToAssignee) {
+        await db.query(
+          `
+            UPDATE projects
+            SET restrict_tasks_to_assignee = $1
+            WHERE id = $2
+              AND team_id = $3
+          `,
+          [Boolean(req.body.restrict_tasks_to_assignee), req.params.id, req.user?.team_id || null]
         );
       }
 

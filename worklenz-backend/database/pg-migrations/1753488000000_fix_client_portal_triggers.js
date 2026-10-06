@@ -29,15 +29,15 @@ $$ LANGUAGE plpgsql;
 -- Only recreate triggers for tables that actually exist
 -- Based on the existing tables: client_portal_services, client_portal_requests, client_portal_invoices
 
-CREATE TRIGGER trigger_log_client_portal_services_activity
+CREATE OR REPLACE TRIGGER trigger_log_client_portal_services_activity
     AFTER INSERT OR UPDATE OR DELETE ON client_portal_services
     FOR EACH ROW EXECUTE FUNCTION trigger_log_client_portal_activity();
 
-CREATE TRIGGER trigger_log_client_portal_requests_activity
+CREATE OR REPLACE TRIGGER trigger_log_client_portal_requests_activity
     AFTER INSERT OR UPDATE OR DELETE ON client_portal_requests
     FOR EACH ROW EXECUTE FUNCTION trigger_log_client_portal_activity();
 
-CREATE TRIGGER trigger_log_client_portal_invoices_activity
+CREATE OR REPLACE TRIGGER trigger_log_client_portal_invoices_activity
     AFTER INSERT OR UPDATE OR DELETE ON client_portal_invoices
     FOR EACH ROW EXECUTE FUNCTION trigger_log_client_portal_activity();
   `);

@@ -10,15 +10,19 @@ import {
   Typography,
   theme,
   PlusOutlined,
-  EditOutlined,
+  SettingOutlined,
   CrownOutlined,
 } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchCustomColumns } from '@/features/task-management/task-management.slice';
 import { selectCustomColumns } from '@/features/task-management/task-management.selectors';
-import { setCustomColumnModalAttributes } from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
+import {
+  setCustomColumnModalAttributes,
+  toggleCustomColumnModalOpen,
+} from '@/features/projects/singleProject/task-list-custom-columns/task-list-custom-columns-slice';
 import CustomColumnFormContent from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-form-content';
+import CustomColumnModal from '@/pages/projects/projectView/taskList/task-list-table/custom-columns/custom-column-modal/custom-column-modal';
 import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
@@ -27,9 +31,13 @@ import type { ITaskListColumn } from '@/types/tasks/taskList.types';
 
 interface CustomColumnsSettingsSectionProps {
   projectId?: string | null;
+  disabled?: boolean;
 }
 
-const CustomColumnsSettingsSection = ({ projectId }: CustomColumnsSettingsSectionProps) => {
+const CustomColumnsSettingsSection = ({
+  projectId,
+  disabled = false,
+}: CustomColumnsSettingsSectionProps) => {
   const { t } = useTranslation('project-drawer');
   const { t: tTable } = useTranslation('task-list-table');
   const { token } = theme.useToken();
@@ -37,7 +45,6 @@ const CustomColumnsSettingsSection = ({ projectId }: CustomColumnsSettingsSectio
   const currentSession = useAuthService().getCurrentSession();
   const isFree = isFreeUser(currentSession);
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
-  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
   const customColumns = useAppSelector(selectCustomColumns);
@@ -50,38 +57,56 @@ const CustomColumnsSettingsSection = ({ projectId }: CustomColumnsSettingsSectio
     }
   }, [dispatch, projectId]);
 
+  useEffect(() => {
+    if (disabled) {
+      setIsAdding(false);
+    }
+  }, [disabled]);
+
   const closeForms = () => {
-    setEditingKey(null);
     setIsAdding(false);
   };
 
   const handleAddColumn = () => {
+    if (disabled) return;
     if (isFree || hasReachedCustomFieldLimit) {
       dispatch(toggleUpgradeModal());
       return;
     }
     dispatch(setCustomColumnModalAttributes({ modalType: 'create', columnId: null }));
-    setEditingKey(null);
     setIsAdding(true);
   };
 
   const handleEditColumn = (columnKey?: string) => {
-    if (!columnKey) return;
-    dispatch(setCustomColumnModalAttributes({ modalType: 'edit', columnId: columnKey }));
+    if (disabled || !columnKey) return;
+    const column = customColumns.find(customColumn => customColumn.key === columnKey);
+    const columnId = column?.id || column?.uuid || columnKey;
+
+    dispatch(
+      setCustomColumnModalAttributes({
+        modalType: 'edit',
+        columnId,
+        columnData: column,
+        canChangeColumnType: false,
+        projectId: projectId ?? null,
+      })
+    );
+    dispatch(toggleCustomColumnModalOpen(true));
     setIsAdding(false);
-    setEditingKey(prev => (prev === columnKey ? null : columnKey));
   };
 
-  const addButtonTooltip = hasReachedCustomFieldLimit
-    ? t('customFieldLimitReached', {
-        defaultValue: 'Custom field limit reached. Upgrade to add more.',
-      })
-    : isFree
-      ? t('upgrade-plan', { defaultValue: 'Upgrade plan' })
-      : undefined;
+  const addButtonTooltip = disabled
+    ? t('noPermission', { defaultValue: 'No permission' })
+    : hasReachedCustomFieldLimit
+      ? t('customFieldLimitReached', {
+          defaultValue: 'Custom field limit reached. Upgrade to add more.',
+        })
+      : isFree
+        ? t('upgrade-plan', { defaultValue: 'Upgrade plan' })
+        : undefined;
 
   return (
-    <Flex vertical gap={16}>
+    <Flex vertical gap={16} aria-disabled={disabled}>
       <Flex justify="space-between" align="flex-start">
         <div>
           <Typography.Title level={5} style={{ marginTop: 0, marginBottom: 4 }}>
@@ -95,15 +120,18 @@ const CustomColumnsSettingsSection = ({ projectId }: CustomColumnsSettingsSectio
         </div>
         <Tooltip title={addButtonTooltip}>
           <Button
-            icon={isFree ? <CrownOutlined style={{ color: '#faad14' }} /> : <PlusOutlined />}
+            icon={isFree && !disabled ? <CrownOutlined style={{ color: '#faad14' }} /> : <PlusOutlined />}
             onClick={handleAddColumn}
+            disabled={disabled}
+            aria-label={t('addColumn', { defaultValue: 'Add Column' })}
+            style={{ cursor: disabled ? 'not-allowed' : undefined }}
           >
             {t('addColumn', { defaultValue: 'Add Column' })}
           </Button>
         </Tooltip>
       </Flex>
 
-      {isAdding && (
+      {isAdding && !disabled && (
         <div
           style={{
             borderRadius: 8,
@@ -136,17 +164,6 @@ const CustomColumnsSettingsSection = ({ projectId }: CustomColumnsSettingsSectio
             overflow: 'hidden',
             border: `1px solid ${token.colorBorderSecondary}`,
           }}
-          expandable={{
-            expandedRowKeys: editingKey ? [editingKey] : [],
-            showExpandColumn: false,
-            expandedRowRender: record => (
-              <CustomColumnFormContent
-                key={record.key}
-                projectId={projectId || undefined}
-                onDone={closeForms}
-              />
-            ),
-          }}
           columns={[
             {
               title: t('customColumnNameHeader', { defaultValue: 'Name' }),
@@ -174,20 +191,23 @@ const CustomColumnsSettingsSection = ({ projectId }: CustomColumnsSettingsSectio
               key: 'actions',
               width: 56,
               align: 'right',
-              render: (_, record) => (
-                <Tooltip title={t('editTooltip', { defaultValue: 'Edit' })}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EditOutlined />}
-                    onClick={() => handleEditColumn(record.key)}
-                  />
-                </Tooltip>
-              ),
+              render: (_, record) =>
+                disabled ? null : (
+                  <Tooltip title={t('editTooltip', { defaultValue: 'Edit' })}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<SettingOutlined />}
+                      onClick={() => handleEditColumn(record.key)}
+                      aria-label={t('editTooltip', { defaultValue: 'Edit' })}
+                    />
+                  </Tooltip>
+                ),
             },
           ]}
         />
       )}
+      {!disabled && <CustomColumnModal projectId={projectId || undefined} />}
     </Flex>
   );
 };

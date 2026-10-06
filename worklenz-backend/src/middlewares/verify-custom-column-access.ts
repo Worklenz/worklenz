@@ -7,6 +7,35 @@ import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
 
 /**
+ * Helper function to resolve column ID.
+ * If the ID is not a valid UUID, tries to find the column by key.
+ * Returns the resolved UUID or the original ID if resolution fails.
+ */
+async function resolveColumnId(id: string): Promise<string> {
+  // Check if it's a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) {
+    return id; // Already a valid UUID
+  }
+
+  // Not a UUID, try to find by key
+  try {
+    const result = await db.query(
+      `SELECT id FROM cc_custom_columns WHERE key = $1 LIMIT 1`,
+      [id]
+    );
+    if (result.rows.length > 0) {
+      return result.rows[0].id;
+    }
+  } catch (error) {
+    // If lookup fails, just return the original ID
+    // The database query will fail with a more appropriate error
+  }
+
+  return id;
+}
+
+/**
  * Middleware to verify the user has access to a custom column's project via team
  * membership. Resolves the column's project from cc_custom_columns.id.
  *
@@ -19,7 +48,7 @@ export default function verifyCustomColumnAccess(
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
-    const columnId = req[location]?.[fieldName];
+    let columnId = req[location]?.[fieldName];
 
     if (!columnId) {
       return res.status(400).send(
@@ -34,6 +63,9 @@ export default function verifyCustomColumnAccess(
     }
 
     try {
+      // Resolve column ID (from key to UUID if needed)
+      columnId = await resolveColumnId(columnId);
+
       const q = `
         SELECT 1
         FROM cc_custom_columns cc
@@ -74,7 +106,7 @@ export function verifyNonGuestCustomColumnAccess(
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
-    const columnId = req[location]?.[fieldName];
+    let columnId = req[location]?.[fieldName];
 
     if (!columnId) {
       return res.status(400).send(
@@ -89,6 +121,9 @@ export function verifyNonGuestCustomColumnAccess(
     }
 
     try {
+      // Resolve column ID (from key to UUID if needed)
+      columnId = await resolveColumnId(columnId);
+
       const q = `
         SELECT 1
         FROM cc_custom_columns cc

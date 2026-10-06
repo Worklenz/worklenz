@@ -13,14 +13,14 @@ exports.up = async (pgm) => {
     DECLARE
       _medium_priority_id UUID;
     BEGIN
-      SELECT id
-      INTO _medium_priority_id
-      FROM task_priorities
-      WHERE name = 'Medium'
-      LIMIT 1;
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sys_project_priorities') THEN
+        SELECT id INTO _medium_priority_id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1;
+      ELSE
+        SELECT id INTO _medium_priority_id FROM task_priorities WHERE name = 'Medium' LIMIT 1;
+      END IF;
 
       IF _medium_priority_id IS NULL THEN
-        RAISE EXCEPTION 'Medium task priority is required before setting project default priority';
+        RAISE EXCEPTION 'Medium priority is required before setting project default priority';
       END IF;
 
       UPDATE projects
@@ -32,9 +32,15 @@ exports.up = async (pgm) => {
         FROM pg_constraint
         WHERE conname = 'projects_priority_id_fk'
       ) THEN
-        ALTER TABLE projects
-          ADD CONSTRAINT projects_priority_id_fk
-            FOREIGN KEY (priority_id) REFERENCES task_priorities(id);
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sys_project_priorities') THEN
+          ALTER TABLE projects
+            ADD CONSTRAINT projects_priority_id_fk
+              FOREIGN KEY (priority_id) REFERENCES sys_project_priorities(id) ON DELETE SET NULL;
+        ELSE
+          ALTER TABLE projects
+            ADD CONSTRAINT projects_priority_id_fk
+              FOREIGN KEY (priority_id) REFERENCES task_priorities(id);
+        END IF;
       END IF;
     END
     $$;
@@ -44,11 +50,11 @@ exports.up = async (pgm) => {
     DECLARE
     BEGIN
       IF NEW.priority_id IS NULL THEN
-        SELECT id
-        FROM task_priorities
-        WHERE name = 'Medium'
-        LIMIT 1
-        INTO NEW.priority_id;
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sys_project_priorities') THEN
+          SELECT id FROM sys_project_priorities WHERE name = 'Medium' LIMIT 1 INTO NEW.priority_id;
+        ELSE
+          SELECT id FROM task_priorities WHERE name = 'Medium' LIMIT 1 INTO NEW.priority_id;
+        END IF;
       END IF;
 
       RETURN NEW;
@@ -56,7 +62,7 @@ exports.up = async (pgm) => {
     $$ LANGUAGE plpgsql;
 
     DROP TRIGGER IF EXISTS projects_default_priority_trigger ON projects;
-    CREATE TRIGGER projects_default_priority_trigger
+    CREATE OR REPLACE TRIGGER projects_default_priority_trigger
       BEFORE INSERT OR UPDATE OF priority_id
       ON projects
       FOR EACH ROW

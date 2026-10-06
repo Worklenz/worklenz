@@ -5,11 +5,11 @@
 export interface ActivityLogItem {
   description: string;
   i18n_key?: string;
-  i18n_params?: Record<string, any>;
+  i18n_params?: Record<string, unknown>;
   user_name?: string;
   project_name: string;
   created_at: string;
-  project_id: string;
+  project_id: string | null;
   project_deleted: boolean;
 }
 
@@ -19,7 +19,7 @@ export interface ActivityLogItem {
  */
 export const renderActivityMessage = (
   item: ActivityLogItem,
-  translateFunction: (key: string, options?: any) => string
+  translateFunction: (key: string, options?: Record<string, unknown>) => string
 ): string => {
   // If we have an i18n key, use it with parameters
   if (item.i18n_key && item.i18n_params) {
@@ -53,7 +53,7 @@ export const getActivityUserName = (item: ActivityLogItem): string => {
     return item.user_name;
   }
 
-  if (item.i18n_params?.userName) {
+  if (typeof item.i18n_params?.userName === 'string') {
     return item.i18n_params.userName;
   }
 
@@ -68,7 +68,7 @@ export const getActivityProjectName = (item: ActivityLogItem): string => {
     return item.project_name;
   }
 
-  if (item.i18n_params?.projectName) {
+  if (typeof item.i18n_params?.projectName === 'string') {
     return item.i18n_params.projectName;
   }
 

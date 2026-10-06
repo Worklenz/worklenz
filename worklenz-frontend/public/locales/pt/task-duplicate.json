@@ -12,5 +12,31 @@
     "subscribers": "Inscritos"
   },
   "duplicate": "Duplicar",
-  "cancel": "Cancelar"
+  "cancel": "Cancelar",
+  "copyToProject": {
+    "title": "Copiar tarefa para o projeto",
+    "selectProject": "Selecione um projeto de destino",
+    "confirm": "Copiar tarefa",
+    "copyTask": "Copiar tarefa",
+    "checkDifferences": "Verifique as diferenças",
+    "check": "Verificar diferenças",
+    "checking": "Verificando diferenças...",
+    "confirmDifferences": "Adicionar e copiar tarefa",
+    "differencesFound": "Estas colunas não existem no projeto de destino.",
+    "missingPhasesFound": "Estas fases não existem no projeto de destino.",
+    "statusMissing": "O status \"{{sourceStatus}}\" não existe no projeto de destino. A tarefa será atribuída ao status principal \"{{destinationStatus}}\".",
+    "createMissingItems": "Criar colunas e fases em falta",
+    "createMissingColumns": "Criar colunas em falta",
+    "cancel": "Cancelar",
+    "cancelDifferences": "Cancelar cópia",
+    "success": "Tarefa copiada com sucesso",
+    "openTask": "Abrir tarefa",
+    "loadError": "Não foi possível carregar os projetos acessíveis.",
+    "noProjects": "Nenhum outro projeto acessível foi encontrado.",
+    "noDifferencesFound": "O projeto de destino tem todas as colunas e fases necessárias.",
+    "copyDependencies": "Copiar tarefas de dependência",
+    "copyDependenciesDescription": "Inclua todas as tarefas dependentes ao copiar esta tarefa para o projeto de destino.",
+    "dependenciesInfo": "Esta tarefa tem dependências. As tarefas dependentes também serão copiadas para o projeto de destino.",
+    "error": "Falha ao copiar a tarefa"
+  }
 }

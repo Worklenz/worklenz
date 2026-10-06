@@ -181,6 +181,14 @@ export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || process.
 
 // Azure Blob Storage Credentials
 export const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || "s3";
+// Base URL for the local storage provider (STORAGE_PROVIDER=local). When unset,
+// locally-stored files are referenced with a root-relative URL ("/storage/..."),
+// which works whenever the API serves the frontend from the same origin. Set it
+// (e.g. "http://localhost:3000") when the API is reached on a different origin.
+export const STORAGE_LOCAL_URL = (process.env.STORAGE_LOCAL_URL || "").replace(
+  /\/+$/,
+  "",
+);
 export const AZURE_STORAGE_ACCOUNT_NAME =
   process.env.AZURE_STORAGE_ACCOUNT_NAME;
 export const AZURE_STORAGE_CONTAINER = process.env.AZURE_STORAGE_CONTAINER;
@@ -188,6 +196,9 @@ export const AZURE_STORAGE_ACCOUNT_KEY = process.env.AZURE_STORAGE_ACCOUNT_KEY;
 export const AZURE_STORAGE_URL = process.env.AZURE_STORAGE_URL;
 
 export function getStorageUrl() {
+  if (STORAGE_PROVIDER === "local") {
+    return `${STORAGE_LOCAL_URL}/storage`;
+  }
   if (STORAGE_PROVIDER === "azure") {
     if (!AZURE_STORAGE_URL) {
       console.warn("AZURE_STORAGE_URL is not defined, falling back to S3_URL");

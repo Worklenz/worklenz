@@ -16,17 +16,50 @@ import {
   IWorkloadData,
   ITaskAllocation,
   IMemberAvailability,
+  IWorkloadMember,
 } from '@/types/workload/workload.types';
 import dayjs, { Dayjs } from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import type { CalendarProps } from 'antd';
 
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
+interface RawTask {
+  task_id?: string;
+  task_name?: string;
+  entry_type?: string;
+  logged_hours?: string | number;
+  start_date?: string;
+  end_date?: string;
+  color?: string;
+  priority?: string;
+  priority_name?: string;
+  priority_color?: string;
+  status?: string;
+  status_name?: string;
+  status_color?: string;
+  estimated_hours?: string | number;
+  actual_hours?: string | number;
+  description?: string;
+}
+
+interface RawMember {
+  project_member_id?: string;
+  team_member_id?: string;
+  user_id?: string;
+  name?: string;
+  email?: string;
+  avatar_url?: string;
+  role?: string;
+  org_working_days?: Record<string, boolean>;
+  tasks?: RawTask[];
+}
+
 // Helper function to calculate working days per week from organization settings
-const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
+const calculateWorkingDaysFromOrgSettings = (workingDays?: Record<string, boolean>): number => {
   if (!workingDays) return 5;
   const days = {
     monday: workingDays.monday || false,
@@ -41,8 +74,13 @@ const calculateWorkingDaysFromOrgSettings = (workingDays: any): number => {
 };
 
 // Helper function to transform raw API response to IWorkloadData format
-const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t: any) => {
-  const members = rawData?.body || rawData?.members || [];
+const transformToWorkloadData = (
+  rawData: unknown,
+  workingHoursPerDay: number = 8,
+  t: (key: string) => string
+): IWorkloadData => {
+  const rawObj = rawData && typeof rawData === 'object' ? (rawData as Record<string, unknown>) : null;
+  const members = (Array.isArray(rawObj?.body) ? rawObj.body : Array.isArray(rawObj?.members) ? rawObj.members : []) as RawMember[];
 
   if (!Array.isArray(members)) {
     return {
@@ -52,13 +90,13 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
     };
   }
 
-  const transformedMembers = members.map((member: any) => {
+  const transformedMembers = members.map((member: RawMember): IWorkloadMember => {
     const dailyHours = workingHoursPerDay; // Use the filter setting instead of org settings
     const workingDaysPerWeek = calculateWorkingDaysFromOrgSettings(member.org_working_days) || 5;
     const weeklyCapacity = dailyHours * workingDaysPerWeek;
 
     return {
-      id: member.project_member_id || member.team_member_id || member.user_id,
+      id: member.project_member_id || member.team_member_id || member.user_id || '',
       name: member.name || t('calendar.unknownMember'),
       email: member.email || '',
       avatar: member.avatar_url,
@@ -76,13 +114,13 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
 
   // Generate allocations from member tasks
   const allocations: ITaskAllocation[] = [];
-  members.forEach((member: any) => {
+  members.forEach((member: RawMember) => {
     if (Array.isArray(member.tasks)) {
-      member.tasks.forEach((task: any, index: number) => {
+      member.tasks.forEach((task: RawTask, index: number) => {
         // Calculate hours based on entry type
         let hours = 4; // Default estimation
         if (task.entry_type === 'time_log' && task.logged_hours) {
-          hours = parseFloat(task.logged_hours);
+          hours = typeof task.logged_hours === 'number' ? task.logged_hours : parseFloat(task.logged_hours || '0');
         }
 
         const taskName =
@@ -134,7 +172,7 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
               : taskName,
           projectId: 'current-project',
           projectName: t('calendar.currentProject'),
-          memberId: member.project_member_id || member.team_member_id || member.user_id,
+          memberId: member.project_member_id || member.team_member_id || member.user_id || '',
           memberName: member.name || t('calendar.unknownMember'),
           estimatedHours: hours,
           actualHours: task.entry_type === 'time_log' ? hours : 0,
@@ -205,7 +243,7 @@ const transformToWorkloadData = (rawData: any, workingHoursPerDay: number = 8, t
 };
 
 interface WorkloadCalendarProps {
-  data: IWorkloadData | any; // Allow raw API responses
+  data: IWorkloadData | Record<string, unknown>;
 }
 
 const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
@@ -215,13 +253,21 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
   );
   const { token } = theme.useToken();
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [viewMode, setViewMode] = useState<CalendarProps<Dayjs>['mode']>('month');
 
   // Transform raw API response to expected format
-  const workloadData = useMemo(() => {
-    if (data?.members && data?.allocations && data?.availability) {
-      // Data is already in the expected format
-      return data;
+  const workloadData: IWorkloadData = useMemo(() => {
+    if (
+      data &&
+      typeof data === 'object' &&
+      'members' in data &&
+      'allocations' in data &&
+      'availability' in data &&
+      Array.isArray((data as IWorkloadData).members) &&
+      Array.isArray((data as IWorkloadData).allocations) &&
+      Array.isArray((data as IWorkloadData).availability)
+    ) {
+      return data as IWorkloadData;
     }
     // Transform raw API response
     return transformToWorkloadData(data, workingHoursPerDay, t);
@@ -360,10 +406,6 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
           }`,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
-          '&:hover': {
-            transform: 'scale(1.05)',
-            boxShadow: token.boxShadow,
-          },
         }}
         onClick={() => setSelectedDate(date)}
       >
@@ -425,15 +467,18 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
   }
 
   return (
-    <Flex gap={16}>
-      <div style={{ flex: 1 }}>
+    <Flex gap={16} className="workload-calendar-layout" style={{ padding: 6, flex: 1, minHeight: 0 }}>
+      <div
+        className="workload-calendar-main"
+        style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
+      >
         <Calendar
           value={selectedDate}
           onSelect={setSelectedDate}
           mode={viewMode}
           onPanelChange={(date, mode) => {
             setSelectedDate(date);
-            setViewMode(mode as 'month' | 'week');
+            setViewMode(mode);
           }}
           dateCellRender={dateCellRender}
           monthCellRender={monthCellRender}
@@ -441,6 +486,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
       </div>
 
       <Card
+        className="workload-calendar-side-panel"
         title={
           <Flex align="center" justify="space-between">
             <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
@@ -453,10 +499,21 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
         }
         style={{
           width: 380,
+          flexShrink: 0,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           boxShadow: token.boxShadow,
           borderRadius: '8px',
         }}
-        styles={{ body: { padding: '16px' } }}
+        styles={{
+          body: {
+            padding: '16px',
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+          },
+        }}
       >
         {selectedDateWorkload && selectedDateWorkload.allocations.length > 0 ? (
           <Flex vertical gap={20}>
@@ -622,8 +679,10 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
               >
                 <Flex vertical gap={10}>
                   {selectedDateWorkload.allocations.map(task => {
-                    const member = workloadData.members.find(m => m.id === task.memberId);
-                    const isTimeLog = task.actualHours > 0;
+                    const member = workloadData.members.find(
+                      (m: IWorkloadMember) => m.id === task.memberId
+                    );
+                    const isTimeLog = (task.actualHours ?? 0) > 0;
                     return (
                       <div
                         key={task.id}
@@ -660,7 +719,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                             <Typography.Text
                               ellipsis
                               style={{
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: 500,
                                 color: token.colorText,
                                 marginBottom: 2,
@@ -677,7 +736,9 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                               >
                                 {member?.name}
                               </Typography.Text>
-                              <Typography.Text style={{ color: token.colorTextQuaternary }}>
+                              <Typography.Text
+                                style={{ fontSize: 11, color: token.colorTextQuaternary }}
+                              >
                                 •
                               </Typography.Text>
                               <Typography.Text
@@ -688,7 +749,7 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                                 }}
                               >
                                 {isTimeLog
-                                  ? `${task.actualHours.toFixed(1)}h ${t('calendar.logged')}`
+                                  ? `${(task.actualHours ?? 0).toFixed(1)}h ${t('calendar.logged')}`
                                   : `${task.estimatedHours.toFixed(1)}h ${t('calendar.planned')}`}
                               </Typography.Text>
                             </Flex>
@@ -742,7 +803,9 @@ const WorkloadCalendar = ({ data }: WorkloadCalendarProps) => {
                       .filter(avail => avail.availableHours > 0)
                       .slice(0, 5)
                       .map(avail => {
-                        const member = workloadData.members.find(m => m.id === avail.memberId);
+                        const member = workloadData.members.find(
+                          (m: IWorkloadMember) => m.id === avail.memberId
+                        );
                         const utilizationPercent =
                           avail.availableHours > 0
                             ? (avail.plannedHours / avail.availableHours) * 100

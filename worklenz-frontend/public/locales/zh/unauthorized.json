@@ -1,5 +1,13 @@
 {
   "title": "未授权！",
   "subtitle": "您无权访问此页面",
+  "commentAccessTitle": "您需要访问权限才能查看此评论",
+  "commentAccessContactAdmin": "您未被邀请参加此项目。请联系您的管理员或项目所有者以请求访问权限。",
+  "commentAccessDenied": "您未被邀请参加此项目。请联系您的管理员或项目所有者以请求访问权限。",
+  "invalidCommentLink": "此评论链接无效。",
+  "commentNotFound": "找不到该评论。",
+  "commentLinkOpenFailed": "无法打开此评论链接。请重试或打开任务中的评论。",
+  "unableToOpenComment": "无法打开评论",
+  "openingComment": "开评论...",
   "button": "返回首页"
 }

@@ -5,23 +5,73 @@ import {ServerResponse} from "../models/server-response";
 import db from "../config/db";
 import {log_error} from "../shared/utils";
 import {NON_GUEST_ACCESS_JOIN, NON_GUEST_ACCESS_PREDICATE} from "../shared/guest-access-sql";
+import {
+  canUserAccessTaskDetail,
+  canUserEditTask,
+  TASK_ASSIGNEE_READONLY_CODE,
+  TASK_ASSIGNEE_RESTRICTED_CODE,
+} from "../shared/assignee-task-scope";
+
+export interface VerifyTaskAccessOptions {
+  /**
+   * When true (task detail /info), notification exception requires from=notification|mention.
+   * Other task APIs allow notification/mention proof without that query param so the drawer works.
+   */
+  requireNotificationLink?: boolean;
+}
+
+const getNotificationLinkFrom = (req: IWorkLenzRequest): string | null => {
+  const fromQuery = req.query?.from;
+  if (typeof fromQuery === "string") return fromQuery;
+  const fromBody = (req.body as { from?: unknown } | undefined)?.from;
+  if (typeof fromBody === "string") return fromBody;
+  return null;
+};
+
+const denyAssigneeRestricted = (res: IWorkLenzResponse) =>
+  res.status(403).send(
+    new ServerResponse(
+      false,
+      { code: TASK_ASSIGNEE_RESTRICTED_CODE },
+      "You do not have permission to access this task"
+    )
+  );
+
+const denyAssigneeReadonly = (res: IWorkLenzResponse) =>
+  res.status(403).send(
+    new ServerResponse(
+      false,
+      { code: TASK_ASSIGNEE_READONLY_CODE },
+      "This task is read-only. You can view it for context but cannot edit it."
+    )
+  );
+
+const isReadOnlyHttpMethod = (method: string | undefined): boolean => {
+  const m = (method || "GET").toUpperCase();
+  return m === "GET" || m === "HEAD" || m === "OPTIONS";
+};
 
 /**
  * Middleware to verify that the authenticated user has access to a specific task.
  * This prevents IDOR (Insecure Direct Object Reference) attacks by ensuring users
  * can only access tasks that belong to projects in their team.
- * 
+ *
+ * Also enforces projects.restrict_tasks_to_assignee (TVR-11) with a
+ * notification/mention deep-link exception (TVR-12).
+ *
  * Usage:
  * - For task ID in URL params: verifyTaskAccess('params', 'id')
  * - For task ID in request body: verifyTaskAccess('body', 'task_id')
  * - For task ID in query params: verifyTaskAccess('query', 'task_id')
- * 
+ * - Detail deep links: verifyTaskAccess('query', 'task_id', { requireNotificationLink: true })
+ *
  * @param location - Where to find the task ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the task ID
  */
 export default function verifyTaskAccess(
   location: 'params' | 'body' | 'query' = 'params',
-  fieldName: string = 'id'
+  fieldName: string = 'id',
+  options?: VerifyTaskAccessOptions
 ) {
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
@@ -55,7 +105,23 @@ export default function verifyTaskAccess(
       const result = await db.query(q, [taskId, teamId]);
       
       if (result.rowCount && result.rowCount > 0) {
-        // User has access to this task
+        const mayAccess = await canUserAccessTaskDetail(userId, taskId, req.user, {
+          requireNotificationLink: options?.requireNotificationLink === true,
+          notificationLinkFrom: getNotificationLinkFrom(req),
+        });
+
+        if (!mayAccess) {
+          return denyAssigneeRestricted(res);
+        }
+
+        // TVR-13: parent-context (and other non-assignee) viewers may not mutate
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+
         return next();
       }
       
@@ -245,6 +311,7 @@ export function verifyBulkTaskAccessMiddleware(
 /**
  * Middleware to verify task access via comment ID
  * This is useful for endpoints that operate on comments but need to verify task access
+ * For mutations (POST/PUT/DELETE), enforces assignee-scope restrictions via canUserEditTask.
  * 
  * @param location - Where to find the comment ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the comment ID
@@ -256,8 +323,6 @@ export function verifyTaskAccessViaComment(
   return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
     const userId = req.user?.id;
     const teamId = req.user?.team_id;
-    
-    // Get comment ID from the specified location
     const commentId = req[location]?.[fieldName];
 
     if (!commentId) {
@@ -275,22 +340,30 @@ export function verifyTaskAccessViaComment(
     try {
       // Verify that the comment belongs to a task in a project in the user's team
       const q = `
-        SELECT 1
+        SELECT tc.task_id
         FROM task_comments tc
         INNER JOIN tasks t ON tc.task_id = t.id
         INNER JOIN projects p ON t.project_id = p.id
         WHERE tc.id = $1 AND p.team_id = $2
         LIMIT 1;
       `;
-      
+
       const result = await db.query(q, [commentId, teamId]);
-      
+
       if (result.rowCount && result.rowCount > 0) {
-        // User has access to this comment's task
+        const taskId = result.rows[0].task_id;
+
+        // For mutations, enforce assignee-scope restrictions
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+
         return next();
       }
-      
-      // Comment not found or user doesn't have access
+
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this comment")
       );
@@ -306,6 +379,7 @@ export function verifyTaskAccessViaComment(
 /**
  * Middleware to verify task access via work log ID
  * This is useful for endpoints that operate on work logs but need to verify task access
+ * For mutations (POST/PUT/DELETE), enforces assignee-scope restrictions via canUserEditTask.
  * 
  * @param location - Where to find the work log ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the work log ID
@@ -335,7 +409,7 @@ export function verifyTaskAccessViaWorkLog(
     try {
       // Verify that the work log belongs to a task in a project in the user's team
       const q = `
-        SELECT 1
+        SELECT twl.task_id
         FROM task_work_log twl
         INNER JOIN tasks t ON twl.task_id = t.id
         INNER JOIN projects p ON t.project_id = p.id
@@ -346,6 +420,16 @@ export function verifyTaskAccessViaWorkLog(
       const result = await db.query(q, [workLogId, teamId]);
       
       if (result.rowCount && result.rowCount > 0) {
+        const taskId = result.rows[0].task_id;
+        
+        // For mutations, enforce assignee-scope restrictions
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+        
         return next();
       }
       
@@ -364,6 +448,7 @@ export function verifyTaskAccessViaWorkLog(
 /**
  * Middleware to verify task access via attachment ID
  * This is useful for endpoints that operate on attachments but need to verify task access
+ * For mutations (POST/PUT/DELETE), enforces assignee-scope restrictions via canUserEditTask.
  * 
  * @param location - Where to find the attachment ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the attachment ID
@@ -393,7 +478,7 @@ export function verifyTaskAccessViaAttachment(
     try {
       // Verify that the attachment belongs to a task in a project in the user's team
       const q = `
-        SELECT 1
+        SELECT ta.task_id
         FROM task_attachments ta
         INNER JOIN tasks t ON ta.task_id = t.id
         INNER JOIN projects p ON t.project_id = p.id
@@ -404,9 +489,87 @@ export function verifyTaskAccessViaAttachment(
       const result = await db.query(q, [attachmentId, teamId]);
       
       if (result.rowCount && result.rowCount > 0) {
+        const taskId = result.rows[0].task_id;
+        
+        // For mutations, enforce assignee-scope restrictions
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+        
         return next();
       }
       
+      return res.status(403).send(
+        new ServerResponse(false, null, "You do not have permission to access this attachment")
+      );
+    } catch (error) {
+      log_error(error);
+      return res.status(500).send(
+        new ServerResponse(false, null, "An error occurred while verifying attachment access")
+      );
+    }
+  };
+}
+
+/**
+ * Middleware to verify task access via comment attachment ID.
+ * Comment attachments live in task_comment_attachments, not task_attachments.
+ * For mutations (POST/PUT/DELETE), enforces assignee-scope restrictions via canUserEditTask.
+ *
+ * @param location - Where to find the attachment ID ('params', 'body', or 'query')
+ * @param fieldName - The name of the field containing the attachment ID
+ */
+export function verifyTaskAccessViaCommentAttachment(
+  location: 'params' | 'body' | 'query' = 'params',
+  fieldName: string = 'id'
+) {
+  return async (req: IWorkLenzRequest, res: IWorkLenzResponse, next: NextFunction) => {
+    const userId = req.user?.id;
+    const teamId = req.user?.team_id;
+
+    const attachmentId = req[location]?.[fieldName];
+
+    if (!attachmentId) {
+      return res.status(400).send(
+        new ServerResponse(false, null, "Attachment ID is required")
+      );
+    }
+
+    if (!userId || !teamId) {
+      return res.status(401).send(
+        new ServerResponse(false, null, "Authentication required")
+      );
+    }
+
+    try {
+      const q = `
+        SELECT tca.task_id
+        FROM task_comment_attachments tca
+        INNER JOIN tasks t ON tca.task_id = t.id
+        INNER JOIN projects p ON t.project_id = p.id
+        WHERE tca.id = $1 AND p.team_id = $2
+        LIMIT 1;
+      `;
+
+      const result = await db.query(q, [attachmentId, teamId]);
+
+      if (result.rowCount && result.rowCount > 0) {
+        const taskId = result.rows[0].task_id;
+        
+        // For mutations, enforce assignee-scope restrictions
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+        
+        return next();
+      }
+
       return res.status(403).send(
         new ServerResponse(false, null, "You do not have permission to access this attachment")
       );
@@ -482,6 +645,7 @@ export function verifyNonGuestTaskAccessViaAttachment(
 /**
  * Middleware to verify task access via dependency ID
  * This is useful for endpoints that operate on dependencies but need to verify task access
+ * For mutations (POST/PUT/DELETE), enforces assignee-scope restrictions via canUserEditTask.
  *
  * @param location - Where to find the dependency ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the dependency ID
@@ -511,7 +675,7 @@ export function verifyTaskAccessViaDependency(
     try {
       // Verify that the dependency involves tasks in projects in the user's team
       const q = `
-        SELECT 1
+        SELECT td.task_id
         FROM task_dependencies td
         INNER JOIN tasks t ON td.task_id = t.id
         INNER JOIN projects p ON t.project_id = p.id
@@ -522,6 +686,16 @@ export function verifyTaskAccessViaDependency(
       const result = await db.query(q, [dependencyId, teamId]);
 
       if (result.rowCount && result.rowCount > 0) {
+        const taskId = result.rows[0].task_id;
+        
+        // For mutations, enforce assignee-scope restrictions
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+        
         return next();
       }
 
@@ -540,6 +714,7 @@ export function verifyTaskAccessViaDependency(
 /**
  * Middleware to verify task access via recurring schedule ID
  * This is useful for endpoints that operate on recurring schedules but need to verify task access
+ * For mutations (POST/PUT/DELETE), enforces assignee-scope restrictions via canUserEditTask.
  *
  * @param location - Where to find the schedule ID ('params', 'body', or 'query')
  * @param fieldName - The name of the field containing the schedule ID
@@ -569,7 +744,7 @@ export function verifyTaskAccessViaSchedule(
     try {
       // Verify that the schedule belongs to a task in a project in the user's team
       const q = `
-        SELECT 1
+        SELECT t.id as task_id
         FROM tasks t
         INNER JOIN projects p ON t.project_id = p.id
         WHERE t.schedule_id = $1 AND p.team_id = $2
@@ -579,6 +754,16 @@ export function verifyTaskAccessViaSchedule(
       const result = await db.query(q, [scheduleId, teamId]);
 
       if (result.rowCount && result.rowCount > 0) {
+        const taskId = result.rows[0].task_id;
+        
+        // For mutations, enforce assignee-scope restrictions
+        if (!isReadOnlyHttpMethod(req.method)) {
+          const mayEdit = await canUserEditTask(userId, taskId, req.user);
+          if (!mayEdit) {
+            return denyAssigneeReadonly(res);
+          }
+        }
+        
         return next();
       }
 

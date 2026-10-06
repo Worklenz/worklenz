@@ -3,10 +3,12 @@
   "home": "Início",
   "projects": "Projetos",
   "planner": "Planejador",
+  "reporting": "Reports",
   "my-team-reports": "Relatórios da Minha Equipe",
-  "clients": "Clientes",
   "finance": "Finanças",
   "client-portal": "Clientes",
+  "closePopover": "Fechar popover",
+  "clients": "Clientes",
   "teams": "Equipes",
   "labels": "Rótulos",
   "jobTitles": "Títulos de Emprego",
@@ -15,6 +17,8 @@
   "invite": "Convidar",
   "inviteTooltip": "Convidar membros da equipe a se juntar",
   "switchTeamTooltip": "Trocar equipe",
+  "searchTeams": "Pesquisar equipes...",
+  "noTeamsFound": "Nenhuma equipe encontrada",
   "help": "Ajuda",
   "notificationTooltip": "Ver notificações",
   "profileTooltip": "Ver perfil",
@@ -69,14 +73,22 @@
     "conflictTitle": "Conflito de Temporizador",
     "conflictMessage": "Outro temporizador está em execução para \"{{taskName}}\" no projeto \"{{projectName}}\". Você deseja pará-lo e iniciar este temporizador?",
     "stopAndStart": "Parar e Iniciar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "logTime": "Registrar tempo",
+    "openTimeLogPanel": "Registro de horário aberto para {{taskName}}"
   },
-  "reporting": "Reports",
-  "closePopover": "Fechar popover",
   "ownerRole": "Proprietário",
   "adminRole": "Administrador",
   "teamLeadRole": "Líder de Equipe",
   "memberRole": "Membro",
   "themeToggleOn": "Sim",
-  "themeToggleOff": "Não"
+  "themeToggleOff": "Não",
+  "whatsNew": {
+    "tag": "Novidades",
+    "tooltip": "Veja o que mudou nesta versão",
+    "newBadge": "Novo",
+    "modalHeading": "Novidades — {{title}}",
+    "readFullChangelog": "Ver changelog completo →",
+    "releaseUnavailable": "Esta atualização não está mais disponível."
+  }
 }

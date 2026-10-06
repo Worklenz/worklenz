@@ -18,15 +18,16 @@ import {
   Typography,
   message as antdMessage,
 } from '@/shared/antd-imports';
-import { saveImportFields } from '@/api/imports';
+import { saveImportFields, updateImportSource } from '@/api/imports';
+import type { TranslateFn, ThemeToken } from '../types';
 
 interface DirectIntegrationStepContentProps {
   step: number;
   lowerKey: string;
   isJira: boolean;
   authCompleted: boolean;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
-  themeToken: any;
+  t: TranslateFn;
+  themeToken: ThemeToken;
   source: { label: string };
   asanaWorkspaces: Array<{ id: string; name: string }>;
   clickupTeams: Array<{
@@ -47,9 +48,9 @@ interface DirectIntegrationStepContentProps {
   trelloBoards: Array<{ id: string; name: string }>;
   mondayBoards: Array<{ id: string; name: string }>;
   job: { id: string } | null;
-  updateImportSource: (jobId: string, payload: any) => Promise<any>;
+  updateImportSource: typeof updateImportSource;
   runAutoMapping: (suppressToast?: boolean) => Promise<void>;
-  message: any;
+  message: typeof antdMessage;
   selectedClickupList: string;
   setSelectedClickupList: React.Dispatch<React.SetStateAction<string>>;
   selectedClickupSpace: string;
@@ -327,8 +328,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                       await updateImportSource(job.id, { boardId: v, boardName });
                       await runAutoMapping();
                     }
-                  } catch (err: any) {
-                    message.error(err?.message || t('importStep.autoMapError', 'Auto-mapping failed'));
+                  } catch (err) {
+                    message.error(err instanceof Error ? err.message : t('importStep.autoMapError', 'Auto-mapping failed'));
                   }
                 }}
                 options={boardOptions}
@@ -361,8 +362,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                       projectName,
                     });
                     await runAutoMapping();
-                  } catch (err: any) {
-                    message.error(err?.message || t('importStep.autoMapError', 'Auto-mapping failed'));
+                  } catch (err) {
+                    message.error(err instanceof Error ? err.message : t('importStep.autoMapError', 'Auto-mapping failed'));
                   }
                 }}
                 options={projectOptions}
@@ -379,8 +380,8 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                   try {
                     await persistAsanaSelection(v, selectedWorkspace, projectName);
                     await runAutoMapping();
-                  } catch (err: any) {
-                    message.error(err?.message || t('importStep.autoMapError', 'Auto-mapping failed'));
+                  } catch (err) {
+                    message.error(err instanceof Error ? err.message : t('importStep.autoMapError', 'Auto-mapping failed'));
                   }
                 }}
                 options={projectOptions}
@@ -840,7 +841,7 @@ export const DirectIntegrationStepContent: React.FC<DirectIntegrationStepContent
                 onClick={async () => {
                   if (job?.id && fieldMappingRows.length) {
                     try {
-                      await saveImportFields(job.id, fieldMappingRows as any);
+                      await saveImportFields(job.id, fieldMappingRows);
                       antdMessage.success(t('importStep.fieldMappingSaved', 'Field mapping saved.'));
                     } catch {
                       antdMessage.error(t('importStep.fieldMappingSaveError', 'Failed to save field mapping.'));

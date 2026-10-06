@@ -19,6 +19,7 @@
   "weeklyEndTitle": "Wöchentliche Endzusammenfassung",
   "weeklyEndDescription": "Jeden Freitag gesendet. Rückblick auf abgeschlossene Aufgaben, Überfällige und Ausblick auf nächste Woche.",
   "channelLabel": "Kanal",
+  "channelEmail": "E-Mail",
   "timeLabel": "Senden um",
   "saveDigestPreferences": "Benachrichtigungseinstellungen speichern",
   "digestPreferencesSaved": "Ihre Benachrichtigungseinstellungen wurden gespeichert"

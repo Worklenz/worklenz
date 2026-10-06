@@ -15,26 +15,74 @@
     "explanation": {
       "perUser": "只为活跃用户付费。非常适合小团队（1-5用户），定价灵活且随团队规模增长。",
       "basePlan": "固定基础价格加包含用户数，超出用户按每用户收费。适合大团队（6+用户），计费可预测。"
-    }
+    },
+    "autoPerUser": "自动对 {{count}} 用户{{s}} 使用每用户定价",
+    "autoBase": "自动使用 {{count}} 用户{{s}} 的基本方案定价",
+    "additionalUserCharge": "包括 {{included}} 用户。每个额外用户的费用为 ${{price}}/月。"
   },
   "teamSize": {
     "label": "团队规模",
     "help": "选择您当前或预期的团队规模",
     "user": "用户",
     "users": "用户",
-    "helpDescription": "输入您团队的用户数量（1-500）"
+    "helpDescription": "输入您团队的用户数量（1-500）",
+    "placeholder": "选择团队规模"
   },
   "plans": {
     "free": {
       "name": "免费",
       "description": "开始使用的完美选择",
-      "features": ["3个项目", "基础任务管理", "团队协作", "手动管理", "社区支持"],
+      "features": [
+        "3个项目",
+        "基础任务管理",
+        "团队协作",
+        "手动管理",
+        "社区支持"
+      ],
       "forever": "永久免费"
+    },
+    "pro": {
+      "name": "专业版",
+      "description": "对于专业团队",
+      "features": [
+        "✓ 无限项目和任务",
+        "高级任务管理",
+        "甘特图",
+        "时间跟踪",
+        "自定义字段",
+        "电子邮件支持"
+      ],
+      "payPerUser": "按用户付费（1-5 位用户）",
+      "usersIncluded": "包括 {{count}} 用户",
+      "maxUsers": "最多 {{count}} 个用户"
+    },
+    "business": {
+      "name": "商业",
+      "description": "对于成长型组织",
+      "features": [
+        "专业版中的一切",
+        "高级报告",
+        "自定义工作流程",
+        "API访问",
+        "✓ 优先支持",
+        "高级集成"
+      ],
+      "payPerUser": "按用户付费（1-5 位用户）",
+      "usersIncluded": "包括 {{count}} 用户",
+      "maxUsers": "最多 {{count}} 个用户",
+      "maxUsersAppSumo": "最多 50 个用户（AppSumo 特别版）"
     },
     "proSmall": {
       "name": "专业版（小型）",
       "description": "小团队的理想选择",
-      "features": ["无限项目", "高级任务管理", "甘特图", "时间跟踪", "自定义字段", "邮件支持"]
+      "features": [
+        "无限项目",
+        "高级任务管理",
+        "甘特图",
+        "时间跟踪",
+        "自定义字段",
+        "邮件支持"
+      ]
     },
     "businessSmall": {
       "name": "商业版（小型）",
@@ -155,7 +203,10 @@
     "unlimited": "无限"
   },
   "tips": {
-    "switchAnytime": "💡 提示：您可以随时在计费设置中切换定价模式"
+    "switchAnytime": "💡 提示：您可以随时在计费设置中切换定价模式",
+    "smallTeamPricing": "💰 小团队可以获得更好的每用户费率",
+    "annualDiscount": "💸 按年计费节省高达 30%",
+    "freeUpgrade": "🚀 免费用户可以随时升级"
   },
   "errors": {
     "loadingData": "加载定价数据错误",
@@ -205,6 +256,82 @@
       "payment": "付款",
       "complete": "完成"
     }
+  },
+  "ui": {
+    "loading": "正在加载定价选项...",
+    "selectTeamSize": "选择您的团队规模",
+    "chooseBilling": "选择计费频率",
+    "planSelected": "已选择计划",
+    "totalCost": "总成本",
+    "perUserCost": "每用户成本",
+    "included": "包含内容",
+    "popular": "最受欢迎",
+    "recommended": "推荐",
+    "currentPlan": "当前方案",
+    "upgrade": "升级",
+    "downgrade": "降级",
+    "change": "更改计划",
+    "specialOffer": "特别优惠",
+    "limitedTime": "限时",
+    "saveAmount": "节省 ${{amount}}",
+    "freeForever": "永远免费",
+    "noCommitment": "没有承诺，随时取消",
+    "instantActivation": "即时激活",
+    "supportIncluded": "包含支持"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "任务管理",
+      "projectTracking": "项目追踪",
+      "teamCollaboration": "团队协作",
+      "fileSharing": "文件共享",
+      "basicReporting": "基本报告",
+      "mobileApp": "移动应用程序访问"
+    },
+    "advanced": {
+      "ganttCharts": "甘特图",
+      "timeTracking": "时间跟踪",
+      "advancedReporting": "高级报告",
+      "customFields": "自定义字段",
+      "apiAccess": "API访问",
+      "prioritySupport": "优先支持"
+    },
+    "enterprise": {
+      "sso": "单点登录 (SSO)",
+      "advancedSecurity": "先进的安全性",
+      "customIntegrations": "定制集成",
+      "dedicatedSupport": "专门的支持",
+      "onPremise": "本地部署",
+      "slaSupport": "SLA 支持"
+    }
+  },
+  "appsumo": {
+    "exclusiveTitle": "🎉 AppSumo 独家：商业计划 70% 折扣！",
+    "timeRemaining": "剩余 {{days}}d {{hours}}h {{minutes}}m",
+    "urgency": {
+      "finalHours": "最后时间",
+      "urgent": "紧急",
+      "limitedTime": "限时"
+    },
+    "specialPricing": "🎯 AppSumo 终身优惠会员特价",
+    "businessUsers": "💪 商业计划最多支持 50 个用户（通常为 25 个）",
+    "lifetimeTitle": "AppSumo 终身优惠会员",
+    "discountExpired": "您的 70% 折扣期已过期，但您仍然可以按标准价格升级到商务计划。",
+    "watchOffers": "💡 关注未来的活动和特别优惠！",
+    "discountApplied": "应用 70% AppSumo 折扣"
+  },
+  "billing": {
+    "billedAnnually": "（按年计费）",
+    "billedMonthly": "（按月计费）",
+    "perYear": "/year",
+    "perMonth": "/month",
+    "forUsers": "对于 {{count}} 用户{{s}}"
+  },
+  "ribbon": {
+    "recommended": "推荐",
+    "popular": "最受欢迎",
+    "bestValue": "最超值",
+    "appsumoSpecial": "App相扑特辑"
   },
   "customFields": {
     "upgradeModalHeadline": "使用无限自定义字段捕获每一个细节",

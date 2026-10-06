@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import {
   Table,
   TableProps,
+  TableColumnsType,
   Badge,
   Tooltip,
   Typography,
@@ -105,34 +106,31 @@ export const FilesTable: React.FC<FilesTableProps> = ({
     if (projectId) navigate(`/worklenz/projects/${projectId}?tab=all-attachments`);
   };
 
-  const projectColumn = useMemo(
-    () => ({
-      key: 'project',
-      title: <CustomTableTitle title={t('colProject', { defaultValue: 'Project' })} />,
-      width: 180,
-      render: (_: unknown, record: { project_id: string; project_name: string; project_color: string }) => (
-        <span
-          style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
-          onClick={() => goToProject(record.project_id)}
-        >
-          <Badge color={record.project_color || token.colorPrimary} />
-          <Typography.Text ellipsis={{ tooltip: record.project_name }} style={{ maxWidth: 150 }}>
-            {record.project_name}
-          </Typography.Text>
-        </span>
-      ),
-    }),
-    [t, token, navigate]
-  );
+  const getProjectColumn = <T extends { project_id: string; project_name: string; project_color: string }>(): TableColumnsType<T>[number] => ({
+    key: 'project',
+    title: <CustomTableTitle title={t('colProject', { defaultValue: 'Project' })} />,
+    width: 180,
+    render: (_: unknown, record: T) => (
+      <span
+        style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}
+        onClick={() => goToProject(record.project_id)}
+      >
+        <Badge color={record.project_color || token.colorPrimary} />
+        <Typography.Text ellipsis={{ tooltip: record.project_name }} style={{ maxWidth: 150 }}>
+          {record.project_name}
+        </Typography.Text>
+      </span>
+    ),
+  });
 
-  const fileColumns: TableProps<ITeamProjectFileRow>['columns'] = useMemo(
+  const fileColumns: TableColumnsType<ITeamProjectFileRow> = useMemo(
     () => [
       {
         key: 'name',
         title: <CustomTableTitle title={t('colName', { defaultValue: 'Name' })} />,
         width: 240,
         fixed: 'left' as const,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectFileRow) => (
           <Flex align="center" gap={6} style={{ cursor: 'pointer' }} onClick={() => onPreviewFile(record)}>
             <img
               src={`/file-types/${getFileTypeIcon(record.type)}`}
@@ -145,18 +143,18 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           </Flex>
         ),
       },
-      projectColumn as any,
+      getProjectColumn<ITeamProjectFileRow>(),
       {
         key: 'size',
         title: <CustomTableTitle title={t('colSize', { defaultValue: 'Size' })} />,
         width: 100,
-        render: (_: unknown, record) => <Typography.Text>{formatFileSize(record.size)}</Typography.Text>,
+        render: (_: unknown, record: ITeamProjectFileRow) => <Typography.Text>{formatFileSize(record.size)}</Typography.Text>,
       },
       {
         key: 'uploaded_by',
         title: <CustomTableTitle title={t('colUploadedBy', { defaultValue: 'Uploaded By' })} />,
         width: 160,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectFileRow) => (
           <Typography.Text>{record.uploaded_by || t('unknownUploader', { defaultValue: 'Unknown' })}</Typography.Text>
         ),
       },
@@ -164,7 +162,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'created_at',
         title: <CustomTableTitle title={t('colWhen', { defaultValue: 'When' })} />,
         width: 120,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectFileRow) => (
           <Tooltip title={record.created_at}>
             <Typography.Text>{durationDateFormat(record.created_at)}</Typography.Text>
           </Tooltip>
@@ -174,7 +172,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'actions',
         title: <CustomTableTitle title={t('colActions', { defaultValue: 'Actions' })} />,
         width: 100,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectFileRow) => (
           <Flex gap={8} align="center">
             <Tooltip title={t('downloadTooltip', { defaultValue: 'Download' })}>
               <Button
@@ -211,17 +209,17 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         ),
       },
     ],
-    [t, projectColumn, onPreviewFile, onDownloadFile, onDeleteFile, downloadingId, deletingId]
+    [t, token, goToProject, onPreviewFile, onDownloadFile, onDeleteFile, downloadingId, deletingId]
   );
 
-  const attachmentColumns: TableProps<ITeamTaskAttachmentRow>['columns'] = useMemo(
+  const attachmentColumns: TableColumnsType<ITeamTaskAttachmentRow> = useMemo(
     () => [
       {
         key: 'name',
         title: <CustomTableTitle title={t('colName', { defaultValue: 'Name' })} />,
         width: 240,
         fixed: 'left' as const,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => (
           <Flex align="center" gap={6} style={{ cursor: 'pointer' }} onClick={() => onPreviewAttachment(record)}>
             <img
               src={`/file-types/${getFileTypeIcon(record.type)}`}
@@ -234,12 +232,12 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           </Flex>
         ),
       },
-      projectColumn as any,
+      getProjectColumn<ITeamTaskAttachmentRow>(),
       {
         key: 'task',
         title: <CustomTableTitle title={t('colTask', { defaultValue: 'Task' })} />,
         width: 200,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => (
           <Typography.Text ellipsis={{ tooltip: record.task_name }} style={{ maxWidth: 180 }}>
             {record.task_key && record.task_name ? `${record.task_key} - ${record.task_name}` : record.task_name || t('noTaskName', { defaultValue: '--' })}
           </Typography.Text>
@@ -249,13 +247,13 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'size',
         title: <CustomTableTitle title={t('colSize', { defaultValue: 'Size' })} />,
         width: 100,
-        render: (_: unknown, record) => <Typography.Text>{formatFileSize(record.size)}</Typography.Text>,
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => <Typography.Text>{formatFileSize(record.size)}</Typography.Text>,
       },
       {
         key: 'uploaded_by',
         title: <CustomTableTitle title={t('colUploadedBy', { defaultValue: 'Uploaded By' })} />,
         width: 160,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => (
           <Typography.Text>{record.uploaded_by || t('unknownUploader', { defaultValue: 'Unknown' })}</Typography.Text>
         ),
       },
@@ -263,7 +261,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'created_at',
         title: <CustomTableTitle title={t('colWhen', { defaultValue: 'When' })} />,
         width: 120,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => (
           <Tooltip title={record.created_at}>
             <Typography.Text>{durationDateFormat(record.created_at)}</Typography.Text>
           </Tooltip>
@@ -273,7 +271,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'actions',
         title: <CustomTableTitle title={t('colActions', { defaultValue: 'Actions' })} />,
         width: 100,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamTaskAttachmentRow) => (
           <Flex gap={8} align="center">
             <Tooltip title={t('downloadTooltip', { defaultValue: 'Download' })}>
               <Button
@@ -310,17 +308,17 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         ),
       },
     ],
-    [t, projectColumn, onPreviewAttachment, onDownloadAttachment, onDeleteAttachment, downloadingId, deletingId]
+    [t, token, goToProject, onPreviewAttachment, onDownloadAttachment, onDeleteAttachment, downloadingId, deletingId]
   );
 
-  const linkColumns: TableProps<ITeamProjectLinkRow>['columns'] = useMemo(
+  const linkColumns: TableColumnsType<ITeamProjectLinkRow> = useMemo(
     () => [
       {
         key: 'title',
         title: <CustomTableTitle title={t('colName', { defaultValue: 'Name' })} />,
         width: 240,
         fixed: 'left' as const,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectLinkRow) => (
           <Flex align="center" gap={6} style={{ cursor: 'pointer' }} onClick={() => onOpenLink(record)}>
             <LinkOutlined style={{ color: colors.lightGray }} />
             <Typography.Text ellipsis={{ tooltip: record.title }} style={{ maxWidth: 210 }}>
@@ -329,12 +327,12 @@ export const FilesTable: React.FC<FilesTableProps> = ({
           </Flex>
         ),
       },
-      projectColumn as any,
+      getProjectColumn<ITeamProjectLinkRow>(),
       {
         key: 'uploaded_by',
         title: <CustomTableTitle title={t('colUploadedBy', { defaultValue: 'Uploaded By' })} />,
         width: 160,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectLinkRow) => (
           <Typography.Text>{record.added_by_name || t('unknownUploader', { defaultValue: 'Unknown' })}</Typography.Text>
         ),
       },
@@ -342,7 +340,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'created_at',
         title: <CustomTableTitle title={t('colWhen', { defaultValue: 'When' })} />,
         width: 120,
-        render: (_: unknown, record) => (
+        render: (_: unknown, record: ITeamProjectLinkRow) => (
           <Tooltip title={record.created_at}>
             <Typography.Text>{durationDateFormat(record.created_at)}</Typography.Text>
           </Tooltip>
@@ -352,7 +350,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         key: 'actions',
         title: <CustomTableTitle title={t('colActions', { defaultValue: 'Actions' })} />,
         width: 100,
-        render: (_: unknown, record) => {
+        render: (_: unknown, record: ITeamProjectLinkRow) => {
           if (record.source_type !== 'manual') {
             return (
               <Tooltip title={t('openTask', { defaultValue: 'Open task' })}>
@@ -404,7 +402,7 @@ export const FilesTable: React.FC<FilesTableProps> = ({
         },
       },
     ],
-    [t, projectColumn, onOpenLink, onEditLink, onDeleteLink, deletingId]
+    [t, token, goToProject, onOpenLink, onEditLink, onDeleteLink, deletingId]
   );
 
   const emptyText = (

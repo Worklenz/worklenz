@@ -4,8 +4,8 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 
 dayjs.extend(isoWeek);
 import { useTranslation } from 'react-i18next';
-import { Button, Flex, Space, theme, Tooltip, Popover } from '@/shared/antd-imports';
-import { SettingOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Button, Flex, Space, theme, Tooltip, Popover, message } from '@/shared/antd-imports';
+import { SettingOutlined, ReloadOutlined, BranchesOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { themeWiseColor } from '@/utils/themeWiseColor';
@@ -16,6 +16,7 @@ import {
   scheduleApi,
   useFetchScheduleMembersQuery,
   useFetchTaskTimelineQuery,
+  useFetchDailyCapacityQuery,
 } from '@/api/schedule/scheduleApi';
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
@@ -27,6 +28,7 @@ import { setSelectedTaskId, setShowTaskDrawer } from '@/features/task-drawer/tas
 import { setProjectId } from '@/features/project/project.slice';
 import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
+import { useProjectRoomSync, projectIdsFromTasks, hasParentSubtaskOverlap } from '@/hooks/useProjectRoomSync';
 import { useAuthService } from '@/hooks/useAuth';
 import { getUserSession } from '@/utils/session-helper';
 import { WorklenzLogoLoader } from '@/components/worklenz-loader/worklenz-loader';
@@ -40,7 +42,7 @@ const ZOOM_CFG: Record<ZoomLevel, { label: string; colWidth: number; weeksSpan: 
   months: { label: 'Months', colWidth: 30, weeksSpan: 10, dense: 'bar' },
 };
 
-const WEEKDAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY_KEYS = ['mondayShort', 'tuesdayShort', 'wednesdayShort', 'thursdayShort', 'fridayShort', 'saturdayShort', 'sundayShort'] as const;
 
 // Vertical drag-to-resize (chip's bottom-edge handle, Days/Weeks zoom only): dragging
 // changes a task's total_minutes by 0.5h per quantized step. RESIZE_PX_PER_HOUR doubles as
@@ -52,6 +54,7 @@ const RESIZE_BASE_HOURS = 1; // chip stays at CHIP_BASE_HEIGHT for <=1h/day
 const MIN_TOTAL_MINUTES = 30; // 0.5h floor, mirrors PlannerAddTaskModal's est-hours min={0.5}
 const MAX_TOTAL_MINUTES = 24 * 60; // 24h ceiling
 const ROW_HEIGHT_FLOOR = 112; // doubled from the previous hardcoded 56
+const EMPTY_TASKS: any[] = []; // stable fallback so rawTasks doesn't get a new reference every render while loading
 
 const getChipHeight = (hours: number, dense: 'full' | 'compact') =>
   CHIP_BASE_HEIGHT[dense] + Math.max(0, hours - RESIZE_BASE_HOURS) * RESIZE_PX_PER_HOUR[dense];
@@ -80,6 +83,8 @@ const PlannerScheduleView: React.FC = () => {
   const workingHours = useAppSelector(state => state.scheduleReducer.workingHours) || 8;
   const workingDaysRaw = useAppSelector(state => state.scheduleReducer.workingDays);
   const showTaskDrawer = useAppSelector(state => state.taskDrawerReducer.showTaskDrawer);
+
+  const weekdayShort = useMemo(() => WEEKDAY_KEYS.map(k => t(k, { defaultValue: k.replace('Short', '') })), [t]);
 
   // Org-configured working days (e.g. ['monday', ..., 'friday']) — falls back to Mon-Fri
   // when settings haven't loaded yet, so estimate-splitting works before the user ever
@@ -145,7 +150,7 @@ const PlannerScheduleView: React.FC = () => {
   // Chip drag-and-drop: same row (member unchanged) + different day column = due-date
   // change; same day column (date unchanged) + different member row = reassignment.
   // Dragging to a different member AND a different day does both at once.
-  const dragInfo = useRef<{ taskId: string; projectId: string; memberId: string; date: string } | null>(null);
+  const dragInfo = useRef<{ taskId: string; projectId: string; memberId: string; date: string; parentTaskId: string | null } | null>(null);
 
   // Vertical drag-to-resize (chip bottom-edge handle) — separate gesture from the
   // whole-chip native HTML5 drag above. suppressChipDragRef is set true for the duration
@@ -453,6 +458,45 @@ const PlannerScheduleView: React.FC = () => {
     { skip: shouldSkipTaskQuery }
   );
 
+  const { data: capacityResponse } = useFetchDailyCapacityQuery(
+    {
+      startDate: startDate || '',
+      endDate: endDate || '',
+    },
+    { skip: !startDate || !endDate }
+  );
+
+  const memberCapacityMap = useMemo(() => {
+    const map = new Map<string, any>();
+    const memberCapList: any[] = capacityResponse?.body || [];
+    memberCapList.forEach(m => {
+      m.daily_capacity?.forEach((c: any) => {
+        const key = `${m.team_member_id}_${c.date}`;
+        map.set(key, c);
+      });
+    });
+    return map;
+  }, [capacityResponse]);
+
+  const isOrgHoliday = useMemo(() => {
+    const set = new Set<string>();
+    const memberCapList: any[] = capacityResponse?.body || [];
+    memberCapList.forEach(m => {
+      m.daily_capacity?.forEach((c: any) => {
+        if (c.is_holiday) set.add(c.date);
+      });
+    });
+    return set;
+  }, [capacityResponse]);
+
+  // Surface the backend's truncation notice (the timeline query caps out at a fixed
+  // row count) instead of letting tasks silently vanish from view with no indication.
+  useEffect(() => {
+    if (taskTimelineResponse?.message) {
+      message.warning(taskTimelineResponse.message, 8);
+    }
+  }, [taskTimelineResponse?.message]);
+
   const drawerTaskId = useAppSelector(state => state.taskDrawerReducer.selectedTaskId);
   const drawerTaskName = useAppSelector(
     state => state.taskDrawerReducer.taskFormViewModel?.task?.name ?? null
@@ -478,20 +522,34 @@ const PlannerScheduleView: React.FC = () => {
   }, [socket]);
 
 
-  const rawTasks = taskTimelineResponse?.body || [];
+  const rawTasks = useMemo(() => taskTimelineResponse?.body || EMPTY_TASKS, [taskTimelineResponse]);
   const tasks = React.useMemo(
     () =>
       rawTasks.map((t: any) => {
+        let next = t;
         if (drawerTaskId && t.id === drawerTaskId && drawerTaskName) {
-          return { ...t, name: drawerTaskName };
+          next = { ...next, name: drawerTaskName };
+        } else if (taskNameOverrides[t.id]) {
+          next = { ...next, name: taskNameOverrides[t.id] };
         }
-        if (taskNameOverrides[t.id]) {
-          return { ...t, name: taskNameOverrides[t.id] };
+        // A subtask's cached parent_task_name goes stale the instant its parent is
+        // renamed elsewhere — patch it from the same override sources used for the
+        // parent's own name above, so the "Subtask of: …" tooltip updates live too.
+        if (t.parent_task_id === drawerTaskId && drawerTaskName) {
+          next = { ...next, parent_task_name: drawerTaskName };
+        } else if (t.parent_task_id && taskNameOverrides[t.parent_task_id]) {
+          next = { ...next, parent_task_name: taskNameOverrides[t.parent_task_id] };
         }
-        return t;
+        return next;
       }),
     [rawTasks, taskNameOverrides, drawerTaskId, drawerTaskName]
   );
+
+  // Keeps this view's socket room membership in sync with the projects currently
+  // loaded, so PROJECT_UPDATES_AVAILABLE broadcasts — e.g. a new subtask created
+  // elsewhere — actually reach it instead of only showing up after a hard refresh.
+  const loadedProjectIds = useMemo(() => projectIdsFromTasks(rawTasks), [rawTasks]);
+  useProjectRoomSync(loadedProjectIds);
 
   // Drop the resize live-preview once the refetched tasks[] genuinely reflects the
   // committed value — hoursForTaskOnDay then reads identically whether or not
@@ -659,12 +717,23 @@ const PlannerScheduleView: React.FC = () => {
     return totalMinutes / 60 / workingSpan;
   };
 
+  // Shared chip label — used by the full-density chip, compact-density chip, and
+  // the "+N" hidden-overflow popover chip, so the subtask prefix/wording stays
+  // identical across all three instead of being repeated at each call site.
+  const taskChipLabel = (task: any) =>
+    task.parent_task_id
+      ? `↳ ${t('subtask', { defaultValue: 'Subtask' })}: ${task.name}`
+      : `${t('task', { defaultValue: 'Task' })}: ${task.name}`;
+
   // Shared hover-tooltip content (project, est time, status, phase, assignees) —
   // used both by visible grid chips and by the "+N" collapsed task list rows,
   // so hovering a task shows the same details either way.
   const renderTaskTooltipTitle = (task: any, date: dayjs.Dayjs) => {
     const hours = hoursForTaskOnDay(task, date);
-    const overCapacity = hours > workingHours;
+    const memberId = task.team_member_id || task.assignee_id || '';
+    const capInfo = memberCapacityMap.get(`${memberId}_${date.format('YYYY-MM-DD')}`);
+    const effectiveDayCap = capInfo ? capInfo.working_hours : workingHours;
+    const overCapacity = hours > effectiveDayCap;
     return (
       <div style={{ minWidth: 180 }}>
         {overCapacity && (
@@ -679,15 +748,24 @@ const PlannerScheduleView: React.FC = () => {
               marginBottom: 6,
             }}
           >
-            ⚠ {t('exceedsWorkingHours', { defaultValue: 'Exceeds working hours' })} ({hours.toFixed(1)}h / {workingHours}h)
+            ⚠ {t('exceedsWorkingHours', { defaultValue: 'Exceeds working hours' })} ({hours.toFixed(1)}h / {effectiveDayCap}h)
           </div>
         )}
-        <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>{task.name}</div>
+        <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>
+          {task.parent_task_id && '↳ '}
+          {task.name}
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 12 }}>
           <div>
             <span style={{ opacity: 0.65 }}>{t('project', { defaultValue: 'Project' })}: </span>
             {task.project_name || '-'}
           </div>
+          {task.parent_task_id && (
+            <div>
+              <span style={{ opacity: 0.65 }}>{t('subtaskOf', { defaultValue: 'Subtask of' })}: </span>
+              {task.parent_task_name || '-'}
+            </div>
+          )}
           {isWorkingDay(date) && (
             <div>
               <span style={{ opacity: 0.65 }}>{t('estHoursPerDay', { defaultValue: 'Estimated Hours' })}: </span>
@@ -728,25 +806,36 @@ const PlannerScheduleView: React.FC = () => {
     );
   };
 
+  // Subtasks have their own independent estimate (never rolled up into the parent's),
+  // so they count toward a member's total the same as any other assigned task.
   const dayEstTotal = (memberId: string, date: dayjs.Dayjs) =>
     tasksFor(memberId, date).reduce((sum, t) => sum + hoursForTaskOnDay(t, date), 0);
 
   const memberTotalHours = (memberId: string) =>
     days.reduce((sum, d) => sum + dayEstTotal(memberId, d.date), 0);
 
-  // Same Utilization bucketing as PlannerWorkloadView: hours scheduled over the
-  // visible range ÷ capacity (working days shown × working hours/day).
-  const workingDaysVisible = useMemo(() => days.filter(d => isWorkingDay(d.date)).length, [days, workingDaySet]);
+  const memberTotalCapacity = (memberId: string) => {
+    let totalCap = 0;
+    days.forEach(d => {
+      const capInfo = memberCapacityMap.get(`${memberId}_${d.date.format('YYYY-MM-DD')}`);
+      if (capInfo) {
+        totalCap += capInfo.working_hours;
+      } else if (isWorkingDay(d.date)) {
+        totalCap += workingHours;
+      }
+    });
+    return totalCap;
+  };
 
   const visibleMembers = useMemo(() => {
     if (!filterUtilLevels.length) return members;
-    const cap = workingDaysVisible * workingHours;
     return members.filter((m: any) => {
       const memberId = m.team_member_id || m.id;
+      const cap = memberTotalCapacity(memberId);
       const pct = cap ? (memberTotalHours(memberId) / cap) * 100 : 0;
       return filterUtilLevels.some(level => UTIL_LEVELS.find(l => l.value === level)?.test(pct));
     });
-  }, [members, filterUtilLevels, workingDaysVisible, workingHours, tasks]);
+  }, [members, filterUtilLevels, memberCapacityMap, days, workingDaySet, workingHours, tasks]);
 
   // ── Handlers ──
   const handlePrevious = () => setAnchor(a => a - cfg.weeksSpan * 7);
@@ -759,12 +848,8 @@ const PlannerScheduleView: React.FC = () => {
       scheduleApi.util.invalidateTags([
         'DateList',
         'Members',
-        'MemberProjects',
-        'Capacity',
-        'Workload',
-        'CapacityReport',
-        'Conflicts',
         'TaskTimeline',
+        'Capacity',
         'TimeOff',
       ])
     );
@@ -790,11 +875,11 @@ const PlannerScheduleView: React.FC = () => {
       const timeZone = getUserSession()?.timezone_name || Intl.DateTimeFormat().resolvedOptions().timeZone;
       socket?.emit(
         SocketEvents.TASK_START_DATE_CHANGE.toString(),
-        JSON.stringify({ task_id: info.taskId, start_date: targetDateStr, parent_task: null, time_zone: timeZone })
+        JSON.stringify({ task_id: info.taskId, start_date: targetDateStr, parent_task: info.parentTaskId, time_zone: timeZone })
       );
       socket?.emit(
         SocketEvents.TASK_END_DATE_CHANGE.toString(),
-        JSON.stringify({ task_id: info.taskId, end_date: targetDateStr, parent_task: null, time_zone: timeZone })
+        JSON.stringify({ task_id: info.taskId, end_date: targetDateStr, parent_task: info.parentTaskId, time_zone: timeZone })
       );
     }
 
@@ -1129,7 +1214,13 @@ const PlannerScheduleView: React.FC = () => {
         return;
       }
       e.stopPropagation();
-      dragInfo.current = { taskId: task.id, projectId: task.project_id, memberId, date: date.format('YYYY-MM-DD') };
+      dragInfo.current = {
+        taskId: task.id,
+        projectId: task.project_id,
+        memberId,
+        date: date.format('YYYY-MM-DD'),
+        parentTaskId: task.parent_task_id ?? null,
+      };
     };
 
   // Small grip strip anchored to the chip's bottom edge (chip needs position:relative).
@@ -1287,7 +1378,7 @@ const PlannerScheduleView: React.FC = () => {
         />
         <PlannerMultiFilterDropdown
           label={t('allMembers', { defaultValue: 'Members' })}
-          options={teamData.map((m: any) => ({ value: m.team_member_id || m.id, label: m.name }))}
+          options={teamData.map((m: any) => ({ value: m.team_member_id || m.id, label: m.name || m.email || '' }))}
           selected={filterMembers}
           onChange={setFilterMembers}
         />
@@ -1307,19 +1398,19 @@ const PlannerScheduleView: React.FC = () => {
             />
             <PlannerMultiFilterDropdown
               label={t('allStatuses', { defaultValue: 'Project Status' })}
-              options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name }))}
+              options={projectStatuses.map((s: any) => ({ value: s.id, label: s.name || '' }))}
               selected={filterStatuses}
               onChange={setFilterStatuses}
             />
             <PlannerMultiFilterDropdown
               label={t('allPriorities', { defaultValue: 'Priority' })}
-              options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name }))}
+              options={projectPriorities.map((p: any) => ({ value: p.id, label: p.name || '' }))}
               selected={filterPriorities}
               onChange={setFilterPriorities}
             />
             <PlannerMultiFilterDropdown
               label={t('allUtilLevels', { defaultValue: 'Utilization' })}
-              options={UTIL_LEVELS.map(l => ({ value: l.value, label: l.label }))}
+              options={UTIL_LEVELS.map(l => ({ value: l.value, label: t('util' + l.value.charAt(0).toUpperCase() + l.value.slice(1), { defaultValue: l.label }) }))}
               selected={filterUtilLevels}
               onChange={setFilterUtilLevels}
             />
@@ -1605,9 +1696,18 @@ const PlannerScheduleView: React.FC = () => {
                         fontSize: 12,
                         fontWeight: 600,
                         color: isToday ? token.colorPrimary : undefined,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 3,
                       }}
                     >
-                      {cfg.dense === 'bar' ? d.date.date() : `${WEEKDAY[(d.date.day() + 6) % 7]} ${d.date.date()}`}
+                      {cfg.dense === 'bar' ? d.date.date() : `${weekdayShort[(d.date.day() + 6) % 7]} ${d.date.date()}`}
+                      {isOrgHoliday.has(dateStr) && (
+                        <Tooltip title={t('holiday', { defaultValue: 'Holiday' })}>
+                          <span style={{ fontSize: 10 }}>🎉</span>
+                        </Tooltip>
+                      )}
                     </div>
                     {cfg.dense !== 'bar' && <div style={{ fontSize: 12, opacity: 0.45 }}>{d.date.format('MMM')}</div>}
                   </div>
@@ -1647,10 +1747,29 @@ const PlannerScheduleView: React.FC = () => {
                     style={{ display: 'flex', minHeight: ROW_HEIGHT_FLOOR, borderBottom: `1px solid ${borderColor}` }}
                   >
                     {days.map(d => {
+                      const dateStr = d.date.format('YYYY-MM-DD');
+                      const capInfo = memberCapacityMap.get(`${memberId}_${dateStr}`);
+                      const nonWorkingDay = !isWorkingDay(d.date);
+                      const effectiveDayCap = capInfo ? capInfo.working_hours : (nonWorkingDay ? 0 : workingHours);
+                      const isFullDayTimeOff = Boolean(
+                        capInfo?.is_time_off && capInfo?.is_full_day_time_off !== false && capInfo?.working_hours === 0
+                      );
+                      const isHoliday = Boolean(capInfo?.is_holiday);
+                      const isPartialTimeOff = Boolean(
+                        capInfo?.is_time_off && (capInfo?.is_full_day_time_off === false || (capInfo.time_off_hours && capInfo.working_hours > 0))
+                      );
                       const dayTasks = tasksFor(memberId, d.date);
                       const used = dayEstTotal(memberId, d.date);
-                      const over = used > workingHours;
-                      const nonWorkingDay = !isWorkingDay(d.date);
+                      const over = used > effectiveDayCap;
+                      // Parent tasks and their subtasks carry independent, additive estimates
+                      // (never rolled up) — so both counting toward the day total is correct,
+                      // not a bug. This just surfaces the combination to the PM rather than
+                      // silently altering the total.
+                      const dayHasParentSubtaskOverlap = hasParentSubtaskOverlap(
+                        dayTasks,
+                        (t: any) => t.id,
+                        (t: any) => t.parent_task_id
+                      );
 
                       // When more than 4 tasks stack in one cell, only the first 3
                       // render as full chips; the rest collapse behind a "+N" badge
@@ -1677,7 +1796,7 @@ const PlannerScheduleView: React.FC = () => {
                               suppressCellClickRef.current = false;
                               return;
                             }
-                            openCreateTask(memberId, d.date);
+                            if (!isFullDayTimeOff) openCreateTask(memberId, d.date);
                           }}
                           onDragOver={e => e.preventDefault()}
                           onDrop={e => {
@@ -1690,18 +1809,33 @@ const PlannerScheduleView: React.FC = () => {
                             minWidth: colWidth,
                             flexShrink: 0,
                             borderRight: `1px solid ${borderColor}`,
+                            padding: '6px 5px',
                             background: over
                               ? 'rgba(255,77,79,.06)'
-                              : nonWorkingDay
-                                ? token.colorFillQuaternary
-                                : undefined,
-                            padding: cfg.dense === 'full' ? '6px 5px' : '4px 3px',
+                              : isFullDayTimeOff
+                                ? 'repeating-linear-gradient(45deg, rgba(250, 173, 20, 0.08) 0 4px, transparent 4px 8px)'
+                                : nonWorkingDay
+                                  ? token.colorFillQuaternary
+                                  : undefined,
                             display: 'flex',
                             flexDirection: 'column',
-                            cursor: 'pointer',
+                            gap: 4,
+                            position: 'relative',
+                            cursor: isFullDayTimeOff ? 'not-allowed' : 'pointer',
                           }}
                         >
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                            {dayHasParentSubtaskOverlap && (
+                              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                <Tooltip
+                                  title={t('includesParentAndSubtask', {
+                                    defaultValue: 'Includes parent + subtask of the same task — hours are counted separately',
+                                  })}
+                                >
+                                  <BranchesOutlined style={{ fontSize: 12, color: token.colorWarning }} />
+                                </Tooltip>
+                              </div>
+                            )}
                             {dayTasks.length === 0 && (
                               <div
                                 className="planner-add-hint"
@@ -1727,6 +1861,7 @@ const PlannerScheduleView: React.FC = () => {
                               const taskRange = taskDateRange(task);
                               const isFirstDay = dateStr === taskRange.start;
                               const isLastDay = dateStr === taskRange.end;
+                              const isSubtask = !!task.parent_task_id;
                               return (
                                 <Tooltip
                                   key={task.id}
@@ -1755,8 +1890,9 @@ const PlannerScheduleView: React.FC = () => {
                                     position: 'relative',
                                     cursor: 'grab',
                                     borderRadius: 4,
-                                    background: `${color}18`,
-                                    border: `1px solid ${color}40`,
+                                    marginLeft: isSubtask ? 8 : 0,
+                                    background: isSubtask ? `${color}0c` : `${color}18`,
+                                    border: `1px solid ${color}${isSubtask ? '30' : '40'}`,
                                     borderLeft: `3px solid ${color}`,
                                     padding: cfg.dense === 'full' ? '3px 6px' : cfg.dense === 'compact' ? '2px 4px' : 0,
                                     height: cfg.dense === 'bar' ? 8 : undefined,
@@ -1774,7 +1910,7 @@ const PlannerScheduleView: React.FC = () => {
                                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
                                         {isWorkingDay(d.date) && (
                                           <span style={{ fontSize: 12, fontWeight: 700, color }}>
-                                            {hours.toFixed(1)}h{hours > workingHours && ' ⚠'}
+                                            {hours.toFixed(1)}h{hours > effectiveDayCap && ' ⚠'}
                                           </span>
                                         )}
                                         <span
@@ -1799,7 +1935,7 @@ const PlannerScheduleView: React.FC = () => {
                                           textOverflow: 'ellipsis',
                                         }}
                                       >
-                                        {t('task', { defaultValue: 'Task' })}: {task.name}
+                                        {taskChipLabel(task)}
                                       </div>
                                     </>
                                   )}
@@ -1818,7 +1954,7 @@ const PlannerScheduleView: React.FC = () => {
                                           textOverflow: 'ellipsis',
                                         }}
                                       >
-                                        {t('task', { defaultValue: 'Task' })}: {task.name}
+                                        {taskChipLabel(task)}
                                       </span>
                                     </div>
                                   )}
@@ -1879,9 +2015,11 @@ const PlannerScheduleView: React.FC = () => {
                                           style={{
                                             position: 'relative',
                                             padding: cfg.dense === 'bar' ? '5px 8px' : '5px 8px 9px',
+                                            marginLeft: task.parent_task_id ? 8 : 0,
                                             fontSize: 12,
                                             borderRadius: 4,
                                             cursor: 'grab',
+                                            opacity: task.parent_task_id ? 0.85 : 1,
                                             borderLeft: `3px solid ${task.project_color || token.colorPrimary}`,
                                             whiteSpace: 'nowrap',
                                             overflow: 'hidden',
@@ -1893,7 +2031,7 @@ const PlannerScheduleView: React.FC = () => {
                                               {hoursForTaskOnDay(task, d.date).toFixed(1)}h{' '}
                                             </span>
                                           )}
-                                          {t('task', { defaultValue: 'Task' })}: {task.name}
+                                          {taskChipLabel(task)}
                                           {cfg.dense !== 'bar' &&
                                             renderResizeHandle(
                                               task,
@@ -1948,6 +2086,21 @@ const PlannerScheduleView: React.FC = () => {
                               </div>
                             )}
                           </div>
+                          {isFullDayTimeOff && (
+                            <div style={{ fontSize: 11, color: '#fa8c16', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
+                              🔵 {t('timeOff', { defaultValue: 'Time Off' })}
+                            </div>
+                          )}
+                          {isHoliday && effectiveDayCap === 0 && !isFullDayTimeOff && (
+                            <div style={{ fontSize: 11, color: '#faad14', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
+                              🎉 {t('holiday', { defaultValue: 'Holiday' })}
+                            </div>
+                          )}
+                          {isPartialTimeOff && (
+                            <div style={{ fontSize: 10, color: '#fa8c16', fontWeight: 600, textAlign: 'center', margin: '2px 0' }}>
+                              {capInfo.time_off_hours}h {t('timeOff', { defaultValue: 'Time Off' })}
+                            </div>
+                          )}
                           {!nonWorkingDay && (cfg.dense === 'full' || cfg.dense === 'compact') && (
                             <div
                               style={{
@@ -1959,7 +2112,7 @@ const PlannerScheduleView: React.FC = () => {
                                 marginTop: cfg.dense === 'full' ? 6 : 3,
                               }}
                             >
-                              {used.toFixed(1)}h / {workingHours}h
+                              {used.toFixed(1)}h / {effectiveDayCap}h
                             </div>
                           )}
                         </div>

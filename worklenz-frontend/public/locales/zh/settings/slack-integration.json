@@ -54,6 +54,7 @@
     "title": "连接您的 Slack 工作区",
     "description": "将 Slack 与您的 Worklenz 团队集成，以接收实时通知、从 Slack 创建任务，并保持您的团队在两个平台上同步。"
   },
+  "upgradeRequired": "升级到 Business 计划",
   "features": {
     "notifications": {
       "title": "实时通知",
@@ -72,12 +73,17 @@
     "project": "项目",
     "slackChannel": "Slack 频道",
     "notifications": "通知",
+    "status": "状态",
+    "statusActive": "活跃",
+    "statusInactive": "非活跃",
     "active": "活跃",
     "actions": "操作",
     "channelConfigs": "Slack 频道配置",
     "toggleStatus": "切换 {{channel}} 的状态",
     "editConfig": "编辑 {{channel}} 的配置",
-    "deleteConfig": "删除 {{channel}} 的配置"
+    "deleteConfig": "删除 {{channel}} 的配置",
+    "reactivate": "重新启用",
+    "reactivateConfig": "重新启用 {{channel}}"
   },
   "modal": {
     "configureChannel": "配置 Slack 频道",
@@ -89,6 +95,7 @@
     "notificationTypes": "通知类型",
     "selectNotificationTypes": "选择通知类型",
     "refreshChannels": "刷新",
+    "scrollForMore": "滚动查看更多...",
     "notificationOptions": {
       "taskCreated": "任务已创建",
       "taskUpdated": "任务已更新",

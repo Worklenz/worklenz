@@ -27,12 +27,13 @@
   "appsumoBusinessUnlockTitle": "Desbloquea el plan Business con 5 códigos de AppSumo",
   "appsumoBusinessUnlockDescription": "Canjea {{required}} códigos de AppSumo para desbloquear automáticamente las funciones del plan Business. Has canjeado {{count}} de {{required}} códigos.",
   "redeemAnotherCode": "Canjear otro código",
-
+  "totalSeats": "Asientos totales",
+  "availableSeats": "Asientos disponibles",
+  "addMoreSeats": "Añadir más asientos",
   "drawerTitle": "Canjear Código",
   "label": "Canjear Código",
   "drawerPlaceholder": "Ingrese su código de canje",
   "redeemSubmit": "Enviar",
-
   "modalTitle": "Seleccione el mejor plan para su equipo",
   "seatLabel": "Número de asientos",
   "freePlan": "Plan Gratuito",
@@ -41,13 +42,11 @@
   "business": "Negocio",
   "tag": "Más Popular",
   "enterprise": "Empresa",
-
   "freeSubtitle": "gratis para siempre",
   "freeUsers": "Mejor para uso personal",
   "freeText01": "100MB de almacenamiento",
   "freeText02": "3 proyectos",
   "freeText03": "5 miembros del equipo",
-
   "startupSubtitle": "TARIFA PLANa / mes",
   "startupUsers": "Hasta 15 usuarios",
   "startupText01": "25GB de almacenamiento",
@@ -55,27 +54,20 @@
   "startupText03": "Programación",
   "startupText04": "Informes",
   "startupText05": "Suscribirse a proyectos",
-
   "businessSubtitle": "usuario / mes",
   "businessUsers": "16 - 200 usuarios",
-
   "enterpriseUsers": "200 - 500+ usuarios",
-
   "footerTitle": "Por favor, proporciónenos un número de teléfono que podamos usar para contactarte.",
   "footerLabel": "Número de Teléfono",
   "footerButton": "Contactarnos",
-
   "redeemCodePlaceHolder": "Ingrese su código de canje",
   "submit": "Enviar",
-
   "trialPlan": "Plan de Prueba",
   "trialExpireDate": "Válido hasta {{trial_expire_date}}",
   "trialExpired": "Su prueba gratuita expiró {{trial_expire_string}}",
   "trialInProgress": "Su prueba gratuita expira {{trial_expire_string}}",
-
   "required": "Este campo es requerido",
   "invalidCode": "Código inválido",
-
   "selectPlan": "Seleccione el mejor plan para su equipo",
   "changeSubscriptionPlan": "Cambie su plan de suscripción",
   "noOfSeats": "Número de asientos",
@@ -93,20 +85,19 @@
   "subscribeToProjects": "Suscribirse a proyectos",
   "billedAnnually": "Facturado Anualmente",
   "billedMonthly": "Facturado Mensualmente",
-
   "pausePlan": "Pausar Plan",
   "resumePlan": "Reanudar Plan",
   "changePlan": "Cambiar Plan",
   "cancelPlan": "Cancelar Plan",
-
   "perMonthPerUser": "por usuario / mes",
   "viewInvoice": "Ver Factura",
   "switchToFreePlan": "Cambiar a Plan Gratuito",
-
   "expirestoday": "hoy",
   "expirestomorrow": "mañana",
   "expiredDayAgo": "hace {{days}} día",
   "expiredDaysAgo": "hace {{days}} días",
+  "continueWith": "Continuar con {{plan}}",
+  "changeToPlan": "Cambiar a {{plan}}",
   "creditPlan": "Plan de Crédito",
   "customPlan": "Plan Personalizado",
   "planValidTill": "Su plan es válido hasta {{date}}",
@@ -115,7 +106,27 @@
   "selectSeatsText": "Seleccione el número de asientos adicionales a comprar.",
   "purchase": "Comprar",
   "contactSales": "Contactar ventas",
-
+  "submitSuccess": "¡Código canjeado exitosamente!",
+  "submitSuccessDescription": "Su cuenta ha sido actualizada con los nuevos créditos.",
+  "percentUsed": "% Used",
+  "sizeUnits": {
+    "bytes": "bytes",
+    "kb": "KB",
+    "mb": "MB",
+    "gb": "GB",
+    "tb": "TB"
+  },
+  "seatPerMonth": "asiento / mes",
+  "totalPrice": "Total $",
+  "tryForFree": "Pruébalo gratis",
+  "subscriptionUpdateSuccess": "¡Suscripción actualizada exitosamente!",
+  "paymentProcessorError": "No se pudo cargar el procesador de pagos",
+  "seatsLabel": "Asientos:",
+  "requiredField": "*",
+  "purchaseSeatsTextSingle": "Para continuar, deberás comprar un asiento adicional.",
+  "singleUserNote": "Actualmente tienes 1 asiento disponible.",
+  "selectSeatsTextSingle": "Seleccione el número de asientos adicionales a comprar.",
+  "phoneNumberPattern": "07xxxxxxxxx",
   "pricingModel": "Modelo de Precios",
   "flatRate": "Tarifa Plana",
   "perUser": "Por Usuario",
@@ -125,21 +136,20 @@
   "switchTo": "Cambiar a",
   "pricing": "precios",
   "managementUrl": "URL de gestión",
+  "openManagementUrl": "Abrir URL de administración",
   "updateCardDetails": "Actualizar datos de la tarjeta",
-
   "upgradeToUnlockFeatures": "Actualizar para desbloquear funciones premium",
   "currentPlanLimits": "El plan actual incluye:",
   "planFeatures": "Características del Plan",
   "teamSizeLimit": "Límite de tamaño del equipo",
   "storageLimit": "Límite de almacenamiento",
   "projectLimit": "Límite de proyectos",
-
   "billingCyclePreference": "Ciclo de Facturación",
   "annualSavings": "Ahorre con facturación anual",
   "monthlyBilling": "Mensual",
   "yearlyBilling": "Anual",
-
   "planComparison": "Comparar Planes",
   "currentUsage": "Uso Actual",
-  "planRecommendation": "Recomendado para el tamaño de su equipo"
+  "planRecommendation": "Recomendado para el tamaño de su equipo",
+  "appsumoBusinessUnlockProgress": "{{count}} de {{required}} códigos AppSumo canjeados. Canjee códigos {{required}} para desbloquear las funciones del Plan Empresarial."
 }

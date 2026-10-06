@@ -11,6 +11,10 @@ import { getColor } from "../shared/utils";
 import SqlHelper from "../shared/sql-helpers";
 import { DEFAULT_PAGE_SIZE } from "../shared/constants";
 import { buildTaskFilterClauses, buildTaskOrderClause, buildTabClause } from "../shared/home-task-query-builder";
+import {
+  buildMultiProjectAssigneeScopeClause,
+  isAssigneeScopeSessionExempt,
+} from "../shared/assignee-task-scope";
 
 export default class HomePageController extends WorklenzControllerBase {
 
@@ -36,6 +40,15 @@ export default class HomePageController extends WorklenzControllerBase {
   // the same $N regardless of which/how-many other filters are active.
   private static readonly TZ_PARAM_INDEX = 3;
   private static readonly BASE_PARAM_OFFSET = 3;
+
+  private static getAssigneeScopeClauseForUser(user: IWorkLenzRequest["user"]): string {
+    // TVR-17: Owner / Admin / Team Lead / Guest skip multi-project filter entirely
+    return buildMultiProjectAssigneeScopeClause(
+      "t.id",
+      2,
+      isAssigneeScopeSessionExempt(user)
+    );
+  }
 
   private static isValidGroup(groupBy: string) {
     return groupBy === this.GROUP_BY_ASSIGNED_TO_ME
@@ -130,7 +143,7 @@ export default class HomePageController extends WorklenzControllerBase {
              p.name AS project_name,
              p.color_code AS project_color,
              ts.name AS status,
-             stc.color_code AS status_color,
+             COALESCE(ts.color_code, stc.color_code) AS status_color,
              (CASE
                 WHEN stc.id IS NULL THEN '{}'::JSON
                 ELSE JSON_BUILD_OBJECT('is_done', stc.is_done, 'is_doing', stc.is_doing, 'is_todo', stc.is_todo)
@@ -167,7 +180,9 @@ export default class HomePageController extends WorklenzControllerBase {
              LEFT JOIN LATERAL (
                SELECT ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(x))) AS project_statuses
                FROM (
-                 SELECT s.id, s.name, cat.color_code
+                 SELECT s.id,
+                        s.name,
+                        COALESCE(s.color_code, cat.color_code) AS color_code
                  FROM task_statuses s
                  LEFT JOIN sys_task_status_categories cat ON cat.id = s.category_id
                  WHERE s.project_id = t.project_id
@@ -182,7 +197,8 @@ export default class HomePageController extends WorklenzControllerBase {
     tzParamIndex: number,
     extraFilterClause = "",
     orderClause = "ORDER BY t.end_date ASC, t.id ASC",
-    limitClause = ""
+    limitClause = "",
+    assigneeScopeClause = ""
   ): Promise<{ end_date?: string }[]> {
     const q = `
       SELECT ${this.getTaskSelectColumns(tzParamIndex)}
@@ -202,6 +218,7 @@ export default class HomePageController extends WorklenzControllerBase {
                          AND user_id = $2)
         ${groupByClosure}
         ${currentTabClosure}
+        ${assigneeScopeClause}
         ${extraFilterClause}
       ${orderClause}
       ${limitClause}`;
@@ -608,6 +625,7 @@ export default class HomePageController extends WorklenzControllerBase {
     const currentTab = this.isValidView(req.query.current_tab as string) ? req.query.current_tab : this.ALL_TAB;
 
     const groupByClosure = this.getTasksByGroupClosure(currentGroup as string);
+    const assigneeScopeClause = this.getAssigneeScopeClauseForUser(req.user);
 
     const isCalendarView = req.query.is_calendar_view;
 
@@ -615,7 +633,7 @@ export default class HomePageController extends WorklenzControllerBase {
       const selectedDate = req.query.selected_date as string;
       const calendarClosure = `AND t.end_date::DATE = $3::DATE`;
       const params = [teamId, userId, selectedDate, timeZone];
-      const result = await this.getTasksResult(groupByClosure, calendarClosure, params, 4);
+      const result = await this.getTasksResult(groupByClosure, calendarClosure, params, 4, "", "ORDER BY t.end_date ASC, t.id ASC", "", assigneeScopeClause);
       const counts = await this.getCountsResult(groupByClosure, teamId, userId, timeZone);
 
       res.set("Cache-Control", "no-store");
@@ -660,7 +678,7 @@ export default class HomePageController extends WorklenzControllerBase {
       const { clause: limitClause, params: limitParams } = SqlHelper.buildPaginationClause(size, offset, values.length + this.BASE_PARAM_OFFSET + 1);
 
       const [tasks, counts] = await Promise.all([
-        this.getTasksResult(groupByClosure, currentTabClosure, [teamId, userId, timeZone, ...values, ...limitParams], this.TZ_PARAM_INDEX, filterClause, orderClause, limitClause),
+        this.getTasksResult(groupByClosure, currentTabClosure, [teamId, userId, timeZone, ...values, ...limitParams], this.TZ_PARAM_INDEX, filterClause, orderClause, limitClause, assigneeScopeClause),
         this.getCountsResult(groupByClosure, teamId, userId, timeZone, filterClause, values, currentTabClosure),
       ]);
 
@@ -680,7 +698,7 @@ export default class HomePageController extends WorklenzControllerBase {
     // HomeContinueCard.tsx, just computed via SQL counts instead of a JS
     // pass over the full fetched array.
     const params = [teamId, userId, timeZone];
-    const result = await this.getTasksResult(groupByClosure, "", params, 3);
+    const result = await this.getTasksResult(groupByClosure, "", params, 3, "", "ORDER BY t.end_date ASC, t.id ASC", "", assigneeScopeClause);
     const groupedResult = await this.groupByDate(currentTab as string, result, timeZone, today);
     const counts = await this.getCountsResult(groupByClosure, teamId, userId, timeZone);
 
@@ -837,6 +855,7 @@ export default class HomePageController extends WorklenzControllerBase {
       : this.GROUP_BY_ASSIGNED_TO_ME;
 
     const groupByClosure = this.getTasksByGroupClosure(currentGroup as string);
+    const assigneeScopeClause = this.getAssigneeScopeClauseForUser(req.user);
 
     const q = `
       SELECT t.id,
@@ -852,9 +871,10 @@ export default class HomePageController extends WorklenzControllerBase {
              (SELECT name FROM task_priorities WHERE id = t.priority_id) AS priority_name,
              (SELECT color_code FROM task_priorities WHERE id = t.priority_id) AS priority_color,
              (SELECT name FROM task_statuses WHERE id = t.status_id) AS status_name,
-             (SELECT color_code
-              FROM sys_task_status_categories
-              WHERE id = (SELECT category_id FROM task_statuses WHERE id = t.status_id)) AS status_color,
+            (SELECT COALESCE(ts.color_code, stc.color_code)
+            FROM task_statuses ts
+            LEFT JOIN sys_task_status_categories stc ON stc.id = ts.category_id
+            WHERE ts.id = t.status_id) AS status_color,
              is_todo(t.status_id, t.project_id) AS is_todo,
              is_doing(t.status_id, t.project_id) AS is_doing,
              is_completed(t.status_id, t.project_id) AS is_completed,
@@ -871,6 +891,7 @@ export default class HomePageController extends WorklenzControllerBase {
                        WHERE project_id = p.id
                          AND user_id = $2)
         ${groupByClosure}
+        ${assigneeScopeClause}
       ORDER BY t.end_date ASC`;
 
     const result = await db.query(q, [teamId, userId, startDate, endDate]);

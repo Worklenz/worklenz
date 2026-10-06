@@ -287,7 +287,7 @@ const KanbanGroup: React.FC<KanbanGroupProps> = ({ title, tasks, id, color }) =>
           )}
 
           <SortableContext
-            items={tasks.map(task => task.id)}
+            items={tasks.map(task => task.id).filter((id): id is string => !!id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="App" style={{ display: 'flex', flexDirection: 'column' }}>
