@@ -37,10 +37,32 @@ const wantsForcedPreview = (req: Request): boolean => {
   return value === "1" || value === "true";
 };
 
-const getRequestOrigin = (req: Request): string => {
-  const proto = (req.get("x-forwarded-proto") || req.protocol || "https").split(",")[0].trim();
-  const host = (req.get("x-forwarded-host") || req.get("host") || "app.worklenz.com").split(",")[0].trim();
-  return `${proto}://${host}`;
+const DEFAULT_PUBLIC_ORIGIN = "https://app.worklenz.com";
+
+/**
+ * The link-preview page is HTML returned to unauthenticated crawlers. Never
+ * derive its canonical URL from Host/X-Forwarded-Host because those headers can
+ * be supplied by a client when proxy configuration is incomplete.
+ */
+const getPublicBaseUrl = (): string => {
+  const configuredOrigin = (process.env.FRONTEND_URL || DEFAULT_PUBLIC_ORIGIN)
+    .split(",")[0]
+    .trim();
+  const valueWithProtocol = /^https?:\/\//i.test(configuredOrigin)
+    ? configuredOrigin
+    : `https://${configuredOrigin}`;
+
+  try {
+    const parsed = new URL(valueWithProtocol);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return DEFAULT_PUBLIC_ORIGIN;
+    }
+
+    const basePath = parsed.pathname.replace(/\/+$/, "");
+    return `${parsed.origin}${basePath}`;
+  } catch {
+    return DEFAULT_PUBLIC_ORIGIN;
+  }
 };
 
 const getSiteName = (origin: string): string => {
@@ -51,11 +73,21 @@ const getSiteName = (origin: string): string => {
   }
 };
 
+/** Escapes text destined for quoted HTML attributes, including quotes. */
+const escapeHtmlAttribute = (value: string): string => {
+  return escapeHtmlEntities(value)
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+};
+
 /** Text-only unfurl (no og:image) — like Google Meet / WhatsApp link cards */
 const buildOgHtml = (preview: LinkPreviewData): string => {
   const title = escapeHtmlEntities(preview.title);
   const description = escapeHtmlEntities(preview.description);
+  const titleAttribute = escapeHtmlAttribute(preview.title);
+  const descriptionAttribute = escapeHtmlAttribute(preview.description);
   const url = escapeHtmlEntities(preview.url);
+  const urlAttribute = escapeHtmlAttribute(preview.url);
   const siteName = escapeHtmlEntities(preview.siteName);
 
   return `<!DOCTYPE html>
@@ -63,17 +95,17 @@ const buildOgHtml = (preview: LinkPreviewData): string => {
 <head>
   <meta charset="utf-8" />
   <title>${title}</title>
-  <meta name="description" content="${description}" />
+  <meta name="description" content="${descriptionAttribute}" />
   <meta name="robots" content="noindex, nofollow" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Worklenz" />
-  <meta property="og:title" content="${title}" />
-  <meta property="og:description" content="${description}" />
-  <meta property="og:url" content="${url}" />
+  <meta property="og:title" content="${titleAttribute}" />
+  <meta property="og:description" content="${descriptionAttribute}" />
+  <meta property="og:url" content="${urlAttribute}" />
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="${title}" />
-  <meta name="twitter:description" content="${description}" />
-  <link rel="canonical" href="${url}" />
+  <meta name="twitter:title" content="${titleAttribute}" />
+  <meta name="twitter:description" content="${descriptionAttribute}" />
+  <link rel="canonical" href="${urlAttribute}" />
   <style>
     body { font-family: Inter, system-ui, sans-serif; background:#0b141a; color:#e9edef; margin:0; padding:32px; }
     .card { max-width:420px; border-left:3px solid #00a884; background:#1f2c34; border-radius:0 8px 8px 0; padding:12px 14px; }
@@ -167,7 +199,7 @@ export const linkPreviewMiddleware = async (
       return;
     }
 
-    const origin = getRequestOrigin(req);
+    const origin = getPublicBaseUrl();
 
     let preview: LinkPreviewData | null = null;
 

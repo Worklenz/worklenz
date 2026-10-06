@@ -362,7 +362,8 @@ export const resolveAssigneeTaskScope = async (
   } catch (error) {
     // Fail closed: deny access + log on DB error (IDOR prevention)
     console.error(
-      `[SECURITY] Database error in resolveAssigneeTaskScope for userId=${userId}, projectId=${projectId}:`,
+      "[SECURITY] Database error in resolveAssigneeTaskScope",
+      { userId, projectId },
       error
     );
     return { applyFilter: false, teamMemberId: null };

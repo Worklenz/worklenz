@@ -1205,7 +1205,13 @@ export default class TaskDuplicateController extends WorklenzControllerBase {
         try {
           await copyObject(copyTask.sourceKey, copyTask.destinationKey);
         } catch (error) {
-          console.error(`Failed to copy attachment file: ${copyTask.sourceKey} -> ${copyTask.destinationKey}`, error);
+          console.error(
+            "Failed to copy attachment file",
+            copyTask.sourceKey,
+            "->",
+            copyTask.destinationKey,
+            error
+          );
           // Continue with other files even if one fails
         }
       }
