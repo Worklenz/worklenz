@@ -21,7 +21,7 @@ import {
   FilterOutlined,
   MoreOutlined,
 } from '@/shared/antd-imports';
-import PortalStatusTag from '@/ee/components/client-portal/PortalStatusTag';
+import PortalStatusTag from '@/components/client-portal/PortalStatusTag';
 
 const { Title, Text } = Typography;
 

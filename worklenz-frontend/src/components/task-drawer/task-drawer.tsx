@@ -32,7 +32,7 @@ import useTaskDrawerNavigation from '@/hooks/useTaskDrawerNavigation';
 import InfoTabFooter from './shared/info-tab/info-tab-footer';
 import { CrownOutlined } from '@ant-design/icons';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';

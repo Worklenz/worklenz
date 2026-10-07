@@ -13,10 +13,10 @@ import PeopleDropdown from '@/components/common/people-dropdown/PeopleDropdown';
 import AvatarGroup from '@/components/AvatarGroup';
 import dayjs from 'dayjs';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser, hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { isFreeUser, hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { openUpgradeModal, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import {
   getTaskCustomFieldDisplayName,

@@ -62,28 +62,28 @@ import scheduleApiV2Router from "./gannt-apis/schedule-api-v2-router";
 import projectManagerApiRouter from "./project-managers-api-router";
 import surveyApiRouter from "./survey-api-router";
 
-import billingApiRouter from "../../ee/routes/apis/billing-api-router";
-import planTrialApiRouter from "../../ee/routes/apis/plan-trial-api-router";
+import billingApiRouter from "../../routes/apis/billing-api-router";
+import planTrialApiRouter from "../../routes/apis/plan-trial-api-router";
 import taskDependenciesApiRouter from "./task-dependencies-api-router";
 
 import taskRecurringApiRouter from "./task-recurring-api-router";
 import teamFilesApiRouter from "./team-files-api-router";
 
 import customColumnsApiRouter from "./custom-columns-api-router";
-import projectFinanceApiRouter from "../../ee/routes/apis/project-finance-api-router";
-import projectRatecardApiRouter from "../../ee/routes/apis/project-ratecard-api-router";
-import ratecardApiRouter from "../../ee/routes/apis/ratecard-api-router";
+import projectFinanceApiRouter from "../../routes/apis/project-finance-api-router";
+import projectRatecardApiRouter from "../../routes/apis/project-ratecard-api-router";
+import ratecardApiRouter from "../../routes/apis/ratecard-api-router";
 import holidayApiRouter from "./holiday-api-router";
 import userActivityLogsApiRouter from "./user-activity-logs-api-router";
 import supportApiRouter from "./support-api-router";
 import accountApiRouter from "./account-api-router";
 import planRecommendationApiRouter from "./plan-recommendation-api-router";
 import migrationApiRouter from "./migration-api-router";
-import subscriptionsApiRouter from "../../ee/routes/apis/subscriptions-api-router";
+import subscriptionsApiRouter from "../../routes/apis/subscriptions-api-router";
 import plansApiRouter from "./plans-api-router";
 import usersApiRouter from "./users-api-router";
-import clientPortalApiRouter from "../../ee/routes/apis/client-portal-api-router";
-import slackApiRouter from "../../ee/routes/apis/slack-api-router";
+import clientPortalApiRouter from "../../routes/apis/client-portal-api-router";
+import slackApiRouter from "../../routes/apis/slack-api-router";
 import onboardingApiRouter from "./onboarding-api-router";
 import importsApiRouter from "./imports-api-router";
 import digestApiRouter from "./digest-api-router";

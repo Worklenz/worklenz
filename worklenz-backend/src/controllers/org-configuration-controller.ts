@@ -4,7 +4,7 @@ import { IWorkLenzRequest } from "../interfaces/worklenz-request";
 import { IWorkLenzResponse } from "../interfaces/worklenz-response";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
-import { hasBusinessPlanAccess } from "../ee/middlewares/subscription-middleware";
+import { hasBusinessPlanAccess } from "../middlewares/subscription-middleware";
 
 export default class OrgConfigurationController extends WorklenzControllerBase {
 

@@ -38,7 +38,7 @@ import { InputRef } from 'antd/es/input';
 import { CheckboxChangeEvent } from 'antd/es/checkbox';
 import TaskTemplateDrawer from '@/components/task-templates/task-template-drawer';
 import { useAuthService } from '@/hooks/useAuth';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { CrownOutlined } from '@/shared/antd-imports';
 import { Calendar1 } from 'lucide-react';

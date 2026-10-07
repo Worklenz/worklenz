@@ -48,13 +48,13 @@ import {
 import { setProjectId } from '@/features/project/project.slice';
 import { IProjectUpdateCommentViewModel } from '@/types/project/project.types';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 import { getAllProjectMembers } from '@/features/projects/singleProject/members/projectMembersSlice';
 import { projectCommentsApiService } from '@/api/projects/comments/project-comments.api.service';
 import { useAuthService } from '@/hooks/useAuth';
 import SingleAvatar from '@/components/common/single-avatar/single-avatar';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import CustomMentionsInput from './CustomMentionsInput';
 import { formatDateForSeparator, isDifferentDay } from '@/utils/chatDateFormat';
 import { themeWiseColor } from '@utils/themeWiseColor';

@@ -2,7 +2,7 @@ import { PlusOutlined, CrownOutlined } from '@/shared/antd-imports';
 import { Button, Tooltip, message } from '@/shared/antd-imports';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';

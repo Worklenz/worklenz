@@ -56,7 +56,7 @@ import memberReducer from '@features/settings/member/memberSlice';
 import clientReducer from '@features/settings/client/clientSlice';
 import jobReducer from '@features/settings/job/jobSlice';
 import teamReducer from '@features/teams/teamSlice';
-import billingReducer from '@/ee/features/admin-center/billing/billing.slice';
+import billingReducer from '@/features/admin-center/billing/billing.slice';
 import categoriesReducer from '@features/settings/categories/categoriesSlice';
 import labelReducer from '@features/settings/label/labelSlice';
 
@@ -101,19 +101,19 @@ import taskManagementFieldsReducer from '@features/task-management/taskListField
 import projectWorkloadReducer from '@features/project-workload/projectWorkloadSlice';
 
 //clients portal
-import clientsPortalReducer from '../ee/features/clients-portal';
+import clientsPortalReducer from '../features/clients-portal';
 
 //client view
-import clientViewReducer from '../ee/features/client-view';
+import clientViewReducer from '../features/client-view';
 
 // Client Portal API
-import { clientPortalApi } from '@/ee/api/client-portal/client-portal-api';
+import { clientPortalApi } from '@/api/client-portal/client-portal-api';
 
 // Schedule API
 import { scheduleApi } from '@/api/schedule/scheduleApi';
 
-import projectFinanceRateCardReducer from '@/ee/features/finance/project-finance-slice';
-import projectFinancesReducer from '@/ee/features/projects/finance/project-finance.slice';
+import projectFinanceRateCardReducer from '@/features/finance/project-finance-slice';
+import projectFinancesReducer from '@/features/projects/finance/project-finance.slice';
 import financeReducer from '@/features/projects/finance/finance-slice';
 import financeOverviewReducer from '@/features/finance-overview/finance-overview.slice';
 

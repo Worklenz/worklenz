@@ -6,7 +6,7 @@ import mainRoutes from './main-routes';
 import notFoundRoute from './not-found-route';
 import accountSetupRoute from './account-setup-routes';
 import reportingRoutes from './reporting-routes';
-import clientPortalRoutes from '../../ee/app/routes/client-portal-routes';
+import clientPortalRoutes from '../../app/routes/client-portal-routes';
 import { useAuthService } from '@/hooks/useAuth';
 import { AuthenticatedLayout } from '@/layouts/AuthenticatedLayout';
 import AppShellLayout from '@/layouts/AppShellLayout';
@@ -34,7 +34,7 @@ const withCodeSplitting = (Component: React.LazyExoticComponent<React.ComponentT
 
 // Memoized guard components with defensive programming
 import { useAuthStatus } from '@/hooks/useAuthStatus';
-import clientViewRoutes from '../../ee/app/routes/client-view-routes';
+import clientViewRoutes from '../../app/routes/client-view-routes';
 
 export const AuthGuard = memo(({ children }: GuardProps) => {
   const { isAuthenticated, location } = useAuthStatus();

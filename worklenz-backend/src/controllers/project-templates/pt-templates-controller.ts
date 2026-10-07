@@ -15,7 +15,7 @@ import { IO } from "../../shared/io";
 import {
   getCurrentProjectsCount,
   getFreePlanSettings,
-} from "../../ee/shared/paddle-utils";
+} from "../../shared/paddle-utils";
 import OnboardingController from "../onboarding-controller";
 
 export default class ProjectTemplatesController extends ProjectTemplatesControllerBase {

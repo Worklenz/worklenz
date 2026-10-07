@@ -31,12 +31,12 @@ import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { sanitizeCommentContent, stripHtmlTags } from '@/utils/sanitizeInput';
 import { REACTION_CONFIGS } from '@/shared/reaction-config';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { teamMembersApiService } from '@/api/team-members/teamMembers.api.service';
 import { ITeamMember } from '@/types/teamMembers/teamMember.types';
 import CustomMentionsInput, { MentionOption } from './custom-mentions-input';
 import '../info-tab-footer.css';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 // Helper function to format date for time separators

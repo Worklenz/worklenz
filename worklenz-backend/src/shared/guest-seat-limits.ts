@@ -1,4 +1,4 @@
-import { checkTeamSubscriptionStatus, getActiveGuestCount } from "../ee/shared/paddle-utils";
+import { checkTeamSubscriptionStatus, getActiveGuestCount } from "../shared/paddle-utils";
 import {
   FREE_GUEST_LIMIT,
   PRO_GUEST_LIMIT,

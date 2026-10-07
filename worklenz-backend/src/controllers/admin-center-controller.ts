@@ -22,9 +22,9 @@ import {
   getOwnerIdByTeam,
   getTeamMemberCount,
   getUsedStorage,
-} from "../ee/shared/paddle-utils";
+} from "../shared/paddle-utils";
 import { appSumoService } from "../shared/private-extensions";
-import { PlanTrialService } from "../ee/services/plan-trial-service";
+import { PlanTrialService } from "../services/plan-trial-service";
 import {
   addModifier,
   cancelSubscription,
@@ -32,7 +32,7 @@ import {
   generatePayLinkRequest,
   pauseOrResumeSubscription,
   updateUsers,
-} from "../ee/shared/paddle-requests";
+} from "../shared/paddle-requests";
 import { statusExclude } from "../shared/constants";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { SocketEvents } from "../socket.io/events";

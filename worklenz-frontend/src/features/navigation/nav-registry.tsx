@@ -30,7 +30,7 @@ import {
   TagOutlined,
 } from '@ant-design/icons';
 import type { NavSurface, SurfaceKey } from './nav-registry.types';
-import type { TempChatsType } from '@/ee/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
+import type { TempChatsType } from '@/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
 
 // ─── Home ───────────────────────────────────────────────────────────────────
 // Ported 1:1 from the NAV_ITEMS previously hardcoded in HomeLeftSidebar.tsx.

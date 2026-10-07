@@ -22,9 +22,9 @@ import {
   BUSINESS_PLAN_LIMIT,
   APPSUMO_PLAN_LIMIT,
 } from "../shared/constants";
-import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
-import { updateUsers } from "../ee/shared/paddle-requests";
-import { getTeamMemberSeatLimit } from "../ee/shared/subscription-limits";
+import { checkTeamSubscriptionStatus } from "../shared/paddle-utils";
+import { updateUsers } from "../shared/paddle-requests";
+import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import {
   canAssignRole,
   canManageTargetRole,

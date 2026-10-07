@@ -46,8 +46,8 @@ import { getRoleColor, isTeamLeadRole } from '@/types/roles/role.types';
 import { fetchBillingInfo, toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleProjectMemberDrawer } from '@/features/projects/singleProject/members/projectMembersSlice';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
-import { useAppSumoTracking } from '@/ee/hooks/useAppSumoTracking';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
+import { useAppSumoTracking } from '@/hooks/useAppSumoTracking';
 import { AppSumoUpsellEvents } from '@/types/mixpanel-events.types';
 
 interface PaginationType {

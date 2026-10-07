@@ -66,7 +66,7 @@ import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/
 import { fetchEnhancedKanbanGroups } from '@/features/enhanced-kanban/enhanced-kanban.slice';
 import { fetchTasksV3, setLoading } from '@/features/task-management/task-management.slice';
 import { fetchStatuses } from '@/features/taskAttributes/taskStatusSlice';
-import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isFreeUser } from '@/utils/subscription-utils';
 import { ProjectIntegrationsButton } from '@/components/projects/integrations/ProjectIntegrationsButton';
 import useTaskCreationPermission from '@/hooks/useTaskCreationPermission';
 import { isUserGuest } from '@/lib/project/project-view-guest';

@@ -17,7 +17,7 @@ import { getBaseUrl } from "../cron_jobs/helpers";
 import { syncProjectCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
 import { isValidUuid } from "../shared/validation-helpers";
 import { uploadBase64, getProjectCommentAttachmentKey, getPublicUrl } from "../shared/storage";
-import { getFreePlanSettings, getUsedStorage } from "../ee/shared/paddle-utils";
+import { getFreePlanSettings, getUsedStorage } from "../shared/paddle-utils";
 
 const ALLOWED_ATTACHMENT_TYPES = [
   "image/jpeg", "image/png", "image/gif", "image/webp",

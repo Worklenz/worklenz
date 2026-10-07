@@ -2,7 +2,7 @@ import express, { NextFunction } from "express";
 
 import TaskExportController from "../../controllers/task-export-controller";
 import requireTaskExportAccess from "../../middlewares/validators/task-export-access-validator";
-import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
+import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { isValidUuid } from "../../shared/validation-helpers";
 import { ServerResponse } from "../../models/server-response";

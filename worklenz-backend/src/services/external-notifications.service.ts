@@ -1,6 +1,6 @@
 import db from "../config/db";
 import { log_error } from "../shared/utils";
-import { SlackService } from "../ee/services/slack.service";
+import { SlackService } from "../services/slack.service";
 import { TeamsNotificationService } from "./teams-notification.service";
 
 interface TaskNotificationData {

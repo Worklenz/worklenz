@@ -76,7 +76,7 @@ import { hasTaskExportRoleAccess } from '@/utils/task-export-access';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import { hasBusinessFeatureAccess, isFreeUser } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import {
   CrownOutlined,
   InfoCircleOutlined,
@@ -94,7 +94,7 @@ import {
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
-import { projectFinanceApiService } from '@/ee/api/project-finance-ratecard/project-finance.api.service';
+import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
 
 export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();

@@ -1,4 +1,4 @@
-import RateCardSettings from '@/ee/pages/settings/rate-card-settings/RateCardSettings';
+import RateCardSettings from '@/pages/settings/rate-card-settings/RateCardSettings';
 import {
   AppstoreOutlined,
   BankOutlined,
@@ -23,7 +23,7 @@ import {
 import { MobileOutlined, SwapOutlined } from '@ant-design/icons';
 import React, { ReactNode, lazy } from 'react';
 import { ILocalSession } from '@/types/auth/local-session.types';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 const ProfileSettings = lazy(() => import('../../pages/settings/profile/profile-settings'));
 const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')

@@ -12,7 +12,7 @@ import { getBaseUrl } from "../cron_jobs/helpers";
 import { ICommentEmailNotification } from "../interfaces/comment-email-notification";
 import { sendTaskComment } from "../shared/email-notifications";
 import { getRootDir, uploadBase64, getKey, getTaskAttachmentKey, createPresignedUrlWithClient } from "../shared/s3";
-import { getFreePlanSettings, getUsedStorage } from "../ee/shared/paddle-utils";
+import { getFreePlanSettings, getUsedStorage } from "../shared/paddle-utils";
 import { ExternalNotificationsService } from "../services/external-notifications.service";
 import { syncCommentLinks, deleteCommentLinks } from "../shared/url-extractor";
 

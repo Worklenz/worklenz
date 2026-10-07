@@ -42,7 +42,7 @@ import { setUser } from '@/features/user/userSlice';
 import { useNavigate } from 'react-router-dom';
 import { createAuthService } from '@/services/auth/auth.service';
 import taskCommentsApiService from '@/api/tasks/task-comments.api.service';
-import { shouldShowAppSumoPromo } from '@/ee/utils/subscription-utils';
+import { shouldShowAppSumoPromo } from '@/utils/subscription-utils';
 import { openUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { APPSUMO_DRAWER_IMAGE_URL } from '@/config/appsumo-promo.config';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';

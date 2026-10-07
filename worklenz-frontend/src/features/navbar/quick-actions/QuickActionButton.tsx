@@ -16,7 +16,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useTranslation } from 'react-i18next';
 import { toggleInviteMemberDrawer } from '../../settings/member/memberSlice';
-import { toggleAddClientDrawer } from '@/ee/features/clients-portal/clients/clients-slice';
+import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
 import { evt_projects_create_click } from '@/shared/worklenz-analytics-events';
 import { LogTimeModal } from '@/components/time-entries/LogTimeModal';
 import { AddExpenseModal } from '@/components/expenses/AddExpenseModal';

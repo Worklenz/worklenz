@@ -5,8 +5,8 @@ jest.mock('../config/db', () => ({
   },
 }));
 
-jest.mock('../ee/shared/paddle-utils', () => {
-  const actual = jest.requireActual('../ee/shared/paddle-utils');
+jest.mock('../shared/paddle-utils', () => {
+  const actual = jest.requireActual('../shared/paddle-utils');
   return {
     ...actual,
     checkTeamSubscriptionStatus: jest.fn(),
@@ -18,9 +18,9 @@ jest.mock('../shared/guest-seat-limits', () => ({
 }));
 
 import ProjectMembersController from '../controllers/project-members-controller';
-import { checkTeamSubscriptionStatus } from '../ee/shared/paddle-utils';
+import { checkTeamSubscriptionStatus } from '../shared/paddle-utils';
 import { getGuestSeatLimit } from '../shared/guest-seat-limits';
-import { getActiveGuestCount } from '../ee/shared/paddle-utils';
+import { getActiveGuestCount } from '../shared/paddle-utils';
 
 const mockedCheckTeamSubscriptionStatus = checkTeamSubscriptionStatus as jest.MockedFunction<typeof checkTeamSubscriptionStatus>;
 const mockedGetGuestSeatLimit = getGuestSeatLimit as jest.MockedFunction<typeof getGuestSeatLimit>;

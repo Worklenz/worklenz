@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { adminCenterItems } from '../../../lib/admin-center-constants';
 import './sidebar.css';
 import { useAuthService } from '@/hooks/useAuth';
-import { isBusinessPlan } from '@/ee/utils/subscription-utils';
+import { isBusinessPlan } from '@/utils/subscription-utils';
 import { ISUBSCRIPTION_TYPE } from '@/shared/constants';
 
 const AdminCenterSidebar: React.FC = () => {

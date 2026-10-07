@@ -5,7 +5,7 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import organizationSettingsValidator from "../../middlewares/validators/organization-settings-validator";
 import teamOwnerOrAdminValidator from "../../middlewares/validators/team-owner-or-admin-validator";
 import phoneNumberValidator from "../../middlewares/validators/phone-number-validator";
-import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
+import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
 
 const adminCenterApiRouter = express.Router();
 

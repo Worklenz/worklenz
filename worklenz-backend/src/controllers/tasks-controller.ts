@@ -45,7 +45,7 @@ import {
   IActivityLogChangeType,
 } from "../services/activity-logs/interfaces";
 import { getKey, getRootDir, uploadBase64 } from "../shared/s3";
-import { isRestrictedFromProPlanFeatures } from "../ee/middlewares/subscription-middleware";
+import { isRestrictedFromProPlanFeatures } from "../middlewares/subscription-middleware";
 
 export default class TasksController extends TasksControllerBase {
   private static async getTaskDrawerCustomColumns(projectId: string | null) {
