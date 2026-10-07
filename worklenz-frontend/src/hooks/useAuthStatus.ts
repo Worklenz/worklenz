@@ -51,6 +51,7 @@ export const useAuthStatus = () => {
           const today = new Date();
           // Use valid_till_date first, fallback to trial_expire_date
           const expireDateStr = currentSession.valid_till_date || currentSession.trial_expire_date;
+          if (!expireDateStr) return false;
           const expiryDate = new Date(expireDateStr);
           const diffTime = today.getTime() - expiryDate.getTime();
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));

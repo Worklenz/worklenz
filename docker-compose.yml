@@ -138,10 +138,6 @@ services:
         target: /docker-entrypoint-initdb.d/sql
         consistency: cached
       - type: bind
-        source: ./worklenz-backend/database/migrations
-        target: /docker-entrypoint-initdb.d/migrations
-        consistency: cached
-      - type: bind
         source: ./worklenz-backend/database/00_init.sh
         target: /docker-entrypoint-initdb.d/00_init.sh
         consistency: cached

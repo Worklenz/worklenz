@@ -1,35 +1,29 @@
 {
   "rename": "Renombrar",
   "renameStatus": "Renombrar Estado",
+  "renamePhase": "Renombrar Fase",
   "delete": "Eliminar",
   "addTask": "Agregar tarea",
   "addSectionButton": "Agregar sección",
   "changeCategory": "Cambiar categoría",
-
   "deleteTooltip": "Eliminar",
   "deleteConfirmationTitle": "¿Estás seguro?",
   "deleteConfirmationOk": "Sí",
   "deleteConfirmationCancel": "Cancelar",
-
   "deleteTaskTitle": "Eliminar tarea",
   "deleteTaskContent": "¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.",
   "deleteTaskConfirm": "Eliminar",
   "deleteTaskCancel": "Cancelar",
-
   "deleteStatusTitle": "Eliminar estado",
   "deleteStatusContent": "¿Estás seguro de que deseas eliminar este estado? Esta acción no se puede deshacer.",
-
   "deletePhaseTitle": "Eliminar fase",
   "deletePhaseContent": "¿Estás seguro de que deseas eliminar esta fase? Esta acción no se puede deshacer.",
-
   "dueDate": "Fecha de vencimiento",
   "cancel": "Cancelar",
-
   "today": "Hoy",
   "tomorrow": "Mañana",
   "assignToMe": "Asignarme",
   "archive": "Archivar",
-
   "newTaskNamePlaceholder": "Escribe un nombre de tarea",
   "newSubtaskNamePlaceholder": "Escribe un nombre de subtarea",
   "untitledSection": "Sección sin título",
@@ -42,14 +36,12 @@
   "noSubtasks": "Sin subtareas",
   "showSubtasks": "Mostrar subtareas",
   "hideSubtasks": "Ocultar subtareas",
-
   "exampleTasks": {
     "prefix": "ej.",
     "task1": "Definir el alcance del proyecto",
     "task2": "Revisar con las partes interesadas",
     "task3": "Programar el inicio"
   },
-
   "errorLoadingTasks": "Error al cargar tareas",
   "noTasksFound": "No se encontraron tareas",
   "loadingFilters": "Cargando filtros...",

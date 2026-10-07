@@ -83,6 +83,12 @@ const navPreferencesSlice = createSlice({
       state.collapsedIsUserSet = true;
       saveToLocalStorage(state);
     },
+    // Toggles the collapsed state by inverting the current value.
+    toggleCollapsed: (state) => {
+      state.collapsed = !state.collapsed;
+      state.collapsedIsUserSet = true;
+      saveToLocalStorage(state);
+    },
     setPinnedDefault: (state, action: PayloadAction<{ surfaceKey: SurfaceKey; itemKey: string }>) => {
       const { surfaceKey, itemKey } = action.payload;
       state.pinnedDefaults[surfaceKey] = itemKey;
@@ -104,6 +110,6 @@ const navPreferencesSlice = createSlice({
   },
 });
 
-export const { setCollapsed, setPinnedDefault, clearPinnedDefault, setGroupOrder } =
+export const { setCollapsed, toggleCollapsed, setPinnedDefault, clearPinnedDefault, setGroupOrder } =
   navPreferencesSlice.actions;
 export default navPreferencesSlice.reducer;

@@ -1,10 +1,12 @@
 export interface ITaskDuplicateRequest {
-  task_id?: string;
-  project_id?: string;
-  options?: IDuplicateOptions[];
+  task_id: string;
+  project_id: string;
+  destination_project_id?: string;
+  confirm_project_differences?: boolean;
+  options: IDuplicateOptions;
 }
 
-interface IDuplicateOptions {
+export interface IDuplicateOptions {
   subtasks: boolean;
   attachments: boolean;
   dates: boolean;

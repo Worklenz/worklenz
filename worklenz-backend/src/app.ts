@@ -10,6 +10,7 @@ import { csrfSync } from "csrf-sync";
 import cors from "cors";
 import flash from "connect-flash";
 import hpp from "hpp";
+import rateLimit from "express-rate-limit";
 
 import passportConfig from "./passport";
 import apiRouter from "./routes/apis";
@@ -20,21 +21,39 @@ import public_router from "./routes/public";
 import clientPortalApiRouter from "./ee/routes/apis/client-portal-api-router";
 import { loadAddonRouters } from "./addons/load-addons";
 import { isInternalServer, isProduction, log_error } from "./shared/utils";
+import { STORAGE_PROVIDER } from "./shared/constants";
 import sessionMiddleware from "./middlewares/session-middleware";
 import safeControllerFunction from "./shared/safe-controller-function";
 import AwsSesController from "./controllers/aws-ses-controller";
 import BillingController from "./ee/controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import importWorker from "./services/import-worker";
+import taskExportWorker from "./services/task-export/task-export-worker";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
 import { createCsrfRotation } from "./middlewares/csrf-rotation";
+import linkPreviewMiddleware from "./middlewares/link-preview-middleware";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
+import db from "./config/db";
+import { IWorkLenzRequest } from "./interfaces/worklenz-request";
 
 const app = express();
 
+// Keep application-level protection in place even when a deployment is not
+// fronted by the nginx rate-limit configuration.
+const globalRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 1_000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 if (process.env.IMPORT_WORKER_ENABLED !== "false") {
   importWorker.start();
+}
+
+if (process.env.TASK_EXPORT_WORKER_ENABLED !== "false") {
+  taskExportWorker.start();
 }
 
 // Trust first proxy if behind reverse proxy
@@ -54,6 +73,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(globalRateLimiter);
 app.use(hpp());
 
 // Helmet security headers
@@ -112,19 +132,16 @@ const parseCsvOrigins = (value?: string): string[] => {
 const allowedOrigins = [
   isProduction()
     ? [
-        `http://localhost:5000`,
-        `http://127.0.0.1:5000`,
-        `https://app.worklenz.com`,
-        `https://www.app.worklenz.com`,
-        `https://clients.worklenz.com`,
-        `https://uat.app.worklenz.com`,
-        `https://www.uat.app.worklenz.com`,
-        `https://uat.clients.worklenz.com`,
-        `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
-        `https://api.ncinga.worklenz.com`,
-        `https://ncinga.worklenz.com`,
-        `https://www.ncinga.worklenz.com`,
-      ]
+      `http://localhost:5000`,
+      `http://127.0.0.1:5000`,
+      `https://app.worklenz.com`,
+      `https://www.app.worklenz.com`,
+      `https://clients.worklenz.com`,
+      `https://uat.app.worklenz.com`,
+      `https://www.uat.app.worklenz.com`,
+      `https://uat.clients.worklenz.com`,
+      `https://appleid.apple.com`, // Allow Apple Sign-In OAuth requests
+    ]
     : [
       "http://localhost:3000",
       "http://localhost:5173",
@@ -148,13 +165,13 @@ app.use(cors({
     if (!isProduction()) {
       return callback(null, true);
     }
-    
+
     // In production, allow requests without Origin header (for mobile apps, native clients)
     // Mobile apps and native clients typically don't send Origin headers
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // If Origin header is present in production, validate it against whitelist
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -202,7 +219,7 @@ app.use(passport.session());
 app.use(flash());
 
 // Auth check middleware
-function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
+async function isLoggedIn(req: Request, res: Response, next: NextFunction) {
   // Allow client portal invitation routes to bypass authentication
   const fullPath = req.originalUrl || req.url;
 
@@ -224,7 +241,56 @@ function isLoggedIn(req: Request, _res: Response, next: NextFunction) {
   ) {
     return next();
   }
-  return req.user ? next() : next(createError(401));
+  if (!req.user) return next(createError(401));
+
+  try {
+    const sessionUser = (req as IWorkLenzRequest).user;
+    const result = await db.query(
+      `SELECT 1
+       FROM team_members
+       WHERE user_id = $1
+         AND team_id = $2
+         AND active = TRUE
+       LIMIT 1`,
+      [sessionUser?.id, sessionUser?.team_id],
+    );
+
+    if (result.rowCount) return next();
+
+    const fallbackTeamResult = await db.query(
+      `SELECT tm.team_id
+       FROM team_members tm
+       JOIN teams t ON t.id = tm.team_id
+       WHERE tm.user_id = $1
+         AND tm.active = TRUE
+       ORDER BY (t.user_id = $1) DESC, tm.created_at ASC
+       LIMIT 1`,
+      [sessionUser?.id],
+    );
+    const fallbackTeamId = fallbackTeamResult.rows[0]?.team_id;
+
+    if (fallbackTeamId) {
+      await db.query("SELECT set_active_team($1, $2)", [sessionUser?.id, fallbackTeamId]);
+      const refreshedResult = await db.query(
+        "SELECT deserialize_user($1) AS user",
+        [sessionUser?.id],
+      );
+      const refreshedUser = refreshedResult.rows[0]?.user;
+      if (refreshedUser) {
+        (req as IWorkLenzRequest).user = refreshedUser;
+      }
+      return next();
+    }
+
+    req.logout(() => undefined);
+    return res.status(403).send({
+      success: false,
+      message: "Your access to this team has been deactivated.",
+    });
+  } catch (error) {
+    log_error(error);
+    return next(createError(500));
+  }
 }
 
 // Enhanced with stronger token generation
@@ -255,7 +321,7 @@ app.use((req, res, next) => {
 
   // Always exclude webhooks (external services can't provide CSRF tokens)
   if (path.startsWith("/webhook/") || originalUrl.startsWith("/webhook/") ||
-      originalUrl.includes("/webhook/directpay/")) {
+    originalUrl.includes("/webhook/directpay/")) {
     log_error(`[CSRF] Excluding webhook: ${path}`);
     return next();
   }
@@ -431,7 +497,7 @@ app.post(
 // DirectPay webhook test endpoint (GET) - verify webhook is reachable
 app.get("/webhook/directpay/card-response", (req: Request, res: Response) => {
   console.log("[DirectPay Webhook Test] GET request received");
-  res.status(200).json({ 
+  res.status(200).json({
     message: "DirectPay webhook endpoint is reachable",
     timestamp: new Date().toISOString(),
     url: req.url,
@@ -441,21 +507,21 @@ app.get("/webhook/directpay/card-response", (req: Request, res: Response) => {
 
 // DirectPay webhook (no auth/CSRF required - called by DirectPay server)
 // Add raw body parser to handle text/plain and capture raw payload
-app.post("/webhook/directpay/card-response", 
+app.post("/webhook/directpay/card-response",
   express.raw({ type: "*/*", limit: "10mb" }),
   (req: any, res: Response, next: NextFunction) => {
     // Log raw body for debugging
     console.log("[DirectPay Webhook] Raw body type:", typeof req.body);
     console.log("[DirectPay Webhook] Raw body:", req.body);
     console.log("[DirectPay Webhook] Content-Type:", req.headers["content-type"]);
-    
+
     // If body is Buffer (raw), try to parse it
     if (Buffer.isBuffer(req.body)) {
       try {
         const bodyString = req.body.toString("utf8");
         req.rawBody = bodyString;
         console.log("[DirectPay Webhook] Body string:", bodyString);
-        
+
         // Try to parse as JSON
         try {
           req.body = JSON.parse(bodyString);
@@ -504,6 +570,23 @@ if (isProduction()) {
   });
 } else {
   app.use(express.static(path.join(__dirname, "public")));
+}
+
+// Serve locally-stored uploads (avatars, attachments, ...) when the local
+// storage provider is active. Must be mounted in every environment - self-hosted
+// deployments run with NODE_ENV=production - not just in development.
+if (STORAGE_PROVIDER === "local") {
+  app.use(
+    "/storage",
+    express.static(path.join(process.cwd(), "storage"), {
+      index: false,
+      setHeaders: (res) => {
+        // Files are keyed by a real extension, so express.static sets a correct
+        // Content-Type; stop browsers from sniffing a different one.
+        res.setHeader("X-Content-Type-Options", "nosniff");
+      },
+    }),
+  );
 }
 
 // Swagger UI documentation (development only)
@@ -574,6 +657,12 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   }
   next(err);
 });
+
+// Open Graph link previews for Slack/Discord/etc. crawlers (task & comment links)
+app.get(
+  ["/worklenz/t/:taskId", "/worklenz/c/:commentId", "/worklenz/projects/:projectId"],
+  linkPreviewMiddleware
+);
 
 // React app handling - serve index.html for all non-API routes
 app.get("*", (req: Request, res: Response, next: NextFunction) => {

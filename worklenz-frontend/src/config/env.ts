@@ -25,7 +25,7 @@ export const getApiUrl = (): string => {
   }
 
   // Fallback for deployed environments when VITE_API_URL is not injected.
-  // Example: ncinga.worklenz.com -> api.ncinga.worklenz.com
+  // Example: example.worklenz.com -> api.example.worklenz.com
   // Example: app.worklenz.com -> api.worklenz.com
   const { protocol, hostname } = window.location;
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';

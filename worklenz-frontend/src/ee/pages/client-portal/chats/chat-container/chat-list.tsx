@@ -32,8 +32,8 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
   const safeChatList = Array.isArray(chatList) ? chatList : [];
   const filteredChatList = safeChatList.filter(
     chat =>
-      chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      chat.lastMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+      String(chat?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      String(chat?.lastMessage || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatTime = (timeString?: string) => {

@@ -45,6 +45,8 @@
   "account-deletion-search": "konto löschen profil entfernen gefahrenbereich konto schließen",
   "team-hierarchy": "Teamhierarchie",
   "team-hierarchy-search": "hierarchie organigramm struktur manager organisationsbaum",
+  "guest-members": "Gastmitglieder",
+  "guest-members-search": "gäste besucher externe benutzer temporärer zugriff",
   "mobile-app": "Mobile App",
   "mobile-app-search": "ios android handy mobil herunterladen qr code app store google play",
   "configuration": "Konfiguration",

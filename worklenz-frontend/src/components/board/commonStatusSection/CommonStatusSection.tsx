@@ -9,6 +9,7 @@ import {
 } from '@/shared/antd-imports';
 import { setTaskCardDisabled, initializeStatus } from '../../../features/board/create-card.slice';
 import { TaskType } from '../../../types/task.types';
+import { IProjectTask } from '@/types/project/projectTasksViewModel.types';
 import TaskCreateCard from '../taskCreateCard/TaskCreateCard';
 import TaskCard from '../taskCard/TaskCard';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -26,6 +27,15 @@ interface CommonStatusSectionProps {
   category: string;
   id: string;
 }
+
+const mapTaskTypeToProjectTask = (task: TaskType): IProjectTask => ({
+  id: task.taskId,
+  name: task.task,
+  status: task.status,
+  priority: task.priority,
+  end_date: task.dueDate ? task.dueDate.toISOString() : undefined,
+  start_date: task.startDate ? task.startDate.toISOString() : undefined,
+});
 
 const CommonStatusSection: React.FC<CommonStatusSectionProps> = ({
   status,
@@ -259,7 +269,7 @@ const CommonStatusSection: React.FC<CommonStatusSectionProps> = ({
           )}
 
           {dataSource.map(task => (
-            <TaskCard key={task.taskId} task={task} />
+            <TaskCard key={task.taskId} task={mapTaskTypeToProjectTask(task)} />
           ))}
 
           {!isBottomCardDisabled && (

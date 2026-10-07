@@ -1,7 +1,7 @@
 import { Button, Dropdown } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { ILanguageType, setLanguage } from './localesSlice';
+import { ILanguageType, Language, setLanguage } from './localesSlice';
 
 const LanguageSelector = () => {
   const language = useAppSelector(state => state.localesReducer.lng);
@@ -11,22 +11,22 @@ const LanguageSelector = () => {
     dispatch(setLanguage(lang));
   };
 
-  const items = [
-    { key: 'en', label: 'English' },
-    { key: 'es', label: 'Español' },
-    { key: 'pt', label: 'Português' },
-    { key: 'alb', label: 'Shqip' },
-    { key: 'de', label: 'Deutsch' },
-    { key: 'zh', label: '简体中文' },
+  const items: Array<{ key: ILanguageType; label: string }> = [
+    { key: Language.EN, label: 'English' },
+    { key: Language.ES, label: 'Español' },
+    { key: Language.PT, label: 'Português' },
+    { key: Language.ALB, label: 'Shqip' },
+    { key: Language.DE, label: 'Deutsch' },
+    { key: Language.ZH, label: '简体中文' },
   ];
 
-  const languageLabels = {
-    en: 'En',
-    es: 'Es',
-    pt: 'Pt',
-    alb: 'Sq',
-    de: 'de',
-    zh: 'zh',
+  const languageLabels: Record<ILanguageType, string> = {
+    [Language.EN]: 'En',
+    [Language.ES]: 'Es',
+    [Language.PT]: 'Pt',
+    [Language.ALB]: 'Sq',
+    [Language.DE]: 'De',
+    [Language.ZH]: 'Zh',
   };
 
   return (

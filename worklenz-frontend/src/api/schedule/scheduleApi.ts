@@ -89,12 +89,13 @@ interface TaskTimelineFilters {
   clientName?: string;
 }
 
-interface TaskTimelineItem {
+export interface TaskTimelineItem {
   id: string;
   name: string;
   start_date: string | null;
   end_date: string | null;
   parent_task_id: string | null;
+  parent_task_name: string | null;
   project_id: string;
   project_name: string;
   project_color: string;
@@ -134,39 +135,51 @@ interface TaskConflict {
 }
 
 // Time-Off Types
-interface TimeOffEntry {
+export interface TimeOffEntry {
   id: string;
   team_member_id: string;
   start_date: string;
   end_date: string;
   reason: string | null;
+  is_full_day: boolean;
+  hours_off: number | null;
+  timezone: string | null;
+  type: 'vacation' | 'sick' | 'personal' | 'other' | null;
   created_at: string;
   member_name: string;
   member_email: string;
   member_avatar: string | null;
 }
 
-interface TimeOffFilters {
+export interface TimeOffFilters {
   teamMemberId?: string;
   startDate?: string;
   endDate?: string;
 }
 
-interface CreateTimeOffRequest {
+export interface CreateTimeOffRequest {
   team_member_id: string;
   start_date: string;
   end_date: string;
   reason?: string;
+  is_full_day?: boolean;
+  hours_off?: number | null;
+  timezone?: string | null;
+  type?: 'vacation' | 'sick' | 'personal' | 'other' | null;
 }
 
-interface UpdateTimeOffRequest {
+export interface UpdateTimeOffRequest {
   id: string;
   start_date?: string;
   end_date?: string;
   reason?: string;
+  is_full_day?: boolean;
+  hours_off?: number | null;
+  timezone?: string | null;
+  type?: 'vacation' | 'sick' | 'personal' | 'other' | null;
 }
 
-interface TimeOffSummary {
+export interface TimeOffSummary {
   team_member_id: string;
   member_name: string;
   member_email: string;
@@ -175,6 +188,10 @@ interface TimeOffSummary {
     start_date: string;
     end_date: string;
     reason: string | null;
+    is_full_day: boolean;
+    hours_off: number | null;
+    timezone: string | null;
+    type: 'vacation' | 'sick' | 'personal' | 'other' | null;
   }>;
   total_days_off: number;
 }
@@ -366,7 +383,7 @@ export const scheduleApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: ['TimeOff', 'TaskTimeline'],
+      invalidatesTags: ['TimeOff', 'TaskTimeline', 'Capacity', 'Workload', 'Members', 'MemberProjects'],
     }),
 
     updateTimeOff: builder.mutation<IServerResponse<TimeOffEntry>, UpdateTimeOffRequest>({
@@ -375,7 +392,7 @@ export const scheduleApi = createApi({
         method: 'PUT',
         body,
       }),
-      invalidatesTags: ['TimeOff', 'TaskTimeline'],
+      invalidatesTags: ['TimeOff', 'TaskTimeline', 'Capacity', 'Workload', 'Members', 'MemberProjects'],
     }),
 
     deleteTimeOff: builder.mutation<IServerResponse<null>, string>({
@@ -383,7 +400,7 @@ export const scheduleApi = createApi({
         url: `/time-off/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['TimeOff', 'TaskTimeline'],
+      invalidatesTags: ['TimeOff', 'TaskTimeline', 'Capacity', 'Workload', 'Members', 'MemberProjects'],
     }),
 
     // Resource Management & Workload endpoints

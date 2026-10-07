@@ -3,6 +3,7 @@ import { getLoggedInUserIdFromSocket, log_error } from "../util";
 import { SocketEvents } from "../events";
 import TasksRecurringController from "../../controllers/task-recurring-controller";
 import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
+import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 
 export async function on_task_recurring_change(_io: Server, socket: Socket, data?: { task_id?: string, schedule_id?: string }) {
     if (!data?.task_id) return;
@@ -11,6 +12,9 @@ export async function on_task_recurring_change(_io: Server, socket: Socket, data
 
         // Enforce restrict_task_creation: restricted users cannot modify tasks.
         if (await isTaskCreationRestrictedForTask(userId, data.task_id)) {
+            return;
+        }
+        if (await isAssigneeScopeEditRestrictedForTask(userId, data.task_id)) {
             return;
         }
 

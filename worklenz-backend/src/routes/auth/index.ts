@@ -30,7 +30,7 @@ authRouter.post("/login", passport.authenticate("local-login", options("login"))
 authRouter.post("/signup", signUpValidator, passwordValidator, passport.authenticate("local-signup", options("signup")));
 authRouter.post("/signup/check", signUpValidator, passwordValidator, safeControllerFunction(AuthController.status_check));
 authRouter.get("/verify", AuthController.verify);
-authRouter.get("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));
+authRouter.post("/check-password", safeControllerFunction(AuthController.checkPasswordStrength));
 
 authRouter.post("/reset-password", resetPasswordLimiter, resetEmailValidator, safeControllerFunction(AuthController.reset_password));
 authRouter.post("/update-password", updatePasswordLimiter, updatePasswordValidator, passwordValidator, safeControllerFunction(AuthController.verify_reset_email));

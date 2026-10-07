@@ -103,7 +103,8 @@
     "assignees": "Asignados",
     "searchMembers": "Buscar por nombre o correo…",
     "noMembersFound": "No se encontraron miembros",
-    "time": "Tiempo"
+    "time": "Tiempo",
+    "markTimeOff": "Marcar Ausencia / Permiso"
   },
   "homeCalendar": {
     "todayButton": "Hoy",
@@ -200,9 +201,9 @@
     "hoursLabel": "Horas",
     "hoursPlaceholder": "0",
     "minutesLabel": "Minutos",
-    "requiredDate": "* Fecha",
-    "requiredStartTime": "* Hora de inicio",
-    "requiredEndTime": "* Hora de fin",
+    "requiredDate": "Fecha",
+    "requiredStartTime": "Hora de inicio",
+    "requiredEndTime": "Hora de fin",
     "workDescriptionLabel": "Descripción del trabajo",
     "workDescriptionPlaceholder": "¿En qué trabajaste?",
     "submitButton": "Registrar tiempo",
@@ -398,5 +399,15 @@
     "loadTasksError": "No se pudieron cargar las tareas y la moneda de este proyecto.",
     "successMessage": "Costo fijo agregado a la tarea",
     "errorMessage": "Error al agregar costo fijo a la tarea"
+  },
+  "timeOff": {
+    "timeOff": "Ausencia",
+    "off": "ausente",
+    "types": {
+      "vacation": "Vacaciones",
+      "sick": "Enfermedad",
+      "personal": "Personal",
+      "other": "Otro"
+    }
   }
 }

@@ -27,5 +27,12 @@
   "noTaskTemplatesStep1": "Navigieren Sie zu einem Projekt und öffnen Sie es.",
   "noTaskTemplatesStep2": "Wählen Sie Aufgaben mit der Massenbearbeitungsoption aus.",
   "noTaskTemplatesStep3": "Klicken Sie in der Massenaktionsleiste auf Weitere Optionen und wählen Sie Aufgabenvorlage erstellen.",
-  "noSearchResults": "Keine Vorlagen entsprechen Ihrer Suche."
+  "noSearchResults": "Keine Vorlagen entsprechen Ihrer Suche.",
+  "shareWithOrganization": "Mit Organisation teilen",
+  "organizationBadge": "Organisation",
+  "scopeUpdateSuccess": "Freigabe der Vorlage aktualisiert.",
+  "scopeSharedSuccess": "Mit der Organisation geteilte Vorlage.",
+  "scopeUnsharedSuccess": "Die Vorlage wird nicht mehr mit der Organisation geteilt.",
+  "scopeUpdateError": "Aktualisierung der Vorlagenfreigabe fehlgeschlagen.",
+  "moreOptions": "Weitere Optionen"
 }

@@ -6,22 +6,20 @@
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.up = async (pgm) => {
-  // Add business plan override column (boolean to indicate Business Plan is activated)
-  pgm.addColumn('organizations', 'business_plan_override', {
-    type: 'BOOLEAN',
-    default: false,
-    notNull: true
-  });
-
-  // Add team member limit override column (integer to store the new limit)
-  pgm.addColumn('organizations', 'team_member_limit_override', {
-    type: 'INTEGER',
-    default: null
-  });
+  pgm.addColumns('organizations', {
+    business_plan_override: {
+      type: 'BOOLEAN',
+      default: false,
+      notNull: true,
+    },
+    team_member_limit_override: {
+      type: 'INTEGER',
+      default: null,
+    },
+  }, { ifNotExists: true });
 };
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
 exports.down = async (pgm) => {
-  pgm.dropColumn('organizations', 'business_plan_override');
-  pgm.dropColumn('organizations', 'team_member_limit_override');
+  pgm.dropColumns('organizations', ['business_plan_override', 'team_member_limit_override'], { ifExists: true });
 };

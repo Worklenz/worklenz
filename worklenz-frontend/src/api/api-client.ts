@@ -363,8 +363,13 @@ apiClient.interceptors.response.use(
       const errorMessage = errorData?.message || 'Access denied';
 
       // Check if this is a project access error - don't show alert, let component handle it
-      if (errorMessage.toLowerCase().includes('project') || errorData?.body?.requiresTeamSwitch) {
-        // Suppress alert - the project-view component will show appropriate messages
+      if (
+        errorMessage.toLowerCase().includes('project') ||
+        errorData?.body?.requiresTeamSwitch ||
+        errorData?.body?.code === 'TASK_ASSIGNEE_RESTRICTED' ||
+        errorData?.body?.code === 'TASK_ASSIGNEE_READONLY'
+      ) {
+        // Suppress alert - the project-view / task-drawer will show appropriate messages
         return Promise.reject(error);
       }
 
@@ -376,7 +381,12 @@ apiClient.interceptors.response.use(
     const errorMessage = (errorResponse?.data as any)?.message || message || 'An unexpected error occurred';
     const errorTitle = 'Error';
 
-    if (error.code !== 'ERR_NETWORK') {
+    // Same opt-out as the success path: callers that show their own error
+    // toast for a failed action set this header so the interceptor doesn't
+    // also show a generic one for the same failure.
+    const isSilentRequest = error.config?.headers?.['X-Silent-Request'] === '1';
+
+    if (error.code !== 'ERR_NETWORK' && !isSilentRequest) {
       alertService.error(errorTitle, errorMessage);
     }
 

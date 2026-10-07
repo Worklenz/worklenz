@@ -77,6 +77,8 @@ export interface ITask {
   billable: boolean;
   phase_id: string;
   parent_task_id: string | null;
+  is_sub_task?: boolean;
+  parent_task_name?: string;
   project_id: string;
   team_id: string;
   task_key: string;
@@ -89,6 +91,10 @@ export interface ITask {
   weight: number | null;
   created_at?: string;
   updated_at?: string;
+  has_dependencies?: boolean;
+  has_subscribers?: boolean;
+  comments_count?: number;
+  attachments_count?: number;
 }
 
 export interface IProjectMemberViewModel extends IProjectMember {
@@ -104,7 +110,6 @@ export interface ITaskViewModel extends ITask {
   created_from_now?: string;
   updated_from_now?: string;
   reporter?: string;
-  is_sub_task?: boolean;
   status_color?: string;
   status_color_dark?: string;
   attachments_count?: number;
@@ -116,6 +121,8 @@ export interface ITaskViewModel extends ITask {
   task_level?: number;
   schedule_id?: string | null;
   custom_column_values?: Record<string, ITaskCustomColumnValue>;
+  /** TVR-13: parent of assigned-only subtask — viewable, not editable */
+  assignee_scope_readonly?: boolean;
 }
 
 export interface ITaskTeamMember extends ITeamMember {

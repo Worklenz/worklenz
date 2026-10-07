@@ -1,7 +1,8 @@
 {
   "formTitle": "Krijo detyrën tënde të parë.",
-  "inputLabel": "Shkruaj disa detyra që do të kryesh në",
+  "inputLable": "Shkruaj disa detyra që do të kryesh në",
   "addAnother": "Shto një tjetër",
   "goBack": "Kthehu mbrapa",
-  "continue": "Vazhdo"
+  "continue": "Vazhdo",
+  "inputLabel": "Shkruaj disa detyra që do të kryesh në"
 }

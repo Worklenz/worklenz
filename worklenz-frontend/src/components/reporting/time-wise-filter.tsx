@@ -85,7 +85,10 @@ const TimeWiseFilter = () => {
     setSelectedTimeFrame(item.label);
     setCustomRange(null);
     dispatch(setDuration(item.key));
-    if (item.key === 'YESTERDAY') {
+    if (item.key === 'TODAY') {
+      const today = dayjs().format('YYYY-MM-DD');
+      dispatch(setDateRange([today, today]));
+    } else if (item.key === 'YESTERDAY') {
       const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
       dispatch(setDateRange([yesterday, yesterday]));
     } else if (item.dates) {
@@ -103,7 +106,10 @@ const TimeWiseFilter = () => {
   useEffect(() => {
     const selectedDuration = durations.find(item => item.key === duration);
     if (selectedDuration?.dates) {
-      if (duration === 'YESTERDAY') {
+      if (duration === 'TODAY') {
+        const today = dayjs().format('YYYY-MM-DD');
+        dispatch(setDateRange([today, today]));
+      } else if (duration === 'YESTERDAY') {
         const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
         dispatch(setDateRange([yesterday, yesterday]));
       } else {

@@ -4,7 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { clearSelection } from '@/features/task-management/selection.slice';
-import { fetchTasksV3, bulkDeleteTasks } from '@/features/task-management/task-management.slice';
+import {
+  fetchTasksV3,
+  bulkDeleteTasks,
+  updateTask,
+  moveTaskBetweenGroups,
+} from '@/features/task-management/task-management.slice';
+import { store } from '@/app/store';
 
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { taskListBulkActionsApiService } from '@/api/tasks/task-list-bulk-actions.api.service';
@@ -71,6 +77,44 @@ export const useBulkActions = () => {
     }
   }, [dispatch, projectId]);
 
+  const applyBulkStatusUpdateLocally = useCallback(
+    (taskIds: string[], statusId: string) => {
+      for (const taskId of taskIds) {
+        const { taskManagement, grouping } = store.getState();
+        const task = taskManagement.entities[taskId];
+        if (!task) continue;
+
+        dispatch(
+          updateTask({
+            ...task,
+            status: statusId,
+            updatedAt: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+        );
+
+        if (grouping.currentGrouping !== 'status') continue;
+
+        const groups = store.getState().taskManagement.groups;
+        const currentGroup = groups.find(group => group.taskIds.includes(taskId));
+        const targetGroup =
+          groups.find(group => group.id === statusId) ||
+          groups.find(group => group.groupValue === statusId);
+
+        if (currentGroup && targetGroup && currentGroup.id !== targetGroup.id) {
+          dispatch(
+            moveTaskBetweenGroups({
+              taskId,
+              sourceGroupId: currentGroup.id,
+              targetGroupId: targetGroup.id,
+            })
+          );
+        }
+      }
+    },
+    [dispatch]
+  );
+
   const handleClearSelection = useCallback(() => {
     dispatch(clearSelection());
   }, [dispatch]);
@@ -114,8 +158,25 @@ export const useBulkActions = () => {
         const res = await taskListBulkActionsApiService.changeStatus(body, projectId);
         if (res.done) {
           trackMixpanelEvent(evt_project_task_list_bulk_change_status);
+
+          const failedTasks = res.body?.failed_tasks ?? [];
+          const updatedTaskIds = selectedTaskIds.filter(id => !failedTasks.includes(id));
+
+          if (updatedTaskIds.length > 0) {
+            applyBulkStatusUpdateLocally(updatedTaskIds, statusId);
+          }
+
+          if (failedTasks.length > 0) {
+            alertService.warning(
+              t('errors.incompleteDependencies', { defaultValue: 'Incomplete Dependencies!' }),
+              t('errors.someDependenciesNotCompleted', {
+                defaultValue:
+                  'Some tasks were not updated. Please ensure all dependent tasks are completed before proceeding.',
+              })
+            );
+          }
+
           dispatch(clearSelection());
-          refetchTasks();
         }
       } catch (error) {
         logger.error('Error changing status:', error);
@@ -123,7 +184,7 @@ export const useBulkActions = () => {
         updateLoadingState('status', false);
       }
     },
-    [projectId, trackMixpanelEvent, dispatch, refetchTasks, updateLoadingState, t]
+    [projectId, trackMixpanelEvent, dispatch, applyBulkStatusUpdateLocally, updateLoadingState, t]
   );
 
   const handleBulkPriorityChange = useCallback(

@@ -28,6 +28,7 @@
     "startToFinishDependency": "开始-完成依赖",
     "dependencyType": "依赖类型",
     "removeDependency": "删除",
+    "removeDependencyTooltip": "删除依赖",
     "circularDependencyError": "这将创建循环依赖。",
     "dependencyCreatedSuccessfully": "依赖创建成功。",
     "dependencyRemovedSuccessfully": "依赖删除成功。",
@@ -56,7 +57,11 @@
     "collapseAll": "折叠全部",
     "today": "今天",
     "fullscreen": "全屏",
-    "noDate": "无日期"
+    "noDate": "无日期",
+    "viewBy": "查看方式",
+    "sortBy": "排序方式",
+    "sortManual": "手动",
+    "sortChronological": "时间顺序"
   },
   "viewMode": {
     "day": "日",
@@ -76,12 +81,15 @@
     "taskNameColumn": "任务名称",
     "addNewPhase": "添加新阶段",
     "addNewStatus": "添加新状态",
-    "noTasksAvailable": "没有可用的任务"
+    "noTasksAvailable": "没有可用的任务",
+    "setDates": "设置日期",
+    "clickToEditDates": "单击可编辑日期"
   },
   "roadmap": {
     "phasesAndTasks": "阶段与任务",
     "tasksCount": "任务",
-    "complete": "完成"
+    "complete": "完成",
+    "dragDisabledInChronological": "切换到手动排序以拖动重新排序阶段"
   },
   "unscheduledTasksTitle": "未安排的任务",
   "noUnscheduledTasks": "没有可用的未安排任务。"

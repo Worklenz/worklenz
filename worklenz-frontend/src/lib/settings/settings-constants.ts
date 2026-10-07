@@ -1,5 +1,6 @@
 import RateCardSettings from '@/ee/pages/settings/rate-card-settings/RateCardSettings';
 import {
+  AppstoreOutlined,
   BankOutlined,
   FileZipOutlined,
   GlobalOutlined,
@@ -28,6 +29,10 @@ const NotificationsSettings = lazy(
   () => import('../../pages/settings/notifications/notifications-settings')
 );
 const ClientsSettings = lazy(() => import('../../pages/settings/clients/clients-settings'));
+const DepartmentsSettings = lazy(
+  () => import('@/pages/settings/departments/departments-settings')
+);
+const PracticesSettings = lazy(() => import('@/pages/settings/practices/practices-settings'));
 const JobTitlesSettings = lazy(() => import('@/pages/settings/job-titles/job-titles-settings'));
 const LabelsSettings = lazy(() => import('../../pages/settings/labels/LabelsSettings'));
 const CategoriesSettings = lazy(
@@ -154,6 +159,28 @@ export const settingsItems: SettingMenuItem[] = [
     groupDefaultValue: 'Workspace Setup',
     icon: React.createElement(UserSwitchOutlined),
     element: React.createElement(ClientsSettings),
+    adminOnly: true,
+  },
+  {
+    key: 'departments',
+    name: 'departments',
+    defaultValue: 'Departments',
+    endpoint: 'departments',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
+    icon: React.createElement(GroupOutlined),
+    element: React.createElement(DepartmentsSettings),
+    adminOnly: true,
+  },
+  {
+    key: 'practices',
+    name: 'practices',
+    defaultValue: 'Practices',
+    endpoint: 'practices',
+    groupKey: 'workspace-setup',
+    groupDefaultValue: 'Workspace Setup',
+    icon: React.createElement(AppstoreOutlined),
+    element: React.createElement(PracticesSettings),
     adminOnly: true,
   },
   {

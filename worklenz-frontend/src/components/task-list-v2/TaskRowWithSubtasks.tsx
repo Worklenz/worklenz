@@ -43,7 +43,11 @@ interface TaskRowWithSubtasksProps {
     isSticky?: boolean;
   }>;
   isFirstInGroup?: boolean;
-  updateTaskCustomColumnValue?: (taskId: string, columnKey: string, value: string) => void;
+  updateTaskCustomColumnValue?: (
+    taskId: string,
+    columnKey: string,
+    value: string | number | boolean | string[] | null
+  ) => void;
   depth?: number;
   maxDepth?: number;
   canCreateTask?: boolean;
@@ -433,7 +437,8 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
     // Subtask drag-and-drop handlers
     const handleSubtaskDragEnd = useCallback(
       (event: DragEndEvent, currentFilteredSubtasks: Task[]) => {
-        // Disable drag and drop for guest users
+        // Disable drag and drop for guest users (subtasks stay editable under
+        // a parent-context read-only parent — TVR-13)
         if (isGuest) return;
 
         const { active, over } = event;
@@ -539,7 +544,11 @@ const TaskRowWithSubtasks: React.FC<TaskRowWithSubtasksProps> = memo(
             )}
 
             {/* Add subtask row - only show when not loading and task creation is allowed */}
-            {!isLoadingSubtasks && !task.is_parent_container && canCreateTask && !isGuest && (
+            {!isLoadingSubtasks &&
+              !task.is_parent_container &&
+              canCreateTask &&
+              !isGuest &&
+              !task.assignee_scope_readonly && (
               <div
                 className={`${getSubtaskBackgroundColor(effectiveDepth + 1)} border-l-4 ${getBorderColor(effectiveDepth + 1)}`}
               >

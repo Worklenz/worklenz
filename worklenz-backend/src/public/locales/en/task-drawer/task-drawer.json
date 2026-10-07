@@ -31,7 +31,23 @@
       "taskWeightTooltip": "Set the weight of this subtask (percentage)",
       "taskWeightRequired": "Please enter a task weight",
       "taskWeightRange": "Weight must be between 0 and 100",
+      "customFields": {
+        "empty": "Empty",
+        "enterNumber": "Enter number",
+        "selectDate": "Select date",
+        "selectOption": "Select option",
+        "selectPeople": "Select people",
+        "updateError": "Failed to update custom field"
+      },
       "recurring": "Recurring"
+    },
+    "customFields": {
+      "title": "Custom Fields",
+      "autoSaveHint": "Changes save automatically when you leave a field.",
+      "addCustomField": "Add a custom field",
+      "addCustomColumn": "Add Custom Column",
+      "showMoreFields": "Show {{count}} more fields",
+      "hideFields": "Hide fields"
     },
     "labels": {
       "labelInputPlaceholder": "Search or create",
@@ -82,7 +98,10 @@
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
       "createdBy": "Created {{time}} by {{user}}",
-      "updatedTime": "Updated {{time}}"
+      "updatedTime": "Updated {{time}}",
+      "copyLink": "Copy Link",
+      "linkCopied": "Comment link copied",
+      "linkCopyFailed": "Failed to copy link"
     },
     "searchInputPlaceholder": "Search by name",
     "pendingInvitation": "Pending Invitation"

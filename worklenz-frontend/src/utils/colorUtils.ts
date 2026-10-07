@@ -1,4 +1,17 @@
 /**
+ * Socket/status payloads append a 2-char alpha channel (e.g. "#1890ff69") for
+ * translucent selectors. Ant Design Tags expect solid #RRGGBB — strip the alpha
+ * so live updates match API-loaded colors in tables.
+ */
+export const toSolidTagColor = (color?: string): string | undefined => {
+  if (!color) return undefined;
+  if (color.length === 9 && color.startsWith('#')) {
+    return color.slice(0, 7);
+  }
+  return color;
+};
+
+/**
  * Calculate the contrast color (black or white) for a given background color
  * @param hexColor - Hex color code (e.g., '#FF5733' or 'FF5733')
  * @returns '#000000' for light backgrounds, '#FFFFFF' for dark backgrounds

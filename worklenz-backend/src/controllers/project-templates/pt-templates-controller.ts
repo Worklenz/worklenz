@@ -43,9 +43,29 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     req: IWorkLenzRequest,
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
-    const { searchQuery } = this.toPaginationOptions(req.query, "name");
+    const { searchQuery } = this.toPaginationOptions(req.query, "cpt.name");
 
-    const q = `SELECT id, name, color_code, created_at, FALSE AS selected FROM custom_project_templates WHERE team_id = $1 ${searchQuery} ORDER BY name;`;
+    const q = `
+      SELECT
+        cpt.id,
+        cpt.name,
+        cpt.color_code,
+        cpt.created_at,
+        cpt.scope,
+        (cpt.team_id = $1) AS can_manage,
+        FALSE AS selected,
+        (SELECT COUNT(*) FROM cpt_tasks WHERE template_id = cpt.id)::int AS task_count,
+        (SELECT COUNT(*) FROM cpt_phases WHERE template_id = cpt.id)::int AS phase_count
+      FROM custom_project_templates cpt
+      WHERE (
+        cpt.team_id = $1
+        OR (
+          cpt.scope = 'organization'
+          AND in_organization(cpt.team_id, $1)
+        )
+      ) ${searchQuery}
+      ORDER BY cpt.name;
+    `;
     const result = await db.query(q, [req.user?.team_id]);
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -56,6 +76,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
+    const access = await ProjectTemplatesController.getCustomTemplateAccess(
+      id,
+      req.user?.team_id
+    );
+    if (!access?.canAccess) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
+
     const data = await ProjectTemplatesController.getCustomTemplateData(id);
     if (!data) {
       return res
@@ -73,8 +103,13 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
 
-    const q = `DELETE FROM custom_project_templates WHERE id = $1;`;
-    await db.query(q, [id]);
+    const q = `DELETE FROM custom_project_templates WHERE id = $1 AND team_id = $2 RETURNING id;`;
+    const result = await db.query(q, [id, req.user?.team_id]);
+    if (!result.rowCount) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
     return res
       .status(200)
       .send(new ServerResponse(true, [], "Template deleted successfully."));
@@ -107,6 +142,49 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
     return res
       .status(404)
       .send(new ServerResponse(false, {}, "Template not found."));
+  }
+
+  @HandleExceptions()
+  public static async updateCustomTemplateScope(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ): Promise<IWorkLenzResponse> {
+    const { id } = req.params;
+    const { scope } = req.body;
+    const teamId = req.user?.team_id;
+
+    if (!id || !teamId) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, {}, "Invalid request."));
+    }
+
+    if (!["team", "organization"].includes(scope)) {
+      return res
+        .status(400)
+        .send(new ServerResponse(false, {}, "Invalid scope value."));
+    }
+
+    const q = `
+      UPDATE custom_project_templates
+      SET scope = $1, updated_at = NOW()
+      WHERE id = $2 AND team_id = $3
+      RETURNING id, scope;
+    `;
+    const result = await db.query(q, [scope, id, teamId]);
+    if (!result.rowCount) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, {}, "Template not found."));
+    }
+
+    return res.status(200).send(
+      new ServerResponse(
+        true,
+        result.rows[0],
+        "Template scope updated successfully."
+      )
+    );
   }
 
   @HandleExceptions()
@@ -364,6 +442,16 @@ export default class ProjectTemplatesController extends ProjectTemplatesControll
 
     const { template_id, project_name, color_code } = req.body;
     let project_id: string | null = null;
+
+    const access = await this.getCustomTemplateAccess(
+      template_id,
+      req.user?.team_id
+    );
+    if (!access?.canAccess) {
+      return res
+        .status(404)
+        .send(new ServerResponse(false, null, "Template not found."));
+    }
 
     const data = await this.getCustomTemplateData(template_id);
 

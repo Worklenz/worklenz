@@ -74,6 +74,12 @@ export const LicenseExpiryGuard = memo(({ children }: GuardProps) => {
   // NEW: Check if current route is a project view (with or without query params)
   const isProjectViewRoute = /^\/worklenz\/projects\/[a-f0-9-]{36}/i.test(location.pathname);
 
+  // License is no longer expired for the active team (e.g. user switched to a
+  // different team) — leave the expired-plan page instead of getting stuck on it.
+  if (isLicenseExpiredPage && !isLicenseExpired) {
+    return <Navigate to="/worklenz/home" replace />;
+  }
+
   // Redirect to license expired page if license is expired
   // Except when on admin center, account deletion, or already on license expired page
   if (isLicenseExpired && !isAdminCenterRoute && !isAccountDeletionRoute && !isLicenseExpiredPage && !isProjectViewRoute) {

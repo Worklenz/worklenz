@@ -7,6 +7,10 @@ import WorklenzControllerBase from "../worklenz-controller-base";
 
 interface DailyCapacity {
     date: string;
+    base_hours?: number;
+    holiday_hours?: number;
+    time_off_hours?: number;
+    effective_working_hours?: number;
     working_hours: number;
     allocated_hours: number;
     available_hours: number;
@@ -14,6 +18,8 @@ interface DailyCapacity {
     is_time_off: boolean;
     is_holiday: boolean;
     is_weekend: boolean;
+    is_full_day_time_off?: boolean;
+    time_off_type?: string | null;
     status: 'available' | 'normal' | 'fully-allocated' | 'overallocated' | 'unavailable';
     projects: Array<{
         project_id: string;
@@ -119,6 +125,10 @@ export default class CapacityController extends WorklenzControllerBase {
 
             const dailyCapacity: DailyCapacity[] = capacityResult.rows.map((row: any) => ({
                 date: row.date,
+                base_hours: parseFloat(row.base_hours) || 0,
+                holiday_hours: parseFloat(row.holiday_hours) || 0,
+                time_off_hours: parseFloat(row.time_off_hours) || 0,
+                effective_working_hours: parseFloat(row.effective_working_hours) || 0,
                 working_hours: parseFloat(row.working_hours) || 0,
                 allocated_hours: parseFloat(row.allocated_hours) || 0,
                 available_hours: parseFloat(row.available_hours) || 0,
@@ -126,6 +136,8 @@ export default class CapacityController extends WorklenzControllerBase {
                 is_time_off: row.is_time_off,
                 is_holiday: row.is_holiday,
                 is_weekend: row.is_weekend,
+                is_full_day_time_off: row.is_full_day_time_off || false,
+                time_off_type: row.time_off_type || null,
                 status: row.status,
                 projects: row.projects || []
             }));

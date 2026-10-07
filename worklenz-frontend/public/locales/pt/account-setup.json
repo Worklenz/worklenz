@@ -1,6 +1,33 @@
 {
   "continue": "Continuar",
-
+  "switchAccount": "Trocar de conta",
+  "signInAnotherAccount": "Entrar com outra conta",
+  "switchToLightMode": "Mudar para modo claro",
+  "switchToDarkMode": "Mudar para modo escuro",
+  "stepOrganization": "Organização",
+  "stepProject": "Projeto",
+  "stepInviteTeam": "Convidar equipe",
+  "setupFailedTitle": "Falha na configuração",
+  "setupFailedMessage": "Algo deu errado ao configurar sua conta. Tente novamente.",
+  "retry": "Tentar novamente",
+  "untitledTemplate": "Modelo sem título",
+  "templatesLoadError": "Falha ao carregar os modelos",
+  "organizationStepHeadline": "Como se chama sua organização?",
+  "organizationStepSubheading": "Este será o nome do seu espaço de trabalho. Você pode alterá-lo a qualquer momento nas Configurações.",
+  "organizationStepPrefilledNote": "Preenchido automaticamente a partir de {{email}}. Sinta-se à vontade para editar.",
+  "organizationNamePlaceholderFromDomain": "ex. Equipe {{org}}",
+  "organizationNamePlaceholderFromName": "ex. Equipe de {{name}}",
+  "projectNameInputPlaceholder": "Dê um nome ao seu projeto",
+  "popularStartingPoints": "Pontos de partida populares",
+  "projectChipWebsiteRedesign": "Redesign de site",
+  "projectChipMarketingCampaign": "Campanha de marketing",
+  "projectChipProductLaunch": "Lançamento de produto",
+  "projectChipClientOnboarding": "Integração de clientes",
+  "membersStepSubheading": "Adicione até 5 colegas de equipe. Você sempre pode convidar mais depois.",
+  "membersStepInfoBanner": "Você sempre pode convidar mais membros depois em Configurações, em Equipe.",
+  "teammateEmailPlaceholder": "colega@empresa.com",
+  "addAnotherLink": "+ Adicionar outro",
+  "removeMember": "Remover",
   "setupYourAccount": "Configure sua conta.",
   "organizationStepTitle": "Nomeie sua organização",
   "organizationStepWelcome": "Bem-vindo ao Worklenz!",
@@ -25,15 +52,11 @@
   "organizationStepCategory4": "Startups",
   "organizationStepSuggestionsNote": "Estes são apenas exemplos para começar. Escolha algo que represente sua organização.",
   "organizationStepPrivacyNote": "O nome da sua organização é privado e visível apenas para os membros da sua equipe.",
-
   "projectStepTitle": "Crie seu primeiro projeto",
   "projectStepLabel": "Em qual projeto você está trabalhando agora?",
   "projectStepPlaceholder": "ex. Plano de Marketing",
-
-  "step2Title": "Crie suas primeiras tarefas",
-  "step2InputLabel": "Digite algumas tarefas que você vai fazer em",
-  "step2AddAnother": "Adicionar outro",
-
+  "tasksStepLabel": "Digite algumas tarefas que você vai fazer em",
+  "tasksStepAddAnother": "Adicionar outro",
   "emailPlaceholder": "Endereço de e-mail",
   "invalidEmail": "Por favor, insira um endereço de e-mail válido",
   "or": "ou",
@@ -48,10 +71,8 @@
   "skipping": "Pulando...",
   "formTitle": "Crie sua primeira tarefa.",
   "step3Title": "Convide sua equipe para trabalhar",
-
   "maxMembers": " (Você pode convidar até 5 membros)",
   "maxTasks": " (Você pode criar até 5 tarefas)",
-
   "membersStepTitle": "Convide sua equipe",
   "membersStepDescription": "Adicione membros da equipe ao \"{{organizationName}}\" e comece a colaborar",
   "memberPlaceholder": "Membro da equipe {{index}} - Digite o endereço de email",
@@ -59,7 +80,6 @@
   "addAnotherTeamMember": "Adicionar outro membro da equipe ({{current}}/{{max}})",
   "canInviteLater": "Você sempre pode convidar membros da equipe mais tarde",
   "skipStepDescription": "Não tem endereços de email prontos? Sem problema! Você pode pular esta etapa e convidar membros da equipe do seu painel de projeto mais tarde.",
-
   "orgCategoryTech": "Empresas de Tecnologia",
   "orgCategoryCreative": "Agências Criativas",
   "orgCategoryConsulting": "Consultoria",
@@ -68,12 +88,10 @@
   "namingTip2": "Reflita sua indústria ou valores",
   "namingTip3": "Pense no crescimento futuro",
   "namingTip4": "Torne único e marcante",
-
   "aboutYouTitle": "Conte-nos sobre você",
   "aboutYouDescription": "Ajude-nos a personalizar sua experiência",
   "orgTypeQuestion": "O que melhor descreve sua organização?",
   "userRoleQuestion": "Qual é seu papel?",
-
   "yourNeedsTitle": "Quais são suas principais necessidades?",
   "yourNeedsDescription": "Selecione todas que se aplicam para nos ajudar a configurar seu espaço de trabalho",
   "yourNeedsQuestion": "Como você usará principalmente o Worklenz?",
@@ -85,8 +103,6 @@
   "useCaseOther": "Algo mais",
   "selectedText": "selecionado",
   "previousToolsQuestion": "Que ferramentas você usou antes? (Opcional)",
-  "previousToolsPlaceholder": "ex., Asana, Trello, Jira, Monday.com, etc.",
-
   "discoveryTitle": "Uma última coisa...",
   "discoveryDescription": "Ajude-nos a entender como você descobriu o Worklenz",
   "discoveryQuestion": "Como você soube sobre nós?",
@@ -98,7 +114,6 @@
   "yourNeedsStepName": "Suas necessidades",
   "discoveryStepName": "Descoberta",
   "stepProgress": "Passo {{step}} de 3: {{title}}",
-
   "projectStepHeader": "Vamos criar seu primeiro projeto",
   "projectStepSubheader": "Comece do zero ou use um modelo para ir mais rápido",
   "startFromScratch": "Começar do zero",
@@ -112,7 +127,6 @@
   "templatesAvailable": "15+ modelos específicos da indústria disponíveis",
   "chooseTemplate": "Escolha um modelo que corresponda ao seu tipo de projeto",
   "createProject": "Criar projeto",
-
   "templateSoftwareDev": "Desenvolvimento de Software",
   "templateSoftwareDesc": "Sprints ágeis, rastreamento de bugs, lançamentos",
   "templateMarketing": "Campanha de Marketing",
@@ -121,15 +135,12 @@
   "templateConstructionDesc": "Fases, licenças, empreiteiros",
   "templateStartup": "Lançamento de Startup",
   "templateStartupDesc": "Desenvolvimento MVP, financiamento, crescimento",
-
   "tasksStepTitle": "Adicione suas primeiras tarefas",
   "tasksStepDescription": "Divida \"{{projectName}}\" em tarefas acionáveis para começar",
   "taskPlaceholder": "Tarefa {{index}} - ex., O que precisa ser feito?",
   "addAnotherTask": "Adicionar outra tarefa ({{current}}/{{max}})",
-
   "surveyStepTitle": "Conte-nos sobre você",
   "surveyStepLabel": "Ajude-nos a personalizar sua experiência no Worklenz respondendo algumas perguntas.",
-
   "organizationType": "O que melhor descreve sua organização?",
   "organizationTypeFreelancer": "Freelancer",
   "organizationTypeStartup": "Startup",
@@ -137,7 +148,6 @@
   "organizationTypeAgency": "Agência",
   "organizationTypeEnterprise": "Empresa",
   "organizationTypeOther": "Outro",
-
   "userRole": "Qual é o seu papel?",
   "userRoleFounderCeo": "Fundador / CEO",
   "userRoleProjectManager": "Gerente de Projeto",
@@ -145,7 +155,6 @@
   "userRoleDesigner": "Designer",
   "userRoleOperations": "Operações",
   "userRoleOther": "Outro",
-
   "mainUseCases": "Para que você usará principalmente o Worklenz?",
   "mainUseCasesTaskManagement": "Gerenciamento de tarefas",
   "mainUseCasesTeamCollaboration": "Colaboração em equipe",
@@ -153,10 +162,8 @@
   "mainUseCasesClientCommunication": "Comunicação com clientes e relatórios",
   "mainUseCasesTimeTracking": "Controle de tempo",
   "mainUseCasesOther": "Outro",
-
   "previousTools": "Que ferramenta(s) você usava antes do Worklenz?",
   "previousToolsPlaceholder": "ex. Trello, Asana, Monday.com",
-
   "howHeardAbout": "Como você soube do Worklenz?",
   "howHeardAboutGoogleSearch": "Busca no Google",
   "howHeardAboutTwitter": "Twitter",
@@ -164,14 +171,12 @@
   "howHeardAboutFriendColleague": "Um amigo ou colega",
   "howHeardAboutBlogArticle": "Um blog ou artigo",
   "howHeardAboutOther": "Outro",
-
   "aboutYouStepTitle": "Conte-nos sobre você",
   "aboutYouStepDescription": "Ajude-nos a personalizar sua experiência",
   "yourNeedsStepTitle": "Quais são suas principais necessidades?",
   "yourNeedsStepDescription": "Selecione todas que se aplicam para nos ajudar a configurar seu espaço de trabalho",
   "selected": "selecionado",
   "previousToolsLabel": "Que ferramentas você usou antes? (Opcional)",
-
   "roleSuggestions": {
     "designer": "UI/UX, Gráficos, Criativo",
     "developer": "Frontend, Backend, Full-stack",
@@ -180,7 +185,6 @@
     "sales": "Desenvolvimento de Negócios, Relacionamento com Clientes",
     "operations": "Administração, RH, Finanças"
   },
-
   "languages": {
     "en": "English",
     "es": "Español",
@@ -189,21 +193,54 @@
     "alb": "Shqip",
     "zh": "简体中文"
   },
-
   "orgSuggestions": {
-    "tech": ["TechCorp", "DevStudio", "CodeCraft", "PixelForge"],
-    "creative": ["Creative Hub", "Design Studio", "Brand Works", "Visual Arts"],
-    "consulting": ["Strategy Group", "Business Solutions", "Expert Advisors", "Growth Partners"],
-    "startup": ["Innovation Labs", "Future Works", "Venture Co", "Next Gen"]
+    "tech": [
+      "TechCorp",
+      "DevStudio",
+      "CodeCraft",
+      "PixelForge"
+    ],
+    "creative": [
+      "Creative Hub",
+      "Design Studio",
+      "Brand Works",
+      "Visual Arts"
+    ],
+    "consulting": [
+      "Strategy Group",
+      "Business Solutions",
+      "Expert Advisors",
+      "Growth Partners"
+    ],
+    "startup": [
+      "Innovation Labs",
+      "Future Works",
+      "Venture Co",
+      "Next Gen"
+    ]
   },
-
   "projectSuggestions": {
-    "freelancer": ["Projeto Cliente", "Atualização Portfolio", "Marca Pessoal"],
-    "startup": ["Desenvolvimento MVP", "Lançamento Produto", "Pesquisa Mercado"],
-    "agency": ["Campanha Cliente", "Estratégia Marca", "Redesign Website"],
-    "enterprise": ["Migração Sistema", "Otimização Processos", "Treinamento Equipe"]
+    "freelancer": [
+      "Projeto Cliente",
+      "Atualização Portfolio",
+      "Marca Pessoal"
+    ],
+    "startup": [
+      "Desenvolvimento MVP",
+      "Lançamento Produto",
+      "Pesquisa Mercado"
+    ],
+    "agency": [
+      "Campanha Cliente",
+      "Estratégia Marca",
+      "Redesign Website"
+    ],
+    "enterprise": [
+      "Migração Sistema",
+      "Otimização Processos",
+      "Treinamento Equipe"
+    ]
   },
-
   "useCaseDescriptions": {
     "taskManagement": "Organizar e rastrear tarefas",
     "teamCollaboration": "Trabalhar juntos perfeitamente",
@@ -211,5 +248,8 @@
     "clientCommunication": "Manter-se conectado com clientes",
     "timeTracking": "Monitorar horas do projeto",
     "other": "Algo mais"
-  }
+  },
+  "step2Title": "Crie suas primeiras tarefas",
+  "step2InputLabel": "Digite algumas tarefas que você vai fazer em",
+  "step2AddAnother": "Adicionar outro"
 }

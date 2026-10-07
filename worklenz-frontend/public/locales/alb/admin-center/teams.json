@@ -29,5 +29,7 @@
   "role": "Roli",
   "owner": "Pronari",
   "admin": "Administruesi",
-  "member": "Anëtari"
+  "member": "Anëtari",
+  "cannotChangeOwnerRole": "Roli i pronarit nuk mund të ndryshohet",
+  "pendingInvitation": "Ftesë në pritje"
 }

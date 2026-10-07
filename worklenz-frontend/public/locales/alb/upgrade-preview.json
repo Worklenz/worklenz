@@ -1,0 +1,337 @@
+{
+  "upgradeNowButton": "Bëj upgrade tani",
+  "comingSoonTag": "Së shpejti",
+  "clientPortalMockups": {
+    "requests": {
+      "statusAccepted": "Pranuar",
+      "statusPending": "Në pritje",
+      "statusRejected": "Refuzuar"
+    },
+    "services": {
+      "statusActive": "Aktiv"
+    }
+  },
+  "cards": {
+    "finance": {
+      "overview": {
+        "title": "Pasqyra Financiare",
+        "description": "Buxheti, kostoja aktuale dhe variancat u grumbulluan në të gjitha projektet në një vend.",
+        "features": [
+          "Buxheti kundrejt kostos aktuale për projekt",
+          "Varianca dhe përdorimi në të gjithë portofolin",
+          "Projektet që kërkojnë vëmendje, të shënuara automatikisht",
+          "E eksportueshme në Excel"
+        ]
+      },
+      "expenses": {
+        "title": "Shpenzime",
+        "description": "Të gjitha kostot fikse të shtuara në detyrat e projektit në të gjithë ekipin tuaj, të gjurmuara në një vend.",
+        "features": [
+          "Regjistroni kostot fikse kundrejt çdo detyre",
+          "Shih shpenzimet sipas projektit dhe të caktuarit",
+          "Përfshirë në listën e financave të çdo projekti",
+          "Historia e shpenzimeve të eksportueshme"
+        ]
+      },
+      "profitability": {
+        "title": "Përfitueshmëria",
+        "description": "Shiko marzhet e fitimit sipas projektit dhe ekipit sapo të dërgohet kjo veçori.",
+        "features": [
+          "Të ardhurat kundrejt kostos për projekt",
+          "Trendet e marzhit të fitimit me kalimin e kohës",
+          "Zbërthimi i përfitimit në nivel ekipi",
+          "Raporte të përfitueshmërisë të gatshme për eksport"
+        ]
+      },
+      "budgets": {
+        "title": "Buxhetet",
+        "description": "Vendosni buxhetet për projekt dhe gjurmoni shpenzimet kundrejt tyre në kohë reale.",
+        "features": [
+          "Planifikimi i buxhetit të projektit",
+          "Ndjekja e shpenzimeve në kohë reale",
+          "Sinjalizime mbi buxhetin",
+          "Buxheti kundrejt raportimit aktual"
+        ]
+      },
+      "invoices": {
+        "title": "Faturat",
+        "description": "Gjeneroni, dërgoni dhe gjurmoni faturat e klientit pa u larguar nga Worklenz.",
+        "features": [
+          "Krijoni fatura nga koha dhe shpenzimet e gjurmuara",
+          "Gjurmo faturat e paguara, në pritje dhe të vonuara",
+          "Portali i faturave përballë klientit",
+          "Statusi i pagesës me një shikim"
+        ]
+      },
+      "billableTime": {
+        "title": "Koha e Faturueshme",
+        "description": "Gjurmo orët e faturueshme kundrejt orëve jo të faturueshme në çdo projekt dhe shok ekipi.",
+        "features": [
+          "Përbërja e faturueshme kundrejt asaj jo të faturueshme",
+          "Të ardhurat nga orët e faturueshme",
+          "Tarifat e faturueshme për shokun e skuadrës",
+          "Fletë kohore të eksportueshme për faturimin"
+        ]
+      },
+      "utilization": {
+        "title": "Përdorimi",
+        "description": "Shihni se sa plotësisht shpërndahet koha e ekipit tuaj nëpër projekte aktive.",
+        "features": [
+          "Përdorimi i ekipit sipas javës ose muajit",
+          "Shokët e skuadrës së tepërt dhe të pakët",
+          "Planifikimi i kapaciteteve me një shikim",
+          "Tendencat e përdorimit me kalimin e kohës"
+        ]
+      },
+      "forecasts": {
+        "title": "Parashikimet",
+        "description": "Projektoni të ardhurat dhe kostot e ardhshme bazuar në tubacionin tuaj aktiv.",
+        "features": [
+          "Parashikimi i të ardhurave dhe kostove",
+          "Marzhet e parashikuara të fitimit",
+          "Projeksionet e bazuara në tubacione",
+          "Tendencat e parashikimit nga muaji në muaj"
+        ]
+      },
+      "generic": {
+        "title": "Financat",
+        "description": "Monitoroni përfitimin, buxhetet, faturat dhe shpenzimet për çdo projekt në një vend.",
+        "features": [
+          "Ndjekja e përfitimit të projektit",
+          "Buxhetet dhe parashikimet",
+          "Faturimi dhe gjurmimi i shpenzimeve",
+          "Raportet e kohës dhe shfrytëzimit të faturueshëm"
+        ]
+      }
+    },
+    "planner": {
+      "schedule": {
+        "title": "Orar",
+        "description": "Shikoni orarin e gjithë ekipit tuaj dhe caktoni punën me një shikim.",
+        "features": [
+          "Rrjeti i orarit javor dhe mujor në të gjithë ekipin",
+          "Planifikimi zvarrit për të caktuar",
+          "Konfliktet e kapacitetit raportohen automatikisht",
+          "Përditësimet në kohë reale ndërsa caktohet puna"
+        ]
+      },
+      "timeline": {
+        "title": "Afati Kohor",
+        "description": "Planifikoni çdo projekt në një afat kohor të zmadhuar.",
+        "features": [
+          "Afatet kohore të projektit të stilit Gantt",
+          "Zvarrit për të rregulluar datat e fillimit dhe mbarimit",
+          "Pamja e varësisë ndërmjet projekteve",
+          "Zmadhoni nga ditë në vite"
+        ]
+      },
+      "workload": {
+        "title": "Ngarkesa e Punës",
+        "description": "Balanconi kapacitetin në të gjithë ekipin tuaj përpara se t'i mbi-angazhoni ato.",
+        "features": [
+          "Për person të caktuar kundrejt orëve të disponueshme",
+          "Sinjalizime mbi dhe nën-akordim",
+          "Planifikimi i kapaciteteve nëpër projekte aktive",
+          "Trendet e ngarkesës së punës me kalimin e kohës"
+        ]
+      }
+    },
+    "clientPortal": {
+      "clients": {
+        "title": "Klientët",
+        "description": "Jepuni klientëve një portal të markës për të gjurmuar përparimin e projektit, për të ndarë skedarët dhe për të qëndruar në hap.",
+        "features": [
+          "Portali i markës së klientit për ndarjen e progresit të projektit",
+          "Kërkesat, miratimet dhe mesazhet e klientëve",
+          "Faturimi përballë klientit",
+          "Llogari të klientëve të pakufizuar"
+        ]
+      },
+      "requests": {
+        "title": "Kërkesat",
+        "description": "Lërini klientët të paraqesin dhe të gjurmojnë kërkesat e shërbimit pa u larguar nga portali i tyre.",
+        "features": [
+          "Kërkesat për shërbime të paraqitura nga klienti",
+          "Pranoni, refuzoni ose ndiqni në një vend",
+          "Ndjekja e statusit nga paraqitja deri në përfundim",
+          "Lidhur direkt me shërbimin që u kërkua"
+        ]
+      },
+      "services": {
+        "title": "Shërbimet",
+        "description": "Publikoni shërbimet që klientët mund të kërkojnë dhe kontrolloni atë që mund të shohin.",
+        "features": [
+          "Një katalog i shërbimeve të kërkuara",
+          "Kontrollet e dukshmërisë për shërbim",
+          "Vëllimi i kërkesës për shërbim",
+          "Caktoni një pronar shërbimi në ekipin tuaj"
+        ]
+      },
+      "chats": {
+        "title": "Mesazhet",
+        "description": "Dërgojini mesazhe klientëve direkt nga i njëjti portal që përdorin për gjithçka tjetër.",
+        "features": [
+          "Mesazhe direkte me klientët",
+          "Një fije bisede për klient",
+          "Historia e bisedave e kërkueshme",
+          "Njoftimet kur një klient përgjigjet"
+        ]
+      },
+      "invoices": {
+        "title": "Faturat",
+        "description": "Krijoni, dërgoni dhe gjurmoni faturat e klientit pa u larguar nga Worklenz.",
+        "features": [
+          "Krijoni fatura nga koha dhe shpenzimet e gjurmuara",
+          "Gjurmo faturat e paguara, në pritje dhe të vonuara",
+          "Portali i faturave përballë klientit",
+          "Statusi i pagesës me një shikim"
+        ]
+      },
+      "ticketing": {
+        "title": "Tiketimi",
+        "description": "Lërini klientët të mbledhin dhe të gjurmojnë biletat e mbështetjes direkt nga portali i tyre.",
+        "features": [
+          "Bileta mbështetëse të dorëzuara nga klienti",
+          "Ndjekja dhe përditësimet e statusit të biletave",
+          "Shënime dhe detyra të brendshme",
+          "Etiketimi me përparësi dhe SLA"
+        ]
+      },
+      "settings": {
+        "title": "Cilësimet e Portalit",
+        "description": "Personalizoni portalin tuaj të klientit me markën tuaj.",
+        "features": [
+          "Ngarkoni logon tuaj",
+          "Titulli i markës nëpër portal",
+          "Identiteti vizual i qëndrueshëm për klientët",
+          "Detajet e kompanisë që klientët mund t'i shohin"
+        ]
+      }
+    }
+  },
+  "financeMockups": {
+    "overview": {
+      "paginationText": "{{from}}-{{to}} nga {{total}}",
+      "perPageText": "{{count}} / faqe"
+    },
+    "profitability": {
+      "totalRevenue": "Të ardhurat totale",
+      "totalCost": "Kostoja totale",
+      "netProfit": "Fitimi neto",
+      "avgMargin": "Mesatar Marzhi",
+      "marginByProjectCard": "Marzhi i Fitimit sipas Projektit"
+    },
+    "budgets": {
+      "totalBudget": "Buxheti total",
+      "spent": "Shpenzuar",
+      "remaining": "E mbetur",
+      "overBudget": "Mbi buxhet",
+      "budgetVsSpendCard": "Buxheti kundrejt Shpenzimit sipas Projektit"
+    },
+    "invoices": {
+      "totalInvoiced": "Totali i faturuar",
+      "paid": "E Paguar",
+      "pending": "Në pritje",
+      "overdue": "Vonuar",
+      "invoicesCard": "Faturat",
+      "invoiceNoColumn": "Fatura nr",
+      "clientColumn": "Klienti",
+      "amountColumn": "Shuma",
+      "statusColumn": "Statusi"
+    },
+    "billableTime": {
+      "billableHours": "Orari i faturueshëm",
+      "nonBillableHours": "Orari i pafaturueshëm",
+      "billablePercent": "% e faturueshme",
+      "billableRevenue": "Të ardhurat e faturueshme",
+      "byTeamMemberCard": "Koha e faturueshme nga anëtari i ekipit",
+      "teamMemberColumn": "Anëtar i ekipit",
+      "billableHoursColumn": "Orari i faturueshëm"
+    },
+    "utilization": {
+      "avgUtilization": "Mesatar Shfrytëzimi",
+      "teamSize": "Madhësia e Ekipit",
+      "overutilized": "I mbishfrytëzuar",
+      "underutilized": "I përdorur pak",
+      "byTeamMemberCard": "Përdorimi nga anëtari i ekipit",
+      "teamMemberColumn": "Anëtar i ekipit"
+    },
+    "forecasts": {
+      "forecastedRevenue": "Të ardhurat e parashikuara",
+      "forecastedCost": "Kostoja e parashikuar",
+      "projectedMargin": "Marzhi i parashikuar",
+      "forecastWindow": "Dritarja e parashikimit",
+      "revenueTrendCard": "Trendi i parashikimit të të ardhurave"
+    },
+    "expenses": {
+      "pageTitle": "Shpenzimet e Projektit",
+      "pageSubtitle": "Të gjitha kostot fikse të shtuara në detyrat e projektit të ekipit tuaj.",
+      "projectColumn": "Projekti",
+      "taskColumn": "Detyra",
+      "amountColumn": "Shuma",
+      "assigneeColumn": "Caktuar",
+      "dateColumn": "Data",
+      "rowsPerPage": "Rreshtat për faqe: {{count}}"
+    }
+  },
+  "ticketingMockup": {
+    "openTickets": "Hap Biletat",
+    "inProgress": "Në progres",
+    "resolvedToday": "Zgjidhet sot",
+    "avgResponseTime": "Mesatar Koha e përgjigjes",
+    "ticketsCard": "Biletat",
+    "ticketNoColumn": "Bileta nr",
+    "clientColumn": "Klienti",
+    "subjectColumn": "Subjekti",
+    "priorityColumn": "Prioriteti",
+    "statusColumn": "Statusi",
+    "priorityHigh": "E lartë",
+    "priorityMedium": "Mesatar",
+    "priorityLow": "E ulët",
+    "statusOpen": "Hap",
+    "statusResolved": "E zgjidhur"
+  },
+  "plannerMockup": {
+    "chrome": {
+      "daysOption": "Ditë",
+      "weeksOption": "Javë",
+      "monthsOption": "Muaj",
+      "quartersOption": "lagjet",
+      "yearsOption": "vite",
+      "dayOption": "Ditë",
+      "weekOption": "Javë",
+      "monthOption": "Muaj",
+      "membersOption": "Anëtarë",
+      "projectsOption": "Projektet",
+      "priority": "Prioriteti",
+      "category": "Kategoria",
+      "projectStatus": "Statusi i Projektit",
+      "projectPriority": "Prioriteti i Projektit",
+      "taskLegend": "Detyra",
+      "projectBlockLegend": "Bllok projekt"
+    },
+    "schedule": {
+      "scheduledHours": "Orari i planifikuar",
+      "membersScheduled": "Anëtarët e planifikuar",
+      "unassignedHours": "Orë të pacaktuara",
+      "overbookedMembers": "Anëtarët e mbivendosur",
+      "memberColumn": "Anëtar",
+      "thisWeekCard": "Këtë javë"
+    },
+    "timeline": {
+      "activeProjects": "Projektet Aktive",
+      "onTrack": "Në rrugën e duhur",
+      "atRisk": "Në rrezik",
+      "avgCompletion": "Mesatar Përfundimi",
+      "projectTimelineCard": "Afati kohor i projektit"
+    },
+    "workload": {
+      "totalCapacity": "Kapaciteti total",
+      "allocatedHours": "Orët e shpërndara",
+      "availableHours": "Orari i disponueshëm",
+      "overallocatedMembers": "Anëtarët e mbipërcaktuar",
+      "utilColumn": "UTIL",
+      "teamTotalRow": "Totali i ekipit"
+    }
+  }
+}

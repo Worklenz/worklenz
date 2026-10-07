@@ -13,6 +13,7 @@ import {
   UserAddOutlined,
   UserOutlined,
 } from '@/shared/antd-imports';
+import type { TranslateFn, ThemeToken } from '../types';
 
 const MOVE_USERS_ROW_HEIGHT = 52;
 const MOVE_USERS_MAX_LIST_HEIGHT = 420;
@@ -39,7 +40,7 @@ interface MoveUserListData {
   users: string[];
   userEmails: Record<string, string>;
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   palette: {
     text: string;
     textSecondary: string;
@@ -56,8 +57,8 @@ interface MoveUserListData {
 
 interface CsvMappingStepsContentProps {
   step: number;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
-  themeToken: any;
+  t: TranslateFn;
+  themeToken: ThemeToken;
   csvColumns: string[];
   fieldMappings: Record<string, string>;
   setFieldMappings: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -135,7 +136,7 @@ const MoveUsersRow = ({ index, style, data }: ListChildComponentProps<MoveUserLi
 
 interface StatusValueRowProps {
   value: string;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   palette: MoveUserListData['palette'];
   statusOptions: WorkTypeOption[];
   statusValueMapping: Record<string, string>;

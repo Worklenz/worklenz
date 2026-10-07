@@ -111,7 +111,7 @@ const SortableSubtaskRow = ({ subtask, themeMode, onEdit, onDelete, t, isGuest =
     transition,
     opacity: isDragging ? 0.4 : 1,
     display: 'grid',
-    gridTemplateColumns: '32px 1fr 85px 100px 48px 72px',
+    gridTemplateColumns: '32px 1fr 80px 80px 100px 48px 72px',
     alignItems: 'center',
     gap: 8,
     padding: '4px 8px',
@@ -204,6 +204,41 @@ const SortableSubtaskRow = ({ subtask, themeMode, onEdit, onDelete, t, isGuest =
             {subtask.status_name}
           </Tag>
         </Tooltip>
+      </div>
+
+      {/* Phase column — fixed width, tag left-aligned */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', minWidth: 0 }}>
+        {subtask.phase_name ? (
+          <Tooltip 
+            title={subtask.phase_name}
+            placement="top"
+          >
+            <Tag
+              color={(themeMode === 'dark' ? subtask.phase_color_dark : subtask.phase_color)?.slice(0, 7) || '#1890ff'}
+              style={{ 
+                textTransform: 'capitalize', 
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                minWidth: 0,
+              }}
+            >
+              {subtask.phase_name}
+            </Tag>
+          </Tooltip>
+        ) : (
+          <Tag
+            style={{ 
+              margin: 0,
+              color: themeMode === 'dark' ? '#8c8c8c' : '#bfbfbf',
+              background: themeMode === 'dark' ? '#262626' : '#f5f5f5',
+              border: `1px solid ${themeMode === 'dark' ? '#434343' : '#d9d9d9'}`,
+            }}
+          >
+            —
+          </Tag>
+        )}
       </div>
 
       {/* Assignees */}
@@ -560,7 +595,7 @@ const SubTaskTable = ({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '32px 1fr 85px 100px 48px 72px',
+                    gridTemplateColumns: '32px 1fr 80px 80px 100px 48px 72px',
                     alignItems: 'center',
                     gap: 8,
                     padding: '4px 8px',

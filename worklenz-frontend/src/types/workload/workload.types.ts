@@ -12,6 +12,9 @@ export interface IWorkloadMember {
   isOverallocated: boolean;
   isUnderutilized: boolean;
   expectedCapacity: number;
+  tasks?: ITaskAllocation[];
+  // Whether this member has any task assigned in this project, independent of the selected date range.
+  hasAnyAssignment?: boolean;
 }
 
 export interface ITaskAllocation {
@@ -31,6 +34,7 @@ export interface ITaskAllocation {
   status: string;
   statusColor?: string;
   completionPercentage: number;
+  entryType?: 'task' | 'time_log';
 }
 
 export interface IMemberAvailability {
@@ -45,12 +49,12 @@ export interface IMemberAvailability {
 }
 
 export interface IWorkloadData {
-  projectId: string;
-  projectName: string;
+  projectId?: string;
+  projectName?: string;
   members: IWorkloadMember[];
   allocations: ITaskAllocation[];
   availability: IMemberAvailability[];
-  summary: IWorkloadSummary;
+  summary?: IWorkloadSummary;
 }
 
 export interface IWorkloadSummary {

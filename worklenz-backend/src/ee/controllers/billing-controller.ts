@@ -88,7 +88,7 @@ export default class BillingController extends WorklenzControllerBase {
           </div>
       </body>
       </html>`;
-    const to = [process.env.CONTACT_US_EMAIL || "chamika@ceydigital.com"];
+    const to = [process.env.CONTACT_US_EMAIL || "support@worklenz.com"];
 
     sendEmail({
       to,

@@ -15,7 +15,7 @@ import { CalendarOutlined, InboxOutlined, SettingOutlined } from '@ant-design/ic
 import { useTranslation } from 'react-i18next'; // Assuming you're using i18next for translations
 import './TableColumns.css';
 import { useNavigate } from 'react-router-dom';
-import { toggleUpdatedrawer, toggleUpdatedrawer } from '../../features/projects/projects.slice';
+import { toggleUpdatedrawer } from '../../features/projects/projects.slice';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 
 interface DataType {

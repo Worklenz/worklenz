@@ -14,6 +14,7 @@ export interface ILocalSession extends IUserType {
   is_admin?: boolean;
   is_member?: boolean;
   role_name?: string;
+  is_guest?: boolean;
   build_v?: string;
   is_google?: boolean;
   setup_completed?: boolean;
@@ -35,6 +36,7 @@ export interface ILocalSession extends IUserType {
   // Plan trial fields
   active_plan_trial?: string; // 'BUSINESS', 'ENTERPRISE', etc.
   plan_trial_end_date?: string; // End date of plan trial
+  plan_trial_plan_id?: string; // ID of the plan trial plan
   trial_days_remaining?: number; // Days remaining in plan trial
   trial_plan_display_name?: string; // Display name of trial plan
   is_plan_trial?: boolean; // Quick flag for plan trial status

@@ -25,6 +25,7 @@ import {
   coerceBooleanValue,
   normalizeLabelName,
   parseImportedArray,
+  parseImportDate,
   sanitizeSampleValue,
   SELECTION_COLORS,
 } from "./imports/value-utils";
@@ -1080,8 +1081,8 @@ class ImportsService {
           }
           case "date": {
             if (!normalizedValue) break;
-            const parsed = new Date(normalizedValue);
-            if (Number.isNaN(parsed.getTime())) break;
+            const parsed = parseImportDate(normalizedValue);
+            if (!parsed) break;
             dateValue = parsed;
             break;
           }

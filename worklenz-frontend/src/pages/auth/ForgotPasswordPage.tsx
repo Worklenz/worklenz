@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMediaQuery } from 'react-responsive';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserOutlined } from '@/shared/antd-imports';
-import { Form, Card, Input, Flex, Button, Typography, Result } from '@/shared/antd-imports';
+import { Form, Input, Flex, Button, Result } from '@/shared/antd-imports';
 
 import PageHeader from '@components/AuthPageHeader';
 
@@ -18,15 +16,12 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { setSession } from '@/utils/session-helper';
 import { setUser } from '@features/user/userSlice';
 import logger from '@/utils/errorLogger';
+import { AUTH_PRIMARY_BUTTON_COLOR } from '@/shared/constants';
 
 const ForgotPasswordPage = () => {
   const [form] = Form.useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isOAuthUser, setIsOAuthUser] = useState(false);
-  const [urlParams, setUrlParams] = useState({
-    teamId: '',
-  });
 
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -36,15 +31,8 @@ const ForgotPasswordPage = () => {
   // Localization
   const { t } = useTranslation('auth/forgot-password');
 
-  // media queries from react-responsive package
-  const isMobile = useMediaQuery({ query: '(max-width: 576px)' });
-
   useEffect(() => {
     trackMixpanelEvent(evt_forgot_password_page_visit);
-    const searchParams = new URLSearchParams(window.location.search);
-    setUrlParams({
-      teamId: searchParams.get('team') || '',
-    });
     const verifyAuthStatus = async () => {
       try {
         const session = await dispatch(verifyAuthentication()).unwrap();
@@ -65,22 +53,15 @@ const ForgotPasswordPage = () => {
       if (values.email.trim() === '') return;
       try {
         setIsLoading(true);
-        setIsOAuthUser(false); // Reset OAuth user state
         // Normalize email to lowercase for case-insensitive comparison
         const normalizedEmail = values.email.toLowerCase().trim();
         const result = await dispatch(resetPassword(normalizedEmail)).unwrap();
         if (result.done) {
           trackMixpanelEvent(evt_reset_password_click);
           setIsSuccess(true);
-        } else if (result.body === 'oauth_user') {
-          setIsOAuthUser(true);
         }
       } catch (error: any) {
         logger.error('Failed to reset password', error);
-        // Check if the error response indicates an OAuth user
-        if (error?.response?.data?.body === 'oauth_user') {
-          setIsOAuthUser(true);
-        }
       } finally {
         setIsLoading(false);
       }
@@ -88,111 +69,61 @@ const ForgotPasswordPage = () => {
     [dispatch, trackMixpanelEvent]
   );
 
-  const handleGoogleSignIn = useCallback(() => {
-    const googleAuthUrl = `/api/auth/google${urlParams.teamId ? `?state=${JSON.stringify({ team: urlParams.teamId })}` : ''}`;
-    window.location.href = googleAuthUrl;
-  }, [urlParams.teamId]);
-
-  const handleTryDifferentEmail = useCallback(() => {
-    setIsOAuthUser(false);
-    form.resetFields();
-  }, [form]);
+  if (isSuccess) {
+    return (
+      <Result
+        status="success"
+        title={t('successTitle', { defaultValue: 'Reset instruction sent!' })}
+        subTitle={t('successMessage', { defaultValue: 'Reset information has been sent to your email. Please check your email.' })}
+      />
+    );
+  }
 
   return (
-    <Card
-      style={{
-        width: '100%',
-        boxShadow: 'none',
-      }}
-      styles={{
-        body: {
-          paddingInline: isMobile ? 24 : 48,
-        },
-      }}
-      variant="outlined"
-    >
-      {isSuccess ? (
-        <Result status="success" title={t('successTitle')} subTitle={t('successMessage')} />
-      ) : isOAuthUser ? (
-        <Result
-          status="info"
-          title={t('oauthUserTitle')}
-          subTitle={t('oauthUserMessage')}
-          extra={[
-            <Button
-              key="google-signin"
-              type="primary"
-              size="large"
-              onClick={handleGoogleSignIn}
-              style={{ borderRadius: 4 }}
-            >
-              {t('signInWithGoogleButton')}
-            </Button>,
-            <Button
-              key="try-different"
-              type="default"
-              size="large"
-              onClick={handleTryDifferentEmail}
-              style={{ borderRadius: 4 }}
-            >
-              {t('tryDifferentEmailButton')}
-            </Button>,
-          ]}
-        />
-      ) : (
-        <>
-          <PageHeader description={t('headerDescription')} />
-          <Form
-            name="forgot-password"
-            form={form}
-            layout="vertical"
-            autoComplete="off"
-            requiredMark="optional"
-            initialValues={{ remember: true }}
-            onFinish={onFinish}
-            style={{ width: '100%' }}
-          >
-            <Form.Item
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  type: 'email',
-                  message: t('emailRequired'),
-                },
-              ]}
-            >
-              <Input
-                prefix={<UserOutlined />}
-                placeholder={t('emailPlaceholder', { defaultValue: 'Enter your email' })}
-                size="large"
-                style={{ borderRadius: 4 }}
-              />
-            </Form.Item>
+    <>
+      <PageHeader title={t('headline')} description={t('headerDescription')} />
 
-            <Form.Item>
-              <Flex vertical gap={8}>
-                <Button
-                  block
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  loading={isLoading}
-                  style={{ borderRadius: 4 }}
-                >
-                  {t('resetPasswordButton', { defaultValue: 'Reset Password' })}
-                </Button>
-                <Flex justify="center">
-                  <Link to="/auth/login">
-                    {t('returnToLoginButton', { defaultValue: 'Return to Login' })}
-                  </Link>
-                </Flex>
-              </Flex>
-            </Form.Item>
-          </Form>
-        </>
-      )}
-    </Card>
+      <Form
+        name="forgot-password"
+        form={form}
+        layout="vertical"
+        autoComplete="off"
+        requiredMark={false}
+        onFinish={onFinish}
+        style={{ width: '100%' }}
+      >
+        <Form.Item
+          name="email"
+          label={t('emailLabel')}
+          rules={[
+            {
+              required: true,
+              type: 'email',
+              message: t('emailRequired'),
+            },
+          ]}
+        >
+          <Input size="large" placeholder={t('emailPlaceholder')} />
+        </Form.Item>
+
+        <Button
+          block
+          type="primary"
+          htmlType="submit"
+          size="large"
+          loading={isLoading}
+          style={{ backgroundColor: AUTH_PRIMARY_BUTTON_COLOR, borderColor: AUTH_PRIMARY_BUTTON_COLOR }}
+        >
+          {t('resetPasswordButton')}
+        </Button>
+      </Form>
+
+      <Flex justify="center" style={{ marginTop: 18 }}>
+        <Link to="/auth/login" className="blue-link" style={{ fontSize: 12.5 }}>
+          {t('returnToLoginButton')}
+        </Link>
+      </Flex>
+    </>
   );
 };
 

@@ -39,7 +39,7 @@ const tempServices: TempServicesType[] = [
     id: '2',
     name: 'Product portfolio video',
     created_by: 'sachintha prasad',
-    status: 'inProgress',
+    status: 'in_progress',
     no_of_requests: 10,
     service_data: {
       description: 'A product showcase video service.',

@@ -9,6 +9,8 @@
   "dragToReorderPhases": "拖拽阶段来重新排序。每个阶段可以有不同的颜色。",
   "enterNewPhaseName": "输入新阶段名称...",
   "addPhase": "添加阶段",
+  "startDate": "开始日期",
+  "endDate": "结束日期",
   "noPhasesFound": "未找到阶段",
   "no": "没有",
   "found": "找到",

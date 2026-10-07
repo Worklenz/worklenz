@@ -328,40 +328,67 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
     res: IWorkLenzResponse
   ): Promise<IWorkLenzResponse> {
     const { id } = req.params;
-    const { name, field_type, width, is_visible, configuration } = req.body;
+    const { name, field_type, width, is_visible, configuration, lock_field_type } = req.body;
+    const parsedWidth = Number.parseInt(String(width), 10);
+    const columnWidth = Number.isFinite(parsedWidth) ? parsedWidth : 120;
 
-    // --- Grandfathered AppSumo check ---
-    // LTD users who already have >10 fields (grandfathered) cannot edit existing fields.
-    // const teamId = req.user?.team_id;
-    // if (teamId) {
-    //   const subscriptionData = await checkTeamSubscriptionStatus(teamId);
-    //   if (subscriptionData && !hasBusinessAccess(subscriptionData) && subscriptionData.is_ltd === true) {
-    //     // Resolve the project_id for this column to count its custom fields
-    //     const colProjectResult = await db.query(
-    //       `SELECT project_id FROM cc_custom_columns WHERE id = $1`,
-    //       [id]
-    //     );
-    //     const projectId = colProjectResult.rows[0]?.project_id;
-    //     if (projectId) {
-    //       const currentCount = await getCustomColumnCount(projectId);
-    //       if (currentCount > CUSTOM_FIELD_LIMIT) {
-    //         return res.status(200).send(
-    //           new ServerResponse(
-    //             false,
-    //             { error_code: "CUSTOM_FIELD_LIMIT_EXCEEDED" },
-    //             "Editing custom fields beyond your current plan limit requires a Business plan."
-    //           )
-    //         );
-    //       }
-    //     }
-    //   }
-    // }
-    // --- End grandfathered check ---
+    // Try to resolve the column ID - it might be a UUID or a key (nanoid)
+    let columnId = id;
+    try {
+      // If it's not a valid UUID, try to find the column by key
+      if (!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        // Not a UUID, try to find by key
+        const keyResult = await db.query(
+          `SELECT id FROM cc_custom_columns WHERE key = $1 LIMIT 1`,
+          [id]
+        );
+        if (keyResult.rows.length > 0) {
+          columnId = keyResult.rows[0].id;
+        } else {
+          return res.status(400).send(
+            new ServerResponse(false, { error_code: "CUSTOM_COLUMN_NOT_FOUND" }, "Custom column not found")
+          );
+        }
+      }
+    } catch (error) {
+      // If UUID parsing fails, just use the id as-is and let the middleware handle it
+      columnId = id;
+    }
 
     const client = await db.pool.connect();
 
     try {
       await client.query("BEGIN");
+
+      const existingColumnResult = await client.query(
+        `SELECT field_type, type_locked FROM cc_custom_columns WHERE id = $1 LIMIT 1`,
+        [columnId]
+      );
+
+      if (existingColumnResult.rowCount === 0) {
+        await client.query("ROLLBACK");
+        return res.status(400).send(
+          new ServerResponse(false, { error_code: "CUSTOM_COLUMN_NOT_FOUND" }, "Custom column not found")
+        );
+      }
+
+      const existingFieldType = existingColumnResult.rows[0].field_type;
+      const isTypeLocked = existingColumnResult.rows[0].type_locked === true;
+
+      if (field_type && field_type !== existingFieldType && isTypeLocked) {
+        await client.query("ROLLBACK");
+        return res.status(400).send(
+          new ServerResponse(
+            false,
+            { error_code: "CUSTOM_COLUMN_TYPE_IMMUTABLE" },
+            "Custom column type cannot be changed after creation"
+          )
+        );
+      }
+
+      // A locked type would have been rejected above, so any surviving change is allowed.
+      const resolvedFieldType =
+        field_type && field_type !== existingFieldType ? field_type : existingFieldType;
 
       // 1. Update the main custom column
       const columnQuery = `
@@ -372,32 +399,29 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       `;
       await client.query(columnQuery, [
         name,
-        field_type,
-        width,
+        resolvedFieldType,
+        columnWidth,
         is_visible,
-        id,
+        columnId,
       ]);
 
-      // 2. Update the configuration
-      const configQuery = `
-        UPDATE cc_column_configurations 
-        SET 
-          field_title = $1,
-          field_type = $2,
-          number_type = $3,
-          decimals = $4,
-          label = $5,
-          label_position = $6,
-          preview_value = $7,
-          expression = $8,
-          first_numeric_column_key = $9,
-          second_numeric_column_key = $10,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE column_id = $11;
-      `;
-      await client.query(configQuery, [
+      if (lock_field_type === true) {
+        await client.query(
+          `UPDATE cc_custom_columns SET type_locked = TRUE WHERE id = $1`,
+          [columnId]
+        );
+      }
+
+      if (resolvedFieldType !== existingFieldType) {
+        await client.query(`DELETE FROM cc_column_values WHERE column_id = $1`, [columnId]);
+      }
+
+      // 2. Update the configuration when it exists. column_id is not unique
+      // in the current schema, so it cannot be used with ON CONFLICT.
+      const configValues = [
+        columnId,
         configuration.field_title,
-        configuration.field_type,
+        resolvedFieldType,
         configuration.number_type || null,
         configuration.decimals || null,
         configuration.label || null,
@@ -406,15 +430,45 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         configuration.expression || null,
         configuration.first_numeric_column_key || null,
         configuration.second_numeric_column_key || null,
-        id,
-      ]);
+      ];
+      const configUpdateResult = await client.query(
+        `
+          UPDATE cc_column_configurations
+          SET field_title = $2,
+              field_type = $3,
+              number_type = $4,
+              decimals = $5,
+              label = $6,
+              label_position = $7,
+              preview_value = $8,
+              expression = $9,
+              first_numeric_column_key = $10,
+              second_numeric_column_key = $11,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE column_id = $1;
+        `,
+        configValues
+      );
+
+      if (configUpdateResult.rowCount === 0) {
+        await client.query(
+          `
+            INSERT INTO cc_column_configurations (
+              column_id, field_title, field_type, number_type,
+              decimals, label, label_position, preview_value,
+              expression, first_numeric_column_key, second_numeric_column_key
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+          `,
+          configValues
+        );
+      }
 
       // 3. Update selections if present
       if (configuration.selections_list) {
         // Delete existing selections
         await client.query(
           "DELETE FROM cc_selection_options WHERE column_id = $1",
-          [id]
+          [columnId]
         );
 
         // Insert new selections
@@ -429,7 +483,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
             selection,
           ] of configuration.selections_list.entries()) {
             await client.query(selectionQuery, [
-              id,
+              columnId,
               selection.selection_id,
               selection.selection_name,
               selection.selection_color,
@@ -443,7 +497,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
       if (configuration.labels_list) {
         // Delete existing labels
         await client.query("DELETE FROM cc_label_options WHERE column_id = $1", [
-          id,
+          columnId,
         ]);
 
         // Insert new labels
@@ -455,7 +509,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
           `;
           for (const [index, label] of configuration.labels_list.entries()) {
             await client.query(labelQuery, [
-              id,
+              columnId,
               label.label_id,
               label.label_name,
               label.label_color,
@@ -506,7 +560,7 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
         LEFT JOIN cc_column_configurations cf ON cf.column_id = cc.id
         WHERE cc.id = $1;
       `;
-      const result = await client.query(getColumnQuery, [id]);
+      const result = await client.query(getColumnQuery, [columnId]);
       const [data] = result.rows;
 
       return res.status(200).send(new ServerResponse(true, data));

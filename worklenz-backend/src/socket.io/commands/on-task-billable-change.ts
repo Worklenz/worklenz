@@ -1,10 +1,11 @@
 import { Server, Socket } from "socket.io";
-import { getLoggedInUserIdFromSocket, log_error } from "../util";
+import { getLoggedInUserIdFromSocket, log_error, emitToTaskVisibleProjectMembers } from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import { body } from "express-validator";
 import { isRestrictedFromProPlanFeatures } from "../../ee/middlewares/subscription-middleware";
 import { isTaskCreationRestrictedForTask } from "../../shared/task-creation-restriction";
+import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 
 export async function on_task_billable_change(_io: Server, socket: Socket, data?: {task_id?: string, billable?: boolean}) {
     if (typeof data == "string") {
@@ -13,8 +14,13 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
     if (!data?.task_id || (typeof data.billable != "boolean")) return;
     
     try {
+        const userId = getLoggedInUserIdFromSocket(socket);
         // Enforce restrict_task_creation: restricted users cannot modify tasks.
-        if (await isTaskCreationRestrictedForTask(getLoggedInUserIdFromSocket(socket), data.task_id)) {
+        if (await isTaskCreationRestrictedForTask(userId, data.task_id)) {
+            return;
+        }
+        // TVR-13: parent-context viewers cannot edit
+        if (await isAssigneeScopeEditRestrictedForTask(userId, data.task_id)) {
             return;
         }
 
@@ -55,12 +61,18 @@ export async function on_task_billable_change(_io: Server, socket: Socket, data?
             billable: data?.billable
         });
         
-        // Broadcast to all clients in the project room for real-time updates
+        // Broadcast to clients in the project room who can see this task
         if (taskData?.project_id) {
-            _io.to(taskData.project_id).emit(SocketEvents.TASK_BILLABLE_CHANGE.toString(), {
-                id: data?.task_id,
-                billable: data?.billable
-            });
+            await emitToTaskVisibleProjectMembers(
+                _io,
+                taskData.project_id,
+                data.task_id,
+                SocketEvents.TASK_BILLABLE_CHANGE.toString(),
+                {
+                    id: data?.task_id,
+                    billable: data?.billable
+                }
+            );
         }
 
     } catch (e) {

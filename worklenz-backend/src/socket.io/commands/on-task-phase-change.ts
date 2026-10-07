@@ -3,11 +3,12 @@ import {Server, Socket} from "socket.io";
 import db from "../../config/db";
 import {TASK_STATUS_COLOR_ALPHA, UNMAPPED} from "../../shared/constants";
 import {SocketEvents} from "../events";
-import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates} from "../util";
+import {getLoggedInUserIdFromSocket, log_error, notifyProjectUpdates, emitToTaskVisibleProjectMembers} from "../util";
 import {getColor} from "../../shared/utils";
 import { getTaskPhaseDetails, logPhaseChange } from "../../services/activity-logs/activity-logs.service";
-import { getAssignees, runAssignOrRemove } from "./on-quick-assign-or-remove";
+import {getAssignees, runAssignOrRemove} from "./on-quick-assign-or-remove";
 import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
+import { isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
 
 async function autoAssignPhaseAssignee(
   io: Server,
@@ -120,16 +121,22 @@ async function autoAssignPhaseAssignee(
       team_member_id,
     });
 
-    // Also broadcast to other clients in the project room
-    socket.to(project_id).emit(SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(), {
-      id: taskId,
-      parent_task: null,
-      assignees,
-      names,
-      mode: 0,
-      team_member_id,
-    });
-  } catch (err) {
+    // Also broadcast to other clients in the project room who can see this task
+    await emitToTaskVisibleProjectMembers(
+      socket,
+      project_id,
+      taskId,
+      SocketEvents.QUICK_ASSIGNEES_UPDATE.toString(),
+      {
+        id: taskId,
+        parent_task: null,
+        assignees,
+        names,
+        mode: 0,
+        team_member_id,
+      },
+      { excludeSocketId: socket.id }
+    );  } catch (err) {
     log_error("Error in autoAssignPhaseAssignee: " + err);
     // Non-fatal — don't propagate, the phase change itself already succeeded
   }
@@ -138,6 +145,10 @@ async function autoAssignPhaseAssignee(
 export async function on_task_phase_change(_io: Server, socket: Socket, body?: any) {
   try {
     if (!body?.task_id) return;
+
+    if (await isAssigneeScopeEditRestrictedForTask(getLoggedInUserIdFromSocket(socket), body.task_id)) {
+      return;
+    }
 
     const q2 = `SELECT handle_on_task_phase_change($1, $2) AS res;`;
 
@@ -168,6 +179,7 @@ export async function on_task_phase_change(_io: Server, socket: Socket, body?: a
       }
     }
 
+    // Emit TASK_PHASE_CHANGE event for the parent task
     socket.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
       id: body.phase_id,
       task_id: body.task_id,
@@ -176,6 +188,38 @@ export async function on_task_phase_change(_io: Server, socket: Socket, body?: a
       status_id: body.status_id,
       name: phaseName
     });
+
+    // Emit TASK_PHASE_CHANGE for cascaded subtasks (bounded — large trees must not fan out unbounded emits)
+    // cascaded_subtasks is an array of {task_id, phase_id, phase_name, phase_color}
+    const MAX_CASCADED_PHASE_SOCKET_EMITS = 100;
+    const cascadedSubtasks = Array.isArray(changeResponse.cascaded_subtasks)
+      ? changeResponse.cascaded_subtasks
+      : [];
+    const cascadedToEmit = cascadedSubtasks.slice(0, MAX_CASCADED_PHASE_SOCKET_EMITS);
+    for (const cascadedTask of cascadedToEmit) {
+      socket.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+        id: cascadedTask.phase_id,
+        task_id: cascadedTask.task_id,
+        parent_task: body.task_id,
+        color_code: cascadedTask.phase_color || getColor(cascadedTask.phase_name) + TASK_STATUS_COLOR_ALPHA,
+        status_id: body.status_id,
+        name: cascadedTask.phase_name,
+        is_cascaded: true
+      });
+    }
+    if (cascadedSubtasks.length > MAX_CASCADED_PHASE_SOCKET_EMITS) {
+      socket.emit(SocketEvents.TASK_PHASE_CHANGE.toString(), {
+        id: body.phase_id,
+        task_id: body.task_id,
+        parent_task: body.parent_task,
+        color_code: changeResponse.color_code,
+        status_id: body.status_id,
+        name: phaseName,
+        is_cascaded: true,
+        cascade_truncated: true,
+        cascaded_count: cascadedSubtasks.length
+      });
+    }
 
     // Auto-assign the phase default assignee if feature is enabled
     // Pass both new phaseId and previous phase ID for removal logic

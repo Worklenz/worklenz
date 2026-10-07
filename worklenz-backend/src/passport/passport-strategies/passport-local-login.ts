@@ -22,7 +22,6 @@ async function handleLogin(req: Request, email: string, password: string, done: 
     const q = `SELECT id, email, google_id, password
                FROM users
                WHERE LOWER(email) = $1
-                 AND google_id IS NULL
                  AND is_deleted IS FALSE;`;
     const result = await db.query(q, [normalizedEmail]);
     
@@ -41,6 +40,21 @@ async function handleLogin(req: Request, email: string, password: string, done: 
 
       const { team_id, team_member_id } = req.body;
 
+      const activeMembershipResult = await db.query(
+        `SELECT 1
+         FROM team_members
+         WHERE user_id = $1
+           AND active = TRUE
+         LIMIT 1`,
+        [data.id],
+      );
+
+      if (!activeMembershipResult.rowCount) {
+        const errorMsg = "Your access has been deactivated. Please contact your administrator";
+        req.flash(ERROR_KEY, errorMsg);
+        return done(null, false);
+      }
+
       if (team_id && team_member_id) {
         try {
           const invitationContextQuery = `
@@ -49,6 +63,7 @@ async function handleLogin(req: Request, email: string, password: string, done: 
             INNER JOIN team_member_info_view tmiv ON tmiv.team_member_id = tm.id
             WHERE tm.id = $1
               AND tm.team_id = $2
+              AND tm.active = TRUE
               AND LOWER(tmiv.email) = $3
             LIMIT 1;
           `;
@@ -58,10 +73,14 @@ async function handleLogin(req: Request, email: string, password: string, done: 
             normalizedEmail,
           ]);
 
-          if (invitationContextResult.rowCount && invitationContextResult.rowCount > 0) {
-            const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
-            await db.query(setActiveTeamQuery, [data.id, team_id]);
+          if (!invitationContextResult.rowCount) {
+            const errorMsg = "This invitation is no longer active. Please contact your administrator";
+            req.flash(ERROR_KEY, errorMsg);
+            return done(null, false);
           }
+
+          const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
+          await db.query(setActiveTeamQuery, [data.id, team_id]);
         } catch (error) {
           log_error(error, {
             userId: data.id,

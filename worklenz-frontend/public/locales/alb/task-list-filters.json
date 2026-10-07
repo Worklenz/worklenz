@@ -60,6 +60,14 @@
   "filterActive": "filtër aktiv",
   "clearAll": "Pastro të gjitha",
   "clearing": "Po pastron...",
+  "exportFiltered": "Eksporto",
+  "exportFilteredTooltip": "Eksporto detyrat e filtruara si CSV",
+  "exportFilteredEmpty": "Asnjë detyrë nuk përputhet me filtrat aktualë",
+  "exportFilteredSuccessTitle": "Eksporti u shkarkua",
+  "exportFilteredSuccessMessage": "CSV e detyrave të filtruara është shkarkuar.",
+  "exportFilteredFailedTitle": "Eksporti dështoi",
+  "exportFilteredFailedMessage": "Nuk mund të eksportohen detyrat e filtruara. Ju lutemi provoni përsëri.",
+  "exportFilteredBusinessPlanTooltip": "Eksportimi i detyrave kërkon planin Business. Përmirësoni për të eksportuar.",
   "cancel": "Anulo",
   "search": "Kërko",
   "groupedBy": "Grupuar sipas",
@@ -87,5 +95,7 @@
   "ascendingOrder": "Rritës",
   "descendingOrder": "Zbritës",
   "currentSort": "Renditja aktuale: {{field}} {{order}}",
-  "apply": "Apliko"
+  "apply": "Apliko",
+  "showingYourTasksOnly": "Showing your tasks only",
+  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
 }

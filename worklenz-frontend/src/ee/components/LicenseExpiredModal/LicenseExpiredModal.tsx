@@ -10,7 +10,7 @@ import {
   Divider,
 } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import {
   ClockCircleOutlined,
@@ -28,6 +28,7 @@ import { useAppSelector } from '@/hooks/useAppSelector';
 import { fetchTeams, setActiveTeam } from '@/features/teams/teamSlice';
 import { verifyAuthentication } from '@/features/auth/authSlice';
 import { setUser } from '@/features/user/userSlice';
+import { navigateAfterTeamSwitch } from '@/utils/team-switch-navigation';
 import CustomAvatar from '@/components/CustomAvatar';
 import { colors } from '@/styles/colors';
 import { createAuthService } from '@/services/auth/auth.service';
@@ -45,6 +46,7 @@ export const LicenseExpiredModal = ({
   subscriptionType = ISUBSCRIPTION_TYPE.TRIAL,
 }: LicenseExpiredModalProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const { t } = useTranslation('common');
   const authService = useAuthService();
@@ -97,7 +99,7 @@ export const LicenseExpiredModal = ({
       
       // Verify authentication with updated session
       await handleVerifyAuth();
-      window.location.reload();
+      navigateAfterTeamSwitch(location.pathname);
     } catch (error) {
       console.error('Failed to switch team:', error);
     }

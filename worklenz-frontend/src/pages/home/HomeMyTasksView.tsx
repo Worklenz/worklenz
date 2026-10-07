@@ -244,7 +244,7 @@ const HomeMyTasksView: React.FC = () => {
   const totalCount = activeBody?.total ?? 0;
 
   const projectFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.projects || []).map(p => ({ value: p.project_id, label: p.project_name })),
+    () => (filterOptionsData?.body?.projects || []).map(p => ({ value: p.project_id, label: p.project_name || p.project_id || '' })),
     [filterOptionsData?.body?.projects]
   );
 
@@ -259,12 +259,12 @@ const HomeMyTasksView: React.FC = () => {
   // The backend already dedupes by lowercased name; mirror that as the
   // filter value so it round-trips through the `status[]` query param.
   const statusFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.statuses || []).map(s => ({ value: s.name.toLowerCase(), label: s.name })),
+    () => (filterOptionsData?.body?.statuses || []).map(s => ({ value: (s.name || '').toLowerCase(), label: s.name || '' })),
     [filterOptionsData?.body?.statuses]
   );
 
   const assigneeFilterOptions = useMemo(
-    () => (filterOptionsData?.body?.assignees || []).map(a => ({ value: a.team_member_id, label: a.name })),
+    () => (filterOptionsData?.body?.assignees || []).map(a => ({ value: a.team_member_id, label: a.name || a.team_member_id || '' })),
     [filterOptionsData?.body?.assignees]
   );
 
@@ -449,9 +449,14 @@ const HomeMyTasksView: React.FC = () => {
         key: 'status',
         title: renderSortableTitle(t('tasks.status', { defaultValue: 'Status' }), 'status'),
         width: '14%',
+        ellipsis: true,
         filters: statusFilterOptions.map(o => ({ text: o.label, value: o.value })),
         filteredValue: selectedStatusIds,
-        render: (_, record) => <HomeTasksStatusDropdown task={record} teamId={record.team_id || ''} />,
+        render: (_, record) => (
+          <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
+            <HomeTasksStatusDropdown task={record} teamId={record.team_id || ''} />
+          </div>
+        ),
       },
       {
         key: 'priority',

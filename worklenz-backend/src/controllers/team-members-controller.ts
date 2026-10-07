@@ -14,7 +14,7 @@ import { IO } from "../shared/io";
 import { SocketEvents } from "../socket.io/events";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { formatDuration, getColor, sanitizePlainText } from "../shared/utils";
+import { formatDuration, getColor, log_error, sanitizePlainText } from "../shared/utils";
 import {
   statusExclude,
   TEAM_MEMBER_TREE_MAP_COLOR_ALPHA,
@@ -150,6 +150,41 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     const [data] = result.rows;
     const newMembers = data?.new_members || [];
+    const departmentId = (body as any)?.department_id || null;
+
+    if (departmentId && Array.isArray(newMembers) && newMembers.length > 0) {
+      const memberIds = newMembers
+        .map((member: any) => member.team_member_id)
+        .filter((id: string | undefined) => !!id);
+
+      if (memberIds.length > 0) {
+        const { clause, params } = SqlHelper.buildInClause(memberIds, 2);
+        const assignDepartmentQuery = `
+          UPDATE team_members
+          SET department_id = $1::UUID
+          WHERE id IN (${clause});
+        `;
+        await db.query(assignDepartmentQuery, [departmentId, ...params]);
+      }
+    }
+
+    const practiceId = (body as any)?.practice_id || null;
+
+    if (practiceId && Array.isArray(newMembers) && newMembers.length > 0) {
+      const memberIds = newMembers
+        .map((member: any) => member.team_member_id)
+        .filter((id: string | undefined) => !!id);
+
+      if (memberIds.length > 0) {
+        const { clause, params } = SqlHelper.buildInClause(memberIds, 2);
+        const assignPracticeQuery = `
+          UPDATE team_members
+          SET practice_id = $1::UUID
+          WHERE id IN (${clause});
+        `;
+        await db.query(assignPracticeQuery, [practiceId, ...params]);
+      }
+    }
 
     const projectId = (body as any)?.project_id;
 
@@ -470,40 +505,72 @@ export default class TeamMembersController extends WorklenzControllerBase {
     const { searchQuery, searchParams, sortField, sortOrder, size, offset } =
       this.toPaginationOptions(req.query, ["u.name", "u.email"], true, 2);
 
-    // Map frontend field names to actual sortable columns
-    // Since we're sorting inside the subquery, we need to use the actual column expressions
-    // not the aliases (PostgreSQL doesn't allow aliases in ORDER BY within the same SELECT)
+    // Map frontend field names to actual sortable columns.
+    // We sort inside the subquery, so we must use the real column expressions, not the
+    // aliases (PostgreSQL doesn't allow aliases in ORDER BY within the same SELECT).
+    const teamMemberNameExpr =
+      "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)";
+    const teamMemberNameLowerExpr = `LOWER(${teamMemberNameExpr})`;
+    const teamMemberEmailExpr =
+      "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)";
+    const teamMemberEmailLowerExpr = `LOWER(${teamMemberEmailExpr})`;
     const fieldMapping: Record<string, string> = {
-      name: "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
-      email:
-        "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      name: teamMemberNameLowerExpr,
+      email: teamMemberEmailLowerExpr,
       job_title:
         "(SELECT name FROM job_titles WHERE id = team_members.job_title_id)",
       role_name: "(SELECT name FROM roles WHERE id = team_members.role_id)",
+      // Role-level ordering: Owner (1) → Admin (2) → Team Lead (3) → everyone else (4).
+      // Owner is matched via the role's owner flag and Admin via the admin_role flag
+      // (the same patterns used elsewhere in this file), so those branches keep working
+      // if the roles are renamed. Team Lead is matched by name first because the Team
+      // Lead role is also created with admin_role = TRUE; the name literal is the only
+      // way to tell it apart from the Admin role.
+      // Keep these levels in sync with ROLE_LEVELS in
+      // worklenz-frontend/src/pages/settings/team-members/team-members-settings.tsx —
+      // the ELSE branch (4) is the shared fallback for unknown/custom roles.
+      role_level:
+        "(CASE " +
+        "WHEN (SELECT owner FROM roles WHERE id = team_members.role_id) IS TRUE THEN 1 " +
+        "WHEN (SELECT name FROM roles WHERE id = team_members.role_id) = 'Team Lead' THEN 3 " +
+        "WHEN EXISTS(SELECT id FROM roles WHERE id = team_members.role_id AND admin_role IS TRUE) THEN 2 " +
+        "ELSE 4 END)",
       projects_count:
         "(SELECT COUNT(*) FROM project_members WHERE team_member_id = team_members.id)",
       active: "active",
       is_owner:
         "(CASE WHEN user_id = (SELECT user_id FROM teams WHERE id = $1) THEN TRUE ELSE FALSE END)",
-      "u.name":
-        "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
-      "u.email":
-        "(SELECT email FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)",
+      "u.name": teamMemberNameLowerExpr,
+      "u.email": teamMemberEmailLowerExpr,
     };
 
-    // Handle sortField - it could be a string or array
-    let mappedSortField =
-      "(SELECT name FROM team_member_info_view WHERE team_member_info_view.team_member_id = team_members.id)";
-    if (typeof sortField === "string") {
-      // Single field from user clicking a column header
-      mappedSortField = fieldMapping[sortField] || mappedSortField;
-    } else if (Array.isArray(sortField)) {
-      // Multiple fields - build ORDER BY clause with all fields
-      const mappedFields = sortField
-        .map((field) => fieldMapping[field] || field)
-        .join(` ${sortOrder}, `);
-      mappedSortField = mappedFields;
+    // Build the ORDER BY clause. sortField may arrive as a string (column header / sort
+    // control) or as an array (multi-column sort), so normalize it to a list first.
+    const sortFields = Array.isArray(sortField) ? sortField : [sortField];
+
+    // Map every requested field to its SQL expression, appending the direction to each
+    // one. (Attaching the direction per expression instead of once after the whole list
+    // keeps the JOIN well-formed when a mapped value contains more than one expression.)
+    // Only known fields are honoured - an unmapped/blank field is dropped here and the
+    // safe default below takes over, so a raw query param can never reach ORDER BY.
+    const orderByParts = sortFields
+      .map((field) => fieldMapping[field as string])
+      .filter((expr): expr is string => Boolean(expr))
+      .map((expr) => `${expr} ${sortOrder}`);
+
+    // A role-level sort groups by level in the requested direction and then keeps names
+    // alphabetical inside each group. The tiebreaker is pinned to ASC on purpose: it
+    // mirrors the frontend re-sort (sortTeamMembersByRole) applied after inline
+    // role/name edits, so those edits never jump rows between groups.
+    if (sortFields.includes("role_level")) {
+      orderByParts.push(`${teamMemberNameLowerExpr} ASC`);
     }
+
+    // Defensive: never emit an empty ORDER BY clause (e.g. an empty sortField array).
+    const mappedSortField =
+      orderByParts.length > 0
+        ? orderByParts.join(", ")
+        : `${teamMemberNameLowerExpr} ${sortOrder}`;
 
     const paginate =
       req.query.all !== "true" ? `LIMIT ${size} OFFSET ${offset}` : "";
@@ -521,7 +588,12 @@ export default class TeamMembersController extends WorklenzControllerBase {
                             FROM project_members
                             WHERE team_member_id = team_members.id) AS projects_count,
                            (SELECT name FROM job_titles WHERE id = team_members.job_title_id) AS job_title,
+                           team_members.department_id,
+                           (SELECT name FROM departments WHERE id = team_members.department_id) AS department_name,
+                           team_members.practice_id,
+                           (SELECT name FROM practices WHERE id = team_members.practice_id) AS practice_name,
                            (SELECT name FROM roles WHERE id = team_members.role_id) AS role_name,
+                           ${fieldMapping.role_level} AS role_level,
                            EXISTS(SELECT id
                                   FROM roles
                                   WHERE id = team_members.role_id
@@ -559,7 +631,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
                                     )
                               )
                         )
-                    ORDER BY ${mappedSortField} ${sortOrder} ${paginate}) t) AS data
+                    ORDER BY ${mappedSortField} ${paginate}) t) AS data
       FROM team_members
              LEFT JOIN users u ON team_members.user_id = u.id
       WHERE ${searchQuery} team_id = $1
@@ -645,6 +717,10 @@ export default class TeamMembersController extends WorklenzControllerBase {
                     WHERE team_member_id = team_members.id
                       AND email_invitations.team_id = team_members.team_id) AS pending_invitation,
             (SELECT name FROM job_titles WHERE id = team_members.job_title_id) AS job_title,
+            team_members.department_id,
+            (SELECT name FROM departments WHERE id = team_members.department_id) AS department_name,
+            team_members.practice_id,
+            (SELECT name FROM practices WHERE id = team_members.practice_id) AS practice_name,
             (SELECT name FROM roles WHERE id = team_members.role_id) AS role_name,
             COALESCE(
               (SELECT email FROM users WHERE id = team_members.user_id),
@@ -729,6 +805,24 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     const q = `SELECT update_team_member($1) AS team_member;`;
     const result = await db.query(q, [JSON.stringify(req.body)]);
+
+    const teamId = req.user?.team_id || null;
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "department_id")) {
+      const departmentId = req.body.department_id || null;
+      await db.query(
+        `UPDATE team_members SET department_id = $1::UUID WHERE id = $2::UUID AND team_id = $3::UUID;`,
+        [departmentId, req.params.id, teamId]
+      );
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "practice_id")) {
+      const practiceId = req.body.practice_id || null;
+      await db.query(
+        `UPDATE team_members SET practice_id = $1::UUID WHERE id = $2::UUID AND team_id = $3::UUID;`,
+        [practiceId, req.params.id, teamId]
+      );
+    }
 
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
@@ -835,14 +929,14 @@ export default class TeamMembersController extends WorklenzControllerBase {
 
     const member = data.invitation;
 
-    sendInvitationEmail(
+    void sendInvitationEmail(
       !member.is_new,
       req.user as IPassportSession,
       !member.is_new ? member.name : member.team_member_id,
       member.email,
       member.team_member_user_id,
       member.name || member.email?.split("@")[0],
-    );
+    ).catch(log_error);
 
     if (member.team_member_id) {
       NotificationsService.sendInvitation(

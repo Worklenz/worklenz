@@ -33,7 +33,9 @@ const MembersReportsTasksTab = ({ memberId }: MembersReportsTasksTabProps) => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
   const filteredTasks = useMemo(() => {
-    let filtered = tasksList.filter(task => task.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    let filtered = tasksList.filter(task =>
+      String(task?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     // Apply stat type filter if one is selected
     if (selectedStatType) {

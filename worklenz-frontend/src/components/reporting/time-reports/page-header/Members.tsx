@@ -631,47 +631,16 @@ const Members: React.FC = () => {
       <Badge count={selectedTeamLead ? 1 : 0} size="small" color="blue" offset={[-6, 6]}>
         <Button
           loading={loadingMembers}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            height: '32px',
-            fontSize: '12px',
-            borderColor: selectedTeamLead ? (isDark ? '#1890ff' : '#1890ff') : colors.buttonBorder,
-            color: selectedTeamLead ? (isDark ? '#1890ff' : '#1890ff') : colors.buttonText,
-            fontWeight: activeFiltersCount > 0 || selectedTeamLead ? 600 : 400,
-            transition: 'all 0.2s ease-in-out',
-            backgroundColor: selectedTeamLead ? (isDark ? '#001529' : '#f6ffed') : colors.buttonBg,
-            borderRadius: '8px',
-            padding: '4px 12px',
-            boxShadow: selectedTeamLead
-              ? `0 2px 4px ${isDark ? 'rgba(24, 144, 255, 0.2)' : 'rgba(24, 144, 255, 0.1)'}`
-              : 'none',
-          }}
-          onMouseEnter={e => {
-            if (!selectedTeamLead) {
-              e.currentTarget.style.backgroundColor = isDark ? '#262626' : '#f0f0f0';
-            }
-          }}
-          onMouseLeave={e => {
-            if (!selectedTeamLead) {
-              e.currentTarget.style.backgroundColor = colors.buttonBg;
-            }
-          }}
+          disabled={loadingMembers}
+          size="small"
+          style={{ fontSize: 12, borderRadius: 7 }}
         >
-          <FilterOutlined
-            style={{
-              fontSize: '14px',
-              color: selectedTeamLead ? (isDark ? '#1890ff' : '#1890ff') : colors.buttonText,
-            }}
-          />
           <span>{getButtonText()}</span>
           {loadingTeamLeads && isAdmin && <Spin size="small" style={{ marginLeft: '4px' }} />}
           <CaretDownFilled
             style={{
-              fontSize: '10px',
-              marginLeft: '2px',
-              color: selectedTeamLead ? (isDark ? '#1890ff' : '#1890ff') : colors.buttonText,
+              fontSize: 10,
+              marginLeft: 4,
               transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
               transition: 'transform 0.2s ease-in-out',
             }}

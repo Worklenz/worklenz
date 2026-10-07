@@ -22,12 +22,13 @@
     "compile": "tsc --build tsconfig.prod.json",
     "compile:dev": "tsc --build tsconfig.json",
     "compile:prod": "tsc --build tsconfig.prod.json",
-    "copy": "npm run copy:assets && npm run copy:views && npm run copy:config && npm run copy:shared && npm run copy:templates && npm run copy:docs",
+    "copy": "npm run copy:assets && npm run copy:views && npm run copy:config && npm run copy:shared && npm run copy:templates && npm run copy:release-notes && npm run copy:docs",
     "copy:assets": "npx cpx2 \"src/public/**\" build/public",
     "copy:views": "npx cpx2 \"src/views/**\" build/views",
     "copy:config": "npx cpx2 \".env\" build && npx cpx2 \"package.json\" build",
     "copy:shared": "npx cpx2 \"src/shared/postgresql-error-codes.json\" build/shared && npx cpx2 \"src/shared/sample-data.json\" build/shared && npx cpx2 \"src/shared/templates/**\" build/shared/templates",
     "copy:templates": "npx cpx2 \"worklenz-email-templates/**\" build/worklenz-email-templates",
+    "copy:release-notes": "npx cpx2 \"release-notes/**\" build/release-notes",
     "copy:docs": "npx cpx2 \"src/docs/**\" build/docs",
     "watch": "concurrently \"npm run watch:ts\" \"npm run watch:assets\"",
     "watch:ts": "tsc --build tsconfig.json --watch",
@@ -45,7 +46,9 @@
     "migrate:create": "node scripts/migrate.js create",
     "migrate:addons": "node scripts/migrate-addons.js",
     "build:addons": "node scripts/build-addons.js",
-    "migrate:bootstrap": "node scripts/migrate-bootstrap.js"
+    "migrate:bootstrap": "node scripts/migrate-bootstrap.js",
+    "migrate:reconcile-legacy-ids": "node scripts/reconcile-legacy-migration-ids.js",
+    "migrate:validate-ids": "node scripts/validate-migration-ids.js"
   },
   "jestSonar": {
     "reportPath": "coverage",
@@ -61,6 +64,7 @@
     "@slack/events-api": "^3.0.1",
     "@slack/interactive-messages": "^2.0.2",
     "@slack/web-api": "^7.11.0",
+    "archiver": "^7.0.1",
     "axios": "^1.6.0",
     "bcrypt": "^5.1.0",
     "bluebird": "^3.7.2",
@@ -81,14 +85,18 @@
     "express-rate-limit": "^6.8.0",
     "express-session": "^1.17.3",
     "express-validator": "^6.15.0",
+    "gray-matter": "^4.0.3",
     "helmet": "^6.2.0",
     "hpp": "^0.2.3",
     "http-errors": "^2.0.0",
+    "i18next": "^23.16.8",
+    "i18next-fs-backend": "^2.6.8",
     "jsonschema": "^1.4.1",
     "jsonwebtoken": "^9.0.1",
     "jwks-rsa": "^3.2.0",
     "libphonenumber-js": "^1.12.33",
     "lodash": "^4.17.21",
+    "marked": "^4.3.0",
     "mime-types": "^2.1.35",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
@@ -121,6 +129,7 @@
     "@babel/plugin-proposal-decorators": "^7.29.7",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.22.5",
+    "@types/archiver": "^6.0.4",
     "@types/bcrypt": "^5.0.0",
     "@types/bluebird": "^3.5.38",
     "@types/body-parser": "^1.19.2",
@@ -139,9 +148,11 @@
     "@types/fs-extra": "^9.0.13",
     "@types/hpp": "^0.2.2",
     "@types/http-errors": "^1.8.2",
+    "@types/i18next-fs-backend": "^1.1.5",
     "@types/jest": "^28.1.8",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/lodash": "^4.14.196",
+    "@types/marked": "^5.0.2",
     "@types/mime-types": "^2.1.1",
     "@types/morgan": "^1.9.4",
     "@types/multer": "^1.4.13",
@@ -186,5 +197,10 @@
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5",
     "yamljs": "^0.3.0"
+  },
+  "overrides": {
+    "passport-custom": {
+      "@types/express": "$@types/express"
+    }
   }
 }

@@ -151,7 +151,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
       >
         <TaskDrawerKey
           taskKey={taskFormViewModel?.task?.task_key || 'NEW-TASK'}
-          label={t('taskInfoTab.details.task-key')}
+          label={t('taskInfoTab.details.task-key', { defaultValue: 'Task Key' })}
         />
         {taskFormViewModel?.task && (
           <TaskDrawerPhaseSelector
@@ -160,7 +160,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           />
         )}
 
-        <Form.Item name="assignees" label={t('taskInfoTab.details.assignees')}>
+        <Form.Item name="assignees" label={t('taskInfoTab.details.assignees', { defaultValue: 'Assignees' })}>
           {!isGuest ? (
             <Flex gap={4} align="center">
               <Avatars
@@ -197,7 +197,7 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           <ConditionalProgressInput task={taskFormViewModel?.task as ITaskViewModel} form={form} />
         )}
 
-        <Form.Item name="priority" label={t('taskInfoTab.details.priority')}>
+        <Form.Item name="priority" label={t('taskInfoTab.details.priority', { defaultValue: 'Priority' })}>
           {taskFormViewModel?.task && (
             <TaskDrawerPrioritySelector task={taskFormViewModel.task as ITaskViewModel} />
           )}
@@ -207,19 +207,19 @@ const TaskDetailsForm = ({ taskFormViewModel = null, canCreateTask = true, isGue
           <TaskDrawerLabels task={taskFormViewModel.task as ITaskViewModel} t={t} isGuest={isGuest} />
         )}
 
-        <Form.Item name="billable" label={t('taskInfoTab.details.billable')}>
+        <Form.Item name="billable" label={t('taskInfoTab.details.billable', { defaultValue: 'Billable' })}>
           {taskFormViewModel?.task && (
             <TaskDrawerBillable task={taskFormViewModel.task as ITaskViewModel} disabled={isGuest} />
           )}
         </Form.Item>
 
-        <Form.Item name="recurring" label={t('taskInfoTab.details.recurring')}>
+        <Form.Item name="recurring" label={t('taskInfoTab.details.recurring', { defaultValue: 'Recurring' })}>
           {taskFormViewModel?.task && (
             <TaskDrawerRecurringConfig task={taskFormViewModel.task as ITaskViewModel} disabled={isGuest} />
           )}
         </Form.Item>
 
-        <Form.Item name="notify" label={t('taskInfoTab.details.notify')}>
+        <Form.Item name="notify" label={t('taskInfoTab.details.notify', { defaultValue: 'Notify' })}>
           {taskFormViewModel?.task && (
             <NotifyMemberSelector task={taskFormViewModel.task as ITaskViewModel} t={t} disabled={isGuest} />
           )}

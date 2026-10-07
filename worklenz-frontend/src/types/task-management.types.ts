@@ -34,9 +34,12 @@ export interface Task {
   parent_task_key?: string | null;
   parent_is_subtask?: boolean;  // true when parent itself has a parent — task is depth ≥ 2
   is_sub_task?: boolean; // Add this property
+  /** TVR-13: true when visible only as parent of an assigned subtask (view, no edit) */
+  assignee_scope_readonly?: boolean;
   is_parent_container?: boolean;
   parent_task_not_archived?: boolean;
   progress?: number;
+  progress_value?: number | null;
   weight?: number;
   color?: string;
   statusColor?: string;

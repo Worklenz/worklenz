@@ -14,13 +14,15 @@ import { useFinanceFeaturePreviews } from '@/components/upgrade/financeFeaturePr
 import { Navigate, useLocation } from 'react-router-dom';
 import { SuspenseFallback } from '@/components/suspense-fallback/suspense-fallback';
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
+import { useNavPreferences } from '@/features/navigation/useNavPreferences';
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 import PlannerScheduleView from '@/features/schedule/PlannerScheduleView';
 import PlannerTimelineView from '@/features/schedule/PlannerTimelineView';
 import PlannerWorkloadView from '@/features/schedule/PlannerWorkloadView';
-import { ControlOutlined, CalendarOutlined, InboxOutlined } from '@ant-design/icons';
+import { ControlOutlined, CalendarOutlined, InboxOutlined, FileOutlined } from '@ant-design/icons';
 import GuestRedirect from '@/guards/GuestRedirect';
+import { isSessionGuest } from '@/utils/guest-session';
 
 // Lazy load page components for better code splitting with chunk error handling
 const HomeLayout = lazy(
@@ -96,6 +98,12 @@ const TaskShortLinkRedirect = lazy(
     'TaskShortLinkRedirect'
   )
 );
+const CommentShortLinkRedirect = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/projects/projectView/CommentShortLinkRedirect'),
+    'CommentShortLinkRedirect'
+  )
+);
 const Unauthorized = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/unauthorized/unauthorized'),
@@ -127,6 +135,42 @@ const FinanceExpensesPage = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/finance-overview/FinanceExpensesPage'),
     'FinanceExpensesPage'
+  )
+);
+const FinanceBudgetsPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/finance-overview/FinanceBudgetsPage'),
+    'FinanceBudgetsPage'
+  )
+);
+const FinanceInvoicesPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/finance-overview/FinanceInvoicesPage'),
+    'FinanceInvoicesPage'
+  )
+);
+const FinanceBillableTimePage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/finance-overview/FinanceBillableTimePage'),
+    'FinanceBillableTimePage'
+  )
+);
+const FinanceUtilizationPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/finance-overview/FinanceUtilizationPage'),
+    'FinanceUtilizationPage'
+  )
+);
+const FinanceProfitabilityPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/finance-overview/FinanceProfitabilityPage'),
+    'FinanceProfitabilityPage'
+  )
+);
+const FinanceForecastsPage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/finance-overview/FinanceForecastsPage'),
+    'FinanceForecastsPage'
   )
 );
 // The Finance rail (unlike Home/Planner/Projects) doesn't mount a TaskDrawer
@@ -214,13 +258,14 @@ const FinanceRailLayout = () => {
   const location = useLocation();
   const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
   const financePreviews = useFinanceFeaturePreviews();
+  const { resolved: financeNavResolved } = useNavPreferences('finance');
 
   const activeKey = useMemo(() => {
     const rest = location.pathname.startsWith(FINANCE_BASE_PATH)
       ? location.pathname.slice(FINANCE_BASE_PATH.length).replace(/^\//, '')
       : '';
-    return rest || 'overview';
-  }, [location.pathname]);
+    return rest || financeNavResolved.activeDefaultKey;
+  }, [location.pathname, financeNavResolved.activeDefaultKey]);
 
   const lockedPreview = financePreviews[activeKey];
 
@@ -245,32 +290,10 @@ const FinanceRailLayout = () => {
   );
 };
 
-// Each wrapped in its own component (rather than inline JSX in the route
-// config) so it can call the translation hook — route `element`s can't call
-// hooks directly.
-const FinanceProfitabilityComingSoon = () => {
-  const previews = useFinanceFeaturePreviews();
-  return <FeatureUpgradePreview {...previews.profitability} showCta={false} />;
-};
-const FinanceBudgetsComingSoon = () => {
-  const previews = useFinanceFeaturePreviews();
-  return <FeatureUpgradePreview {...previews.budgets} showCta={false} />;
-};
-const FinanceInvoicesComingSoon = () => {
-  const previews = useFinanceFeaturePreviews();
-  return <FeatureUpgradePreview {...previews.invoices} showCta={false} />;
-};
-const FinanceBillableTimeComingSoon = () => {
-  const previews = useFinanceFeaturePreviews();
-  return <FeatureUpgradePreview {...previews['billable-time']} showCta={false} />;
-};
-const FinanceUtilizationComingSoon = () => {
-  const previews = useFinanceFeaturePreviews();
-  return <FeatureUpgradePreview {...previews.utilization} showCta={false} />;
-};
-const FinanceForecastsComingSoon = () => {
-  const previews = useFinanceFeaturePreviews();
-  return <FeatureUpgradePreview {...previews.forecasts} showCta={false} />;
+const WorklenzIndexRedirect = () => {
+  const authService = useAuthService();
+  const session = authService.getCurrentSession();
+  return <Navigate to={isSessionGuest(session) ? 'projects' : 'home'} replace />;
 };
 
 const mainRoutes: RouteObject[] = [
@@ -278,7 +301,7 @@ const mainRoutes: RouteObject[] = [
     path: '/worklenz',
     element: <MainLayout />,
     children: [
-      { index: true, element: <Navigate to="home" replace /> },
+      { index: true, element: <WorklenzIndexRedirect /> },
       {
         path: 'home',
         element: (
@@ -376,8 +399,9 @@ const mainRoutes: RouteObject[] = [
         path: 'projects',
         element: <SimpleRailLayout surfaceKey="projects" />,
         children: [
+          { index: true, element: <NavSurfaceIndexRedirect surfaceKey="projects" /> },
           {
-            index: true,
+            path: 'all-projects',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
                 <ProjectList />
@@ -451,13 +475,25 @@ const mainRoutes: RouteObject[] = [
         path: 'team-lead-reports',
         element: <SimpleRailLayout surfaceKey="team-lead-reports" />,
         children: [
+          // Mirror the projects/finance surfaces: the bare path redirects to the
+          // user's resolved default rail item, and every rail item is a real
+          // named route so SimpleRailLayout.handleSelect never lands on 404.
+          { index: true, element: <NavSurfaceIndexRedirect surfaceKey="team-lead-reports" /> },
           {
-            index: true,
+            path: 'overview',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
                 <TeamLeadGuard>
                   <TeamLeadReports />
                 </TeamLeadGuard>
+              </Suspense>
+            ),
+          },
+          {
+            path: 'export',
+            element: (
+              <Suspense fallback={<SuspenseFallback />}>
+                <ComingSoonPage title="Export" icon={<FileOutlined />} />
               </Suspense>
             ),
           },
@@ -488,6 +524,14 @@ const mainRoutes: RouteObject[] = [
         element: (
           <Suspense fallback={<SuspenseFallback />}>
             <TaskShortLinkRedirect />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'c/:commentId',
+        element: (
+          <Suspense fallback={<SuspenseFallback />}>
+            <CommentShortLinkRedirect />
           </Suspense>
         ),
       },
@@ -531,8 +575,9 @@ const mainRoutes: RouteObject[] = [
           </AdminGuard>
         ),
         children: [
+          { index: true, element: <NavSurfaceIndexRedirect surfaceKey="finance" /> },
           {
-            index: true,
+            path: 'overview',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
                 <FinanceOverviewPage />
@@ -543,7 +588,7 @@ const mainRoutes: RouteObject[] = [
             path: 'profitability',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
-                <FinanceProfitabilityComingSoon />
+                <FinanceProfitabilityPage />
               </Suspense>
             ),
           },
@@ -551,7 +596,7 @@ const mainRoutes: RouteObject[] = [
             path: 'budgets',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
-                <FinanceBudgetsComingSoon />
+                <FinanceBudgetsPage />
               </Suspense>
             ),
           },
@@ -559,7 +604,7 @@ const mainRoutes: RouteObject[] = [
             path: 'invoices',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
-                <FinanceInvoicesComingSoon />
+                <FinanceInvoicesPage />
               </Suspense>
             ),
           },
@@ -575,7 +620,7 @@ const mainRoutes: RouteObject[] = [
             path: 'billable-time',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
-                <FinanceBillableTimeComingSoon />
+                <FinanceBillableTimePage />
               </Suspense>
             ),
           },
@@ -583,7 +628,7 @@ const mainRoutes: RouteObject[] = [
             path: 'utilization',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
-                <FinanceUtilizationComingSoon />
+                <FinanceUtilizationPage />
               </Suspense>
             ),
           },
@@ -591,7 +636,7 @@ const mainRoutes: RouteObject[] = [
             path: 'forecasts',
             element: (
               <Suspense fallback={<SuspenseFallback />}>
-                <FinanceForecastsComingSoon />
+                <FinanceForecastsPage />
               </Suspense>
             ),
           },

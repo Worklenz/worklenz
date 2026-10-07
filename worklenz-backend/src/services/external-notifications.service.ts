@@ -63,7 +63,7 @@ export class ExternalNotificationsService {
       if (!baseUrl.startsWith("http://") && !baseUrl.startsWith("https://")) {
         baseUrl = `https://${baseUrl}`;
       }
-      const taskUrl = `${baseUrl}/worklenz/projects/${row.project_id}?task=${row.task_id}`;
+      const taskUrl = `${baseUrl}/worklenz/projects/${row.project_id}?task=${row.task_id}&from=notification`;
 
       return {
         task_id: row.task_id,

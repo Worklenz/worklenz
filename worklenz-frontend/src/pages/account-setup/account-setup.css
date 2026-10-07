@@ -1,149 +1,403 @@
 /* Account Setup Page Styles */
 
-/* Steps styling - using Ant Design theme tokens */
-.ant-steps-item-finish .ant-steps-item-icon {
-  border-color: var(--ant-color-primary) !important;
-  background-color: var(--ant-color-primary) !important;
+/* "Switch account" trigger - suppress AntD's default hover/focus/active
+   border, outline, background tint and click "wave" box-shadow so the
+   control stays flat (only the text/icon color reacts) */
+/* Switch-account avatar - override SingleAvatar's default letter-color +
+   border (scoped here rather than in the shared component, which is used
+   in 20+ other places) to match the wizard's blue and drop the border in
+   both themes. */
+.switch-account-trigger .ant-avatar,
+.switch-account-popover .ant-avatar {
+  background-color: #067efc !important;
+  border: none !important;
 }
 
-.ant-steps-item-icon {
-  width: 32px !important;
-  height: 32px !important;
-  margin: 0 8px 0 0 !important;
-  font-size: 16px !important;
-  line-height: 32px !important;
-  text-align: center !important;
-  border: 1px solid var(--ant-color-border) !important;
-  border-radius: 32px !important;
-  transition: all 0.3s !important;
-  background-color: var(--ant-color-bg-container) !important;
-  color: var(--ant-color-text) !important;
+.ant-btn.switch-account-trigger,
+.ant-btn.switch-account-trigger:hover,
+.ant-btn.switch-account-trigger:focus,
+.ant-btn.switch-account-trigger:focus-visible,
+.ant-btn.switch-account-trigger:active,
+.ant-btn-text.switch-account-trigger,
+.ant-btn-text.switch-account-trigger:hover,
+.ant-btn-text.switch-account-trigger:focus,
+.ant-btn-text.switch-account-trigger:focus-visible,
+.ant-btn-text.switch-account-trigger:active,
+.ant-btn-variant-text.switch-account-trigger,
+.ant-btn-variant-text.switch-account-trigger:hover,
+.ant-btn-variant-text.switch-account-trigger:focus,
+.ant-btn-variant-text.switch-account-trigger:focus-visible,
+.ant-btn-variant-text.switch-account-trigger:active {
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
-.ant-steps-item-wait .ant-steps-item-icon {
-  cursor: not-allowed;
-  opacity: 0.6;
+/* Disabled "Continue" - AntD's default disabled-button fill is a very faint
+   tint of black/white, which reads fine against a pure white/near-black
+   surface but nearly disappears against this page's #f5f5f5 (light) /
+   #141414 (dark) layout background. Give it an explicit, visibly distinct
+   fill in both themes instead. */
+.wiz-footer .ant-btn-primary[disabled],
+.wiz-footer .ant-btn-primary.ant-btn-disabled {
+  background-color: #d9d9d9 !important;
+  border-color: #d9d9d9 !important;
+  color: rgba(0, 0, 0, 0.35) !important;
+  opacity: 1 !important;
 }
 
-.ant-steps-item-process .ant-steps-item-icon {
-  border-color: var(--ant-color-primary) !important;
-  background-color: var(--ant-color-primary) !important;
-  color: var(--ant-color-white) !important;
+[data-theme='dark'] .wiz-footer .ant-btn-primary[disabled],
+[data-theme='dark'] .wiz-footer .ant-btn-primary.ant-btn-disabled {
+  background-color: #434343 !important;
+  border-color: #434343 !important;
+  color: rgba(255, 255, 255, 0.45) !important;
 }
 
-.progress-steps .ant-steps-item.ant-steps-item-process .ant-steps-item-title::after {
-  background-color: var(--ant-color-primary) !important;
-  width: 60px !important;
+/* ── Wizard shell ─────────────────────────────────── */
+/* Fixed to the viewport (not just min-height) so the header and footer stay
+   pinned in place on short screens - only .wiz-body scrolls internally when
+   its content doesn't fit, instead of the whole page scrolling. */
+.wiz-shell {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-size: 12px;
 }
 
-.ant-steps-item-title {
-  color: var(--ant-color-text) !important;
+.wiz-page-wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 
-.ant-steps-item-description {
-  color: var(--ant-color-text-secondary) !important;
+.wiz-header {
+  flex: 0 0 auto;
+  padding: 40px 24px 0;
 }
 
-/* Responsive layout */
-@media (max-width: 1000px) {
-  .progress-steps,
-  .step,
-  .step-content {
-    width: 90% !important;
-    max-width: 500px !important;
+/* Reserve room for the absolutely-positioned "Switch account" control
+   (icon-only below 640px, see .wiz-footer-utils breakpoint comment for the
+   same pattern) so a long translated subtitle can never run underneath it -
+   it ellipsizes instead (see .wiz-logo span below). */
+@media (max-width: 639px) {
+  .wiz-header {
+    padding-right: 88px;
   }
 }
 
-@media (max-width: 768px) {
-  .progress-steps,
-  .step,
-  .step-content {
-    width: 95% !important;
-    max-width: 400px !important;
+.wiz-logo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 22px;
+  min-width: 0;
+}
+
+.wiz-logo img {
+  flex-shrink: 0;
+}
+
+.wiz-logo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.wiz-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 40px 0 32px;
+}
+
+.wiz-h2 {
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.wiz-sub {
+  font-size: 13px;
+  margin-bottom: 22px;
+}
+
+.wiz-footer {
+  flex: 0 0 auto;
+  padding: 16px 0;
+  position: relative;
+}
+
+.wiz-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Theme & language switcher - pinned to the true right edge of the page
+   (matches the "Switch account" control at top-right), independent of the
+   640px-wide centered .wiz-page-wrap used by the rest of the footer. */
+.wiz-footer-utils {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* .wiz-page-wrap is fixed at 640px wide and centered, so the gutter between
+   its right edge and the viewport edge is only (viewport-640)/2. The utils
+   (~24px inset, up to ~170px wide once the language label is showing) need
+   roughly 180px of gutter to clear the Continue button - that requires a
+   viewport around 1000px+, not just >767px. Below that (including the
+   640-1000px range where the column looks "wide" but isn't actually full
+   viewport width), drop the utils out of flow and stack them under the
+   back/continue row instead of overlapping it. */
+@media (max-width: 1080px) {
+  .wiz-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .wiz-footer-utils {
+    position: static;
+    transform: none;
+    width: 100%;
+    justify-content: flex-end;
+    padding: 0 24px;
+    box-sizing: border-box;
   }
 }
 
-@media (max-width: 500px) {
-  .progress-steps {
-    display: none !important;
-  }
-
-  .step {
-    display: none !important;
-  }
-
-  .step-content {
-    width: 100% !important;
-    max-width: 300px !important;
-    padding: 0 1rem !important;
-  }
+/* ── Step indicator ───────────────────────────────── */
+/* No flex-wrap: 3 items x 110px (330px) is wider than the inner content
+   area on most phones (e.g. 375px viewport - 48px page padding = 327px).
+   Wrapping would break .wiz-step-line, which is positioned assuming a
+   single row. Items shrink together below 110px instead via flex-basis. */
+.wiz-steps {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 28px;
+  width: 100%;
 }
 
-/* Tasks step specific styles */
-.tasks-step .task-item-card {
-  transition: all 0.3s ease;
+.wiz-step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 110px;
+  position: relative;
 }
 
-.tasks-step .task-item-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+/* Colors for the circle/label/line are applied inline via the AntD `token`
+   object (see account-setup.tsx) rather than CSS custom properties: this app
+   does not enable AntD's cssVar mode, so --ant-color-* never resolves and
+   silently falls back to its hardcoded default in every theme. */
+.wiz-step-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  border-width: 2px;
+  border-style: solid;
+  transition: all 0.2s;
+  z-index: 1;
 }
 
-.tasks-step .task-input {
+.wiz-step-label {
+  font-size: 11px;
+  margin-top: 6px;
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  padding: 0 2px;
+}
+
+.wiz-step-line {
+  position: absolute;
+  top: 12px;
+  left: calc(50% + 13px);
+  width: calc(100% - 26px);
+  height: 2px;
+  z-index: 0;
+}
+
+/* ── Form fields ──────────────────────────────────── */
+.wiz-field-wrap {
+  margin-bottom: 18px;
+}
+
+.wiz-field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.wiz-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wiz-input-row .ant-input {
+  flex: 1;
+}
+
+.wiz-check-ok {
   font-size: 16px;
 }
 
-.tasks-step .task-input:focus {
-  box-shadow: none !important;
+.wiz-char-count {
+  font-size: 11.5px;
+  text-align: right;
+  margin-top: 4px;
 }
 
-/* Project step specific styles */
-.project-step .ant-input-affix-wrapper {
-  transition: all 0.3s ease;
+.wiz-smart-note {
+  font-size: 11.5px;
+  margin-top: 6px;
 }
 
-.project-step .ant-input-affix-wrapper:focus-within {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+.wiz-suggest-label {
+  font-size: 12px;
+  margin: 12px 0 8px;
 }
 
-.project-suggestion-button {
-  transition: all 0.2s ease;
+.wiz-divider-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  font-size: 12px;
+}
+
+/* --wiz-divider-color is set inline (see project-step.tsx) since pseudo-elements
+   can't be styled directly via the style prop. */
+.wiz-divider-or::before,
+.wiz-divider-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--wiz-divider-color, #e8e8e8);
+}
+
+/* ── Chips (popular starting points) ─────────────── */
+.wiz-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wiz-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: 16px;
+  padding: 6px 13px;
+  font-size: 12.5px;
   cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  user-select: none;
 }
 
-.project-suggestion-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.project-suggestion-button:active {
-  transform: translateY(0);
-}
-
-/* Organization step specific styles */
-.organization-step .ant-input-affix-wrapper {
-  transition: all 0.3s ease;
-}
-
-.organization-step .ant-input-affix-wrapper:focus-within {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
-  border-color: #1890ff;
-}
-
-.organization-suggestion-button {
-  transition: all 0.2s ease;
+/* ── Template picker ──────────────────────────────── */
+.wiz-browse-all {
+  font-size: 12.5px;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  margin-top: 12px;
 }
 
-.organization-suggestion-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.wiz-browse-all:hover {
+  text-decoration: underline;
 }
 
-.organization-suggestion-button:active {
-  transform: translateY(0);
+/* ── Invite team: email rows ──────────────────────── */
+.wiz-info-text {
+  font-style: italic;
+  font-size: 12px;
+  margin: -4px 0 18px;
 }
 
-/* Survey step animations */
+.wiz-email-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.wiz-email-row .ant-input {
+  flex: 1;
+}
+
+.wiz-row-status {
+  width: 20px;
+  text-align: center;
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+
+.wiz-row-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.wiz-row-remove:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #ff4d4f !important;
+}
+
+[data-theme='dark'] .wiz-row-remove:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wiz-add-row-btn {
+  font-size: 12.5px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 4px 0;
+  font-weight: 600;
+}
+
+/* Survey step animations (still used by SurveyPromptModal) */
 .survey-page-transition {
   animation: fadeInUp 0.4s ease-out;
 }

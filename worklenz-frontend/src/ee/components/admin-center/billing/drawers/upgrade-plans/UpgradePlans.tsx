@@ -229,7 +229,7 @@ const UpgradePlans = () => {
           const basePrice = isAnnual
             ? parseFloat(planData.annual_base_price || '0')
             : parseFloat(planData.monthly_base_price || '0');
-          const includedUsers = parseInt(planData.included_users) || 0;
+          const includedUsers = parseInt(planData.included_users || '0') || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const perUserPrice = isAnnual
             ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') *
@@ -246,7 +246,7 @@ const UpgradePlans = () => {
           const basePrice = isAnnual
             ? parseFloat(planData.annual_base_price || '0')
             : parseFloat(planData.monthly_base_price || '0');
-          const includedUsers = parseInt(planData.included_users) || 0;
+          const includedUsers = parseInt(planData.included_users || '0') || 0;
           const extraUsers = Math.max(0, teamSize - includedUsers);
           const perUserPrice = isAnnual
             ? parseFloat(planData.annual_per_user_price || planData.additional_user_price || '0') *

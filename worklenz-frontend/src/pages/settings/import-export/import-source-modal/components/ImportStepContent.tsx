@@ -3,6 +3,7 @@ import { message as antdMessage } from '@/shared/antd-imports';
 import { updateImportSource } from '@/api/imports';
 import type { ImportJob } from '@/api/imports';
 import type { ITaskStatusCategory } from '@/types/status.types';
+import type { TranslateFn, ThemeToken } from '../types';
 import { CsvMappingStepsContent } from './CsvMappingStepsContent';
 import { CsvReviewStepContent } from './CsvReviewStepContent';
 import { CsvSetupStepsContent } from './CsvSetupStepsContent';
@@ -15,8 +16,8 @@ interface ImportStepContentProps {
   lowerKey: string;
   isJira: boolean;
   authCompleted: boolean;
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
-  themeToken: any;
+  t: TranslateFn;
+  themeToken: ThemeToken;
   sourceLabel: string;
   source: { label: string };
   asanaWorkspaces: Array<{ id: string; name: string }>;
@@ -108,7 +109,7 @@ interface ImportStepContentProps {
   setUserEmails: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   addUsers: boolean;
   setAddUsers: React.Dispatch<React.SetStateAction<boolean>>;
-  csvRows: Record<string, any>[];
+  csvRows: Record<string, unknown>[];
   hideProjectSetup?: boolean;
   onCsvUploaded?: () => void;
 }

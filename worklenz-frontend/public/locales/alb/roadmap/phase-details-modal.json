@@ -31,6 +31,12 @@
   },
   "tasksInPhase": {
     "title": "Tasks in this Phase",
-    "noTasks": "No tasks in this phase"
+    "noTasks": "No tasks in this phase",
+    "priority": "Prioriteti",
+    "assignees": "Të caktuarit",
+    "dueDate": "Data e përfundimit",
+    "startDate": "Data e fillimit",
+    "noAssignees": "I pacaktuar",
+    "noDueDate": "Pa afat"
   }
 }

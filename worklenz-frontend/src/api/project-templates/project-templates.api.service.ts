@@ -17,6 +17,16 @@ export const projectTemplatesApiService = {
     const response = await apiClient.patch(`${rootUrl}/custom-template/${id}`, { name });
     return response.data;
   },
+
+  updateTemplateScope: async (
+    id: string,
+    scope: 'team' | 'organization'
+  ): Promise<IServerResponse<{ id: string; scope: string }>> => {
+    const response = await apiClient.patch(`${rootUrl}/custom-template/${id}/scope`, { scope }, {
+      headers: { 'X-Silent-Request': '1' },
+    });
+    return response.data;
+  },
   getWorklenzTemplates: async (): Promise<IServerResponse<IWorklenzTemplate[]>> => {
     const response = await apiClient.get(`${rootUrl}/worklenz-templates`);
     return response.data;

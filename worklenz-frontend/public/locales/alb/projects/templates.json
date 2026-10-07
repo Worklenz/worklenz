@@ -27,5 +27,12 @@
   "noTaskTemplatesStep1": "Navigoni në një projekt dhe hapeni.",
   "noTaskTemplatesStep2": "Zgjidhni detyrat duke përdorur opsionin Redaktim Masiv.",
   "noTaskTemplatesStep3": "Klikoni mbi Më Shumë Opsionet në shiritin e veprimeve masive dhe zgjidhni Krijo Shabllon Detyre.",
-  "noSearchResults": "Nuk ka shabllone që përputhen me kërkimin tuaj."
+  "noSearchResults": "Nuk ka shabllone që përputhen me kërkimin tuaj.",
+  "shareWithOrganization": "Ndaj me organizatën",
+  "organizationBadge": "Organizata",
+  "scopeUpdateSuccess": "Ndarja e shabllonit u përditësua.",
+  "scopeSharedSuccess": "Modeli i ndarë me organizatën.",
+  "scopeUnsharedSuccess": "Modeli nuk ndahet më me organizatën.",
+  "scopeUpdateError": "Dështoi përditësimi i ndarjes së shabllonit.",
+  "moreOptions": "Më shumë opsione"
 }

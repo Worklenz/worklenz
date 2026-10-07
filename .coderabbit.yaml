@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+    # By default CodeRabbit only reviews PRs targeting the default branch (main).
+    # Regex patterns for additional base branches to review.
+    base_branches:
+      - development
+      - main
+  path_filters:
+    # Vendored / built assets, not first-party source
+    - "!worklenz-backend/src/public/**"
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/build/**"

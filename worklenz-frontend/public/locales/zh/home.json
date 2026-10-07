@@ -103,7 +103,8 @@
     "assignees": "负责人",
     "searchMembers": "按姓名或邮箱搜索…",
     "noMembersFound": "未找到成员",
-    "time": "时间"
+    "time": "时间",
+    "markTimeOff": "标记请假 / 休假"
   },
   "homeCalendar": {
     "todayButton": "今天",
@@ -200,9 +201,9 @@
     "hoursLabel": "小时",
     "hoursPlaceholder": "0",
     "minutesLabel": "分钟",
-    "requiredDate": "* 日期",
-    "requiredStartTime": "* 开始时间",
-    "requiredEndTime": "* 结束时间",
+    "requiredDate": "日期",
+    "requiredStartTime": "开始时间",
+    "requiredEndTime": "结束时间",
     "workDescriptionLabel": "工作描述",
     "workDescriptionPlaceholder": "您做了什么工作？",
     "submitButton": "记录时间",
@@ -398,5 +399,15 @@
     "loadTasksError": "无法加载此项目的任务和货币。",
     "successMessage": "已添加任务固定成本",
     "errorMessage": "添加任务固定成本失败"
+  },
+  "timeOff": {
+    "timeOff": "请假",
+    "off": "休假",
+    "types": {
+      "vacation": "假期",
+      "sick": "病假",
+      "personal": "事假",
+      "other": "其他"
+    }
   }
 }

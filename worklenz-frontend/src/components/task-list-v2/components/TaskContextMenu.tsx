@@ -49,6 +49,7 @@ interface TaskContextMenuProps {
   position: { x: number; y: number };
   onClose: () => void;
   canCreateTask?: boolean;
+  onCopyToProject: () => void;
 }
 
 const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
@@ -57,9 +58,11 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
   position,
   onClose,
   canCreateTask = true,
+  onCopyToProject,
 }) => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation('task-list-table');
+  const { t: tDuplicate } = useTranslation('task-duplicate');
   const { socket } = useSocket();
   const authService = useAuthService();
   const currentSession = authService.getCurrentSession();
@@ -516,6 +519,22 @@ const TaskContextMenu: React.FC<TaskContextMenuProps> = ({
           >
             <CopyOutlined className="text-gray-500 dark:text-gray-400" />
             <span>{t('contextMenu.duplicateTask')}</span>
+          </button>
+        ),
+      },
+      {
+        key: 'copyToProject',
+        label: (
+          <button
+            onClick={canCreateTask && !task?.is_sub_task ? onCopyToProject : undefined}
+            disabled={!canCreateTask || task?.is_sub_task}
+            className={`flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left ${
+              !canCreateTask || task?.is_sub_task ? disabledCls : ''
+            }`}
+            title={task?.is_sub_task ? 'Only main tasks can be copied to other projects' : ''}
+          >
+            <CopyOutlined className="text-gray-500 dark:text-gray-400" />
+            <span>{tDuplicate('copyToProject.title', { defaultValue: 'Copy to project' })}</span>
           </button>
         ),
       },

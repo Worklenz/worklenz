@@ -31,6 +31,7 @@ import {
   fetchHolidaySettings,
   updateHolidaySettings,
   fetchCountriesWithStates,
+  fetchHolidays,
 } from '@/features/admin-center/admin-center.slice';
 
 const SettingsPage: React.FC = () => {
@@ -134,6 +135,22 @@ const SettingsPage: React.FC = () => {
     try {
       await dispatch(updateHolidaySettings(values)).unwrap();
       message.success(t('holidaySettingsSaved') || 'Holiday settings saved successfully');
+      
+      // Trigger holiday refetch after settings are saved
+      // This will cause the calendar to reload with new country holidays
+      // Don't await or throw errors from this - it happens in background
+      const currentYear = new Date().getFullYear();
+      dispatch(
+        fetchHolidays({
+          from_date: `${currentYear}-01-01`,
+          to_date: `${currentYear}-12-31`,
+          include_custom: true,
+          country_code: values.country_code,
+        })
+      ).catch(error => {
+        // Log but don't show error to user - holidays will load when calendar renders
+        logger.error('Error fetching holidays after settings update', error);
+      });
     } catch (error) {
       logger.error('Error updating holiday settings', error);
       message.error(t('errorSavingHolidaySettings') || 'Error saving holiday settings');

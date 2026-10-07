@@ -1,0 +1,337 @@
+{
+  "upgradeNowButton": "立即升级",
+  "comingSoonTag": "即将推出",
+  "clientPortalMockups": {
+    "requests": {
+      "statusAccepted": "已接受",
+      "statusPending": "待处理",
+      "statusRejected": "已拒绝"
+    },
+    "services": {
+      "statusActive": "活跃"
+    }
+  },
+  "cards": {
+    "finance": {
+      "overview": {
+        "title": "财务概览",
+        "description": "所有项目的预算、实际成本和差异汇总在一处。",
+        "features": [
+          "每个项目的预算与实际成本",
+          "整个投资组合的方差和利用率",
+          "需要注意的项目，自动标记",
+          "可导出至 Excel"
+        ]
+      },
+      "expenses": {
+        "title": "费用",
+        "description": "添加到整个团队的项目任务中的所有固定成本都在一个地方进行跟踪。",
+        "features": [
+          "记录任何任务的固定成本",
+          "按项目和受让人查看支出",
+          "包含在每个项目的财务汇总中",
+          "可导出的费用历史记录"
+        ]
+      },
+      "profitability": {
+        "title": "盈利能力",
+        "description": "此功能发布后，请立即查看按项目和团队划分的利润率。",
+        "features": [
+          "每个项目的收入与成本",
+          "利润率随时间的变化趋势",
+          "团队层面的盈利能力细分",
+          "出口就绪的盈利报告"
+        ]
+      },
+      "budgets": {
+        "title": "预算",
+        "description": "设置每个项目的预算并实时跟踪支出。",
+        "features": [
+          "项目预算规划",
+          "实时支出跟踪",
+          "超出预算警报",
+          "预算与实际报告"
+        ]
+      },
+      "invoices": {
+        "title": "发票",
+        "description": "无需离开 Worklenz 即可生成、发送和跟踪客户发票。",
+        "features": [
+          "根据跟踪的时间和费用创建发票",
+          "跟踪已付、待处理和逾期发票",
+          "面向客户的发票门户",
+          "付款状态一目了然"
+        ]
+      },
+      "billableTime": {
+        "title": "计费时间",
+        "description": "跟踪每个项目和团队成员的计费时间与非计费时间。",
+        "features": [
+          "可计费与不可计费细分",
+          "计费工时收入",
+          "按队友计费",
+          "可导出的计费时间表"
+        ]
+      },
+      "utilization": {
+        "title": "利用率",
+        "description": "查看您的团队的时间在活跃项目中的分配情况。",
+        "features": [
+          "按周或月划分的团队利用率",
+          "队友分配过多和不足",
+          "容量规划一目了然",
+          "随着时间的推移利用率趋势"
+        ]
+      },
+      "forecasts": {
+        "title": "预测",
+        "description": "根据您的活跃渠道预测未来的收入和成本。",
+        "features": [
+          "收入和成本预测",
+          "预计利润率",
+          "基于管道的预测",
+          "逐月预测趋势"
+        ]
+      },
+      "generic": {
+        "title": "财务",
+        "description": "在一个地方跟踪每个项目的盈利能力、预算、发票和费用。",
+        "features": [
+          "项目盈利跟踪",
+          "预算和预测",
+          "发票和费用跟踪",
+          "计费时间和利用率报告"
+        ]
+      }
+    },
+    "planner": {
+      "schedule": {
+        "title": "日程",
+        "description": "一目了然地查看整个团队的日程安排并分配工作。",
+        "features": [
+          "团队范围内的每周和每月计划表",
+          "拖动分配调度",
+          "自动标记容量冲突",
+          "分配工作时实时更新"
+        ]
+      },
+      "timeline": {
+        "title": "时间线",
+        "description": "在一个可缩放的时间表上规划每个项目。",
+        "features": [
+          "甘特式项目时间表",
+          "拖动调整开始和结束日期",
+          "跨项目依赖视图",
+          "从几天到几年"
+        ]
+      },
+      "workload": {
+        "title": "工作量",
+        "description": "在过度投入之前平衡整个团队的能力。",
+        "features": [
+          "每人分配时间与可用时间",
+          "分配过多和不足警报",
+          "跨活跃项目的容量规划",
+          "工作负载随时间变化的趋势"
+        ]
+      }
+    },
+    "clientPortal": {
+      "clients": {
+        "title": "客户",
+        "description": "为客户提供一个品牌门户来跟踪项目进度、共享文件并随时了解情况。",
+        "features": [
+          "用于共享项目进度的品牌客户门户",
+          "客户请求、批准和消息传递",
+          "面向客户的发票",
+          "无限的客户帐户"
+        ]
+      },
+      "requests": {
+        "title": "请求",
+        "description": "让客户无需离开门户即可提交和跟踪服务请求。",
+        "features": [
+          "客户提交的服务请求",
+          "在一处接受、拒绝或跟进",
+          "从提交到完成的状态跟踪",
+          "直接链接到所请求的服务"
+        ]
+      },
+      "services": {
+        "title": "服务",
+        "description": "发布客户可以请求的服务，并控制他们可以看到的内容。",
+        "features": [
+          "可请求服务的目录",
+          "每个服务的可见性控制",
+          "每项服务的请求量",
+          "在您的团队中分配一名服务所有者"
+        ]
+      },
+      "chats": {
+        "title": "消息",
+        "description": "直接从客户用于处理其他事务的同一个门户向客户发送消息。",
+        "features": [
+          "与客户直接消息传递",
+          "每个客户端一个对话线程",
+          "可搜索的对话历史记录",
+          "客户回复时的通知"
+        ]
+      },
+      "invoices": {
+        "title": "发票",
+        "description": "无需离开 Worklenz 即可创建、发送和跟踪客户发票。",
+        "features": [
+          "根据跟踪的时间和费用创建发票",
+          "跟踪已付、待处理和逾期发票",
+          "面向客户的发票门户",
+          "付款状态一目了然"
+        ]
+      },
+      "ticketing": {
+        "title": "工单",
+        "description": "让客户直接从他们的门户提出和跟踪支持请求。",
+        "features": [
+          "客户提交的支持票",
+          "票证状态跟踪和更新",
+          "内部笔记和作业",
+          "优先级和 SLA 标记"
+        ]
+      },
+      "settings": {
+        "title": "门户设置",
+        "description": "使用您自己的品牌定制您的客户门户。",
+        "features": [
+          "上传您自己的徽标",
+          "门户网站上的品牌标题",
+          "为客户提供一致的视觉识别",
+          "客户可查看公司详情"
+        ]
+      }
+    }
+  },
+  "financeMockups": {
+    "overview": {
+      "paginationText": "{{total}} 的 {{from}}-{{to}}",
+      "perPageText": "{{count}} / 页"
+    },
+    "profitability": {
+      "totalRevenue": "总收入",
+      "totalCost": "总成本",
+      "netProfit": "净利润",
+      "avgMargin": "平均。保证金",
+      "marginByProjectCard": "按项目划分的利润率"
+    },
+    "budgets": {
+      "totalBudget": "总预算",
+      "spent": "已用",
+      "remaining": "剩余",
+      "overBudget": "超出预算",
+      "budgetVsSpendCard": "按项目划分的预算与支出"
+    },
+    "invoices": {
+      "totalInvoiced": "已开具发票总额",
+      "paid": "已付款",
+      "pending": "待处理",
+      "overdue": "逾期",
+      "invoicesCard": "发票",
+      "invoiceNoColumn": "发票#",
+      "clientColumn": "客户",
+      "amountColumn": "金额",
+      "statusColumn": "状态"
+    },
+    "billableTime": {
+      "billableHours": "计费时间",
+      "nonBillableHours": "不可计费时间",
+      "billablePercent": "可计费%",
+      "billableRevenue": "可计费收入",
+      "byTeamMemberCard": "按团队成员计费时间",
+      "teamMemberColumn": "团队成员",
+      "billableHoursColumn": "计费时间"
+    },
+    "utilization": {
+      "avgUtilization": "平均。利用率",
+      "teamSize": "团队规模",
+      "overutilized": "过度使用",
+      "underutilized": "利用不足",
+      "byTeamMemberCard": "团队成员的利用",
+      "teamMemberColumn": "团队成员"
+    },
+    "forecasts": {
+      "forecastedRevenue": "预计收入",
+      "forecastedCost": "预计成本",
+      "projectedMargin": "预计利润",
+      "forecastWindow": "预测窗口",
+      "revenueTrendCard": "收入预测趋势"
+    },
+    "expenses": {
+      "pageTitle": "项目费用",
+      "pageSubtitle": "团队为项目任务添加的所有固定费用。",
+      "projectColumn": "项目",
+      "taskColumn": "任务",
+      "amountColumn": "金额",
+      "assigneeColumn": "负责人",
+      "dateColumn": "日期",
+      "rowsPerPage": "每页行数：{{count}}"
+    }
+  },
+  "ticketingMockup": {
+    "openTickets": "公开门票",
+    "inProgress": "进行中",
+    "resolvedToday": "今天解决了",
+    "avgResponseTime": "平均。响应时间",
+    "ticketsCard": "门票",
+    "ticketNoColumn": "票号#",
+    "clientColumn": "客户",
+    "subjectColumn": "主题",
+    "priorityColumn": "优先级",
+    "statusColumn": "状态",
+    "priorityHigh": "高",
+    "priorityMedium": "中等",
+    "priorityLow": "低",
+    "statusOpen": "打开",
+    "statusResolved": "已解决"
+  },
+  "plannerMockup": {
+    "chrome": {
+      "daysOption": "天",
+      "weeksOption": "周",
+      "monthsOption": "月",
+      "quartersOption": "宿舍",
+      "yearsOption": "年",
+      "dayOption": "日",
+      "weekOption": "周",
+      "monthOption": "月",
+      "membersOption": "成员",
+      "projectsOption": "项目",
+      "priority": "优先级",
+      "category": "类别",
+      "projectStatus": "项目状态",
+      "projectPriority": "项目优先级",
+      "taskLegend": "任务",
+      "projectBlockLegend": "项目块"
+    },
+    "schedule": {
+      "scheduledHours": "预定时间",
+      "membersScheduled": "会员预定",
+      "unassignedHours": "未分配的时间",
+      "overbookedMembers": "超额预订会员",
+      "memberColumn": "成员",
+      "thisWeekCard": "本周"
+    },
+    "timeline": {
+      "activeProjects": "活跃项目",
+      "onTrack": "步入正轨",
+      "atRisk": "有风险",
+      "avgCompletion": "平均。完成",
+      "projectTimelineCard": "项目时间表"
+    },
+    "workload": {
+      "totalCapacity": "总容量",
+      "allocatedHours": "分配时长",
+      "availableHours": "可用时间",
+      "overallocatedMembers": "超额分配的成员",
+      "utilColumn": "UTIL",
+      "teamTotalRow": "团队总计"
+    }
+  }
+}

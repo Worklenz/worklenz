@@ -6,7 +6,6 @@ import {
   Row,
   Statistic,
   Table,
-  Tag,
   Avatar,
   Button,
   Input,
@@ -22,6 +21,7 @@ import {
   FilterOutlined,
   MoreOutlined,
 } from '@/shared/antd-imports';
+import PortalStatusTag from '@/ee/components/client-portal/PortalStatusTag';
 
 const { Title, Text } = Typography;
 
@@ -33,12 +33,6 @@ const FAKE_CLIENTS = [
   { key: '4', name: 'Vertex Manufacturing', email: undefined, contact: 'Liam Carter', status: 'expired', projects: 6 },
   { key: '5', name: 'Northwind Studio', email: undefined, contact: 'Sofia Marchetti', status: 'not_invited', projects: 0 },
 ];
-
-const statusColor: Record<string, string> = {
-  active: 'green',
-  not_invited: 'default',
-  expired: 'red',
-};
 
 const ClientsPreviewMockup: React.FC = () => {
   const { t } = useTranslation('client-portal-clients');
@@ -66,7 +60,9 @@ const ClientsPreviewMockup: React.FC = () => {
     {
       title: t('portalStatusColumn', { defaultValue: 'Portal Status' }),
       dataIndex: 'status',
-      render: (status: string) => <Tag color={statusColor[status]}>{statusLabel[status]}</Tag>,
+      render: (status: string) => (
+        <PortalStatusTag status={status} label={statusLabel[status]} />
+      ),
     },
     { title: t('assignedProjectsColumn', { defaultValue: 'Assigned Projects' }), dataIndex: 'projects' },
     {

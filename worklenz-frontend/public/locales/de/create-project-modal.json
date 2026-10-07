@@ -34,5 +34,10 @@
   "csvImportSelected": "CSV-Aufgabenimport ausgewählt",
   "csvImportHint": "Ordnen Sie CSV-Felder zu und importieren Sie Aufgaben, nachdem Sie dieses Projekt konfiguriert haben.",
   "csvImportFooterHint": "Sie ordnen CSV-Felder zu, bevor dieses Projekt erstellt wird.",
-  "continueToCsvImport": "Weiter zum CSV-Import"
+  "continueToCsvImport": "Weiter zum CSV-Import",
+  "customizeNo": "Nein",
+  "customizeYes": "Ja, anpassen",
+  "customizeFooterQuestion": "Vor dem Erstellen anpassen?",
+  "customizeNoHint": "Jetzt erstellen und Projekt öffnen",
+  "customizeYesHint": "Zuerst Kunde, Status, Termine und mehr festlegen"
 }

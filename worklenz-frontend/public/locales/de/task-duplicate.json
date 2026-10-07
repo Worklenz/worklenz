@@ -12,5 +12,31 @@
     "subscribers": "Abonentët"
   },
   "duplicate": "Dyfisho",
-  "cancel": "Anulo"
+  "cancel": "Anulo",
+  "copyToProject": {
+    "title": "Aufgabe in Projekt kopieren",
+    "selectProject": "Zielprojekt auswählen",
+    "confirm": "Aufgabe kopieren",
+    "copyTask": "Aufgabe kopieren",
+    "checkDifferences": "Unterschiede prüfen",
+    "check": "Unterschiede prüfen",
+    "checking": "Unterschiede werden geprüft...",
+    "confirmDifferences": "Hinzufügen und kopieren",
+    "differencesFound": "Diese Spalten fehlen im Zielprojekt.",
+    "missingPhasesFound": "Diese Phasen fehlen im Zielprojekt.",
+    "statusMissing": "Status \"{{sourceStatus}}\" ist im Zielprojekt nicht vorhanden. Die Aufgabe wird dem Hauptstatus \"{{destinationStatus}}\" zugewiesen.",
+    "createMissingItems": "Fehlende Spalten und Phasen erstellen",
+    "createMissingColumns": "Fehlende Spalten erstellen",
+    "cancel": "Abbrechen",
+    "cancelDifferences": "Kopieren abbrechen",
+    "success": "Aufgabe erfolgreich kopiert",
+    "openTask": "Aufgabe öffnen",
+    "loadError": "Zugängliche Projekte konnten nicht geladen werden.",
+    "noProjects": "Keine anderen zugänglichen Projekte gefunden.",
+    "noDifferencesFound": "Das Zielprojekt enthält alle erforderlichen Spalten und Phasen.",
+    "copyDependencies": "Abhängigkeitsaufgaben kopieren",
+    "copyDependenciesDescription": "Beziehen Sie beim Kopieren dieser Aufgabe in das Zielprojekt alle abhängigen Aufgaben ein.",
+    "dependenciesInfo": "Diese Aufgabe hat Abhängigkeiten. Die abhängigen Aufgaben werden ebenfalls in das Zielprojekt kopiert.",
+    "error": "Aufgabe konnte nicht kopiert werden"
+  }
 }

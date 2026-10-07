@@ -17,7 +17,8 @@
       "basePlan": "Fester Grundpreis mit inbegriffenen Benutzern plus zusätzliche Benutzerkosten. Ideal für größere Teams (6+ Benutzer) mit vorhersagbarer Abrechnung."
     },
     "autoPerUser": "Automatisch Pro-Benutzer-Preise für {{count}} Benutzer{{s}}",
-    "autoBase": "Automatisch Basis-Plan-Preise für {{count}} Benutzer{{s}}"
+    "autoBase": "Automatisch Basis-Plan-Preise für {{count}} Benutzer{{s}}",
+    "additionalUserCharge": "Beinhaltet {{included}} Benutzer. Jeder weitere Benutzer kostet ${{price}}/Monat."
   },
   "teamSize": {
     "label": "Teamgröße",
@@ -39,6 +40,37 @@
         "Community-Support"
       ],
       "forever": "Für immer"
+    },
+    "pro": {
+      "name": "Pro",
+      "description": "Für professionelle Teams",
+      "features": [
+        "✓ Unbegrenzte Projekte und Aufgaben",
+        "Erweiterte Aufgabenverwaltung",
+        "Gantt-Diagramme",
+        "Zeiterfassung",
+        "Benutzerdefinierte Felder",
+        "E-Mail-Support"
+      ],
+      "payPerUser": "Bezahlung pro Benutzer (1–5 Benutzer)",
+      "usersIncluded": "{{count}} Benutzer enthalten",
+      "maxUsers": "Bis zu {{count}} Benutzer max"
+    },
+    "business": {
+      "name": "Geschäft",
+      "description": "Für wachsende Organisationen",
+      "features": [
+        "Alles in Pro",
+        "Erweiterte Berichterstattung",
+        "Benutzerdefinierte Arbeitsabläufe",
+        "API-Zugriff",
+        "✓ Priority-Support",
+        "Erweiterte Integrationen"
+      ],
+      "payPerUser": "Bezahlung pro Benutzer (1–5 Benutzer)",
+      "usersIncluded": "{{count}} Benutzer enthalten",
+      "maxUsers": "Bis zu {{count}} Benutzer max",
+      "maxUsersAppSumo": "Bis zu 50 Benutzer max. (AppSumo Special)"
     },
     "proSmall": {
       "name": "Pro Klein",
@@ -171,7 +203,10 @@
     "unlimited": "Unbegrenzt"
   },
   "tips": {
-    "switchAnytime": "💡 Tipp: Sie können jederzeit zwischen Preismodellen in Ihren Abrechnungseinstellungen wechseln"
+    "switchAnytime": "💡 Tipp: Sie können jederzeit zwischen Preismodellen in Ihren Abrechnungseinstellungen wechseln",
+    "smallTeamPricing": "💰 Kleine Teams erhalten bessere Preise pro Benutzer",
+    "annualDiscount": "💸 Sparen Sie bis zu 30 % bei jährlicher Abrechnung",
+    "freeUpgrade": "🚀 Kostenlose Benutzer können jederzeit ein Upgrade durchführen"
   },
   "errors": {
     "loadingData": "Fehler beim Laden der Preisdaten",
@@ -222,6 +257,54 @@
       "complete": "Abschließen"
     }
   },
+  "ui": {
+    "loading": "Preisoptionen werden geladen...",
+    "selectTeamSize": "Wählen Sie Ihre Teamgröße",
+    "chooseBilling": "Wählen Sie die Abrechnungshäufigkeit",
+    "planSelected": "Plan ausgewählt",
+    "totalCost": "Gesamtkosten",
+    "perUserCost": "Kosten pro Benutzer",
+    "included": "Enthalten",
+    "popular": "Am beliebtesten",
+    "recommended": "Empfohlen",
+    "currentPlan": "Aktueller Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "change": "Plan ändern",
+    "specialOffer": "Sonderangebot",
+    "limitedTime": "Begrenzte Zeit",
+    "saveAmount": "Sparen Sie ${{amount}}",
+    "freeForever": "Kostenlos für immer",
+    "noCommitment": "Keine Verpflichtung, jederzeit kündbar",
+    "instantActivation": "Sofortige Aktivierung",
+    "supportIncluded": "Support inklusive"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "Aufgabenverwaltung",
+      "projectTracking": "Projektverfolgung",
+      "teamCollaboration": "Team-Zusammenarbeit",
+      "fileSharing": "Dateifreigabe",
+      "basicReporting": "Grundlegende Berichterstattung",
+      "mobileApp": "Zugriff auf mobile Apps"
+    },
+    "advanced": {
+      "ganttCharts": "Gantt-Diagramme",
+      "timeTracking": "Zeiterfassung",
+      "advancedReporting": "Erweiterte Berichterstattung",
+      "customFields": "Benutzerdefinierte Felder",
+      "apiAccess": "API-Zugriff",
+      "prioritySupport": "Vorrangiger Support"
+    },
+    "enterprise": {
+      "sso": "Single Sign-On (SSO)",
+      "advancedSecurity": "Erweiterte Sicherheit",
+      "customIntegrations": "Benutzerdefinierte Integrationen",
+      "dedicatedSupport": "Dedizierter Support",
+      "onPremise": "Bereitstellung vor Ort",
+      "slaSupport": "SLA-Unterstützung"
+    }
+  },
   "appsumo": {
     "exclusiveTitle": "🎉 AppSumo Exklusiv: 70% RABATT auf Business Pläne!",
     "timeRemaining": "{{days}}T {{hours}}St {{minutes}}Min verbleibend",
@@ -243,6 +326,12 @@
     "perYear": "/Jahr",
     "perMonth": "/Monat",
     "forUsers": " für {{count}} Benutzer{{s}}"
+  },
+  "ribbon": {
+    "recommended": "Empfohlen",
+    "popular": "Am beliebtesten",
+    "bestValue": "Bester Wert",
+    "appsumoSpecial": "AppSumo-Spezial"
   },
   "customFields": {
     "upgradeModalHeadline": "Erfassen Sie jedes Detail mit unbegrenzten benutzerdefinierten Feldern",

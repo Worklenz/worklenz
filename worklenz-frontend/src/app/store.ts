@@ -66,6 +66,7 @@ import adminCenterReducer from '@features/admin-center/admin-center.slice';
 // Features
 import dateReducer from '@features/date/dateSlice';
 import notificationReducer from '@/features/navbar/notificationSlice';
+import whatsNewReducer from '@/features/whats-new/whatsNewSlice';
 import buttonReducer from '@features/actionSetup/buttonSlice';
 import scheduleReducer from '../features/schedule/scheduleSlice';
 import scheduleRTKReducer from '../features/schedule/scheduleSliceRTK';
@@ -240,6 +241,9 @@ const coreReducers = {
 
   // Org Configuration
   orgConfigReducer: orgConfigReducer,
+
+  // What's New
+  whatsNewReducer: whatsNewReducer,
 };
 
 const safeAddonReducers: Record<string, (typeof addonReducers)[string]> = {};

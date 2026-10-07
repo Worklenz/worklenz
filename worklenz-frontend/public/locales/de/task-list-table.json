@@ -27,8 +27,8 @@
   "lastUpdatedColumn": "Zuletzt aktualisiert",
   "lastupdatedColumn": "Zuletzt aktualisiert",
   "reporterColumn": "Melder",
-  "dueTimeColumn": "Fällige Zeit",
   "moveColumnHandle": "Spalte verschieben",
+  "dueTimeColumn": "Fällige Zeit",
   "activeParentBadge": "Aktive übergeordnete Aufgabe",
   "activeParentTooltip": "Übergeordnete Aufgabe ist nicht archiviert",
   "todoSelectorText": "Zu erledigen",
@@ -41,8 +41,8 @@
   "labelsSelectorInputTip": "Enter drücken zum Erstellen!",
   "addTaskText": "Aufgabe hinzufügen",
   "addSubTaskText": "+ Unteraufgabe hinzufügen",
-  "addSubTaskInputPlaceholder": "Namen der Unteraufgabe eingeben und mit Enter speichern",
   "addTaskInputPlaceholder": "Aufgabe eingeben und Enter drücken",
+  "addSubTaskInputPlaceholder": "Namen der Unteraufgabe eingeben und mit Enter speichern",
   "noTasksInGroup": "Keine Aufgaben in dieser Gruppe",
   "dropTaskHere": "Aufgabe hier ablegen",
   "openButton": "Öffnen",
@@ -67,7 +67,12 @@
     "convertToSubTask": "In Unteraufgabe umwandeln",
     "convertToTask": "In Aufgabe umwandeln",
     "delete": "Löschen",
-    "searchByNameInputPlaceholder": "Nach Namen suchen"
+    "searchByNameInputPlaceholder": "Nach Namen suchen",
+    "deleteConfirmTitle": "Aufgabe löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteSubtaskConfirmMessage": "Möchten Sie diese Unteraufgabe wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "deleteConfirmOk": "Löschen",
+    "deleteConfirmCancel": "Abbrechen"
   },
   "setDueDate": "Fälligkeitsdatum festlegen",
   "setStartDate": "Startdatum festlegen",
@@ -132,8 +137,12 @@
       "updateSuccessMessage": "Benutzerdefinierte Spalte erfolgreich aktualisiert",
       "deleteSuccessMessage": "Benutzerdefinierte Spalte erfolgreich gelöscht",
       "deleteErrorMessage": "Fehler beim Löschen der benutzerdefinierten Spalte",
+      "deleteErrorMissingId": "Spalte kann nicht gelöscht werden: Fehlende UUID",
+      "hideFromTaskList": "Aus Aufgabenliste ausblenden",
+      "showInTaskList": "In der Aufgabenliste anzeigen",
       "createErrorMessage": "Fehler beim Erstellen der benutzerdefinierten Spalte",
-      "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte"
+      "updateErrorMessage": "Fehler beim Aktualisieren der benutzerdefinierten Spalte",
+      "typeCannotBeChanged": "Der Spaltentyp kann nach der Erstellung nicht geändert werden."
     },
     "fieldTypes": {
       "people": "Personen",
@@ -195,5 +204,11 @@
     "conflictTitle": "Timer läuft bereits",
     "conflictMessage": "Sie haben einen Timer für \"{{taskName}}\" im Projekt \"{{projectName}}\" laufen. Möchten Sie diesen Timer stoppen und einen neuen für diese Aufgabe starten?",
     "stopAndStart": "Stoppen & Neuen Timer starten"
+  },
+  "errors": {
+    "taskNotCompleted": "Aufgabe ist nicht abgeschlossen",
+    "completeTaskDependencies": "Bitte schließen Sie die Aufgabenabhängigkeiten ab, bevor Sie fortfahren",
+    "incompleteDependencies": "Unvollständige Abhängigkeiten!",
+    "someDependenciesNotCompleted": "Einige Aufgaben wurden nicht aktualisiert. Bitte stellen Sie sicher, dass alle abhängigen Aufgaben abgeschlossen sind, bevor Sie fortfahren."
   }
 }

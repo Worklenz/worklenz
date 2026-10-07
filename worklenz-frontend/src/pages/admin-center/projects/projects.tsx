@@ -52,14 +52,13 @@ const Projects: React.FC = () => {
     try {
       const res = await adminCenterApiService.getOrganizationProjects({
         ...requestParams,
-        total: 0,
       });
       if (res.done) {
         setTotal(res.body.total ?? 0);
         setProjects(res.body.data ?? []);
       }
     } catch (error) {
-      logger.error('Error fetching teams', error);
+      logger.error('Error fetching projects', error);
     } finally {
       setIsLoading(false);
     }
@@ -188,7 +187,7 @@ const Projects: React.FC = () => {
               fontSize: '16px',
             }}
           >
-            {projects.length} {t('subTitle')}
+            {total} {t('subTitle')}
           </span>
         }
         extra={

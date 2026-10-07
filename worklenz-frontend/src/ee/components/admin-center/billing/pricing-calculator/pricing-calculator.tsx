@@ -93,7 +93,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
           betterOption,
         };
       })
-      .filter(Boolean);
+      .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [pricingOptions]);
 
   // Notify parent component of pricing changes
@@ -175,7 +175,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                           <Space>
                             <span>{t('perUserPricing', 'Per User')}</span>
                             {comparison.betterOption === 'per_user' && (
-                              <Tag color="green" size="small">
+                              <Tag color="green">
                                 {t('recommended', 'Recommended')}
                               </Tag>
                             )}
@@ -203,7 +203,7 @@ const PricingCalculator: React.FC<PricingCalculatorProps> = ({
                           <Space>
                             <span>{t('flatRatePricing', 'Flat Rate')}</span>
                             {comparison.betterOption === 'flat_rate' && (
-                              <Tag color="green" size="small">
+                              <Tag color="green">
                                 {t('recommended', 'Recommended')}
                               </Tag>
                             )}

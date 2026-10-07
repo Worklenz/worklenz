@@ -1,0 +1,10 @@
+{
+  "title": "{{items}} Dienste",
+  "requestButton": "Stellen Sie eine Anfrage",
+  "modal": {
+    "title": "Stellen Sie eine Anfrage",
+    "submitButton": "Einreichen"
+  },
+  "uploadLogoText": "Klicken oder ziehen Sie Datei in diesen Bereich, um hochzuladen",
+  "uploadLogoAltText": "Unterstützung für einen einzelnen oder Massen-Upload. Das Hochladen von Unternehmensdaten oder anderen Banddateien ist strengstens untersagt"
+}

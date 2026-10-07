@@ -158,6 +158,11 @@ export const API_BASE_URL = '/api/v1';
 export const AUTH_API_BASE_URL = '/secure';
 export const CLIENT_PORTAL_API_BASE_URL = '/api/client-portal';
 
+// Fixed brand blue for primary button backgrounds on the login, signup, and
+// account-setup pages specifically - same value in both light and dark mode,
+// deliberately not tied to the app-wide theme.config.ts colorPrimary token.
+export const AUTH_PRIMARY_BUTTON_COLOR = '#067efc';
+
 export const DEFAULT_TASK_NAME = 'Untitled Task';
 
 // Fired on `document` whenever a task's fixed cost is added/changed (Quick
@@ -168,6 +173,7 @@ export const DEFAULT_TASK_NAME = 'Untitled Task';
 // task comments (see task-comments.tsx).
 export const TASK_FIXED_COST_CHANGED_EVENT = 'task-fixed-cost-changed';
 
+export const TODAY = 'TODAY';
 export const YESTERDAY = 'YESTERDAY';
 export const LAST_WEEK = 'LAST_WEEK';
 export const LAST_MONTH = 'LAST_MONTH';
@@ -299,6 +305,11 @@ export const IconsMap: { [x: string]: string } = {
 
 export const durations: IRPTDuration[] = [
   {
+    key: TODAY,
+    label: 'todayText',
+    dates: new Date(dayjs().format()).toString(),
+  },
+  {
     key: YESTERDAY,
     label: 'yesterdayText',
     dates: new Date(dayjs().subtract(1, 'day').format()).toString(),
@@ -309,7 +320,7 @@ export const durations: IRPTDuration[] = [
     dates:
       new Date(dayjs().subtract(7, 'day').format()).toString() +
       ' - ' +
-      new Date(dayjs().format()).toString(),
+      new Date(dayjs().subtract(1, 'day').format()).toString(),
   },
   {
     key: PREV_WEEK,
@@ -325,7 +336,7 @@ export const durations: IRPTDuration[] = [
     dates:
       new Date(dayjs().subtract(30, 'day').format()).toString() +
       ' - ' +
-      new Date(dayjs().format()).toString(),
+      new Date(dayjs().subtract(1, 'day').format()).toString(),
   },
   {
     key: PREV_MONTH,

@@ -29,3 +29,6 @@ yarn-error.log*
 
 # test run reports
 vitest-*.json
+
+# scripts cache
+scripts/.translation_cache.json

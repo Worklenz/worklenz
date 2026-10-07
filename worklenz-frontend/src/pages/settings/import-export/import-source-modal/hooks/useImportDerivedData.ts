@@ -1,13 +1,14 @@
 import React from 'react';
 import type { IProjectStatus } from '@/types/project/projectStatus.types';
+import type { TranslateFn } from '../types';
 
 interface UseImportDerivedDataArgs {
   fieldMappings: Record<string, string>;
-  csvRows: Record<string, any>[];
+  csvRows: Record<string, unknown>[];
   csvColumns: string[];
   worklenzStatuses: IProjectStatus[];
   defaultWorkTypes: IProjectStatus[];
-  t: (key: string, defaultValueOrOptions?: any, options?: any) => string;
+  t: TranslateFn;
   fieldMappingRows: Array<{ source_field: string; target_field: string; required?: boolean; include?: boolean }>;
   integrationType: 'direct' | 'csv';
   hierarchyRows: Array<{ source_level: string; target_level: string; position?: number }>;

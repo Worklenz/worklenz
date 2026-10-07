@@ -25,23 +25,39 @@ CREATE TABLE IF NOT EXISTS slack_workspaces (
     last_verified_at        TIMESTAMP WITH TIME ZONE
 );
 
-ALTER TABLE slack_workspaces
-    ADD CONSTRAINT slack_workspaces_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_workspaces'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE slack_workspaces ADD CONSTRAINT slack_workspaces_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE slack_workspaces
-    ADD CONSTRAINT slack_workspaces_organization_id_fk
-        FOREIGN KEY (organization_id) REFERENCES organizations
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_workspaces'::regclass AND conname = 'slack_workspaces_organization_id_fk'
+    ) THEN
+        ALTER TABLE slack_workspaces ADD CONSTRAINT slack_workspaces_organization_id_fk
+            FOREIGN KEY (organization_id) REFERENCES organizations ON DELETE CASCADE;
+    END IF;
 
-ALTER TABLE slack_workspaces
-    ADD CONSTRAINT slack_workspaces_created_by_fk
-        FOREIGN KEY (created_by) REFERENCES users
-            ON DELETE SET NULL;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_workspaces'::regclass AND conname = 'slack_workspaces_created_by_fk'
+    ) THEN
+        ALTER TABLE slack_workspaces ADD CONSTRAINT slack_workspaces_created_by_fk
+            FOREIGN KEY (created_by) REFERENCES users ON DELETE SET NULL;
+    END IF;
 
-ALTER TABLE slack_workspaces
-    ADD CONSTRAINT slack_workspaces_organization_team_unique
-        UNIQUE (organization_id, team_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_workspaces'::regclass AND conname = 'slack_workspaces_organization_team_unique'
+    ) THEN
+        ALTER TABLE slack_workspaces ADD CONSTRAINT slack_workspaces_organization_team_unique
+            UNIQUE (organization_id, team_id);
+    END IF;
+END $$;
 
 -- Create slack_users table to store Slack user information
 CREATE TABLE IF NOT EXISTS slack_users (
@@ -56,23 +72,39 @@ CREATE TABLE IF NOT EXISTS slack_users (
     updated_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE slack_users
-    ADD CONSTRAINT slack_users_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_users'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE slack_users ADD CONSTRAINT slack_users_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE slack_users
-    ADD CONSTRAINT slack_users_slack_workspace_id_fk
-        FOREIGN KEY (slack_workspace_id) REFERENCES slack_workspaces
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_users'::regclass AND conname = 'slack_users_slack_workspace_id_fk'
+    ) THEN
+        ALTER TABLE slack_users ADD CONSTRAINT slack_users_slack_workspace_id_fk
+            FOREIGN KEY (slack_workspace_id) REFERENCES slack_workspaces ON DELETE CASCADE;
+    END IF;
 
-ALTER TABLE slack_users
-    ADD CONSTRAINT slack_users_user_id_fk
-        FOREIGN KEY (user_id) REFERENCES users
-            ON DELETE SET NULL;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_users'::regclass AND conname = 'slack_users_user_id_fk'
+    ) THEN
+        ALTER TABLE slack_users ADD CONSTRAINT slack_users_user_id_fk
+            FOREIGN KEY (user_id) REFERENCES users ON DELETE SET NULL;
+    END IF;
 
-ALTER TABLE slack_users
-    ADD CONSTRAINT slack_users_workspace_slack_user_unique
-        UNIQUE (slack_workspace_id, slack_user_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_users'::regclass AND conname = 'slack_users_workspace_slack_user_unique'
+    ) THEN
+        ALTER TABLE slack_users ADD CONSTRAINT slack_users_workspace_slack_user_unique
+            UNIQUE (slack_workspace_id, slack_user_id);
+    END IF;
+END $$;
 
 -- Create slack_channels table to store Slack channel information
 CREATE TABLE IF NOT EXISTS slack_channels (
@@ -86,18 +118,31 @@ CREATE TABLE IF NOT EXISTS slack_channels (
     updated_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE slack_channels
-    ADD CONSTRAINT slack_channels_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channels'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE slack_channels ADD CONSTRAINT slack_channels_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE slack_channels
-    ADD CONSTRAINT slack_channels_slack_workspace_id_fk
-        FOREIGN KEY (slack_workspace_id) REFERENCES slack_workspaces
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channels'::regclass AND conname = 'slack_channels_slack_workspace_id_fk'
+    ) THEN
+        ALTER TABLE slack_channels ADD CONSTRAINT slack_channels_slack_workspace_id_fk
+            FOREIGN KEY (slack_workspace_id) REFERENCES slack_workspaces ON DELETE CASCADE;
+    END IF;
 
-ALTER TABLE slack_channels
-    ADD CONSTRAINT slack_channels_workspace_channel_unique
-        UNIQUE (slack_workspace_id, channel_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channels'::regclass AND conname = 'slack_channels_workspace_channel_unique'
+    ) THEN
+        ALTER TABLE slack_channels ADD CONSTRAINT slack_channels_workspace_channel_unique
+            UNIQUE (slack_workspace_id, channel_id);
+    END IF;
+END $$;
 
 -- Create slack_channel_configs table to link Worklenz projects with Slack channels
 CREATE TABLE IF NOT EXISTS slack_channel_configs (
@@ -111,28 +156,47 @@ CREATE TABLE IF NOT EXISTS slack_channel_configs (
     updated_at        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT slack_channel_configs_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channel_configs'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE slack_channel_configs ADD CONSTRAINT slack_channel_configs_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT slack_channel_configs_project_id_fk
-        FOREIGN KEY (project_id) REFERENCES projects
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channel_configs'::regclass AND conname = 'slack_channel_configs_project_id_fk'
+    ) THEN
+        ALTER TABLE slack_channel_configs ADD CONSTRAINT slack_channel_configs_project_id_fk
+            FOREIGN KEY (project_id) REFERENCES projects ON DELETE CASCADE;
+    END IF;
 
-ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT slack_channel_configs_slack_channel_id_fk
-        FOREIGN KEY (slack_channel_id) REFERENCES slack_channels
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channel_configs'::regclass AND conname = 'slack_channel_configs_slack_channel_id_fk'
+    ) THEN
+        ALTER TABLE slack_channel_configs ADD CONSTRAINT slack_channel_configs_slack_channel_id_fk
+            FOREIGN KEY (slack_channel_id) REFERENCES slack_channels ON DELETE CASCADE;
+    END IF;
 
-ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT slack_channel_configs_created_by_fk
-        FOREIGN KEY (created_by) REFERENCES users
-            ON DELETE SET NULL;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channel_configs'::regclass AND conname = 'slack_channel_configs_created_by_fk'
+    ) THEN
+        ALTER TABLE slack_channel_configs ADD CONSTRAINT slack_channel_configs_created_by_fk
+            FOREIGN KEY (created_by) REFERENCES users ON DELETE SET NULL;
+    END IF;
 
-ALTER TABLE slack_channel_configs
-    ADD CONSTRAINT slack_channel_configs_project_channel_unique
-        UNIQUE (project_id, slack_channel_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_channel_configs'::regclass AND conname = 'slack_channel_configs_project_channel_unique'
+    ) THEN
+        ALTER TABLE slack_channel_configs ADD CONSTRAINT slack_channel_configs_project_channel_unique
+            UNIQUE (project_id, slack_channel_id);
+    END IF;
+END $$;
 
 -- Create slack_notifications table to track sent notifications
 CREATE TABLE IF NOT EXISTS slack_notifications (
@@ -149,14 +213,23 @@ CREATE TABLE IF NOT EXISTS slack_notifications (
     sent_at             TIMESTAMP WITH TIME ZONE
 );
 
-ALTER TABLE slack_notifications
-    ADD CONSTRAINT slack_notifications_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_notifications'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE slack_notifications ADD CONSTRAINT slack_notifications_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE slack_notifications
-    ADD CONSTRAINT slack_notifications_config_id_fk
-        FOREIGN KEY (slack_channel_config_id) REFERENCES slack_channel_configs
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_notifications'::regclass AND conname = 'slack_notifications_config_id_fk'
+    ) THEN
+        ALTER TABLE slack_notifications ADD CONSTRAINT slack_notifications_config_id_fk
+            FOREIGN KEY (slack_channel_config_id) REFERENCES slack_channel_configs ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_slack_workspaces_organization_id ON slack_workspaces(organization_id);
@@ -181,19 +254,31 @@ CREATE TABLE IF NOT EXISTS slack_audit_log (
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP  NOT NULL
 );
 
-ALTER TABLE slack_audit_log
-    ADD CONSTRAINT slack_audit_log_pk
-        PRIMARY KEY (id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_audit_log'::regclass AND contype = 'p'
+    ) THEN
+        ALTER TABLE slack_audit_log ADD CONSTRAINT slack_audit_log_pk PRIMARY KEY (id);
+    END IF;
 
-ALTER TABLE slack_audit_log
-    ADD CONSTRAINT slack_audit_log_user_id_fk
-        FOREIGN KEY (user_id) REFERENCES users
-            ON DELETE SET NULL;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_audit_log'::regclass AND conname = 'slack_audit_log_user_id_fk'
+    ) THEN
+        ALTER TABLE slack_audit_log ADD CONSTRAINT slack_audit_log_user_id_fk
+            FOREIGN KEY (user_id) REFERENCES users ON DELETE SET NULL;
+    END IF;
 
-ALTER TABLE slack_audit_log
-    ADD CONSTRAINT slack_audit_log_organization_id_fk
-        FOREIGN KEY (organization_id) REFERENCES organizations
-            ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conrelid = 'slack_audit_log'::regclass AND conname = 'slack_audit_log_organization_id_fk'
+    ) THEN
+        ALTER TABLE slack_audit_log ADD CONSTRAINT slack_audit_log_organization_id_fk
+            FOREIGN KEY (organization_id) REFERENCES organizations ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- Create indexes for audit log queries
 CREATE INDEX IF NOT EXISTS idx_slack_audit_log_user_id ON slack_audit_log(user_id);

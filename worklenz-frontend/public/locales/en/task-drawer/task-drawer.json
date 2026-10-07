@@ -63,7 +63,11 @@
     },
     "customFields": {
       "title": "Custom Fields",
-      "autoSaveHint": "Changes save automatically when you leave a field."
+      "autoSaveHint": "Changes save automatically when you leave a field.",
+      "addCustomField": "Add a custom field",
+      "addCustomColumn": "Add Custom Column",
+      "showMoreFields": "Show {{count}} more fields",
+      "hideFields": "Hide fields"
     },
     "labels": {
       "labelInputPlaceholder": "Search or create",
@@ -101,7 +105,9 @@
       "chooseOrDropFileToUpload": "Choose or drop file to upload",
       "uploading": "Uploading...",
       "maxFileSizeText": "Max file size: {{maxSize}}MB",
-      "upgradeLinkText": "Need larger uploads? Upgrade"
+      "upgradeLinkText": "Need larger uploads? Upgrade",
+      "downloadFailed": "Failed to download file",
+      "deleteFailed": "Failed to delete attachment"
     },
     "comments": {
       "title": "Comments",
@@ -122,6 +128,8 @@
       "maxFilesError": "You can only upload a maximum of {{count}} files",
       "processFilesError": "Failed to process files",
       "addCommentError": "Please add a comment or attach files",
+      "commentTooLong": "Comment is too long. Please shorten it below {{max}} characters.",
+      "saveCommentError": "Failed to save comment. Please try again.",
       "enterHint": "Enter to send  ·  Shift+Enter for new line",
       "fileTooLargeToSend": "Files over 25MB in comments require the Business plan. Remove this file or upgrade to continue.",
       "historyLockedBoundary": "Comment history is limited to the last 90 days on this plan",
@@ -129,7 +137,10 @@
       "historyLockedBody": "Comments beyond 90 days are available on the Business plan.",
       "viewFullComments": "View comment history",
       "createdBy": "Created {{time}} by {{user}}",
-      "updatedTime": "Updated {{time}}"
+      "updatedTime": "Updated {{time}}",
+      "copyLink": "Copy Link",
+      "linkCopied": "Comment link copied",
+      "linkCopyFailed": "Failed to copy link"
     },
     "searchInputPlaceholder": "Search by name",
     "pendingInvitation": "Pending Invitation"
@@ -196,5 +207,14 @@
     "confirmMarkAsDone": "Yes, mark as done",
     "cancelMarkAsDone": "No, keep current status",
     "markAsDoneDescription": "You've set the progress to 100%. Would you like to update the task status to \"Done\"?"
+  },
+  "taskAccessDenied": {
+    "title": "No access",
+    "subtitle": "You can only open tasks assigned to you in this project. Ask a project manager to assign you if you need access.",
+    "close": "Close"
+  },
+  "assigneeScopeReadonly": {
+    "title": "View only",
+    "description": "You are assigned to a subtask of this task. You can view the parent for context but cannot edit it."
   }
 }

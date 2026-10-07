@@ -1,0 +1,22 @@
+{
+  "title": "Manage Departments",
+  "nameColumn": "Name",
+  "search": "Search departments",
+  "createDepartmentButton": "Create Department",
+  "createDepartmentDrawerTitle": "Create Department",
+  "updateDepartmentDrawerTitle": "Update Department",
+  "nameLabel": "Name",
+  "namePlaceholder": "Enter department name",
+  "nameRequiredError": "Department name is required",
+  "createButton": "Create",
+  "updateButton": "Update",
+  "editTooltip": "Edit",
+  "deleteTooltip": "Delete",
+  "deleteConfirmationTitle": "Are you sure to delete this department?",
+  "deleteConfirmationOk": "Delete",
+  "deleteConfirmationCancel": "Cancel",
+  "fetchDepartmentErrorMessage": "Failed to fetch department",
+  "createDepartmentErrorMessage": "Failed to create department",
+  "updateDepartmentErrorMessage": "Failed to update department",
+  "pinTooltip": "Pin to navbar"
+}

@@ -7,11 +7,11 @@ export interface PricingTier {
   additional_user_price?: string; // Legacy field, kept for compatibility
 
   // New API fields to match actual structure
-  monthly_base_price: string;
-  annual_base_price: string;
-  monthly_per_user_price: string;
-  annual_per_user_price: string;
-  included_users: string;
+  monthly_base_price?: string;
+  annual_base_price?: string;
+  monthly_per_user_price?: string;
+  annual_per_user_price?: string;
+  included_users?: string;
   max_users_limit?: string;
 
   monthly_plan_id?: string;

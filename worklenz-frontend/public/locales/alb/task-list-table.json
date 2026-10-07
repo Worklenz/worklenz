@@ -41,10 +41,10 @@
   "labelsSelectorInputTip": "Shtyp Enter për të krijuar!",
   "addTaskText": "Shto Detyrë",
   "addSubTaskText": "+ Shto Nën-Detyrë",
+  "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
   "addSubTaskInputPlaceholder": "Shkruaj emrin e nën-detyrës dhe shtyp Enter për ta ruajtur",
   "noTasksInGroup": "Nuk ka detyra në këtë grup",
   "dropTaskHere": "Lëshoje detyrën këtu",
-  "addTaskInputPlaceholder": "Shkruaj detyrën dhe shtyp Enter",
   "openButton": "Hap",
   "okButton": "Në rregull",
   "noLabelsFound": "Nuk u gjetën etiketa",
@@ -67,7 +67,12 @@
     "convertToSubTask": "Shndërro në Nën-Detyrë",
     "convertToTask": "Shndërro në Detyrë",
     "delete": "Fshi",
-    "searchByNameInputPlaceholder": "Kërko sipas emrit"
+    "searchByNameInputPlaceholder": "Kërko sipas emrit",
+    "deleteConfirmTitle": "Fshi detyrën",
+    "deleteConfirmMessage": "Jeni i sigurt që doni të fshini këtë detyrë? Kjo veprim nuk mund të zhbëhet.",
+    "deleteSubtaskConfirmMessage": "Jeni i sigurt që dëshironi ta fshini këtë nëndetyrë? Ky veprim nuk mund të zhbëhet.",
+    "deleteConfirmOk": "Fshi",
+    "deleteConfirmCancel": "Anulo"
   },
   "setDueDate": "Cakto datën e afatit",
   "setStartDate": "Cakto datën e fillimit",
@@ -132,8 +137,12 @@
       "updateSuccessMessage": "Kolona e personalizuar u përditësua me sukses",
       "deleteSuccessMessage": "Kolona e personalizuar u fshi me sukses",
       "deleteErrorMessage": "Dështoi në fshirjen e kolonës së personalizuar",
+      "deleteErrorMissingId": "Kolona nuk mund të fshihet: UUID mungon",
+      "hideFromTaskList": "Fshih nga lista e detyrave",
+      "showInTaskList": "Shfaq në listën e detyrave",
       "createErrorMessage": "Dështoi në krijimin e kolonës së personalizuar",
-      "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar"
+      "updateErrorMessage": "Dështoi në përditësimin e kolonës së personalizuar",
+      "typeCannotBeChanged": "Lloji i kolonës nuk mund të ndryshohet pas krijimit."
     },
     "fieldTypes": {
       "people": "Njerëz",
@@ -195,5 +204,11 @@
     "conflictTitle": "Kronómetr Tashë Në Ecuri",
     "conflictMessage": "Ju keni një kronómetr në ecuri për \"{{taskName}}\" në projektin \"{{projectName}}\". Dëshironi ta ndaloni atë kronómetr dhe të filloni një të ri për këtë detyrë?",
     "stopAndStart": "Ndalo & Fillo Kronómetr të Ri"
+  },
+  "errors": {
+    "taskNotCompleted": "Detyra nuk është përfunduar",
+    "completeTaskDependencies": "Ju lutemi përfundoni varësitë e detyrës para se të vazhdoni",
+    "incompleteDependencies": "Varësi të paplota!",
+    "someDependenciesNotCompleted": "Disa detyra nuk u përditësuan. Ju lutemi sigurohuni që të gjitha detyrat e varura të jenë përfunduar përpara se të vazhdoni."
   }
 }

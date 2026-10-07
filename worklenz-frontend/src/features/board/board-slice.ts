@@ -679,7 +679,7 @@ const boardSlice = createSlice({
       action: PayloadAction<{
         sectionId: string;
         subtask: IProjectTask;
-        mode: 'add' | 'delete';
+        mode: 'add' | 'delete' | 'update';
       }>
     ) => {
       const { sectionId, subtask, mode } = action.payload;
@@ -702,6 +702,13 @@ const boardSlice = createSlice({
 
           // Add the subtask
           task.sub_tasks.push({ ...subtask });
+        } else if (mode === 'update') {
+          const idx = task.sub_tasks.findIndex(t => t.id === subtask.id);
+          if (idx !== -1) {
+            task.sub_tasks[idx] = { ...task.sub_tasks[idx], ...subtask };
+          } else {
+            task.sub_tasks.push({ ...subtask });
+          }
         } else {
           // Remove the subtask
           task.sub_tasks = task.sub_tasks.filter(t => t.id !== subtask.id);

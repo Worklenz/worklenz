@@ -58,6 +58,8 @@ export const useProjectLinks = (active: boolean) => {
         // New links are ordered by created_at DESC, so show them on the first page.
         // If we're already on page 1 the effect won't re-trigger, so fetch manually;
         // otherwise let the page change drive the refetch to avoid a stale-closure fetch.
+        // Set loading here so the table shows a spinner immediately (no stale frame
+        // before the effect-driven fetch starts).
         if (pageIndex === 1) {
           await fetchLinks();
         } else {

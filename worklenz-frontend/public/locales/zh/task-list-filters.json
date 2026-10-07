@@ -60,6 +60,14 @@
   "filterActive": "个筛选器已激活",
   "clearAll": "清除全部",
   "clearing": "清除中...",
+  "exportFiltered": "导出",
+  "exportFilteredTooltip": "将筛选后的任务导出为 CSV",
+  "exportFilteredEmpty": "没有任务匹配当前筛选条件",
+  "exportFilteredSuccessTitle": "导出已下载",
+  "exportFilteredSuccessMessage": "已下载筛选任务的 CSV 文件。",
+  "exportFilteredFailedTitle": "导出失败",
+  "exportFilteredFailedMessage": "无法导出筛选后的任务，请重试。",
+  "exportFilteredBusinessPlanTooltip": "任务导出需要商业版。升级后即可导出。",
   "cancel": "取消",
   "search": "搜索",
   "groupedBy": "分组方式",
@@ -87,5 +95,7 @@
   "ascendingOrder": "升序",
   "descendingOrder": "降序",
   "currentSort": "当前排序：{{field}} {{order}}",
-  "apply": "应用"
+  "apply": "应用",
+  "showingYourTasksOnly": "Showing your tasks only",
+  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
 }

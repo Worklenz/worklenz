@@ -1,14 +1,31 @@
 import { Server, Socket } from "socket.io";
-import { log_error, notifyProjectUpdates } from "../util";
+import { log_error, notifyProjectUpdates, getLoggedInUserIdFromSocket } from "../util";
 import db from "../../config/db";
 import { SocketEvents } from "../events";
 import moment from "moment";
 import momentTime from "moment-timezone";
 import { getTaskDetails, logEndDateChange, logStartDateChange } from "../../services/activity-logs/activity-logs.service";
+import { logUnauthorizedSocketAccess } from "../authorization";
+import { canUserEditTask } from "../../shared/assignee-task-scope";
+import { ISocketSession } from "../../interfaces/socket-session";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 export async function on_gannt_drag_change(_io: Server, socket: Socket, data?: string) {
   try {
     const body = JSON.parse(data as string);
+
+    // ── Access control ────────────────────────────────────────────────────────
+    // User must be able to edit this task (not just view it) — mirrors
+    // on_schedule_task_drag_change.ts's assignee-scope gate.
+    const userId = getLoggedInUserIdFromSocket(socket);
+    const { session } = socket.request as ISocketSession;
+    const sessionUser = session?.passport?.user as IPassportSession | undefined;
+
+    const mayEdit = await canUserEditTask(userId, body.task_id, sessionUser);
+    if (!mayEdit) {
+      logUnauthorizedSocketAccess(socket, "GANNT_DRAG_CHANGE", "task", body.task_id);
+      return;
+    }
 
     const chartStartDate = moment(body.chart_start);
 

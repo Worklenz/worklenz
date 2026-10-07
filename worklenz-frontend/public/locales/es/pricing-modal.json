@@ -41,6 +41,37 @@
       ],
       "forever": "Para siempre"
     },
+    "pro": {
+      "name": "Pro",
+      "description": "Para equipos profesionales",
+      "features": [
+        "✓ Proyectos y tareas ilimitados",
+        "Gestión avanzada de tareas",
+        "diagramas de Gantt",
+        "Seguimiento de tiempo",
+        "Campos personalizados",
+        "Soporte por correo electrónico"
+      ],
+      "payPerUser": "Pago por usuario (1-5 usuarios)",
+      "usersIncluded": "{{count}} Usuarios incluidos",
+      "maxUsers": "Hasta {{count}} usuarios máx."
+    },
+    "business": {
+      "name": "Negocio",
+      "description": "Para organizaciones en crecimiento",
+      "features": [
+        "Todo en Pro",
+        "Informes avanzados",
+        "Flujos de trabajo personalizados",
+        "Acceso API",
+        "✓ Soporte prioritario",
+        "Integraciones avanzadas"
+      ],
+      "payPerUser": "Pago por usuario (1-5 usuarios)",
+      "usersIncluded": "{{count}} Usuarios incluidos",
+      "maxUsers": "Hasta {{count}} usuarios máx.",
+      "maxUsersAppSumo": "Hasta 50 usuarios como máximo (especial AppSumo)"
+    },
     "proSmall": {
       "name": "Pro Pequeño",
       "description": "Ideal para equipos pequeños",
@@ -172,13 +203,17 @@
     "unlimited": "Ilimitado"
   },
   "tips": {
-    "switchAnytime": "💡 Consejo: Puedes cambiar entre modelos de precios en cualquier momento desde tu configuración de facturación"
+    "switchAnytime": "💡 Consejo: Puedes cambiar entre modelos de precios en cualquier momento desde tu configuración de facturación",
+    "smallTeamPricing": "💰 Los equipos pequeños obtienen mejores tarifas por usuario",
+    "annualDiscount": "💸 Ahorra hasta un 30% con facturación anual",
+    "freeUpgrade": "🚀 Los usuarios gratuitos pueden actualizar en cualquier momento"
   },
   "errors": {
     "loadingData": "Error al cargar datos de precios",
     "loadingPlansRetry": "No se pudieron cargar los planes de precios. Por favor, actualiza la página.",
-    "calculando": "Calculando precios...",
-    "selectedPlan": "Plan seleccionado: {{plan}}"
+    "calculating": "Calculando precios...",
+    "selectedPlan": "Plan seleccionado: {{plan}}",
+    "calculando": "Calculando precios..."
   },
   "accessibility": {
     "availablePlans": "Planes Disponibles",
@@ -221,6 +256,54 @@
       "confirm": "Confirmar",
       "payment": "Pago",
       "complete": "Completar"
+    }
+  },
+  "ui": {
+    "loading": "Cargando opciones de precios...",
+    "selectTeamSize": "Selecciona el tamaño de tu equipo",
+    "chooseBilling": "Elige la frecuencia de facturación",
+    "planSelected": "Plan seleccionado",
+    "totalCost": "Costo total",
+    "perUserCost": "Costo por usuario",
+    "included": "Incluido",
+    "popular": "Más Popular",
+    "recommended": "Recomendado",
+    "currentPlan": "Plan Actual",
+    "upgrade": "Actualizar",
+    "downgrade": "Rebajar",
+    "change": "Cambiar Plan",
+    "specialOffer": "Oferta especial",
+    "limitedTime": "Tiempo limitado",
+    "saveAmount": "Ahorra ${{amount}}",
+    "freeForever": "Gratis para siempre",
+    "noCommitment": "Sin compromiso, cancela en cualquier momento",
+    "instantActivation": "Activación instantánea",
+    "supportIncluded": "Soporte incluido"
+  },
+  "features": {
+    "common": {
+      "taskManagement": "Gestión de tareas",
+      "projectTracking": "Seguimiento de proyectos",
+      "teamCollaboration": "Colaboración en Equipo",
+      "fileSharing": "Compartir archivos",
+      "basicReporting": "Informes básicos",
+      "mobileApp": "Acceso a la aplicación móvil"
+    },
+    "advanced": {
+      "ganttCharts": "Diagramas de Gantt",
+      "timeTracking": "Seguimiento de tiempo",
+      "advancedReporting": "Informes avanzados",
+      "customFields": "Campos personalizados",
+      "apiAccess": "Acceso API",
+      "prioritySupport": "Soporte prioritario"
+    },
+    "enterprise": {
+      "sso": "Inicio de sesión único (SSO)",
+      "advancedSecurity": "Seguridad avanzada",
+      "customIntegrations": "Integraciones personalizadas",
+      "dedicatedSupport": "Soporte dedicado",
+      "onPremise": "Implementación local",
+      "slaSupport": "Soporte de SLA"
     }
   },
   "appsumo": {

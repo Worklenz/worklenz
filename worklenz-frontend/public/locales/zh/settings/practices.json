@@ -1,0 +1,22 @@
+{
+  "title": "管理实践领域",
+  "nameColumn": "名称",
+  "search": "搜索实践领域",
+  "createPracticeButton": "创建实践领域",
+  "createPracticeDrawerTitle": "创建实践领域",
+  "updatePracticeDrawerTitle": "更新实践领域",
+  "nameLabel": "名称",
+  "namePlaceholder": "输入实践领域名称",
+  "nameRequiredError": "实践领域名称为必填项",
+  "createButton": "创建",
+  "updateButton": "更新",
+  "editTooltip": "编辑",
+  "deleteTooltip": "删除",
+  "deleteConfirmationTitle": "您确定要删除此实践领域吗？",
+  "deleteConfirmationOk": "删除",
+  "deleteConfirmationCancel": "取消",
+  "fetchPracticeErrorMessage": "获取实践领域失败",
+  "createPracticeErrorMessage": "创建实践领域失败",
+  "updatePracticeErrorMessage": "更新实践领域失败",
+  "pinTooltip": "固定到导航栏"
+}

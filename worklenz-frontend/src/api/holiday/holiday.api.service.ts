@@ -697,23 +697,17 @@ export const holidayApiService = {
     params: ICombinedHolidaysRequest & { country_code?: string }
   ): Promise<IServerResponse<IHolidayCalendarEvent[]>> => {
     try {
-      console.log('🔍 getCombinedHolidays called with params:', params);
       const year = new Date(params.from_date).getFullYear();
       let allHolidays: IHolidayCalendarEvent[] = [];
 
       // Get official holidays from API for all countries including Sri Lanka
       if (params.country_code) {
-        console.log(
-          `🌐 Fetching official holidays for country: ${params.country_code}, year: ${year}`
-        );
-
         try {
           // Fetch from backend API - this includes Poya days stored in the database
           const countryHolidaysRes = await holidayApiService.getCountryHolidays(
             params.country_code,
             year
           );
-          console.log('📅 Country holidays response:', countryHolidaysRes);
 
           if (countryHolidaysRes.done && countryHolidaysRes.body) {
             const officialHolidays = countryHolidaysRes.body
@@ -730,16 +724,15 @@ export const holidayApiService = {
                 is_editable: false,
               }));
 
-            console.log(`✅ Found ${officialHolidays.length} official holidays from API`);
             allHolidays.push(...officialHolidays);
           } else {
-            console.log('⚠️ No official holidays returned from API');
+            // No official holidays returned from API
           }
         } catch (error) {
-          console.error('❌ Error fetching official holidays from API:', error);
+          logger.error('Error fetching official holidays from API:', error);
         }
       } else {
-        console.log('⚠️ No country code provided, skipping official holidays');
+        // No country code provided, skipping official holidays
       }
 
       // Get organization holidays from database (includes both custom and country-specific)

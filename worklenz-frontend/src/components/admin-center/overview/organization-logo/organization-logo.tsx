@@ -405,7 +405,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
                       }
                     }}
                     title={
-                      <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                      <Flex align="center" justify="space-between" style={{ width: '100%' }}>
                         <Typography.Text strong>
                           {t('customLogoUpgradePopoverTitle', {
                             defaultValue: t('customLogoUpgradePopoverTitle'),
@@ -474,7 +474,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
                   placement="bottomLeft"
                   onOpenChange={setIsUpgradePopoverOpen}
                   title={
-                    <Flex align="center" justify="space-between" style={{ width: 240 }}>
+                    <Flex align="center" justify="space-between" style={{ width: '100%' }}>
                       <Typography.Text strong>
                         {t('customLogoUpgradePopoverTitle', {
                           defaultValue: t('customLogoUpgradePopoverTitle'),

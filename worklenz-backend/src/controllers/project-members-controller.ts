@@ -7,7 +7,7 @@ import db from "../config/db";
 import { ServerResponse } from "../models/server-response";
 import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
-import { getColor } from "../shared/utils";
+import { getColor, log_error } from "../shared/utils";
 import TeamMembersController from "./team-members-controller";
 import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
 import { updateUsers } from "../ee/shared/paddle-requests";
@@ -24,6 +24,20 @@ const normalizeProjectAccessLevel = (value: unknown): string => {
 };
 
 export default class ProjectMembersController extends WorklenzControllerBase {
+
+  private static async getInheritedAccessLevel(teamMemberId: string | undefined, teamId: string): Promise<string | undefined> {
+    if (!teamMemberId) return undefined;
+
+    const result = await db.query(
+      `SELECT CASE WHEN is_guest THEN 'GUEST' ELSE NULL END AS access_level
+       FROM team_members
+       WHERE id = $1 AND team_id = $2
+       LIMIT 1`,
+      [teamMemberId, teamId],
+    );
+
+    return result.rows[0]?.access_level;
+  }
 
   public static async checkIfUserAlreadyExists(owner_id: string, email: string) {
     if (!owner_id) throw new Error("Owner not found.");
@@ -100,7 +114,10 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     req.body.user_id = sessionUser.id;
     req.body.team_id = teamId;
     // Default to MEMBER access level - can be changed later if needed
-    req.body.access_level = normalizeProjectAccessLevel(req.body.access_level);
+    const inheritedAccessLevel = !req.body.access_level
+      ? await ProjectMembersController.getInheritedAccessLevel(req.body.team_member_id, teamId)
+      : undefined;
+    req.body.access_level = normalizeProjectAccessLevel(inheritedAccessLevel || req.body.access_level);
 
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
     const guestLimitError = await ProjectMembersController.getGuestLimitError(teamId, req.body.access_level, subscriptionData);
@@ -173,7 +190,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         // Send email invitation to existing team member for the project
         // This ensures they receive an email notification and can access the project
         if (teamMemberInfo.email && teamMemberInfo.name) {
-          sendInvitationEmail(
+          void sendInvitationEmail(
             true, // isNewMember = true (existing team member, not a new user)
             sessionUser as IPassportSession,
             teamMemberInfo.name, // userNameOrId = name for existing members
@@ -181,7 +198,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
             teamMemberInfo.user_id || teamMemberId, // userId - use team_member_id as fallback if user_id is null
             teamMemberInfo.name, // userName
             req.body.project_id // projectId - this allows them to access the project directly
-          );
+          ).catch(log_error);
         }
 
         return res.status(200).send(new ServerResponse(true, data.member));
@@ -1050,7 +1067,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           COUNT(DISTINCT p.id) AS projects_count,
           STRING_AGG(DISTINCT p.name, ', ') AS project_names,
           MIN(p.name) AS project_name,
-          MIN(pal.name) AS team_access,
+          MIN(pal.key) AS team_access,
           g.avatar_url,
           BOOL_OR(tm.active) AS active,
           CASE WHEN g.last_active > NOW() - INTERVAL '5 minutes'

@@ -121,7 +121,7 @@ const AllTasksProjectFilter = () => {
   }, [projects, selectedProjects, dispatch]);
 
   const filteredProjects = projects.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    String(p?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleToggle = (projectId: string) => {

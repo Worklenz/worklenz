@@ -4,7 +4,6 @@ import { useAuthService } from '@/hooks/useAuth';
 import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { ROLE_NAMES } from '@/types/roles/role.types';
-import { ILocalSession } from '@/types/auth/local-session.types';
 
 /**
  * Returns whether the current user can create and assign tasks in the current project.
@@ -28,9 +27,8 @@ export interface IProjectTaskCreationContext {
   is_guest?: boolean;
 }
 
-/**
- * Pure helper (no React hooks) — usable in unit tests and non-hook contexts.
- */
+import { ILocalSession } from '@/types/auth/local-session.types';
+
 export const getTaskCreationPermission = ({
   session,
   project,
@@ -50,8 +48,6 @@ export const getTaskCreationPermission = ({
     return { canCreateTask: true, isRestricted: false };
   }
 
-  // Determine effective restriction:
-  // Project-level overrides org-level when explicitly set.
   const projectRestricted = project?.restrict_task_creation ?? false;
   const orgRestricted = orgConfig?.restrict_task_creation ?? false;
   const isRestricted = projectRestricted || orgRestricted;

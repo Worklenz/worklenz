@@ -19,7 +19,7 @@
   "noTemplates": "No se encontraron plantillas.",
   "noYourLibrary": "No hay plantillas en tu biblioteca.",
   "previewTemplate": "Vista previa de plantilla",
-  "configureHint": "Estado, fechas, gerente y más se configuran dentro del proyecto después de la creación.",
+  "configureHint": "Puedes personalizar estado, cliente, gerente, fechas y más antes de crear.",
   "blankFooterHint": "Sin plantilla seleccionada - se creará en blanco.",
   "templateFooterHint": "La plantilla seleccionada se usará para este proyecto.",
   "cancel": "Cancelar",
@@ -34,5 +34,10 @@
   "csvImportSelected": "Importación de tareas CSV seleccionada",
   "csvImportHint": "Asigna los campos CSV e importa tareas después de configurar este proyecto.",
   "csvImportFooterHint": "Asignarás los campos CSV antes de crear este proyecto.",
-  "continueToCsvImport": "Continuar con la importación CSV"
+  "continueToCsvImport": "Continuar con la importación CSV",
+  "customizeNo": "No",
+  "customizeYes": "Sí, personalizar",
+  "customizeFooterQuestion": "¿Quieres personalizar antes de crear?",
+  "customizeNoHint": "Crear ahora y abrir el proyecto",
+  "customizeYesHint": "Configura primero cliente, estado, fechas y más"
 }

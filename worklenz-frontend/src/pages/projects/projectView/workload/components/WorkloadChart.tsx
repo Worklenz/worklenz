@@ -1,21 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
-import {
-  Flex,
-  Select,
-  Radio,
-  Avatar,
-  Progress,
-  Typography,
-  Badge,
-  Empty,
-  theme,
-  Tooltip,
-} from '@/shared/antd-imports';
+import { Flex, Select, Empty, theme } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { IWorkloadData, IWorkloadMember } from '@/types/workload/workload.types';
+import { IWorkloadData } from '@/types/workload/workload.types';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { formatTime } from '@/api/project-workload/project-workload.api.service';
 import { Bar } from 'react-chartjs-2';
+import PillToggleGroup from './PillToggleGroup';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -347,6 +337,10 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
     return {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'index' as const,
+        intersect: false,
+      },
       plugins: {
         legend: {
           display: chartType === 'comparison',
@@ -369,6 +363,22 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
                   `${t('chart.capacity')}: ${formatTime(member.expectedCapacity)}`,
                 ];
               }
+            },
+            afterBody: tooltipItems => {
+              const member = sortedMembers[tooltipItems[0]?.dataIndex];
+              if (!member) return [];
+
+              const statusText = member.isOverallocated
+                ? t('status.overallocated')
+                : member.isUnderutilized
+                  ? t('status.underutilized')
+                  : t('status.optimal');
+              const lines = [`${t('table.status')}: ${statusText}`];
+
+              if (chartType === 'comparison') {
+                lines.push(`${t('chart.utilization')}: ${member.utilizationPercentage}%`);
+              }
+              return lines;
             },
           },
         },
@@ -422,7 +432,7 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
   }
 
   return (
-    <Flex vertical gap={16}>
+    <Flex vertical gap={16} style={{ padding: 6, flex: 1, minHeight: 0 }}>
       <style>
         {`
           .workload-chart-container::-webkit-scrollbar {
@@ -442,15 +452,20 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
         `}
       </style>
       <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
-        <Radio.Group value={chartType} onChange={e => setChartType(e.target.value)}>
-          <Radio.Button value="bar">{t('chart.barChart')}</Radio.Button>
-          <Radio.Button value="comparison">{t('chart.comparison')}</Radio.Button>
-        </Radio.Group>
+        <PillToggleGroup<ChartType>
+          value={chartType}
+          onChange={setChartType}
+          options={[
+            { label: t('chart.barChart'), value: 'bar' },
+            { label: t('chart.comparison'), value: 'comparison' },
+          ]}
+        />
 
         <Select
+          size="small"
           value={sortBy}
           onChange={setSortBy}
-          style={{ width: 150 }}
+          style={{ width: 190 }}
           options={[
             { label: t('chart.sortByName'), value: 'name' },
             { label: t('chart.sortByWorkload'), value: 'workload' },
@@ -462,8 +477,8 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
       <div
         className="workload-chart-container"
         style={{
-          height: 400,
-          minHeight: 300,
+          flex: 1,
+          minHeight: 200,
           width: '100%',
           position: 'relative',
           overflowX: 'auto',
@@ -495,117 +510,6 @@ const WorkloadChart = ({ data }: WorkloadChartProps) => {
           />
         </div>
       </div>
-
-      <Flex vertical gap={12} style={{ marginTop: 16 }}>
-        <Typography.Title level={5}>{t('chart.memberDetails')}</Typography.Title>
-        {sortedMembers.map((member: any) => (
-          <MemberWorkloadCard key={member.id} member={member} capacityUnit="hours" />
-        ))}
-      </Flex>
-    </Flex>
-  );
-};
-
-const MemberWorkloadCard = ({
-  member,
-  capacityUnit,
-}: {
-  member: IWorkloadMember;
-  capacityUnit: 'hours' | 'points';
-}) => {
-  const { t } = useTranslation('workload');
-  const { alertThresholds } = useAppSelector(state => state.projectWorkload);
-  const { token } = theme.useToken();
-
-  // Calculate working days from weekly capacity and daily capacity
-  const workingDays =
-    member.dailyCapacity > 0 ? Math.round(member.weeklyCapacity / member.dailyCapacity) : 5;
-
-  const getStatusTooltip = () => {
-    if (member.isOverallocated) {
-      return t('calculations.statusTooltip.overallocated');
-    }
-    if (member.isUnderutilized) {
-      return t('calculations.statusTooltip.underutilized', {
-        threshold: alertThresholds.underutilization,
-      });
-    }
-    return t('calculations.statusTooltip.optimal', { threshold: alertThresholds.underutilization });
-  };
-
-  const status =
-    member.utilizationPercentage > alertThresholds.overallocation
-      ? 'exception'
-      : member.utilizationPercentage < alertThresholds.underutilization
-        ? 'normal'
-        : 'success';
-
-  const statusBadge = member.isOverallocated
-    ? { text: t('status.overallocated'), color: 'red' }
-    : member.isUnderutilized
-      ? { text: t('status.underutilized'), color: 'orange' }
-      : { text: t('status.optimal'), color: 'green' };
-
-  return (
-    <Flex
-      align="center"
-      gap={16}
-      style={{
-        padding: 12,
-        borderRadius: 8,
-        backgroundColor: token.colorFillAlter,
-        border: `1px solid ${token.colorBorder}`,
-      }}
-    >
-      <Avatar src={member.avatar} size={40}>
-        {member.name.charAt(0).toUpperCase()}
-      </Avatar>
-
-      <Flex vertical style={{ flex: 1 }}>
-        <Flex align="center" gap={8}>
-          <Typography.Text strong>{member.name}</Typography.Text>
-          <Tooltip title={getStatusTooltip()} placement="top">
-            <Badge color={statusBadge.color} text={statusBadge.text} />
-          </Tooltip>
-        </Flex>
-        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-          {member.role || member.email}
-        </Typography.Text>
-      </Flex>
-
-      <Flex vertical align="end" style={{ minWidth: 200 }}>
-        <Tooltip
-          title={t('calculations.utilizationTooltip', {
-            utilization: member.utilizationPercentage,
-            assignedHours: member.currentWorkload,
-            weeklyCapacity: member.expectedCapacity,
-            dailyHours: member.dailyCapacity,
-            workingDays: workingDays,
-          })}
-          placement="left"
-        >
-          <Typography.Text>
-            {formatTime(member.currentWorkload)} / {formatTime(member.expectedCapacity)}
-          </Typography.Text>
-        </Tooltip>
-        <Tooltip
-          title={t('calculations.utilizationTooltip', {
-            utilization: member.utilizationPercentage,
-            assignedHours: member.currentWorkload,
-            weeklyCapacity: member.expectedCapacity,
-            dailyHours: member.dailyCapacity,
-            workingDays: workingDays,
-          })}
-          placement="left"
-        >
-          <Progress
-            percent={member.utilizationPercentage}
-            size="small"
-            status={status}
-            style={{ marginBottom: 0 }}
-          />
-        </Tooltip>
-      </Flex>
     </Flex>
   );
 };

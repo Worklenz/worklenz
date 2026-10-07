@@ -184,7 +184,11 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
       >
         {/* Trial badge */}
         {isTrial && trialDaysLeft !== null && (
-          <Tooltip title={`${trialDaysLeft} days left in your trial`} placement="right" {...tooltipProps}>
+          <Tooltip
+            title={t('trialDaysLeft', { count: trialDaysLeft, defaultValue: '{{count}} days left in your trial' })}
+            placement="right"
+            {...tooltipProps}
+          >
             <button
               onClick={() => dispatch(toggleUpgradeModal())}
               style={{
@@ -212,7 +216,7 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
 
         {/* Upgrade button */}
         {isTrial && (
-          <Tooltip title="Upgrade to Pro" placement="right" {...tooltipProps}>
+          <Tooltip title={t('upgradeToPro', { defaultValue: 'Upgrade to Pro' })} placement="right" {...tooltipProps}>
             <button
               onClick={() => dispatch(toggleUpgradeModal())}
               style={{
@@ -322,7 +326,7 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
             </div>
           }
         >
-          <Tooltip title="Settings" placement="right" {...tooltipProps}>
+          <Tooltip title={t('settingsTooltip', { defaultValue: 'Settings' })} placement="right" {...tooltipProps}>
             <button
               style={{
                 ...BOTTOM_BTN,
@@ -350,7 +354,7 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
           </Tooltip>
         </Popover>
 
-        <Tooltip title="Get Mobile App" placement="right" {...tooltipProps}>
+        <Tooltip title={t('getMobileApp', { defaultValue: 'Get Mobile App' })} placement="right" {...tooltipProps}>
           <button
             onClick={() => setMobileModalOpen(true)}
             style={{
@@ -420,7 +424,7 @@ const PlannerLeftSidebar: React.FC<PlannerLeftSidebarProps> = ({ activeView, onV
             </div>
           }
         >
-          <Tooltip title="Help & Support" placement="right" {...tooltipProps}>
+          <Tooltip title={t('helpSupport', { defaultValue: 'Help & Support' })} placement="right" {...tooltipProps}>
             <button
               style={{
                 ...BOTTOM_BTN,

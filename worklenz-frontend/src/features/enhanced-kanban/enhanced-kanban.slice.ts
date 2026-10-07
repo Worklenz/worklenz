@@ -19,6 +19,7 @@ import { ITaskAssignee } from '@/types/project/projectTasksViewModel.types';
 import { InlineMember } from '@/types/teamMembers/inlineMember.types';
 import { ILabelsChangeResponse } from '@/types/tasks/taskList.types';
 import { RootState } from '@/app/store';
+import { Task } from '@/types/task-management.types';
 
 export enum IGroupBy {
   STATUS = 'status',
@@ -195,13 +196,56 @@ const priorityValueToName: Record<string, string> = {
   '2': 'high',
 };
 
+interface V3ApiTask extends Partial<Task> {
+  id: string;
+  originalStatusId?: string;
+  originalPriorityId?: string;
+  statusColor?: string;
+  priorityColor?: string;
+  priority_color?: string;
+  priority_color_dark?: string;
+  priority_value?: number;
+  phase_id?: string | null;
+  phase?: string;
+  start_date?: string;
+  end_date?: string;
+  completed_at?: string;
+  parent_task_id?: string;
+  parent_task_container_id?: string;
+  is_parent_container?: boolean;
+  parent_task_not_archived?: boolean;
+  comments_count?: number;
+  has_subscribers?: boolean;
+  attachments_count?: number;
+  has_dependencies?: boolean;
+  schedule_id?: string;
+  reporter?: string;
+  order?: number;
+  complete_ratio?: number;
+  all_labels?: Task['all_labels'];
+}
+
+interface V3ApiGroup {
+  id: string;
+  title: string;
+  color: string;
+  color_code_dark?: string;
+  category_id?: string;
+  start_date?: string;
+  end_date?: string;
+  tasks: V3ApiTask[];
+  todo_progress?: number;
+  doing_progress?: number;
+  done_progress?: number;
+}
+
 // Transform V3 API task to IProjectTask format
-const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTask => ({
+const transformV3TaskToProjectTask = (task: V3ApiTask, projectId: string): IProjectTask => ({
   id: task.id,
   name: task.title || task.name || '',
   task_key: task.task_key || '',
   project_id: projectId,
-  parent_task_id: task.parent_task_id || null,
+  parent_task_id: task.parent_task_id || undefined,
   parent_task_container_id: task.parent_task_container_id || undefined,
   is_parent_container: !!task.is_parent_container,
   parent_task_not_archived: !!task.parent_task_not_archived,
@@ -230,42 +274,42 @@ const transformV3TaskToProjectTask = (task: any, projectId: string): IProjectTas
   progress: task.progress ?? task.complete_ratio ?? 0,
   progress_value: task.progress_value ?? task.complete_ratio ?? 0,
   manual_progress: false,
-  assignees: (task.assignees || []).map((a: any) =>
+  assignees: (task.assignees || []).map((a: string | ITaskAssignee) =>
     typeof a === 'string' ? { team_member_id: a, id: a, project_member_id: '', name: '' } : a
   ),
   names: task.assignee_names || task.names || [],
   labels: task.labels || [],
-  all_labels: task.all_labels || [],
+  all_labels: (task.all_labels as IProjectTask['all_labels']) || [],
   sub_tasks_count: task.sub_tasks_count || 0,
   total_tasks_count: task.sub_tasks_count || 0,
   completed_count: 0,
   show_sub_tasks: task.show_sub_tasks || task.has_filtered_children || false,
-  sub_tasks: (task.sub_tasks || []).map((subtask: any) =>
-    transformV3TaskToProjectTask(subtask, projectId)
+  sub_tasks: (task.sub_tasks || []).map((subtask: Task) =>
+    transformV3TaskToProjectTask(subtask as V3ApiTask, projectId)
   ),
   sub_tasks_loading: false,
   created_at: task.createdAt || task.created_at,
   updated_at: task.updatedAt || task.updated_at,
-  completed_at: task.completedAt || task.completed_at,
+  completed_at: task.completedAt || task.completed_at || undefined,
   comments_count: task.comments_count || 0,
   has_subscribers: task.has_subscribers || false,
   attachments_count: task.attachments_count || 0,
   has_dependencies: task.has_dependencies || false,
-  schedule_id: task.schedule_id || null,
-  reporter: task.reporter || null,
+  schedule_id: task.schedule_id || undefined,
+  reporter: task.reporter || undefined,
   sort_order: task.order || 0,
 });
 
 // Transform V3 API group to ITaskListGroup format
-const transformV3GroupToTaskListGroup = (group: any, projectId: string): ITaskListGroup => ({
+const transformV3GroupToTaskListGroup = (group: V3ApiGroup, projectId: string): ITaskListGroup => ({
   id: group.id,
   name: group.title,
   color_code: group.color,
   color_code_dark: group.color_code_dark || group.color,
-  category_id: group.category_id || null,
-  start_date: group.start_date || null,
-  end_date: group.end_date || null,
-  tasks: group.tasks.map((task: any) => transformV3TaskToProjectTask(task, projectId)),
+  category_id: group.category_id || undefined,
+  start_date: group.start_date || undefined,
+  end_date: group.end_date || undefined,
+  tasks: group.tasks.map((task: V3ApiTask) => transformV3TaskToProjectTask(task, projectId)),
   todo_progress: group.todo_progress || 0,
   doing_progress: group.doing_progress || 0,
   done_progress: group.done_progress || 0,
@@ -310,8 +354,8 @@ export const fetchEnhancedKanbanGroups = createAsyncThunk(
       const response = await tasksApiService.getTaskListV3(config);
 
       // Transform V3 response to ITaskListGroup[] format expected by the kanban board
-      const transformedGroups: ITaskListGroup[] = (response.body?.groups ?? []).map((group: any) =>
-        transformV3GroupToTaskListGroup(group, projectId)
+      const transformedGroups: ITaskListGroup[] = (response.body?.groups ?? []).map((group: unknown) =>
+        transformV3GroupToTaskListGroup(group as V3ApiGroup, projectId)
       );
 
       return transformedGroups;
@@ -841,7 +885,7 @@ const enhancedKanbanSlice = createSlice({
       foundTask.progress_value = +complete_ratio; // Also update progress_value field
       foundTask.status = status_id;
       foundTask.status_category = statusCategory;
-      foundTask.completed_at = completed_at; // Update completed date
+      foundTask.completed_at = completed_at ?? undefined; // Update completed date
 
       // If grouped by status and the group changes, move the task
       if (state.groupBy === IGroupBy.STATUS && oldGroupId && oldGroupId !== status_id) {
@@ -1205,7 +1249,7 @@ const enhancedKanbanSlice = createSlice({
       action: PayloadAction<{
         sectionId: string;
         subtask: IProjectTask;
-        mode: 'add' | 'delete';
+        mode: 'add' | 'delete' | 'update';
       }>
     ) => {
       const { sectionId, subtask, mode } = action.payload;
@@ -1228,6 +1272,13 @@ const enhancedKanbanSlice = createSlice({
 
           // Add the subtask
           task.sub_tasks.push({ ...subtask });
+        } else if (mode === 'update') {
+          const subtaskIndex = task.sub_tasks.findIndex(t => t.id === subtask.id);
+          if (subtaskIndex !== -1) {
+            task.sub_tasks[subtaskIndex] = { ...task.sub_tasks[subtaskIndex], ...subtask };
+          } else {
+            task.sub_tasks.push({ ...subtask });
+          }
         } else {
           // Remove the subtask
           const subtaskIndex = task.sub_tasks.findIndex(t => t.id === subtask.id);

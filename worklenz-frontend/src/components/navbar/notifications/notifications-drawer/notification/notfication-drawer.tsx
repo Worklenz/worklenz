@@ -29,6 +29,7 @@ import { ITeamInvitationViewModel } from '@/types/notifications/notifications.ty
 import logger from '@/utils/errorLogger';
 import NotificationItem from './notification-item';
 import InvitationItem from './invitation-item';
+import { fetchReleaseById } from '@/features/whats-new/whatsNewSlice';
 import { notificationsApiService } from '@/api/notifications/notifications.api.service';
 import { profileSettingsApiService } from '@/api/settings/profile/profile-settings.api.service';
 import { INotificationSettings } from '@/types/settings/notifications.types';
@@ -217,6 +218,13 @@ const NotificationDrawer = () => {
   const goToUrl = async (event: React.MouseEvent, notification: IWorklenzNotification) => {
     event.preventDefault();
     event.stopPropagation();
+
+    if (notification.release_id) {
+      dispatch(toggleDrawer());
+      dispatch(fetchReleaseById(notification.release_id));
+      return;
+    }
+
     if (!notification.url) return;
 
     dispatch(toggleDrawer());
@@ -252,6 +260,7 @@ const NotificationDrawer = () => {
           task: notification.params?.task,
           tab: notification.params?.tab,
           comment: resolvedCommentId || undefined,
+          from: notification.params?.from || 'notification',
         };
         targetUrl = `${notification.url}${toQueryString(qParams)}`;
       }

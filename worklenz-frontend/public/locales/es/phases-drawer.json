@@ -9,6 +9,8 @@
   "dragToReorderPhases": "Arrastra las fases para reordenarlas. Cada fase puede tener un color diferente.",
   "enterNewPhaseName": "Ingresa el nombre de la nueva fase...",
   "addPhase": "Agregar Fase",
+  "startDate": "Fecha de inicio",
+  "endDate": "Fecha de fin",
   "noPhasesFound": "No se encontraron fases",
   "no": "No",
   "found": "encontrado",

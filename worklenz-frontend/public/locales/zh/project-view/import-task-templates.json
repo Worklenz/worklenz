@@ -7,5 +7,7 @@
   "templates": "模板",
   "remove": "移除",
   "cancel": "取消",
-  "import": "导入"
+  "import": "导入",
+  "subtasksLabel": "子任务",
+  "subtaskCountTooltip": "将导入 {{count}} 子任务"
 }

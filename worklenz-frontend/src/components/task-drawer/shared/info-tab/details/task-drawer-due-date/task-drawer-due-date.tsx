@@ -158,12 +158,12 @@ const handleDueTimeChange = useCallback(
 
   return (
     <>
-      <Form.Item name="dueDate" label={t('taskInfoTab.details.due-date')}>
+      <Form.Item name="dueDate" label={t('taskInfoTab.details.due-date', { defaultValue: 'Due Date' })}>
         <Flex align="center" gap={8}>
           {isShowStartDate && (
             <>
               <DatePicker
-                placeholder={t('taskInfoTab.details.start-date')}
+                placeholder={t('taskInfoTab.details.start-date', { defaultValue: 'Start Date' })}
                 disabledDate={(current: Dayjs) => disabledStartDate(current) ?? false}
                 onChange={handleStartDateChange}
                 value={isValidStartDate ? startDayjs : null}
@@ -175,7 +175,7 @@ const handleDueTimeChange = useCallback(
             </>
           )}
           <DatePicker
-            placeholder={t('taskInfoTab.details.end-date')}
+            placeholder={t('taskInfoTab.details.end-date', { defaultValue: 'End Date' })}
             disabledDate={(current: Dayjs) => disabledEndDate(current) ?? false}
             onChange={handleEndDateChange}
             value={isValidDueDate ? dueDayjs : null}
@@ -189,8 +189,8 @@ const handleDueTimeChange = useCallback(
             style={{ color: isShowStartDate ? 'red' : colors.skyBlue }}
           >
             {isShowStartDate
-              ? t('taskInfoTab.details.hide-start-date')
-              : t('taskInfoTab.details.show-start-date')}
+              ? t('taskInfoTab.details.hide-start-date', { defaultValue: 'Hide Start Date' })
+              : t('taskInfoTab.details.show-start-date', { defaultValue: 'Show Start Date' })}
           </Button>
         </Flex>
       </Form.Item>

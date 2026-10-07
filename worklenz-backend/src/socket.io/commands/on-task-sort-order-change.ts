@@ -9,6 +9,9 @@ import {UNMAPPED} from "../../shared/constants";
 import TasksControllerV2 from "../../controllers/tasks-controller-v2";
 import { assignMemberIfNot } from "./on-quick-assign-or-remove";
 import { verifyNonGuestProjectAccessSocket, logUnauthorizedSocketAccess } from "../authorization";
+import { canUserEditTask, isAssigneeScopeEditRestrictedForTask } from "../../shared/assignee-task-scope";
+import { ISocketSession } from "../../interfaces/socket-session";
+import { IPassportSession } from "../../interfaces/passport-session";
 
 interface ChangeRequest {
   from_index: number; // from sort_order
@@ -94,8 +97,26 @@ export async function on_task_sort_order_change(_io: Server, socket: Socket, dat
       return;
     }
 
+    const userId = getLoggedInUserIdFromSocket(socket);
+    if (data.task?.id && await isAssigneeScopeEditRestrictedForTask(userId, data.task.id)) {
+      return;
+    }
+
     // New simplified approach - use bulk updates if provided
     if (data.task_updates && data.task_updates.length > 0) {
+      // Every task named in the bulk payload must be individually editable —
+      // the array can carry task IDs beyond the single dragged task, so
+      // checking only data.task.id above is not enough (TVR-13).
+      const { session } = socket.request as ISocketSession;
+      const sessionUser = session?.passport?.user as IPassportSession | undefined;
+      for (const update of data.task_updates) {
+        const mayEdit = await canUserEditTask(userId, update.task_id, sessionUser);
+        if (!mayEdit) {
+          logUnauthorizedSocketAccess(socket, "TASK_SORT_ORDER_CHANGE", "task", update.task_id);
+          return;
+        }
+      }
+
       // Check dependencies for status changes
       if (data.group_by === GroupBy.STATUS && data.to_group) {
         const canContinue = await TasksControllerV2.checkForCompletedDependencies(data.task.id, data.to_group);

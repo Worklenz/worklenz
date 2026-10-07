@@ -3,6 +3,7 @@ import { InlineSuspenseFallback } from '@/components/suspense-fallback/suspense-
 import i18n from '@/i18n';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
 import { isFreeUser } from '@/ee/utils/subscription-utils';
+import { isUserGuest } from './project-view-guest';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 
@@ -200,25 +201,10 @@ export const updateTabLabels = () => {
 };
 
 /**
- * Check if user is a guest in the project
- * A guest user can only access Task List, Board, and Members views
- * @param currentProject - The project data
- * @returns true if user is a guest, false otherwise
- */
-export const isUserGuest = (currentProject?: IProjectViewModel | null): boolean => {
-  // Check if project has is_guest flag (to be added to project response)
-  if (currentProject && typeof currentProject === 'object' && 'is_guest' in currentProject) {
-    return (currentProject as any).is_guest === true;
-  }
-  return false;
-};
-
-/**
  * Get restricted views for guests
- * Guests can only access Task List, Board, and Members views
+ * Guests cannot access editing-oriented project views
  */
-const GUEST_RESTRICTED_VIEWS = ['roadmap', 'workload', 'project-insights-member-overview', 'finance', 'updates', 'all-attachments'];
-const GUEST_ALLOWED_VIEWS = ['tasks-list', 'board', 'members'];
+const GUEST_RESTRICTED_VIEWS = ['project-insights-member-overview', 'finance', 'updates', 'all-attachments'];
 
 // Function to get filtered tab items based on user permissions
 export const getFilteredTabItems = (
@@ -237,8 +223,8 @@ export const getFilteredTabItems = (
         return null; // Hide restricted views for guests
       }
 
-      // Hide roadmap tab when user cannot create/edit tasks
-      if (item.key === 'roadmap' && canCreateTask === false) {
+      // Guests can view Roadmap but cannot edit tasks there.
+      if (item.key === 'roadmap' && canCreateTask === false && !isGuest) {
         return null;
       }
 

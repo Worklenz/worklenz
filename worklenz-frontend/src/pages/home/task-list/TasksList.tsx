@@ -217,7 +217,7 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
       {
         key: 'name',
         title: renderSortableTitle(t('tasks.name', { defaultValue: 'Task Name' }), 'name'),
-        width: isMobile ? '26%' : '28%',
+        width: isMobile ? '30%' : '32%',
         render: (_, record) => (
           <div
             onClick={() => handleSelectTask(record)}
@@ -269,9 +269,12 @@ const TasksList: React.FC<TasksListProps> = React.memo(({ cardTitle }) => {
       {
         key: 'status',
         title: t('tasks.status', { defaultValue: 'Status' }),
-        width: '16%',
+        width: '10%',
+        ellipsis: true,
         render: (_, record) => (
-          <HomeTasksStatusDropdown task={record} teamId={record.team_id || ''} />
+          <div style={{ minWidth: 0, maxWidth: '100%', overflow: 'hidden' }}>
+            <HomeTasksStatusDropdown task={record} teamId={record.team_id || ''} />
+          </div>
         ),
       },
       {

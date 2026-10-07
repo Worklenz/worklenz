@@ -27,6 +27,10 @@ import logger from '@/utils/errorLogger';
 import TimerButton from './timers/TimerButton';
 import QuickActionButton from './quick-actions/QuickActionButton';
 import GlobalSearchButton from './global-search/GlobalSearchButton';
+import WhatsNewTag from '@/components/whats-new/WhatsNewTag';
+import WhatsNewModal from '@/components/whats-new/WhatsNewModal';
+import WhatsNewReleaseViewerModal from '@/components/whats-new/WhatsNewReleaseViewerModal';
+import { fetchCurrentRelease } from '@/features/whats-new/whatsNewSlice';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { useAppSelector } from '@/hooks/useAppSelector';
@@ -39,6 +43,7 @@ import {
 import { isTeamLeadRole, ROLE_DEFINITIONS, ROLE_NAMES } from '@/types/roles/role.types';
 import { ConnectionStatusIndicator } from '@/components/connection-status/ConnectionStatusIndicator';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
+import { isSessionGuest } from '@/utils/guest-session';
 
 const Navbar = () => {
   const dispatch = useAppDispatch();
@@ -88,6 +93,13 @@ const Navbar = () => {
       dispatch(fetchOrganizationDetails());
     }
   }, [currentSession, organization, isOwnerOrAdmin, dispatch]);
+
+  // Fetched once per app load (session bootstrap), not on every route change —
+  // server-evaluated eligibility only needs to be re-checked on a fresh load
+  // (see EC-7 / FR-6.8 in the What's New spec).
+  useEffect(() => {
+    dispatch(fetchCurrentRelease());
+  }, [dispatch]);
 
   useEffect(() => {
     // Shared loader — used by all event sources below
@@ -139,7 +151,7 @@ const Navbar = () => {
     }
   }, [currentSession?.trial_expire_date]);
 
-  // Guest status is a per-project access level (project_members.access_level = GUEST).
+  // Guest status is team-level; project membership still controls visibility.
   const routeProjectId = location.pathname.match(/\/projects\/([^/]+)/)?.[1] || null;
   const projectId = currentProject?.projectId || currentProject?.project?.id || routeProjectId;
   // currentProject.projectId updates synchronously on navigation, but
@@ -172,7 +184,10 @@ const Navbar = () => {
     }
   }, [projectDataMatchesId, guestStatusStorageKey, projectIsGuest]);
 
-  const isGuest = guestProjectStateRef.current.isGuest;
+  // Prefer team-scoped session.is_guest so Home stays hidden after logout/login
+  // even before a project is loaded. Project/sessionStorage remain as fallbacks
+  // during invite accept / project fetch transitions.
+  const isGuest = isSessionGuest(currentSession) || guestProjectStateRef.current.isGuest;
   const shouldHideGuestHome = isGuest;
 
   // Filtered NavRoutesType[] — shared by the desktop Menu (mapped below into
@@ -319,6 +334,7 @@ const Navbar = () => {
                       ) && <UpgradePlanButton showModal redirectToBilling={false} />}
                     <ConnectionStatusIndicator />
                     <Flex align="center" gap={6}>
+                      <WhatsNewTag />
                       <QuickActionButton
                         canInviteMembers={canInviteMembers}
                         isInviteRestricted={Boolean(currentSession?.is_expired)}
@@ -360,6 +376,8 @@ const Navbar = () => {
       {createPortal(<NotificationDrawer />, document.body, 'notification-drawer')}
       {createPortal(<AddClientDrawer />, document.body, 'add-client-drawer')}
       {createPortal(<UpgradePromptModal />, document.body, 'upgrade-prompt-modal')}
+      {createPortal(<WhatsNewModal />, document.body, 'whats-new-modal')}
+      {createPortal(<WhatsNewReleaseViewerModal />, document.body, 'whats-new-release-viewer-modal')}
     </Col>
   );
 };

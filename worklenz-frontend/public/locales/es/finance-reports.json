@@ -1,0 +1,171 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "No budget set",
+  "loadError": "Could not load this report. Try again.",
+  "retry": "Retry",
+  "searchPlaceholder": "Search",
+  "budgets": {
+    "pageTitle": "Budgets",
+    "pageSubTitle": "Budget tracking and burn rate across all projects. ETC is remaining estimated hours at the realized hourly rate from logged time.",
+    "empty": "No projects to show yet.",
+    "table": {
+      "project": "Project",
+      "budget": "Budget",
+      "spent": "Spent",
+      "remaining": "Remaining",
+      "burnRate": "Burn Rate",
+      "etc": "ETC",
+      "alert": "Alert"
+    },
+    "alert": {
+      "high": "High burn",
+      "watch": "Watch",
+      "ok": "OK",
+      "none": "No budget"
+    }
+  },
+  "invoices": {
+    "pageTitle": "Invoices",
+    "pageSubTitle": "Send, track, and collect client payments from one portfolio view.",
+    "empty": "No invoices yet. Create invoices from Client Portal.",
+    "openInvoice": "Open invoice",
+    "kpi": {
+      "totalInvoiced": "Total invoiced",
+      "totalPaid": "Total paid",
+      "totalOutstanding": "Total outstanding"
+    },
+    "table": {
+      "invoice": "Invoice",
+      "client": "Client",
+      "project": "Project",
+      "amount": "Amount",
+      "paymentStatus": "Payment Status",
+      "paidAmount": "Paid Amount",
+      "status": "Status",
+      "issued": "Issued",
+      "due": "Due"
+    },
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "paid": "Paid",
+      "overdue": "Overdue",
+      "cancelled": "Cancelled",
+      "outstanding": "Outstanding"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "Billable Time",
+    "pageSubTitle": "Logged hours, billable flag, and rate-card value across the team. Timesheet approval is not required — every log is already recorded.",
+    "empty": "No time logged in this period.",
+    "tableTitle": "Time Entries",
+    "range": {
+      "week": "This week",
+      "month": "This month",
+      "lastMonth": "Last month"
+    },
+    "kpi": {
+      "logged": "Logged this period",
+      "billable": "Billable",
+      "nonBillable": "Non-billable",
+      "value": "Billable value"
+    },
+    "table": {
+      "member": "Member",
+      "project": "Project",
+      "task": "Task",
+      "date": "Date",
+      "time": "Time",
+      "billable": "Billable",
+      "rate": "Rate",
+      "value": "Value"
+    },
+    "billable": "Billable",
+    "internal": "Internal"
+  },
+  "utilization": {
+    "pageTitle": "Utilization",
+    "pageSubTitle": "Team billable hours against capacity for the selected period. Overallocated is above 85% of capacity.",
+    "empty": "No team members to show.",
+    "tableTitle": "Utilization by Member",
+    "kpi": {
+      "team": "Team utilization",
+      "billable": "Billable hours",
+      "nonBillable": "Non-billable",
+      "overallocated": "Overallocated"
+    },
+    "overallocatedCount_one": "{{count}} member",
+    "overallocatedCount_other": "{{count}} members",
+    "table": {
+      "member": "Member",
+      "role": "Role",
+      "billableHours": "Billable Hours",
+      "totalHours": "Total Hours",
+      "utilization": "Utilization",
+      "status": "Status"
+    },
+    "status": {
+      "high": "Overallocated",
+      "watch": "Watch",
+      "ok": "OK"
+    }
+  },
+  "profitability": {
+    "pageTitle": "Profitability",
+    "pageSubTitle": "Portfolio revenue from paid invoices, tracked cost from logged time and fixed costs, and billable utilization by project.",
+    "empty": "No projects to show yet.",
+    "revenueNote": "Revenue is paid client-portal invoices. Project-level revenue is not tracked yet, so the table shows cost and utilization.",
+    "noRevenueNote": "No paid invoices yet, so revenue, profit, and margin stay empty until invoices are collected.",
+    "kpi": {
+      "revenue": "Revenue",
+      "trackedCost": "Tracked Cost",
+      "profit": "Profit",
+      "margin": "Profit Margin",
+      "billableUtil": "Billable Util."
+    },
+    "trendTitle": "Revenue & Profit Trend",
+    "costBreakdownTitle": "Cost Breakdown",
+    "tableTitle": "Project Profitability",
+    "cost": {
+      "fixed": "Fixed costs",
+      "timeBased": "Time-based costs"
+    },
+    "table": {
+      "project": "Project",
+      "cost": "Cost",
+      "utilization": "Utilization",
+      "health": "Health"
+    },
+    "health": {
+      "high": "High burn",
+      "watch": "Watch",
+      "ok": "On track",
+      "none": "No budget"
+    },
+    "legend": {
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "cost": "Cost"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "Forecasts",
+    "pageSubTitle": "Next three months from a linear trend of the last three months of invoiced revenue and time-based cost.",
+    "methodology": "Forecast method: linear trend of the previous three months. Not a pipeline-based forecast.",
+    "kpi": {
+      "projectedRevenue": "Projected Revenue (This Month)",
+      "projectedProfit": "Projected Profit (This Month)"
+    },
+    "vsPrevious": "{{value}}% vs last month",
+    "noRevenueBaseline": "No hay ingresos este mes para comparar",
+    "noProfitBaseline": "No hay ganancias este mes para comparar.",
+    "chartTitle": "3-Month Revenue Forecast",
+    "legend": {
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "actual": "Actual",
+      "projected": "Projected"
+    },
+    "empty": "Not enough history to forecast yet. Log time and send invoices to build a trend."
+  }
+}

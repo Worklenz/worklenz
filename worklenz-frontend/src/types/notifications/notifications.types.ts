@@ -13,6 +13,7 @@ export interface IWorklenzNotification {
   comment_id?: string;
   params?: Params;
   created_at?: string;
+  release_id?: string;
 }
 
 export interface ITeamInvitationViewModel extends ITeamInvites {

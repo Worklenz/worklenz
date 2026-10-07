@@ -54,6 +54,7 @@
     "title": "Lidh Hapësirën Tuaj të Punës së Slack",
     "description": "Integro Slack me ekipin tuaj të Worklenz për të marrë njoftime në kohë reale, për të krijuar detyra nga Slack, dhe për të mbajtur ekipin tuaj të sinkronizuar në të dyja platformat."
   },
+  "upgradeRequired": "Përmirëso në planin Business",
   "features": {
     "notifications": {
       "title": "Njoftime në Kohë Reale",
@@ -72,12 +73,17 @@
     "project": "Projekti",
     "slackChannel": "Kanali i Slack",
     "notifications": "Njoftimet",
+    "status": "Statusi",
+    "statusActive": "Aktiv",
+    "statusInactive": "Joaktiv",
     "active": "Aktiv",
     "actions": "Veprimet",
     "channelConfigs": "Konfigurimet e Kanaleve të Slack",
     "toggleStatus": "Ndrysho statusin për {{channel}}",
     "editConfig": "Redakto konfigurimin për {{channel}}",
-    "deleteConfig": "Fshi konfigurimin për {{channel}}"
+    "deleteConfig": "Fshi konfigurimin për {{channel}}",
+    "reactivate": "Riaktivizo",
+    "reactivateConfig": "Riaktivizo {{channel}}"
   },
   "modal": {
     "configureChannel": "Konfiguro Kanalin e Slack",
@@ -89,6 +95,7 @@
     "notificationTypes": "Llojet e Njoftimeve",
     "selectNotificationTypes": "Zgjidh llojet e njoftimeve",
     "refreshChannels": "Rifresko",
+    "scrollForMore": "Rrulloni për më tepër...",
     "notificationOptions": {
       "taskCreated": "Detyra u krijua",
       "taskUpdated": "Detyra u përditësua",

@@ -1,28 +1,25 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Form, Input, InputRef, Typography, Card, Tooltip } from '@/shared/antd-imports';
+import React, { useEffect, useRef } from 'react';
+import { Input, InputRef } from '@/shared/antd-imports';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next';
 import { setOrganizationName } from '@/features/account-setup/account-setup.slice';
 import { RootState } from '@/app/store';
 import { sanitizeInput } from '@/utils/sanitizeInput';
 
-const { Title, Paragraph, Text } = Typography;
-
 interface Props {
   onEnter: () => void;
-  styles: any;
   organizationNamePlaceholder: string;
   organizationNameInitialValue?: string;
+  prefilledEmail?: string;
   isDarkMode: boolean;
   token?: any;
 }
 
 export const OrganizationStep: React.FC<Props> = ({
   onEnter,
-  styles,
   organizationNamePlaceholder,
   organizationNameInitialValue,
-  isDarkMode,
+  prefilledEmail,
   token,
 }) => {
   const { t } = useTranslation('account-setup');
@@ -30,105 +27,64 @@ export const OrganizationStep: React.FC<Props> = ({
   const { organizationName } = useSelector((state: RootState) => state.accountSetupReducer);
   const inputRef = useRef<InputRef>(null);
 
-  // Autofill organization name if not already set
   useEffect(() => {
     if (!organizationName && organizationNameInitialValue) {
       dispatch(setOrganizationName(organizationNameInitialValue));
     }
     setTimeout(() => inputRef.current?.focus(), 300);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onPressEnter = () => {
-    if (!organizationName.trim()) return;
+    if (organizationName.trim().length < 2) return;
     onEnter();
   };
 
   const handleOrgNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sanitizedValue = sanitizeInput(e.target.value);
-    dispatch(setOrganizationName(sanitizedValue));
+    dispatch(setOrganizationName(sanitizeInput(e.target.value)));
   };
 
+  const isValid = organizationName.trim().length >= 2;
+  const showPrefilledNote = Boolean(organizationNameInitialValue && prefilledEmail);
+
   return (
-    <div className="w-full organization-step">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <Title level={3} className="mb-2" style={{ color: token?.colorText }}>
-          {t('organizationStepWelcome')}
-        </Title>
-        <Paragraph className="text-base" style={{ color: token?.colorTextSecondary }}>
-          {t('organizationStepDescription')}
-        </Paragraph>
-      </div>
+    <div className="w-full">
+      <h2 className="wiz-h2" style={{ color: token?.colorText }}>
+        {t('organizationStepHeadline')}
+      </h2>
+      <p className="wiz-sub" style={{ color: token?.colorTextSecondary }}>
+        {t('organizationStepSubheading')}
+      </p>
 
-      {/* Main Form Card */}
-      <div className="mb-6">
-        <Card
-          className="border-2 hover:shadow-md transition-all duration-200"
-          style={{
-            borderColor: token?.colorPrimary,
-            backgroundColor: token?.colorBgContainer,
-          }}
-        >
-          <Form.Item
-            className="mb-4"
-            label={
-              <div className="flex items-center space-x-2">
-                <span className="font-medium text-base" style={{ color: token?.colorText }}>
-                  {t('organizationStepLabel')}
-                </span>
-                <Tooltip title={t('organizationStepTooltip')}>
-                  <span className="text-sm cursor-help" style={{ color: token?.colorTextTertiary }}>
-                    ⓘ
-                  </span>
-                </Tooltip>
-              </div>
-            }
+      <div className="wiz-field-wrap">
+        <label className="wiz-field-label" style={{ color: token?.colorTextSecondary }}>
+          {t('organizationStepLabel')}
+        </label>
+        <div className="wiz-input-row">
+          <Input
+            size="large"
+            placeholder={organizationNamePlaceholder || t('organizationStepPlaceholder')}
+            value={organizationName}
+            onChange={handleOrgNameChange}
+            onPressEnter={onPressEnter}
+            ref={inputRef}
+            maxLength={50}
+          />
+          <span
+            className="wiz-check-ok"
+            style={{ visibility: isValid ? 'visible' : 'hidden', color: token?.colorSuccess }}
           >
-            <Input
-              placeholder={organizationNamePlaceholder || t('organizationStepPlaceholder')}
-              value={organizationName}
-              onChange={handleOrgNameChange}
-              onPressEnter={onPressEnter}
-              ref={inputRef}
-              className="text-base"
-              maxLength={50}
-            />
-          </Form.Item>
-
-          {/* Character Count and Validation */}
-          <div className="flex justify-between items-center text-sm">
-            <Text type="secondary">
-              {organizationName.length}/50 {t('organizationStepCharacters')}
-            </Text>
-            {organizationName.length > 0 && (
-              <div className="flex items-center space-x-1">
-                {organizationName.length >= 2 ? (
-                  <span style={{ color: token?.colorSuccess }}>
-                    ✓ {t('organizationStepGoodLength')}
-                  </span>
-                ) : (
-                  <span style={{ color: token?.colorWarning }}>
-                    ⚠ {t('organizationStepTooShort')}
-                  </span>
-                )}
-              </div>
-            )}
+            ✓
+          </span>
+        </div>
+        <div className="wiz-char-count" style={{ color: token?.colorTextTertiary }}>
+          {organizationName.length}/50
+        </div>
+        {showPrefilledNote && (
+          <div className="wiz-smart-note" style={{ color: token?.colorTextTertiary }}>
+            {t('organizationStepPrefilledNote', { email: prefilledEmail })}
           </div>
-        </Card>
-      </div>
-
-      {/* Footer Note */}
-      <div
-        className="text-center p-4 rounded-lg"
-        style={{
-          backgroundColor: token?.colorInfoBg,
-          borderColor: token?.colorInfoBorder,
-          border: '1px solid',
-        }}
-      >
-        <Text type="secondary" className="text-sm">
-          🔒 {t('organizationStepPrivacyNote')}
-        </Text>
+        )}
       </div>
     </div>
   );

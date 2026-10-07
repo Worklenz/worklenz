@@ -629,6 +629,20 @@ const taskSlice = createSlice({
       }
     },
 
+    addTaskToTop: (
+      state,
+      action: PayloadAction<{
+        task: IProjectTask;
+        groupId: string;
+      }>
+    ) => {
+      const { task, groupId } = action.payload;
+      const decodedTask = decodeTaskName(task);
+      const group = state.taskGroups.find(g => g.id === groupId);
+      if (!group || !task.id) return;
+      group.tasks.unshift(decodedTask);
+    },
+
     deleteTask: (
       state,
       action: PayloadAction<{
@@ -1417,6 +1431,7 @@ const taskSlice = createSlice({
 export const {
   setGroup,
   addTask,
+  addTaskToTop,
   deleteTask,
   updateTaskName,
   updateTaskProgress,

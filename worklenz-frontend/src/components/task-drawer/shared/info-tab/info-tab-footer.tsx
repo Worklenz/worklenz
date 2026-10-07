@@ -42,6 +42,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES = 25 * 1024 * 1024;
+const MAX_COMMENT_LENGTH = 5000;
 
 const InfoTabFooter = () => {
   const { t } = useTranslation('task-drawer/task-drawer');
@@ -173,6 +174,16 @@ const InfoTabFooter = () => {
       return;
     }
 
+    if (commentValue.length > MAX_COMMENT_LENGTH) {
+      message.error(
+        t('taskInfoTab.comments.commentTooLong', {
+          max: MAX_COMMENT_LENGTH,
+          defaultValue: `Comment is too long. Please shorten it below ${MAX_COMMENT_LENGTH} characters.`,
+        })
+      );
+      return;
+    }
+
     try {
       const hasOversizedAttachment = selectedFiles.some(
         file => Number(file.size || 0) > COMMENT_ATTACHMENT_SIZE_LIMIT_BYTES
@@ -218,9 +229,21 @@ const InfoTabFooter = () => {
             detail: { taskId: selectedTaskId },
           })
         );
+      } else {
+        message.error(
+          res.message ||
+            t('taskInfoTab.comments.saveCommentError', {
+              defaultValue: 'Failed to save comment. Please try again.',
+            })
+        );
       }
     } catch (error) {
       logger.error('Failed to create comment:', error);
+      message.error(
+        t('taskInfoTab.comments.saveCommentError', {
+          defaultValue: 'Failed to save comment. Please try again.',
+        })
+      );
     } finally {
       setUploading(false);
     }
@@ -546,7 +569,7 @@ const InfoTabFooter = () => {
         <Tooltip title={createdFromNow !== 'N/A' ? `Created ${createdFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
             {t('taskInfoTab.comments.createdBy', {
-              defaultValue: 'Created {time} by {user}',
+              defaultValue: 'Created {{time}} by {{user}}',
               time: createdFromNow,
               user: taskFormViewModel?.task?.reporter || '',
             })}
@@ -554,7 +577,7 @@ const InfoTabFooter = () => {
         </Tooltip>
         <Tooltip title={updatedFromNow !== 'N/A' ? `Updated ${updatedFromNow}` : 'N/A'}>
           <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            {t('taskInfoTab.comments.updatedTimes', {
+            {t('taskInfoTab.comments.updatedTime', {
               defaultValue: 'Updated {{time}}',
               time: updatedFromNow,
             })}

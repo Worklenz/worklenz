@@ -54,11 +54,11 @@ function countAllTasks(tasks: ITaskTemplateTask[]): number {
 function flattenToTopLevel(tasks: ITaskTemplateTask[]): ITaskTemplateTask[] {
   const flat: ITaskTemplateTask[] = [];
   for (const task of tasks) {
-    flat.push({ name: task.name, total_minutes: task.total_minutes });
+    flat.push({ id: task.id, name: task.name, total_minutes: task.total_minutes });
     for (const sub of task.sub_tasks || []) {
-      flat.push({ name: sub.name, total_minutes: sub.total_minutes });
+      flat.push({ id: sub.id, name: sub.name, total_minutes: sub.total_minutes });
       for (const grand of sub.sub_tasks || []) {
-        flat.push({ name: grand.name, total_minutes: grand.total_minutes });
+        flat.push({ id: grand.id, name: grand.name, total_minutes: grand.total_minutes });
       }
     }
   }
@@ -71,16 +71,19 @@ function flattenToTopLevel(tasks: ITaskTemplateTask[]): ITaskTemplateTask[] {
  */
 function projectTasksToTemplateTasks(projectTasks: any[]): ITaskTemplateTask[] {
   return projectTasks.map(task => ({
+    id: task.id,
     name: task.name || '',
     total_minutes: task.total_minutes ?? 0,
     ...(task.sub_tasks && task.sub_tasks.length > 0
       ? {
           sub_tasks: task.sub_tasks.map((sub: any) => ({
+            id: sub.id,
             name: sub.name || '',
             total_minutes: sub.total_minutes ?? 0,
             ...(sub.sub_tasks && sub.sub_tasks.length > 0
               ? {
                   sub_tasks: sub.sub_tasks.map((grand: any) => ({
+                    id: grand.id,
                     name: grand.name || '',
                     total_minutes: grand.total_minutes ?? 0,
                   })),

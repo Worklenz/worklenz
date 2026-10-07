@@ -3,7 +3,6 @@ import {
   Card,
   Empty,
   Flex,
-  Form,
   Popconfirm,
   Space,
   Spin,
@@ -12,17 +11,16 @@ import {
   Input,
   message,
   Popover,
-  Typography,
 } from '@/shared/antd-imports';
 import {
   EditOutlined,
   DeleteOutlined,
-  PaperClipOutlined,
   RollbackOutlined,
   CheckSquareOutlined,
   PushpinOutlined,
   PushpinFilled,
   CloseOutlined,
+  PaperClipOutlined,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -127,7 +125,6 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
   const projectId = projectIdProp || routeProjectId;
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
-  const [form] = Form.useForm();
   const { t } = useTranslation('project-view-updates');
   const { token } = useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
@@ -138,7 +135,6 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
   const isAppSumoUser = String(currentSession?.subscription_type || '').toLowerCase().includes('appsumo');
 
   const listRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { updatesList, loading } = useAppSelector(state => state.updatesReducer);
   const user = useAppSelector(state => state.userReducer);
@@ -157,14 +153,6 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
   >([]);
 
   const [replyTo, setReplyTo] = useState<IProjectUpdateCommentViewModel | null>(null);
-  const [pendingAttachment, setPendingAttachment] = useState<{
-    name: string;
-    url: string;
-    key: string;
-    type?: string;
-    size?: number;
-  } | null>(null);
-  const [uploadingAttachment, setUploadingAttachment] = useState(false);
 
   // Plain-text version of a comment (mentions substituted, tags stripped) —
   // used for reply snippets and convert-to-task titles.
@@ -185,7 +173,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
       dispatch(getProjectComments(projectId));
       dispatch(getAllProjectMembers(projectId));
       // Opening the conversation clears its unread badge (Inbox + project tab)
-      projectCommentsApiService.markConversationRead(projectId).catch(() => {});
+      projectCommentsApiService.markConversationRead(projectId).catch(() => { });
     }
   }, [projectId, dispatch]);
 
@@ -200,7 +188,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
       }
       dispatch(getProjectComments(projectId));
       if (document.visibilityState === 'visible') {
-        projectCommentsApiService.markConversationRead(projectId).catch(() => {});
+        projectCommentsApiService.markConversationRead(projectId).catch(() => { });
       }
     };
 
@@ -309,42 +297,10 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
     setCommentValue(value);
   }, []);
 
-  const handleAttachmentSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file || !projectId) return;
-
-    setUploadingAttachment(true);
-    try {
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = ev => resolve(ev.target?.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const res = await projectCommentsApiService.uploadCommentAttachment(
-        projectId,
-        dataUrl,
-        file.name,
-        file.type
-      );
-      if (res.done && res.body) {
-        setPendingAttachment(res.body);
-      } else {
-        message.error(res.message || t('attachmentUploadError', { defaultValue: 'Failed to upload attachment' }));
-      }
-    } catch (error) {
-      message.error(t('attachmentUploadError', { defaultValue: 'Failed to upload attachment' }));
-    } finally {
-      setUploadingAttachment(false);
-    }
-  };
-
   const isSubmittingRef = useRef(false);
 
   const onFinish = async () => {
-    if (!projectId || (!commentValue?.trim() && !pendingAttachment)) return;
+    if (!projectId || !commentValue?.trim()) return;
     if (isSubmittingRef.current) return; // ← prevents double fire
     isSubmittingRef.current = true;
 
@@ -374,25 +330,23 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
       await dispatch(
         createProjectComment({
           project_id: projectId,
-          content: commentValue.trim() || (pendingAttachment ? `Shared file: ${pendingAttachment.name}` : ''),
+          content: commentValue.trim(),
           mentions: mentionsWithValidUUIDs,
           reply_to_id: replyTo?.id,
           reply_to_preview: replyTo
             ? {
-                id: replyTo.id,
-                author_name: replyTo.created_by,
-                content_snippet: toPlainText(replyTo).slice(0, 150),
-                is_deleted: false,
-              }
+              id: replyTo.id,
+              author_name: replyTo.created_by,
+              content_snippet: toPlainText(replyTo).slice(0, 150),
+              is_deleted: false,
+            }
             : undefined,
-          attachments: pendingAttachment ? [pendingAttachment] : [],
         })
       ).unwrap();
 
       setCommentValue('');
       setSelectedMembers([]);
       setReplyTo(null);
-      setPendingAttachment(null);
 
       setTimeout(() => {
         if (listRef.current) {
@@ -514,14 +468,17 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
 
       // Optimistically update the UI immediately
       if (response.done && response.body) {
-        dispatch(updateCommentAfterEdit({
-          comment_id: commentId,
-          content: contentToSave,
-          edited: true,
-          edit_count: response.body.edit_count || 1,
-          last_edited_at: response.body.last_edited_at || new Date().toISOString(),
-          last_edited_by_name: response.body.last_edited_by_name || user?.name || 'You',
-        }));
+        dispatch(
+          updateCommentAfterEdit({
+            comment_id: commentId,
+            content: contentToSave,
+            edited: true,
+            edit_count: response.body.edit_count || 1,
+            last_edited_at: new Date().toISOString(),
+            last_edited_by_name:
+              response.body.last_edited_by_name || user?.name || 'You',
+          })
+        );
       }
 
       setEditingCommentId(null);
@@ -1041,56 +998,16 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
             </button>
           </div>
         )}
-        {pendingAttachment && (
-          <Flex
-            align="center"
-            gap={8}
-            style={{
-              maxWidth: '900px',
-              margin: '0 auto 6px',
-              width: '100%',
-              padding: '6px 20px',
-              borderRadius: 8,
-              background: token.colorFillTertiary,
-              fontSize: 12,
-            }}
-          >
-            <PaperClipOutlined />
-            <Typography.Text style={{ fontSize: 12, flex: 1 }} ellipsis>
-              {pendingAttachment.name}
-            </Typography.Text>
-            <Button
-              type="text"
-              size="small"
-              onClick={() => setPendingAttachment(null)}
-              style={{ fontSize: 11, height: 20, padding: '0 4px' }}
-            >
-              ✕
-            </Button>
-          </Flex>
-        )}
+
         <Flex
           align={commentValue.trim() ? 'flex-end' : 'center'}
           gap={10}
-          style={{ maxWidth: '900px', margin: '0 auto', width: '100%' }}
+          style={{
+            maxWidth: '900px',
+            margin: '0 auto',
+            width: '100%',
+          }}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleAttachmentSelect}
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
-          />
-          <Tooltip title={t('attachFile', { defaultValue: 'Attach a file' })}>
-            <button
-              className="chat-attach-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAttachment}
-              style={{ flexShrink: 0 }}
-            >
-              <PaperClipOutlined style={{ fontSize: 18 }} />
-            </button>
-          </Tooltip>
           <div style={{ flex: 1, minWidth: 0 }}>
             <CustomMentionsInput
               placeholder={t('inputPlaceholder')}
@@ -1102,9 +1019,15 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
               prefix="@"
               filterOption={(input: string, option: any) => {
                 if (!input) return true;
+
                 const optionLabel =
-                  option?.label?.props?.children?.[1]?.props?.children || option?.value || '';
-                return optionLabel.toLowerCase().includes(input.toLowerCase());
+                  option?.label?.props?.children?.[1]?.props?.children ||
+                  option?.value ||
+                  '';
+
+                return optionLabel
+                  .toLowerCase()
+                  .includes(input.toLowerCase());
               }}
               style={{
                 width: '100%',
@@ -1116,30 +1039,26 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
               themeMode={themeMode}
             />
           </div>
+
           <Button
             type="primary"
             shape="round"
             onClick={onFinish}
             loading={submitting}
-            disabled={submitting || uploadingAttachment || !commentValue.trim()}
+            disabled={submitting || !commentValue.trim()}
             className="send-button"
             style={{
               height: 40,
               paddingInline: 24,
               flexShrink: 0,
               fontWeight: 500,
-              backgroundColor: (submitting || uploadingAttachment || !commentValue.trim()) ? themeWiseColor('#d9d9d9', '#434343', themeMode) : '#1677ff',
-              borderColor: (submitting || uploadingAttachment || !commentValue.trim()) ? themeWiseColor('#d9d9d9', '#434343', themeMode) : '#1677ff',
-              color: (submitting || uploadingAttachment || !commentValue.trim()) ? themeWiseColor('rgba(0, 0, 0, 0.25)', '#ffffff', themeMode) : '#fff',
-              opacity: 1,
-              cursor: (submitting || uploadingAttachment || !commentValue.trim()) ? 'not-allowed' : 'pointer',
             }}
           >
             {t('addButton', { defaultValue: 'Send' })}
           </Button>
         </Flex>
       </div>
-    </Card>
+    </Card >
   );
 };
 

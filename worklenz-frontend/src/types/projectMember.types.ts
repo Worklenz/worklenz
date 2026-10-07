@@ -5,6 +5,7 @@ export interface IProjectMemberViewModel extends IProjectMember {
   name?: string;
   email?: string;
   access?: string;
+  access_level?: string;
   pending_invitation?: boolean;
   all_tasks_count?: number;
   completed_tasks_count?: number;

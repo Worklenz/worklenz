@@ -180,13 +180,15 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
     []
   );
 
-  const extractWordCount = useCallback((html: string) => {
-    const text = html
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    return text ? text.split(' ').length : 0;
-  }, []);
+ const extractWordCount = useCallback((html: string) => {
+  if (!html) return 0;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const text = doc.body.textContent?.trim() || '';
+
+  return text ? text.split(/\s+/).length : 0;
+}, []);
 
   // Classifies a list element as ordered or bulleted. Quill 1 used <ul>/<ol>;
   // Quill 2 emits <ol> for both and marks the items with data-list, so the tag
@@ -500,7 +502,9 @@ const DescriptionEditor = ({ description, taskId, parentTaskId, isGuest = false 
       >
         {(!content || content === '<p><br></p>') && (
           <div className="description-placeholder">
-            {t('taskInfoTab.description.clickToAdd')}
+            {t('taskInfoTab.description.clickToAdd', {
+              defaultValue: 'Click to add description',
+            })}
           </div>
         )}
 

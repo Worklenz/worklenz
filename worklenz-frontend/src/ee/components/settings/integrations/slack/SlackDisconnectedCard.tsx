@@ -57,7 +57,7 @@ export function SlackDisconnectedCard({
               onClick={onConnect}
               loading={loading}
               className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600"
-              aria-label={t('connectWorkspace')}
+              aria-label={t('connectWorkspace', { defaultValue: 'Connect Slack Workspace' })}
             >
               {t('connectWorkspace', { defaultValue: 'Connect Slack Workspace' })}
             </Button>

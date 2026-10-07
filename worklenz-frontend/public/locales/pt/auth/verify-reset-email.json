@@ -10,5 +10,7 @@
   "passwordRequired": "Por favor, digite sua nova senha",
   "returnToLoginButton": "Voltar ao Login",
   "confirmPasswordRequired": "Por favor, confirme sua nova senha",
-  "passwordMismatch": "As senhas não coincidem"
+  "passwordMismatch": "As senhas não coincidem",
+  "successTitle": "Senha redefinida com sucesso",
+  "successMessage": "Sua senha foi atualizada. Agora você pode entrar com sua nova senha."
 }

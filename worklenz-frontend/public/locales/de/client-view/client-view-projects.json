@@ -1,0 +1,12 @@
+{
+  "title": "{{items}} Projekte",
+  "table": {
+    "header": {
+      "name": "Name",
+      "status": "Alle Status",
+      "taskProgress": "Aufgabenfortschritt",
+      "lastUpdates": "Letzte Updates",
+      "members": "Mitglieder"
+    }
+  }
+}

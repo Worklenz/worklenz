@@ -36,7 +36,9 @@ const ProjectManagersFilterDropdown = () => {
 
   const filteredProjectManagerData = useMemo(() => {
     return projectManagers.filter(projectManager =>
-      projectManager.name.toLowerCase().includes(searchQuery.toLowerCase())
+      String(projectManager?.name || '')
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase())
     );
   }, [projectManagers, searchQuery]);
 
