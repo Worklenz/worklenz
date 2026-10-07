@@ -17,7 +17,9 @@ const ProjectReportsStatusGraph = ({
   const { t } = useTranslation('reporting-projects-drawer');
 
   const chartData = {
-    labels: values.chart.map(item => t(`${item.name}Text`)),
+    labels: values.chart.map(item =>
+      item.name.trim().toLowerCase() === 'todo' ? 'To Do' : item.name
+    ),
     datasets: [
       {
         label: t('tasksText'),
@@ -70,7 +72,7 @@ const ProjectReportsStatusGraph = ({
             <Flex key={item.name} gap={4} align="center">
               <Badge color={item.color} />
               <Typography.Text ellipsis>
-                {t(`${item.name}`)}({item.y})
+                {item.name.trim().toLowerCase() === 'todo' ? 'To Do' : item.name} ({item.y})
               </Typography.Text>
             </Flex>
           ))}
