@@ -3,8 +3,13 @@
 /** @type {import('node-pg-migrate').ColumnDefinitions | undefined} */
 exports.shorthands = undefined;
 
+/**
+ * Creates the table. It depends on client_portal_requests, which is created by
+ * 1753401600000_create_client_portal_tables, so on a fresh database this runs
+ * from 1753401610000_create_client_portal_request_comments_after_tables instead.
+ */
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */
-exports.up = async (pgm) => {
+const createRequestComments = (pgm) => {
   pgm.sql(`
 -- Migration: Create Client Portal Request Comments Table
 -- Description: Creates a dedicated table for tracking comments on client portal requests
@@ -46,6 +51,16 @@ COMMENT ON COLUMN client_portal_request_comments.sender_name IS 'Cached name of 
 
 
   `);
+};
+
+exports.createRequestComments = createRequestComments;
+
+/** @param {import('node-pg-migrate').MigrationBuilder} pgm */
+exports.up = async (pgm) => {
+  const { rows } = await pgm.db.query("SELECT to_regclass('client_portal_requests') AS t");
+  if (rows[0].t) {
+    createRequestComments(pgm);
+  }
 };
 
 /** @param {import('node-pg-migrate').MigrationBuilder} pgm */

@@ -14,6 +14,13 @@ export const getCsrfToken = (): string | null => {
   return csrfToken;
 };
 
+// Drop the cached token. csrf-sync stores the token in the server session, and
+// login/signup/logout replace that session, so the cached token is no longer valid.
+// The next state-changing request fetches a fresh one via ensureCsrfToken().
+export const clearCsrfToken = (): void => {
+  csrfToken = null;
+};
+
 // Function to refresh CSRF token from server
 export const refreshCsrfToken = async (): Promise<string | null> => {
   try {
