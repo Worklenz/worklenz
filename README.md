@@ -51,7 +51,7 @@ comprehensive solution for managing projects, tasks, and collaboration within te
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
   - [Quick Start (Docker)](#-quick-start-docker---recommended)
-  - [Manual Installation](#️-manual-installation-no-docker)
+  - [Manual Installation](#️-manual-installation-for-development)
 - [Deployment](#deployment)
   - [Local Development](#local-development-with-docker)
   - [Remote Server Deployment](#remote-server-deployment)
@@ -128,7 +128,7 @@ docker compose down
 
 **Video Guide**: For a visual walkthrough of the local Docker deployment process, check out our [step-by-step video guide](https://www.youtube.com/watch?v=AfwAKxJbqLg).
 
-### 🛠️ Manual Installation (No Docker)
+### 🛠️ Manual Installation (For Development)
 
 Use this path to run the services individually, either for development or on a
 server that does not use Docker.
