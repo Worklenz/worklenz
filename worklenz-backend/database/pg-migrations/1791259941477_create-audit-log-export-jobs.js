@@ -65,7 +65,7 @@ exports.up = (pgm) => {
       WHERE expires_at IS NOT NULL AND status = 'ready';
 
     COMMENT ON TABLE audit_log_export_jobs IS
-      'Async CSV export jobs for Admin Center > Security > Audit Log, used when a filtered result set exceeds the synchronous export row cap. See spec #32, task 5.2.';
+      'Async CSV export jobs for Admin Center > Security > Audit Log, used when a filtered result set exceeds the synchronous export row cap.';
     COMMENT ON COLUMN audit_log_export_jobs.filters IS
       'Snapshot of the list filters applied when the export was requested: start_date, end_date, categories[], actor_user_ids[], search.';
   `);

@@ -68,7 +68,7 @@ exports.up = (pgm) => {
           ON DELETE SET NULL;
 
     COMMENT ON TABLE audit_events IS
-      'Append-only, workspace(organization)-wide audit trail for Admin Center > Security > Audit Log. Separate from task_activity_logs (per-task, unaffected by this table). See spec #32.';
+      'Append-only, workspace(organization)-wide audit trail for Admin Center > Security > Audit Log. Separate from task_activity_logs (per-task, unaffected by this table).';
     COMMENT ON COLUMN audit_events.actor_name IS
       'Snapshot of the actor''s display name at event time; survives actor_user_id being set NULL on user deletion.';
     COMMENT ON COLUMN audit_events.category IS

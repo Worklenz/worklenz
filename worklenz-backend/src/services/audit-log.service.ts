@@ -70,7 +70,7 @@ export function actorFromSessionUser(user: IPassportSession): AuditActor {
 /**
  * Records a workspace-wide audit log entry.
  *
- * Non-blocking by design (spec #32, spike decision 0.3): this function returns immediately -
+ * Non-blocking by design: this function returns immediately -
  * synchronously, before any validation or DB work runs - and never throws. The actual write
  * is deferred to a later microtask and fully error-isolated, mirroring the existing
  * "fire email in background, never let it affect the response" pattern already used for

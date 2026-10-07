@@ -14,7 +14,7 @@ import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/r
 import { logAuditEvent, resolveOrganizationIdForUserId } from "../../services/audit-log.service";
 import { AUDIT_EVENT_TYPE } from "../../shared/audit-log-constants";
 
-// Spec #32, task 3.1: logs login_success for the OAuth web callbacks below. Failures aren't
+// logs login_success for the OAuth web callbacks below. Failures aren't
 // instrumented here - OAuth failures are almost always provider/token-level (expired code,
 // network issue) rather than an access-control event against a specific workspace, and
 // Google/Apple sign-in are consumer OAuth, not a customer-configurable SSO integration (see

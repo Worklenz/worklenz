@@ -214,7 +214,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       projectId || "",
     );
 
-    // Spec #32, task 3.3 — one audit entry per invited email. This is the single shared
+    // one audit entry per invited email. This is the single shared
     // invite-processing function used by both the self-hosted and cloud/Paddle paths in
     // create() above, so instrumenting here (rather than in create()) covers both without
     // duplicating the call.
@@ -840,7 +840,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
       return res.status(200).send(roleAssignmentError);
     }
 
-    // Spec #32, task 3.4 — captured before update_team_member() runs so there's an old value
+    // captured before update_team_member() runs so there's an old value
     // to compare against. Note: the Owner role is never an assignable target of this endpoint
     // (see ensureAssignableRole/MANAGEABLE_ROLE_MAP in shared/team-permissions.ts — Owner can
     // only "keep their own role", never be assigned to someone else), so there is no
@@ -1118,7 +1118,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
         );
     }
 
-    // Spec #32, task 3.3 — captured before remove_team_member() runs so the audit
+    // captured before remove_team_member() runs so the audit
     // description below still has a readable identity for the member being removed.
     const removedMemberInfoResult = await db.query(
       `SELECT name, email FROM team_member_info_view WHERE team_member_id = $1`,

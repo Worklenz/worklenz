@@ -129,7 +129,7 @@ export default class ProjectsController extends WorklenzControllerBase {
         req.body.name
       );
 
-      // Spec #32, task 3.7 — additive alongside ActivityLoggingService above, which logs
+      // additive alongside ActivityLoggingService above, which logs
       // into the separate per-task activity_logs table and is out of scope per the spec's
       // non-goals; this call targets audit_events only.
       if (req.user?.organization_id) {
@@ -987,7 +987,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       delete req.body.restrict_tasks_to_assignee;
     }
 
-    // Spec #32, task 3.5 — read before update_project(), which also writes this column,
+    // read before update_project(), which also writes this column,
     // so the audit entry below records the real old → new transition.
     let previousRestrictTasksToAssignee = false;
     if (canUpdateProjectPrivacy && hasRestrictTasksToAssignee) {
@@ -1220,7 +1220,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       project.name
     );
 
-    // Spec #32, task 3.7 — fire before the DELETEs below (the project row still exists at
+    // fire before the DELETEs below (the project row still exists at
     // this point), additive alongside ActivityLoggingService above.
     if (req.user?.organization_id) {
       logAuditEvent({
@@ -1524,7 +1524,7 @@ export default class ProjectsController extends WorklenzControllerBase {
       );
     }
 
-    // Spec #32, task 3.7 — toggle_archive_project() is a single flip, so "restored" is just
+    // toggle_archive_project() is a single flip, so "restored" is just
     // the wasArchived branch of the same toggle, not a separate endpoint.
     if (req.user?.organization_id) {
       logAuditEvent({
@@ -1545,7 +1545,7 @@ export default class ProjectsController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async toggleArchiveAll(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    // Spec #32, task 3.7 — toggle_archive_all_projects() restores when any archive row exists,
+    // toggle_archive_all_projects() restores when any archive row exists,
     // so the same check taken before the call tells archive and restore apart.
     const checkResult = await db.query(
       `SELECT p.name,

@@ -224,7 +224,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { name } = req.body;
 
-    // Spec #32, task 3.8 — captured before the UPDATE so the audit entry can record a real
+    // captured before the UPDATE so the audit entry can record a real
     // old → new transition.
     const previousNameResult = await db.query(
       `SELECT organization_name FROM organizations WHERE user_id = $1`,
@@ -259,7 +259,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
   ): Promise<IWorkLenzResponse> {
     const { contact_number } = req.body;
 
-    // Spec #32, task 3.6 — captured before the UPDATE for the old → new audit entry.
+    // captured before the UPDATE for the old → new audit entry.
     const previousContactResult = await db.query(
       `SELECT contact_number FROM organizations WHERE user_id = $1`,
       [req.user?.owner_id]
@@ -475,7 +475,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         );
     }
 
-    // Spec #32, task 3.6 — captured before the UPDATE for the old → new audit entry.
+    // captured before the UPDATE for the old → new audit entry.
     const previousCalcResult = await db.query(
       `SELECT calculation_method, hours_per_day FROM organizations WHERE user_id = $1`,
       [req.user?.owner_id]
@@ -1396,7 +1396,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, blocker.message).withTitle(blocker.title));
     }
 
-    // Spec #32, task 3.8 — captured before the DELETE purely for a readable description.
+    // captured before the DELETE purely for a readable description.
     const teamNameResult = await db.query(`SELECT name FROM teams WHERE id = $1`, [id]);
     const teamName = teamNameResult.rows[0]?.name;
 
@@ -1412,7 +1412,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
         .send(new ServerResponse(false, null, "Team not found").withTitle("Unable to delete team"));
     }
 
-    // Spec #32, task 3.8 — teamId is deliberately omitted/null here: audit_events.team_id
+    // teamId is deliberately omitted/null here: audit_events.team_id
     // writes land asynchronously (logAuditEvent is fire-and-forget via queueMicrotask), by
     // which time the just-deleted team row above no longer exists, so passing its id would
     // fail the FK constraint and the entry would silently be dropped. The organization
@@ -1670,7 +1670,7 @@ export default class AdminCenterController extends WorklenzControllerBase {
       ]);
     }
 
-    // Spec #32, task 3.6
+    // Audit log
     if (req.user?.organization_id && previousCountryCode !== country_code) {
       logAuditEvent({
         organizationId: req.user.organization_id,

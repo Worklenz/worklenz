@@ -1,5 +1,5 @@
 'use strict';
-// Portfolio progress tracking (spec #15).
+// Portfolio progress tracking.
 // The only new stored data is a manual, per-project Delivery Confidence.
 // Percent complete and blocked-task counts stay computed from existing task data.
 

@@ -29,24 +29,24 @@ adminCenterApiRouter.put("/organization/holiday-settings", teamOwnerOrAdminValid
 adminCenterApiRouter.get("/countries-with-states", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getCountriesWithStates));
 
 // users
-// Spec #32, task 4.5 — also reused as the Audit Log's actor picker (searchable, paginated,
+// Also reused as the Audit Log's actor picker (searchable, paginated,
 // organization-scoped workspace users: ?search=&index=&size=). No dedicated picker endpoint
 // was added since this one already fits the requirement.
 adminCenterApiRouter.get("/organization/users", teamOwnerOrAdminValidator, safeControllerFunction(AdminCenterController.getOrganizationUsers));
 
-// audit log (Spec #32, task 4) — note the dedicated 403 access guard (task 4.4) instead of
+// audit log — note the dedicated 403 access guard instead of
 // teamOwnerOrAdminValidator's 401, per that task's explicit requirement.
 adminCenterApiRouter.get("/organization/audit-log", auditLogAccessValidator, safeControllerFunction(AuditLogController.getAuditEvents));
 adminCenterApiRouter.get("/organization/audit-log/summary", auditLogAccessValidator, safeControllerFunction(AuditLogController.getSummary));
 
-// audit log CSV export (Spec #32, task 5) — same access guard as the read endpoint above;
+// audit log CSV export — same access guard as the read endpoint above;
 // exporting is a superset of viewing, not a separate permission tier.
 adminCenterApiRouter.post("/organization/audit-log/export", auditLogAccessValidator, safeControllerFunction(AuditLogExportController.create));
 adminCenterApiRouter.get("/organization/audit-log/export/latest", auditLogAccessValidator, safeControllerFunction(AuditLogExportController.latest));
 adminCenterApiRouter.get("/organization/audit-log/export/:jobId", auditLogAccessValidator, safeControllerFunction(AuditLogExportController.get));
 adminCenterApiRouter.get("/organization/audit-log/export/:jobId/download", auditLogAccessValidator, safeControllerFunction(AuditLogExportController.download));
 
-// audit log retention (Spec #32, task 6.1) — viewable by Owner/Admin, changeable by Owner only.
+// audit log retention — viewable by Owner/Admin, changeable by Owner only.
 adminCenterApiRouter.get("/organization/audit-log/retention", auditLogAccessValidator, safeControllerFunction(AuditLogRetentionController.get));
 adminCenterApiRouter.put("/organization/audit-log/retention", auditLogOwnerValidator, safeControllerFunction(AuditLogRetentionController.update));
 

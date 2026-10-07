@@ -1205,7 +1205,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     }
   }
 
-  /** Spec #32, task 3.7 — template/onboarding projects skip ProjectsController.create, so they log here. */
+  /** template/onboarding projects skip ProjectsController.create, so they log here. */
   protected static logProjectCreatedFromTemplate(user: IPassportSession | undefined, projectName: string): void {
     if (!user?.organization_id) return;
     logAuditEvent({

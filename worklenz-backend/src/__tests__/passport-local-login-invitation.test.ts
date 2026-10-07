@@ -63,7 +63,7 @@ describe('Local login with invitation params', () => {
 
     expect(error).toBeNull();
     expect(user).toBe(false);
-    // 3 calls for the login/invitation checks above, plus a 4th from the Spec #32 audit log
+    // 3 calls for the login/invitation checks above, plus a 4th from the audit log
     // instrumentation (logFailedLogin -> resolveOrganizationIdForUserId) added in
     // passport-local-login.ts for this exact rejection branch. No 4th mock value is queued
     // here, so that call resolves to undefined and resolveOrganizationIdForUserId's own

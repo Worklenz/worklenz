@@ -24,7 +24,7 @@ import TokenService from "../services/token-service";
 import { logAuditEvent, resolveOrganizationIdForUserId } from "../services/audit-log.service";
 import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
 
-// Spec #32, task 3.1 — see the identical note in routes/auth/index.ts: mobile OAuth success
+// see the identical note in routes/auth/index.ts: mobile OAuth success
 // is logged, failures are not (provider/token-level, not a workspace access-control event).
 function logMobileOAuthLoginSuccess(user: any): void {
   if (!user?.id) return;

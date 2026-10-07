@@ -197,8 +197,8 @@ describe("audit-log.service", () => {
     });
 
     it("falls back to email when name is blank", () => {
-      const actor = actorFromSessionUser({ id: "user-2", name: "  ", email: "c@ifinity.ae" } as any);
-      expect(actor).toEqual({ userId: "user-2", name: "c@ifinity.ae" });
+      const actor = actorFromSessionUser({ id: "user-2", name: "  ", email: "c@example.com" } as any);
+      expect(actor).toEqual({ userId: "user-2", name: "c@example.com" });
     });
 
     it("falls back to 'Unknown user' when neither name nor email is available", () => {

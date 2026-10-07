@@ -9,7 +9,7 @@ import { AUDIT_EVENT_TYPE } from "../../shared/audit-log-constants";
 
 /**
  * Logs a login_failed audit event once a request has matched a real user account (wrong
- * password, deactivated access, or an invalid invitation). Spec #32, task 3.1.
+ * password, deactivated access, or an invalid invitation).
  *
  * Deliberately NOT called for "no account found with this email" or missing
  * email/password: there is no real workspace to attach those to, and audit_events.
