@@ -51,15 +51,33 @@ WHERE schedule_id IS NOT NULL AND end_date IS NOT NULL;
 -- PART 4: Add foreign key constraints
 -- ============================================================================
 
-ALTER TABLE task_recurring_schedules
-ADD CONSTRAINT task_recurring_schedules_timezone_id_fk
-    FOREIGN KEY (timezone_id) REFERENCES timezones(id)
-    ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'task_recurring_schedules'::regclass
+          AND conname = 'task_recurring_schedules_timezone_id_fk'
+    ) THEN
+        ALTER TABLE task_recurring_schedules
+        ADD CONSTRAINT task_recurring_schedules_timezone_id_fk
+            FOREIGN KEY (timezone_id) REFERENCES timezones(id)
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
-ALTER TABLE task_recurring_schedules
-ADD CONSTRAINT task_recurring_schedules_created_by_fk
-    FOREIGN KEY (created_by) REFERENCES users(id)
-    ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'task_recurring_schedules'::regclass
+          AND conname = 'task_recurring_schedules_created_by_fk'
+    ) THEN
+        ALTER TABLE task_recurring_schedules
+        ADD CONSTRAINT task_recurring_schedules_created_by_fk
+            FOREIGN KEY (created_by) REFERENCES users(id)
+            ON DELETE SET NULL;
+    END IF;
+END $$;
 
 -- ============================================================================
 -- PART 5: Add indexes for performance

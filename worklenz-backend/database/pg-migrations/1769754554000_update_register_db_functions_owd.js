@@ -127,7 +127,6 @@ $$;
 
 comment on function register_user(json) is 'Registers a new user and automatically starts a 14-day Business plan trial';
 
-alter function register_user(json) owner to postgres;
 
 
 -- Google Register user
@@ -238,7 +237,6 @@ $$;
 
 comment on function register_google_user(json) is 'Registers a new Google OAuth user and automatically starts a 14-day Business plan trial';
 
-alter function register_google_user(json) owner to postgres;
 
 
 -- Apple Register user
@@ -398,7 +396,6 @@ $$;
 
 comment on function register_apple_user(json) is 'Registers a new Apple Sign-In OAuth user and automatically starts a 14-day Business plan trial';
 
-alter function register_apple_user(json) owner to postgres;
 
 
 

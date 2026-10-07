@@ -494,3 +494,12 @@ tr:hover .action-buttons {
 .ant-menu-inline-collapsed-tooltip {
   display: none !important;
 }
+
+/* Theme-aware scrollbars for the Files page filter dropdowns */
+.files-filter-dropdown .rc-virtual-list-scrollbar-thumb {
+  background-color: var(--files-scrollbar-thumb) !important;
+}
+
+.files-filter-dropdown .rc-virtual-list-scrollbar-thumb:hover {
+  background-color: var(--files-scrollbar-thumb-hover) !important;
+}

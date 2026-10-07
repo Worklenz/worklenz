@@ -226,7 +226,6 @@ BEGIN
 END;
 $$;
 
-alter function get_task_form_view_model(uuid, uuid, uuid, uuid) owner to postgres;
 
 COMMIT;
 
