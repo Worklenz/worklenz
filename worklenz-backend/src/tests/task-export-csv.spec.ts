@@ -197,6 +197,18 @@ describe("tasks CSV encoding fixtures (TE-12)", () => {
     expect(row[2]).not.toContain("<p>");
   });
 
+  it("strips tags revealed by encoded HTML without double-decoding entities", () => {
+    const row = mapTaskToExportRow(
+      {
+        ...FIXTURE_TASK_PLAIN,
+        description: "&lt;script&gt;alert('x')&lt;/script&gt;&amp;lt;safe&amp;gt;",
+      },
+      []
+    );
+
+    expect(row[2]).toBe("alert('x')&lt;safe&gt;");
+  });
+
   it("generates a multi-task CSV with header then one row per task", () => {
     const csv = generateTasksCsv(
       [FIXTURE_TASK_PLAIN, FIXTURE_TASK_UNICODE],

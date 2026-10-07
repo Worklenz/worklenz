@@ -10,16 +10,19 @@ const DATE_TIME_FORMAT = "YYYY-MM-DD HH:mm:ss";
 export const stripHtmlToPlainText = (value: string | null | undefined): string => {
   if (!value) return "";
 
-  return value
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
+  const decodedValue = value
     .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
+    // Decode ampersands last so already-encoded entities are decoded only once.
+    .replace(/&amp;/gi, "&");
+
+  return decodedValue
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 };
