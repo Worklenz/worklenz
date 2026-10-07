@@ -34,8 +34,8 @@ ALTER TABLE task_activity_logs ADD COLUMN IF NOT EXISTS i18n_key TEXT;
 ALTER TABLE task_activity_logs ADD COLUMN IF NOT EXISTS i18n_params JSONB;
 
 -- CREATE INDEX IF NOT EXISTS for better performance on i18n_key queries
-CREATE INDEX IF NOT EXISTS CONCURRENTLY IF NOT EXISTS idx_project_logs_i18n_key ON project_logs(i18n_key);
-CREATE INDEX IF NOT EXISTS CONCURRENTLY IF NOT EXISTS idx_task_activity_logs_i18n_key ON task_activity_logs(i18n_key);
+CREATE INDEX IF NOT EXISTS idx_project_logs_i18n_key ON project_logs(i18n_key);
+CREATE INDEX IF NOT EXISTS idx_task_activity_logs_i18n_key ON task_activity_logs(i18n_key);
 
 -- Create function to log project activities with i18n support
 CREATE OR REPLACE FUNCTION log_project_activity_i18n(

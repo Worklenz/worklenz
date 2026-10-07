@@ -22,6 +22,7 @@ EXCEPTION
 END $$;
 
 -- Update status column to use enum
+ALTER TABLE email_logs ALTER COLUMN status DROP DEFAULT;
 ALTER TABLE email_logs ALTER COLUMN status TYPE email_status_type USING status::email_status_type;
 ALTER TABLE email_logs ALTER COLUMN status SET DEFAULT 'pending'::email_status_type;
 

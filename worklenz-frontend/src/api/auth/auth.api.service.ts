@@ -1,5 +1,5 @@
 import { IServerResponse } from '@/types/common.types';
-import apiClient from '../api-client';
+import apiClient, { clearCsrfToken } from '../api-client';
 import {
   IUserLoginRequest,
   IUserLoginResponse,
@@ -12,11 +12,14 @@ const rootUrl = `${AUTH_API_BASE_URL}`;
 export const authApiService = {
   async login(credentials: IUserLoginRequest): Promise<IAuthorizeResponse> {
     const response = await apiClient.post<IAuthorizeResponse>(`${rootUrl}/login`, credentials);
+    // Login replaces the server session, which invalidates the cached CSRF token
+    clearCsrfToken();
     return response.data;
   },
 
   async logout(): Promise<IServerResponse<void>> {
     const response = await apiClient.get<IServerResponse<void>>(`${rootUrl}/logout`);
+    clearCsrfToken();
     return response.data;
   },
 
@@ -29,6 +32,8 @@ export const authApiService = {
 
   async signUp(body: any): Promise<IServerResponse<void>> {
     const response = await apiClient.post<IServerResponse<void>>(`${rootUrl}/signup`, body);
+    // Signup logs the user in, which replaces the server session
+    clearCsrfToken();
     return response.data;
   },
 
