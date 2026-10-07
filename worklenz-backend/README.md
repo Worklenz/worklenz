@@ -8,7 +8,7 @@ Follow these steps to set up the backend for development:
 
 1. **Configure Environment Variables:**
 
-   - Create a copy of the `.env.example` file and name it `.env`.
+   - Create a copy of the `.env.template` file and name it `.env`.
    - Update the required fields in `.env` with your specific configuration.
 
 2. **Set up Database:**

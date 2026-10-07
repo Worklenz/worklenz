@@ -2,7 +2,7 @@
 <h1 align="center">
     <a href="https://worklenz.com" target="_blank" rel="noopener noreferrer">
         <img src="https://s3.dualstack.us-west-2.amazonaws.com/worklenz.com/assets/worklenz-light-mode.png" alt="Worklenz Logo" width="400">
-    </a>  
+    </a>
 </h1>
 <h3 align="center">All-in-one open-source project management for efficient teams</h3>
 
@@ -52,7 +52,7 @@ Prefer full control over your data? Run Worklenz on your own server.
 
 | Method | Guide |
 |--------|-------|
-| 🐳 Docker (Recommended) | [Quick Docker Setup](#quick-start-docker) | 
+| 🐳 Docker (Recommended) | [Quick Docker Setup](#quick-start-docker) |
 | 🔧 Manual Installation | [Manual Dev Setup](#manual-installation) |
 
 <br>
@@ -200,7 +200,8 @@ docker compose up -d
 <a id="manual-installation"></a>
 ### 🛠️ Manual Installation (For Development)
 
-For developers who want to run the services individually or customize the setup.
+Use this path to run the services individually, either for development or on a
+server that does not use Docker.
 
 **📋 Prerequisites:**
 - Node.js (version 20 or higher)
@@ -211,8 +212,12 @@ For developers who want to run the services individually or customize the setup.
 
 1. 📥 Clone the repository:
 ```bash
+# Open a terminal and navigate to the directory where you want to clone Worklenz.
+cd /path/to/your/projects
+
 git clone https://github.com/Worklenz/worklenz.git
 cd worklenz
+git switch main
 ```
 
 2. ⚙️ Set up environment variables:
@@ -246,6 +251,9 @@ psql -U your_username -d worklenz_db -f database/sql/triggers.sql
 psql -U your_username -d worklenz_db -f database/sql/3_views.sql
 psql -U your_username -d worklenz_db -f database/sql/2_dml.sql
 psql -U your_username -d worklenz_db -f database/sql/5_database_user.sql
+
+# Apply versioned migrations after the base schema is initialized
+npm run migrate:up
 ```
 
 5. ▶️ Start the development servers:
@@ -260,6 +268,44 @@ npm run dev
 ```
 
 6. 🌐 Access the application at http://localhost:5000
+
+#### Production server (without Docker)
+
+For a production server, build the applications and run the backend through a
+process manager such as systemd or PM2. Do not leave `npm start` running only in
+an SSH session.
+
+```bash
+cd worklenz-backend
+npm run build
+npm run migrate:up
+
+cd ../worklenz-frontend
+npm run build
+```
+
+The frontend production files are written to `worklenz-frontend/build`. Configure
+your web server to serve that directory and proxy `/api` and `/socket.io` to the
+backend. Configure the process manager to run `npm start` from the
+`worklenz-backend` directory.
+
+To update a manual deployment, back up the database, then pull the latest
+`main` branch, rebuild both applications, apply migrations, and restart the
+backend process:
+
+```bash
+cd /path/to/your/projects/worklenz
+git pull --ff-only origin main
+
+cd worklenz-backend
+npm ci
+npm run build
+npm run migrate:up
+
+cd ../worklenz-frontend
+npm ci
+npm run build
+```
 
 ## 🚢 Deployment
 
@@ -478,4 +524,3 @@ By contributing to Worklenz, you agree your contributions will be licensed under
   <br/>
   <a href="https://worklenz.com">www.worklenz.com</a>
 </div>
-
