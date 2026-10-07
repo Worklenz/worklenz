@@ -57,6 +57,7 @@ import SingleAvatar from '@/components/common/single-avatar/single-avatar';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import CustomMentionsInput from './CustomMentionsInput';
 import { formatDateForSeparator, isDifferentDay } from '@/utils/chatDateFormat';
+import { fromNow } from '@/utils/dateUtils';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import '@/styles/chat-thread.css';
 import './project-view-updates.css';
@@ -125,7 +126,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
   const projectId = projectIdProp || routeProjectId;
   const dispatch = useAppDispatch();
   const { socket } = useSocket();
-  const { t } = useTranslation('project-view-updates');
+  const { t, i18n } = useTranslation('project-view-updates');
   const { token } = useToken();
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const authService = useAuthService();
@@ -476,7 +477,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
             edit_count: response.body.edit_count || 1,
             last_edited_at: new Date().toISOString(),
             last_edited_by_name:
-              response.body.last_edited_by_name || user?.name || 'You',
+              response.body.last_edited_by_name || user?.name || t('you', { defaultValue: 'You' }),
           })
         );
       }
@@ -565,7 +566,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
           color: token.colorTextSecondary,
         }}
       >
-        {formatDateForSeparator(date, t)}
+        {formatDateForSeparator(date, t, i18n.language)}
       </span>
     </div>
   );
@@ -871,13 +872,23 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
                               >
                                 <PaperClipOutlined />
                                 <span className="chat-msg-attachment-name">
-                                  {attachment.name || 'Attachment'}
+                                  {attachment.name || t('attachment', { defaultValue: 'Attachment' })}
                                 </span>
                               </a>
                             ))}
                             {item.edited && (
                               <Tooltip
-                                title={`Edited ${dayjs(item.last_edited_at).fromNow()} by ${item.last_edited_by_name || 'Unknown'}`}
+                                title={
+                                  item.last_edited_at
+                                    ? t('editedTooltip', {
+                                        defaultValue: 'Edited {{time}} by {{author}}',
+                                        time: fromNow(item.last_edited_at, i18n.language),
+                                        author:
+                                          item.last_edited_by_name ||
+                                          t('unknown', { defaultValue: 'Unknown' }),
+                                      })
+                                    : t('edited', { defaultValue: '(edited)' })
+                                }
                               >
                                 <span
                                   style={{
@@ -887,7 +898,7 @@ const ProjectViewUpdates = ({ projectId: projectIdProp, fullHeight }: ProjectVie
                                     opacity: 0.7,
                                   }}
                                 >
-                                  (edited)
+                                  {t('edited', { defaultValue: '(edited)' })}
                                 </span>
                               </Tooltip>
                             )}

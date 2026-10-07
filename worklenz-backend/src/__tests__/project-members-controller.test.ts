@@ -18,9 +18,9 @@ jest.mock('../shared/guest-seat-limits', () => ({
 }));
 
 import ProjectMembersController from '../controllers/project-members-controller';
-import { checkTeamSubscriptionStatus } from '../shared/paddle-utils';
+import TeamMembersController from '../controllers/team-members-controller';
+import { checkTeamSubscriptionStatus, getActiveGuestCount } from '../shared/paddle-utils';
 import { getGuestSeatLimit } from '../shared/guest-seat-limits';
-import { getActiveGuestCount } from '../shared/paddle-utils';
 
 const mockedCheckTeamSubscriptionStatus = checkTeamSubscriptionStatus as jest.MockedFunction<typeof checkTeamSubscriptionStatus>;
 const mockedGetGuestSeatLimit = getGuestSeatLimit as jest.MockedFunction<typeof getGuestSeatLimit>;
@@ -51,7 +51,7 @@ describe('ProjectMembersController.getGuestMembers', () => {
       user: {
         id: 'admin-user',
         team_id: 'team-123',
-        owner: true,
+        is_admin: true,
       },
       query: {
         current: '1',
@@ -65,8 +65,6 @@ describe('ProjectMembersController.getGuestMembers', () => {
       status: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
     };
-
-    (ProjectMembersController as any).verifyAdminAccess = jest.fn().mockResolvedValue(true);
 
     await ProjectMembersController.getGuestMembers(req, res);
 
@@ -138,5 +136,43 @@ describe('ProjectMembersController.create', () => {
         message: 'Guest limit exceeded',
       })
     );
+  });
+});
+
+describe('ProjectMembersController.createByEmail', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const db = require('../config/db').default;
+    db.query.mockResolvedValue({ rows: [], rowCount: 0 });
+  });
+
+  it('blocks a project invitation when a trial team has reached its member limit', async () => {
+    mockedCheckTeamSubscriptionStatus.mockResolvedValue({
+      subscription_status: 'trialing',
+      current_count: 10,
+      team_member_limit_override: false,
+    } as any);
+
+    const createOrInviteMembersSpy = jest.spyOn(TeamMembersController, 'createOrInviteMembers');
+    const req: any = {
+      body: { project_id: 'project-123', email: 'invitee@example.com' },
+      query: {},
+      user: { id: 'user-123', team_id: 'team-123', owner_id: 'owner-123' },
+    };
+    const res: any = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+    };
+
+    await ProjectMembersController.createByEmail(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        done: false,
+        body: expect.objectContaining({ error_code: 'SEAT_LIMIT_EXCEEDED' }),
+      }),
+    );
+    expect(createOrInviteMembersSpy).not.toHaveBeenCalled();
   });
 });

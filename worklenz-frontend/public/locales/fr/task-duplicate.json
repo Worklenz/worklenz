@@ -1,0 +1,42 @@
+{
+  "duplicateTask": "Tâche en double",
+  "duplicateTaskDescription": "Sélectionnez les éléments à copier dans la nouvelle tâche :",
+  "duplicateOptions": {
+    "subtasks": "Sous-tâches",
+    "attachments": "Pièces jointes",
+    "dates": "Dates",
+    "dependencies": "Dépendances",
+    "assignees": "Destinataires",
+    "labels": "Étiquettes",
+    "customFields": "Valeurs des champs personnalisés",
+    "subscribers": "Abonnés"
+  },
+  "duplicate": "Dupliquer",
+  "cancel": "Annuler",
+  "copyToProject": {
+    "title": "Copier la tâche dans le projet",
+    "selectProject": "Sélectionnez un projet de destination",
+    "confirm": "Tâche de copie",
+    "copyTask": "Tâche de copie",
+    "checkDifferences": "Vérifier les différences",
+    "check": "Vérifier les différences",
+    "checking": "Vérification des différences...",
+    "confirmDifferences": "Ajouter et copier une tâche",
+    "differencesFound": "Ces colonnes sont absentes du projet de destination.",
+    "missingPhasesFound": "Ces phases seront créées dans le projet de destination.",
+    "statusMissing": "Le statut \"{{sourceStatus}}\" n'est pas dans le projet de destination. La tâche sera affectée au statut principal \"{{destinationStatus}}\".",
+    "createMissingItems": "Créer des colonnes et des phases manquantes",
+    "createMissingColumns": "Créer des colonnes manquantes",
+    "cancel": "Annuler",
+    "cancelDifferences": "Annuler la copie",
+    "success": "Tâche copiée avec succès",
+    "openTask": "Tâche ouverte",
+    "loadError": "Impossible de charger les projets accessibles.",
+    "noProjects": "Aucun autre projet accessible trouvé.",
+    "noDifferencesFound": "Le projet de destination comporte toutes les colonnes et phases requises.",
+    "copyDependencies": "Copier les tâches de dépendance",
+    "copyDependenciesDescription": "Incluez toutes les tâches dépendantes lors de la copie de cette tâche dans le projet de destination.",
+    "dependenciesInfo": "Cette tâche a des dépendances. Les tâches dépendantes seront également copiées dans le projet de destination.",
+    "error": "Échec de la copie de la tâche"
+  }
+}

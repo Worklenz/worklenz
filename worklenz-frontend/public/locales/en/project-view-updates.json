@@ -46,5 +46,10 @@
   "convertToTaskError": "Failed to create task",
   "convertToTaskEmpty": "Message has no text to use as a task name",
   "attachFile": "Attach a file",
-  "attachmentUploadError": "Failed to upload attachment"
+  "attachmentUploadError": "Failed to upload attachment",
+  "edited": "(edited)",
+  "editedTooltip": "Edited {{time}} by {{author}}",
+  "unknown": "Unknown",
+  "you": "You",
+  "attachment": "Attachment"
 }

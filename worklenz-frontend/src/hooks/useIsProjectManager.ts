@@ -1,18 +1,12 @@
-import { useAuthService } from '@/hooks/useAuth';
-import { useAppSelector } from '@/hooks/useAppSelector';
+import useProjectPermissions from '@/hooks/useProjectPermissions';
 
-const useIsProjectManager = () => {
-  const currentSession = useAuthService().getCurrentSession();
-  const { project: currentProject } = useAppSelector(state => state.projectReducer);
-  const { project: drawerProject } = useAppSelector(state => state.projectDrawerReducer);
-
-  // Check if user is project manager for either the current project or drawer project
-  const isManagerOfCurrentProject =
-    currentSession?.team_member_id === currentProject?.project_manager?.id;
-  const isManagerOfDrawerProject =
-    currentSession?.team_member_id === drawerProject?.project_manager?.id;
-
-  return isManagerOfCurrentProject || isManagerOfDrawerProject;
+/**
+ * Whether the current user is PM on the given project (default: active project view).
+ * Does not OR with the drawer project — that caused PM controls to leak across projects.
+ */
+const useIsProjectManager = (projectId?: string | null) => {
+  const { isProjectManager } = useProjectPermissions(projectId);
+  return isProjectManager;
 };
 
 export default useIsProjectManager;

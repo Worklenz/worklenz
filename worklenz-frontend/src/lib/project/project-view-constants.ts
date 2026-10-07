@@ -6,11 +6,16 @@ import { isFreeUser } from '@/utils/subscription-utils';
 import { isUserGuest } from './project-view-guest';
 import { ILocalSession } from '@/types/auth/local-session.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
+import {
+  getSoftwareProjectLabels,
+  isSoftwareProjectType,
+} from '@/lib/project/software-project';
 
 // Import core components synchronously to avoid suspense in main tabs
 import ProjectViewEnhancedBoard from '@/pages/projects/projectView/enhancedBoard/project-view-enhanced-board';
 import TaskListV2 from '@/components/task-list-v2/TaskListV2';
 import ProjectViewFinance from '@/pages/projects/projectView/finance/ProjectViewFinance';
+import ProjectViewBacklog from '@/pages/projects/projectView/backlog/ProjectViewBacklog';
 
 // Lazy load less critical components
 const ProjectViewInsights = React.lazy(
@@ -30,6 +35,15 @@ const ProjectViewRoadmap = React.lazy(
 );
 const ProjectViewWorkload = React.lazy(
   () => import('@/pages/projects/projectView/workload/ProjectViewWorkload')
+);
+const ProjectViewReleases = React.lazy(
+  () => import('@/pages/projects/projectView/releases/ProjectViewReleases')
+);
+const ProjectViewReports = React.lazy(
+  () => import('@/pages/projects/projectView/reports/ProjectViewReports')
+);
+const ProjectViewSoftwareList = React.lazy(
+  () => import('@/pages/projects/projectView/software-list/ProjectViewSoftwareList')
 );
 
 // type of a tab items
@@ -53,7 +67,10 @@ const getTabLabel = (key: string): string => {
       // Provide fallback labels
       const fallbacks: Record<string, string> = {
         taskList: 'Task List',
+        backlog: 'Backlog',
         board: 'Board',
+        releases: 'Releases',
+        reports: 'Reports',
         insights: 'Insights',
         files: 'Files',
         members: 'Members',
@@ -69,7 +86,10 @@ const getTabLabel = (key: string): string => {
     // Fallback labels in case of any error
     const fallbacks: Record<string, string> = {
       taskList: 'Task List',
+      backlog: 'Backlog',
       board: 'Board',
+      releases: 'Releases',
+      reports: 'Reports',
       insights: 'Insights',
       files: 'Files',
       members: 'Members',
@@ -84,6 +104,14 @@ const getTabLabel = (key: string): string => {
 export const tabItems: TabItems[] = [
   {
     index: 0,
+    key: 'backlog',
+    defaultLabel: 'Backlog',
+    label: getTabLabel('backlog'),
+    isPinned: true,
+    element: React.createElement(ProjectViewBacklog),
+  },
+  {
+    index: 1,
     key: 'tasks-list',
     defaultLabel: 'Task List',
     label: getTabLabel('taskList'),
@@ -91,7 +119,7 @@ export const tabItems: TabItems[] = [
     element: React.createElement(TaskListV2),
   },
   {
-    index: 1,
+    index: 2,
     key: 'board',
     defaultLabel: 'Board',
     label: getTabLabel('board'),
@@ -99,14 +127,14 @@ export const tabItems: TabItems[] = [
     element: React.createElement(ProjectViewEnhancedBoard),
   },
   {
-    index: 2,
+    index: 3,
     key: 'project-insights-member-overview',
     defaultLabel: 'Insights',
     label: getTabLabel('insights'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
-    index: 3,
+    index: 4,
     key: 'all-attachments',
     defaultLabel: 'Files',
     label: getTabLabel('files'),
@@ -117,7 +145,7 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 4,
+    index: 5,
     key: 'members',
     defaultLabel: 'Members',
     label: getTabLabel('members'),
@@ -128,7 +156,7 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 5,
+    index: 6,
     key: 'updates',
     defaultLabel: 'Updates',
     label: getTabLabel('updates'),
@@ -139,25 +167,47 @@ export const tabItems: TabItems[] = [
     ),
   },
   {
-    index: 6,
+    index: 7,
     key: 'roadmap',
     defaultLabel: 'Roadmap',
     label: getTabLabel('roadmap'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
-    index: 7,
+    index: 8,
     key: 'workload',
     defaultLabel: 'Workload',
     label: getTabLabel('workload'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
   },
   {
-    index: 8,
+    index: 9,
     key: 'finance',
     defaultLabel: 'Finance',
     label: getTabLabel('finance'),
     element: React.createElement('div'), // Placeholder, actual element set in getFilteredTabItems
+  },
+  {
+    index: 10,
+    key: 'releases',
+    defaultLabel: 'Releases',
+    label: getTabLabel('releases'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewReleases)
+    ),
+  },
+  {
+    index: 11,
+    key: 'reports',
+    defaultLabel: 'Reports',
+    label: getTabLabel('reports'),
+    element: React.createElement(
+      Suspense,
+      { fallback: React.createElement(InlineSuspenseFallback) },
+      React.createElement(ProjectViewReports)
+    ),
   },
 ];
 
@@ -166,6 +216,9 @@ export const updateTabLabels = () => {
   try {
     tabItems.forEach(item => {
       switch (item.key) {
+        case 'backlog':
+          item.label = getTabLabel('backlog');
+          break;
         case 'tasks-list':
           item.label = getTabLabel('taskList');
           break;
@@ -193,6 +246,12 @@ export const updateTabLabels = () => {
         case 'finance':
           item.label = getTabLabel('finance');
           break;
+        case 'releases':
+          item.label = getTabLabel('releases');
+          break;
+        case 'reports':
+          item.label = getTabLabel('reports');
+          break;
       }
     });
   } catch (error) {
@@ -204,7 +263,37 @@ export const updateTabLabels = () => {
  * Get restricted views for guests
  * Guests cannot access editing-oriented project views
  */
-const GUEST_RESTRICTED_VIEWS = ['project-insights-member-overview', 'finance', 'updates', 'all-attachments'];
+const GUEST_RESTRICTED_VIEWS = [
+  'project-insights-member-overview',
+  'finance',
+  'updates',
+  'all-attachments',
+  'reports',
+];
+
+/**
+ * Tabs hidden for software projects. Links to a hidden tab (e.g. `tab=finance`)
+ * fall back to the first available tab, which is the Backlog.
+ */
+const SOFTWARE_HIDDEN_VIEWS = ['finance', 'workload'];
+
+const SOFTWARE_ONLY_VIEWS = ['backlog', 'releases', 'reports'];
+
+/** Tabs shown in the software project tab bar; the rest are listed under "More". */
+export const SOFTWARE_PRIMARY_TABS = ['backlog', 'board', 'releases', 'reports'];
+
+const SOFTWARE_TAB_ORDER = [
+  'backlog',
+  'board',
+  'releases',
+  'reports',
+  'tasks-list',
+  'roadmap',
+  'project-insights-member-overview',
+  'all-attachments',
+  'members',
+  'updates',
+];
 
 // Function to get filtered tab items based on user permissions
 export const getFilteredTabItems = (
@@ -215,12 +304,22 @@ export const getFilteredTabItems = (
   const hasFinancePermission = hasFinanceViewPermission(currentSession, currentProject);
   const isFree = isFreeUser(currentSession);
   const isGuest = isUserGuest(currentProject);
+  const isSoftware = isSoftwareProjectType(currentProject?.project_type);
+  const softwareLabels = getSoftwareProjectLabels(currentProject?.project_type);
 
-  return tabItems
+  const filtered = tabItems
     .map(item => {
+      if (SOFTWARE_ONLY_VIEWS.includes(item.key) && !isSoftware) {
+        return null;
+      }
+
       // If user is a guest, only show allowed views (Task List, Board, and Members)
       if (isGuest && GUEST_RESTRICTED_VIEWS.includes(item.key)) {
         return null; // Hide restricted views for guests
+      }
+
+      if (isSoftware && SOFTWARE_HIDDEN_VIEWS.includes(item.key)) {
+        return null;
       }
 
       // Guests can view Roadmap but cannot edit tasks there.
@@ -295,8 +394,41 @@ export const getFilteredTabItems = (
         };
       }
 
+      if (item.key === 'backlog' && isSoftware) {
+        return {
+          ...item,
+          label: softwareLabels.backlog,
+          defaultLabel: softwareLabels.backlog,
+        };
+      }
+
+      if (item.key === 'tasks-list' && isSoftware) {
+        return {
+          ...item,
+          label: softwareLabels.taskList,
+          defaultLabel: softwareLabels.taskList,
+          element: React.createElement(
+            Suspense,
+            { fallback: React.createElement(InlineSuspenseFallback) },
+            React.createElement(ProjectViewSoftwareList)
+          ),
+        };
+      }
+
       // Return tab as is for all other cases
       return item;
     })
     .filter(item => item !== null) as TabItems[];
+
+  if (!isSoftware) {
+    return filtered;
+  }
+
+  return [...filtered].sort((a, b) => {
+    const aIndex = SOFTWARE_TAB_ORDER.indexOf(a.key);
+    const bIndex = SOFTWARE_TAB_ORDER.indexOf(b.key);
+    const safeA = aIndex === -1 ? SOFTWARE_TAB_ORDER.length : aIndex;
+    const safeB = bIndex === -1 ? SOFTWARE_TAB_ORDER.length : bIndex;
+    return safeA - safeB;
+  });
 };

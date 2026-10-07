@@ -38,7 +38,7 @@ const TaskDrawerActivityLog = () => {
   const [isHistoryPopoverOpen, setIsHistoryPopoverOpen] = useState(false);
   const { selectedTaskId, taskFormViewModel } = useAppSelector(state => state.taskDrawerReducer);
   const { mode: themeMode } = useAppSelector(state => state.themeReducer);
-  const { t } = useTranslation('task-drawer/task-drawer');
+  const { t, i18n } = useTranslation('task-drawer/task-drawer');
   const currentSession = useAuthService().getCurrentSession();
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
   const { trackAppSumoEvent } = useAppSumoTracking();
@@ -83,7 +83,11 @@ const TaskDrawerActivityLog = () => {
             <Typography.Text>{truncateText(activity.assigned_user?.name)}</Typography.Text>
             <ArrowRightOutlined />
             &nbsp;
-            <Tag color={'default'}>{truncateText(activity.log_type?.toUpperCase())}</Tag>
+            <Tag color={'default'}>
+              {activity.log_type === 'create' || activity.log_type === 'assign'
+                ? t('taskActivityLogTab.add', { defaultValue: 'ADD' })
+                : t('taskActivityLogTab.remove', { defaultValue: 'REMOVE' })}
+            </Tag>
           </Flex>
         );
 
@@ -209,6 +213,69 @@ const TaskDrawerActivityLog = () => {
     }
   };
 
+  const getLocalizedAttribute = (rawAttribute?: string): string => {
+    if (!rawAttribute) return '';
+    const normalized = rawAttribute.toLowerCase().replace(/[\s_]+/g, '_');
+    switch (normalized) {
+      case 'status':
+        return t('taskActivityLogTab.attributes.status', { defaultValue: 'status' });
+      case 'priority':
+        return t('taskActivityLogTab.attributes.priority', { defaultValue: 'priority' });
+      case 'phase':
+        return t('taskActivityLogTab.attributes.phase', { defaultValue: 'phase' });
+      case 'progress':
+        return t('taskActivityLogTab.attributes.progress', { defaultValue: 'progress' });
+      case 'weight':
+        return t('taskActivityLogTab.attributes.weight', { defaultValue: 'weight' });
+      case 'name':
+        return t('taskActivityLogTab.attributes.name', { defaultValue: 'name' });
+      case 'start_date':
+        return t('taskActivityLogTab.attributes.startDate', { defaultValue: 'start date' });
+      case 'end_date':
+        return t('taskActivityLogTab.attributes.endDate', { defaultValue: 'due date' });
+      case 'estimation':
+        return t('taskActivityLogTab.attributes.estimation', { defaultValue: 'time estimation' });
+      case 'label':
+        return t('taskActivityLogTab.attributes.label', { defaultValue: 'label' });
+      case 'description':
+        return t('taskActivityLogTab.attributes.description', { defaultValue: 'description' });
+      case 'attachment':
+        return t('taskActivityLogTab.attributes.attachment', { defaultValue: 'attachment' });
+      case 'comment':
+        return t('taskActivityLogTab.attributes.comment', { defaultValue: 'comment' });
+      case 'assignee':
+        return t('taskActivityLogTab.attributes.assignee', { defaultValue: 'assignee' });
+      case 'archive':
+        return t('taskActivityLogTab.attributes.archive', { defaultValue: 'archive' });
+      default:
+        return rawAttribute;
+    }
+  };
+
+  const renderActivityAction = (activity: IActivityLog) => {
+    const attribute = getLocalizedAttribute(activity.attribute_type);
+    const logType = activity.log_type?.toLowerCase();
+
+    let prefix = activity.log_text || '';
+    if (logType === 'update') {
+      prefix = t('taskActivityLogTab.updatedThe', { defaultValue: 'updated the ' });
+    } else if (logType === 'create' || logType === 'assign') {
+      prefix = t('taskActivityLogTab.addedA', { defaultValue: 'added ' });
+    } else if (logType === 'delete' || logType === 'unassign') {
+      prefix = t('taskActivityLogTab.removedA', { defaultValue: 'removed ' });
+    }
+
+    const suffix = t('taskActivityLogTab.periodSuffix', { defaultValue: '.' });
+
+    return (
+      <>
+        <Typography.Text>{prefix}</Typography.Text>
+        <Typography.Text strong>{attribute}</Typography.Text>
+        <Typography.Text>{suffix}</Typography.Text>
+      </>
+    );
+  };
+
   useEffect(() => {
     !loading && fetchActivityLogs();
   }, []);
@@ -243,15 +310,18 @@ const TaskDrawerActivityLog = () => {
                 <Flex vertical gap={4}>
                   <Flex gap={4} align="center">
                     <Typography.Text strong>{activity.done_by?.name}</Typography.Text>
-                    <Typography.Text>{activity.log_text}</Typography.Text>
-                    <Typography.Text strong>{activity.attribute_type}.</Typography.Text>
+                    {renderActivityAction(activity)}
                     <Tooltip
                       title={
-                        activity.created_at ? formatDateTimeWithLocale(activity.created_at) : ''
+                        activity.created_at
+                          ? formatDateTimeWithLocale(activity.created_at, i18n.language)
+                          : ''
                       }
                     >
                       <Typography.Text strong type="secondary">
-                        {activity.created_at ? calculateTimeGap(activity.created_at) : ''}
+                        {activity.created_at
+                          ? calculateTimeGap(activity.created_at, i18n.language)
+                          : ''}
                       </Typography.Text>
                     </Tooltip>
                   </Flex>
@@ -266,16 +336,20 @@ const TaskDrawerActivityLog = () => {
               <Flex vertical gap={4}>
                 <Flex gap={4} align="center">
                   <Typography.Text strong>{activityLogs.name}</Typography.Text>
-                  <Typography.Text>{t('taskActivityLogTab.createdTask')}</Typography.Text>
+                  <Typography.Text>
+                    {t('taskActivityLogTab.createdTask', { defaultValue: 'created the task.' })}
+                  </Typography.Text>
                   <Tooltip
                     title={
                       activityLogs.created_at
-                        ? formatDateTimeWithLocale(activityLogs.created_at)
+                        ? formatDateTimeWithLocale(activityLogs.created_at, i18n.language)
                         : ''
                     }
                   >
                     <Typography.Text strong type="secondary">
-                      {activityLogs.created_at ? calculateTimeGap(activityLogs.created_at) : ''}
+                      {activityLogs.created_at
+                        ? calculateTimeGap(activityLogs.created_at, i18n.language)
+                        : ''}
                     </Typography.Text>
                   </Tooltip>
                 </Flex>

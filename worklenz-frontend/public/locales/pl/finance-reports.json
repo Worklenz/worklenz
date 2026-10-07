@@ -1,0 +1,171 @@
+{
+  "emptyValue": "—",
+  "noBudgetSet": "Nie ustalono budżetu",
+  "loadError": "Nie można wczytać tego raportu. Spróbuj ponownie.",
+  "retry": "Spróbuj ponownie",
+  "searchPlaceholder": "Szukaj",
+  "budgets": {
+    "pageTitle": "Budżety",
+    "pageSubTitle": "Śledzenie budżetu i wskaźnika spalania we wszystkich projektach. ETC to pozostałe szacowane godziny według zrealizowanej stawki godzinowej z zarejestrowanego czasu.",
+    "empty": "Nie ma jeszcze projektów do pokazania.",
+    "table": {
+      "project": "Projekt",
+      "budget": "Budżet",
+      "spent": "Wydane",
+      "remaining": "Pozostało",
+      "burnRate": "Szybkość spalania",
+      "etc": "itd",
+      "alert": "Alarm"
+    },
+    "alert": {
+      "high": "Wysokie spalanie",
+      "watch": "Oglądaj",
+      "ok": "OK",
+      "none": "Brak budżetu"
+    }
+  },
+  "invoices": {
+    "pageTitle": "Faktury",
+    "pageSubTitle": "Wysyłaj, śledź i odbieraj płatności klientów w jednym widoku portfela.",
+    "empty": "Nie ma jeszcze faktur. Twórz faktury z Portalu Klienta.",
+    "openInvoice": "Otwórz fakturę",
+    "kpi": {
+      "totalInvoiced": "Całość na fakturze",
+      "totalPaid": "Razem zapłacono",
+      "totalOutstanding": "Razem zaległe"
+    },
+    "table": {
+      "invoice": "Faktura",
+      "client": "Klient",
+      "project": "Projekt",
+      "amount": "Kwota",
+      "paymentStatus": "Stan płatności",
+      "paidAmount": "Zapłacona kwota",
+      "status": "Stan",
+      "issued": "Wydane",
+      "due": "Termin"
+    },
+    "status": {
+      "draft": "Wersja robocza",
+      "sent": "Wysłano",
+      "paid": "Płatny",
+      "overdue": "Zaległe",
+      "cancelled": "Anulowano",
+      "outstanding": "Znakomity"
+    }
+  },
+  "billableTime": {
+    "pageTitle": "Czas rozliczeniowy",
+    "pageSubTitle": "Zarejestrowane godziny, flaga podlegająca rozliczeniu i wartość arkusza stawek w całym zespole. Zatwierdzenie karty czasu pracy nie jest wymagane — każdy dziennik jest już zarejestrowany.",
+    "empty": "W tym okresie nie zarejestrowano żadnego czasu.",
+    "tableTitle": "Wpisy czasu",
+    "range": {
+      "week": "W tym tygodniu",
+      "month": "W tym miesiącu",
+      "lastMonth": "Ostatni miesiąc"
+    },
+    "kpi": {
+      "logged": "Zarejestrowano ten okres",
+      "billable": "Płatne",
+      "nonBillable": "Niepodlegające rozliczeniu",
+      "value": "Wartość rozliczeniowa"
+    },
+    "table": {
+      "member": "Członek",
+      "project": "Projekt",
+      "task": "Zadanie",
+      "date": "Data",
+      "time": "Czas",
+      "billable": "Płatne",
+      "rate": "Oceń",
+      "value": "Wartość"
+    },
+    "billable": "Płatne",
+    "internal": "Wewnętrzne"
+  },
+  "utilization": {
+    "pageTitle": "Wykorzystanie",
+    "pageSubTitle": "Rozliczane godziny pracy zespołu w oparciu o możliwości w wybranym okresie. Nadmierna alokacja przekracza 85% pojemności.",
+    "empty": "Brak członków zespołu do pokazania.",
+    "tableTitle": "Wykorzystanie przez członka",
+    "kpi": {
+      "team": "Wykorzystanie zespołu",
+      "billable": "Godziny płatne",
+      "nonBillable": "Niepodlegające rozliczeniu",
+      "overallocated": "Nadmierna alokacja"
+    },
+    "overallocatedCount_one": "{{count}} członek",
+    "overallocatedCount_other": "{{count}} członków",
+    "table": {
+      "member": "Członek",
+      "role": "Rola",
+      "billableHours": "Godziny płatne",
+      "totalHours": "Łączna liczba godzin",
+      "utilization": "Wykorzystanie",
+      "status": "Stan"
+    },
+    "status": {
+      "high": "Nadmierna alokacja",
+      "watch": "Oglądaj",
+      "ok": "OK"
+    }
+  },
+  "profitability": {
+    "pageTitle": "Rentowność",
+    "pageSubTitle": "Przychody portfela z opłaconych faktur, śledzone koszty na podstawie zarejestrowanego czasu i kosztów stałych oraz rozliczane wykorzystanie według projektu.",
+    "empty": "Nie ma jeszcze projektów do pokazania.",
+    "revenueNote": "Przychodami są opłacane faktury z portalu klienta. Przychody na poziomie projektu nie są jeszcze śledzone, więc tabela pokazuje koszty i wykorzystanie.",
+    "noRevenueNote": "Nie ma jeszcze opłaconych faktur, zatem przychody, zyski i marża pozostają puste do czasu odebrania faktur.",
+    "kpi": {
+      "revenue": "Przychody",
+      "trackedCost": "Śledzony koszt",
+      "profit": "Zysk",
+      "margin": "Marża zysku",
+      "billableUtil": "Płatne użytkowanie"
+    },
+    "trendTitle": "Trend przychodów i zysków",
+    "costBreakdownTitle": "Podział kosztów",
+    "tableTitle": "Rentowność projektu",
+    "cost": {
+      "fixed": "Koszty stałe",
+      "timeBased": "Koszty zależne od czasu"
+    },
+    "table": {
+      "project": "Projekt",
+      "cost": "Koszt",
+      "utilization": "Wykorzystanie",
+      "health": "Zdrowie"
+    },
+    "health": {
+      "high": "Wysokie spalanie",
+      "watch": "Oglądaj",
+      "ok": "Na dobrej drodze",
+      "none": "Brak budżetu"
+    },
+    "legend": {
+      "revenue": "Przychody",
+      "profit": "Zysk",
+      "cost": "Koszt"
+    }
+  },
+  "forecasts": {
+    "pageTitle": "Prognozy",
+    "pageSubTitle": "Następne trzy miesiące z liniowego trendu z ostatnich trzech miesięcy zafakturowanych przychodów i kosztów opartych na czasie.",
+    "methodology": "Metoda prognozy: trend liniowy z poprzednich trzech miesięcy. Nie jest to prognoza oparta na rurociągach.",
+    "kpi": {
+      "projectedRevenue": "Prognozowane przychody (w przyszłym miesiącu)",
+      "projectedProfit": "Prognozowany zysk (w przyszłym miesiącu)"
+    },
+    "vsPrevious": "{{value}}% w porównaniu z tym miesiącem",
+    "noRevenueBaseline": "Brak przychodów w tym miesiącu do porównania",
+    "noProfitBaseline": "Brak zysku w tym miesiącu do porównania",
+    "chartTitle": "Prognoza przychodów na 3 miesiące",
+    "legend": {
+      "revenue": "Przychody",
+      "profit": "Zysk",
+      "actual": "Rzeczywisty",
+      "projected": "Przewidywane"
+    },
+    "empty": "Za mało historii, żeby prognozować. Rejestruj czas i wysyłaj faktury, aby zbudować trend."
+  }
+}

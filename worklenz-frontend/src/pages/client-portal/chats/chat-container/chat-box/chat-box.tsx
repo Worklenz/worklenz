@@ -42,9 +42,11 @@ type ChatBoxProps = {
   openedChat: TempChatsType;
   /** Mobile only — when provided, a back button renders in the chat header. */
   onBack?: () => void;
+  /** Optional secondary line under the name in the header (e.g. "4 active projects"). */
+  subtitle?: string;
 };
 
-const ChatBox = ({ openedChat, onBack }: ChatBoxProps) => {
+const ChatBox = ({ openedChat, onBack, subtitle }: ChatBoxProps) => {
   const [message, setMessage] = useState<string>('');
   const [pendingFile, setPendingFile] = useState<{
     name: string;
@@ -55,7 +57,7 @@ const ChatBox = ({ openedChat, onBack }: ChatBoxProps) => {
   const inputRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { t } = useTranslation('client-portal-chats');
+  const { t, i18n } = useTranslation('client-portal-chats');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const { useToken } = theme;
   const { token } = useToken();
@@ -319,6 +321,11 @@ const ChatBox = ({ openedChat, onBack }: ChatBoxProps) => {
           >
             {openedChat.name}
           </Typography.Text>
+          {subtitle && (
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+              {subtitle}
+            </Typography.Text>
+          )}
         </Flex>
         <Tooltip title={t('refresh')}>
           <Button
@@ -396,7 +403,7 @@ const ChatBox = ({ openedChat, onBack }: ChatBoxProps) => {
                           color: token.colorTextSecondary,
                         }}
                       >
-                        {formatDateForSeparator(timeIso, t)}
+                        {formatDateForSeparator(timeIso, t, i18n.language)}
                       </span>
                     </div>
                   )}
@@ -449,7 +456,7 @@ const ChatBox = ({ openedChat, onBack }: ChatBoxProps) => {
                                 inputRef.current?.focus();
                               }}
                             >
-                              <RollbackOutlined style={{ fontSize: 14 }} />
+                              <RollbackOutlined style={{ fontSize: 12 }} />
                             </button>
                           </Tooltip>
                           <Tooltip
@@ -496,7 +503,7 @@ const ChatBox = ({ openedChat, onBack }: ChatBoxProps) => {
                                 disabled={clientProjects.length === 0}
                                 onClick={() => handleConvertToTask(chatMessage)}
                               >
-                                <CheckSquareOutlined style={{ fontSize: 14 }} />
+                                <CheckSquareOutlined style={{ fontSize: 12 }} />
                               </button>
                             </Popover>
                           </Tooltip>

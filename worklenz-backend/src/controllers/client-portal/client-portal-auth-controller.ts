@@ -15,6 +15,11 @@ import {
   generateInvitationEmailHTML,
   generateWelcomeEmailHTML,
 } from "./helpers";
+import {
+  ensureContactIdForClient,
+  getLoginAccessState,
+  linkContactToLogin,
+} from "../../services/client-contacts-service";
 
 export default class ClientPortalAuthController extends ClientPortalControllerBase {
   static async validateInvitationBySlug(
@@ -197,6 +202,16 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
               );
           }
 
+          // The link is a signed JWT, but regenerating it replaces the stored token. An older link
+          // must stop working even though its signature and expiry are still valid.
+          if (!(await TokenService.isCurrentOrganizationInvite(token))) {
+            return res
+              .status(400)
+              .json(
+                new ServerResponse(false, null, "Invalid or expired invitation"),
+              );
+          }
+
           // Check if email exists in Worklenz users table for linking
           const existingWorklenzUserQuery = `
             SELECT id, email, name, password FROM users
@@ -326,6 +341,20 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             orgInvitePayload.teamId,
             clientId,
           ]);
+
+          // The joiner is the only person at the company created for them, so they are its POC.
+          try {
+            await linkContactToLogin(db, {
+              teamId: orgInvitePayload.teamId,
+              clientId,
+              clientUserId: newUser.id,
+              email: newUser.email,
+              name,
+              role: "poc",
+            });
+          } catch (linkError) {
+            console.error("Could not create company user for joiner:", linkError);
+          }
 
           // Generate client access token
           const permissions = await TokenService.getClientPermissions(clientId);
@@ -498,9 +527,11 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         newUser.client_id,
       );
 
+      // clientUserId lets the per-request check see this login's status and its company user.
       const tokenPayload = {
         clientId: newUser.client_id,
         organizationId: newUser.team_id,
+        clientUserId: newUser.id,
         email: newUser.email,
         permissions,
         type: "client" as const,
@@ -572,6 +603,20 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         organizations.find((org) => org.isDefault) || organizations[0];
       const organizationId = defaultOrg?.teamId || clientUser.team_id;
       const clientId = defaultOrg?.clientId || clientUser.client_id;
+
+      // An admin can disable a company user without touching their login, so check it here too.
+      const access = await getLoginAccessState(db, clientUser.id, clientId);
+      if (access.isDisabled) {
+        return res
+          .status(403)
+          .json(
+            new ServerResponse(
+              false,
+              null,
+              "Your access has been disabled. Please contact your administrator.",
+            ),
+          );
+      }
 
       // Generate client access token with organization information
       const tokenPayload = {
@@ -649,12 +694,34 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           .json(new ServerResponse(false, null, "Invalid or expired token"));
       }
 
+      // A refresh must not outlive the user's access. Tokens issued before clientUserId was always
+      // included are resolved by email so they can't be refreshed indefinitely.
+      let clientUserId = decoded.clientUserId;
+      if (!clientUserId) {
+        const found = await db.query(
+          "SELECT id FROM client_users WHERE LOWER(email) = LOWER($1) LIMIT 1",
+          [decoded.email],
+        );
+        clientUserId = found.rows[0]?.id;
+      }
+
+      const access = clientUserId
+        ? await getLoginAccessState(db, clientUserId, decoded.clientId)
+        : null;
+      if (!access || !access.exists || access.loginStatus !== "active" || access.isDisabled) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Access has been revoked"));
+      }
+
       // Generate new token with updated expiry
       const newToken = TokenService.generateClientToken({
         clientId: decoded.clientId,
         organizationId: decoded.organizationId,
+        clientUserId,
         email: decoded.email,
         permissions: decoded.permissions || [],
+        availableOrganizations: decoded.availableOrganizations,
         type: "client" as const,
       });
 
@@ -963,6 +1030,20 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             clientId,
           ]);
 
+          // The joiner is the only person at the company created for them, so they are its POC.
+          try {
+            await linkContactToLogin(db, {
+              teamId: invitation.team_id,
+              clientId,
+              clientUserId,
+              email: user.email,
+              name: user.name,
+              role: "poc",
+            });
+          } catch (linkError) {
+            console.error("Could not create company user for joiner:", linkError);
+          }
+
           return res.json(
             new ServerResponse(true, {
               redirectTo: "client-portal",
@@ -1025,7 +1106,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       // Get client information
       const clientQuery = `
-        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.invite_slug
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person, c.invite_slug
         FROM clients c
         WHERE c.id = $1 AND c.team_id = $2
       `;
@@ -1131,6 +1212,20 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           `;
           await db.query(orgAccessQuery, [newClientUserId, teamId, client.id]);
 
+          // Tie the company user to the login that was just linked
+          try {
+            await linkContactToLogin(db, {
+              teamId,
+              clientId: client.id,
+              clientUserId: newClientUserId,
+              email: client.email,
+              name: client.contact_person?.trim() || client.name,
+              role: "poc",
+            });
+          } catch (linkError) {
+            console.error("Could not link company user to login:", linkError);
+          }
+
           // Update client status to active since user already exists
           const updateClientQuery = `
             UPDATE clients SET status = 'active', updated_at = NOW()
@@ -1168,7 +1263,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days from now
       const inviteToken = TokenService.generateInviteToken();
 
-      // Create invitation record in database
+      // Create invitation record in database, tied to the company's contact for this email
       await TokenService.createInvitation({
         clientId: client.id,
         email: client.email,
@@ -1176,6 +1271,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         role: "member",
         invitedBy: userId,
         token: inviteToken,
+        clientContactId: await ensureContactIdForClient(db, teamId, client),
       });
 
       // Generate client portal link with secure token
@@ -1237,7 +1333,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
 
       // Get client information
       const clientQuery = `
-        SELECT c.id, c.name, c.email, c.company_name, c.phone
+        SELECT c.id, c.name, c.email, c.company_name, c.phone, c.contact_person
         FROM clients c
         WHERE c.id = $1 AND c.team_id = $2
       `;
@@ -1250,6 +1346,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
       }
 
       const client = clientResult.rows[0];
+      const clientContactId = await ensureContactIdForClient(db, teamId, client);
 
       // Check if client already has an active portal user (already joined)
       const activeUserCheck = await db.query(
@@ -1285,10 +1382,12 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         const existingInvitation = pendingInviteCheck.rows[0];
         inviteToken = TokenService.generateInviteToken();
 
-        // Update invitation with new token, expiry, and current client email/name
+        // Update invitation with new token, expiry, and current client email/name. created_at is
+        // restarted too so "latest invitation" and the invited-at time reflect this send.
         await db.query(
           `UPDATE client_invitations
-           SET token = $1, expires_at = $2, email = $3, name = $4, updated_at = NOW()
+           SET token = $1, expires_at = $2, email = $3, name = $4, updated_at = NOW(),
+               created_at = NOW(), client_contact_id = COALESCE(client_contact_id, $6)
            WHERE id = $5`,
           [
             inviteToken,
@@ -1296,6 +1395,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
             client.email,
             client.name,
             existingInvitation.id,
+            clientContactId,
           ],
         );
       } else {
@@ -1308,6 +1408,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
           role: "member",
           invitedBy: userId,
           token: inviteToken,
+          clientContactId,
         });
       }
 
@@ -1403,6 +1504,7 @@ export default class ClientPortalAuthController extends ClientPortalControllerBa
         role: "member",
         invitedBy,
         token: inviteToken,
+        clientContactId: await ensureContactIdForClient(db, teamId, client),
       });
 
       // Get the email template

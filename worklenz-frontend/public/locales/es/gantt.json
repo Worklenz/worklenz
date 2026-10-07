@@ -1,4 +1,5 @@
 {
+  "backlogGroupName": "Trabajo pendiente",
   "task": {
     "open": "Abrir",
     "clickViewPhaseDetails": "Haz clic para ver los detalles de la fase",

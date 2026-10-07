@@ -5,6 +5,40 @@ import { IWorkLenzResponse } from "../../interfaces/worklenz-response";
 import { ServerResponse } from "../../models/server-response";
 import db from "../../config/db";
 import SqlHelper from "../../shared/sql-helpers";
+import { isValidUuid } from "../../shared/validation-helpers";
+import type { PoolClient } from "pg";
+import {
+  uploadBase64,
+  getClientPortalStorageKey,
+  generateUniqueFilename,
+} from "../../shared/storage";
+import {
+  DISCOUNT_TYPES,
+  NormalizedLineItem,
+  OVERDUE_SQL,
+  buildInvoiceOrderBy,
+  cleanText,
+  clampPagination,
+  computeInvoiceTotals,
+  escapeLikePattern,
+  isInvoiceableRequestStatus,
+  isPaymentStatus,
+  isSettableInvoiceStatus,
+  normalizeCurrency,
+  normalizeLineItems,
+  parseOptionalDate,
+  parseTaxAndDiscount,
+  resolvePayment,
+  roundMoney,
+  validatePaymentProof,
+} from "./client-portal-invoice-helpers";
+import {
+  CLIENT_SNAPSHOT_SELECT,
+  ClientSnapshot,
+  SNAPSHOT_COLUMNS,
+  snapshotFromRow,
+  snapshotParams,
+} from "./client-portal-client-snapshot";
 
 export default class ClientPortalInvoicesController extends ClientPortalControllerBase {
 
@@ -47,6 +81,54 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       .join(",\n          ");
   }
 
+  /** Past its due date and not fully paid, and neither a draft nor cancelled. */
+  private static isPastDue(row: {
+    due_date?: string | Date | null;
+    payment_status?: string;
+    status?: string;
+  }) {
+    if (!row.due_date || row.payment_status === "paid") return false;
+    if (row.status === "draft" || row.status === "cancelled") return false;
+    return new Date(row.due_date) < new Date(new Date().toDateString());
+  }
+
+  /** An invoice's lines, in the order they were entered. */
+  private static async getLineItems(invoiceId: string) {
+    const result = await db.query(
+      `SELECT id, description, quantity, rate, amount
+       FROM client_portal_invoice_line_items
+       WHERE invoice_id = $1
+       ORDER BY position, created_at`,
+      [invoiceId]
+    );
+    return result.rows.map((row: any) => ({
+      id: row.id,
+      description: row.description,
+      quantity: parseFloat(row.quantity || "0"),
+      rate: parseFloat(row.rate || "0"),
+      amount: parseFloat(row.amount || "0"),
+    }));
+  }
+
+  /** Inserts an invoice's lines in one statement; call inside the caller's transaction. */
+  private static async insertLineItems(
+    conn: PoolClient,
+    invoiceId: string,
+    items: NormalizedLineItem[]
+  ) {
+    const values: (string | number)[] = [];
+    const rows = items.map((item, index) => {
+      const base = values.length;
+      values.push(invoiceId, item.description, item.quantity, item.rate, item.amount, index);
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5}, $${base + 6})`;
+    });
+    await conn.query(
+      `INSERT INTO client_portal_invoice_line_items (invoice_id, description, quantity, rate, amount, position)
+       VALUES ${rows.join(", ")}`,
+      values
+    );
+  }
+
   static async getInvoices(
     req: AuthenticatedClientRequest,
     res: IWorkLenzResponse
@@ -64,6 +146,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.amount,
           i.currency,
           i.status,
+          i.payment_status,
+          i.paid_amount,
+          i.project_name,
           i.due_date,
           i.sent_at,
           i.paid_at,
@@ -135,6 +220,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         amount: parseFloat(row.amount || "0"),
         currency: row.currency,
         status: row.status,
+        paymentStatus: row.payment_status,
+        paidAmount: parseFloat(row.paid_amount || "0"),
+        projectName: row.project_name,
         dueDate: row.due_date,
         sentAt: row.sent_at,
         paidAt: row.paid_at,
@@ -142,10 +230,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
         serviceName: row.service_name,
-        isOverdue:
-          row.due_date &&
-          new Date(row.due_date) < new Date() &&
-          row.status !== "paid",
+        isOverdue: ClientPortalInvoicesController.isPastDue(row),
       }));
 
       return res.json(
@@ -196,6 +281,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.amount,
           i.currency,
           i.status,
+          i.payment_status,
+          i.paid_amount,
+          i.project_name,
           i.due_date,
           i.sent_at,
           i.paid_at,
@@ -203,7 +291,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.updated_at,
           r.req_no as request_number,
           s.name as service_name,
-          c.name as client_name
+          COALESCE(i.client_snapshot_name, c.name) as client_name
         FROM client_portal_invoices i
         LEFT JOIN client_portal_requests r ON i.request_id = r.id
         LEFT JOIN client_portal_services s ON r.service_id = s.id
@@ -220,6 +308,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         amount: parseFloat(invoice.amount),
         currency: invoice.currency,
         status: invoice.status,
+        paymentStatus: invoice.payment_status,
+        paidAmount: parseFloat(invoice.paid_amount || "0"),
+        projectName: invoice.project_name,
         dueDate: invoice.due_date,
         sentAt: invoice.sent_at,
         paidAt: invoice.paid_at,
@@ -247,7 +338,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   ) {
     try {
       const organizationId = req.user?.team_id;
-      const { page = 1, limit = 10, status, search, clientId } = req.query;
+      const { status, paymentStatus, search, clientId, sortBy, sortOrder } = req.query;
+      const { page, limit, offset } = clampPagination(req.query.page, req.query.limit);
 
       if (!organizationId) {
         return res
@@ -255,98 +347,100 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Unauthorized"));
       }
 
-      // Build query with pagination and filtering
-      let query = `
-        SELECT
-          i.id,
-          i.invoice_no,
-          i.amount,
-          i.currency,
-          i.status,
-          i.due_date,
-          i.sent_at,
-          i.paid_at,
-          i.created_at,
-          i.updated_at,
-          r.req_no as request_number,
-          s.name as service_name,
-          c.name as client_name
+      // The client filter is compared as a UUID, so a malformed one is a bad request, not a 500.
+      if (clientId && !isValidUuid(String(clientId))) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid client ID"));
+      }
+
+      if (paymentStatus && !isPaymentStatus(paymentStatus)) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid payment status"));
+      }
+
+      // One WHERE for the rows, the count and the stat-card totals, so they always agree.
+      const conditions: string[] = ["i.organization_team_id = $1"];
+      const params: (string | number)[] = [organizationId];
+
+      if (clientId) {
+        params.push(String(clientId));
+        conditions.push(`i.client_id = $${params.length}`);
+      }
+      if (status) {
+        params.push(String(status));
+        conditions.push(`i.status = $${params.length}`);
+      }
+      if (paymentStatus) {
+        params.push(String(paymentStatus));
+        conditions.push(`i.payment_status = $${params.length}`);
+      }
+      if (search) {
+        params.push(`%${escapeLikePattern(String(search))}%`);
+        const at = `$${params.length}`;
+        conditions.push(
+          `(i.invoice_no ILIKE ${at} OR i.project_name ILIKE ${at} OR s.name ILIKE ${at} OR c.name ILIKE ${at} OR i.client_snapshot_name ILIKE ${at})`
+        );
+      }
+
+      const fromClause = `
         FROM client_portal_invoices i
         LEFT JOIN client_portal_requests r ON i.request_id = r.id
         LEFT JOIN client_portal_services s ON r.service_id = s.id
         LEFT JOIN clients c ON i.client_id = c.id
-        WHERE i.organization_team_id = $1
+        WHERE ${conditions.join(" AND ")}
       `;
 
-      const queryParams: (string | number)[] = [organizationId];
-      let paramIndex = 2;
+      const [totalsResult, listResult] = await Promise.all([
+        db.query(
+          `SELECT
+             COUNT(*)::int AS total,
+             COALESCE(SUM(i.amount), 0) AS total_invoiced,
+             COALESCE(SUM(i.paid_amount), 0) AS total_paid
+           ${fromClause}`,
+          params
+        ),
+        db.query(
+          `SELECT
+             i.id,
+             i.client_id,
+             i.invoice_no,
+             i.amount,
+             i.currency,
+             i.status,
+             i.payment_status,
+             i.paid_amount,
+             i.project_name,
+             i.due_date,
+             i.sent_at,
+             i.paid_at,
+             i.created_at,
+             i.updated_at,
+             r.req_no AS request_number,
+             s.name AS service_name,
+             COALESCE(i.client_snapshot_name, c.name) AS client_name,
+             ${OVERDUE_SQL} AS is_overdue
+           ${fromClause}
+           ORDER BY ${buildInvoiceOrderBy(sortBy, sortOrder)}
+           LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+          [...params, limit, offset]
+        ),
+      ]);
 
-      // Add client filter if provided
-      if (clientId) {
-        query += ` AND i.client_id = $${paramIndex}`;
-        queryParams.push(String(clientId));
-        paramIndex++;
-      }
+      const totalsRow = totalsResult.rows[0] || {};
+      const totalInvoiced = roundMoney(parseFloat(totalsRow.total_invoiced || "0"));
+      const totalPaid = roundMoney(parseFloat(totalsRow.total_paid || "0"));
 
-      // Add status filter if provided
-      if (status) {
-        query += ` AND i.status = $${paramIndex}`;
-        queryParams.push(String(status));
-        paramIndex++;
-      }
-
-      // Add search filter if provided
-      if (search) {
-        query += ` AND (i.invoice_no ILIKE $${paramIndex} OR s.name ILIKE $${paramIndex} OR c.name ILIKE $${paramIndex})`;
-        queryParams.push(`%${search}%`);
-        paramIndex++;
-      }
-
-      // Get total count
-      let countQuery = `
-        SELECT COUNT(*) as total
-        FROM client_portal_invoices i
-        LEFT JOIN client_portal_requests r ON i.request_id = r.id
-        LEFT JOIN client_portal_services s ON r.service_id = s.id
-        LEFT JOIN clients c ON i.client_id = c.id
-        WHERE i.organization_team_id = $1
-      `;
-      const countParams: (string | number)[] = [organizationId];
-      let countParamIndex = 2;
-
-      if (clientId) {
-        countQuery += ` AND i.client_id = $${countParamIndex}`;
-        countParams.push(String(clientId));
-        countParamIndex++;
-      }
-      if (status) {
-        countQuery += ` AND i.status = $${countParamIndex}`;
-        countParams.push(String(status));
-        countParamIndex++;
-      }
-      if (search) {
-        countQuery += ` AND (i.invoice_no ILIKE $${countParamIndex} OR s.name ILIKE $${countParamIndex} OR c.name ILIKE $${countParamIndex})`;
-        countParams.push(`%${search}%`);
-        countParamIndex++;
-      }
-
-      const countResult = await db.query(countQuery, countParams);
-      const total = parseInt(countResult.rows[0]?.total || "0");
-
-      // Add pagination
-      const offset = (Number(page) - 1) * Number(limit);
-      query += ` ORDER BY i.created_at DESC LIMIT $${paramIndex} OFFSET $${
-        paramIndex + 1
-      }`;
-      queryParams.push(Number(limit), offset);
-
-      const result = await db.query(query, queryParams);
-      const invoices = result.rows.map((row: any) => ({
+      const invoices = listResult.rows.map((row: any) => ({
         id: row.id,
         invoiceNumber: row.invoice_no,
         amount: parseFloat(row.amount || "0"),
         currency: row.currency,
         status: row.status,
+        paymentStatus: row.payment_status,
+        paidAmount: parseFloat(row.paid_amount || "0"),
+        projectName: row.project_name,
         dueDate: row.due_date,
         sentAt: row.sent_at,
         paidAt: row.paid_at,
@@ -354,11 +448,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         updatedAt: row.updated_at,
         requestNumber: row.request_number,
         serviceName: row.service_name,
+        clientId: row.client_id,
         clientName: row.client_name,
-        isOverdue:
-          row.due_date &&
-          new Date(row.due_date) < new Date() &&
-          row.status !== "paid",
+        isOverdue: row.is_overdue === true,
       }));
 
       return res.json(
@@ -366,9 +458,14 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           true,
           {
             invoices,
-            total,
-            page: Number(page),
-            limit: Number(limit),
+            total: totalsRow.total || 0,
+            page,
+            limit,
+            totals: {
+              totalInvoiced,
+              totalPaid,
+              totalOutstanding: roundMoney(totalInvoiced - totalPaid),
+            },
           },
           "Invoices retrieved successfully"
         )
@@ -382,140 +479,245 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   }
 
   static async createInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse) {
-    try {
-      const { 
-        requestId, 
-        amount, 
-        currency = "USD", 
-        dueDate, 
-        notes, 
-        status = "draft",
-        taxRate = 0,
-        discountType = 'percentage',
-        discountValue = 0,
-        subtotal,
-        taxAmount,
-        discountAmount
-      } = req.body;
-      const organizationId = req.user?.team_id;
-      const createdBy = req.user?.id;
+    const organizationId = req.user?.team_id;
+    const createdBy = req.user?.id;
+    const body = (req.body ?? {}) as Record<string, any>;
 
-      if (!requestId) {
+    if (!organizationId) {
+      return res
+        .status(401)
+        .json(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    // ---- validate input (nothing is written until all of it is good) ----
+    const requestId = body.requestId ? String(body.requestId) : null;
+    const clientIdInput = body.clientId ? String(body.clientId) : null;
+    const status = body.status ?? "draft";
+    if (status !== "draft" && status !== "sent") {
+      return res
+        .status(400)
+        .json(new ServerResponse(false, null, "A new invoice can only be created as draft or sent"));
+    }
+
+    const dueDate = parseOptionalDate(body.dueDate);
+    if (dueDate === undefined) {
+      return res
+        .status(400)
+        .json(new ServerResponse(false, null, "Invalid due date"));
+    }
+
+    const taxAndDiscount = parseTaxAndDiscount(body);
+    if (taxAndDiscount.error !== undefined) {
+      return res.status(400).json(new ServerResponse(false, null, taxAndDiscount.error));
+    }
+
+    const projectName = cleanText(body.projectName, 255);
+    const notes = cleanText(body.notes, 5000);
+    const currency = normalizeCurrency(body.currency);
+
+    // Line items drive the totals. A caller that only sends `amount` (older clients) gets one line.
+    let lineItems: NormalizedLineItem[];
+    if (body.lineItems !== undefined) {
+      const parsed = normalizeLineItems(body.lineItems);
+      if (parsed.error !== undefined) {
+        return res.status(400).json(new ServerResponse(false, null, parsed.error));
+      }
+      lineItems = parsed.items;
+    } else if (Number(body.amount) > 0) {
+      const rate = roundMoney(Number(body.amount));
+      lineItems = [{ description: projectName || "Services", quantity: 1, rate, amount: rate }];
+    } else {
+      return res
+        .status(400)
+        .json(new ServerResponse(false, null, "At least one line item is required"));
+    }
+
+    const totals = computeInvoiceTotals(
+      lineItems,
+      taxAndDiscount.discountType,
+      taxAndDiscount.discountValue,
+      taxAndDiscount.taxRate
+    );
+    if (totals.total <= 0) {
+      return res
+        .status(400)
+        .json(new ServerResponse(false, null, "Invoice total must be greater than 0"));
+    }
+
+    // ---- resolve the client: from the linked request, or picked directly ----
+    let clientId: string;
+    let clientName: string | null = null;
+    let serviceName: string | null = null;
+    // The client's details as they are now, kept on the invoice so it always shows who it was issued to.
+    let clientSnapshot: ClientSnapshot;
+
+    if (requestId) {
+      if (!isValidUuid(requestId)) {
         return res
           .status(400)
-          .json(new ServerResponse(false, null, "Request ID is required"));
+          .json(new ServerResponse(false, null, "Invalid request ID"));
       }
-
-      if (!amount || amount <= 0) {
-        return res
-          .status(400)
-          .json(new ServerResponse(false, null, "Valid amount is required"));
-      }
-
-      // Verify request exists and get client info
-      const requestQuery = `
-        SELECT r.id, r.client_id, r.service_id, r.status, c.name as client_name, s.name as service_name
+      const requestResult = await db.query(
+        `
+        SELECT r.id, r.client_id, r.status, c.name AS client_name, s.name AS service_name,
+               ${CLIENT_SNAPSHOT_SELECT}
         FROM client_portal_requests r
         LEFT JOIN clients c ON r.client_id = c.id
         LEFT JOIN client_portal_services s ON r.service_id = s.id
         WHERE r.id = $1 AND r.organization_team_id = $2
-      `;
-      const requestResult = await db.query(requestQuery, [
-        requestId,
-        organizationId,
-      ]);
-
+        `,
+        [requestId, organizationId]
+      );
       if (requestResult.rows.length === 0) {
         return res
           .status(404)
           .json(new ServerResponse(false, null, "Request not found"));
       }
-
       const request = requestResult.rows[0];
+      if (!isInvoiceableRequestStatus(request.status)) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Pending and rejected requests cannot be invoiced"));
+      }
+      clientId = request.client_id;
+      clientName = request.client_name;
+      serviceName = request.service_name;
+      clientSnapshot = snapshotFromRow(request);
+    } else if (clientIdInput) {
+      if (!isValidUuid(clientIdInput)) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Invalid client ID"));
+      }
+      const clientResult = await db.query(
+        `SELECT c.id, c.name, ${CLIENT_SNAPSHOT_SELECT} FROM clients c WHERE c.id = $1 AND c.team_id = $2`,
+        [clientIdInput, organizationId]
+      );
+      if (clientResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Client not found"));
+      }
+      clientId = clientResult.rows[0].id;
+      clientName = clientResult.rows[0].name;
+      clientSnapshot = snapshotFromRow(clientResult.rows[0]);
+    } else {
+      return res
+        .status(400)
+        .json(new ServerResponse(false, null, "A request or a client is required"));
+    }
 
-      // Generate invoice number
-      const invoiceNo = `INV-${Date.now()}-${Math.random()
-        .toString(36)
-        .substring(2, 7)
-        .toUpperCase()}`;
+    // ---- write the invoice and its lines together ----
+    const invoiceNo = `INV-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 7)
+      .toUpperCase()}`;
+    const sentAt = status === "sent" ? new Date() : null;
 
-      // Create invoice
-      // If status is 'sent', set sent_at timestamp
-      const sentAt = status === 'sent' ? new Date() : null;
-      const insertQuery = `
+    const conn = await db.connect();
+    let newInvoice: any;
+    try {
+      await conn.query("BEGIN");
+
+      const insertResult = await conn.query(
+        `
         INSERT INTO client_portal_invoices (
           invoice_no, request_id, client_id, organization_team_id,
-          amount, currency, status, due_date, notes, created_by_user_id, sent_at, created_at, updated_at,
-          tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal
+          amount, currency, status, due_date, notes, created_by_user_id, sent_at,
+          created_at, updated_at,
+          tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal,
+          project_name, ${SNAPSHOT_COLUMNS.join(", ")}
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), $12, $13, $14, $15, $16, $17)
-        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, created_at, tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal
-      `;
-
-      const result = await db.query(insertQuery, [
-        invoiceNo,
-        requestId,
-        request.client_id,
-        organizationId,
-        amount,
-        currency,
-        status,
-        dueDate || null,
-        notes || null,
-        createdBy,
-        sentAt,
-        taxRate || 0,
-        taxAmount || 0,
-        discountType || 'percentage',
-        discountValue || 0,
-        discountAmount || 0,
-        subtotal || amount
-      ]);
-
-      const newInvoice = result.rows[0];
-
-      // Create notification for the client about new invoice
-      if (request.client_id && organizationId) {
-        await this.createNotification(
-          request.client_id,
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW(), $12, $13, $14, $15, $16, $17, $18,
+                $19, $20, $21, $22, $23, $24)
+        RETURNING id, invoice_no, amount, currency, status, payment_status, paid_amount, project_name,
+                  due_date, sent_at, created_at, tax_rate, tax_amount, discount_type,
+                  discount_value, discount_amount, subtotal
+        `,
+        [
+          invoiceNo,
+          requestId,
+          clientId,
           organizationId,
-          "invoice_created",
-          "New Invoice",
-          `New invoice ${newInvoice.invoice_no} for ${currency} ${amount}`,
-          newInvoice.id,
-          newInvoice.invoice_no,
-          {
-            amount: parseFloat(newInvoice.amount),
-            currency: newInvoice.currency,
-            dueDate: newInvoice.due_date,
-            serviceName: request.service_name
-          }
-        );
-      }
+          totals.total,
+          currency,
+          status,
+          dueDate,
+          notes,
+          createdBy,
+          sentAt,
+          taxAndDiscount.taxRate,
+          totals.taxAmount,
+          taxAndDiscount.discountType,
+          taxAndDiscount.discountValue,
+          totals.discountAmount,
+          totals.subtotal,
+          projectName,
+          ...snapshotParams(clientSnapshot),
+        ]
+      );
+      newInvoice = insertResult.rows[0];
 
-      return res.json(new ServerResponse(true, {
-        id: newInvoice.id,
-        invoiceNumber: newInvoice.invoice_no,
-        amount: parseFloat(newInvoice.amount),
-        currency: newInvoice.currency,
-        status: newInvoice.status,
-        dueDate: newInvoice.due_date,
-        createdAt: newInvoice.created_at,
-        clientName: request.client_name,
-        serviceName: request.service_name,
-        taxRate: parseFloat(newInvoice.tax_rate || "0"),
-        taxAmount: parseFloat(newInvoice.tax_amount || "0"),
-        discountType: newInvoice.discount_type,
-        discountValue: parseFloat(newInvoice.discount_value || "0"),
-        discountAmount: parseFloat(newInvoice.discount_amount || "0"),
-        subtotal: parseFloat(newInvoice.subtotal || "0")
-      }, "Invoice created successfully"));
+      await ClientPortalInvoicesController.insertLineItems(conn, newInvoice.id, lineItems);
+      await conn.query("COMMIT");
     } catch (error) {
+      await conn.query("ROLLBACK");
       console.error("Error creating invoice:", error);
       return res
         .status(500)
         .json(new ServerResponse(false, null, "Failed to create invoice"));
+    } finally {
+      conn.release();
     }
+
+    // Tell the client about it. The invoice is already saved, so a failed notification must not
+    // turn a successful create into an error.
+    try {
+      await this.createNotification(
+        clientId,
+        organizationId,
+        "invoice_created",
+        "New Invoice",
+        `New invoice ${newInvoice.invoice_no} for ${currency} ${totals.total}`,
+        newInvoice.id,
+        newInvoice.invoice_no,
+        {
+          amount: parseFloat(newInvoice.amount),
+          currency: newInvoice.currency,
+          dueDate: newInvoice.due_date,
+          serviceName,
+        }
+      );
+    } catch (error) {
+      console.error("Error creating invoice notification:", error);
+    }
+
+    return res.json(
+      new ServerResponse(
+        true,
+        {
+          id: newInvoice.id,
+          invoiceNumber: newInvoice.invoice_no,
+          amount: parseFloat(newInvoice.amount),
+          currency: newInvoice.currency,
+          status: newInvoice.status,
+          paymentStatus: newInvoice.payment_status,
+          paidAmount: parseFloat(newInvoice.paid_amount || "0"),
+          projectName: newInvoice.project_name,
+          dueDate: newInvoice.due_date,
+          createdAt: newInvoice.created_at,
+          clientName,
+          serviceName,
+          taxRate: parseFloat(newInvoice.tax_rate || "0"),
+          taxAmount: parseFloat(newInvoice.tax_amount || "0"),
+          discountType: newInvoice.discount_type,
+          discountValue: parseFloat(newInvoice.discount_value || "0"),
+          discountAmount: parseFloat(newInvoice.discount_amount || "0"),
+          subtotal: parseFloat(newInvoice.subtotal || "0"),
+        },
+        "Invoice created successfully"
+      )
+    );
   }
 
   static async getInvoiceDetails(
@@ -537,6 +739,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.amount,
           i.currency,
           i.status,
+          i.payment_status,
+          i.paid_amount,
+          i.project_name,
           i.due_date,
           i.sent_at,
           i.paid_at,
@@ -551,9 +756,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           s.id as service_id,
           s.name as service_name,
           s.description as service_description,
-          c.name as client_name,
-          c.company_name,
-          c.email as client_email,
+          COALESCE(i.client_snapshot_name, c.name) as client_name,
+          COALESCE(i.client_snapshot_company_name, c.company_name) as company_name,
+          COALESCE(i.client_snapshot_email, c.email) as client_email,
           u.name as created_by_name
         FROM client_portal_invoices i
         LEFT JOIN client_portal_requests r ON i.request_id = r.id
@@ -579,6 +784,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         amount: parseFloat(invoice.amount || "0"),
         currency: invoice.currency,
         status: invoice.status,
+        paymentStatus: invoice.payment_status,
+        paidAmount: parseFloat(invoice.paid_amount || "0"),
+        projectName: invoice.project_name,
         dueDate: invoice.due_date,
         sentAt: invoice.sent_at,
         paidAt: invoice.paid_at,
@@ -591,10 +799,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         discountValue: parseFloat(invoice.discount_value || "0"),
         discountAmount: parseFloat(invoice.discount_amount || "0"),
         subtotal: parseFloat(invoice.subtotal || "0"),
-        isOverdue:
-          invoice.due_date &&
-          new Date(invoice.due_date) < new Date() &&
-          invoice.status !== "paid",
+        lineItems: await ClientPortalInvoicesController.getLineItems(invoice.id),
+        isOverdue: ClientPortalInvoicesController.isPastDue(invoice),
         request: invoice.request_id
           ? {
               id: invoice.request_id,
@@ -651,9 +857,6 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Unauthorized"));
       }
 
-      const financeSelectClause =
-        await ClientPortalInvoicesController.getClientPortalInvoiceFinanceSelectClause();
-
       // Get invoice details with related information (without client_id filter)
       const query = `
         SELECT
@@ -662,6 +865,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.amount,
           i.currency,
           i.status,
+          i.payment_status,
+          i.paid_amount,
+          i.project_name,
           i.due_date,
           i.sent_at,
           i.paid_at,
@@ -669,7 +875,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           i.updated_at,
           i.notes,
           i.payment_proof_url,
-          ${financeSelectClause},
+          i.tax_rate,
+          i.tax_amount,
+          i.discount_type,
+          i.discount_value,
+          i.discount_amount,
+          i.subtotal,
+          ${OVERDUE_SQL} AS is_overdue,
           r.id as request_id,
           r.req_no as request_number,
           r.request_data,
@@ -678,12 +890,12 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           s.name as service_name,
           s.description as service_description,
           c.id as client_id,
-          c.name as client_name,
-          c.company_name,
-          c.email as client_email,
-          c.phone as client_phone,
-          c.address as client_address,
-          c.contact_person as client_contact_person,
+          COALESCE(i.client_snapshot_name, c.name) as client_name,
+          COALESCE(i.client_snapshot_company_name, c.company_name) as company_name,
+          COALESCE(i.client_snapshot_email, c.email) as client_email,
+          COALESCE(i.client_snapshot_phone, c.phone) as client_phone,
+          COALESCE(i.client_snapshot_address, c.address) as client_address,
+          COALESCE(i.client_snapshot_contact_person, c.contact_person) as client_contact_person,
           u.name as created_by_name
         FROM client_portal_invoices i
         LEFT JOIN client_portal_requests r ON i.request_id = r.id
@@ -714,12 +926,21 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           cps.company_name,
           cps.address_line_1,
           cps.address_line_2,
-          cps.invoice_footer_message
+          cps.city,
+          cps.state,
+          cps.zip_code,
+          cps.country,
+          cps.invoice_footer_message,
+          cps.invoice_template_style,
+          cps.invoice_show_logo
         FROM teams t
         LEFT JOIN client_portal_settings cps ON cps.organization_team_id = t.id
         WHERE t.id = $1
       `;
-      const orgResult = await db.query(orgQuery, [organizationId]);
+      const [orgResult, lineItems] = await Promise.all([
+        db.query(orgQuery, [organizationId]),
+        ClientPortalInvoicesController.getLineItems(invoice.id),
+      ]);
       const orgSettings = orgResult.rows[0] || {};
 
       const invoiceDetails = {
@@ -728,6 +949,9 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         amount: parseFloat(invoice.amount || "0"),
         currency: invoice.currency,
         status: invoice.status,
+        paymentStatus: invoice.payment_status,
+        paidAmount: parseFloat(invoice.paid_amount || "0"),
+        projectName: invoice.project_name,
         dueDate: invoice.due_date,
         sentAt: invoice.sent_at,
         paidAt: invoice.paid_at,
@@ -741,10 +965,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         discountValue: parseFloat(invoice.discount_value || "0"),
         discountAmount: parseFloat(invoice.discount_amount || "0"),
         subtotal: parseFloat(invoice.subtotal || "0"),
-        isOverdue:
-          invoice.due_date &&
-          new Date(invoice.due_date) < new Date() &&
-          invoice.status !== "paid",
+        lineItems,
+        isOverdue: invoice.is_overdue === true,
         request: invoice.request_id
           ? {
               id: invoice.request_id,
@@ -781,7 +1003,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           phone: orgSettings.contact_phone || null,
           addressLine1: orgSettings.address_line_1 || null,
           addressLine2: orgSettings.address_line_2 || null,
+          city: orgSettings.city || null,
+          state: orgSettings.state || null,
+          zipCode: orgSettings.zip_code || null,
+          country: orgSettings.country || null,
           invoiceFooterMessage: orgSettings.invoice_footer_message || null,
+          templateStyle: orgSettings.invoice_template_style || "classic",
+          showLogo: orgSettings.invoice_show_logo !== false,
         },
       };
 
@@ -814,7 +1042,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
       // Verify invoice exists and belongs to client
       const invoiceCheck = await db.query(
-        "SELECT id, status, amount FROM client_portal_invoices WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
+        "SELECT id, status, payment_status, amount FROM client_portal_invoices WHERE id = $1 AND client_id = $2 AND organization_team_id = $3",
         [id, clientId, organizationId]
       );
 
@@ -827,18 +1055,20 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const invoice = invoiceCheck.rows[0];
 
       // Check if invoice is already paid
-      if (invoice.status === "paid") {
+      if (invoice.payment_status === "paid") {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
-      // Update invoice status to paid, store payment proof URL, and save notes
+      // Mark the invoice fully paid, store the payment proof URL and save notes. The document
+      // status is left alone: payment and lifecycle are separate fields.
       const updateQuery = `
         UPDATE client_portal_invoices
-        SET status = 'paid', paid_at = NOW(), updated_at = NOW(), payment_proof_url = $2, notes = COALESCE($3, notes)
+        SET payment_status = 'paid', paid_amount = amount, paid_at = NOW(), updated_at = NOW(),
+            payment_proof_url = $2, notes = COALESCE($3, notes)
         WHERE id = $1
-        RETURNING id, invoice_no, amount, currency, status, paid_at, updated_at, payment_proof_url, notes
+        RETURNING id, invoice_no, amount, currency, status, payment_status, paid_amount, paid_at, updated_at, payment_proof_url, notes
       `;
 
       const result = await db.query(updateQuery, [id, transactionId || null, notes || null]);
@@ -853,6 +1083,8 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             amount: parseFloat(updatedInvoice.amount || "0"),
             currency: updatedInvoice.currency,
             status: updatedInvoice.status,
+            paymentStatus: updatedInvoice.payment_status,
+            paidAmount: parseFloat(updatedInvoice.paid_amount || "0"),
             paidAt: updatedInvoice.paid_at,
             updatedAt: updatedInvoice.updated_at,
             paymentProofUrl: updatedInvoice.payment_proof_url,
@@ -902,15 +1134,24 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             i.amount,
             i.currency,
             i.status,
+            i.payment_status,
+            i.paid_amount,
+            i.project_name,
             i.due_date,
             i.created_at,
             i.notes,
+            i.subtotal,
+            i.discount_type,
+            i.discount_value,
+            i.discount_amount,
+            i.tax_rate,
+            i.tax_amount,
             c.id as client_id,
-            c.name as client_name,
-            c.company_name,
-            c.email as client_email,
-            c.phone as client_phone,
-            c.address as client_address,
+            COALESCE(i.client_snapshot_name, c.name) as client_name,
+            COALESCE(i.client_snapshot_company_name, c.company_name) as company_name,
+            COALESCE(i.client_snapshot_email, c.email) as client_email,
+            COALESCE(i.client_snapshot_phone, c.phone) as client_phone,
+            COALESCE(i.client_snapshot_address, c.address) as client_address,
             r.req_no as request_number,
             s.name as service_name,
             s.description as service_description,
@@ -921,7 +1162,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             cps.contact_phone as organization_phone,
             cps.address_line_1 as organization_address_line_1,
             cps.address_line_2 as organization_address_line_2,
-            cps.invoice_footer_message as organization_invoice_footer_message
+            cps.city as organization_city,
+            cps.state as organization_state,
+            cps.zip_code as organization_zip_code,
+            cps.country as organization_country,
+            cps.invoice_footer_message as organization_invoice_footer_message,
+            cps.invoice_template_style as organization_invoice_template_style,
+            cps.invoice_show_logo as organization_invoice_show_logo
           FROM client_portal_invoices i
           LEFT JOIN clients c ON i.client_id = c.id
           LEFT JOIN client_portal_requests r ON i.request_id = r.id
@@ -940,15 +1187,24 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             i.amount,
             i.currency,
             i.status,
+            i.payment_status,
+            i.paid_amount,
+            i.project_name,
             i.due_date,
             i.created_at,
             i.notes,
+            i.subtotal,
+            i.discount_type,
+            i.discount_value,
+            i.discount_amount,
+            i.tax_rate,
+            i.tax_amount,
             c.id as client_id,
-            c.name as client_name,
-            c.company_name,
-            c.email as client_email,
-            c.phone as client_phone,
-            c.address as client_address,
+            COALESCE(i.client_snapshot_name, c.name) as client_name,
+            COALESCE(i.client_snapshot_company_name, c.company_name) as company_name,
+            COALESCE(i.client_snapshot_email, c.email) as client_email,
+            COALESCE(i.client_snapshot_phone, c.phone) as client_phone,
+            COALESCE(i.client_snapshot_address, c.address) as client_address,
             r.req_no as request_number,
             s.name as service_name,
             s.description as service_description,
@@ -959,7 +1215,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
             cps.contact_phone as organization_phone,
             cps.address_line_1 as organization_address_line_1,
             cps.address_line_2 as organization_address_line_2,
-            cps.invoice_footer_message as organization_invoice_footer_message
+            cps.city as organization_city,
+            cps.state as organization_state,
+            cps.zip_code as organization_zip_code,
+            cps.country as organization_country,
+            cps.invoice_footer_message as organization_invoice_footer_message,
+            cps.invoice_template_style as organization_invoice_template_style,
+            cps.invoice_show_logo as organization_invoice_show_logo
           FROM client_portal_invoices i
           LEFT JOIN clients c ON i.client_id = c.id
           LEFT JOIN client_portal_requests r ON i.request_id = r.id
@@ -982,16 +1244,25 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const invoice = result.rows[0];
 
       // Check if due date has passed
-      const isOverdue = invoice.due_date && new Date(invoice.due_date) < new Date() && invoice.status !== 'paid';
+      const isOverdue = ClientPortalInvoicesController.isPastDue(invoice);
+      const lineItems = await ClientPortalInvoicesController.getLineItems(invoice.id);
 
       // Prepare invoice data for template generator
       const invoiceData = {
         invoiceNumber: invoice.invoice_no,
         status: invoice.status,
+        paymentStatus: invoice.payment_status,
         createdAt: invoice.created_at,
         dueDate: invoice.due_date,
         amount: parseFloat(invoice.amount || "0"),
         currency: invoice.currency,
+        lineItems,
+        subtotal: parseFloat(invoice.subtotal || "0"),
+        discountType: invoice.discount_type,
+        discountValue: parseFloat(invoice.discount_value || "0"),
+        discountAmount: parseFloat(invoice.discount_amount || "0"),
+        taxRate: parseFloat(invoice.tax_rate || "0"),
+        taxAmount: parseFloat(invoice.tax_amount || "0"),
         isOverdue,
         client: {
           name: invoice.client_name,
@@ -1016,7 +1287,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           phone: invoice.organization_phone,
           addressLine1: invoice.organization_address_line_1,
           addressLine2: invoice.organization_address_line_2,
+          city: invoice.organization_city,
+          state: invoice.organization_state,
+          zipCode: invoice.organization_zip_code,
+          country: invoice.organization_country,
           invoiceFooterMessage: invoice.organization_invoice_footer_message,
+          templateStyle: invoice.organization_invoice_template_style || "classic",
+          showLogo: invoice.organization_invoice_show_logo !== false,
         },
       };
 
@@ -1073,13 +1350,13 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
   ) {
     try {
       const { id } = req.params;
-      const { amount, currency, dueDate, notes, taxRate, taxAmount, discountType, discountValue, discountAmount, subtotal } = req.body;
-      
+      const body = (req.body ?? {}) as Record<string, any>;
+
       // Determine if this is a client request or admin request
-      const isClientRequest = 'clientId' in req && req.clientId;
+      const isClientRequest = 'clientId' in req && !!req.clientId;
       const clientId = isClientRequest ? (req as AuthenticatedClientRequest).clientId : null;
-      const organizationId = isClientRequest 
-        ? (req as AuthenticatedClientRequest).organizationId 
+      const organizationId = isClientRequest
+        ? (req as AuthenticatedClientRequest).organizationId
         : (req as IWorkLenzRequest).user?.team_id;
 
       if (!organizationId) {
@@ -1088,27 +1365,14 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Unauthorized"));
       }
 
-      // Build query based on request type
-      let checkQuery: string;
-      let queryParams: any[];
-
-      if (isClientRequest && clientId) {
-        // Client-side: verify invoice belongs to client and check if paid
-        checkQuery = `
-          SELECT id, status as current_status FROM client_portal_invoices
-          WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
-        `;
-        queryParams = [id, clientId, organizationId];
-      } else {
-        // Admin-side: verify invoice belongs to organization
-        checkQuery = `
-          SELECT id, status as current_status FROM client_portal_invoices
-          WHERE id = $1 AND organization_team_id = $2
-        `;
-        queryParams = [id, organizationId];
-      }
-
-      const checkResult = await db.query(checkQuery, queryParams);
+      const checkResult = await db.query(
+        `
+        SELECT id, status, payment_status, amount, tax_rate, discount_type, discount_value
+        FROM client_portal_invoices
+        WHERE id = $1 AND organization_team_id = $2 ${isClientRequest ? "AND client_id = $3" : ""}
+        `,
+        isClientRequest ? [id, organizationId, clientId] : [id, organizationId]
+      );
 
       if (checkResult.rows.length === 0) {
         return res
@@ -1116,111 +1380,193 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
-      const currentInvoice = checkResult.rows[0];
-      const currentStatus = currentInvoice.current_status;
+      const current = checkResult.rows[0];
 
-      // Prevent editing paid invoices
-      if (currentStatus === "paid") {
+      // The set of things being changed; collected first so nothing is written on a bad request.
+      const sets: string[] = [];
+      const params: any[] = [];
+      const setColumn = (column: string, value: any) => {
+        params.push(value);
+        sets.push(`${column} = $${params.length}`);
+      };
+
+      // ---- lifecycle status: admin only, and never "paid" (record a payment instead) ----
+      if (body.status !== undefined) {
+        if (isClientRequest) {
+          return res
+            .status(403)
+            .json(new ServerResponse(false, null, "Clients cannot change an invoice's status"));
+        }
+        if (!isSettableInvoiceStatus(body.status)) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Invalid invoice status"));
+        }
+        setColumn("status", body.status);
+        // Moving to "sent" for the first time stamps when it went out.
+        if (body.status === "sent") sets.push("sent_at = COALESCE(sent_at, NOW())");
+      }
+
+      // ---- content: everything below is locked once the invoice is paid ----
+      const contentKeys = [
+        "amount", "currency", "dueDate", "notes", "projectName", "lineItems",
+        "taxRate", "taxAmount", "discountType", "discountValue", "discountAmount", "subtotal",
+      ];
+      const editsContent = contentKeys.some(key => body[key] !== undefined);
+      if (editsContent && current.payment_status === "paid") {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Paid invoices cannot be edited"));
       }
 
-      // Build SET clause for fields to update
-      const setFields: Record<string, any> = {};
+      if (body.currency !== undefined) setColumn("currency", normalizeCurrency(body.currency));
 
-      if (amount !== undefined) {
-        setFields.amount = amount;
+      if (body.dueDate !== undefined) {
+        const dueDate = parseOptionalDate(body.dueDate);
+        if (dueDate === undefined) {
+          return res.status(400).json(new ServerResponse(false, null, "Invalid due date"));
+        }
+        setColumn("due_date", dueDate);
+      }
+      if (body.notes !== undefined) setColumn("notes", cleanText(body.notes, 5000));
+      if (body.projectName !== undefined) setColumn("project_name", cleanText(body.projectName, 255));
+
+      // ---- money: line items drive the totals; a legacy scalar `amount` is still accepted ----
+      let newLineItems: NormalizedLineItem[] | null = null;
+      let newAmount: number | null = null;
+
+      if (body.lineItems !== undefined) {
+        const parsed = normalizeLineItems(body.lineItems);
+        if (parsed.error !== undefined) {
+          return res.status(400).json(new ServerResponse(false, null, parsed.error));
+        }
+        const taxAndDiscount = parseTaxAndDiscount({
+          taxRate: body.taxRate ?? current.tax_rate,
+          discountType: body.discountType ?? current.discount_type,
+          discountValue: body.discountValue ?? current.discount_value,
+        });
+        if (taxAndDiscount.error !== undefined) {
+          return res.status(400).json(new ServerResponse(false, null, taxAndDiscount.error));
+        }
+        const totals = computeInvoiceTotals(
+          parsed.items,
+          taxAndDiscount.discountType,
+          taxAndDiscount.discountValue,
+          taxAndDiscount.taxRate
+        );
+        if (totals.total <= 0) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Invoice total must be greater than 0"));
+        }
+        newLineItems = parsed.items;
+        newAmount = totals.total;
+        setColumn("amount", totals.total);
+        setColumn("subtotal", totals.subtotal);
+        setColumn("tax_rate", taxAndDiscount.taxRate);
+        setColumn("tax_amount", totals.taxAmount);
+        setColumn("discount_type", taxAndDiscount.discountType);
+        setColumn("discount_value", taxAndDiscount.discountValue);
+        setColumn("discount_amount", totals.discountAmount);
+      } else if (body.amount !== undefined) {
+        const amount = Number(body.amount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+          return res
+            .status(400)
+            .json(new ServerResponse(false, null, "Valid amount is required"));
+        }
+        newAmount = roundMoney(amount);
+        setColumn("amount", newAmount);
+        const legacyFinance: Record<string, string> = {
+          taxRate: "tax_rate",
+          taxAmount: "tax_amount",
+          discountValue: "discount_value",
+          discountAmount: "discount_amount",
+          subtotal: "subtotal",
+        };
+        for (const [key, column] of Object.entries(legacyFinance)) {
+          if (body[key] === undefined) continue;
+          const value = Number(body[key]);
+          if (!Number.isFinite(value) || value < 0) {
+            return res
+              .status(400)
+              .json(new ServerResponse(false, null, `Invalid ${key}`));
+          }
+          setColumn(column, value);
+        }
+        if (body.discountType !== undefined) {
+          if (!(DISCOUNT_TYPES as readonly string[]).includes(body.discountType)) {
+            return res
+              .status(400)
+              .json(new ServerResponse(false, null, "Discount type must be percentage or fixed"));
+          }
+          setColumn("discount_type", body.discountType);
+        }
       }
 
-      if (currency !== undefined) {
-        setFields.currency = currency;
+      // A smaller total can never leave more paid than the invoice is worth.
+      if (newAmount !== null) {
+        params.push(newAmount);
+        const at = `$${params.length}`;
+        sets.push(`paid_amount = LEAST(paid_amount, ${at})`);
+        sets.push(
+          `payment_status = CASE WHEN payment_status = 'partially_paid' AND LEAST(paid_amount, ${at}) >= ${at} THEN 'paid' ELSE payment_status END`
+        );
       }
 
-      if (dueDate !== undefined) {
-        setFields.due_date = dueDate;
-      }
-
-      if (notes !== undefined) {
-        setFields.notes = notes;
-      }
-
-      if (taxRate !== undefined) {
-        setFields.tax_rate = taxRate;
-      }
-
-      if (taxAmount !== undefined) {
-        setFields.tax_amount = taxAmount;
-      }
-
-      if (discountType !== undefined) {
-        setFields.discount_type = discountType;
-      }
-
-      if (discountValue !== undefined) {
-        setFields.discount_value = discountValue;
-      }
-
-      if (discountAmount !== undefined) {
-        setFields.discount_amount = discountAmount;
-      }
-
-      if (subtotal !== undefined) {
-        setFields.subtotal = subtotal;
-      }
-
-      if (Object.keys(setFields).length === 0) {
+      if (sets.length === 0) {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "No valid fields to update"));
       }
 
-      // Build secure UPDATE query using SqlHelper for parameterized fields
-      const params: any[] = [];
-      let paramIndex = 1;
-
-      const setClauses = Object.entries(setFields).map(([field, value]) => {
-        params.push(value);
-        return `${field} = $${paramIndex++}`;
-      });
-
-      // Build WHERE clause using SqlHelper for security
-      const { where: whereClause, params: whereParams } = SqlHelper.buildWhereClause([
-        { field: "id", operator: "=", value: id },
-        { field: "organization_team_id", operator: "=", value: organizationId, conjunction: "AND" }
-      ], paramIndex);
-
-      // Add client_id filter for client requests
-      if (isClientRequest && clientId) {
-        whereParams.push(clientId);
-        const finalWhereClause = `${whereClause} AND client_id = $${whereParams.length + 2}`;
-        params.push(...whereParams, clientId);
-      } else {
-        params.push(...whereParams);
+      sets.push("updated_at = NOW()");
+      params.push(id, organizationId);
+      const idAt = `$${params.length - 1}`;
+      const orgAt = `$${params.length}`;
+      let clientClause = "";
+      if (isClientRequest) {
+        params.push(clientId);
+        clientClause = ` AND client_id = $${params.length}`;
       }
 
-      // Always update the updated_at timestamp
-      setClauses.push("updated_at = NOW()");
+      const conn = await db.connect();
+      try {
+        await conn.query("BEGIN");
+        const result = await conn.query(
+          `
+          UPDATE client_portal_invoices
+          SET ${sets.join(", ")}
+          WHERE id = ${idAt} AND organization_team_id = ${orgAt}${clientClause}
+          RETURNING id, invoice_no, amount, currency, status, payment_status, paid_amount, project_name,
+                    due_date, sent_at, paid_at, updated_at, tax_rate, tax_amount, discount_type,
+                    discount_value, discount_amount, subtotal
+          `,
+          params
+        );
 
-      // Build final query
-      const updateQuery = `
-        UPDATE client_portal_invoices
-        SET ${setClauses.join(", ")}
-        WHERE ${isClientRequest && clientId ? `${whereClause} AND client_id = $${params.length + 1}` : whereClause}
-        RETURNING id, invoice_no, amount, currency, status, due_date, sent_at, paid_at, updated_at, tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal
-      `;
+        if (result.rows.length === 0) {
+          await conn.query("ROLLBACK");
+          return res
+            .status(404)
+            .json(new ServerResponse(false, null, "Invoice not found"));
+        }
 
-      const result = await db.query(updateQuery, params);
+        if (newLineItems) {
+          await conn.query("DELETE FROM client_portal_invoice_line_items WHERE invoice_id = $1", [id]);
+          await ClientPortalInvoicesController.insertLineItems(conn, id, newLineItems);
+        }
+        await conn.query("COMMIT");
 
-      if (result.rows.length === 0) {
-        return res
-          .status(404)
-          .json(new ServerResponse(false, null, "Invoice not found"));
+        return res.json(
+          new ServerResponse(true, result.rows[0], "Invoice updated successfully")
+        );
+      } catch (error) {
+        await conn.query("ROLLBACK");
+        throw error;
+      } finally {
+        conn.release();
       }
-
-      return res.json(
-        new ServerResponse(true, result.rows[0], "Invoice updated successfully")
-      );
     } catch (error) {
       console.error("Error updating invoice:", error);
       return res
@@ -1249,11 +1595,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
       const checkQuery = isClientRequest
         ? `
-        SELECT id, status FROM client_portal_invoices
+        SELECT id, payment_status FROM client_portal_invoices
         WHERE id = $1 AND client_id = $2 AND organization_team_id = $3
       `
         : `
-        SELECT id, status FROM client_portal_invoices
+        SELECT id, payment_status FROM client_portal_invoices
         WHERE id = $1 AND organization_team_id = $2
       `;
       const checkParams = isClientRequest ? [id, clientId, organizationId] : [id, organizationId];
@@ -1265,10 +1611,11 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
           .json(new ServerResponse(false, null, "Invoice not found"));
       }
 
-      if (checkResult.rows[0].status === "paid") {
+      // Deleting would erase the record of money received, whether in full or in part.
+      if (checkResult.rows[0].payment_status !== "unpaid") {
         return res
           .status(400)
-          .json(new ServerResponse(false, null, "Cannot delete paid invoices"));
+          .json(new ServerResponse(false, null, "Cannot delete an invoice that has payments recorded"));
       }
 
       const deleteQuery = isClientRequest
@@ -1383,7 +1730,7 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
 
       // Verify invoice exists and belongs to organization
       const checkQuery = `
-        SELECT i.id, i.status, i.client_id, i.invoice_no
+        SELECT i.id, i.status, i.payment_status, i.client_id, i.invoice_no
         FROM client_portal_invoices i
         WHERE i.id = $1 AND i.organization_team_id = $2
       `;
@@ -1398,28 +1745,29 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
       const invoice = checkResult.rows[0];
 
       // Check if invoice is already paid
-      if (invoice.status === 'paid') {
+      if (invoice.payment_status === 'paid') {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Invoice is already paid"));
       }
 
-      // Only allow marking as paid if invoice status is 'sent'
-      if (invoice.status !== 'sent') {
+      // A draft was never sent and a cancelled invoice is void: neither can be paid.
+      if (invoice.status === 'draft' || invoice.status === 'cancelled') {
         return res
           .status(400)
           .json(new ServerResponse(false, null, "Only sent invoices can be marked as paid"));
       }
 
-      // Update invoice status to 'paid' and set paid_at timestamp
+      // Fully paid; the document status is left as it was.
       const updateQuery = `
         UPDATE client_portal_invoices
         SET
-          status = 'paid',
+          payment_status = 'paid',
+          paid_amount = amount,
           paid_at = NOW(),
           updated_at = NOW()
         WHERE id = $1
-        RETURNING id, invoice_no, status, paid_at
+        RETURNING id, invoice_no, status, payment_status, paid_amount, paid_at
       `;
 
       const result = await db.query(updateQuery, [id]);
@@ -1455,5 +1803,251 @@ export default class ClientPortalInvoicesController extends ClientPortalControll
         .json(new ServerResponse(false, null, "Failed to mark invoice as paid"));
     }
   }
+
+  static async recordPayment(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { id } = req.params;
+      const organizationId = req.user?.team_id;
+      const { paymentStatus, paidAmount, proof } = (req.body ?? {}) as Record<string, any>;
+
+      if (!organizationId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Unauthorized"));
+      }
+
+      if (!isPaymentStatus(paymentStatus)) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Payment status must be unpaid, partially_paid or paid"));
+      }
+
+      const checkResult = await db.query(
+        `SELECT id, invoice_no, status, payment_status, amount, client_id
+         FROM client_portal_invoices
+         WHERE id = $1 AND organization_team_id = $2`,
+        [id, organizationId]
+      );
+      if (checkResult.rows.length === 0) {
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+      const invoice = checkResult.rows[0];
+
+      // Paid locks the amount to the invoice total, Unpaid clears it, Partial is clamped to it.
+      const resolved = resolvePayment(paymentStatus, parseFloat(invoice.amount), paidAmount);
+
+      // Optional proof file, sent as a base64 data URL like the other portal uploads.
+      let proofUrl: string | null = null;
+      if (proof && proof.fileData) {
+        const problem = validatePaymentProof(proof);
+        if (problem) {
+          return res.status(400).json(new ServerResponse(false, null, problem));
+        }
+        const storageKey = getClientPortalStorageKey(
+          "payment-proofs",
+          organizationId,
+          String(id),
+          generateUniqueFilename(String(proof.fileName || "proof"), "proof")
+        );
+        proofUrl = (await uploadBase64(String(proof.fileData), storageKey)) || null;
+        if (!proofUrl) {
+          return res
+            .status(500)
+            .json(new ServerResponse(false, null, "Failed to upload the payment proof"));
+        }
+      }
+
+      // Paid At is the time of the latest recorded payment; going back to Unpaid clears it.
+      const updateResult = await db.query(
+        `
+        UPDATE client_portal_invoices
+        SET payment_status = $2,
+            paid_amount = $3,
+            paid_at = CASE WHEN $2 = 'unpaid' THEN NULL ELSE NOW() END,
+            payment_proof_url = COALESCE($4, payment_proof_url),
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, invoice_no, amount, currency, status, payment_status, paid_amount,
+                  paid_at, updated_at, payment_proof_url
+        `,
+        [id, resolved.paymentStatus, resolved.paidAmount, proofUrl]
+      );
+      const updated = updateResult.rows[0];
+
+      // Tell the client only when the invoice has just become fully paid.
+      if (
+        invoice.client_id &&
+        resolved.paymentStatus === "paid" &&
+        invoice.payment_status !== "paid"
+      ) {
+        try {
+          await this.createNotification(
+            invoice.client_id,
+            organizationId,
+            "invoice_paid",
+            "Invoice Paid",
+            `Invoice ${invoice.invoice_no} has been marked as paid`,
+            id,
+            invoice.invoice_no,
+            { status: "paid", paidAt: updated.paid_at }
+          );
+        } catch (error) {
+          console.error("Error creating invoice paid notification:", error);
+        }
+      }
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            id: updated.id,
+            invoiceNumber: updated.invoice_no,
+            amount: parseFloat(updated.amount || "0"),
+            currency: updated.currency,
+            status: updated.status,
+            paymentStatus: updated.payment_status,
+            paidAmount: parseFloat(updated.paid_amount || "0"),
+            paidAt: updated.paid_at,
+            updatedAt: updated.updated_at,
+            paymentProofUrl: updated.payment_proof_url,
+          },
+          "Payment recorded successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error recording invoice payment:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to record payment"));
+    }
+  }
+
+  /**
+   * Copies an invoice as a fresh draft: same client, request, lines, tax/discount and notes;
+   * a new number, unpaid with nothing paid, issued today, and no due date, sent/paid times or proof.
+   */
+  static async duplicateInvoice(
+    req: IWorkLenzRequest,
+    res: IWorkLenzResponse
+  ) {
+    const { id } = req.params;
+    const organizationId = req.user?.team_id;
+    const createdBy = req.user?.id;
+
+    if (!organizationId) {
+      return res
+        .status(401)
+        .json(new ServerResponse(false, null, "Unauthorized"));
+    }
+
+    const conn = await db.connect();
+    try {
+      await conn.query("BEGIN");
+
+      const source = await conn.query(
+        `SELECT * FROM client_portal_invoices WHERE id = $1 AND organization_team_id = $2`,
+        [id, organizationId]
+      );
+      if (source.rows.length === 0) {
+        await conn.query("ROLLBACK");
+        return res
+          .status(404)
+          .json(new ServerResponse(false, null, "Invoice not found"));
+      }
+      const original = source.rows[0];
+
+      // A duplicate is a new document, so it takes the client's details as they are now; the
+      // original's snapshot is only the fallback if the client can no longer be read.
+      const currentClient = await conn.query(
+        `SELECT ${CLIENT_SNAPSHOT_SELECT} FROM clients c WHERE c.id = $1`,
+        [original.client_id]
+      );
+      const liveSnapshot = snapshotFromRow(currentClient.rows[0]);
+      const clientSnapshot = liveSnapshot.name
+        ? liveSnapshot
+        : snapshotFromRow({
+            snapshot_name: original.client_snapshot_name,
+            snapshot_company_name: original.client_snapshot_company_name,
+            snapshot_email: original.client_snapshot_email,
+            snapshot_phone: original.client_snapshot_phone,
+            snapshot_address: original.client_snapshot_address,
+            snapshot_contact_person: original.client_snapshot_contact_person,
+          });
+
+      const invoiceNo = `INV-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 7)
+        .toUpperCase()}`;
+
+      const inserted = await conn.query(
+        `
+        INSERT INTO client_portal_invoices (
+          invoice_no, request_id, client_id, organization_team_id,
+          amount, currency, status, payment_status, paid_amount, due_date, notes,
+          created_by_user_id, sent_at, paid_at, created_at, updated_at,
+          tax_rate, tax_amount, discount_type, discount_value, discount_amount, subtotal,
+          project_name, ${SNAPSHOT_COLUMNS.join(", ")}
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, 'draft', 'unpaid', 0, NULL, $7,
+                $8, NULL, NULL, NOW(), NOW(), $9, $10, $11, $12, $13, $14, $15,
+                $16, $17, $18, $19, $20, $21)
+        RETURNING id, invoice_no
+        `,
+        [
+          invoiceNo,
+          original.request_id,
+          original.client_id,
+          organizationId,
+          original.amount,
+          original.currency,
+          original.notes,
+          createdBy,
+          original.tax_rate,
+          original.tax_amount,
+          original.discount_type,
+          original.discount_value,
+          original.discount_amount,
+          original.subtotal,
+          original.project_name,
+          ...snapshotParams(clientSnapshot),
+        ]
+      );
+      const copy = inserted.rows[0];
+
+      await conn.query(
+        `
+        INSERT INTO client_portal_invoice_line_items (invoice_id, description, quantity, rate, amount, position)
+        SELECT $1, description, quantity, rate, amount, position
+        FROM client_portal_invoice_line_items
+        WHERE invoice_id = $2
+        `,
+        [copy.id, id]
+      );
+
+      await conn.query("COMMIT");
+
+      return res.json(
+        new ServerResponse(
+          true,
+          { id: copy.id, invoiceNumber: copy.invoice_no },
+          "Invoice duplicated successfully"
+        )
+      );
+    } catch (error) {
+      await conn.query("ROLLBACK");
+      console.error("Error duplicating invoice:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to duplicate invoice"));
+    } finally {
+      conn.release();
+    }
+  }
+
 
 }

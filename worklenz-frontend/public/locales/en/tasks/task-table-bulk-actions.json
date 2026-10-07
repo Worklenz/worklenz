@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "Change Status",
   "CHANGE_PRIORITY": "Change Priority",
   "CHANGE_PHASE": "Change Phase",
+  "MOVE_TO_SPRINT": "Move to sprint",
   "ADD_LABELS": "Add Labels",
   "ASSIGN_TO_ME": "Assign to Me",
   "ASSIGN_MEMBERS": "Assign Members",

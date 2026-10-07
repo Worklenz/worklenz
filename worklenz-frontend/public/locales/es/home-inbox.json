@@ -32,5 +32,7 @@
   "clientsLockedTooltip": "Disponible en el plan Business",
   "clientChatLockedTitle": "Chat con clientes bloqueado",
   "clientChatLockedBody": "Chatear con tus clientes directamente desde la bandeja de entrada está disponible en el plan Business.",
-  "upgradeNow": "Actualizar ahora"
+  "upgradeNow": "Actualizar ahora",
+  "today": "Hoy",
+  "edited": "(editado)"
 }

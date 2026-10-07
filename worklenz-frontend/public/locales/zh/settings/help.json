@@ -1,0 +1,29 @@
+{
+  "pageTitle": "帮助",
+  "pageDescription": "文档、发布说明、社区链接和版本信息。",
+  "opensInNewTab": "在新标签页中打开",
+  "opensEmailApp": "打开邮件应用",
+  "items": {
+    "documentation": "文档",
+    "releaseNotes": "发布说明",
+    "changelog": "更新日志",
+    "emailSupport": "邮件支持",
+    "youtube": "YouTube",
+    "discord": "不和谐",
+    "github": "GitHub",
+    "facebook": "脸书",
+    "linkedin": "领英",
+    "x": "X",
+    "privacyPolicy": "隐私政策",
+    "about": "关于"
+  },
+  "releaseNotes": {
+    "unavailable": "尚未发布任何发布说明",
+    "loadFailed": "无法加载发布说明。点击重试。",
+    "loadFailedMessage": "无法加载发布说明，请重试。"
+  },
+  "about": {
+    "version": "版本",
+    "lastUpdated": "最后更新"
+  }
+}

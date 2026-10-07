@@ -29,7 +29,7 @@ import { getRoleColor, ROLE_NAMES } from '@/types/roles/role.types';
 import { canManageUserRole, getSessionRoleName } from '@/utils/role-permissions.utils';
 import { fetchBillingInfo } from '@/features/admin-center/admin-center.slice';
 
-const PAGE_SIZE_OPTIONS = [5, 10, 20, 50];
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 const HomeMyTeam: React.FC = () => {
   const { token } = theme.useToken();
@@ -105,8 +105,6 @@ const HomeMyTeam: React.FC = () => {
       if (res.done) {
         await fetchMembers();
         dispatch(fetchBillingInfo());
-      } else {
-        message.error(res.message || 'Unable to remove member.');
       }
     } finally {
       setLoading(false);

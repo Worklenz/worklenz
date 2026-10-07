@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { ServerResponse } from "../models/server-response";
 import TokenService from "../services/token-service";
+import { getLoginAccessState } from "../services/client-contacts-service";
 import db from "../config/db";
 
 export interface AuthenticatedClientRequest extends Request {
@@ -141,6 +142,24 @@ export const authenticateClient = async (
       if (!hasAccess) {
         return res.status(403).json(
           new ServerResponse(false, null, "Access denied to this organization")
+        );
+      }
+    }
+
+    // The token outlives changes made by an admin, so re-check this person on every request: the
+    // login must still exist and be active, and their company user must not be disabled.
+    if (tokenPayload.clientUserId) {
+      const access = await getLoginAccessState(db, tokenPayload.clientUserId, tokenPayload.clientId);
+
+      if (!access.exists) {
+        return res.status(401).json(
+          new ServerResponse(false, null, "Your access has been removed. Please contact your administrator.")
+        );
+      }
+
+      if (access.loginStatus !== "active" || access.isDisabled) {
+        return res.status(403).json(
+          new ServerResponse(false, null, "Your access has been disabled. Please contact your administrator.")
         );
       }
     }

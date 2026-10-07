@@ -134,6 +134,28 @@ export const isFreeUser = (session: ILocalSession | null): boolean => {
 };
 
 /**
+ * True when a trial license is past the grace period. Free plans are not expired trials.
+ */
+export const isExpiredTrialSession = (session: ILocalSession | null): boolean => {
+  if (!session) return false;
+  if (
+    session.subscription_type === ISUBSCRIPTION_TYPE.FREE ||
+    session.subscription_status?.toLowerCase() === 'free'
+  ) {
+    return false;
+  }
+  if (session.subscription_type !== ISUBSCRIPTION_TYPE.TRIAL) return false;
+  if (session.is_expired) return true;
+
+  const expireDateStr = session.valid_till_date || session.trial_expire_date;
+  if (!expireDateStr) return false;
+  const expiryDate = new Date(expireDateStr);
+  if (Number.isNaN(expiryDate.getTime())) return false;
+  const diffDays = Math.ceil((Date.now() - expiryDate.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays > 7;
+};
+
+/**
  * Get the subscription plan type for display purposes
  */
 export const getSubscriptionPlanType = (session: ILocalSession | null): string => {

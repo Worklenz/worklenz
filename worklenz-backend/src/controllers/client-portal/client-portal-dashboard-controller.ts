@@ -51,8 +51,8 @@ export default class ClientPortalDashboardController extends ClientPortalControl
       const invoiceStatsQuery = `
         SELECT
           COUNT(*) as total_invoices,
-          COUNT(CASE WHEN status != 'paid' THEN 1 END) as unpaid_invoices,
-          COALESCE(SUM(CASE WHEN status != 'paid' THEN amount END), 0) as unpaid_amount
+          COUNT(CASE WHEN payment_status <> 'paid' THEN 1 END) as unpaid_invoices,
+          COALESCE(SUM(CASE WHEN payment_status <> 'paid' THEN amount - paid_amount END), 0) as unpaid_amount
         FROM client_portal_invoices
         WHERE client_id = $1 AND organization_team_id = $2
       `;

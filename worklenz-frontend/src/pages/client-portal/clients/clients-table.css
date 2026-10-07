@@ -1,15 +1,32 @@
-/* Hover styles for action buttons */
-.ant-table-tbody > tr:hover .action-buttons-container {
-  opacity: 1 !important;
+.clients-table .ant-table {
+  font-size: 12px;
 }
 
-/* Ensure action buttons are visible on hover */
-.action-buttons-container {
-  opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+.clients-table .ant-table-thead > tr > th {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--ant-color-text-secondary);
+  padding: 4px 8px !important;
 }
 
-/* Show action buttons when row is hovered */
-.ant-table-tbody > tr:hover .action-buttons-container {
-  opacity: 1;
+.clients-table .ant-table-tbody > tr > td {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+/* antd Typography and form controls set their own 14px; pin them to the row size. */
+.clients-table .ant-table-tbody .ant-typography,
+.clients-table .ant-table-tbody .ant-select-selection-item,
+.clients-table .ant-table-tbody .ant-select-selector {
+  font-size: 12px !important;
+}
+
+@media (max-width: 900px) {
+  .clients-table .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .clients-table .ant-table {
+    min-width: 1100px;
+  }
 }

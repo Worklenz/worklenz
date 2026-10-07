@@ -5,29 +5,22 @@ import {
   Avatar,
   Tag,
   Button,
-  List,
   Spin,
   Alert,
-  Empty,
   message,
   Dropdown,
   Form,
   Input,
   Row,
   Col,
-  Divider,
 } from '@/shared/antd-imports';
 import {
   UserOutlined,
-  TeamOutlined,
-  ProjectOutlined,
-  EyeOutlined,
   EditOutlined,
   DeleteOutlined,
   MoreOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../hooks/useAppSelector';
 import { useAppDispatch } from '../../hooks/useAppDispatch';
 import { toggleClientDetailsDrawer } from '../../features/clients-portal/clients/clients-slice';
@@ -87,7 +80,6 @@ const getDefaultPhoneCountry = (
 
 const ClientDetailsDrawer = () => {
   const { t } = useTranslation('client-portal-clients');
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
 
   const { isClientDetailsDrawerOpen, selectedClientId } = useAppSelector(
@@ -105,7 +97,6 @@ const ClientDetailsDrawer = () => {
   ] = useLazyGetClientDetailsQuery();
 
   const client = clientDetails?.body;
-  const clientStats = client?.stats;
 
   const [deactivateClient, { isLoading: isDeactivating }] = useDeactivateClientMutation();
   const [updateClient, { isLoading: isUpdating }] = useUpdateClientMutation();
@@ -467,131 +458,6 @@ const ClientDetailsDrawer = () => {
           </Row>
         </Form>
 
-        {/* ── Statistics ───────────────────────────────────────────────── */}
-        {clientStats && (
-          <>
-            <Divider style={{ margin: '8px 0 12px' }} />
-            <Row gutter={12} style={{ marginBottom: 16 }}>
-              {[
-                {
-                  icon: <ProjectOutlined />,
-                  value: clientStats.totalProjects ?? 0,
-                  label: t('totalProjectsLabel') || 'Total Projects',
-                  color: undefined,
-                },
-                {
-                  icon: <ProjectOutlined />,
-                  value: clientStats.activeProjects ?? 0,
-                  label: t('activeProjectsLabel') || 'Active Projects',
-                  color: '#3f8600',
-                },
-                {
-                  icon: <TeamOutlined />,
-                  value: clientStats.totalTeamMembers ?? 0,
-                  label: t('totalTeamMembersLabel') || 'Team Members',
-                  color: undefined,
-                },
-                {
-                  icon: null,
-                  value: clientStats.totalRequests ?? 0,
-                  label: t('totalRequestsLabel') || 'Requests',
-                  color: undefined,
-                },
-              ].map(stat => (
-                <Col span={6} key={stat.label}>
-                  <div
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: 8,
-                      border: '1px solid rgba(5, 5, 5, 0.08)',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 22,
-                        fontWeight: 700,
-                        lineHeight: 1.2,
-                        color: stat.color,
-                      }}
-                    >
-                      {stat.value}
-                    </div>
-                    <Flex align="center" justify="center" gap={4} style={{ marginTop: 4 }}>
-                      {stat.icon && (
-                        <span style={{ fontSize: 11, opacity: 0.45 }}>{stat.icon}</span>
-                      )}
-                      <Typography.Text type="secondary" style={{ fontSize: 11 }}>
-                        {stat.label}
-                      </Typography.Text>
-                    </Flex>
-                  </div>
-                </Col>
-              ))}
-            </Row>
-          </>
-        )}
-
-        {/* ── Projects ─────────────────────────────────────────────────── */}
-        {client && (
-          <>
-            {/* ── Projects ─────────────────────────────────────────────── */}
-            <Divider style={{ margin: '8px 0 12px' }} orientation="left" orientationMargin={0}>
-              <Flex align="center" gap={6}>
-                <ProjectOutlined />
-                <Text strong>{t('projectsTitle') || 'Projects'}</Text>
-              </Flex>
-            </Divider>
-            {client.projects && client.projects.length > 0 ? (
-              <List
-                size="small"
-                dataSource={client.projects}
-                renderItem={project => (
-                  <List.Item
-                    actions={[
-                      <Button
-                        type="link"
-                        icon={<EyeOutlined />}
-                        size="small"
-                        onClick={() =>
-                          project.id &&
-                          navigate(
-                            `/worklenz/projects/${project.id}?tab=tasks-list&pinned_tab=tasks-list`
-                          )
-                        }
-                      >
-                        {t('viewButton')}
-                      </Button>,
-                    ]}
-                  >
-                    <List.Item.Meta
-                      title={project.name}
-                      description={
-                        <Flex gap={8} align="center">
-                          <Tag
-                            color={project.status === 'active' ? 'green' : 'default'}
-                            style={{ fontSize: 11 }}
-                          >
-                            {project.status}
-                          </Tag>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {project.completedTasks}/{project.totalTasks}{' '}
-                            {t('tasksCompletedText') || 'tasks completed'}
-                          </Text>
-                        </Flex>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            ) : (
-              <Empty
-                description={t('noProjectsText') || 'No projects'}
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              />
-            )}
-          </>
-        )}
       </Spin>
     </Modal>
   );

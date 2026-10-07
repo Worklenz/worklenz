@@ -77,9 +77,12 @@ export class NotificationsService {
       const safeTaskName = sanitizePlainText(taskName);
       const message = `A task has been assigned to you in <b>${safePhaseName}</b>: <b>${safeTaskName}</b>`;
 
+      const messageKey = "notifications.phaseTaskAssigned";
+      const messageParams = { phase: safePhaseName, task: safeTaskName };
+
       // 1. In-app bell notification
-      await db.query(`SELECT create_notification($1, $2, $3, $4, $5) AS res;`,
-        [assigneeUserId, teamId, taskId, projectId, message]);
+      await db.query(`SELECT create_notification($1, $2, $3, $4, $5, $6, $7, $8) AS res;`,
+        [assigneeUserId, teamId, taskId, projectId, message, messageKey, JSON.stringify(messageParams), "PHASE_TASK_ASSIGNED"]);
 
       // 2. Email queue (cron picks up within 10 min via get_task_updates)
       await db.query(
@@ -102,6 +105,9 @@ export class NotificationsService {
           team: teamName,
           team_id: teamId,
           message,
+          message_key: messageKey,
+          message_params: messageParams,
+          notification_type_key: "PHASE_TASK_ASSIGNED",
           project: projectRow?.project_name,
           project_color: projectRow?.color_code,
           project_id: projectId,
@@ -123,6 +129,14 @@ export class NotificationsService {
       receiver.message,
       url,
     );
+
+    if (receiver.message_key) {
+      notification.setTranslation(
+        receiver.message_key,
+        receiver.message_params,
+        receiver.notification_type_key
+      );
+    }
 
     if (receiver.project) {
       notification.setProject(receiver.project);
@@ -220,33 +234,44 @@ export class NotificationsService {
   public static async createNotification(request: ICreateNotificationRequest) {
     try {
       const q = `
-        INSERT INTO user_notifications (message, user_id, team_id, task_id, project_id, comment_id)
-        VALUES ($5, $1, $2, $3, $4, $6)
+        INSERT INTO user_notifications (
+          message, user_id, team_id, task_id, project_id, comment_id,
+          message_key, message_params, notification_type_key
+        )
+        VALUES ($5, $1, $2, $3, $4, $6, $7, $8, $9)
         RETURNING (SELECT name FROM teams WHERE id = $2) AS team,
                   (SELECT name FROM projects WHERE id = $4) AS project,
                   (SELECT color_code FROM projects WHERE id = $4) AS project_color;
-      `; const result = await db.query(q, [
+      `;
+      const result = await db.query(q, [
         request.userId,
         request.teamId,
         request.taskId,
         request.projectId,
         request.message,
         request.commentId ?? null,
-
+        request.messageKey ?? null,
+        request.messageParams ? JSON.stringify(request.messageParams) : null,
+        request.notificationTypeKey ?? null,
       ]);
       const [response] = result.rows;
 
-      this.sendNotification({
-        receiver_socket_id: request.socketId,
-        project: response?.project,
-        message: request.message,
-        project_color: response?.project_color,
-        project_id: request.projectId as string,
-        team: response?.team,
-        team_id: request.teamId,
-        task_id: request.taskId ?? undefined,
-        comment_id: request.commentId ?? undefined,
-      });
+      if (request.socketId) {
+        this.sendNotification({
+          receiver_socket_id: request.socketId,
+          project: response?.project,
+          message: request.message,
+          message_key: request.messageKey,
+          message_params: request.messageParams,
+          notification_type_key: request.notificationTypeKey,
+          project_color: response?.project_color,
+          project_id: request.projectId as string,
+          team: response?.team,
+          team_id: request.teamId,
+          task_id: request.taskId ?? undefined,
+          comment_id: request.commentId ?? undefined,
+        });
+      }
 
     } catch (error) {
       log_error(error);

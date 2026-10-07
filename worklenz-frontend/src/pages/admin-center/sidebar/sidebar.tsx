@@ -1,5 +1,5 @@
 import { RightOutlined } from '@/shared/antd-imports';
-import { ConfigProvider, Flex, Menu, MenuProps } from '@/shared/antd-imports';
+import { ConfigProvider, Flex, Menu, MenuProps, Tag } from '@/shared/antd-imports';
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { colors } from '../../../styles/colors';
@@ -18,12 +18,16 @@ const AdminCenterSidebar: React.FC = () => {
 
   type MenuItem = Required<MenuProps>['items'][number];
   const isSelfHosted = currentSession?.subscription_type === ISUBSCRIPTION_TYPE.SELF_HOSTED;
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
   const menuItems = adminCenterItems.filter(item => {
     if (item.key === 'settings') {
       return isBusinessPlan(currentSession);
     }
     if (item.selfHostedExcluded && isSelfHosted) {
+      return false;
+    }
+    if (item.ownerOrAdminOnly && !isOwnerOrAdmin) {
       return false;
     }
     return true;
@@ -39,6 +43,15 @@ const AdminCenterSidebar: React.FC = () => {
             <Link to={`/worklenz/admin-center/${item.endpoint}`}>
               {t(item.name, { defaultValue: item.defaultValue })}
             </Link>
+            {item.isNew && (
+              <Tag
+                color="red"
+                bordered={false}
+                style={{ fontSize: 10, lineHeight: '16px', paddingInline: 5, marginInlineEnd: 0 }}
+              >
+                {t('newBadge', { defaultValue: 'NEW' })}
+              </Tag>
+            )}
           </Flex>
           <RightOutlined style={{ fontSize: 12, fontWeight: 'bold' }} />
         </Flex>

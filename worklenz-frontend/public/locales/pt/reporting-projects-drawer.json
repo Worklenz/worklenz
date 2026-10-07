@@ -3,24 +3,19 @@
   "membersButton": "Membros",
   "tasksButton": "Tarefas",
   "searchByNameInputPlaceholder": "Pesquisar por nome",
-
   "overviewTab": "Visão Geral",
   "membersTab": "Membros",
   "tasksTab": "Tarefas",
-
   "completedTasksText": "Tarefas Concluídas",
   "incompleteTasksText": "Tarefas Incompletas",
   "overdueTasksText": "Tarefas Atrasadas",
   "allocatedHoursText": "Horas Alocadas",
   "loggedHoursText": "Horas Registradas",
-
   "tasksText": "Tarefas",
   "allText": "Todas",
-
   "tasksByStatusText": "Tarefas Por Status",
   "tasksByPriorityText": "Tarefas Por Prioridade",
   "tasksByDueDateText": "Tarefas Por Data de Vencimento",
-
   "todoText": "A Fazer",
   "doingText": "Fazendo",
   "doneText": "Feita",
@@ -31,7 +26,6 @@
   "upcomingText": "Próxima",
   "overdueText": "Atrasada",
   "noDueDateText": "Sem Data de Vencimento",
-
   "nameColumn": "Nome",
   "tasksCountColumn": "Contagem de Tarefas",
   "completedTasksColumn": "Tarefas Concluídas",
@@ -42,7 +36,7 @@
   "loggedTimeColumn": "Tempo Registrado",
   "taskColumn": "Tarefa",
   "projectColumn": "Projeto",
-  "statusColumn": "Status",
+  "statusColumn": "Estado",
   "priorityColumn": "Prioridade",
   "phaseColumn": "Fase",
   "dueDateColumn": "Data de Vencimento",
@@ -51,9 +45,8 @@
   "overloggedTimeColumn": "Tempo Excedido",
   "completedOnColumn": "Concluído Em",
   "daysOverdueColumn": "Dias Atrasados",
-
   "groupByText": "Agrupar Por:",
-  "statusText": "Status",
+  "statusText": "Estado",
   "priorityText": "Prioridade",
   "phaseText": "Fase"
 }

@@ -16,10 +16,29 @@ import HandleExceptions from "../decorators/handle-exceptions";
 import { PasswordStrengthChecker } from "../shared/password-strength-check";
 import FileConstants from "../shared/file-constants";
 import axios from "axios";
+import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../shared/signup-email-domain-policy";
 import { log_error } from "../shared/utils";
 import { DEFAULT_ERROR_MESSAGE } from "../shared/constants";
 import { getAppSumoPopupFrequencyDays } from "../shared/appsumo-popup";
 import TokenService from "../services/token-service";
+import { logAuditEvent, resolveOrganizationIdForUserId } from "../services/audit-log.service";
+import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
+
+// Spec #32, task 3.1 — see the identical note in routes/auth/index.ts: mobile OAuth success
+// is logged, failures are not (provider/token-level, not a workspace access-control event).
+function logMobileOAuthLoginSuccess(user: any): void {
+  if (!user?.id) return;
+  void (async () => {
+    const context = await resolveOrganizationIdForUserId(user.id, user.active_team || null);
+    if (!context) return;
+    logAuditEvent({
+      organizationId: context.organizationId,
+      teamId: context.teamId,
+      actor: { userId: user.id, name: user.name || user.email || "Unknown user" },
+      eventType: AUDIT_EVENT_TYPE.LOGIN_SUCCESS.id,
+    });
+  })();
+}
 
 export default class AuthController extends WorklenzControllerBase {
   /** This just send ok response to the client when the request came here through the sign-up-validator */
@@ -103,11 +122,11 @@ export default class AuthController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     if (data) {
-      // Google/Apple-only accounts have no existing password to verify against -
-      // let them set an initial password directly instead of comparing against NULL.
+      // Only accounts without any password (e.g. Google-only signups) may set one without
+      // the current password; an ambient session is not proof for replacing an existing credential.
       const hasExistingPassword = !!data.password;
 
-      if (!hasExistingPassword || bcrypt.compareSync(currentPassword, data.password)) {
+      if (!hasExistingPassword || bcrypt.compareSync(currentPassword || "", data.password)) {
 
         // Prevent reusing the same password (only meaningful if one already exists)
         const isSamePassword = hasExistingPassword && bcrypt.compareSync(newPassword, data.password);
@@ -384,6 +403,8 @@ export default class AuthController extends WorklenzControllerBase {
           res.setHeader('X-Session-ID', req.sessionID);
           res.setHeader('X-Session-Name', sessionName);
 
+          logMobileOAuthLoginSuccess(user);
+
           return res.status(200).send({
             done: true,
             message: info?.message || "Login successful",
@@ -470,6 +491,8 @@ export default class AuthController extends WorklenzControllerBase {
           res.setHeader('X-Session-ID', req.sessionID);
           res.setHeader('X-Session-Name', sessionName);
 
+          logMobileOAuthLoginSuccess(user);
+
           return res.status(200).send({
             done: true,
             message: info?.message || "Login successful",
@@ -544,6 +567,9 @@ export default class AuthController extends WorklenzControllerBase {
           }
         }
       } else {
+        if (await isSignupEmailDomainBlocked(normalizedProfileEmail))
+          return res.status(400).send(new ServerResponse(false, null, BLOCKED_SIGNUP_EMAIL_MESSAGE));
+
         // New user - register
         const googleUserData = {
           id: profile.sub,
@@ -564,6 +590,7 @@ export default class AuthController extends WorklenzControllerBase {
         }
 
         user.build_v = FileConstants.getRelease();
+        logMobileOAuthLoginSuccess(user);
         return res.status(200).send(new AuthResponse("Login Successful!", true, user, null, "User successfully logged in"));
       });
 

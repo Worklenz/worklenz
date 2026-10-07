@@ -32,5 +32,7 @@
   "clientsLockedTooltip": "Disponível no plano Business",
   "clientChatLockedTitle": "Chat com clientes bloqueado",
   "clientChatLockedBody": "Conversar com seus clientes diretamente pela Caixa de entrada está disponível no plano Business.",
-  "upgradeNow": "Fazer upgrade agora"
+  "upgradeNow": "Fazer upgrade agora",
+  "today": "Hoje",
+  "edited": "(editado)"
 }

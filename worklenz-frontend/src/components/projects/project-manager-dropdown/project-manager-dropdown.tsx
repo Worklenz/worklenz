@@ -99,8 +99,6 @@ const ProjectManagerDropdown: React.FC<ProjectManagerDropdownProps> = ({
     borderRadius: token.borderRadiusLG,
     boxShadow: token.boxShadowSecondary,
     margin: '12px',
-    maxHeight: '255px',
-    overflow: 'auto',
   };
 
   const projectManagerOptionsDropdownRender = (menu: React.ReactNode) => {
@@ -129,7 +127,14 @@ const ProjectManagerDropdown: React.FC<ProjectManagerDropdownProps> = ({
 
   return (
     <Dropdown
-      menu={{ items: projectManagerOptions }}
+      menu={{
+        items: projectManagerOptions,
+        style: {
+          maxHeight: '255px',
+          overflowY: 'auto',
+          border: 'none',
+        },
+      }}
       trigger={['click']}
       dropdownRender={projectManagerOptionsDropdownRender}
       disabled={disabled}

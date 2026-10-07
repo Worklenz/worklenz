@@ -24,6 +24,10 @@ import projectsReducer from '@features/projects/projectsSlice';
 import projectMemberReducer from '@features/projects/singleProject/members/projectMembersSlice';
 import projectViewTaskListColumnsReducer from '@features/projects/singleProject/taskListColumns/taskColumnsSlice';
 import phaseReducer from '@/features/projects/singleProject/phase/phases.slice';
+import epicsReducer from '@/features/projects/singleProject/epics/epics.slice';
+import releasesReducer from '@/features/projects/singleProject/releases/releases.slice';
+import createIssueModalReducer from '@/features/projects/singleProject/create-issue/create-issue-modal.slice';
+import softwareQuickFiltersReducer from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
 import updatesReducer from '../features/projects/singleProject/updates/updatesSlice';
 import statusReducer from '@features/projects/status/StatusSlice';
 import deleteStatusReducer from '@features/projects/status/DeleteStatusSlice';
@@ -62,6 +66,8 @@ import labelReducer from '@features/settings/label/labelSlice';
 
 // Admin Center
 import adminCenterReducer from '@features/admin-center/admin-center.slice';
+import auditLogReducer from '@features/admin-center/audit-log/audit-log.slice';
+import { auditLogApi } from '@/api/admin-center/audit-log.api.service';
 
 // Features
 import dateReducer from '@features/date/dateSlice';
@@ -244,6 +250,14 @@ const coreReducers = {
 
   // What's New
   whatsNewReducer: whatsNewReducer,
+
+  // Software projects & audit log
+  [auditLogApi.reducerPath]: auditLogApi.reducer,
+  epicsReducer: epicsReducer,
+  releasesReducer: releasesReducer,
+  createIssueModalReducer: createIssueModalReducer,
+  softwareQuickFiltersReducer: softwareQuickFiltersReducer,
+  auditLogReducer: auditLogReducer,
 };
 
 const safeAddonReducers: Record<string, (typeof addonReducers)[string]> = {};
@@ -270,6 +284,7 @@ export const store = configureStore({
       roadmapApi.middleware,
       projectWorkloadApi.middleware,
       scheduleApi.middleware,
+      auditLogApi.middleware,
       ...addonMiddlewares
     ),
   reducer: {

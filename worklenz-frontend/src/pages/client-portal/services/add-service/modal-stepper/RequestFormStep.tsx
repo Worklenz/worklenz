@@ -8,19 +8,29 @@ import {
 } from '@/types/client-portal/temp-client-portal.types';
 
 type RequestFormStepProps = {
-  setCurrent: (index: number) => void;
   service: TempServicesType;
   setService: (service: TempServicesType) => void;
 };
 
-const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepProps) => {
+const RequestFormStep = ({ service, setService }: RequestFormStepProps) => {
   const [isAddQuestionCardVisible, setIsAddQuestionCardVisible] = useState(false);
 
   const addQuestionCardRef = useRef<HTMLDivElement>(null);
 
-  const [requestForm, setRequestForm] = useState<TempRequestFromItemType[]>(
-    service.service_data?.request_form || []
-  );
+  const requestForm = service.service_data?.request_form || [];
+
+  const setRequestForm = (
+    updater: TempRequestFromItemType[] | ((prev: TempRequestFromItemType[]) => TempRequestFromItemType[])
+  ) => {
+    const next = typeof updater === 'function' ? updater(requestForm) : updater;
+    setService({
+      ...service,
+      service_data: {
+        ...service.service_data,
+        request_form: next,
+      },
+    });
+  };
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [originalQuestion, setOriginalQuestion] = useState<TempRequestFromItemType | null>(null);
@@ -49,28 +59,6 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
       answer: ['Google Search', 'Social Media', 'Referral', 'Website', 'Other'],
     },
   ];
-
-  const questionTypeExamples = {
-    text: {
-      icon: '📝',
-      description: 'Open-ended questions for detailed responses',
-      examples: [
-        'What are your project goals?',
-        'Describe your target audience',
-        'What challenges are you facing?',
-      ],
-    },
-    multipleChoice: {
-      icon: '☑️',
-      description: 'Predefined options for quick selection',
-      examples: ['Budget range', 'Timeline preferences', 'Service type needed'],
-    },
-    attachment: {
-      icon: '📎',
-      description: 'File uploads for documents, images, etc.',
-      examples: ['Upload your logo', 'Share reference materials', 'Provide existing documents'],
-    },
-  };
 
   const handleAddSampleQuestions = () => {
     setRequestForm(sampleQuestions);
@@ -114,17 +102,6 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
     setOriginalQuestion(null);
 
     setIsAddQuestionCardVisible(false);
-  };
-
-  const handleNext = () => {
-    setService({
-      ...service,
-      service_data: {
-        ...service.service_data,
-        request_form: requestForm,
-      },
-    });
-    setCurrent(2);
   };
 
   const handleDeleteQuestion = (index: number) => {
@@ -224,7 +201,7 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
                   <Flex justify="space-between" align="flex-start">
                     <div style={{ flex: 1 }}>
                       <Typography.Text
-                        style={{ fontSize: 14, fontWeight: 500, display: 'block', marginBottom: 6 }}
+                        style={{ fontSize: 12, fontWeight: 500, display: 'block', marginBottom: 6 }}
                       >
                          {t('questionNumberText', { number: index + 1, question: item.question, defaultValue: 'Question {{number}}' })}
                       </Typography.Text>
@@ -278,7 +255,7 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
                       color: token.colorPrimary,
                       borderWidth: 2,
                       height: 48,
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: 500,
                     }}
                   >
@@ -400,19 +377,6 @@ const RequestFormStep = ({ setCurrent, service, setService }: RequestFormStepPro
               </Form>
             </div>
           )}
-        </Flex>
-      </div>
-
-      <div style={{ borderTop: `1px solid ${token.colorBorder}`, paddingTop: 16, flexShrink: 0 }}>
-        <Flex align="center" justify="flex-end">
-          <Flex gap={12}>
-             <Button onClick={() => setCurrent(0)} size="large">
-               {t('previousButton', { defaultValue: 'Previous' })}
-             </Button>
-             <Button type="primary" onClick={handleNext} size="large">
-               {t('continueButton', { defaultValue: 'Continue' })}
-            </Button>
-          </Flex>
         </Flex>
       </div>
     </div>

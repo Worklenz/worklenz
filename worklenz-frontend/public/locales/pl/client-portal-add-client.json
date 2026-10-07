@@ -1,0 +1,191 @@
+{
+  "retry": "Spróbuj ponownie",
+  "upgrade": {
+    "title": "Klienci",
+    "description": "Zapewnij klientom markowy portal do śledzenia postępów projektu. Dostępne w planie Business."
+  },
+  "title": {
+    "method": "Jak chcesz dodać tego klienta?",
+    "company": "Opowiedz nam o kliencie",
+    "user": "Wybierz firmę, a następnie nowego użytkownika",
+    "existing": "Wybierz, kogo zaprosić",
+    "csv": "Prześlij plik CSV",
+    "review": "Sprawdź i wyślij"
+  },
+  "steps": {
+    "method": "Metoda",
+    "details": "Szczegóły",
+    "file": "Plik",
+    "review": "Sprawdzenie"
+  },
+  "actions": {
+    "cancel": "Anuluj",
+    "back": "Wstecz",
+    "continue": "Kontynuuj",
+    "done": "Gotowe",
+    "import": "Importuj",
+    "addClient": "Dodaj klienta",
+    "addClientAndInvite": "Dodaj klienta i wyślij zaproszenie",
+    "addUser": "Dodaj użytkownika klienckiego",
+    "addUserAndInvite": "Dodaj użytkownika i wyślij zaproszenie",
+    "sendInvite": "Wyślij zaproszenie"
+  },
+  "method": {
+    "helper": "Każda ścieżka kończy się tak samo. Wybierz tę, która pasuje do tego, co już wiesz.",
+    "groupLabel": "Jak chcesz dodać tego klienta?",
+    "company": {
+      "name": "Nowy klient",
+      "description": "Utwórz rekord firmy i jej pierwszy kontakt jednocześnie."
+    },
+    "user": {
+      "name": "Dodaj użytkownika klienckiego",
+      "description": "Dodaj kolejny kontakt do już istniejącej firmy."
+    },
+    "existing": {
+      "name": "Zaproś istniejący kontakt",
+      "description": "To już lead lub klient? Po prostu wyślij dostęp do portalu."
+    },
+    "csv": {
+      "name": "Importuj z CSV",
+      "description": "Dodaj wielu klientów jednocześnie z arkusza kalkulacyjnego."
+    }
+  },
+  "fields": {
+    "firstName": "Imię",
+    "firstNamePlaceholder": "Anna",
+    "lastName": "Nazwisko",
+    "lastNamePlaceholder": "Kowalska",
+    "email": "Adres e-mail",
+    "emailPlaceholder": "anna@firma.com",
+    "jobTitle": "Stanowisko",
+    "jobTitlePlaceholder": "np. Kierownik ds. marketingu",
+    "phone": "Telefon (opcjonalnie)",
+    "phonePlaceholder": "+1 415 555 0142"
+  },
+  "errors": {
+    "firstNameRequired": "Wprowadź imię.",
+    "emailRequired": "Wprowadź adres e-mail.",
+    "emailInvalid": "Wprowadź prawidłowy adres e-mail."
+  },
+  "newClient": {
+    "companyName": "Nazwa firmy",
+    "companyNameHint": "Pozostaw puste, aby nazwać klienta na podstawie osoby poniżej.",
+    "companyNamePlaceholder": "np. Beacon Logistics",
+    "setupTitle": "SKONFIGURUJ ICH PORTAL",
+    "welcomeMessage": "Wyślij wiadomość powitalną",
+    "welcomeMessageHint": "Opublikowana w Wiadomościach, więc będzie na nich czekać po zalogowaniu.",
+    "welcomeMessageText": "Cześć {{name}}, witamy w Twoim portalu klienta. Napisz do nas tutaj w dowolnym momencie."
+  },
+  "companyUser": {
+    "chooseCompany": "Wybierz firmę",
+    "searchCompanies": "Szukaj firm...",
+    "companiesLabel": "Firmy",
+    "companiesError": "Nie udało się załadować firm.",
+    "noMatches": "Żadna firma nie pasuje do „{{query}}”.",
+    "noCompanies": "Brak firm. Najpierw dodaj nowego klienta.",
+    "existingUsers_one": "{{count}} istniejący użytkownik",
+    "existingUsers_other": "{{count}} istniejących użytkowników",
+    "changeCompany": "Zmień",
+    "makePoc": "Ustaw tego użytkownika jako osobę kontaktową",
+    "makePocHint": "Firma może mieć dowolną liczbę osób kontaktowych lub żadnej. Jest to niezależne od statusu osoby kontaktowej innych użytkowników.",
+    "projectAccess": "Dostęp do projektów",
+    "templateNone": "Skonfiguruj ręcznie później. Brak przypisanych projektów",
+    "templateNoProjects": "Firma {{company}} nie ma jeszcze żadnych projektów, więc nie ma do czego zastosować szablonu.",
+    "templateTooManyProjects": "Firma {{company}} ma więcej projektów, niż można tu wyświetlić. Przypisz dostęp dla każdego projektu osobno później.",
+    "templateApplied": "Przyznaje dostęp {{template}} do wszystkich {{count}} bieżących projektów firmy {{company}}. Możesz później dostosować ustawienia dla każdego projektu z menu wiersza.",
+    "templateHint": "Wybierz szablon, aby jednocześnie przyznać dostęp do wszystkich bieżących projektów, lub pozostaw bez zmian i przypisz projekty pojedynczo później."
+  },
+  "existing": {
+    "helper": "Kontakty bez aktywnego dostępu do portalu.",
+    "search": "Szukaj po nazwie lub e-mailu...",
+    "loadError": "Nie udało się załadować kontaktów.",
+    "noMatches": "Brak wyników dla „{{query}}”.",
+    "everyoneHasAccess": "Wszyscy mają już aktywny dostęp do portalu.",
+    "groupLabel": "Kontakty do zaproszenia"
+  },
+  "review": {
+    "name": "Imię i nazwisko",
+    "company": "Firma",
+    "companyFromName": "Nazwane na podstawie osoby",
+    "email": "E-mail",
+    "emailMissing": "nie podano",
+    "role": "Rola",
+    "rolePocDefault": "Osoba kontaktowa (domyślnie dla nowej firmy)",
+    "rolePoc": "Osoba kontaktowa",
+    "roleMember": "Użytkownik kliencki",
+    "projectAccess": "Dostęp do projektów",
+    "projectAccessTemplate": "{{template}} we wszystkich {{count}} bieżących projektach",
+    "projectAccessNone": "Jeszcze żaden. Przypisz projekty później.",
+    "authentication": "Uwierzytelnianie",
+    "portalAccess": "Dostęp do portalu",
+    "authInvitation": "Link z zaproszeniem. Hasło ustawiają przy pierwszym logowaniu.",
+    "notInvited": "Jeszcze nie zaproszono. Zaproś ich później z tabeli.",
+    "sendNow": "Wyślij zaproszenie do portalu teraz",
+    "sendNowHint": "Pozostaw niezaznaczone, aby dodać rekord bez wysyłania czegokolwiek. Zaproś ich później z tabeli.",
+    "deliverVia": "WYŚLIJ PRZEZ",
+    "deliveryEmail": "Link z zaproszeniem e-mailem",
+    "deliveryLink": "Skopiuj link z zaproszeniem"
+  },
+  "csv": {
+    "helper": "Prześlij plik CSV z wierszem nagłówka i tymi kolumnami: Firma, Imię, Nazwisko, E-mail. Imię i e-mail są wymagane.",
+    "dropzone": "Kliknij, aby wybrać plik CSV, lub przeciągnij go tutaj",
+    "dropzoneHint": "Do {{max}} wierszy.",
+    "dropzoneLabel": "Wybierz plik CSV",
+    "checking": "Sprawdzanie pliku...",
+    "chooseAnother": "Wybierz inny plik",
+    "problemsLabel": "Wiersze z problemami",
+    "columnNames": {
+      "firstName": "Imię",
+      "email": "E-mail"
+    },
+    "columns": {
+      "row": "Wiersz",
+      "person": "Osoba",
+      "problem": "Problem"
+    },
+    "summary": {
+      "noneReady": "Żaden wiersz nie może zostać zaimportowany.",
+      "ready": "{{valid}} z {{total}} wierszy jest gotowych do zaimportowania.",
+      "detail": "Zostanie utworzonych {{newCompanies}} nowych firm, a {{existingCompanies}} istniejących firm otrzyma więcej użytkowników. Wiersze z problemami są pomijane. Nikt nie otrzyma e-maila. Zaproś ich później z listy."
+    },
+    "result": {
+      "title": "Import zakończony",
+      "detail": "Utworzono {{companies}} firm, dodano {{users}} użytkowników, pominięto {{skipped}} wierszy. Wszyscy mają status Niezaproszony, dopóki nie zaprosisz ich z listy."
+    },
+    "error": {
+      "notCsv": "Wybierz plik .csv.",
+      "tooLarge": "Ten plik jest zbyt duży. Limit to {{size}} MB.",
+      "empty": "Plik nie ma wierszy do zaimportowania.",
+      "unreadable": "Nie udało się odczytać tego pliku. Sprawdź, czy jest to prawidłowy plik CSV, i spróbuj ponownie.",
+      "missingColumns": "Plik musi mieć wiersz nagłówka z tymi kolumnami: {{columns}}.",
+      "tooManyRows": "Plik ma {{count}} wierszy. Import może obejmować maksymalnie {{max}}.",
+      "requestFailed": "Nie udało się sprawdzić pliku. Spróbuj ponownie."
+    },
+    "errors": {
+      "missing_first_name": "Brak imienia",
+      "missing_email": "Brak e-maila",
+      "invalid_email": "E-mail jest nieprawidłowy",
+      "duplicate_in_file": "E-mail pojawia się wcześniej w pliku",
+      "email_in_use": "E-mail już należy do użytkownika klienckiego",
+      "company_name_too_long": "Nazwa firmy przekracza 60 znaków",
+      "client_name_taken": "Klient o tej nazwie już istnieje",
+      "import_failed": "Nie udało się zaimportować"
+    }
+  },
+  "messages": {
+    "linkCopied": "Skopiowano link z zaproszeniem.",
+    "linkCopyError": "Nie udało się skopiować linku.",
+    "saveError": "Nie udało się zapisać. Spróbuj ponownie.",
+    "importError": "Import nie powiódł się. Spróbuj ponownie.",
+    "clientAddedInvited": "Dodano klienta, z {{name}} jako domyślną osobą kontaktową. Zaproszenie wysłano na adres {{email}}.",
+    "clientAddedLink": "Dodano klienta. Skopiuj link z zaproszeniem, aby udostępnić go {{name}}.",
+    "clientAddedNotInvited": "Dodano klienta, z {{name}} jako domyślną osobą kontaktową. Jeszcze nie zaproszono.",
+    "userAddedInvited": "{{name}} został dodany do firmy {{company}}. Zaproszenie wysłano na adres {{email}}.",
+    "userAddedLink": "{{name}} został dodany do firmy {{company}}. Skopiuj link z zaproszeniem, aby go udostępnić.",
+    "userAddedNotInvited": "{{name}} został dodany do firmy {{company}}. Jeszcze nie zaproszono.",
+    "inviteSent": "Zaproszenie wysłano na adres {{email}}.",
+    "inviteLinkReady": "Link z zaproszeniem gotowy do skopiowania.",
+    "inviteFailed": "{{name}} został zapisany, ale nie udało się wysłać zaproszenia ({{error}}). Możesz je wysłać z listy.",
+    "emailNotSent": "{{name}} został zapisany, ale nie udało się wysłać e-maila. Udostępnij zamiast tego link."
+  }
+}

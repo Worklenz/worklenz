@@ -94,7 +94,7 @@
     "dailyCapacityLabel": "Capacidade diária (horas)",
     "allocated": "Alocado",
     "utilization": "Utilização",
-    "status": "Status",
+    "status": "Estado",
     "assignedTasks": "Tarefas atribuídas",
     "tasks": "tarefas",
     "actions": "Ações",
@@ -124,13 +124,13 @@
     "endDateHeader": "Data de término",
     "progressHeader": "Progresso (%)",
     "taskFallback": "Tarefa {{id}}",
-    "defaultPriority": "Normal",
+    "defaultPriority": "Normais",
     "memberLabel": "Membro: {{name}}",
     "emailLabel": "E-mail: {{email}}",
     "capacityLabel": "Capacidade: {{value}}",
     "allocatedLabel": "Alocado: {{value}}",
     "utilizationLabel": "Utilização: {{value}}%",
-    "statusLabel": "Status: {{value}}"
+    "statusLabel": "Estado: {{value}}"
   },
   "status": {
     "overallocated": "Sobrecarregado",

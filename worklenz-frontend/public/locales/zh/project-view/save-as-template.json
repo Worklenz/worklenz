@@ -4,6 +4,7 @@
   "templateNamePlaceholder": "输入模板名称",
   "templateInfo": "模板信息",
   "includes": "项目元素",
+  "projectSettings": "项目设置",
   "taskIncludes": "任务元素",
   "cancel": "取消",
   "save": "保存",
@@ -11,18 +12,30 @@
   "created": "模板已创建！",
   "quickSelect": "快速选择：",
   "selectAll": "全选",
-  "essentialOnly": "仅基本",
-  "clearAll": "清空",
-  "itemsSelected": "项已选择",
-  "readyToSave": "准备保存",
+  "essentialOnly": "仅必要项",
+  "clearAll": "全部清除",
+  "itemsSelected": "项已选",
+  "selected": "已选",
+  "readyToSave": "可以保存",
   "validName": "有效名称",
-  "required": "必需",
+  "required": "必填",
+  "characters": "字符",
   "proTips": "专业提示",
+  "budgetPlanHint": "预算设置仅在 Business 和 Enterprise 套餐中可用。",
   "includesOptions": {
     "statuses": "状态",
     "phases": "阶段",
     "labels": "标签",
     "customColumns": "自定义列"
+  },
+  "projectSettingsOptions": {
+    "category": "类别",
+    "projectManager": "项目经理",
+    "estimatedWorkingDays": "预计工作日",
+    "estimatedManDays": "预计人天",
+    "hoursPerDay": "每天小时数",
+    "advanced": "高级设置",
+    "budget": "预算设置"
   },
   "taskIncludesOptions": {
     "name": "名称",
@@ -30,43 +43,59 @@
     "status": "状态",
     "phase": "阶段",
     "label": "标签",
-    "timeEstimate": "预计用时",
+    "timeEstimate": "时间估算",
     "description": "描述",
-    "subTasks": "子任务"
+    "subTasks": "子任务",
+    "assignees": "负责人",
+    "recurrence": "重复选项",
+    "dependencies": "依赖关系",
+    "billable": "可计费 / 不可计费"
   },
   "descriptions": {
     "statuses": "项目状态工作流配置",
-    "phases": "项目阶段和里程碑",
-    "labels": "分类的自定义标签",
-    "customColumns": "自定义字段和元数据",
-    "taskName": "任务名称和标题",
+    "phases": "项目阶段与里程碑",
+    "labels": "用于分类的自定义标签",
+    "customColumns": "自定义字段与元数据",
+    "category": "用于组织的项目类别",
+    "projectManager": "指定的项目经理",
+    "estimatedWorkingDays": "项目预计工作日",
+    "estimatedManDays": "项目预计人天",
+    "hoursPerDay": "默认每日工作小时数",
+    "advanced": "进度模式、任务默认值与访问控制",
+    "budget": "预算金额、货币与项目费率卡",
+    "taskName": "任务名称与标题",
     "taskPriority": "任务优先级",
     "taskStatus": "任务完成状态",
     "taskPhase": "关联的项目阶段",
     "taskLabel": "任务标签",
-    "timeEstimate": "时间估算和持续时间",
-    "description": "任务描述和详情",
-    "subTasks": "子任务和检查项"
+    "timeEstimate": "时间估算与工期",
+    "description": "任务描述与详情",
+    "subTasks": "子任务与清单项",
+    "assignees": "任务与子任务的负责人",
+    "recurrence": "每个任务的频率、间隔与结束规则",
+    "dependencies": "模板内任务之间的链接",
+    "billable": "每个任务的可计费标记"
   },
   "tooltips": {
     "projectElements": "选择要包含在模板中的项目元素",
+    "projectSettings": "选择要包含的项目设置。从该模板创建项目前可以复查这些设置。",
     "taskElements": "选择要包含在模板中的任务元素",
-    "required": "此项是必需的，无法取消选择"
+    "required": "此项为必填，无法取消选择"
   },
   "tips": {
-    "line1": "模板保留您的项目结构以便快速重用",
-    "line2": "基本项目始终包含且无法移除",
-    "line3": "创建新项目时可以自定义模板",
-    "line4": "选择您想要包含在模板中的元素"
+    "line1": "模板可保留项目结构以便快速复用",
+    "line2": "必要项始终包含且无法移除",
+    "line3": "从该模板创建项目时，可以复查并编辑项目设置",
+    "line4": "默认关闭人员与预算，避免新项目中出现意外分配或费用"
   },
   "validation": {
     "nameRequired": "请输入模板名称",
-    "nameMinLength": "模板名称至少需要3个字符",
-    "nameMaxLength": "模板名称必须少于50个字符"
+    "nameMinLength": "模板名称至少需要 3 个字符",
+    "nameMaxLength": "模板名称必须少于 50 个字符"
   },
   "notifications": {
     "createSuccess": "模板已创建",
-    "createSuccessDesc": "您的项目模板已成功创建并可使用。",
+    "createSuccessDesc": "您的项目模板已成功创建，可以使用。",
     "createError": "模板创建失败",
     "error": "错误"
   }

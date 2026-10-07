@@ -1,71 +1,61 @@
-import { Flex, Typography, Card } from '@/shared/antd-imports';
-import Button from 'antd/lib/button';
+import { Button, Flex, Typography } from '@/shared/antd-imports';
+import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { PlusOutlined, FileTextOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { InvoicesTable } from './Invoices-table/invoices-table';
-import { useResponsive } from '../../../hooks/useResponsive';
+import './invoices.css';
+
+const { Title } = Typography;
 
 const ClientPortalInvoices = () => {
   // localization
   const { t } = useTranslation('client-portal-invoices');
-  const { isDesktop } = useResponsive();
   const navigate = useNavigate();
-
-  // function to handle add invoices - navigate to invoice builder
-  const handleAddInvoice = () => {
-    navigate('/worklenz/client-portal/invoices/create');
-  };
 
   return (
     <div
+      className="invoices-page"
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
         maxWidth: '100%',
-        minHeight: 'calc(100vh - 120px)',
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: isDesktop ? 32 : 24 }}>
-        <Flex align="center" justify="space-between" style={{ width: '100%' }} wrap="wrap" gap={16}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-              <FileTextOutlined style={{ fontSize: 20 }} />
-              <Typography.Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: '20px',
-                }}
-              >
-                {t('title') || 'Invoices'}
-              </Typography.Title>
-            </Flex>
-            <Typography.Text
-              type="secondary"
-              style={{
-                fontSize: isDesktop ? '16px' : '14px',
-                lineHeight: 1.5,
-              }}
-            >
-              {t('description') || 'Manage and track your invoices'}
-            </Typography.Text>
-          </div>
+      <Flex
+        align="flex-start"
+        justify="space-between"
+        wrap="wrap"
+        gap={12}
+        style={{ marginBottom: 16, flexShrink: 0 }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <Title level={4} style={{ margin: 0, fontSize: 22 }}>
+            {t('title', { defaultValue: 'Invoices' })}
+          </Title>
+          <Typography.Text type="secondary">
+            {t('description', { defaultValue: 'Send, track, and collect client payments' })}
+          </Typography.Text>
+        </div>
 
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddInvoice}>
-            {t('addInvoiceButton') || 'Add Invoice'}
-          </Button>
-        </Flex>
+        <Button
+          type="primary"
+          size="small"
+          icon={<PlusOutlined />}
+          onClick={() => navigate('/worklenz/client-portal/invoices/create')}
+        >
+          {t('createInvoiceButton', { defaultValue: 'Create Invoice' })}
+        </Button>
+      </Flex>
+
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <InvoicesTable />
       </div>
 
-      {/* Invoices Table */}
-      <Card
-        style={{
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderRadius: 8,
-        }}
-      >
-        <InvoicesTable />
-      </Card>
+      {/* invoices/create, invoices/:id and invoices/:id/edit render here as modals over the
+          list, so a direct or shared link still shows the list underneath. */}
+      <Outlet />
     </div>
   );
 };

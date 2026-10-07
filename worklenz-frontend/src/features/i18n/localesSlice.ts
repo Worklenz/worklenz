@@ -8,6 +8,8 @@ export enum Language {
   ALB = 'alb',
   DE = 'de',
   ZH = 'zh_cn',
+  PL = 'pl',
+  FR = 'fr',
 }
 
 export type ILanguageType = `${Language}`;
@@ -18,16 +20,23 @@ type LocalesState = {
 
 const STORAGE_KEY = 'i18nextLng';
 
+const normalizeLanguageCode = (lang?: string | null): ILanguageType | null => {
+  if (!lang) return null;
+  const lower = lang.toLowerCase().trim();
+  if (lower === 'zh_cn' || lower === 'zh-cn' || lower === 'zh') return Language.ZH;
+  if (lower === 'alb' || lower === 'sq') return Language.ALB;
+  const base = lower.split(/[-_]/)[0];
+  const matched = Object.values(Language).find(l => l === lower || l === base);
+  return matched ? (matched as ILanguageType) : null;
+};
+
 /**
  * Gets the user's browser language and returns it if supported, otherwise returns English
  * @returns The detected supported language or English as fallback
  */
 const getDefaultLanguage = (): ILanguageType => {
-  const browserLang = navigator.language.split('-')[0];
-  if (Object.values(Language).includes(browserLang as Language)) {
-    return browserLang as ILanguageType;
-  }
-  return Language.EN;
+  const browserLang = navigator.language;
+  return normalizeLanguageCode(browserLang) || Language.EN;
 };
 
 const DEFAULT_LANGUAGE: ILanguageType = getDefaultLanguage();
@@ -38,10 +47,7 @@ const DEFAULT_LANGUAGE: ILanguageType = getDefaultLanguage();
  */
 const getLanguageFromLocalStorage = (): ILanguageType => {
   const savedLng = localStorage.getItem(STORAGE_KEY);
-  if (Object.values(Language).includes(savedLng as Language)) {
-    return savedLng as ILanguageType;
-  }
-  return DEFAULT_LANGUAGE;
+  return normalizeLanguageCode(savedLng) || DEFAULT_LANGUAGE;
 };
 
 /**
@@ -59,9 +65,10 @@ const saveLanguageInLocalStorage = (lng: ILanguageType): void => {
  * @param userLang Language string coming from the user profile API response
  */
 export const applyLanguageFromUser = (userLang: string): void => {
-  if (Object.values(Language).includes(userLang as Language)) {
-    localStorage.setItem(STORAGE_KEY, userLang);
-    i18n.changeLanguage(userLang as ILanguageType);
+  const matched = normalizeLanguageCode(userLang);
+  if (matched) {
+    localStorage.setItem(STORAGE_KEY, matched);
+    i18n.changeLanguage(matched);
   }
 };
 

@@ -1,0 +1,81 @@
+{
+  "overviewTab": "Aperçu",
+  "membersTab": "Membres",
+  "tasksTab": "Tâches",
+  "overview": {
+    "title": "Aperçu",
+    "statusOverview": "Aperçu du statut",
+    "priorityOverview": "Aperçu des priorités",
+    "lastUpdatedTasks": "Dernières tâches mises à jour"
+  },
+  "members": {
+    "title": "Membres",
+    "tooltip": "Membres",
+    "tasksByMembers": "Tâches des membres",
+    "tasksByMembersTooltip": "Tâches des membres",
+    "name": "Nom",
+    "taskCount": "Nombre de tâches",
+    "contribution": "Cotisation",
+    "completed": "Terminé",
+    "incomplete": "Incomplet",
+    "overdue": "En retard",
+    "progress": "Progrès"
+  },
+  "tasks": {
+    "overdueTasks": "Tâches en retard",
+    "overLoggedTasks": "Tâches surconnectées",
+    "tasksCompletedEarly": "Tâches terminées tôt",
+    "tasksCompletedLate": "Tâches terminées en retard",
+    "overLoggedTasksTooltip": "Tâches dont le temps est enregistré au-delà de leur temps estimé",
+    "overdueTasksTooltip": "Tâches dont la date d'échéance est dépassée"
+  },
+  "projectDeadline": {
+    "title": "Date limite du projet",
+    "overdueTasksHours": "Tâches en retard (heures)",
+    "overdueTasksHoursTooltip": "Tâches dont le temps est enregistré après la date de fin du projet",
+    "overdueTasks": "Tâches en retard",
+    "overdueTasksTooltip": "Tâches qui ont dépassé la date de fin du projet"
+  },
+  "priorityChart": {
+    "priorityAxis": "Priorité",
+    "taskCountAxis": "Nombre de tâches",
+    "tasks": "Tâches",
+    "taskCount": "tâche",
+    "noPriority": "Aucune priorité",
+    "low": "Faible",
+    "medium": "Moyen",
+    "high": "Élevé",
+    "critical": "Critique"
+  },
+  "memberStats": {
+    "projectMembers": "Membres du projet",
+    "assigneesWithOverdueTasks": "Destinataires avec des tâches en retard",
+    "unassignedMembers": "Membres non attribués"
+  },
+  "common": {
+    "seeAll": "Voir tout",
+    "totalLoggedHours": "Nombre total d'heures enregistrées",
+    "totalEstimation": "Estimation totale",
+    "completedTasks": "Tâches terminées",
+    "incompleteTasks": "Tâches incomplètes",
+    "overdueTasks": "Tâches en retard",
+    "overdueTasksTooltip": "Tâches dont la date d'échéance est dépassée",
+    "totalLoggedHoursTooltip": "Estimation des tâches et temps enregistré pour les tâches.",
+    "includeArchivedTasks": "Inclure les tâches archivées",
+    "export": "Exporter",
+    "name": "Nom",
+    "status": "Statut",
+    "dueDate": "Date d'échéance",
+    "lastUpdated": "Dernière mise à jour",
+    "na": "N/D"
+  },
+  "justNow": "Juste maintenant",
+  "tasksTable": {
+    "daysOverdue": "Jours de retard",
+    "completedAt": "Terminé à",
+    "members": "Membres",
+    "overLoggedTime": "Surtemps enregistré",
+    "completedDate": "Date de fin",
+    "totalAllocation": "Allocation totale"
+  }
+}

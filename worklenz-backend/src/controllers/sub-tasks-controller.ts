@@ -33,8 +33,8 @@ export default class SubTasksController extends WorklenzControllerBase {
               (ts.id) AS status,
               (ts.name) AS status_name,
               TRUE AS is_sub_task,
-              (tsc.color_code) AS status_color,
-              (tsc.color_code_dark) AS status_color_dark,
+              (COALESCE(ts.color_code, tsc.color_code)) AS status_color,
+              (COALESCE(ts.color_code, tsc.color_code_dark, tsc.color_code)) AS status_color_dark,
               (SELECT name FROM projects WHERE id = t.project_id) AS project_name,
               (SELECT value FROM task_priorities WHERE id = t.priority_id) AS priority_value,
               total_minutes,
@@ -48,7 +48,10 @@ export default class SubTasksController extends WorklenzControllerBase {
                     WHERE task_id = t.id
                     ORDER BY name) r) AS labels,
               (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
-                FROM (SELECT task_statuses.id, task_statuses.name, stsc.color_code, stsc.color_code_dark
+                FROM (SELECT task_statuses.id,
+                             task_statuses.name,
+                             COALESCE(task_statuses.color_code, stsc.color_code)                       AS color_code,
+                             COALESCE(task_statuses.color_code, stsc.color_code_dark, stsc.color_code) AS color_code_dark
                       FROM task_statuses
                               INNER JOIN sys_task_status_categories stsc ON task_statuses.category_id = stsc.id
                       WHERE project_id = t.project_id

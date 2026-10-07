@@ -181,7 +181,7 @@
     "reviewProjectCardDescription": "Një projekt i ri Worklenz do të krijohet për këtë importim.",
     "reviewFieldsCardTitle": "{{mapped}}/{{total}} fusha",
     "reviewFieldsCardDescription": "{{mapped}} kolona do të hartëzohen me fushat ekzistuese të Worklenz.",
-    "reviewWorkTypesCardTitle": "{{count}} status",
+    "reviewWorkTypesCardTitle": "statusi {{count}}",
     "reviewWorkTypesCardDescription": "Nëse vlerat nuk hartëzohen me statuset e Worklenz, të gjitha detyrat hartëzohen me Detyrë (niveli 0) si parazgjedhje.",
     "reviewUsersNone": "Pa përdorues",
     "reviewUsersCount": "{{count}} përdorues",

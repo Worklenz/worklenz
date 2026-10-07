@@ -1,5 +1,5 @@
 import { Col, Flex, Row, Typography, theme } from '@/shared/antd-imports';
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import OverviewStatCard from './overview-stat-card';
 import { BankOutlined, FileOutlined, UsergroupAddOutlined } from '@/shared/antd-imports';
 import { colors } from '@/styles/colors';
@@ -7,34 +7,81 @@ import { useTranslation } from 'react-i18next';
 import { IRPTOverviewStatistics } from '@/types/reporting/reporting.types';
 import { reportingApiService } from '@/api/reporting/reporting.api.service';
 import { useAppSelector } from '@/hooks/useAppSelector';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
 
 const OverviewStats = () => {
   const [stats, setStats] = useState<IRPTOverviewStatistics>({});
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation('reporting-overview');
   const { token } = theme.useToken();
+  const { socket } = useSocket();
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const includeArchivedProjects = useAppSelector(
     state => state.reportingReducer.includeArchivedProjects
   );
 
-  const getOverviewStats = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { done, body } =
-        await reportingApiService.getOverviewStatistics(includeArchivedProjects);
-      if (done) {
-        setStats(body);
+  const getOverviewStats = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const { done, body } =
+          await reportingApiService.getOverviewStatistics(includeArchivedProjects);
+        if (done) {
+          setStats(body);
+        }
+      } catch (error) {
+        console.error('Failed to fetch overview statistics:', error);
+      } finally {
+        if (!silent) setLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch overview statistics:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [includeArchivedProjects]);
+    },
+    [includeArchivedProjects]
+  );
 
   useEffect(() => {
     getOverviewStats();
   }, [getOverviewStats]);
+
+  const handleSocketUpdate = useCallback(() => {
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    updateTimeoutRef.current = setTimeout(() => {
+      getOverviewStats(true);
+    }, 150);
+  }, [getOverviewStats]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleSocketUpdate);
+    socket.on(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleSocketUpdate);
+    socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleSocketUpdate);
+    socket.on(SocketEvents.PROJECT_DATA_CHANGE.toString(), handleSocketUpdate);
+    socket.on(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(), handleSocketUpdate);
+    socket.on(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleSocketUpdate);
+    socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleSocketUpdate);
+
+    return () => {
+      socket.off(SocketEvents.PROJECT_END_DATE_CHANGE.toString(), handleSocketUpdate);
+      socket.off(SocketEvents.PROJECT_START_DATE_CHANGE.toString(), handleSocketUpdate);
+      socket.off(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleSocketUpdate);
+      socket.off(SocketEvents.PROJECT_DATA_CHANGE.toString(), handleSocketUpdate);
+      socket.off(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(), handleSocketUpdate);
+      socket.off(SocketEvents.TASK_END_DATE_CHANGE.toString(), handleSocketUpdate);
+      socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleSocketUpdate);
+    };
+  }, [socket, handleSocketUpdate]);
+
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const renderStatText = useCallback(
     (count: number = 0, singularKey: string, pluralKey: string) => {

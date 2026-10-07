@@ -4,11 +4,13 @@ import type { CSSProperties } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { RootState } from '@/app/store';
 
-export type PortalStatusType = 'active' | 'invited' | 'not_invited' | 'expired';
+export type PortalStatusType = 'active' | 'invited' | 'not_invited' | 'expired' | 'disabled';
 
 interface PortalStatusTagProps {
   status: PortalStatusType | string;
   label: string;
+  /** Prefixes the label with a small dot in the status color. */
+  showDot?: boolean;
 }
 
 interface StatusColorSet {
@@ -27,6 +29,12 @@ const PORTAL_STATUS_COLORS: Record<
     dark: { backgroundColor: '#0f1b0f', borderColor: '#274916', color: '#73d13d' },
   },
   expired: {
+    light: { backgroundColor: '#fff2f0', borderColor: '#ffccc7', color: '#cf1322' },
+    dark: { backgroundColor: '#1f0f0f', borderColor: '#58181c', color: '#ff7875' },
+  },
+  // An admin turned this company user off. Shares the red family with Expired (both need action),
+  // the label tells them apart.
+  disabled: {
     light: { backgroundColor: '#fff2f0', borderColor: '#ffccc7', color: '#cf1322' },
     dark: { backgroundColor: '#1f0f0f', borderColor: '#58181c', color: '#ff7875' },
   },
@@ -65,11 +73,33 @@ const getPortalStatusTagStyle = (
   };
 };
 
-export const PortalStatusTag: React.FC<PortalStatusTagProps> = ({ status, label }) => {
+export const PortalStatusTag: React.FC<PortalStatusTagProps> = ({
+  status,
+  label,
+  showDot = false,
+}) => {
   const themeMode = useAppSelector((state: RootState) => state.themeReducer.mode);
   const isDarkMode = themeMode === 'dark';
 
-  return <Tag style={getPortalStatusTagStyle(status, isDarkMode)}>{label}</Tag>;
+  return (
+    <Tag style={getPortalStatusTagStyle(status, isDarkMode)}>
+      {showDot && (
+        <span
+          aria-hidden="true"
+          style={{
+            display: 'inline-block',
+            width: 6,
+            height: 6,
+            marginInlineEnd: 6,
+            verticalAlign: 'middle',
+            borderRadius: '50%',
+            backgroundColor: 'currentColor',
+          }}
+        />
+      )}
+      {label}
+    </Tag>
+  );
 };
 
 export default PortalStatusTag;

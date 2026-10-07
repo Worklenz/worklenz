@@ -1,0 +1,16 @@
+{
+  "title": "Équipes",
+  "team": "Équipe",
+  "teams": "Équipes",
+  "name": "Nom",
+  "created": "Créé",
+  "ownsBy": "Possède par",
+  "edit": "Modifier",
+  "editTeam": "Modifier l'équipe",
+  "pinTooltip": "Cliquez pour épingler ceci dans le menu principal",
+  "editTeamName": "Modifier le nom de l'équipe",
+  "updateName": "Mettre à jour le nom",
+  "namePlaceholder": "Nom",
+  "nameRequired": "Veuillez entrer un nom",
+  "updateFailed": "Le changement de nom d'équipe a échoué !"
+}

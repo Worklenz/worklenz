@@ -36,6 +36,8 @@ const STANDARD_COLUMN_KEYS = new Set([
   'STATUS',
   'ASSIGNEES',
   'LABELS',
+  'ATTACHMENTS',
+  'COMMENTS',
   'PHASE',
   'PRIORITY',
   'TIME_TRACKING',
@@ -58,8 +60,10 @@ const DEFAULT_COLUMN_CONFIG: ColumnConfig[] = [
   { key: 'STATUS', label: 'Status', showInDropdown: true, order: 5, category: 'basic' },
   { key: 'ASSIGNEES', label: 'Assignees', showInDropdown: true, order: 6, category: 'basic' },
   { key: 'LABELS', label: 'Labels', showInDropdown: true, order: 7, category: 'basic' },
-  { key: 'PHASE', label: 'Phase', showInDropdown: true, order: 8, category: 'basic' },
-  { key: 'PRIORITY', label: 'Priority', showInDropdown: true, order: 9, category: 'basic' },
+  { key: 'ATTACHMENTS', label: 'Attachments', showInDropdown: true, order: 8, category: 'basic' },
+  { key: 'COMMENTS', label: 'Latest Comment', showInDropdown: true, order: 9, category: 'basic' },
+  { key: 'PHASE', label: 'Phase', showInDropdown: true, order: 10, category: 'basic' },
+  { key: 'PRIORITY', label: 'Priority', showInDropdown: true, order: 11, category: 'basic' },
   {
     key: 'TIME_TRACKING',
     label: 'Time',
@@ -130,13 +134,25 @@ const ShowFieldsFilterDropdown = () => {
   const saveColumnConfig = useSaveColumnConfig();
   const { isHidden, toggleVisibility } = useCustomColumnVisibility(); // ← ADDED
 
+  const columnsWithBuiltIns = columnList.some(column => column.key === 'ATTACHMENTS')
+    ? columnList
+    : [
+        ...columnList,
+        {
+          key: 'ATTACHMENTS',
+          name: t('attachmentsText', { defaultValue: 'Attachments' }),
+          index: 999,
+          pinned: false,
+        },
+      ];
+
   // Update config if projectId changes
   React.useEffect(() => {
     setColumnConfig(useColumnConfig(projectId || undefined));
   }, [projectId, configModalOpen]);
 
   // Filter columns based on configuration
-  const visibilityChangableColumnList = columnList.filter(column => {
+  const visibilityChangableColumnList = columnsWithBuiltIns.filter(column => {
     if (column.key === 'selector' || column.key === 'TASK') {
       return false;
     }

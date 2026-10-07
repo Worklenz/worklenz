@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CloseOutlined, SearchOutlined } from '@/shared/antd-imports';
+import { CloseOutlined, Input, InputRef, SearchOutlined, theme } from '@/shared/antd-imports';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { ThemeClasses } from './types';
 
@@ -10,15 +10,128 @@ interface SearchFilterProps {
   placeholder?: string;
   themeClasses: ThemeClasses;
   className?: string;
+  /** `inline` is an always-visible live search box that "/" focuses. */
+  variant?: 'collapsible' | 'inline';
 }
 
-export const SearchFilter: React.FC<SearchFilterProps> = ({
+export const SearchFilter: React.FC<SearchFilterProps> = ({ variant = 'collapsible', ...props }) =>
+  variant === 'inline' ? <InlineSearchFilter {...props} /> : <CollapsibleSearchFilter {...props} />;
+
+const InlineSearchFilter = ({
+  value,
+  onChange,
+  placeholder,
+  className = '',
+}: Omit<SearchFilterProps, 'variant'>) => {
+  const { t } = useTranslation('task-list-filters');
+  const { token } = theme.useToken();
+  const [localValue, setLocalValue] = useState(value);
+  const inputRef = useRef<InputRef>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (isEditableElement(document.activeElement)) return;
+      event.preventDefault();
+      inputRef.current?.focus();
+    };
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    },
+    []
+  );
+
+  const commitValue = useCallback(
+    (nextValue: string) => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+      if (nextValue.trim() === value.trim()) return;
+      onChange(nextValue.trim());
+    },
+    [onChange, value]
+  );
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const nextValue = event.target.value;
+    setLocalValue(nextValue);
+    if (!nextValue) {
+      commitValue('');
+      return;
+    }
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => commitValue(nextValue), INLINE_SEARCH_DEBOUNCE_MS);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      commitValue(localValue);
+      return;
+    }
+    if (event.key === 'Escape') {
+      setLocalValue('');
+      commitValue('');
+      inputRef.current?.blur();
+    }
+  };
+
+  const label = placeholder || t('searchWork', { defaultValue: 'Search work…' });
+
+  return (
+    <Input
+      ref={inputRef}
+      size="small"
+      value={localValue}
+      onChange={handleChange}
+      onKeyDown={handleKeyDown}
+      placeholder={label}
+      aria-label={label}
+      allowClear
+      prefix={<SearchOutlined style={{ color: token.colorTextTertiary }} />}
+      suffix={
+        !localValue && (
+          <kbd
+            className="rounded px-1 text-[11px] leading-4"
+            style={{
+              border: `1px solid ${token.colorBorder}`,
+              color: token.colorTextTertiary,
+            }}
+            title={t('searchShortcutHint', { defaultValue: 'Press / to search' })}
+          >
+            /
+          </kbd>
+        )
+      }
+      className={`w-full sm:w-[240px] ${className}`}
+      style={{ height: 30 }}
+    />
+  );
+};
+
+const isEditableElement = (element: Element | null) => {
+  if (!element) return false;
+  if (element instanceof HTMLElement && element.isContentEditable) return true;
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName);
+};
+
+const INLINE_SEARCH_DEBOUNCE_MS = 300;
+
+const CollapsibleSearchFilter = ({
   value,
   onChange,
   placeholder,
   themeClasses,
   className = '',
-}) => {
+}: Omit<SearchFilterProps, 'variant'>) => {
   const { t } = useTranslation('task-list-filters');
   const [isExpanded, setIsExpanded] = useState(false);
   const [localValue, setLocalValue] = useState(value);

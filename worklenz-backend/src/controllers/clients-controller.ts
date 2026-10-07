@@ -126,16 +126,26 @@ export default class ClientsController extends WorklenzControllerBase {
   @HandleExceptions()
   public static async getClientRequests(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
-    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, ["r.req_no", "s.name", "c.name", "r.notes"]);
-    const {status, client_id, service_id, assigned_to} = req.query;
+    // toPaginationOptions() reads size/index/field/order — the admin UI sends page/limit/sortBy/
+    // sortOrder (matching the Clients list), so pagination and sorting are read directly here.
+    // Only its search-query building (which does read `search`) is reused, with the search
+    // placeholders offset past the team/limit/offset params already in `values`.
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Number(req.query.limit) || 10);
+    const offset = (page - 1) * limit;
+    const {searchQuery, searchParams} = this.toPaginationOptions(req.query, ["r.req_no", "s.name", "c.name", "r.notes"], false, 4);
+    const {status, client_id, service_id, assigned_to, sortBy, sortOrder} = req.query;
 
-    // Ensure sortField is a valid column, default to created_at if it's an array
-    const safeSortField = Array.isArray(sortField) ? "r.created_at" : sortField;
+    // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
+    // query param into ORDER BY.
+    const SORTABLE_FIELDS = new Set(["req_no", "client_name", "service_name", "status", "created_at"]);
+    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
+    const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
 
     // Build filter conditions
     const conditions = [];
-    const values = [teamId, size, offset];
-    let paramIndex = 4;
+    const values: (string | number | undefined)[] = [teamId, limit, offset, ...searchParams];
+    let paramIndex = values.length + 1;
 
     if (status) {
       conditions.push(`r.status = $${paramIndex}`);
@@ -188,7 +198,7 @@ export default class ClientsController extends WorklenzControllerBase {
                     JOIN clients c ON r.client_id = c.id
                     LEFT JOIN users u ON r.assigned_to = u.id
                     WHERE r.organization_team_id = $1 ${searchQuery} ${whereClause}
-                    ORDER BY ${safeSortField} ${sortOrder}
+                    ORDER BY ${safeSortField} ${safeSortOrder}
                     LIMIT $2 OFFSET $3) t) AS data
       FROM client_portal_requests r
       JOIN client_portal_services s ON r.service_id = s.id
@@ -252,9 +262,16 @@ export default class ClientsController extends WorklenzControllerBase {
     const requestId = req.params.id;
     const {status, notes, assigned_to} = req.body;
 
-    // Validate status
-    const validStatuses = ["pending", "accepted", "in_progress", "completed", "rejected"];
-    if (!validStatuses.includes(status)) {
+    // Validate status: one of the 5 built-in workflow states, or one of this team's custom
+    // statuses. Custom status names can't be checked by a DB constraint (it can't reference
+    // another table's rows), so this is the actual validation for the status column.
+    const builtInStatuses = ["pending", "accepted", "in_progress", "completed", "rejected"];
+    const customStatusResult = await db.query(
+      "SELECT name FROM client_portal_request_custom_statuses WHERE organization_team_id = $1",
+      [teamId]
+    );
+    const customStatusNames = customStatusResult.rows.map(row => row.name);
+    if (!builtInStatuses.includes(status) && !customStatusNames.includes(status)) {
       return res.status(400).send(new ServerResponse(false, null, "Invalid status"));
     }
 
@@ -443,9 +460,749 @@ export default class ClientsController extends WorklenzControllerBase {
   }
 
   @HandleExceptions()
+  public static async deleteClientRequest(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const requestId = req.params.id;
+
+    const requestCheck = await db.query(
+      "SELECT id FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    if (requestCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Request not found"));
+    }
+
+    // Requests with invoices already raised against them must be kept intact.
+    const invoicesCheck = await db.query(
+      "SELECT COUNT(*) as count FROM client_portal_invoices WHERE request_id = $1",
+      [requestId]
+    );
+
+    const invoiceCount = parseInt(invoicesCheck.rows[0]?.count || "0");
+    if (invoiceCount > 0) {
+      return res.status(400).send(new ServerResponse(false, null, "This request has invoices and can't be deleted"));
+    }
+
+    // Comments and status history cascade on delete.
+    await db.query(
+      "DELETE FROM client_portal_requests WHERE id = $1 AND organization_team_id = $2",
+      [requestId, teamId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, null, "Request deleted successfully"));
+  }
+
+  @HandleExceptions()
+  public static async getRequestCustomStatuses(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+
+    const result = await db.query(
+      `SELECT id, name, color, created_at
+       FROM client_portal_request_custom_statuses
+       WHERE organization_team_id = $1
+       ORDER BY created_at ASC`,
+      [teamId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async createRequestCustomStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const name = (req.body?.name || "").trim();
+    const color = (req.body?.color || "default").trim();
+
+    if (!name) {
+      return res.status(400).send(new ServerResponse(false, null, "Status name is required"));
+    }
+
+    if (name.length > 40) {
+      return res.status(400).send(new ServerResponse(false, null, "Status name must be 40 characters or fewer"));
+    }
+
+    const duplicateCheck = await db.query(
+      "SELECT id FROM client_portal_request_custom_statuses WHERE organization_team_id = $1 AND LOWER(name) = LOWER($2)",
+      [teamId, name]
+    );
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).send(new ServerResponse(false, null, "A custom status with this name already exists"));
+    }
+
+    const result = await db.query(
+      `INSERT INTO client_portal_request_custom_statuses (organization_team_id, name, color, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, color, created_at`,
+      [teamId, name, color, userId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0], "Custom status added"));
+  }
+
+  @HandleExceptions()
+  public static async deleteRequestCustomStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const statusId = req.params.id;
+
+    const statusCheck = await db.query(
+      "SELECT id, name FROM client_portal_request_custom_statuses WHERE id = $1 AND organization_team_id = $2",
+      [statusId, teamId]
+    );
+    if (statusCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Custom status not found"));
+    }
+
+    // Requests already using this status keep it as free text; only the picklist entry goes away.
+    await db.query(
+      "DELETE FROM client_portal_request_custom_statuses WHERE id = $1 AND organization_team_id = $2",
+      [statusId, teamId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, null, "Custom status removed"));
+  }
+
+  // Organization-side Client Portal Ticket Management (admin queue only — client-facing
+  // ticket submission ships in a later phase, so there is no create endpoint here yet).
+
+  @HandleExceptions()
+  public static async getClientTickets(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Number(req.query.limit) || 10);
+    const offset = (page - 1) * limit;
+    const {searchQuery, searchParams} = this.toPaginationOptions(req.query, ["t.subject", "t.ticket_no", "c.name", "t.description"], false, 4);
+    const {status, client_id, priority, sortBy, sortOrder} = req.query;
+
+    // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
+    // query param into ORDER BY.
+    const SORTABLE_FIELDS = new Set(["ticket_no", "client_name", "subject", "priority", "status", "created_at"]);
+    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "created_at";
+    const safeSortOrder = String(sortOrder).toLowerCase() === "asc" ? "ASC" : "DESC";
+
+    // Client/Priority/Status columns are multi-select in the admin UI — each arrives as a
+    // comma-separated list (unlike Requests' single-value filters) and is matched with = ANY(...).
+    const parseList = (v: unknown): string[] =>
+      typeof v === "string" ? v.split(",").map(s => s.trim()).filter(Boolean) : [];
+    const statusList = parseList(status);
+    const clientIdList = parseList(client_id);
+    const priorityList = parseList(priority);
+
+    const conditions: string[] = [];
+    const values: unknown[] = [teamId, limit, offset, ...searchParams];
+    let paramIndex = values.length + 1;
+
+    if (statusList.length) {
+      conditions.push(`t.status = ANY($${paramIndex}::text[])`);
+      values.push(statusList);
+      paramIndex++;
+    }
+    if (clientIdList.length) {
+      conditions.push(`t.client_id = ANY($${paramIndex}::uuid[])`);
+      values.push(clientIdList);
+      paramIndex++;
+    }
+    if (priorityList.length) {
+      conditions.push(`t.priority = ANY($${paramIndex}::text[])`);
+      values.push(priorityList);
+      paramIndex++;
+    }
+
+    const whereClause = conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
+
+    const q = `
+      SELECT ROW_TO_JSON(rec) AS tickets
+      FROM (SELECT COUNT(*) AS total,
+              (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(t2))), '[]'::JSON)
+              FROM (SELECT t.id,
+                            t.ticket_no,
+                            t.client_id,
+                            t.subject,
+                            t.description,
+                            t.priority,
+                            t.status,
+                            t.converted_task_id,
+                            t.resolved_at,
+                            t.created_at,
+                            t.updated_at,
+                            c.name as client_name
+                    FROM client_portal_tickets t
+                    JOIN clients c ON t.client_id = c.id
+                    WHERE t.organization_team_id = $1 ${searchQuery} ${whereClause}
+                    ORDER BY ${safeSortField} ${safeSortOrder}
+                    LIMIT $2 OFFSET $3) t2) AS data
+      FROM client_portal_tickets t
+      JOIN clients c ON t.client_id = c.id
+      WHERE t.organization_team_id = $1 ${searchQuery} ${whereClause}) rec;
+    `;
+
+    const result = await db.query(q, values);
+    const [data] = result.rows;
+
+    return res.status(200).send(new ServerResponse(true, data.tickets || this.paginatedDatasetDefaultStruct));
+  }
+
+  @HandleExceptions()
+  public static async getClientTicketsStats(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+
+    const q = `
+      SELECT
+        COUNT(CASE WHEN status = 'open' THEN 1 END) as open_tickets,
+        COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_tickets,
+        COUNT(CASE WHEN status = 'resolved' AND resolved_at >= date_trunc('day', NOW()) THEN 1 END) as resolved_today,
+        (
+          SELECT ROUND(AVG(EXTRACT(EPOCH FROM (first_reply.first_comment_at - t.created_at)) / 3600.0)::numeric, 1)
+          FROM client_portal_tickets t
+          JOIN LATERAL (
+            SELECT MIN(created_at) as first_comment_at
+            FROM client_portal_ticket_comments
+            WHERE ticket_id = t.id AND sender_type = 'team_member'
+          ) first_reply ON first_reply.first_comment_at IS NOT NULL
+          WHERE t.organization_team_id = $1 AND t.created_at >= NOW() - INTERVAL '30 days'
+        ) as avg_response_hours
+      FROM client_portal_tickets
+      WHERE organization_team_id = $1
+    `;
+
+    const result = await db.query(q, [teamId]);
+    const [data] = result.rows;
+
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async getClientTicketById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const ticketId = req.params.id;
+
+    const q = `
+      SELECT t.id,
+             t.ticket_no,
+             t.client_id,
+             t.subject,
+             t.description,
+             t.priority,
+             t.status,
+             t.converted_task_id,
+             t.resolved_at,
+             t.created_at,
+             t.updated_at,
+             c.name as client_name,
+             c.email as client_email
+      FROM client_portal_tickets t
+      JOIN clients c ON t.client_id = c.id
+      WHERE t.id = $1 AND t.organization_team_id = $2
+    `;
+
+    const result = await db.query(q, [ticketId, teamId]);
+    const [data] = result.rows;
+
+    if (!data) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+
+    return res.status(200).send(new ServerResponse(true, data));
+  }
+
+  @HandleExceptions()
+  public static async updateClientTicketStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const ticketId = req.params.id;
+    const {status} = req.body;
+
+    // Validate status: one of the 3 built-in workflow states, or one of this team's custom
+    // statuses (same validation shape as updateClientRequestStatus).
+    const builtInStatuses = ["open", "in_progress", "resolved"];
+    const customStatusResult = await db.query(
+      "SELECT name FROM client_portal_ticket_custom_statuses WHERE organization_team_id = $1",
+      [teamId]
+    );
+    const customStatusNames = customStatusResult.rows.map(row => row.name);
+    if (!builtInStatuses.includes(status) && !customStatusNames.includes(status)) {
+      return res.status(400).send(new ServerResponse(false, null, "Invalid status"));
+    }
+
+    const ticketCheck = await db.query(
+      "SELECT id FROM client_portal_tickets WHERE id = $1 AND organization_team_id = $2",
+      [ticketId, teamId]
+    );
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+
+    // resolved_at is set only on transition into 'resolved' (and cleared if moved back out),
+    // so "Resolved today" on the stats tile stays accurate.
+    const updateFields = ["status = $3", "updated_at = NOW()"];
+    updateFields.push(status === "resolved" ? "resolved_at = NOW()" : "resolved_at = NULL");
+
+    const q = `
+      UPDATE client_portal_tickets
+      SET ${updateFields.join(", ")}
+      WHERE id = $1 AND organization_team_id = $2
+      RETURNING id, ticket_no, status, resolved_at, updated_at
+    `;
+
+    const result = await db.query(q, [ticketId, teamId, status]);
+    const [data] = result.rows;
+
+    if (!data) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+
+    return res.status(200).send(new ServerResponse(true, data, "Ticket updated successfully"));
+  }
+
+  @HandleExceptions()
+  public static async getClientTicketComments(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const ticketId = req.params.id;
+
+    const ticketCheck = await db.query(
+      "SELECT id FROM client_portal_tickets WHERE id = $1 AND organization_team_id = $2",
+      [ticketId, teamId]
+    );
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+
+    const q = `
+      SELECT id, comment, sender_type, sender_id, sender_name, created_at, updated_at
+      FROM client_portal_ticket_comments
+      WHERE ticket_id = $1 AND organization_team_id = $2
+      ORDER BY created_at ASC
+    `;
+    const result = await db.query(q, [ticketId, teamId]);
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async addClientTicketComment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const userName = req.user?.name;
+    const ticketId = req.params.id;
+    const {comment} = req.body;
+
+    if (!comment || !comment.trim()) {
+      return res.status(400).send(new ServerResponse(false, null, "Comment is required"));
+    }
+
+    const MAX_COMMENT_LENGTH = 5000;
+    if (comment.trim().length > MAX_COMMENT_LENGTH) {
+      return res.status(400).send(new ServerResponse(false, null, `Comment must not exceed ${MAX_COMMENT_LENGTH} characters`));
+    }
+
+    const sanitizedComment = sanitizeCommentContent(comment.trim());
+
+    const ticketCheck = await db.query(
+      "SELECT id, client_id FROM client_portal_tickets WHERE id = $1 AND organization_team_id = $2",
+      [ticketId, teamId]
+    );
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+    const clientId = ticketCheck.rows[0].client_id;
+
+    // Admin-authored comments are always team_member — there is no client-facing ticket UI yet
+    // to author a 'client' comment from.
+    const result = await db.query(
+      `INSERT INTO client_portal_ticket_comments (ticket_id, organization_team_id, client_id, comment, sender_type, sender_id, sender_name)
+       VALUES ($1, $2, $3, $4, 'team_member', $5, $6)
+       RETURNING id, comment, sender_type, sender_id, sender_name, created_at, updated_at`,
+      [ticketId, teamId, clientId, sanitizedComment, userId, userName]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0], "Comment added successfully"));
+  }
+
+  @HandleExceptions()
+  public static async convertClientTicketToTask(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const ticketId = req.params.id;
+    const {project_id} = req.body;
+
+    if (!project_id) {
+      return res.status(400).send(new ServerResponse(false, null, "project_id is required"));
+    }
+
+    const ticketResult = await db.query(
+      "SELECT id, client_id, subject, description, priority, converted_task_id FROM client_portal_tickets WHERE id = $1 AND organization_team_id = $2",
+      [ticketId, teamId]
+    );
+    if (ticketResult.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+    const ticket = ticketResult.rows[0];
+
+    if (ticket.converted_task_id) {
+      return res.status(400).send(new ServerResponse(false, null, "This ticket has already been converted to a task"));
+    }
+
+    // The project picker only ever shows this ticket's client's own projects, but the server
+    // re-validates rather than trusting the client-supplied project_id.
+    const projectCheck = await db.query(
+      "SELECT id FROM projects WHERE id = $1 AND client_id = $2",
+      [project_id, ticket.client_id]
+    );
+    if (projectCheck.rows.length === 0) {
+      return res.status(400).send(new ServerResponse(false, null, "Select a project belonging to this ticket's client"));
+    }
+
+    // Default status/priority resolved the same way create_quick_task() does — the initial
+    // "to do" status of the target project, and the task_priorities row matching the ticket's
+    // priority name.
+    const statusResult = await db.query(
+      `SELECT id FROM task_statuses
+       WHERE project_id = $1 AND category_id IN (SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE)
+       ORDER BY sort_order ASC LIMIT 1`,
+      [project_id]
+    );
+    const statusId = statusResult.rows[0]?.id || null;
+
+    const priorityResult = await db.query(
+      "SELECT id FROM task_priorities WHERE LOWER(name) = LOWER($1)",
+      [ticket.priority || "medium"]
+    );
+    const priorityId = priorityResult.rows[0]?.id || null;
+
+    const taskBody = {
+      name: ticket.subject,
+      project_id,
+      reporter_id: userId,
+      team_id: teamId,
+      description: ticket.description || null,
+      status_id: statusId,
+      priority_id: priorityId,
+      assignees: [],
+      attachments: [],
+      labels: [],
+    };
+
+    // Same create_task() DB function every other task-creation path in the app uses — including
+    // its respect for the target project's own auto_assign_task_creator setting.
+    const taskResult = await db.query("SELECT create_task($1) AS task;", [JSON.stringify(taskBody)]);
+    const [taskData] = taskResult.rows;
+    const taskId = taskData?.task?.id;
+
+    if (!taskId) {
+      return res.status(500).send(new ServerResponse(false, null, "Failed to create task"));
+    }
+
+    await db.query(
+      "UPDATE client_portal_tickets SET converted_task_id = $1, updated_at = NOW() WHERE id = $2",
+      [taskId, ticketId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, {task_id: taskId, project_id}, "Ticket converted to task"));
+  }
+
+  @HandleExceptions()
+  public static async getTicketCustomStatuses(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+
+    const result = await db.query(
+      `SELECT id, name, color, created_at
+       FROM client_portal_ticket_custom_statuses
+       WHERE organization_team_id = $1
+       ORDER BY created_at ASC`,
+      [teamId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async createTicketCustomStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const name = (req.body?.name || "").trim();
+    const color = (req.body?.color || "default").trim();
+
+    if (!name) {
+      return res.status(400).send(new ServerResponse(false, null, "Status name is required"));
+    }
+
+    if (name.length > 40) {
+      return res.status(400).send(new ServerResponse(false, null, "Status name must be 40 characters or fewer"));
+    }
+
+    const duplicateCheck = await db.query(
+      "SELECT id FROM client_portal_ticket_custom_statuses WHERE organization_team_id = $1 AND LOWER(name) = LOWER($2)",
+      [teamId, name]
+    );
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).send(new ServerResponse(false, null, "A custom status with this name already exists"));
+    }
+
+    const result = await db.query(
+      `INSERT INTO client_portal_ticket_custom_statuses (organization_team_id, name, color, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, color, created_at`,
+      [teamId, name, color, userId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0], "Custom status added"));
+  }
+
+  @HandleExceptions()
+  public static async deleteTicketCustomStatus(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const statusId = req.params.id;
+
+    const statusCheck = await db.query(
+      "SELECT id, name FROM client_portal_ticket_custom_statuses WHERE id = $1 AND organization_team_id = $2",
+      [statusId, teamId]
+    );
+    if (statusCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Custom status not found"));
+    }
+    const statusName = statusCheck.rows[0].name;
+
+    // Unlike deleteRequestCustomStatus, this is a hard block, not a silent detach — FR-02
+    // requires a ticket-holding status to be undeletable until every ticket has moved off it.
+    const ticketsInUse = await db.query(
+      "SELECT COUNT(*) as count FROM client_portal_tickets WHERE organization_team_id = $1 AND status = $2",
+      [teamId, statusName]
+    );
+    const ticketCount = parseInt(ticketsInUse.rows[0]?.count || "0", 10);
+    if (ticketCount > 0) {
+      return res.status(400).send(new ServerResponse(false, null, `Move tickets out of "${statusName}" before removing it`));
+    }
+
+    await db.query(
+      "DELETE FROM client_portal_ticket_custom_statuses WHERE id = $1 AND organization_team_id = $2",
+      [statusId, teamId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, null, "Custom status removed"));
+  }
+
+  @HandleExceptions()
+  public static async getClientTicketAttachments(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const ticketId = req.params.id;
+
+    const ticketCheck = await db.query(
+      "SELECT id FROM client_portal_tickets WHERE id = $1 AND organization_team_id = $2",
+      [ticketId, teamId]
+    );
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+
+    const result = await db.query(
+      `SELECT id, file_name, file_url, file_size, file_type, uploaded_by_type, uploaded_by_name, created_at
+       FROM client_portal_ticket_attachments
+       WHERE ticket_id = $1
+       ORDER BY created_at ASC`,
+      [ticketId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async uploadClientTicketAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const userName = req.user?.name;
+    const ticketId = req.params.id;
+    const {fileData, fileName, fileType} = req.body;
+
+    if (!teamId) {
+      return res.status(400).send(new ServerResponse(false, null, "Team not found"));
+    }
+    if (!fileData || !fileName) {
+      return res.status(400).send(new ServerResponse(false, null, "File data and filename are required"));
+    }
+
+    // Same size cap and MIME whitelist as uploadPortalChatFile.
+    const fileSizeBytes = Math.floor((fileData.length * 3) / 4);
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB limit
+    if (fileSizeBytes > maxSizeBytes) {
+      return res.status(400).send(new ServerResponse(false, null, "File size exceeds 10MB limit"));
+    }
+
+    const allowedTypes = [
+      "image/jpeg", "image/png", "image/gif", "image/webp",
+      "application/pdf", "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/plain", "text/csv"
+    ];
+    if (fileType && !allowedTypes.includes(fileType)) {
+      return res.status(400).send(new ServerResponse(false, null, "File type not allowed"));
+    }
+
+    const ticketCheck = await db.query(
+      "SELECT id FROM client_portal_tickets WHERE id = $1 AND organization_team_id = $2",
+      [ticketId, teamId]
+    );
+    if (ticketCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Ticket not found"));
+    }
+
+    const ext = fileName.includes(".") ? fileName.split(".").pop() : "bin";
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const storageKey = getClientPortalStorageKey("ticket-attachments", teamId, ticketId, uniqueFileName);
+
+    const fileUrl = await uploadBase64(fileData, storageKey);
+    if (!fileUrl) {
+      return res.status(500).send(new ServerResponse(false, null, "Failed to upload file"));
+    }
+
+    const result = await db.query(
+      `INSERT INTO client_portal_ticket_attachments
+        (ticket_id, organization_team_id, file_name, file_url, storage_key, file_size, file_type, uploaded_by_type, uploaded_by_id, uploaded_by_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'team_member', $8, $9)
+       RETURNING id, file_name, file_url, file_size, file_type, uploaded_by_type, uploaded_by_name, created_at`,
+      [ticketId, teamId, fileName, fileUrl, storageKey, fileSizeBytes, fileType || null, userId, userName]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0], "File uploaded successfully"));
+  }
+
+  @HandleExceptions()
+  public static async deleteClientTicketAttachment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const ticketId = req.params.id;
+    const attachmentId = req.params.attachmentId;
+
+    const attachmentCheck = await db.query(
+      `SELECT a.id, a.storage_key FROM client_portal_ticket_attachments a
+       JOIN client_portal_tickets t ON a.ticket_id = t.id
+       WHERE a.id = $1 AND a.ticket_id = $2 AND t.organization_team_id = $3`,
+      [attachmentId, ticketId, teamId]
+    );
+    if (attachmentCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Attachment not found"));
+    }
+
+    await db.query("DELETE FROM client_portal_ticket_attachments WHERE id = $1", [attachmentId]);
+
+    try {
+      await deleteObject(attachmentCheck.rows[0].storage_key);
+    } catch (deleteError) {
+      // Don't fail the delete if storage cleanup fails
+    }
+
+    return res.status(200).send(new ServerResponse(true, null, "Attachment removed"));
+  }
+
+  @HandleExceptions()
+  public static async getServiceOptionValues(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const kind = (req.query.kind as string || "").trim();
+
+    if (!["category", "billing_type"].includes(kind)) {
+      return res.status(400).send(new ServerResponse(false, null, "kind must be 'category' or 'billing_type'"));
+    }
+
+    const result = await db.query(
+      `SELECT id, kind, value, created_at
+       FROM client_portal_service_option_values
+       WHERE organization_team_id = $1 AND kind = $2
+       ORDER BY created_at ASC`,
+      [teamId, kind]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows));
+  }
+
+  @HandleExceptions()
+  public static async createServiceOptionValue(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const userId = req.user?.id;
+    const kind = (req.body?.kind || "").trim();
+    const value = (req.body?.value || "").trim();
+
+    if (!["category", "billing_type"].includes(kind)) {
+      return res.status(400).send(new ServerResponse(false, null, "kind must be 'category' or 'billing_type'"));
+    }
+
+    if (!value) {
+      return res.status(400).send(new ServerResponse(false, null, "Value is required"));
+    }
+
+    if (value.length > 50) {
+      return res.status(400).send(new ServerResponse(false, null, "Value must be 50 characters or fewer"));
+    }
+
+    const duplicateCheck = await db.query(
+      "SELECT id FROM client_portal_service_option_values WHERE organization_team_id = $1 AND kind = $2 AND LOWER(value) = LOWER($3)",
+      [teamId, kind, value]
+    );
+    if (duplicateCheck.rows.length > 0) {
+      return res.status(400).send(new ServerResponse(false, null, `This ${kind === "category" ? "category" : "billing type"} already exists`));
+    }
+
+    const result = await db.query(
+      `INSERT INTO client_portal_service_option_values (organization_team_id, kind, value, created_by)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, kind, value, created_at`,
+      [teamId, kind, value, userId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, result.rows[0], "Value added"));
+  }
+
+  @HandleExceptions()
+  public static async deleteServiceOptionValue(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const teamId = req.user?.team_id;
+    const optionId = req.params.id;
+
+    const optionCheck = await db.query(
+      "SELECT id FROM client_portal_service_option_values WHERE id = $1 AND organization_team_id = $2",
+      [optionId, teamId]
+    );
+    if (optionCheck.rows.length === 0) {
+      return res.status(404).send(new ServerResponse(false, null, "Value not found"));
+    }
+
+    // Services already using this value keep it as free text; only the picklist entry goes away.
+    await db.query(
+      "DELETE FROM client_portal_service_option_values WHERE id = $1 AND organization_team_id = $2",
+      [optionId, teamId]
+    );
+
+    return res.status(200).send(new ServerResponse(true, null, "Value removed"));
+  }
+
+  @HandleExceptions()
   public static async getClientServices(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const teamId = req.user?.team_id;
-    const {searchQuery, sortField, sortOrder, size, offset} = this.toPaginationOptions(req.query, "name");
+    // toPaginationOptions() reads size/index/field/order — the admin UI sends page/limit/sortBy/
+    // sortOrder (matching the Requests list), so pagination and sorting are read directly here.
+    // Only its search-query building (which does read `search`) is reused, with the search
+    // placeholders offset past the team/limit/offset params already in `values`.
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.max(1, Number(req.query.limit) || 10);
+    const offset = (page - 1) * limit;
+    const {searchQuery, searchParams} = this.toPaginationOptions(req.query, ["s.name", "s.description"], false, 4);
+    const {status, sortBy, sortOrder} = req.query;
+
+    // Whitelisted against the subquery's own SELECT aliases below — never interpolate the raw
+    // query param into ORDER BY.
+    const SORTABLE_FIELDS = new Set(["name", "status", "is_public", "category", "billing_type", "requests_count", "created_at", "updated_at"]);
+    const safeSortField = SORTABLE_FIELDS.has(String(sortBy)) ? String(sortBy) : "name";
+    const safeSortOrder = String(sortOrder).toLowerCase() === "desc" ? "DESC" : "ASC";
+
+    const conditions = [];
+    const values: (string | number | undefined)[] = [teamId, limit, offset, ...searchParams];
+    let paramIndex = values.length + 1;
+
+    if (status) {
+      conditions.push(`s.status = $${paramIndex}`);
+      values.push((status as string).trim());
+      paramIndex++;
+    }
+
+    const whereClause = conditions.length > 0 ? `AND ${conditions.join(" AND ")}` : "";
 
     const q = `
       SELECT ROW_TO_JSON(rec) AS services
@@ -457,6 +1214,10 @@ export default class ClientsController extends WorklenzControllerBase {
                             s.status,
                             s.is_public,
                             s.service_data,
+                            s.price,
+                            s.currency,
+                            s.category,
+                            s.billing_type,
                             s.created_at,
                             s.updated_at,
                             s.created_by,
@@ -465,14 +1226,14 @@ export default class ClientsController extends WorklenzControllerBase {
                             (SELECT COUNT(*) FROM client_portal_requests WHERE service_id = s.id AND status = 'pending') as pending_requests
                     FROM client_portal_services s
                     LEFT JOIN users u ON s.created_by = u.id
-                    WHERE s.organization_team_id = $1 ${searchQuery}
-                    ORDER BY ${sortField} ${sortOrder}
+                    WHERE s.organization_team_id = $1 ${searchQuery} ${whereClause}
+                    ORDER BY ${safeSortField} ${safeSortOrder}
                     LIMIT $2 OFFSET $3) t) AS data
       FROM client_portal_services s
-      WHERE s.organization_team_id = $1 ${searchQuery}) rec;
+      WHERE s.organization_team_id = $1 ${searchQuery} ${whereClause}) rec;
     `;
 
-    const result = await db.query(q, [teamId, size, offset]);
+    const result = await db.query(q, values);
     const [data] = result.rows;
 
     return res.status(200).send(new ServerResponse(true, data.services || this.paginatedDatasetDefaultStruct));
@@ -497,6 +1258,7 @@ export default class ClientsController extends WorklenzControllerBase {
              s.price,
              s.currency,
              s.category,
+             s.billing_type,
              s.created_at,
              s.updated_at,
              s.created_by,
@@ -523,14 +1285,15 @@ export default class ClientsController extends WorklenzControllerBase {
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
     const {
-      name, 
-      description, 
-      service_data, 
-      is_public, 
+      name,
+      description,
+      service_data,
+      is_public,
       allowed_client_ids,
       price,
       currency,
       category,
+      billing_type,
       service_key,
       // Image upload fields
       imageData,
@@ -637,11 +1400,11 @@ export default class ClientsController extends WorklenzControllerBase {
 
     const q = `
       INSERT INTO client_portal_services (
-        name, description, service_data, is_public, allowed_client_ids, 
-        price, currency, category, service_key,
+        name, description, service_data, is_public, allowed_client_ids,
+        price, currency, category, billing_type, service_key,
         team_id, organization_team_id, created_by, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
-      RETURNING id, name, description, status, is_public, created_at, service_data, price, currency, category, service_key
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'active')
+      RETURNING id, name, description, status, is_public, created_at, service_data, price, currency, category, billing_type, service_key
     `;
 
     const values = [
@@ -653,6 +1416,7 @@ export default class ClientsController extends WorklenzControllerBase {
       price || null,
       currency || null,
       category || null,
+      billing_type || null,
       finalServiceKey,
       teamId,
       teamId,
@@ -673,12 +1437,13 @@ export default class ClientsController extends WorklenzControllerBase {
       name, 
       description, 
       service_data, 
-      is_public, 
-      allowed_client_ids, 
+      is_public,
+      allowed_client_ids,
       status,
       price,
       currency,
       category,
+      billing_type,
       service_key,
       // Image upload fields
       imageData,
@@ -848,6 +1613,12 @@ export default class ClientsController extends WorklenzControllerBase {
       paramIndex++;
     }
 
+    if (billing_type !== undefined) {
+      updateFields.push(`billing_type = $${paramIndex}`);
+      updateValues.push(billing_type);
+      paramIndex++;
+    }
+
     if (service_key !== undefined) {
       updateFields.push(`service_key = $${paramIndex}`);
       updateValues.push(service_key ? service_key.toUpperCase() : null);
@@ -862,7 +1633,7 @@ export default class ClientsController extends WorklenzControllerBase {
       UPDATE client_portal_services 
       SET ${updateFields.join(", ")}
       WHERE id = $1 AND organization_team_id = $2
-      RETURNING id, name, description, status, is_public, updated_at, service_data, price, currency, category, service_key
+      RETURNING id, name, description, status, is_public, updated_at, service_data, price, currency, category, billing_type, service_key
     `;
 
     const result = await db.query(q, updateValues);
@@ -960,6 +1731,15 @@ export default class ClientsController extends WorklenzControllerBase {
       user: req.user
     } as any;
     return ClientPortalClientsController.getClients(modifiedReq, res as any);
+  }
+
+  @HandleExceptions()
+  public static async getPortalClientsStats(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalClientsController.getClientsStats(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1226,6 +2006,16 @@ export default class ClientsController extends WorklenzControllerBase {
     return ClientPortalInvoicesController.markInvoiceAsPaid(req, res);
   }
 
+  @HandleExceptions()
+  public static async recordPortalInvoicePayment(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalInvoicesController.recordPayment(req, res);
+  }
+
+  @HandleExceptions()
+  public static async duplicatePortalInvoice(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    return ClientPortalInvoicesController.duplicateInvoice(req, res);
+  }
+
   // Organization-side Client Portal Chats Management (wrapper methods)
   
   @HandleExceptions()
@@ -1330,6 +2120,15 @@ export default class ClientsController extends WorklenzControllerBase {
         return res.status(500).json(new ServerResponse(false, null, "Failed to retrieve chats"));
       }
     }
+  }
+
+  @HandleExceptions()
+  public static async getPortalChatConversations(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const modifiedReq = {
+      ...req,
+      user: req.user
+    } as any;
+    return ClientPortalClientsController.getChatConversations(modifiedReq, res as any);
   }
 
   @HandleExceptions()
@@ -1682,7 +2481,8 @@ export default class ClientsController extends WorklenzControllerBase {
     // Always try to extract clientId and date from chatId
     let extractedClientId = clientId;
     let dateStr = chatId;
-    
+    let hasDate = false;
+
     if (chatId.includes('-')) {
       // Parse format: clientId-date
       const parts = chatId.split('-');
@@ -1700,19 +2500,28 @@ export default class ClientsController extends WorklenzControllerBase {
             extractedClientId = parts.slice(0, -3).join('-');
           }
           dateStr = dateStrTest;
+          hasDate = true;
         }
       }
     }
-    
-    if (!extractedClientId) {
-      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
-    }
-    
+
     const organizationId = req.user?.team_id;
     if (!organizationId) {
       return res.status(400).json(new ServerResponse(false, null, "Organization ID is required"));
     }
-    
+
+    // A bare client id (no date) is the client's whole conversation as one thread
+    if (!hasDate && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(chatId)) {
+      return ClientPortalChatController.getClientThread(
+        { ...req, user: req.user, clientId: chatId, organizationId } as any,
+        res as any
+      );
+    }
+
+    if (!extractedClientId) {
+      return res.status(400).json(new ServerResponse(false, null, "Client ID is required"));
+    }
+
     // Use getChatDetails which filters by date (more appropriate for organization-side)
     const modifiedReq = {
       ...req,

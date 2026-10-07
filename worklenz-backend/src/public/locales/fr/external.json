@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "Tâche créée"
+    },
+    "task_assigned": {
+      "title": "Tâche assignée"
+    },
+    "task_completed": {
+      "title": "Tâche terminée"
+    },
+    "comment_added": {
+      "title": "Commentaire ajouté"
+    },
+    "priority_changed": {
+      "title": "Priorité modifiée"
+    },
+    "due_date_changed": {
+      "title": "Date d'échéance modifiée"
+    },
+    "task_updated": {
+      "title": "Tâche mise à jour"
+    },
+    "task_status_changed": {
+      "title": "Statut de la tâche modifié"
+    },
+    "viewTask": "Afficher la tâche",
+    "assignedTo": "👥 Assigné à",
+    "assignedBy": "👤 Assigné par",
+    "statusChange": "📊 Changement de statut",
+    "changedBy": "👤 Modifié par",
+    "createdBy": "👤 Créé par",
+    "commentedBy": "💬 Commenté par",
+    "updatedBy": "👤 Mis à jour par",
+    "status": "📊 Statut",
+    "currentStatus": "📊 Statut actuel",
+    "priority": "Priorité",
+    "dueDate": "Date d'échéance",
+    "assignees": "👥 Assignés",
+    "comment": "Commentaire",
+    "priorityChanged": "🔺 Priorité modifiée",
+    "dueDateChanged": "📅 Date d'échéance modifiée",
+    "updatedByWithUser": "Mis à jour par {{user}}"
+  },
+  "teams": {
+    "task": "Tâche",
+    "project": "Projet",
+    "assignees": "Assignés",
+    "assignedBy": "Assigné par",
+    "createdBy": "Créé par",
+    "commentedBy": "Commenté par",
+    "updatedBy": "Mis à jour par",
+    "status": "Statut",
+    "priority": "Priorité",
+    "dueDate": "Date d'échéance",
+    "previousStatus": "Statut précédent",
+    "newStatus": "Nouveau statut",
+    "previousPriority": "Priorité précédente",
+    "newPriority": "Nouvelle priorité",
+    "statusChange": "Changement de statut",
+    "changedBy": "Modifié par",
+    "viewTask": "Afficher la tâche"
+  }
+}

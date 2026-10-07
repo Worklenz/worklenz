@@ -32,10 +32,11 @@ export function useNavPreferences(surfaceKey: SurfaceKey) {
   const currentProject = useAppSelector(selectCurrentProject);
   const isGuestUser =
     isSessionGuest(session) || Boolean(currentProject?.project?.is_guest);
+  const isOwnerOrAdmin = authService.isOwnerOrAdmin();
 
   const resolved = useMemo(
-    () => resolveNavState(surface, prefs, isGuestUser),
-    [surface, prefs, isGuestUser]
+    () => resolveNavState(surface, prefs, isGuestUser, isOwnerOrAdmin),
+    [surface, prefs, isGuestUser, isOwnerOrAdmin]
   );
 
   const toggleCollapsedHandler = useCallback(() => dispatch(toggleCollapsed()), [dispatch]);

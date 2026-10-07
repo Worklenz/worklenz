@@ -333,6 +333,97 @@ export default class ClientPortalChatController extends ClientPortalControllerBa
     }
   }
 
+  /**
+   * Organization side: a client's whole conversation as one thread (not split per day), the
+   * latest `limit` messages in chronological order. Opening it marks the client's messages as
+   * read for the team.
+   */
+  static async getClientThread(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const { clientId } = req;
+      const { organizationId } = req;
+      const { page = 1, limit = 100 } = req.query;
+      const offset = (Number(page) - 1) * Number(limit);
+
+      const query = `
+        SELECT * FROM (
+          SELECT
+            m.id,
+            m.sender_type,
+            m.sender_id,
+            m.message,
+            m.message_type,
+            m.file_url,
+            m.read_at,
+            m.created_at,
+            CASE
+              WHEN m.sender_type = 'team_member' THEN u.name
+              WHEN m.sender_type = 'client' THEN cu.name
+            END as sender_name,
+            CASE
+              WHEN m.sender_type = 'team_member' THEN u.avatar_url
+              ELSE NULL
+            END as sender_avatar
+          FROM client_portal_chat_messages m
+          LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
+          LEFT JOIN client_users cu ON m.sender_type = 'client' AND m.sender_id = cu.id
+          WHERE m.client_id = $1
+            AND m.organization_team_id = $2
+          ORDER BY m.created_at DESC
+          LIMIT $3 OFFSET $4
+        ) latest
+        ORDER BY latest.created_at ASC
+      `;
+      const result = await db.query(query, [
+        clientId,
+        organizationId,
+        Number(limit),
+        offset,
+      ]);
+
+      const countResult = await db.query(
+        "SELECT COUNT(*) as total FROM client_portal_chat_messages WHERE client_id = $1 AND organization_team_id = $2",
+        [clientId, organizationId]
+      );
+      const total = parseInt(countResult.rows[0]?.total || "0");
+
+      const messages = result.rows.map((row: any) => ({
+        id: row.id,
+        senderType: row.sender_type,
+        senderId: row.sender_id,
+        senderName: row.sender_name,
+        senderAvatar: row.sender_avatar,
+        message: row.message,
+        messageType: row.message_type,
+        fileUrl: row.file_url,
+        readAt: row.read_at,
+        createdAt: row.created_at,
+        isFromClient: row.sender_type === "client",
+      }));
+
+      await db.query(
+        "UPDATE client_portal_chat_messages SET read_at = NOW() WHERE client_id = $1 AND organization_team_id = $2 AND sender_type = 'client' AND read_at IS NULL",
+        [clientId, organizationId]
+      );
+
+      return res.json(
+        new ServerResponse(
+          true,
+          { messages, total, page: Number(page), limit: Number(limit) },
+          "Chat retrieved successfully"
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching client chat thread:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve chat"));
+    }
+  }
+
   static async sendMessage(
     req: AuthenticatedClientRequest,
     res: IWorkLenzResponse

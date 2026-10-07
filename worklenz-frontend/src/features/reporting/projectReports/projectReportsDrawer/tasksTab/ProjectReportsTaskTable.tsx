@@ -12,21 +12,15 @@ import CustomTableTitle from '@/components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import dayjs from 'dayjs';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import {
-  setShowTaskDrawer,
-  fetchTask,
-  setSelectedTaskId,
-} from '@/features/task-drawer/task-drawer.slice';
 import { DoubleRightOutlined } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { fetchPriorities } from '@/features/taskAttributes/taskPrioritySlice';
-import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
 import { getTeamMembers } from '@/features/team-members/team-members.slice';
-import { setProjectId } from '@/features/project/project.slice';
+import { openReportingTaskDrawer, ReportingTaskRow } from '@/utils/reporting/openReportingTaskDrawer';
 
 type ProjectReportsTasksTableProps = {
-  tasksData: any[];
+  tasksData: Array<Record<string, unknown>>;
   title: string;
   color: string;
   type: string;
@@ -53,26 +47,19 @@ const ProjectReportsTasksTable = ({
     );
   }, [dispatch]);
 
-  // function to handle task drawer open
-  const handleUpdateTaskDrawer = (id: string) => {
-    if (!id || !projectId) return;
-    dispatch(setSelectedTaskId(id));
-    dispatch(setProjectId(projectId));
-    dispatch(fetchPhasesByProjectId(projectId));
-    dispatch(fetchTask({ taskId: id, projectId: projectId }));
-    dispatch(setShowTaskDrawer(true));
+  const handleOpenTaskDrawer = (task: ReportingTaskRow) => {
+    openReportingTaskDrawer(dispatch, task, projectId);
   };
 
   const columns: TableColumnsType = [
     {
       key: 'task',
+      dataIndex: 'name',
       title: <CustomTableTitle title={t('taskColumn')} />,
-      onCell: record => {
-        return {
-          onClick: () => handleUpdateTaskDrawer(record.id),
-        };
-      },
-      render: record => (
+      onCell: record => ({
+        onClick: () => handleOpenTaskDrawer(record),
+      }),
+      render: (_, record) => (
         <Flex>
           {Number(record.sub_tasks_count) > 0 && <DoubleRightOutlined />}
           <Typography.Text className="group-hover:text-[#1890ff]">{record.name}</Typography.Text>
@@ -192,16 +179,16 @@ const ProjectReportsTasksTable = ({
           ),
           children: (
             <Table
+              rowKey="id"
               columns={visibleColumns()}
               dataSource={tasksData}
               pagination={false}
               scroll={{ x: 'max-content' }}
-              onRow={record => {
-                return {
-                  style: { height: 38, cursor: 'pointer' },
-                  className: 'group even:bg-[#4e4e4e10]',
-                };
-              }}
+              onRow={record => ({
+                style: { height: 38, cursor: 'pointer' },
+                className: 'group even:bg-[#4e4e4e10]',
+                onClick: () => handleOpenTaskDrawer(record),
+              })}
             />
           ),
         },

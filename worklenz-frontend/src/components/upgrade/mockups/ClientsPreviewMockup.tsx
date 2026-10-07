@@ -89,7 +89,7 @@ const ClientsPreviewMockup: React.FC = () => {
         <Flex gap={8}>
           <Button icon={<ShareAltOutlined />}>{t('inviteButton', { defaultValue: 'Send Invitation' })}</Button>
           <Button type="primary" icon={<PlusOutlined />}>
-            {t('addClientButton', { defaultValue: 'Add Client' })}
+            {t('addClientButton', { defaultValue: 'Add new' })}
           </Button>
         </Flex>
       </Flex>

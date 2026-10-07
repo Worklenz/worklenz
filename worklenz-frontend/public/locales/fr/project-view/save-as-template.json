@@ -1,0 +1,102 @@
+{
+  "title": "Enregistrer comme modèle",
+  "templateName": "Nom du modèle",
+  "templateNamePlaceholder": "Entrez le nom du modèle",
+  "templateInfo": "Informations sur le modèle",
+  "includes": "Éléments du projet",
+  "projectSettings": "Paramètres du projet",
+  "taskIncludes": "Éléments de tâche",
+  "cancel": "Annuler",
+  "save": "Enregistrer",
+  "creating": "Création d'un modèle...",
+  "created": "Modèle créé !",
+  "quickSelect": "Sélection rapide :",
+  "selectAll": "Sélectionner tout",
+  "essentialOnly": "Essentiel uniquement",
+  "clearAll": "Tout effacer",
+  "itemsSelected": "éléments sélectionnés",
+  "selected": "sélectionné",
+  "readyToSave": "Prêt à économiser",
+  "validName": "Nom valide",
+  "required": "Obligatoire",
+  "characters": "personnages",
+  "proTips": "Conseils de pro",
+  "budgetPlanHint": "Les paramètres budgétaires sont disponibles sur les forfaits Business et Enterprise.",
+  "includesOptions": {
+    "statuses": "Statuts",
+    "phases": "Étapes",
+    "labels": "Étiquettes",
+    "customColumns": "Colonnes personnalisées"
+  },
+  "projectSettingsOptions": {
+    "category": "Catégorie",
+    "projectManager": "Chef de projet",
+    "estimatedWorkingDays": "Jours de travail estimés",
+    "estimatedManDays": "Jours-homme estimés",
+    "hoursPerDay": "Heures par jour",
+    "advanced": "Paramètres avancés",
+    "budget": "Paramètres budgétaires"
+  },
+  "taskIncludesOptions": {
+    "name": "Nom",
+    "priority": "Priorité",
+    "status": "Statut",
+    "phase": "Phase",
+    "label": "Étiquette",
+    "timeEstimate": "Estimation du temps",
+    "description": "Descriptif",
+    "subTasks": "Sous-tâches",
+    "assignees": "Destinataires",
+    "recurrence": "Options récurrentes",
+    "dependencies": "Dépendances",
+    "billable": "Facturable / Non facturable"
+  },
+  "descriptions": {
+    "statuses": "Configuration du workflow de statut du projet",
+    "phases": "Phases et jalons du projet",
+    "labels": "Étiquettes personnalisées pour la catégorisation",
+    "customColumns": "Champs personnalisés et métadonnées",
+    "category": "Catégorie de projet pour l'organisation",
+    "projectManager": "Chef de projet attitré",
+    "estimatedWorkingDays": "Jours de travail estimés pour le projet",
+    "estimatedManDays": "Jours-homme estimés pour le projet",
+    "hoursPerDay": "Heures de travail par défaut par jour",
+    "advanced": "Modes de progression, valeurs par défaut des tâches et contrôles d'accès",
+    "budget": "Montant du budget, devise et tableau des tarifs du projet",
+    "taskName": "Noms et titres des tâches",
+    "taskPriority": "Niveaux de priorité des tâches",
+    "taskStatus": "État d'achèvement de la tâche",
+    "taskPhase": "Phase de projet associée",
+    "taskLabel": "Libellés et balises de tâches",
+    "timeEstimate": "Estimations de temps et durée",
+    "description": "Descriptions et détails des tâches",
+    "subTasks": "Sous-tâches et éléments de la liste de contrôle",
+    "assignees": "Responsables des tâches et sous-tâches",
+    "recurrence": "Fréquence, intervalle et règle de fin par tâche",
+    "dependencies": "Liens entre les tâches dans le modèle",
+    "billable": "Indicateur facturable pour chaque tâche"
+  },
+  "tooltips": {
+    "projectElements": "Choisissez les éléments de projet à inclure dans votre modèle",
+    "projectSettings": "Choisissez les paramètres du projet à inclure. Ceux-ci peuvent être examinés avant de créer un projet à partir de ce modèle.",
+    "taskElements": "Choisissez les éléments de tâche à inclure dans votre modèle",
+    "required": "Cet élément est obligatoire et ne peut pas être désélectionné"
+  },
+  "tips": {
+    "line1": "Les modèles préservent la structure de votre projet pour une réutilisation rapide",
+    "line2": "Les éléments essentiels sont toujours inclus et ne peuvent pas être supprimés",
+    "line3": "Les paramètres du projet peuvent être révisés et modifiés lors de la création d'un projet à partir de ce modèle",
+    "line4": "Laissez les personnes et le budget désactivés par défaut pour éviter les missions ou les coûts surprises dans les nouveaux projets"
+  },
+  "validation": {
+    "nameRequired": "Veuillez saisir un nom de modèle",
+    "nameMinLength": "Le nom du modèle doit comporter au moins 3 caractères",
+    "nameMaxLength": "Le nom du modèle doit comporter moins de 50 caractères"
+  },
+  "notifications": {
+    "createSuccess": "Modèle créé",
+    "createSuccessDesc": "Votre modèle de projet a été créé avec succès et est prêt à être utilisé.",
+    "createError": "Échec de la création du modèle",
+    "error": "Erreur"
+  }
+}

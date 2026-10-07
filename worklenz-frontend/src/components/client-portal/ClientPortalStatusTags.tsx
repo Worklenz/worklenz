@@ -35,9 +35,11 @@ const ClientPortalStatusTags: React.FC<ClientPortalStatusTagsProps> = ({ status 
       case 'overdue':
         return { color: 'error', text: t('overdue') };
 
-      // Project statuses
+      // Project / Service statuses
       case 'active':
         return { color: 'blue', text: t('active') };
+      case 'inactive':
+        return { color: 'default', text: t('inactive') };
       case 'on_hold':
         return { color: 'orange', text: t('onHold') };
 

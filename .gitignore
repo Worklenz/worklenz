@@ -98,3 +98,4 @@ playwright-mcp
 worklenz-backend/src/private/
 worklenz-backend/database/pg-migrations-private/
 worklenz-backend/database/migrations-private/
+.claude/settings.local.json

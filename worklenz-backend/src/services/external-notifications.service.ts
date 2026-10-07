@@ -2,6 +2,7 @@ import db from "../config/db";
 import { log_error } from "../shared/utils";
 import { SlackService } from "../services/slack.service";
 import { TeamsNotificationService } from "./teams-notification.service";
+import { I18nHelper } from "../shared/i18n-helper";
 
 interface TaskNotificationData {
   task_id: string;
@@ -87,8 +88,11 @@ export class ExternalNotificationsService {
   private static formatSlackMessage(
     notificationType: string,
     taskData: TaskNotificationData,
-    userName: string
+    userName: string,
+    locale: string = "en"
   ): any {
+    const t = I18nHelper.getFixedT(locale, "external");
+
     const emoji = notificationType === "task_created" ? "🆕" :
                   notificationType === "task_assigned" ? "👤" :
                   notificationType === "task_completed" ? "✅" :
@@ -97,13 +101,23 @@ export class ExternalNotificationsService {
                   notificationType === "due_date_changed" ? "📅" :
                   notificationType === "task_updated" ? "✏️" : "🔄";
 
-    const title = notificationType === "task_created" ? "Task Created" :
-                  notificationType === "task_assigned" ? "Task Assigned" :
-                  notificationType === "task_completed" ? "Task Completed" :
-                  notificationType === "comment_added" ? "Comment Added" :
-                  notificationType === "priority_changed" ? "Priority Changed" :
-                  notificationType === "due_date_changed" ? "Due Date Changed" :
-                  notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
+    const titleKey = notificationType === "task_created" ? "task_created" :
+                     notificationType === "task_assigned" ? "task_assigned" :
+                     notificationType === "task_completed" ? "task_completed" :
+                     notificationType === "comment_added" ? "comment_added" :
+                     notificationType === "priority_changed" ? "priority_changed" :
+                     notificationType === "due_date_changed" ? "due_date_changed" :
+                     notificationType === "task_updated" ? "task_updated" : "task_status_changed";
+
+    const defaultTitle = notificationType === "task_created" ? "Task Created" :
+                         notificationType === "task_assigned" ? "Task Assigned" :
+                         notificationType === "task_completed" ? "Task Completed" :
+                         notificationType === "comment_added" ? "Comment Added" :
+                         notificationType === "priority_changed" ? "Priority Changed" :
+                         notificationType === "due_date_changed" ? "Due Date Changed" :
+                         notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
+
+    const title = t(`slack.${titleKey}.title`, { defaultValue: defaultTitle });
 
     // Color based on notification type
     const color = notificationType === "task_created" ? "#36a64f" :
@@ -127,7 +141,7 @@ export class ExternalNotificationsService {
         type: "button",
         text: {
           type: "plain_text",
-          text: "View Task",
+          text: t("slack.viewTask", { defaultValue: "View Task" }),
           emoji: true
         },
         url: taskData.task_url,
@@ -153,80 +167,80 @@ export class ExternalNotificationsService {
     if (notificationType === "task_assigned" && taskData.assignee_names && taskData.assignee_names.length > 0) {
       fields.push({
         type: "mrkdwn",
-        text: `*👥 Assigned To*\n${taskData.assignee_names.join(", ")}`
+        text: `*${t("slack.assignedTo", { defaultValue: "👥 Assigned To" })}*\n${taskData.assignee_names.join(", ")}`
       });
       fields.push({
         type: "mrkdwn",
-        text: `*👤 Assigned By*\n${userName}`
+        text: `*${t("slack.assignedBy", { defaultValue: "👤 Assigned By" })}*\n${userName}`
       });
     } else if ((notificationType === "status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
       fields.push({
         type: "mrkdwn",
-        text: `*📊 Status Change*\n${taskData.old_status_name} → ${taskData.new_status_name}`
+        text: `*${t("slack.statusChange", { defaultValue: "📊 Status Change" })}*\n${taskData.old_status_name} → ${taskData.new_status_name}`
       });
       fields.push({
         type: "mrkdwn",
-        text: `*👤 Changed By*\n${userName}`
+        text: `*${t("slack.changedBy", { defaultValue: "👤 Changed By" })}*\n${userName}`
       });
     } else if (notificationType === "task_created") {
       fields.push({
         type: "mrkdwn",
-        text: `*👤 Created By*\n${userName}`
+        text: `*${t("slack.createdBy", { defaultValue: "👤 Created By" })}*\n${userName}`
       });
       if (taskData.status_name) {
         fields.push({
           type: "mrkdwn",
-          text: `*📊 Status*\n${taskData.status_name}`
+          text: `*${t("slack.status", { defaultValue: "📊 Status" })}*\n${taskData.status_name}`
         });
       }
       if (taskData.assignee_names && taskData.assignee_names.length > 0) {
         fields.push({
           type: "mrkdwn",
-          text: `*👥 Assignees*\n${taskData.assignee_names.join(", ")}`
+          text: `*${t("slack.assignees", { defaultValue: "👥 Assignees" })}*\n${taskData.assignee_names.join(", ")}`
         });
       }
     } else if (notificationType === "comment_added") {
       fields.push({
         type: "mrkdwn",
-        text: `*💬 Commented By*\n${userName}`
+        text: `*${t("slack.commentedBy", { defaultValue: "💬 Commented By" })}*\n${userName}`
       });
       if (taskData.status_name) {
         fields.push({
           type: "mrkdwn",
-          text: `*📊 Status*\n${taskData.status_name}`
+          text: `*${t("slack.status", { defaultValue: "📊 Status" })}*\n${taskData.status_name}`
         });
       }
     } else if (notificationType === "priority_changed") {
       fields.push({
         type: "mrkdwn",
-        text: `*🔺 Priority Changed*\nUpdated by ${userName}`
+        text: `*${t("slack.priorityChanged", { defaultValue: "🔺 Priority Changed" })}*\n${t("slack.updatedByWithUser", { user: userName, defaultValue: `Updated by ${userName}` })}`
       });
     } else if (notificationType === "due_date_changed") {
       fields.push({
         type: "mrkdwn",
-        text: `*📅 Due Date Changed*\nUpdated by ${userName}`
+        text: `*${t("slack.dueDateChanged", { defaultValue: "📅 Due Date Changed" })}*\n${t("slack.updatedByWithUser", { user: userName, defaultValue: `Updated by ${userName}` })}`
       });
     } else if (notificationType === "task_updated") {
       fields.push({
         type: "mrkdwn",
-        text: `*✏️ Updated By*\n${userName}`
+        text: `*${t("slack.updatedBy", { defaultValue: "👤 Updated By" })}*\n${userName}`
       });
       if (taskData.status_name) {
         fields.push({
           type: "mrkdwn",
-          text: `*📊 Current Status*\n${taskData.status_name}`
+          text: `*${t("slack.currentStatus", { defaultValue: "📊 Current Status" })}*\n${taskData.status_name}`
         });
       }
     } else {
       // Default fields for other notification types
       fields.push({
         type: "mrkdwn",
-        text: `*👤 Updated By*\n${userName}`
+        text: `*${t("slack.updatedBy", { defaultValue: "👤 Updated By" })}*\n${userName}`
       });
       if (taskData.status_name) {
         fields.push({
           type: "mrkdwn",
-          text: `*📊 Status*\n${taskData.status_name}`
+          text: `*${t("slack.status", { defaultValue: "📊 Status" })}*\n${taskData.status_name}`
         });
       }
     }
@@ -270,8 +284,11 @@ export class ExternalNotificationsService {
   private static formatTeamsMessage(
     notificationType: string,
     taskData: TaskNotificationData,
-    userName: string
+    userName: string,
+    locale: string = "en"
   ): any {
+    const t = I18nHelper.getFixedT(locale, "external");
+
     const emoji = notificationType === "task_created" ? "🆕" :
                   notificationType === "task_assigned" ? "👤" :
                   notificationType === "task_completed" ? "✅" :
@@ -280,21 +297,31 @@ export class ExternalNotificationsService {
                   notificationType === "due_date_changed" ? "📅" :
                   notificationType === "task_updated" ? "✏️" : "🔄";
 
-    const title = notificationType === "task_created" ? "Task Created" :
-                  notificationType === "task_assigned" ? "Task Assigned" :
-                  notificationType === "task_completed" ? "Task Completed" :
-                  notificationType === "comment_added" ? "Comment Added" :
-                  notificationType === "priority_changed" ? "Priority Changed" :
-                  notificationType === "due_date_changed" ? "Due Date Changed" :
-                  notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
+    const titleKey = notificationType === "task_created" ? "task_created" :
+                     notificationType === "task_assigned" ? "task_assigned" :
+                     notificationType === "task_completed" ? "task_completed" :
+                     notificationType === "comment_added" ? "comment_added" :
+                     notificationType === "priority_changed" ? "priority_changed" :
+                     notificationType === "due_date_changed" ? "due_date_changed" :
+                     notificationType === "task_updated" ? "task_updated" : "task_status_changed";
+
+    const defaultTitle = notificationType === "task_created" ? "Task Created" :
+                         notificationType === "task_assigned" ? "Task Assigned" :
+                         notificationType === "task_completed" ? "Task Completed" :
+                         notificationType === "comment_added" ? "Comment Added" :
+                         notificationType === "priority_changed" ? "Priority Changed" :
+                         notificationType === "due_date_changed" ? "Due Date Changed" :
+                         notificationType === "task_updated" ? "Task Updated" : "Task Status Changed";
+
+    const title = t(`slack.${titleKey}.title`, { defaultValue: defaultTitle });
 
     const facts: any[] = [
       {
-        title: "Task:",
+        title: `${t("teams.task", { defaultValue: "Task" })}:`,
         value: taskData.task_name
       },
       {
-        title: "Project:",
+        title: `${t("teams.project", { defaultValue: "Project" })}:`,
         value: taskData.project_name
       }
     ];
@@ -302,38 +329,59 @@ export class ExternalNotificationsService {
     // Add specific facts based on notification type
     if (notificationType === "task_assigned" && taskData.assignee_names && taskData.assignee_names.length > 0) {
       facts.push({
-        title: "Assignees:",
+        title: `${t("teams.assignees", { defaultValue: "Assignees" })}:`,
         value: taskData.assignee_names.join(", ")
       });
       facts.push({
-        title: "Assigned By:",
+        title: `${t("teams.assignedBy", { defaultValue: "Assigned By" })}:`,
         value: userName
       });
     } else if ((notificationType === "status_changed" || notificationType === "task_completed") && taskData.old_status_name && taskData.new_status_name) {
       facts.push({
-        title: "Status Change:",
+        title: `${t("teams.statusChange", { defaultValue: "Status Change" })}:`,
         value: `${taskData.old_status_name} → ${taskData.new_status_name}`
       });
       facts.push({
-        title: "Changed By:",
+        title: `${t("teams.changedBy", { defaultValue: "Changed By" })}:`,
         value: userName
       });
     } else if (notificationType === "task_created") {
       facts.push({
-        title: "Created By:",
+        title: `${t("teams.createdBy", { defaultValue: "Created By" })}:`,
         value: userName
       });
       if (taskData.status_name) {
         facts.push({
-          title: "Status:",
+          title: `${t("teams.status", { defaultValue: "Status" })}:`,
           value: taskData.status_name
         });
       }
     } else if (notificationType === "comment_added") {
       facts.push({
-        title: "Commented By:",
+        title: `${t("teams.commentedBy", { defaultValue: "Commented By" })}:`,
         value: userName
       });
+    } else if (notificationType === "priority_changed") {
+      facts.push({
+        title: `${t("teams.priority", { defaultValue: "Priority" })}:`,
+        value: t("slack.updatedByWithUser", { user: userName, defaultValue: `Updated by ${userName}` })
+      });
+    } else if (notificationType === "due_date_changed") {
+      facts.push({
+        title: `${t("teams.dueDate", { defaultValue: "Due Date" })}:`,
+        value: t("slack.updatedByWithUser", { user: userName, defaultValue: `Updated by ${userName}` })
+      });
+    } else if (notificationType === "task_updated") {
+      facts.push({
+        title: `${t("teams.updatedBy", { defaultValue: "Updated By" })}:`,
+        value: userName
+      });
+      if (taskData.status_name) {
+        facts.push({
+          title: `${t("teams.status", { defaultValue: "Status" })}:`,
+          value: taskData.status_name
+        });
+      }
     }
 
     return {
@@ -363,7 +411,7 @@ export class ExternalNotificationsService {
                 actions: [
                   {
                     type: "Action.OpenUrl",
-                    title: "View Task",
+                    title: t("teams.viewTask", { defaultValue: "View Task" }),
                     url: taskData.task_url
                   }
                 ]
@@ -397,9 +445,21 @@ export class ExternalNotificationsService {
     taskId: string,
     notificationType: "task_created" | "task_assigned" | "status_changed" | "task_completed" | "task_updated" | "priority_changed" | "due_date_changed" | "comment_added",
     userName: string,
-    additionalData?: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string }
+    additionalDataOrUserId?: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string } | string | null,
+    userId?: string | null
   ): Promise<void> {
     try {
+      let additionalData: { oldStatusId?: string; newStatusId?: string; oldValue?: string; newValue?: string } | undefined;
+      let effectiveUserId: string | null | undefined = userId;
+
+      if (typeof additionalDataOrUserId === "string") {
+        effectiveUserId = additionalDataOrUserId;
+      } else if (additionalDataOrUserId && typeof additionalDataOrUserId === "object") {
+        additionalData = additionalDataOrUserId;
+      }
+
+      const locale = await I18nHelper.getUserLanguage(effectiveUserId);
+
       // Get task data
       const taskData = await this.getTaskNotificationData(taskId);
 
@@ -425,7 +485,7 @@ export class ExternalNotificationsService {
             continue;
           }
 
-          const slackMessage = this.formatSlackMessage(notificationType, taskData, userName);
+          const slackMessage = this.formatSlackMessage(notificationType, taskData, userName, locale);
 
           await SlackService.sendNotification(
             config.id,
@@ -444,7 +504,7 @@ export class ExternalNotificationsService {
       const teamsWebhookUrl = process.env.TEAMS_WEBHOOK_URL;
       if (teamsWebhookUrl) {
         try {
-          const teamsMessage = this.formatTeamsMessage(notificationType, taskData, userName);
+          const teamsMessage = this.formatTeamsMessage(notificationType, taskData, userName, locale);
           await TeamsNotificationService.sendTeamsNotification(teamsWebhookUrl, teamsMessage);
         } catch (error) {
           log_error("Error sending Teams notification:", error);

@@ -47,6 +47,8 @@ const TaskDrawerBillable = ({ task = null, disabled = false }: TaskDrawerBillabl
   }, [billableFromRedux, task?.billable]);
 
   const handleBillableChange = (checked: boolean) => {
+    if (disabled) return;
+
     if (isRestricted) {
       dispatch(toggleUpgradeModal());
       return;

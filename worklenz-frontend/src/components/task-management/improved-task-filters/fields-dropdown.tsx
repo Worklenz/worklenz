@@ -44,7 +44,10 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         PROGRESS: 'progressColumn',
         ASSIGNEES: 'assigneesColumn',
         LABELS: 'labelsColumn',
+        ATTACHMENTS: 'attachmentsColumn',
         PHASE: 'phaseColumn',
+
+        COMMENTS: 'commentsColumn',
         STATUS: 'statusColumn',
         PRIORITY: 'priorityColumn',
         TIME_TRACKING: 'timeTrackingColumn',
@@ -64,7 +67,10 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
         PROGRESS: 'Progress',
         ASSIGNEES: 'Assignees',
         LABELS: 'Labels',
+        ATTACHMENTS: 'Attachments',
         PHASE: 'Phase',
+
+        COMMENTS: 'Latest Comment',
         STATUS: 'Status',
         PRIORITY: 'Priority',
         TIME_TRACKING: 'Time Tracking',
@@ -80,7 +86,7 @@ export const FieldsDropdown: React.FC<FieldsDropdownProps> = ({
 
       const translationKey = keyMappings[fieldKey];
       return translationKey
-        ? tTable(translationKey, { defaultValue: defaultLabels[fieldKey] })
+        ? tTable(translationKey, { defaultValue: defaultLabels[fieldKey] || fieldKey })
         : fieldKey;
     },
     [tTable]

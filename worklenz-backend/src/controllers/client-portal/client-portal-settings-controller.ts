@@ -8,6 +8,14 @@ import { uploadBase64, getClientPortalLogoKey, deleteObject } from "../../shared
 import { log_error } from "../../shared/utils";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
 
+/** `portal_theme` / `invoice_template_style` are stored as free TEXT with a DB CHECK constraint — validate here too so a bad value fails fast with a clear message instead of a raw constraint-violation error. */
+const PORTAL_THEMES = ["light", "dark"];
+const INVOICE_TEMPLATE_STYLES = ["classic", "modern"];
+
+/** Visibility/notification/POC fields are all booleans coming from JSON `req.body` — coerce rather than trust the client sent an actual boolean. */
+const toBool = (value: unknown, fallback: boolean): boolean =>
+  value === undefined ? fallback : Boolean(value);
+
 export default class ClientPortalSettingsController extends ClientPortalControllerBase {
 
   static async getSettings(req: IWorkLenzRequest, res: IWorkLenzResponse) {
@@ -23,11 +31,19 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       const organizationTeamId = teamId;
 
       const q = `
-        SELECT id, team_id, organization_team_id, logo_url, primary_color, 
-               welcome_message, contact_email, contact_phone, terms_of_service, 
-               privacy_policy, company_name, address_line_1, address_line_2, 
-               invoice_footer_message, created_at, updated_at
-        FROM client_portal_settings 
+        SELECT id, team_id, organization_team_id, logo_url, primary_color,
+               welcome_message, contact_email, contact_phone, terms_of_service,
+               privacy_policy, company_name, address_line_1, address_line_2,
+               city, state, zip_code, country,
+               invoice_footer_message, portal_title, portal_theme,
+               visible_project_plan, visible_gantt_timeline, visible_files_documents,
+               visible_invoices, visible_feedback_forms, visible_team_members,
+               visible_project_updates, visible_chat,
+               notify_new_message, notify_task_status_change, notify_file_uploaded,
+               poc_can_add_users, poc_can_remove_users,
+               invoice_template_style, invoice_show_logo,
+               created_at, updated_at
+        FROM client_portal_settings
         WHERE organization_team_id = $1
       `;
 
@@ -44,7 +60,28 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         company_name: null,
         address_line_1: null,
         address_line_2: null,
+        city: null,
+        state: null,
+        zip_code: null,
+        country: null,
         invoice_footer_message: null,
+        portal_title: null,
+        portal_theme: "light",
+        visible_project_plan: true,
+        visible_gantt_timeline: true,
+        visible_files_documents: true,
+        visible_invoices: false,
+        visible_feedback_forms: false,
+        visible_team_members: true,
+        visible_project_updates: true,
+        visible_chat: true,
+        notify_new_message: true,
+        notify_task_status_change: true,
+        notify_file_uploaded: false,
+        poc_can_add_users: false,
+        poc_can_remove_users: false,
+        invoice_template_style: "classic",
+        invoice_show_logo: true,
       };
 
       // Get organization logo if client portal logo is not set
@@ -101,8 +138,35 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         company_name,
         address_line_1,
         address_line_2,
+        city,
+        state,
+        zip_code,
+        country,
         invoice_footer_message,
+        portal_title,
       } = req.body;
+
+      const portal_theme = PORTAL_THEMES.includes(req.body.portal_theme)
+        ? req.body.portal_theme
+        : "light";
+      const invoice_template_style = INVOICE_TEMPLATE_STYLES.includes(req.body.invoice_template_style)
+        ? req.body.invoice_template_style
+        : "classic";
+
+      const visible_project_plan = toBool(req.body.visible_project_plan, true);
+      const visible_gantt_timeline = toBool(req.body.visible_gantt_timeline, true);
+      const visible_files_documents = toBool(req.body.visible_files_documents, true);
+      const visible_invoices = toBool(req.body.visible_invoices, false);
+      const visible_feedback_forms = toBool(req.body.visible_feedback_forms, false);
+      const visible_team_members = toBool(req.body.visible_team_members, true);
+      const visible_project_updates = toBool(req.body.visible_project_updates, true);
+      const visible_chat = toBool(req.body.visible_chat, true);
+      const notify_new_message = toBool(req.body.notify_new_message, true);
+      const notify_task_status_change = toBool(req.body.notify_task_status_change, true);
+      const notify_file_uploaded = toBool(req.body.notify_file_uploaded, false);
+      const poc_can_add_users = toBool(req.body.poc_can_add_users, false);
+      const poc_can_remove_users = toBool(req.body.poc_can_remove_users, false);
+      const invoice_show_logo = toBool(req.body.invoice_show_logo, true);
 
       // Check if settings exist
       const checkQ = `SELECT id FROM client_portal_settings WHERE organization_team_id = $1`;
@@ -112,12 +176,20 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       if (existingResult.rows.length > 0) {
         // Update existing settings
         const updateQ = `
-          UPDATE client_portal_settings 
-          SET logo_url = $1, primary_color = $2, welcome_message = $3, 
-              contact_email = $4, contact_phone = $5, terms_of_service = $6, 
+          UPDATE client_portal_settings
+          SET logo_url = $1, primary_color = $2, welcome_message = $3,
+              contact_email = $4, contact_phone = $5, terms_of_service = $6,
               privacy_policy = $7, company_name = $8, address_line_1 = $9, address_line_2 = $10,
-              invoice_footer_message = $11, updated_at = CURRENT_TIMESTAMP
-          WHERE organization_team_id = $12
+              city = $11, state = $12, zip_code = $13, country = $14,
+              invoice_footer_message = $15, portal_title = $16, portal_theme = $17,
+              visible_project_plan = $18, visible_gantt_timeline = $19, visible_files_documents = $20,
+              visible_invoices = $21, visible_feedback_forms = $22, visible_team_members = $23,
+              visible_project_updates = $24, visible_chat = $25,
+              notify_new_message = $26, notify_task_status_change = $27, notify_file_uploaded = $28,
+              poc_can_add_users = $29, poc_can_remove_users = $30,
+              invoice_template_style = $31, invoice_show_logo = $32,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE organization_team_id = $33
           RETURNING *
         `;
         result = await db.query(updateQ, [
@@ -131,17 +203,47 @@ export default class ClientPortalSettingsController extends ClientPortalControll
           company_name,
           address_line_1,
           address_line_2,
+          city,
+          state,
+          zip_code,
+          country,
           invoice_footer_message,
+          portal_title,
+          portal_theme,
+          visible_project_plan,
+          visible_gantt_timeline,
+          visible_files_documents,
+          visible_invoices,
+          visible_feedback_forms,
+          visible_team_members,
+          visible_project_updates,
+          visible_chat,
+          notify_new_message,
+          notify_task_status_change,
+          notify_file_uploaded,
+          poc_can_add_users,
+          poc_can_remove_users,
+          invoice_template_style,
+          invoice_show_logo,
           organizationTeamId,
         ]);
       } else {
         // Create new settings
         const insertQ = `
-          INSERT INTO client_portal_settings 
-          (team_id, organization_team_id, logo_url, primary_color, welcome_message, 
-           contact_email, contact_phone, terms_of_service, privacy_policy, company_name, 
-           address_line_1, address_line_2, invoice_footer_message)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          INSERT INTO client_portal_settings
+          (team_id, organization_team_id, logo_url, primary_color, welcome_message,
+           contact_email, contact_phone, terms_of_service, privacy_policy, company_name,
+           address_line_1, address_line_2, city, state, zip_code, country,
+           invoice_footer_message, portal_title, portal_theme,
+           visible_project_plan, visible_gantt_timeline, visible_files_documents,
+           visible_invoices, visible_feedback_forms, visible_team_members,
+           visible_project_updates, visible_chat,
+           notify_new_message, notify_task_status_change, notify_file_uploaded,
+           poc_can_add_users, poc_can_remove_users,
+           invoice_template_style, invoice_show_logo)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+                  $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31,
+                  $32, $33, $34)
           RETURNING *
         `;
         result = await db.query(insertQ, [
@@ -157,7 +259,28 @@ export default class ClientPortalSettingsController extends ClientPortalControll
           company_name,
           address_line_1,
           address_line_2,
+          city,
+          state,
+          zip_code,
+          country,
           invoice_footer_message,
+          portal_title,
+          portal_theme,
+          visible_project_plan,
+          visible_gantt_timeline,
+          visible_files_documents,
+          visible_invoices,
+          visible_feedback_forms,
+          visible_team_members,
+          visible_project_updates,
+          visible_chat,
+          notify_new_message,
+          notify_task_status_change,
+          notify_file_uploaded,
+          poc_can_add_users,
+          poc_can_remove_users,
+          invoice_template_style,
+          invoice_show_logo,
         ]);
       }
 
@@ -275,11 +398,16 @@ export default class ClientPortalSettingsController extends ClientPortalControll
       }
 
       const q = `
-        SELECT id, team_id, organization_team_id, logo_url, primary_color, 
-               welcome_message, contact_email, contact_phone, terms_of_service, 
-               privacy_policy, company_name, address_line_1, address_line_2, 
-               invoice_footer_message, created_at, updated_at
-        FROM client_portal_settings 
+        SELECT id, team_id, organization_team_id, logo_url, primary_color,
+               welcome_message, contact_email, contact_phone, terms_of_service,
+               privacy_policy, company_name, address_line_1, address_line_2,
+               city, state, zip_code, country,
+               invoice_footer_message, portal_title, portal_theme,
+               visible_project_plan, visible_gantt_timeline, visible_files_documents,
+               visible_invoices, visible_feedback_forms, visible_team_members,
+               visible_project_updates, visible_chat,
+               created_at, updated_at
+        FROM client_portal_settings
         WHERE organization_team_id = $1
       `;
 
@@ -296,7 +424,21 @@ export default class ClientPortalSettingsController extends ClientPortalControll
         company_name: null,
         address_line_1: null,
         address_line_2: null,
+        city: null,
+        state: null,
+        zip_code: null,
+        country: null,
         invoice_footer_message: null,
+        portal_title: null,
+        portal_theme: "light",
+        visible_project_plan: true,
+        visible_gantt_timeline: true,
+        visible_files_documents: true,
+        visible_invoices: false,
+        visible_feedback_forms: false,
+        visible_team_members: true,
+        visible_project_updates: true,
+        visible_chat: true,
       };
 
       return res.json(new ServerResponse(true, settings, null));

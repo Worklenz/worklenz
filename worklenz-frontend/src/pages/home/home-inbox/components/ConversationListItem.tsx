@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import dayjs from 'dayjs';
+import { formatDate } from '@/utils/dateUtils';
 import { PushpinFilled, PushpinOutlined } from '@ant-design/icons';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { themeWiseColor } from '@utils/themeWiseColor';
 import { InboxConversation } from '../hooks/useInboxConversations';
 
-const formatTime = (timeString?: string, yesterdayLabel = 'Yesterday') => {
+export const formatTime = (timeString?: string, yesterdayLabel = 'Yesterday', language?: string) => {
   if (!timeString) return '';
-  const date = new Date(timeString);
-  if (Number.isNaN(date.getTime())) return '';
-  const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (isToday) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (date.toDateString() === yesterday.toDateString()) return yesterdayLabel;
-  return date.toLocaleDateString([], { weekday: 'short' });
+  const date = dayjs(timeString);
+  if (!date.isValid()) return '';
+  const now = dayjs();
+  if (date.isSame(now, 'day')) return date.format('HH:mm');
+  if (date.isSame(now.subtract(1, 'day'), 'day')) return yesterdayLabel;
+  return formatDate(date, 'ddd', language);
 };
 
 interface ConversationListItemProps {
@@ -35,7 +34,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
   onClick,
   onTogglePin,
 }) => {
-  const { t } = useTranslation('home-inbox');
+  const { t, i18n } = useTranslation('home-inbox');
   const themeMode = useAppSelector(state => state.themeReducer.mode);
   const [hovered, setHovered] = useState(false);
 
@@ -145,7 +144,7 @@ const ConversationListItem: React.FC<ConversationListItemProps> = ({
           ? conversation.authorName || conversation.participants?.[0]
           : conversation.name) || ''}
         {conversation.lastMessageTime
-          ? ` · ${formatTime(conversation.lastMessageTime, t('yesterday', { defaultValue: 'Yesterday' }))}`
+          ? ` · ${formatTime(conversation.lastMessageTime, t('yesterday', { defaultValue: 'Yesterday' }), i18n.language)}`
           : ''}
       </div>
       <div

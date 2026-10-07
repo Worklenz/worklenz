@@ -10,7 +10,7 @@
   "searchByName": "Pesquisar por nome",
   "selectAll": "Selecionar Tudo",
   "clearAll": "Limpar tudo",
-  "statusText": "Status",
+  "statusText": "Estado",
   "healthText": "Saúde",
   "categoryText": "Categoria",
   "projectManagerText": "Gerente de Projeto",
@@ -45,7 +45,7 @@
   "tableViewText": "Tabela",
   "groupedViewText": "Agrupado",
   "groupByCategoryText": "Categoria",
-  "groupByStatusText": "Status",
+  "groupByStatusText": "Estado",
   "groupByHealthText": "Saúde",
   "groupByTeamText": "Equipe",
   "groupByManagerText": "Gerente"

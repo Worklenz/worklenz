@@ -388,9 +388,11 @@ const mainRoutes: RouteObject[] = [
           {
             path: 'add-client',
             element: (
-              <Suspense fallback={<SuspenseFallback />}>
-                <HomeAddClient />
-              </Suspense>
+              <AdminGuard>
+                <Suspense fallback={<SuspenseFallback />}>
+                  <HomeAddClient />
+                </Suspense>
+              </AdminGuard>
             ),
           },
         ],
@@ -451,9 +453,11 @@ const mainRoutes: RouteObject[] = [
           {
             path: 'templates',
             element: (
-              <Suspense fallback={<SuspenseFallback />}>
-                <TemplatesPage />
-              </Suspense>
+              <AdminGuard>
+                <Suspense fallback={<SuspenseFallback />}>
+                  <TemplatesPage />
+                </Suspense>
+              </AdminGuard>
             ),
           },
           {

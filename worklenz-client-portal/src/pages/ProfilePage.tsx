@@ -12,7 +12,7 @@ import {
   UserOutlined,
   LockOutlined
 } from '@/shared/antd-imports';
-import { App } from 'antd';
+import App from 'antd/es/app';
 import clientPortalAPI from '@/services/api';
 import { ClientProfile } from '@/types';
 

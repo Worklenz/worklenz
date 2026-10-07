@@ -17,18 +17,11 @@ import { useAppDispatch } from '@/hooks/useAppDispatch';
 import CustomTableTitle from '@components/CustomTableTitle';
 import { colors } from '@/styles/colors';
 import { lazy } from 'react';
-import {
-  fetchTask,
-  setSelectedTaskId,
-  setShowTaskDrawer,
-} from '@/features/task-drawer/task-drawer.slice';
-import { fetchPhasesByProjectId } from '@/features/projects/singleProject/phase/phases.slice';
-import { setProjectId } from '@/features/project/project.slice';
+import { openReportingTaskDrawer, ReportingTaskRow } from '@/utils/reporting/openReportingTaskDrawer';
 
 const TaskDrawer = lazy(() => import('@components/task-drawer/task-drawer'));
 
-interface ReportingTaskRecord {
-  id: string;
+interface ReportingTaskRecord extends ReportingTaskRow {
   project_id: string;
   name?: string;
   sub_tasks_count?: number | string;
@@ -59,16 +52,10 @@ const ProjectReportsMembersTasksTable = ({
 
   const dispatch = useAppDispatch();
 
-  // function to handle task drawer open
-  const handleUpdateTaskDrawer = useCallback(
-    (id: string, projectId: string) => {
-      if (!id || !projectId) return;
-
-      dispatch(setSelectedTaskId(id));
-      dispatch(setProjectId(projectId));
-      dispatch(fetchPhasesByProjectId(projectId));
-      dispatch(fetchTask({ taskId: id, projectId }));
-      dispatch(setShowTaskDrawer(true));
+  const handleOpenTaskDrawer = useCallback(
+    (task: ReportingTaskRecord) => {
+      if (!task.id || !task.project_id) return;
+      openReportingTaskDrawer(dispatch, task, task.project_id);
     },
     [dispatch]
   );
@@ -182,11 +169,11 @@ const ProjectReportsMembersTasksTable = ({
   // Memoize row props generator
   const getRowProps = useMemo(
     () => (record: ReportingTaskRecord) => ({
-      onClick: () => handleUpdateTaskDrawer(record.id, record.project_id),
+      onClick: () => handleOpenTaskDrawer(record),
       style: { height: 38, cursor: 'pointer' },
       className: 'group even:bg-[#4e4e4e10]',
     }),
-    [handleUpdateTaskDrawer]
+    [handleOpenTaskDrawer]
   );
 
   return (

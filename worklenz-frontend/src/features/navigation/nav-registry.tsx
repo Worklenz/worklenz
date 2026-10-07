@@ -28,6 +28,8 @@ import {
   FileTextOutlined,
   CompassOutlined,
   TagOutlined,
+  LineChartOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import type { NavSurface, SurfaceKey } from './nav-registry.types';
 import type { TempChatsType } from '@/pages/client-portal/chats/chat-container/chat-box/chat-box-wrapper';
@@ -82,6 +84,7 @@ export const HOME_NAV_SURFACE: NavSurface = {
           key: 'add-client',
           label: { i18nNs: 'home-sidebar', i18nKey: 'addClient', defaultValue: 'Add\nClient' },
           icon: <UserAddOutlined />,
+          adminOnly: true, // Owner/Admin only — Members must not manage clients
         },
       ],
     },
@@ -150,6 +153,15 @@ export const REPORTING_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'reporting-sidebar', i18nKey: 'allTasks', defaultValue: 'Tasks' },
           icon: <UnorderedListOutlined />,
         },
+        {
+          key: 'progress-tracking',
+          label: {
+            i18nNs: 'reporting-sidebar',
+            i18nKey: 'progressTracking',
+            defaultValue: 'Progress Tracking',
+          },
+          icon: <RiseOutlined />,
+        },
       ],
     },
     {
@@ -211,6 +223,16 @@ export const CLIENT_PORTAL_NAV_SURFACE: NavSurface = {
           icon: <AppstoreOutlined />,
         },
         {
+          key: 'quotes',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'quotes', defaultValue: 'Quotes' },
+          icon: <FileTextOutlined />,
+        },
+        {
+          key: 'invoices',
+          label: { i18nNs: 'client-portal-common', i18nKey: 'invoices', defaultValue: 'Invoices' },
+          icon: <FileDoneOutlined />,
+        },
+        {
           key: 'chats',
           label: { i18nNs: 'client-portal-common', i18nKey: 'chats', defaultValue: 'Chats' },
           icon: <CommentOutlined />,
@@ -220,20 +242,29 @@ export const CLIENT_PORTAL_NAV_SURFACE: NavSurface = {
             ).length,
         },
         {
-          key: 'invoices',
-          label: { i18nNs: 'client-portal-common', i18nKey: 'invoices', defaultValue: 'Invoices' },
-          icon: <FileDoneOutlined />,
-        },
-        // No real feature behind this yet — visually tagged "Soon" (matches
-        // the design reference) but, unlike other `soon` items, still
-        // navigates to its Coming Soon route (see client-portal-routes.tsx)
-        // via `soonClickable`, so it isn't a dead end.
-        {
           key: 'ticketing',
           label: { i18nNs: 'client-portal-common', i18nKey: 'ticketing', defaultValue: 'Ticketing' },
           icon: <TagOutlined />,
+        },
+        {
+          key: 'client-analytics',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'clientAnalytics',
+            defaultValue: 'Client Analytics',
+          },
+          icon: <LineChartOutlined />,
           soon: true,
-          soonClickable: true,
+        },
+        {
+          key: 'view-as-client',
+          label: {
+            i18nNs: 'client-portal-common',
+            i18nKey: 'viewAsClient',
+            defaultValue: 'View as client',
+          },
+          icon: <EyeOutlined />,
+          soon: true,
         },
         {
           key: 'settings',
@@ -298,6 +329,7 @@ export const PROJECTS_NAV_SURFACE: NavSurface = {
           label: { i18nNs: 'projects-sidebar', i18nKey: 'templates', defaultValue: 'Templates' },
           icon: <BlockOutlined />,
           guestExcluded: true, // Hide from guest users
+          adminOnly: true, // Only Owner/Admin may create projects from templates
         },
         // {
         //   key: 'archived',

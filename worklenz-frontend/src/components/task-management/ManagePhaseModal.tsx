@@ -3,6 +3,7 @@ import { Modal, Button, Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import ManagePhaseContent from './ManagePhaseContent';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 import './ManagePhaseModal.css';
 
 const { Title, Text } = Typography;
@@ -40,7 +41,9 @@ const ManagePhaseModal: React.FC<ManagePhaseModalProps> = ({ open, onClose, proj
               isDarkMode ? 'bg-gray-700 text-gray-200' : 'bg-blue-50 text-blue-700'
             }`}
           >
-            {t('phasesText', { defaultValue: 'Phases' })}
+            {isSoftwareProjectType(project?.project_type)
+              ? t('sprintsText', { defaultValue: 'Sprints' })
+              : t('phasesText', { defaultValue: 'Phases' })}
           </Text>
         </div>
       }

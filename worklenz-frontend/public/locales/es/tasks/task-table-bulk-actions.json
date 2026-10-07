@@ -26,6 +26,7 @@
   "CHANGE_STATUS": "Cambiar Estado",
   "CHANGE_PRIORITY": "Cambiar Prioridad",
   "CHANGE_PHASE": "Cambiar Fase",
+  "MOVE_TO_SPRINT": "Mover al sprint",
   "ADD_LABELS": "Agregar Etiquetas",
   "ASSIGN_TO_ME": "Asignar a Mí",
   "ASSIGN_MEMBERS": "Asignar Miembros",

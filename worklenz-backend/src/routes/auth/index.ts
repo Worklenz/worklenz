@@ -11,6 +11,27 @@ import safeControllerFunction from "../../shared/safe-controller-function";
 import FileConstants from "../../shared/file-constants";
 import { log_error } from "../../shared/utils";
 import { resetPasswordLimiter, updatePasswordLimiter } from "../../middlewares/reset-password-rate-limiter";
+import { logAuditEvent, resolveOrganizationIdForUserId } from "../../services/audit-log.service";
+import { AUDIT_EVENT_TYPE } from "../../shared/audit-log-constants";
+
+// Spec #32, task 3.1: logs login_success for the OAuth web callbacks below. Failures aren't
+// instrumented here - OAuth failures are almost always provider/token-level (expired code,
+// network issue) rather than an access-control event against a specific workspace, and
+// Google/Apple sign-in are consumer OAuth, not a customer-configurable SSO integration (see
+// shared/audit-log-constants.ts's note on spike task 0.8).
+function logOAuthLoginSuccess(user: any): void {
+  if (!user?.id) return;
+  void (async () => {
+    const context = await resolveOrganizationIdForUserId(user.id, user.active_team || null);
+    if (!context) return;
+    logAuditEvent({
+      organizationId: context.organizationId,
+      teamId: context.teamId,
+      actor: { userId: user.id, name: user.name || user.email || "Unknown user" },
+      eventType: AUDIT_EVENT_TYPE.LOGIN_SUCCESS.id,
+    });
+  })();
+}
 
 const authRouter = express.Router();
 
@@ -87,6 +108,7 @@ authRouter.get("/google/verify", (req, res, next) => {
         log_error(loginErr);
         return res.redirect(failureRedirect || "/");
       }
+      logOAuthLoginSuccess(user);
       return res.redirect(successRedirect || "/");
     });
   })(req, res, next);
@@ -119,9 +141,29 @@ authRouter.post("/apple/verify", (req, res, next) => {
   }
 
   const failureRedirect = process.env.LOGIN_FAILURE_REDIRECT + error;
-  return passport.authenticate("apple", {
-    failureRedirect,
-    successRedirect: process.env.LOGIN_SUCCESS_REDIRECT
+  const successRedirect = process.env.LOGIN_SUCCESS_REDIRECT as string;
+
+  // Converted from the declarative { failureRedirect, successRedirect } form to a custom
+  // callback (mirroring /google/verify above) solely so logOAuthLoginSuccess(user) has a
+  // place to run before the redirect — behavior is otherwise unchanged.
+  passport.authenticate("apple", (err: any, user: any, info: any) => {
+    if (err) {
+      log_error(err);
+      return res.redirect(failureRedirect || "/");
+    }
+
+    if (!user) {
+      return res.redirect(failureRedirect || "/");
+    }
+
+    req.logIn(user, (loginErr) => {
+      if (loginErr) {
+        log_error(loginErr);
+        return res.redirect(failureRedirect || "/");
+      }
+      logOAuthLoginSuccess(user);
+      return res.redirect(successRedirect || "/");
+    });
   })(req, res, next);
 });
 

@@ -47,11 +47,7 @@ const ClientPortalLayout = () => {
     const rest = location.pathname.startsWith(CLIENT_PORTAL_BASE_PATH)
       ? location.pathname.slice(CLIENT_PORTAL_BASE_PATH.length).replace(/^\//, '')
       : '';
-    const segment = rest.split('/')[0] || 'clients';
-    // add-service/edit-service are sub-flows of the Services tab, not their
-    // own nav item — show the Services preview for those too.
-    if (segment === 'add-service' || segment === 'edit-service') return 'services';
-    return segment;
+    return rest.split('/')[0] || 'clients';
   }, [location.pathname]);
 
   const clientPortalPreviews = useClientPortalFeaturePreviews();

@@ -29,6 +29,7 @@ import BillingController from "./controllers/billing-controller";
 import { CSP_POLICIES } from "./shared/csp";
 import importWorker from "./services/import-worker";
 import taskExportWorker from "./services/task-export/task-export-worker";
+import auditLogExportWorker from "./services/audit-log-export/audit-log-export-worker";
 import { sqlInjectionDetectorWithBlocking } from "./middlewares/sql-injection-detector";
 import { createCsrfRotation } from "./middlewares/csrf-rotation";
 import linkPreviewMiddleware from "./middlewares/link-preview-middleware";
@@ -48,13 +49,19 @@ const globalRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-if (process.env.IMPORT_WORKER_ENABLED !== "false") {
-  importWorker.start();
-}
+export const startBackgroundWorkers = (): void => {
+  if (process.env.IMPORT_WORKER_ENABLED !== "false") {
+    importWorker.start();
+  }
 
-if (process.env.TASK_EXPORT_WORKER_ENABLED !== "false") {
-  taskExportWorker.start();
-}
+  if (process.env.TASK_EXPORT_WORKER_ENABLED !== "false") {
+    taskExportWorker.start();
+  }
+
+  if (process.env.AUDIT_LOG_EXPORT_WORKER_ENABLED !== "false") {
+    auditLogExportWorker.start();
+  }
+};
 
 // Trust first proxy if behind reverse proxy
 app.set("trust proxy", 1);

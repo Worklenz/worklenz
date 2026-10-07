@@ -1,0 +1,14 @@
+{
+  "taskAssigned": "<b>{{reporter}}</b> 已将 <b>{{task}}</b> 指派给您",
+  "taskRemoved": "<b>{{reporter}}</b> 已将您从 <b>{{task}}</b> 中移除",
+  "taskAdded": "<b>{{user}}</b> 已将 “<b>{{task}}</b>” 添加到 “<b>{{project}}</b>”",
+  "taskRemovedFromProject": "<b>{{user}}</b> 已从 “<b>{{project}}</b>” 中移除了 “<b>{{task}}</b>”",
+  "addedToProject": "您已被 <b>{{user}}</b> 添加到 <b>{{project}}</b>",
+  "removedFromProject": "您已被 <b>{{user}}</b> 从 <b>{{project}}</b> 中移除",
+  "addedToTeam": "您已被添加到 <b>{{team}}</b>",
+  "removedFromTeam": "您已被 <b>{{user}}</b> 从 <b>{{team}}</b> 中移除",
+  "commentAdded": "<b>{{user}}</b> 在 <b>{{task}}</b> 上添加了评论",
+  "mentionedInComment": "<b>{{user}}</b> 在 <b>{{task}}</b> 的评论中提及了您",
+  "mentionedInProjectComment": "<b>{{user}}</b> 在 <b>{{project}}</b> 的评论中提及了您",
+  "phaseTaskAssigned": "在 <b>{{phase}}</b> 中已将一项任务指派给您：<b>{{task}}</b>"
+}

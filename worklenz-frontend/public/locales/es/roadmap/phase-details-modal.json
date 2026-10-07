@@ -1,37 +1,37 @@
 {
-  "title": "Phase Details",
+  "title": "Detalles de la fase",
   "overview": {
-    "title": "Overview",
-    "totalTasks": "Total Tasks",
-    "completion": "Completion",
-    "progress": "Progress"
+    "title": "Resumen",
+    "totalTasks": "Tareas totales",
+    "completion": "Finalización",
+    "progress": "Progreso"
   },
   "timeline": {
-    "title": "Timeline",
-    "startDate": "Start Date",
-    "endDate": "End Date",
-    "status": "Status",
-    "notSet": "Not set",
+    "title": "Cronología",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de finalización",
+    "status": "Estado",
+    "notSet": "No establecido",
     "statusLabels": {
-      "upcoming": "Upcoming",
-      "active": "In Progress",
-      "overdue": "Overdue",
-      "notScheduled": "Not Scheduled"
+      "upcoming": "Próximas",
+      "active": "En progreso",
+      "overdue": "Vencido",
+      "notScheduled": "No programado"
     }
   },
   "taskBreakdown": {
-    "title": "Task Breakdown",
-    "completed": "Completed",
-    "pending": "Pending",
-    "overdue": "Overdue"
+    "title": "Desglose de tareas",
+    "completed": "Completado",
+    "pending": "Pendiente",
+    "overdue": "Vencido"
   },
   "phaseColor": {
-    "title": "Phase Color",
-    "description": "Phase identifier color"
+    "title": "Color de la Fase",
+    "description": "Color del identificador de fase"
   },
   "tasksInPhase": {
-    "title": "Tasks in this Phase",
-    "noTasks": "No tasks in this phase",
+    "title": "Tareas en esta Fase",
+    "noTasks": "No hay tareas en esta fase.",
     "priority": "Prioridad",
     "assignees": "Asignados",
     "dueDate": "Fecha de vencimiento",

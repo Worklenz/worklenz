@@ -106,6 +106,8 @@ const TaskDrawerRecurringConfig = ({ task, disabled = false }: { task: ITaskView
   const [loadingStatuses, setLoadingStatuses] = useState(false);
 
   const handleChange = (checked: boolean) => {
+    if (disabled) return;
+
     if (isFree) {
       dispatch(toggleUpgradeModal());
       return;

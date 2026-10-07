@@ -1,118 +1,50 @@
-import { Flex, Typography, Button, Tooltip, Space } from '@/shared/antd-imports';
-import React, { useEffect, useState } from 'react';
+import { Typography } from '@/shared/antd-imports';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import ChatBoxWrapper from './chat-container/chat-box/chat-box-wrapper';
-import { MessageOutlined, ReloadOutlined, PlusOutlined } from '@ant-design/icons';
-import { useGetOrganizationChatsQuery } from '@/api/client-portal/client-portal-api';
-import { useResponsive } from '@/hooks/useResponsive';
+import { useGetChatConversationsQuery } from '@api/client-portal/client-portal-api';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
-import {
-  MixpanelEvents,
-  ClientPortalEventProps,
-  ClientPortalActionEventProps,
-} from '../../../types/mixpanel-events.types';
+import { MixpanelEvents, ClientPortalEventProps } from '../../../types/mixpanel-events.types';
+import { ChatsInbox } from './chat-container/ChatsInbox';
 
 const ClientPortalChats = () => {
-  // localization
   const { t } = useTranslation('client-portal-chats');
-  const { isDesktop } = useResponsive();
   const { trackMixpanelEvent } = useMixpanelTracking();
-  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
 
-  // API hooks - using organization-side endpoint (clientId is optional)
-  const { data: chatsData, isLoading, error, refetch } = useGetOrganizationChatsQuery({});
-  const chats = Array.isArray(chatsData) ? chatsData : chatsData?.chats || [];
+  const { data: conversations } = useGetChatConversationsQuery();
+  const totalConversations = conversations?.length ?? 0;
 
   // Track page visit
   useEffect(() => {
     const pageEventProps: ClientPortalEventProps = {
       page: 'chats',
       section: 'client_portal',
-      total_items: chats?.length || 0,
+      total_items: totalConversations,
       source: 'direct_visit',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
-  }, [trackMixpanelEvent, chats]);
+  }, [trackMixpanelEvent, totalConversations]);
 
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const handleRefresh = async () => {
-    const actionProps: ClientPortalActionEventProps = {
-      action_type: 'refresh',
-      item_type: 'chat',
-      page: 'chats',
-      section: 'client_portal',
-      source: 'refresh_button',
-    };
-
-    trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_CHAT_REFRESHED, actionProps);
-    setIsRefreshing(true);
-    await refetch();
-    setTimeout(() => setIsRefreshing(false), 800);
-  };
-
+  // Same header as Home > Inbox; the two-pane area below fills the rest of the page.
   return (
     <div
       style={{
-        maxWidth: '100%',
-        minHeight: 'calc(100vh - 120px)',
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100vh - 120px)',
+        minHeight: 520,
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: isDesktop ? 32 : 24 }}>
-        <Flex align="center" justify="space-between" style={{ width: '100%' }} wrap="wrap" gap={16}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-              <MessageOutlined style={{ fontSize: 20 }} />
-              <Typography.Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: '20px',
-                }}
-              >
-                {t('title') || 'Messages'}
-              </Typography.Title>
-            </Flex>
-            <Typography.Text
-              type="secondary"
-              style={{
-                fontSize: isDesktop ? '16px' : '14px',
-                lineHeight: 1.5,
-              }}
-            >
-              {t('description') || 'Communicate with your team and clients'}
-            </Typography.Text>
-          </div>
-
-          <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => setIsNewChatModalOpen(true)}
-              size={isDesktop ? 'middle' : 'small'}
-            >
-              {t('startConversation') || 'New Conversation'}
-            </Button>
-            <Tooltip title={t('refresh') || 'Refresh'}>
-              <Button
-                type="text"
-                icon={<ReloadOutlined
-                  style={{
-                    animation: isRefreshing ? 'spin 1s linear infinite' : 'none',
-                  }}
-                />}
-                onClick={handleRefresh}
-              />
-            </Tooltip>
-          </Space>
-        </Flex>
+      <div style={{ marginBottom: 20, flexShrink: 0 }}>
+        <Typography.Title level={3} style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
+          {t('title', { defaultValue: 'Chats' })}
+        </Typography.Title>
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t('description', { defaultValue: 'Direct messaging with your clients' })}
+        </Typography.Text>
       </div>
 
-      <ChatBoxWrapper
-        isNewChatModalOpen={isNewChatModalOpen}
-        setIsNewChatModalOpen={setIsNewChatModalOpen}
-      />
+      <ChatsInbox />
     </div>
   );
 };

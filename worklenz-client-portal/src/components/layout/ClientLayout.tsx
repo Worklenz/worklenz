@@ -12,28 +12,30 @@ import {
   SunOutlined,
   TranslationOutlined
 } from '@/shared/antd-imports';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { logout, setUser } from '@/store/slices/authSlice';
 import { toggleSidebar, setTheme, setLanguage } from '@/store/slices/uiSlice';
-import { useGetProfileQuery, useGetNotificationsQuery } from '@/store/api';
+import { useGetProfileQuery, useGetNotificationsQuery, useGetOrganizationSettingsQuery } from '@/store/api';
 import type { RootState } from '@/store';
 import { useTranslation } from 'react-i18next';
 import ClientPortalSidebar from './ClientPortalSidebar';
 import { useResponsive } from '@/hooks/useResponsive';
 import NotificationCenter from '../NotificationCenter';
 import OrganizationSwitcher from '../OrganizationSwitcher';
+import { VISIBILITY_GATED_KEYS } from '@/lib/client-portal/client-portal-constants';
 
 const { Header, Sider, Content } = Layout;
 
 const ClientLayout: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useAppDispatch();
   const { token } = theme.useToken();
   const { t, i18n } = useTranslation();
   const { isMobile } = useResponsive();
-  
+
   const { isAuthenticated } = useAppSelector((state: RootState) => state.auth);
 
   // Redirect unauthenticated users to login
@@ -42,6 +44,18 @@ const ClientLayout: React.FC = () => {
       navigate('/auth/login', { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  // Redirect a direct URL visit to a section the admin has turned off — the sidebar already
+  // hides the link, but that alone doesn't stop someone reaching it by typing the URL.
+  const { data: orgSettingsData } = useGetOrganizationSettingsQuery();
+  React.useEffect(() => {
+    if (!orgSettingsData?.body) return;
+    const topSegment = location.pathname.split('/').filter(Boolean)[0] || '';
+    const visibilityField = VISIBILITY_GATED_KEYS[topSegment];
+    if (visibilityField && orgSettingsData.body[visibilityField] === false) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [location.pathname, orgSettingsData, navigate]);
   
   const sidebarCollapsed = useAppSelector((state: RootState) => state.ui.sidebarCollapsed);
   const currentTheme = useAppSelector((state: RootState) => state.ui.theme);
@@ -99,6 +113,8 @@ const ClientLayout: React.FC = () => {
     { value: 'de', label: 'Deutsch' },
     { value: 'al', label: 'Shqip' },
     { value: 'zh', label: '中文' },
+    { value: 'pl', label: 'Polski' },
+    { value: 'fr', label: 'Français' },
   ];
 
 

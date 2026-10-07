@@ -1,0 +1,84 @@
+{
+  "retry": "Versuchen Sie es noch einmal",
+  "tabs": {
+    "overview": "Overview",
+    "messages": "Messages",
+    "members": "Firmenmitglieder",
+    "projects": "Projekte",
+    "billing": "Abrechnung"
+  },
+  "portalStatus": {
+    "active": "Aktiv",
+    "invited": "Eingeladen",
+    "expired": "Abgelaufen",
+    "not_invited": "Nicht eingeladen"
+  },
+  "header": {
+    "back": "Kunden",
+    "edit": "Kunde bearbeiten",
+    "actionsLabel": "Kundenaktionen",
+    "lastSignedIn": "Zuletzt angemeldet am {{time}}",
+    "invited": "Eingeladen {{time}}",
+    "neverSignedIn": "Nie angemeldet"
+  },
+  "rail": {
+    "contact": "Kontakt",
+    "email": "Email",
+    "company": "Company",
+    "projects": "Projekte",
+    "balance": "Gleichgewicht",
+    "portalHealth": "Portalgesundheit",
+    "signInMethod": "Anmeldemethode",
+    "signInPassword": "Passwort",
+    "signInNone": "Noch nicht angemeldet",
+    "lastSignIn": "Letzte Anmeldung",
+    "never": "Niemals",
+    "quickActions": "Schnelle Aktionen",
+    "sendMessage": "Nachricht senden",
+    "createInvoice": "Rechnung erstellen",
+    "assignTask": "Aufgabe zuweisen"
+  },
+  "overview": {
+    "tasksOpen": "Aufgaben offen",
+    "invoicesDue": "Rechnungen fällig",
+    "unansweredMessages": "Unbeantwortete Nachrichten",
+    "statsError": "Die Nummern dieses Kunden konnten nicht geladen werden.",
+    "recentActivity": "Aktuelle Aktivität",
+    "activityError": "Die letzte Aktivität konnte nicht geladen werden.",
+    "noActivity": "Für {{name}} wurde noch nichts protokolliert."
+  },
+  "members": {
+    "title": "Firmenmitglieder",
+    "addUser": "Benutzer hinzufügen"
+  },
+  "projects": {
+    "title": "Projekte",
+    "project": "Projekt",
+    "openProject": "Öffnen Sie {{name}}",
+    "health": "Gesundheit",
+    "progress": "Fortschritt",
+    "progressLabel": "Fortschritt von {{name}}",
+    "due": "Fällig",
+    "assign": "Projekt zuweisen",
+    "loadError": "Die Projekte dieses Kunden konnten nicht geladen werden.",
+    "empty": "Noch keine Projekte für {{name}}.",
+    "truncated": "Zeigt die ersten {{shown}} von {{total}} Projekten."
+  },
+  "billing": {
+    "title": "Rechnungen",
+    "createInvoice": "Rechnung erstellen",
+    "warningTitle": "{{name}} kann ihr Portal noch nicht nutzen",
+    "warningDescription": "Sie haben eine Einladung nicht angenommen und können Rechnungen daher in ihrem Portal weder einsehen noch bezahlen. Sie können weiterhin Rechnungen erstellen. Senden Sie zuerst die Einladung, wenn sie sie sehen sollen.",
+    "sendInvite": "Einladung senden",
+    "resendInvite": "Einladung erneut senden",
+    "inviteSent": "Einladung an {{name}} gesendet.",
+    "inviteError": "Die Einladung konnte nicht gesendet werden."
+  },
+  "errors": {
+    "notFoundTitle": "Kunde nicht gefunden",
+    "notFoundDescription": "Möglicherweise wurde es entfernt oder der Link ist falsch.",
+    "loadTitle": "Dieser Client konnte nicht geladen werden",
+    "loadDescription": "Bitte versuchen Sie es erneut.",
+    "backToClients": "Zurück zu den Kunden"
+  }
+}

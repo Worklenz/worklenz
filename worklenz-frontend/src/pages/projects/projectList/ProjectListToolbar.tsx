@@ -50,6 +50,8 @@ interface ProjectListToolbarProps {
   searchValue: string;
   isRefreshing: boolean;
   isOwnerOrAdmin: boolean;
+  /** Phase 5 — show create for Members with template-create flag. */
+  canCreateFromTemplates?: boolean;
   /** Count of active Status/Category/Priority/Client column filters. */
   activeFilterCount: number;
   onRefresh: () => void;
@@ -67,6 +69,7 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
   searchValue,
   isRefreshing,
   isOwnerOrAdmin,
+  canCreateFromTemplates = false,
   activeFilterCount,
   onRefresh,
   onFilterSegmentChange,
@@ -204,7 +207,9 @@ const ProjectListToolbarComponent: React.FC<ProjectListToolbarProps> = ({
         onClear={() => onSearchChange('')}
       />
 
-      {isOwnerOrAdmin && <CreateProjectButton style={CREATE_BUTTON_STYLE} />}
+      {(isOwnerOrAdmin || canCreateFromTemplates) && (
+        <CreateProjectButton style={CREATE_BUTTON_STYLE} />
+      )}
     </Flex>
   );
 };

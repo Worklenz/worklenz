@@ -1,0 +1,10 @@
+{
+  "title": "Utilisateurs",
+  "subTitle": "utilisateurs",
+  "placeholder": "Rechercher par nom",
+  "user": "Utilisateur",
+  "email": "Courriel",
+  "lastActivity": "Dernière activité",
+  "refresh": "Actualiser les utilisateurs",
+  "name": "Nom"
+}

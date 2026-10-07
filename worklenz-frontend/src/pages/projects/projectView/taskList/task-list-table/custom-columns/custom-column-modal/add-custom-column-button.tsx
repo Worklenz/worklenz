@@ -64,7 +64,7 @@ const AddCustomColumnButton = () => {
         name: defaultFieldTitle,
         key: columnKey,
         field_type: 'text',
-        width: 120,
+        width: 180,
         is_visible: true,
         configuration,
       });
@@ -74,7 +74,7 @@ const AddCustomColumnButton = () => {
           key: columnKey,
           name: defaultFieldTitle,
           columnHeader: null, // Will be rendered dynamically
-          width: 120,
+          width: 180,
           isVisible: true,
           custom_column: true,
           custom_column_obj: {

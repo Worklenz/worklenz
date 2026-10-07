@@ -28,6 +28,8 @@
   "jobTitleLabel": "Job Title",
   "jobTitlePlaceholder": "Select or search job title (Optional)",
   "memberAccessLabel": "Access Level",
+  "createFromTemplatesLabel": "Create projects from templates",
+  "createFromTemplatesHint": "Allows this member to create projects from templates. They become Project Manager of the new project without finance access. Does not allow blank project create.",
   "addToTeamButton": "Add Member to Team",
   "updateButton": "Save Changes",
   "resendInvitationButton": "Resend Invitation Email",

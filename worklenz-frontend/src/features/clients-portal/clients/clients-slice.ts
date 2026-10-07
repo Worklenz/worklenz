@@ -5,6 +5,12 @@ import {
   ClientPortalTeamMember,
 } from '../../../api/client-portal/client-portal-api';
 
+/** Opens the Add Client wizard already on "Add a client user" for this company. */
+export interface AddClientPreset {
+  method: 'user';
+  company: { id: string; name: string };
+}
+
 export type ClientsState = {
   tempClients: TempClientPortalClientType[]; // Keep for backward compatibility
   selectedClient: ClientPortalClient | null;
@@ -12,8 +18,9 @@ export type ClientsState = {
   clientStats: Record<string, any>;
   // UI State
   isAddClientDrawerOpen: boolean;
+  /** Set when the wizard is opened from a company, so it starts on "Add a client user" for it. */
+  addClientPreset: AddClientPreset | null;
   isEditClientDrawerOpen: boolean;
-  isClientTeamsDrawerOpen: boolean;
   isClientSettingsDrawerOpen: boolean;
   isClientDetailsDrawerOpen: boolean;
   selectedClientId: string | null;
@@ -37,8 +44,8 @@ const initialState: ClientsState = {
   clientStats: {},
   // UI State
   isAddClientDrawerOpen: false,
+  addClientPreset: null,
   isEditClientDrawerOpen: false,
-  isClientTeamsDrawerOpen: false,
   isClientSettingsDrawerOpen: false,
   isClientDetailsDrawerOpen: false,
   selectedClientId: null,
@@ -62,6 +69,12 @@ const clientsSlice = createSlice({
     // UI Actions
     toggleAddClientDrawer: state => {
       state.isAddClientDrawerOpen = !state.isAddClientDrawerOpen;
+      // A preset only applies to the opening it was made for.
+      if (!state.isAddClientDrawerOpen) state.addClientPreset = null;
+    },
+    openAddCompanyUserDrawer: (state, action: PayloadAction<AddClientPreset['company']>) => {
+      state.isAddClientDrawerOpen = true;
+      state.addClientPreset = { method: 'user', company: action.payload };
     },
     toggleEditClientDrawer: (state, action: PayloadAction<string | null>) => {
       if (action.payload === null) {
@@ -69,17 +82,6 @@ const clientsSlice = createSlice({
       } else {
         // Open the combined client modal
         state.isClientDetailsDrawerOpen = true;
-        state.selectedClientId = action.payload;
-      }
-    },
-    toggleClientTeamsDrawer: (state, action: PayloadAction<string | null>) => {
-      if (action.payload === null) {
-        // Close the drawer
-        state.isClientTeamsDrawerOpen = false;
-        state.selectedClientId = null;
-      } else {
-        // Open the drawer with the selected client
-        state.isClientTeamsDrawerOpen = true;
         state.selectedClientId = action.payload;
       }
     },
@@ -191,8 +193,8 @@ const clientsSlice = createSlice({
 
 export const {
   toggleAddClientDrawer,
+  openAddCompanyUserDrawer,
   toggleEditClientDrawer,
-  toggleClientTeamsDrawer,
   toggleClientSettingsDrawer,
   toggleClientDetailsDrawer,
   setSearchFilter,

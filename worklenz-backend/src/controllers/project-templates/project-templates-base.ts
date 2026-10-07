@@ -5,6 +5,9 @@ import { logStatusChange } from "../../services/activity-logs/activity-logs.serv
 import { getColor, int, log_error } from "../../shared/utils";
 import { generateProjectKey } from "../../utils/generate-project-key";
 import WorklenzControllerBase from "../worklenz-controller-base";
+import { IPassportSession } from "../../interfaces/passport-session";
+import { actorFromSessionUser, logAuditEvent } from "../../services/audit-log.service";
+import { AUDIT_EVENT_TYPE } from "../../shared/audit-log-constants";
 import {
   ICustomProjectTemplate,
   ICustomTemplatePhase,
@@ -18,7 +21,32 @@ import {
   IColumnConfiguration,
   ISelectionOption,
   ILabelOption,
+  IProjectSettingsIncludes,
+  IProjectTemplateSettingsSnapshot,
+  IProjectTemplateSettingsOverrides,
+  ICustomTemplateRateCardRole,
+  ICustomTemplateTaskAssignee,
+  ICustomTemplateTaskDependency,
+  ICustomTemplateTaskRecurrence,
+  IProjectTemplateApplySkip,
+  IProjectTemplateIncludesPayload,
+  CUSTOM_PROJECT_TEMPLATE_SCHEMA_VERSION,
 } from "./interfaces";
+import {
+  applyOffsetDate,
+  calendarDayOffset,
+  chunkArray,
+  mergeProjectSettingsForImport,
+  remapTemplateDependencies,
+} from "../../shared/project-template-apply-utils";
+
+/** Normalize DB/JSON numeric estimate to a non-negative integer minute count. */
+const normalizeTotalMinutes = (value: unknown): number => {
+  if (value === null || value === undefined || value === "") return 0;
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round(n);
+};
 
 export default abstract class ProjectTemplatesControllerBase extends WorklenzControllerBase {
   // Case-insensitive check for an existing project name within a team, used when
@@ -241,11 +269,15 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                         notes AS description,
                         phase_label,
                         color_code,
+                        schema_version,
+                        includes,
+                        settings,
                         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                             FROM (SELECT name, color_code FROM cpt_phases WHERE template_id = pt.id) rec) AS phases,
                         (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                             FROM (SELECT name,
                                         category_id,
+                                        sort_order,
                                         (SELECT color_code
                                         FROM sys_task_status_categories
                                         WHERE sys_task_status_categories.id = cpts.category_id)
@@ -270,6 +302,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                     SELECT id, name, parent_task_id, description, total_minutes, 
                                            sort_order, task_no, status_sort_order, priority_sort_order, phase_sort_order,
                                            status_id, priority_id, template_id,
+                                           billable, start_offset_days, due_offset_days, task_duration_days,
                                            0 AS depth,
                                            ARRAY[LPAD(sort_order::TEXT, 10, '0'), LPAD(COALESCE(task_no, 0)::TEXT, 10, '0'), id::TEXT] AS path
                                     FROM cpt_tasks
@@ -281,6 +314,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                     SELECT c.id, c.name, c.parent_task_id, c.description, c.total_minutes,
                                            c.sort_order, c.task_no, c.status_sort_order, c.priority_sort_order, c.phase_sort_order,
                                            c.status_id, c.priority_id, c.template_id,
+                                           c.billable, c.start_offset_days, c.due_offset_days, c.task_duration_days,
                                            tt.depth + 1,
                                            tt.path || ARRAY[LPAD(c.sort_order::TEXT, 10, '0'), LPAD(COALESCE(c.task_no, 0)::TEXT, 10, '0'), c.id::TEXT]
                                     FROM cpt_tasks c
@@ -297,6 +331,10 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                                        tt.status_sort_order,
                                        tt.priority_sort_order,
                                        tt.phase_sort_order,
+                                       tt.billable,
+                                       tt.start_offset_days,
+                                       tt.due_offset_days,
+                                       tt.task_duration_days,
                                        (SELECT name FROM cpt_task_statuses cts WHERE tt.status_id = cts.id) AS status_name,
                                        (SELECT name FROM task_priorities tp WHERE tt.priority_id = tp.id) AS priority_name,
                                        (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
@@ -316,7 +354,164 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                     WHERE id = $1;`;
     const result = await db.query(q, [template_id]);
     const [data] = result.rows;
+    if (data) {
+      await this.enrichCustomTemplateTasksFromCpt(data);
+    }
     return data;
+  }
+
+  /**
+   * Loads assignees / dependencies / recurrence / rate-card rows from CPT tables
+   * onto the getCustomTemplateData payload (schema_version 2+).
+   */
+  protected static async enrichCustomTemplateTasksFromCpt(data: any): Promise<void> {
+    if (!data?.id) return;
+
+    const includes = (data.includes || {}) as IProjectTemplateIncludesPayload;
+    const taskIncludes = includes.task || {};
+    const tasks: IProjectTemplateTask[] = Array.isArray(data.tasks) ? data.tasks : [];
+    if (!tasks.length) return;
+
+    const taskIds = tasks
+      .map((t) => t.original_task_id)
+      .filter((id): id is string => !!id);
+
+    if (taskIncludes.assignees !== false) {
+      try {
+        const q = `
+          SELECT task_id, team_member_id, email, name
+          FROM cpt_task_assignees
+          WHERE task_id = ANY($1::UUID[]);
+        `;
+        const result = await db.query(q, [taskIds]);
+        const byTask = new Map<string, ICustomTemplateTaskAssignee[]>();
+        for (const row of result.rows) {
+          const list = byTask.get(row.task_id) || [];
+          list.push({
+            team_member_id: row.team_member_id,
+            email: row.email,
+            name: row.name,
+          });
+          byTask.set(row.task_id, list);
+        }
+        for (const task of tasks) {
+          if (task.original_task_id) {
+            task.assignees = byTask.get(task.original_task_id) || [];
+          }
+        }
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    if (taskIncludes.dependencies !== false) {
+      try {
+        const q = `
+          SELECT task_id, related_task_id, dependency_type::TEXT AS dependency_type
+          FROM cpt_task_dependencies
+          WHERE task_id = ANY($1::UUID[]);
+        `;
+        const result = await db.query(q, [taskIds]);
+        const byTask = new Map<string, ICustomTemplateTaskDependency[]>();
+        for (const row of result.rows) {
+          const list = byTask.get(row.task_id) || [];
+          list.push({
+            related_task_id: row.related_task_id,
+            dependency_type: row.dependency_type || "blocked_by",
+          });
+          byTask.set(row.task_id, list);
+        }
+        for (const task of tasks) {
+          if (task.original_task_id) {
+            task.dependencies = byTask.get(task.original_task_id) || [];
+          }
+        }
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    if (taskIncludes.recurrence !== false) {
+      try {
+        const q = `
+          SELECT
+            ct.id AS task_id,
+            crs.schedule_type::TEXT AS schedule_type,
+            crs.days_of_week,
+            crs.day_of_month,
+            crs.date_of_month,
+            crs.week_of_month,
+            crs.interval_days,
+            crs.interval_weeks,
+            crs.interval_months,
+            crs.end_offset_days,
+            crs.max_occurrences,
+            crs.recurring_mode::TEXT AS recurring_mode,
+            crs.target_status_name,
+            crs.timezone_name
+          FROM cpt_tasks ct
+          INNER JOIN cpt_task_recurring_schedules crs ON crs.id = ct.schedule_id
+          WHERE ct.template_id = $1 AND ct.schedule_id IS NOT NULL;
+        `;
+        const result = await db.query(q, [data.id]);
+        const byTask = new Map<string, ICustomTemplateTaskRecurrence>();
+        for (const row of result.rows) {
+          byTask.set(row.task_id, {
+            schedule_type: row.schedule_type,
+            days_of_week: row.days_of_week ?? null,
+            day_of_month: row.day_of_month ?? null,
+            date_of_month: row.date_of_month ?? null,
+            week_of_month: row.week_of_month ?? null,
+            interval_days: row.interval_days ?? null,
+            interval_weeks: row.interval_weeks ?? null,
+            interval_months: row.interval_months ?? null,
+            end_offset_days: row.end_offset_days ?? null,
+            max_occurrences: row.max_occurrences ?? null,
+            recurring_mode:
+              row.recurring_mode === "change_status" ? "change_status" : "create_task",
+            target_status_name: row.target_status_name ?? null,
+            timezone_name: row.timezone_name || "UTC",
+          });
+        }
+        for (const task of tasks) {
+          if (task.original_task_id && byTask.has(task.original_task_id)) {
+            task.recurrence = byTask.get(task.original_task_id) || null;
+          }
+        }
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    // Attach rate card roles from CPT table onto settings.budget when present
+    try {
+      const q = `
+        SELECT job_title_id, job_title_name, rate, man_day_rate
+        FROM cpt_rate_card_roles
+        WHERE template_id = $1
+        ORDER BY job_title_name NULLS LAST;
+      `;
+      const result = await db.query(q, [data.id]);
+      if (result.rows?.length) {
+        if (!data.settings || typeof data.settings !== "object") {
+          data.settings = {};
+        }
+        if (!data.settings.budget || typeof data.settings.budget !== "object") {
+          data.settings.budget = { amount: 0, currency: "USD", rate_card: [] };
+        }
+        data.settings.budget.rate_card = result.rows.map((r: any) => ({
+          job_title_id: r.job_title_id || null,
+          job_title_name: r.job_title_name || "",
+          rate: Number(r.rate) || 0,
+          man_day_rate:
+            r.man_day_rate !== null && r.man_day_rate !== undefined
+              ? Number(r.man_day_rate)
+              : null,
+        }));
+      }
+    } catch (error) {
+      log_error(error);
+    }
   }
 
   private static async getAllKeysByTeamId(teamId?: string) {
@@ -349,6 +544,677 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     } catch (error) {
       return [];
     }
+  }
+
+  /**
+   * Merge template settings snapshot with review-step overrides for create_project.
+   * Overrides win; missing keys fall back to template; never mutates the template row.
+   */
+  protected static mergeProjectSettingsForImport(
+    templateSettings: IProjectTemplateSettingsSnapshot | null | undefined,
+    overrides: IProjectTemplateSettingsOverrides | null | undefined
+  ) {
+    return mergeProjectSettingsForImport(templateSettings as any, overrides as any);
+  }
+
+  /** Validate category belongs to the team (or org sibling teams); null if invalid. */
+  protected static async resolveImportCategoryId(
+    categoryId: string | null,
+    teamId?: string | null
+  ): Promise<string | null> {
+    if (!categoryId || !teamId) return null;
+    try {
+      const q = `
+        SELECT pc.id
+        FROM project_categories pc
+        WHERE pc.id = $1
+          AND pc.team_id IN (
+            SELECT id FROM teams
+            WHERE organization_id = (SELECT organization_id FROM teams WHERE id = $2)
+          )
+        LIMIT 1;
+      `;
+      const result = await db.query(q, [categoryId, teamId]);
+      return result.rows[0]?.id || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Apply budget/currency after create_project (create_project does not accept them). */
+  protected static async applyImportedBudget(
+    projectId: string,
+    budget: { amount: number | null; currency: string | null } | null
+  ): Promise<void> {
+    if (!budget) return;
+    try {
+      await db.query(
+        `UPDATE projects SET budget = $1, currency = $2 WHERE id = $3;`,
+        [budget.amount, budget.currency, projectId]
+      );
+    } catch (error) {
+      log_error(error);
+    }
+  }
+
+  /**
+   * Resolve a stored team_member_id (or email) to an active member on the apply team.
+   * Org-share ready: id may belong to another team in the same org — resolve by email
+   * onto the apply team's member. No hard FK to source-team members.
+   */
+  protected static async resolveActiveTeamMemberId(
+    teamMemberId: string | null | undefined,
+    email: string | null | undefined,
+    teamId: string
+  ): Promise<string | null> {
+    if (teamMemberId) {
+      try {
+        const q = `
+          SELECT id FROM team_members
+          WHERE id = $1 AND team_id = $2 AND active IS TRUE
+          LIMIT 1;
+        `;
+        const result = await db.query(q, [teamMemberId, teamId]);
+        if (result.rows[0]?.id) return result.rows[0].id;
+      } catch (error) {
+        log_error(error);
+      }
+
+      // Same org, different team: map via email of the stored member
+      try {
+        const q = `
+          SELECT tm_apply.id
+          FROM team_members tm_src
+          INNER JOIN team_member_info_view v_src ON v_src.team_member_id = tm_src.id
+          INNER JOIN teams t_src ON t_src.id = tm_src.team_id
+          INNER JOIN teams t_apply ON t_apply.id = $2
+            AND t_apply.organization_id IS NOT NULL
+            AND t_apply.organization_id = t_src.organization_id
+          INNER JOIN team_member_info_view v_apply
+            ON LOWER(TRIM(v_apply.email)) = LOWER(TRIM(v_src.email))
+          INNER JOIN team_members tm_apply
+            ON tm_apply.id = v_apply.team_member_id
+           AND tm_apply.team_id = $2
+           AND tm_apply.active IS TRUE
+          WHERE tm_src.id = $1
+            AND v_src.email IS NOT NULL
+            AND TRIM(v_src.email) <> ''
+          LIMIT 1;
+        `;
+        const result = await db.query(q, [teamMemberId, teamId]);
+        if (result.rows[0]?.id) return result.rows[0].id;
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    if (email) {
+      try {
+        const q = `
+          SELECT tm.id
+          FROM team_members tm
+          INNER JOIN team_member_info_view tmiv ON tmiv.team_member_id = tm.id
+          WHERE tm.team_id = $1
+            AND tm.active IS TRUE
+            AND LOWER(TRIM(tmiv.email)) = LOWER(TRIM($2))
+          LIMIT 1;
+        `;
+        const result = await db.query(q, [teamId, email]);
+        if (result.rows[0]?.id) return result.rows[0].id;
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    return null;
+  }
+
+  /** Prefetch active apply-team members for batched assignee resolution (8.1). */
+  protected static async loadActiveTeamMemberLookup(teamId: string): Promise<{
+    byId: Map<string, string>;
+    byEmail: Map<string, string>;
+  }> {
+    const byId = new Map<string, string>();
+    const byEmail = new Map<string, string>();
+    try {
+      const q = `
+        SELECT tm.id, LOWER(TRIM(tmiv.email)) AS email
+        FROM team_members tm
+        LEFT JOIN team_member_info_view tmiv ON tmiv.team_member_id = tm.id
+        WHERE tm.team_id = $1 AND tm.active IS TRUE;
+      `;
+      const result = await db.query(q, [teamId]);
+      for (const row of result.rows) {
+        if (row.id) byId.set(row.id, row.id);
+        if (row.email) byEmail.set(row.email, row.id);
+      }
+    } catch (error) {
+      log_error(error);
+    }
+    return { byId, byEmail };
+  }
+
+  protected static async applyImportedProjectManager(
+    projectId: string,
+    requestedPmId: string | null,
+    teamId: string,
+    creatorUserId: string | null,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    if (!requestedPmId) return;
+
+    let resolved = await this.resolveActiveTeamMemberId(requestedPmId, null, teamId);
+
+    if (!resolved && creatorUserId) {
+      try {
+        const q = `
+          SELECT id FROM team_members
+          WHERE user_id = $1 AND team_id = $2 AND active IS TRUE
+          LIMIT 1;
+        `;
+        const result = await db.query(q, [creatorUserId, teamId]);
+        resolved = result.rows[0]?.id || null;
+        if (resolved) {
+          skips.push({
+            type: "project_manager",
+            reason: "inactive_or_missing",
+            detail: "Project manager was inactive or not on this team; fell back to project creator.",
+          });
+        }
+      } catch (error) {
+        log_error(error);
+      }
+    }
+
+    if (!resolved) {
+      skips.push({
+        type: "project_manager",
+        reason: "unresolved",
+        detail: "Could not resolve project manager; left unset.",
+      });
+      return;
+    }
+
+    try {
+      await db.query(`SELECT update_project_manager($1, $2);`, [resolved, projectId]);
+    } catch (error) {
+      log_error(error);
+      skips.push({
+        type: "project_manager",
+        reason: "apply_failed",
+        detail: "Failed to set project manager.",
+      });
+    }
+  }
+
+  /**
+   * Phase 5 — template creator becomes PM with finance_access off (D7).
+   * Does not use update_project_manager (that defaults finance on).
+   */
+  protected static async assignTemplateCreatorAsPm(
+    projectId: string,
+    teamMemberId: string | null | undefined,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    if (!projectId || !teamMemberId) return;
+
+    try {
+      const memberResult = await db.query(
+        `SELECT id, team_id, user_id FROM team_members WHERE id = $1 AND active IS TRUE LIMIT 1;`,
+        [teamMemberId]
+      );
+      const member = memberResult.rows[0];
+      if (!member) {
+        skips.push({
+          type: "project_manager",
+          reason: "creator_unresolved",
+          detail: "Could not resolve project creator as project manager.",
+        });
+        return;
+      }
+
+      const existing = await db.query(
+        `SELECT id FROM project_members
+         WHERE project_id = $1 AND team_member_id = $2
+         LIMIT 1;`,
+        [projectId, teamMemberId]
+      );
+
+      if (existing.rows[0]?.id) {
+        await db.query(
+          `UPDATE project_members
+           SET project_access_level_id = (
+                 SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+               ),
+               finance_access = FALSE
+           WHERE id = $1;`,
+          [existing.rows[0].id]
+        );
+        return;
+      }
+
+      await db.query(
+        `SELECT create_project_member($1);`,
+        [
+          JSON.stringify({
+            team_member_id: teamMemberId,
+            team_id: member.team_id,
+            project_id: projectId,
+            user_id: member.user_id,
+            access_level: "PROJECT_MANAGER",
+          }),
+        ]
+      );
+
+      await db.query(
+        `UPDATE project_members
+         SET finance_access = FALSE
+         WHERE project_id = $1
+           AND team_member_id = $2
+           AND project_access_level_id = (
+             SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER'
+           );`,
+        [projectId, teamMemberId]
+      );
+    } catch (error) {
+      log_error(error);
+      skips.push({
+        type: "project_manager",
+        reason: "creator_apply_failed",
+        detail: "Failed to set project creator as project manager.",
+      });
+    }
+  }
+
+  /**
+   * Phase 5 — apply template PM rules:
+   * - Creator always becomes PM with finance off.
+   * - Non-admin creators cannot assign a different template PM (skip + report).
+   * - Owner/Admin may still apply a different template PM (finance on via update_project_manager).
+   */
+  protected static async applyTemplateProjectManagers(
+    projectId: string,
+    templatePmId: string | null | undefined,
+    teamId: string,
+    creatorUserId: string | null,
+    creatorTeamMemberId: string | null | undefined,
+    isTeamAdmin: boolean,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    await this.assignTemplateCreatorAsPm(projectId, creatorTeamMemberId, skips);
+
+    if (!templatePmId) return;
+
+    const resolved = await this.resolveActiveTeamMemberId(templatePmId, null, teamId);
+    if (resolved && creatorTeamMemberId && resolved === creatorTeamMemberId) {
+      // Creator is already PM with finance off — do not re-run update_project_manager
+      // (that would flip finance on).
+      return;
+    }
+
+    if (!isTeamAdmin) {
+      skips.push({
+        type: "project_manager",
+        reason: "non_admin_cannot_assign_pm",
+        detail:
+          "Template project manager was skipped because only Owner/Admin can assign another PM.",
+      });
+      return;
+    }
+
+    await this.applyImportedProjectManager(
+      projectId,
+      templatePmId,
+      teamId,
+      creatorUserId,
+      skips
+    );
+  }
+
+  protected static async applyImportedTaskAssignees(
+    tasks: IProjectTemplateTask[],
+    templateIdToNewIdMap: Map<string, string>,
+    projectId: string,
+    teamId: string,
+    reporterUserId: string,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    const lookup = await this.loadActiveTeamMemberLookup(teamId);
+    const assignments: Array<{
+      teamMemberId: string;
+      taskId: string;
+      label: string;
+    }> = [];
+
+    for (const task of tasks) {
+      if (!task.original_task_id || !task.assignees?.length) continue;
+      const newTaskId = templateIdToNewIdMap.get(task.original_task_id);
+      if (!newTaskId) continue;
+
+      for (const assignee of task.assignees) {
+        let resolved: string | null = null;
+        if (assignee.team_member_id && lookup.byId.has(assignee.team_member_id)) {
+          resolved = lookup.byId.get(assignee.team_member_id) || null;
+        } else if (assignee.email) {
+          resolved = lookup.byEmail.get(assignee.email.trim().toLowerCase()) || null;
+        }
+
+        // Fallback: org-share / cross-team id resolution (not in local prefetch)
+        if (!resolved) {
+          resolved = await this.resolveActiveTeamMemberId(
+            assignee.team_member_id,
+            assignee.email,
+            teamId
+          );
+        }
+
+        if (!resolved) {
+          skips.push({
+            type: "assignee",
+            reason: "inactive_or_missing",
+            detail: assignee.email || assignee.name || assignee.team_member_id,
+          });
+          continue;
+        }
+
+        assignments.push({
+          teamMemberId: resolved,
+          taskId: newTaskId,
+          label: assignee.email || assignee.name || resolved,
+        });
+      }
+    }
+
+    for (const batch of chunkArray(assignments, 25)) {
+      await Promise.all(
+        batch.map(async (item) => {
+          try {
+            await db.query(`SELECT create_task_assignee($1, $2, $3, $4);`, [
+              item.teamMemberId,
+              projectId,
+              item.taskId,
+              reporterUserId,
+            ]);
+          } catch (error) {
+            log_error(error);
+            skips.push({
+              type: "assignee",
+              reason: "apply_failed",
+              detail: item.label,
+            });
+          }
+        })
+      );
+    }
+  }
+
+  protected static async applyImportedTaskDependencies(
+    tasks: IProjectTemplateTask[],
+    templateIdToNewIdMap: Map<string, string>,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    const edges: Array<{
+      taskTemplateId: string;
+      relatedTemplateId: string;
+      dependencyType?: string;
+      taskName?: string;
+    }> = [];
+
+    for (const task of tasks) {
+      if (!task.original_task_id || !task.dependencies?.length) continue;
+      for (const dep of task.dependencies) {
+        edges.push({
+          taskTemplateId: task.original_task_id,
+          relatedTemplateId: dep.related_task_id,
+          dependencyType: dep.dependency_type,
+          taskName: task.name,
+        });
+      }
+    }
+
+    const { inserts, skipped } = remapTemplateDependencies(edges, templateIdToNewIdMap);
+    for (const s of skipped) {
+      skips.push({
+        type: "dependency",
+        reason: s.reason,
+        detail: `Dependency from ${s.taskName || "task"} could not be remapped.`,
+      });
+    }
+
+    for (const batch of chunkArray(inserts, 50)) {
+      if (!batch.length) continue;
+      const values: unknown[] = [];
+      const placeholders = batch.map((row, i) => {
+        const base = i * 3;
+        values.push(row.taskId, row.relatedTaskId, row.dependencyType);
+        return `($${base + 1}, $${base + 2}, COALESCE($${base + 3}::DEPENDENCY_TYPE, 'blocked_by'::DEPENDENCY_TYPE))`;
+      });
+      try {
+        await db.query(
+          `INSERT INTO task_dependencies (task_id, related_task_id, dependency_type)
+           VALUES ${placeholders.join(", ")}
+           ON CONFLICT (task_id, related_task_id, dependency_type) DO NOTHING;`,
+          values
+        );
+      } catch (error) {
+        log_error(error);
+        // Fall back to per-row so one bad edge doesn't drop the batch
+        for (const row of batch) {
+          try {
+            await db.query(
+              `INSERT INTO task_dependencies (task_id, related_task_id, dependency_type)
+               VALUES ($1, $2, COALESCE($3::DEPENDENCY_TYPE, 'blocked_by'::DEPENDENCY_TYPE))
+               ON CONFLICT (task_id, related_task_id, dependency_type) DO NOTHING;`,
+              [row.taskId, row.relatedTaskId, row.dependencyType]
+            );
+          } catch (rowError) {
+            log_error(rowError);
+            skips.push({
+              type: "dependency",
+              reason: "apply_failed",
+              detail: row.taskId,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  protected static async applyImportedTaskRecurrence(
+    tasks: IProjectTemplateTask[],
+    templateIdToNewIdMap: Map<string, string>,
+    projectId: string,
+    projectStartDate: string | Date | null | undefined,
+    userId: string | null,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    const recurringTasks = tasks.filter(
+      (task) => task.original_task_id && task.recurrence?.schedule_type && templateIdToNewIdMap.get(task.original_task_id)
+    );
+    if (!recurringTasks.length) return;
+
+    for (const batch of chunkArray(recurringTasks, 25)) {
+      await Promise.all(
+        batch.map(async (task) => {
+          const newTaskId = templateIdToNewIdMap.get(task.original_task_id as string) as string;
+          const recurrence = task.recurrence as NonNullable<IProjectTemplateTask["recurrence"]>;
+          try {
+            let timezoneId: string | null = null;
+            if (recurrence.timezone_name) {
+              const tz = await db.query(
+                `SELECT id FROM timezones WHERE name = $1 OR abbrev = $1 LIMIT 1;`,
+                [recurrence.timezone_name]
+              );
+              timezoneId = tz.rows[0]?.id || null;
+            }
+            if (!timezoneId && userId) {
+              const tz = await db.query(`SELECT timezone_id FROM users WHERE id = $1;`, [userId]);
+              timezoneId = tz.rows[0]?.timezone_id || null;
+            }
+
+            let targetStatusId: string | null = null;
+            if (recurrence.recurring_mode === "change_status" && recurrence.target_status_name) {
+              const st = await db.query(
+                `SELECT id FROM task_statuses WHERE project_id = $1 AND name = $2 LIMIT 1;`,
+                [projectId, recurrence.target_status_name]
+              );
+              targetStatusId = st.rows[0]?.id || null;
+            }
+
+            const scheduleStart =
+              projectStartDate != null && projectStartDate !== ""
+                ? applyOffsetDate(projectStartDate, task.start_offset_days)
+                : null;
+            const scheduleEnd =
+              projectStartDate != null && projectStartDate !== ""
+                ? applyOffsetDate(projectStartDate, recurrence.end_offset_days)
+                : null;
+
+            const insertQ = `
+              INSERT INTO task_recurring_schedules (
+                schedule_type, days_of_week, day_of_month, date_of_month, week_of_month,
+                interval_days, interval_weeks, interval_months,
+                start_date, end_date, max_occurrences, recurring_mode, target_status_id,
+                timezone_id, created_by, is_active
+              ) VALUES (
+                $1::SCHEDULE_TYPE, $2, $3, $4, $5,
+                $6, $7, $8,
+                $9, $10, $11, $12, $13,
+                $14, $15, TRUE
+              )
+              RETURNING id;
+            `;
+            const result = await db.query(insertQ, [
+              recurrence.schedule_type,
+              recurrence.days_of_week || null,
+              recurrence.day_of_month ?? null,
+              recurrence.date_of_month ?? null,
+              recurrence.week_of_month ?? null,
+              recurrence.interval_days ?? null,
+              recurrence.interval_weeks ?? null,
+              recurrence.interval_months ?? null,
+              scheduleStart,
+              scheduleEnd,
+              recurrence.max_occurrences ?? null,
+              recurrence.recurring_mode === "change_status" ? "change_status" : "create_task",
+              targetStatusId,
+              timezoneId,
+              userId,
+            ]);
+            const scheduleId = result.rows[0]?.id;
+            if (!scheduleId) {
+              skips.push({
+                type: "recurrence",
+                reason: "apply_failed",
+                detail: task.name || task.original_task_id,
+              });
+              return;
+            }
+
+            await db.query(`UPDATE tasks SET schedule_id = $1 WHERE id = $2;`, [
+              scheduleId,
+              newTaskId,
+            ]);
+            await db.query(`SELECT create_recurring_task_template($1, $2);`, [
+              newTaskId,
+              scheduleId,
+            ]);
+          } catch (error) {
+            log_error(error);
+            skips.push({
+              type: "recurrence",
+              reason: "apply_failed",
+              detail: task.name || task.original_task_id,
+            });
+          }
+        })
+      );
+    }
+  }
+
+  protected static async applyImportedRateCard(
+    projectId: string,
+    teamId: string,
+    rateCard: ICustomTemplateRateCardRole[] | null | undefined,
+    skips: IProjectTemplateApplySkip[]
+  ): Promise<void> {
+    if (!rateCard?.length) return;
+
+    for (const role of rateCard) {
+      let jobTitleId: string | null = role.job_title_id || null;
+
+      if (jobTitleId) {
+        try {
+          const check = await db.query(
+            `SELECT id FROM job_titles WHERE id = $1 AND team_id = $2 LIMIT 1;`,
+            [jobTitleId, teamId]
+          );
+          if (!check.rows[0]?.id) jobTitleId = null;
+        } catch {
+          jobTitleId = null;
+        }
+      }
+
+      if (!jobTitleId && role.job_title_name) {
+        try {
+          const byName = await db.query(
+            `SELECT id FROM job_titles
+             WHERE team_id = $1 AND LOWER(TRIM(name)) = LOWER(TRIM($2))
+             LIMIT 1;`,
+            [teamId, role.job_title_name]
+          );
+          jobTitleId = byName.rows[0]?.id || null;
+        } catch (error) {
+          log_error(error);
+        }
+      }
+
+      if (!jobTitleId) {
+        skips.push({
+          type: "rate_card_role",
+          reason: "job_title_missing",
+          detail: role.job_title_name || role.job_title_id || "unknown",
+        });
+        continue;
+      }
+
+      try {
+        await db.query(
+          `INSERT INTO finance_project_rate_card_roles (project_id, job_title_id, rate, man_day_rate)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (project_id, job_title_id) DO UPDATE SET
+             rate = EXCLUDED.rate,
+             man_day_rate = EXCLUDED.man_day_rate;`,
+          [
+            projectId,
+            jobTitleId,
+            Number(role.rate) || 0,
+            role.man_day_rate !== null && role.man_day_rate !== undefined
+              ? Number(role.man_day_rate)
+              : null,
+          ]
+        );
+      } catch (error) {
+        log_error(error);
+        skips.push({
+          type: "rate_card_role",
+          reason: "apply_failed",
+          detail: role.job_title_name || jobTitleId,
+        });
+      }
+    }
+  }
+
+  /** Spec #32, task 3.7 — template/onboarding projects skip ProjectsController.create, so they log here. */
+  protected static logProjectCreatedFromTemplate(user: IPassportSession | undefined, projectName: string): void {
+    if (!user?.organization_id) return;
+    logAuditEvent({
+      organizationId: user.organization_id,
+      teamId: user.team_id || null,
+      actor: actorFromSessionUser(user),
+      eventType: AUDIT_EVENT_TYPE.PROJECT_CREATED.id,
+      description: `Created project "${projectName}" from a template`,
+    });
   }
 
  protected static async importTemplate(body: any) {
@@ -548,10 +1414,185 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   // custom templates
   @HandleExceptions()
   protected static async getProjectData(project_id: string) {
-    const q = `SELECT phase_label, notes, color_code FROM projects WHERE id = $1;`;
+    const q = `
+      SELECT
+        phase_label,
+        notes,
+        color_code,
+        start_date,
+        end_date,
+        CASE
+          WHEN start_date IS NOT NULL AND end_date IS NOT NULL
+            THEN (DATE(end_date AT TIME ZONE 'UTC') - DATE(start_date AT TIME ZONE 'UTC'))
+          ELSE NULL
+        END AS project_duration_days
+      FROM projects
+      WHERE id = $1;
+    `;
     const result = await db.query(q, [project_id]);
     const [data] = result.rows;
     return data;
+  }
+
+  /**
+   * Builds a project-settings snapshot for template save based on include toggles.
+   * Only keys for enabled toggles are returned.
+   */
+  @HandleExceptions()
+  protected static async getProjectSettingsSnapshot(
+    project_id: string,
+    settingsIncludes: IProjectSettingsIncludes = {},
+    projectDurationDays?: number | null
+  ): Promise<IProjectTemplateSettingsSnapshot> {
+    const snapshot: IProjectTemplateSettingsSnapshot = {};
+
+    if (projectDurationDays !== null && projectDurationDays !== undefined) {
+      snapshot.project_duration_days = Number(projectDurationDays);
+    }
+
+    const needsProjectRow =
+      settingsIncludes.category ||
+      settingsIncludes.projectManager ||
+      settingsIncludes.estimatedWorkingDays ||
+      settingsIncludes.estimatedManDays ||
+      settingsIncludes.hoursPerDay ||
+      settingsIncludes.advanced ||
+      settingsIncludes.budget;
+
+    if (!needsProjectRow) {
+      return snapshot;
+    }
+
+    const q = `
+      SELECT
+        p.category_id,
+        (SELECT name FROM project_categories WHERE id = p.category_id) AS category_name,
+        p.estimated_working_days,
+        p.estimated_man_days,
+        p.hours_per_day,
+        p.budget,
+        p.currency,
+        p.use_manual_progress,
+        p.use_weighted_progress,
+        p.use_time_progress,
+        p.auto_assign_task_creator,
+        p.restrict_task_creation,
+        p.phase_assignees_enabled,
+        (
+          SELECT pm.team_member_id
+          FROM project_members pm
+          WHERE pm.project_id = p.id
+            AND pm.project_access_level_id = (
+              SELECT id FROM project_access_levels WHERE key = 'PROJECT_MANAGER' LIMIT 1
+            )
+          LIMIT 1
+        ) AS project_manager_id
+      FROM projects p
+      WHERE p.id = $1;
+    `;
+    const result = await db.query(q, [project_id]);
+    const [row] = result.rows;
+    if (!row) return snapshot;
+
+    if (settingsIncludes.category) {
+      snapshot.category_id = row.category_id || null;
+      snapshot.category_name = row.category_name || null;
+    }
+    if (settingsIncludes.projectManager) {
+      snapshot.project_manager_id = row.project_manager_id || null;
+    }
+    if (settingsIncludes.estimatedWorkingDays) {
+      snapshot.estimated_working_days =
+        row.estimated_working_days !== null && row.estimated_working_days !== undefined
+          ? Number(row.estimated_working_days)
+          : null;
+    }
+    if (settingsIncludes.estimatedManDays) {
+      snapshot.estimated_man_days =
+        row.estimated_man_days !== null && row.estimated_man_days !== undefined
+          ? Number(row.estimated_man_days)
+          : null;
+    }
+    if (settingsIncludes.hoursPerDay) {
+      snapshot.hours_per_day =
+        row.hours_per_day !== null && row.hours_per_day !== undefined
+          ? Number(row.hours_per_day)
+          : null;
+    }
+    if (settingsIncludes.advanced) {
+      snapshot.advanced = {
+        use_manual_progress: Boolean(row.use_manual_progress),
+        use_weighted_progress: Boolean(row.use_weighted_progress),
+        use_time_progress: Boolean(row.use_time_progress),
+        auto_assign_task_creator: Boolean(row.auto_assign_task_creator),
+        restrict_task_creation: Boolean(row.restrict_task_creation),
+        phase_assignees_enabled: Boolean(row.phase_assignees_enabled),
+      };
+    }
+    if (settingsIncludes.budget) {
+      const rateCard = await this.getProjectRateCardForTemplate(project_id);
+      snapshot.budget = {
+        amount: row.budget !== null && row.budget !== undefined ? Number(row.budget) : 0,
+        currency: row.currency || "USD",
+        rate_card: rateCard,
+      };
+    }
+
+    return snapshot;
+  }
+
+  @HandleExceptions()
+  protected static async getProjectRateCardForTemplate(
+    project_id: string
+  ): Promise<ICustomTemplateRateCardRole[]> {
+    const q = `
+      SELECT
+        fprr.job_title_id,
+        COALESCE(jt.name, '') AS job_title_name,
+        COALESCE(fprr.rate, 0) AS rate,
+        fprr.man_day_rate
+      FROM finance_project_rate_card_roles fprr
+      LEFT JOIN job_titles jt ON jt.id = fprr.job_title_id
+      WHERE fprr.project_id = $1
+      ORDER BY jt.name NULLS LAST;
+    `;
+    try {
+      const result = await db.query(q, [project_id]);
+      return (result.rows || []).map((r: any) => ({
+        job_title_id: r.job_title_id || null,
+        job_title_name: r.job_title_name || "",
+        rate: Number(r.rate) || 0,
+        man_day_rate:
+          r.man_day_rate !== null && r.man_day_rate !== undefined
+            ? Number(r.man_day_rate)
+            : null,
+      }));
+    } catch (error) {
+      // Rate card table may be unavailable on older DBs — skip rather than fail save.
+      log_error(error);
+      return [];
+    }
+  }
+
+  @HandleExceptions()
+  protected static async insertTemplateRateCardRoles(
+    template_id: string,
+    roles: ICustomTemplateRateCardRole[]
+  ) {
+    for await (const role of roles) {
+      if (!role.job_title_name && !role.job_title_id) continue;
+      const q = `
+        INSERT INTO cpt_rate_card_roles (template_id, job_title_id, job_title_name, rate, man_day_rate)
+        VALUES ($1, $2, $3, $4, $5);
+      `;
+      await db.query(q, [
+        template_id,
+        role.job_title_id || null,
+        role.job_title_name || "",
+        role.rate ?? 0,
+        role.man_day_rate ?? null,
+      ]);
+    }
   }
 
   @HandleExceptions()
@@ -584,18 +1625,75 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
   }
 
   @HandleExceptions()
-  @HandleExceptions()
   protected static async getTasksByProject(
     project_id: string,
     taskIncludes: ITaskIncludes,
+    projectStartDate?: string | Date | null,
   ) {
     let taskIncludesClause = "";
     let whereClause = "WHERE project_id = $1 AND archived IS FALSE";
 
+    // status_name is always required to insert into cpt_tasks (status_id NOT NULL)
+    taskIncludesClause += ` (SELECT name FROM task_statuses WHERE task_statuses.id = t.status_id) AS status_name,`;
+
     if (taskIncludes.description) taskIncludesClause += " description,";
     if (taskIncludes.estimation) taskIncludesClause += " total_minutes,";
-    if (taskIncludes.status)
-      taskIncludesClause += ` (SELECT name FROM task_statuses WHERE task_statuses.id = t.status_id) AS status_name,`;
+    if (taskIncludes.billable) taskIncludesClause += " billable,";
+
+    const includeDateOffsets = taskIncludes.dateOffsets !== false;
+    if (includeDateOffsets) {
+      taskIncludesClause += " start_date, end_date,";
+    }
+
+    if (taskIncludes.assignees) {
+      taskIncludesClause += ` (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                    FROM (
+                      SELECT
+                        ta.team_member_id,
+                        (SELECT email FROM team_member_info_view tmiv WHERE tmiv.team_member_id = ta.team_member_id LIMIT 1) AS email,
+                        (SELECT name FROM team_member_info_view tmiv WHERE tmiv.team_member_id = ta.team_member_id LIMIT 1) AS name
+                      FROM tasks_assignees ta
+                      WHERE ta.task_id = t.id
+                    ) rec) AS assignees,`;
+    }
+
+    if (taskIncludes.dependencies) {
+      taskIncludesClause += ` (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
+                    FROM (
+                      SELECT
+                        td.related_task_id,
+                        td.dependency_type::TEXT AS dependency_type
+                      FROM task_dependencies td
+                      WHERE td.task_id = t.id
+                        AND td.related_task_id IN (
+                          SELECT id FROM tasks WHERE project_id = $1 AND archived IS FALSE
+                        )
+                    ) rec) AS dependencies,`;
+    }
+
+    if (taskIncludes.recurrence) {
+      taskIncludesClause += ` schedule_id,
+                    (SELECT ROW_TO_JSON(rec)
+                      FROM (
+                        SELECT
+                          trs.schedule_type::TEXT AS schedule_type,
+                          trs.days_of_week,
+                          trs.day_of_month,
+                          trs.date_of_month,
+                          trs.week_of_month,
+                          trs.interval_days,
+                          trs.interval_weeks,
+                          trs.interval_months,
+                          trs.end_date AS schedule_end_date,
+                          trs.max_occurrences,
+                          trs.recurring_mode::TEXT AS recurring_mode,
+                          (SELECT name FROM task_statuses WHERE id = trs.target_status_id) AS target_status_name,
+                          COALESCE((SELECT name FROM timezones WHERE id = trs.timezone_id), 'UTC') AS timezone_name
+                        FROM task_recurring_schedules trs
+                        WHERE trs.id = t.schedule_id
+                      ) rec) AS recurrence,`;
+    }
+
     if (taskIncludes.labels) {
       taskIncludesClause += ` (SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(ROW_TO_JSON(rec))), '[]'::JSON)
                     FROM (SELECT (SELECT name FROM team_labels WHERE id = task_labels.label_id)
@@ -610,7 +1708,6 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     if (taskIncludes.subtasks) {
       taskIncludesClause += ` parent_task_id,`;
     } else {
-      // When subtasks are not included, exclude tasks that have a parent (i.e., only include top-level tasks)
       whereClause += " AND parent_task_id IS NULL";
     }
 
@@ -627,7 +1724,57 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
                 ${whereClause}
             ORDER BY parent_task_id NULLS FIRST, sort_order ASC, task_no ASC;`;
     const result = await db.query(q, [project_id]);
-    return result.rows;
+
+    return result.rows.map((task: any) => {
+      const mapped: IProjectTemplateTask = { ...task };
+
+      if (includeDateOffsets) {
+        mapped.start_offset_days = calendarDayOffset(projectStartDate, task.start_date);
+        mapped.due_offset_days = calendarDayOffset(projectStartDate, task.end_date);
+        mapped.task_duration_days =
+          task.start_date && task.end_date
+            ? calendarDayOffset(task.start_date, task.end_date)
+            : null;
+      }
+
+      if (taskIncludes.recurrence && task.recurrence) {
+        const rec = task.recurrence as ICustomTemplateTaskRecurrence & {
+          schedule_end_date?: string | Date | null;
+        };
+        mapped.recurrence = {
+          schedule_type: rec.schedule_type,
+          days_of_week: rec.days_of_week ?? null,
+          day_of_month: rec.day_of_month ?? null,
+          date_of_month: rec.date_of_month ?? null,
+          week_of_month: rec.week_of_month ?? null,
+          interval_days: rec.interval_days ?? null,
+          interval_weeks: rec.interval_weeks ?? null,
+          interval_months: rec.interval_months ?? null,
+          end_offset_days: calendarDayOffset(projectStartDate, rec.schedule_end_date),
+          max_occurrences: rec.max_occurrences ?? null,
+          recurring_mode:
+            rec.recurring_mode === "change_status" ? "change_status" : "create_task",
+          target_status_name: rec.target_status_name ?? null,
+          timezone_name: rec.timezone_name || "UTC",
+        };
+      } else if (taskIncludes.recurrence) {
+        mapped.recurrence = null;
+      }
+
+      if (taskIncludes.assignees) {
+        mapped.assignees = (task.assignees || []) as ICustomTemplateTaskAssignee[];
+      }
+      if (taskIncludes.dependencies) {
+        mapped.dependencies = (task.dependencies || []) as ICustomTemplateTaskDependency[];
+      }
+
+      // Never persist absolute source dates on the template payload
+      delete (mapped as any).start_date;
+      delete (mapped as any).end_date;
+      delete (mapped as any).schedule_id;
+
+      return mapped;
+    });
   }
 
   @HandleExceptions()
@@ -676,6 +1823,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     // Two-pass approach to handle nested subtasks (3+ levels):
     // Pass 1: Insert all tasks without parent_task_id, storing original_task_id for mapping
     // Pass 2: Update parent_task_id relationships using the mapping
+    // Pass 3: Assignees, dependencies (remapped), recurrence schedules
 
     const taskIdMap: Map<string, string> = new Map(); // original task id -> new cpt_task id
 
@@ -686,7 +1834,6 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
         description,
         total_minutes,
         sort_order,
-        priority_id,
         status_name,
         task_no,
         id,
@@ -694,30 +1841,72 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
         status_sort_order,
         priority_sort_order,
         phase_sort_order,
+        billable,
+        start_offset_days,
+        due_offset_days,
+        task_duration_days,
       } = task;
 
-      const q = `INSERT INTO cpt_tasks(name, description, total_minutes, sort_order, priority_id, template_id, status_id, task_no,
-                      parent_task_id, original_task_id, status_sort_order, priority_sort_order, phase_sort_order)
-                        VALUES ($1, $2, $3, $4, $5, $6, (SELECT id FROM cpt_task_statuses cts WHERE cts.name = $7 AND cts.template_id = $6), $8,
-                                NULL, $9, $10, $11, $12)
+      let priority_id = task.priority_id;
+      if (!priority_id && task.priority_name) {
+        const priorityResult = await db.query(
+          `SELECT id FROM task_priorities WHERE LOWER(name) = LOWER($1) LIMIT 1;`,
+          [task.priority_name]
+        );
+        priority_id = priorityResult.rows[0]?.id;
+      }
+      if (!priority_id) {
+        const fallbackPriority = await db.query(
+          `SELECT id FROM task_priorities WHERE value = 1 LIMIT 1;`
+        );
+        priority_id = fallbackPriority.rows[0]?.id;
+      }
+
+      const descriptionValue =
+        description === undefined ? null : description;
+      const totalMinutesValue = normalizeTotalMinutes(total_minutes);
+
+      const q = `INSERT INTO cpt_tasks(
+                      name, description, total_minutes, sort_order, priority_id, template_id, status_id, task_no,
+                      parent_task_id, original_task_id, status_sort_order, priority_sort_order, phase_sort_order,
+                      billable, start_offset_days, due_offset_days, task_duration_days)
+                        VALUES (
+                          $1, $2, $3, $4, $5, $6,
+                          (SELECT id FROM cpt_task_statuses cts WHERE cts.name = $7 AND cts.template_id = $6),
+                          $8,
+                          NULL, $9, $10, $11, $12,
+                          $13, $14, $15, $16)
                         RETURNING id;`;
+
+      // task_no is NOT NULL — never insert null (built-in / editor payloads often omit it)
+      const resolvedTaskNo =
+        task_no !== undefined && task_no !== null && Number.isFinite(Number(task_no))
+          ? Number(task_no)
+          : (((await db.query(
+              `SELECT COUNT(*)::int AS c FROM cpt_tasks WHERE template_id = $1;`,
+              [template_id]
+            )).rows[0]?.c as number | undefined) ?? 0) + 1;
+
       const result = await db.query(q, [
         name,
-        description,
-        total_minutes || 0,
+        descriptionValue,
+        totalMinutesValue,
         sort_order,
         priority_id,
         template_id,
         status_name,
-        task_no,
+        resolvedTaskNo || 1,
         id,
         status_sort_order || 0,
         priority_sort_order || 0,
         phase_sort_order || 0,
+        billable === undefined || billable === null ? true : Boolean(billable),
+        start_offset_days ?? null,
+        due_offset_days ?? null,
+        task_duration_days ?? null,
       ]);
       const [data] = result.rows;
 
-      // Store mapping from original task id to new template task id
       if (id && data.id) {
         taskIdMap.set(id, data.id);
       }
@@ -750,6 +1939,130 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
         }
       }
     }
+
+    // Pass 3: assignees, dependencies, recurrence (only when present on payload)
+    const tasksWithCptId = body
+      .filter((task) => task.id && taskIdMap.get(task.id))
+      .map((task) => ({ task, cptTaskId: taskIdMap.get(task.id as string) as string }));
+
+    for (const batch of chunkArray(tasksWithCptId, 20)) {
+      await Promise.all(
+        batch.map(async ({ task, cptTaskId }) => {
+          if (task.assignees?.length) {
+            await this.insertCustomTemplateTaskAssignees(cptTaskId, task.assignees);
+          }
+
+          if (task.dependencies?.length) {
+            await this.insertCustomTemplateTaskDependencies(
+              cptTaskId,
+              task.dependencies,
+              taskIdMap
+            );
+          }
+
+          if (task.recurrence) {
+            const scheduleId = await this.insertCustomTemplateTaskRecurrence(
+              template_id,
+              task.recurrence
+            );
+            if (scheduleId) {
+              await db.query(`UPDATE cpt_tasks SET schedule_id = $1 WHERE id = $2;`, [
+                scheduleId,
+                cptTaskId,
+              ]);
+            }
+          }
+        })
+      );
+    }
+  }
+
+  @HandleExceptions()
+  protected static async insertCustomTemplateTaskAssignees(
+    task_id: string,
+    assignees: ICustomTemplateTaskAssignee[]
+  ) {
+    const rows = assignees.filter((assignee) => assignee.team_member_id);
+    if (!rows.length) return;
+
+    const values: unknown[] = [];
+    const placeholders = rows.map((assignee, i) => {
+      const base = i * 4;
+      values.push(task_id, assignee.team_member_id, assignee.email || null, assignee.name || null);
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
+    });
+    await db.query(
+      `INSERT INTO cpt_task_assignees (task_id, team_member_id, email, name)
+       VALUES ${placeholders.join(", ")}
+       ON CONFLICT (task_id, team_member_id) DO NOTHING;`,
+      values
+    );
+  }
+
+  @HandleExceptions()
+  protected static async insertCustomTemplateTaskDependencies(
+    task_id: string,
+    dependencies: ICustomTemplateTaskDependency[],
+    taskIdMap: Map<string, string>
+  ) {
+    const rows = dependencies
+      .map((dep) => ({
+        relatedCptId: taskIdMap.get(dep.related_task_id),
+        dependencyType: dep.dependency_type || "blocked_by",
+      }))
+      .filter((row) => row.relatedCptId && row.relatedCptId !== task_id);
+    if (!rows.length) return;
+
+    const values: unknown[] = [];
+    const placeholders = rows.map((row, i) => {
+      const base = i * 3;
+      values.push(task_id, row.relatedCptId, row.dependencyType);
+      return `($${base + 1}, $${base + 2}, COALESCE($${base + 3}::DEPENDENCY_TYPE, 'blocked_by'::DEPENDENCY_TYPE))`;
+    });
+    await db.query(
+      `INSERT INTO cpt_task_dependencies (task_id, related_task_id, dependency_type)
+       VALUES ${placeholders.join(", ")}
+       ON CONFLICT (task_id, related_task_id, dependency_type) DO NOTHING;`,
+      values
+    );
+  }
+
+  @HandleExceptions()
+  protected static async insertCustomTemplateTaskRecurrence(
+    template_id: string,
+    recurrence: ICustomTemplateTaskRecurrence
+  ): Promise<string | null> {
+    if (!recurrence.schedule_type) return null;
+
+    const q = `
+      INSERT INTO cpt_task_recurring_schedules (
+        template_id, schedule_type, days_of_week, day_of_month, date_of_month, week_of_month,
+        interval_days, interval_weeks, interval_months, end_offset_days, max_occurrences,
+        recurring_mode, target_status_name, timezone_name
+      ) VALUES (
+        $1, $2::SCHEDULE_TYPE, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11,
+        $12, $13, $14
+      )
+      RETURNING id;
+    `;
+    const result = await db.query(q, [
+      template_id,
+      recurrence.schedule_type,
+      recurrence.days_of_week || null,
+      recurrence.day_of_month ?? null,
+      recurrence.date_of_month ?? null,
+      recurrence.week_of_month ?? null,
+      recurrence.interval_days ?? null,
+      recurrence.interval_weeks ?? null,
+      recurrence.interval_months ?? null,
+      recurrence.end_offset_days ?? null,
+      recurrence.max_occurrences ?? null,
+      recurrence.recurring_mode === "change_status" ? "change_status" : "create_task",
+      recurrence.target_status_name || null,
+      recurrence.timezone_name || "UTC",
+    ]);
+    return result.rows[0]?.id || null;
   }
 
   @HandleExceptions()
@@ -813,14 +2126,29 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
     );
   }
 
+  /**
+   * Creates project tasks from a custom template.
+   *
+   * Plan/structure only — never copies activity:
+   * logged time (task_work_log), running timers, comments, attachments,
+   * task history/activity logs, or source progress_value.
+   * Done-category tasks get progress_value=100 from their status category after insert
+   * (structural, not copied from the source project).
+   *
+   * Phase 6: also applies assignees, dependencies, and recurrence when present on
+   * the task payload (loaded from CPT tables). Returns skips for partial failures.
+   */
   protected static async insertProjectTasksFromCustom(
     tasks: IProjectTemplateTask[],
     team_id: string,
     project_id = "",
     user_id = "",
     socket: Socket | null,
-  ) {
-    if (!project_id) return;
+    projectStartDate?: string | Date | null,
+    taskIncludes?: ITaskIncludes | null,
+  ): Promise<IProjectTemplateApplySkip[]> {
+    const skips: IProjectTemplateApplySkip[] = [];
+    if (!project_id) return skips;
 
     try {
       // Two-pass approach to handle nested subtasks (3+ levels):
@@ -835,15 +2163,30 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
 
       // Pass 1: Insert all tasks without parent relationships
       for await (const [key, task] of tasks.entries()) {
+        const totalMinutesValue = normalizeTotalMinutes(task.total_minutes);
+        const descriptionValue =
+          task.description === undefined ? null : task.description;
+
+        const startDate =
+          projectStartDate != null && projectStartDate !== ""
+            ? applyOffsetDate(projectStartDate, task.start_offset_days)
+            : null;
+        const endDate =
+          projectStartDate != null && projectStartDate !== ""
+            ? applyOffsetDate(projectStartDate, task.due_offset_days)
+            : null;
+
         const q = `INSERT INTO tasks(name, project_id, status_id, priority_id, reporter_id, sort_order,
                               parent_task_id, description, total_minutes, task_no,
                               status_sort_order, priority_sort_order, phase_sort_order,
-                              roadmap_sort_order, member_sort_order)
+                              roadmap_sort_order, member_sort_order,
+                              start_date, end_date, billable)
                     VALUES ($1, $2, (SELECT id FROM task_statuses ts WHERE ts.name = $3 AND ts.project_id = $2),
                             (SELECT id FROM task_priorities tp WHERE tp.name = $4), $5, $6,
                             NULL, $7, $8, $9,
                             $10, $11, $12,
-                            $13, $14)
+                            $13, $14,
+                            $15, $16, $17)
                     RETURNING id, status_id;`;
 
         // Use sequential index (key) for ALL sort orders to ensure deterministic ordering
@@ -856,15 +2199,20 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           task.status_name,
           task.priority_name,
           user_id,
-          sortOrderValue,   // $6  sort_order
-          task.description, // $7
-          task.total_minutes ? task.total_minutes : 0, // $8
-          task.task_no,     // $9
-          sortOrderValue,   // $10 status_sort_order
-          sortOrderValue,   // $11 priority_sort_order
-          sortOrderValue,   // $12 phase_sort_order
-          sortOrderValue,   // $13 roadmap_sort_order
-          sortOrderValue,   // $14 member_sort_order
+          sortOrderValue, // $6  sort_order
+          descriptionValue, // $7
+          totalMinutesValue, // $8
+          task.task_no, // $9
+          sortOrderValue, // $10 status_sort_order
+          sortOrderValue, // $11 priority_sort_order
+          sortOrderValue, // $12 phase_sort_order
+          sortOrderValue, // $13 roadmap_sort_order
+          sortOrderValue, // $14 member_sort_order
+          startDate, // $15
+          endDate, // $16
+          task.billable === undefined || task.billable === null
+            ? true
+            : Boolean(task.billable), // $17
         ]);
         const [data] = result.rows;
 
@@ -919,6 +2267,7 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
       }
 
       // Set progress_value = 100 for all tasks that are in a "Done" status category
+      // (derived from status structure — not copied from source project progress)
       const progressUpdateQ = `
         UPDATE tasks
         SET progress_value = 100, manual_progress = TRUE
@@ -932,9 +2281,47 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
           )
       `;
       await db.query(progressUpdateQ, [project_id]);
+
+      // Phase 6 resolution — gated by includes when present; default on if data exists
+      const applyAssignees = taskIncludes?.assignees !== false;
+      const applyDependencies = taskIncludes?.dependencies !== false;
+      const applyRecurrence = taskIncludes?.recurrence !== false;
+
+      if (applyAssignees) {
+        await this.applyImportedTaskAssignees(
+          tasks,
+          templateIdToNewIdMap,
+          project_id,
+          team_id,
+          user_id,
+          skips
+        );
+      }
+
+      if (applyDependencies) {
+        await this.applyImportedTaskDependencies(
+          tasks,
+          templateIdToNewIdMap,
+          skips
+        );
+      }
+
+      if (applyRecurrence) {
+        await this.applyImportedTaskRecurrence(
+          tasks,
+          templateIdToNewIdMap,
+          project_id,
+          projectStartDate,
+          user_id || null,
+          skips
+        );
+      }
     } catch (error) {
       log_error(error);
+      throw error;
     }
+
+    return skips;
   }
 
   @HandleExceptions()
@@ -1267,5 +2654,337 @@ export default abstract class ProjectTemplatesControllerBase extends WorklenzCon
         }
       }
     }
+  }
+
+  /**
+   * Normalize task rows from getCustomTemplateData / getTemplateData / editor payloads
+   * into the shape expected by insertCustomTemplateTasks.
+   */
+  protected static normalizeTasksForCustomInsert(
+    tasks: IProjectTemplateTask[] | null | undefined
+  ): IProjectTemplateTask[] {
+    if (!Array.isArray(tasks)) return [];
+
+    return tasks.map((task, index) => {
+      const id =
+        task.id ||
+        task.original_task_id ||
+        `synthetic-${index}-${(task.name || "task").slice(0, 32)}`;
+      const phase_name =
+        task.phase_name ||
+        (Array.isArray(task.phases) && task.phases[0]?.name) ||
+        undefined;
+
+      const resolvedTaskNo =
+        task.task_no !== undefined &&
+        task.task_no !== null &&
+        Number.isFinite(Number(task.task_no))
+          ? Number(task.task_no)
+          : index + 1;
+
+      return {
+        ...task,
+        id,
+        original_task_id: task.original_task_id || id,
+        phase_name,
+        task_no: resolvedTaskNo,
+        sort_order: task.sort_order ?? index,
+        status_sort_order: task.status_sort_order ?? index,
+        priority_sort_order: task.priority_sort_order ?? index,
+        phase_sort_order: task.phase_sort_order ?? index,
+      };
+    });
+  }
+
+  protected static normalizeStatusesForCustomInsert(
+    statuses: IProjectTemplateStatus[] | null | undefined
+  ): IProjectTemplateStatus[] {
+    if (!Array.isArray(statuses)) return [];
+    return statuses.map((status, index) => ({
+      ...status,
+      sort_order:
+        status.sort_order !== undefined && status.sort_order !== null
+          ? status.sort_order
+          : String(index),
+    }));
+  }
+
+  /** Resolve a default todo category when a status payload omits category_id. */
+  protected static async resolveDefaultStatusCategoryId(): Promise<string | null> {
+    const result = await db.query(
+      `SELECT id FROM sys_task_status_categories WHERE is_todo IS TRUE LIMIT 1;`
+    );
+    return result.rows[0]?.id || null;
+  }
+
+  protected static async listCustomTemplateNames(
+    teamId: string
+  ): Promise<string[]> {
+    const result = await db.query(
+      `SELECT name FROM custom_project_templates WHERE team_id = $1;`,
+      [teamId]
+    );
+    return result.rows.map((row: { name: string }) => row.name);
+  }
+
+  protected static async clearCustomTemplateChildren(
+    templateId: string
+  ): Promise<void> {
+    await db.query(
+      `UPDATE cpt_tasks SET schedule_id = NULL WHERE template_id = $1;`,
+      [templateId]
+    );
+    await db.query(
+      `DELETE FROM cpt_task_recurring_schedules WHERE template_id = $1;`,
+      [templateId]
+    );
+    await db.query(`DELETE FROM cpt_rate_card_roles WHERE template_id = $1;`, [
+      templateId,
+    ]);
+    await db.query(`DELETE FROM cpt_tasks WHERE template_id = $1;`, [
+      templateId,
+    ]);
+    await db.query(`DELETE FROM cpt_task_statuses WHERE template_id = $1;`, [
+      templateId,
+    ]);
+    await db.query(`DELETE FROM cpt_phases WHERE template_id = $1;`, [
+      templateId,
+    ]);
+    await db.query(`DELETE FROM cpt_custom_columns WHERE template_id = $1;`, [
+      templateId,
+    ]);
+  }
+
+  /**
+   * Persist phases, statuses, tasks, labels, settings extras onto an existing
+   * custom template row (children only — header must already exist).
+   */
+  protected static async persistCustomTemplateChildren(
+    templateId: string,
+    teamId: string,
+    definition: {
+      phases?: ICustomTemplatePhase[] | IProjectTemplatePhase[] | null;
+      status?: IProjectTemplateStatus[] | null;
+      labels?: IProjectTemplateLabel[] | null;
+      tasks?: IProjectTemplateTask[] | null;
+      includes?: IProjectTemplateIncludesPayload | null;
+      settings?: IProjectTemplateSettingsSnapshot | null;
+      include_custom_columns?: boolean;
+      custom_columns?: ICustomColumnWithConfig[] | null;
+    }
+  ): Promise<void> {
+    const phases = Array.isArray(definition.phases) ? definition.phases : [];
+    let statuses = this.normalizeStatusesForCustomInsert(definition.status);
+    const tasks = this.normalizeTasksForCustomInsert(definition.tasks);
+    const labels = Array.isArray(definition.labels) ? definition.labels : [];
+    const includes = definition.includes || {};
+    const settings = definition.settings || null;
+
+    if (statuses.some((status) => !status.category_id)) {
+      const fallbackCategoryId = await this.resolveDefaultStatusCategoryId();
+      if (fallbackCategoryId) {
+        statuses = statuses.map((status) => ({
+          ...status,
+          category_id: status.category_id || fallbackCategoryId,
+        }));
+      }
+    }
+
+    await db.query(
+      `UPDATE custom_project_templates
+       SET schema_version = COALESCE(schema_version, 1),
+           includes = COALESCE($2::jsonb, includes),
+           settings = COALESCE($3::jsonb, settings),
+           include_custom_columns = COALESCE($4, include_custom_columns),
+           updated_at = NOW()
+       WHERE id = $1;`,
+      [
+        templateId,
+        includes && Object.keys(includes).length
+          ? JSON.stringify(includes)
+          : null,
+        settings ? JSON.stringify(settings) : null,
+        definition.include_custom_columns ?? null,
+      ]
+    );
+
+    if (labels.length) {
+      await this.insertTeamLabels(labels, teamId);
+    }
+    if (phases.length) {
+      await this.insertCustomTemplatePhases(
+        phases as ICustomTemplatePhase[],
+        templateId
+      );
+    }
+    if (statuses.length) {
+      await this.insertCustomTemplateStatus(statuses, templateId, teamId);
+    }
+    if (tasks.length) {
+      await this.insertCustomTemplateTasks(tasks, templateId, teamId);
+    }
+
+    const rateCard = settings?.budget?.rate_card;
+    if (Array.isArray(rateCard) && rateCard.length) {
+      await this.insertTemplateRateCardRoles(templateId, rateCard);
+    }
+
+    const customColumns = Array.isArray(definition.custom_columns)
+      ? definition.custom_columns
+      : null;
+    if (customColumns?.length) {
+      await this.insertCustomTemplateColumns(customColumns, templateId);
+      await db.query(
+        `UPDATE custom_project_templates SET include_custom_columns = TRUE WHERE id = $1;`,
+        [templateId]
+      );
+    }
+  }
+
+  /**
+   * Create a new custom template shell + children from a full definition.
+   * Returns the new template id.
+   */
+  protected static async createCustomTemplateFromDefinition(
+    teamId: string,
+    definition: {
+      name: string;
+      phase_label?: string | null;
+      color_code?: string | null;
+      notes?: string | null;
+      phases?: ICustomTemplatePhase[] | IProjectTemplatePhase[] | null;
+      status?: IProjectTemplateStatus[] | null;
+      labels?: IProjectTemplateLabel[] | null;
+      tasks?: IProjectTemplateTask[] | null;
+      includes?: IProjectTemplateIncludesPayload | null;
+      settings?: IProjectTemplateSettingsSnapshot | null;
+      include_custom_columns?: boolean;
+      custom_columns?: ICustomColumnWithConfig[] | null;
+      schema_version?: number;
+    }
+  ): Promise<string> {
+    const shell = {
+      name: definition.name.trim(),
+      phase_label: definition.phase_label || "Phase",
+      color_code: definition.color_code || getColor(definition.name),
+      notes: definition.notes || null,
+      team_id: teamId,
+    };
+
+    const result = await db.query(`SELECT create_project_template($1);`, [
+      JSON.stringify(shell),
+    ]);
+    const templateId = result.rows[0]?.create_project_template?.id as string;
+    if (!templateId) {
+      throw new Error("Failed to create custom project template.");
+    }
+
+    const defaultIncludes: IProjectTemplateIncludesPayload = {
+      project: {
+        statuses: true,
+        phases: true,
+        labels: true,
+        customColumns: Boolean(definition.include_custom_columns),
+      },
+      projectSettings: {
+        category: false,
+        projectManager: false,
+        estimatedWorkingDays: false,
+        estimatedManDays: false,
+        hoursPerDay: false,
+        advanced: false,
+        budget: false,
+      },
+      task: {
+        status: true,
+        phase: true,
+        labels: true,
+        estimation: true,
+        description: true,
+        subtasks: true,
+        assignees: true,
+        recurrence: true,
+        dependencies: true,
+        billable: true,
+        dateOffsets: true,
+      },
+    };
+
+    await db.query(
+      `UPDATE custom_project_templates
+       SET schema_version = $2,
+           includes = $3::jsonb,
+           settings = $4::jsonb,
+           updated_at = NOW()
+       WHERE id = $1;`,
+      [
+        templateId,
+        definition.schema_version ?? CUSTOM_PROJECT_TEMPLATE_SCHEMA_VERSION,
+        JSON.stringify(definition.includes || defaultIncludes),
+        JSON.stringify(definition.settings || {}),
+      ]
+    );
+
+    await this.persistCustomTemplateChildren(templateId, teamId, {
+      phases: definition.phases,
+      status: definition.status,
+      labels: definition.labels,
+      tasks: definition.tasks,
+      includes: definition.includes || defaultIncludes,
+      settings: definition.settings,
+      include_custom_columns: definition.include_custom_columns,
+      custom_columns: definition.custom_columns,
+    });
+
+    return templateId;
+  }
+
+  /**
+   * Map a worklenz (built-in) template payload into a custom-template definition.
+   */
+  protected static async buildDefinitionFromWorklenzTemplate(
+    worklenzTemplateId: string,
+    overrides?: {
+      name?: string;
+      phase_label?: string;
+      color_code?: string;
+      notes?: string;
+      phases?: IProjectTemplatePhase[];
+      status?: IProjectTemplateStatus[];
+      labels?: IProjectTemplateLabel[];
+      tasks?: IProjectTemplateTask[];
+      includes?: IProjectTemplateIncludesPayload;
+      settings?: IProjectTemplateSettingsSnapshot;
+    }
+  ): Promise<{
+    name: string;
+    phase_label?: string | null;
+    color_code?: string | null;
+    notes?: string | null;
+    phases?: IProjectTemplatePhase[];
+    status?: IProjectTemplateStatus[];
+    labels?: IProjectTemplateLabel[];
+    tasks?: IProjectTemplateTask[];
+    includes?: IProjectTemplateIncludesPayload;
+    settings?: IProjectTemplateSettingsSnapshot | null;
+  } | null> {
+    const data = await this.getTemplateData(worklenzTemplateId);
+    if (!data) return null;
+
+    return {
+      name: (overrides?.name || data.name || "Template").trim(),
+      phase_label: overrides?.phase_label ?? data.phase_label ?? "Phase",
+      color_code:
+        overrides?.color_code ||
+        data.color_code ||
+        getColor(data.name || "Template"),
+      notes: overrides?.notes ?? data.description ?? null,
+      phases: overrides?.phases ?? data.phases ?? [],
+      status: overrides?.status ?? data.status ?? [],
+      labels: overrides?.labels ?? data.labels ?? [],
+      tasks: overrides?.tasks ?? data.tasks ?? [],
+      includes: overrides?.includes,
+      settings: overrides?.settings ?? null,
+    };
   }
 }

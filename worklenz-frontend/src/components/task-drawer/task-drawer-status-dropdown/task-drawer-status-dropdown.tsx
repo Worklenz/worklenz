@@ -142,8 +142,12 @@ const TaskDrawerStatusDropdown = ({ statuses, task, teamId, disabled = false }: 
           onChange={handleStatusChange}
           disabled={disabled}
           dropdownStyle={{ borderRadius: 8, minWidth: 150, maxWidth: 200 }}
+          popupMatchSelectWidth={false}
           style={
             {
+              width: 'fit-content',
+              minWidth: 120,
+              maxWidth: 220,
               backgroundColor: resolvedStatusBackground,
               borderRadius: 16,
               '--task-drawer-status-bg': resolvedStatusBackground,

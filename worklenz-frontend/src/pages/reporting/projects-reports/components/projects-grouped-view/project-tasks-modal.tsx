@@ -540,7 +540,7 @@ const ProjectTasksModal = ({ open, project, onClose }: ProjectTasksModalProps) =
             pageSize: pageSize,
             total: total,
             showSizeChanger: true,
-            pageSizeOptions: ['10', '15', '25', '50'],
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (totalCount, range) =>
               `${range[0]}-${range[1]} ${t('ofText')} ${totalCount}`,
           }}

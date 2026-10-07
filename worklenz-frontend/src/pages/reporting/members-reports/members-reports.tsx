@@ -65,7 +65,7 @@ const MembersReports = () => {
         title={t('membersHeaderTitle', { count: total })}
         style={{ padding: 0, marginBottom: 16 }}
         children={
-          <Space>
+          <Space wrap style={{ rowGap: 8 }}>
             <Button>
               <Checkbox checked={archived} onChange={() => dispatch(setArchived(!archived))}>
                 <Typography.Text>{t('includeArchivedButton')}</Typography.Text>

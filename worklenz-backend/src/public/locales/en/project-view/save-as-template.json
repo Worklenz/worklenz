@@ -1,17 +1,43 @@
 {
   "title": "Save as Template",
   "templateName": "Template Name",
-  "includes": "What should be included in the template from the project ?",
+  "templateNamePlaceholder": "Enter template name",
+  "templateInfo": "Template Information",
+  "includes": "Project Elements",
+  "projectSettings": "Project Settings",
+  "taskIncludes": "Task Elements",
+  "cancel": "Cancel",
+  "save": "Save",
+  "creating": "Creating template...",
+  "created": "Template Created!",
+  "quickSelect": "Quick Select:",
+  "selectAll": "Select All",
+  "essentialOnly": "Essential Only",
+  "clearAll": "Clear All",
+  "itemsSelected": "items selected",
+  "selected": "selected",
+  "readyToSave": "Ready to save",
+  "validName": "Valid name",
+  "required": "Required",
+  "characters": "characters",
+  "proTips": "Pro Tips",
+  "budgetPlanHint": "Budget settings are available on Business and Enterprise plans.",
   "includesOptions": {
     "statuses": "Statuses",
     "phases": "Phases",
-    "labels": "Labels"
-  },
-  "taskIncludes": "What should be included in the template from the tasks ?",
-  "taskIncludesOptions": {
-    "statuses": "Statuses",
-    "phases": "Phases",
     "labels": "Labels",
+    "customColumns": "Custom Columns"
+  },
+  "projectSettingsOptions": {
+    "category": "Category",
+    "projectManager": "Project manager",
+    "estimatedWorkingDays": "Estimated working days",
+    "estimatedManDays": "Estimated man days",
+    "hoursPerDay": "Hours per day",
+    "advanced": "Advanced settings",
+    "budget": "Budget settings"
+  },
+  "taskIncludesOptions": {
     "name": "Name",
     "priority": "Priority",
     "status": "Status",
@@ -19,9 +45,58 @@
     "label": "Label",
     "timeEstimate": "Time Estimate",
     "description": "Description",
-    "subTasks": "Sub Tasks"
+    "subTasks": "Sub Tasks",
+    "assignees": "Assignees",
+    "recurrence": "Recurring options",
+    "dependencies": "Dependencies",
+    "billable": "Billable / Non-billable"
   },
-  "cancel": "Cancel",
-  "save": "Save",
-  "templateNamePlaceholder": "Enter template name"
+  "descriptions": {
+    "statuses": "Project status workflow configuration",
+    "phases": "Project phases and milestones",
+    "labels": "Custom labels for categorization",
+    "customColumns": "Custom fields and metadata",
+    "category": "Project category for organization",
+    "projectManager": "Assigned project manager",
+    "estimatedWorkingDays": "Estimated working days for the project",
+    "estimatedManDays": "Estimated man days for the project",
+    "hoursPerDay": "Default working hours per day",
+    "advanced": "Progress modes, task defaults, and access controls",
+    "budget": "Budget amount, currency, and project rate card",
+    "taskName": "Task names and titles",
+    "taskPriority": "Task priority levels",
+    "taskStatus": "Task completion status",
+    "taskPhase": "Associated project phase",
+    "taskLabel": "Task labels and tags",
+    "timeEstimate": "Time estimates and duration",
+    "description": "Task descriptions and details",
+    "subTasks": "Subtasks and checklist items",
+    "assignees": "Assignees on tasks and subtasks",
+    "recurrence": "Frequency, interval, and end rule per task",
+    "dependencies": "Links between tasks in the template",
+    "billable": "Billable flag for each task"
+  },
+  "tooltips": {
+    "projectElements": "Choose what project elements to include in your template",
+    "projectSettings": "Choose which project settings to include. These can be reviewed before creating a project from this template.",
+    "taskElements": "Choose what task elements to include in your template",
+    "required": "This item is required and cannot be deselected"
+  },
+  "tips": {
+    "line1": "Templates preserve your project structure for quick reuse",
+    "line2": "Essential items are always included and cannot be removed",
+    "line3": "Project settings can be reviewed and edited when creating a project from this template",
+    "line4": "Leave people and budget off by default to avoid surprise assignments or costs in new projects"
+  },
+  "validation": {
+    "nameRequired": "Please enter a template name",
+    "nameMinLength": "Template name must be at least 3 characters",
+    "nameMaxLength": "Template name must be less than 50 characters"
+  },
+  "notifications": {
+    "createSuccess": "Template Created",
+    "createSuccessDesc": "Your project template has been successfully created and is ready to use.",
+    "createError": "Template Creation Failed",
+    "error": "Error"
+  }
 }

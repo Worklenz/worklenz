@@ -1,0 +1,29 @@
+{
+  "pageTitle": "Help",
+  "pageDescription": "Documentation, release notes, community links, and version information.",
+  "opensInNewTab": "opens in a new tab",
+  "opensEmailApp": "opens your email app",
+  "items": {
+    "documentation": "Documentation",
+    "releaseNotes": "Release notes",
+    "changelog": "Changelog",
+    "emailSupport": "Email support",
+    "youtube": "YouTube",
+    "discord": "Discord",
+    "github": "GitHub",
+    "facebook": "Facebook",
+    "linkedin": "LinkedIn",
+    "x": "X",
+    "privacyPolicy": "Privacy policy",
+    "about": "About"
+  },
+  "releaseNotes": {
+    "unavailable": "No release notes published yet",
+    "loadFailed": "Couldn't load release notes. Click to try again.",
+    "loadFailedMessage": "Couldn't load release notes. Please try again."
+  },
+  "about": {
+    "version": "Version",
+    "lastUpdated": "Last updated"
+  }
+}

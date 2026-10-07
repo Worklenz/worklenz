@@ -8,11 +8,159 @@ import { generateUniqueSlug, suggestSlug, isValidSlug } from "../../utils/slug";
 import { sendEmail, sendEmailEnhanced, EmailRequest } from "../../shared/email";
 import TokenService from "../../services/token-service";
 import { getClientPortalBaseUrl } from "../../cron_jobs/helpers";
+import { ensureContactIdForClient } from "../../services/client-contacts-service";
 import FileConstants from "../../shared/file-constants";
 import { IEmailTemplateType } from "../../interfaces/email-template-type";
 import crypto from "crypto";
 
+type PortalStatusKey = "active" | "invited" | "not_invited" | "expired";
+
+const PORTAL_STATUS_LABELS: Record<PortalStatusKey, { label: string; color: string }> = {
+  active: { label: "Active", color: "green" },
+  invited: { label: "Invited", color: "orange" },
+  not_invited: { label: "Not Invited", color: "default" },
+  expired: { label: "Expired", color: "red" },
+};
+
+// Portal status is derived from whether the client has an active portal user and the state of
+// its latest invitation. The list, its status filter and the stats endpoint all build on these
+// fragments so a client can never be counted under a different status than the one it is shown
+// with. They expect the client table to be aliased as `c`.
+const PORTAL_STATE_COLUMNS_SQL = `
+  -- Portal access: any active client_user for this client, unless an admin disabled that person
+  -- (Disable lives on the company user, see client_contacts.disabled_at)
+  CASE WHEN EXISTS (
+    SELECT 1 FROM client_users cu
+    WHERE cu.client_id = c.id AND cu.status = 'active'
+      AND NOT EXISTS (
+        SELECT 1 FROM client_contacts cc
+        WHERE cc.client_user_id = cu.id AND cc.client_id = c.id AND cc.disabled_at IS NOT NULL
+      )
+  ) THEN true ELSE false END as has_portal_access,
+  -- Get the latest invitation info
+  (
+    SELECT ci.created_at
+    FROM client_invitations ci
+    WHERE ci.client_id = c.id
+    ORDER BY ci.created_at DESC
+    LIMIT 1
+  ) as invitation_sent_at,
+  (
+    SELECT ci.expires_at
+    FROM client_invitations ci
+    WHERE ci.client_id = c.id
+    ORDER BY ci.created_at DESC
+    LIMIT 1
+  ) as invitation_expires_at,
+  -- Check if invitation was accepted
+  (
+    SELECT ci.status = 'accepted'
+    FROM client_invitations ci
+    WHERE ci.client_id = c.id
+    ORDER BY ci.created_at DESC
+    LIMIT 1
+  ) as invitation_accepted
+`;
+
+// Reads the columns produced by PORTAL_STATE_COLUMNS_SQL. An invitation is valid until its own
+// expires_at (7 days from the latest send), so resending restarts the window.
+const PORTAL_STATUS_SQL = `
+  CASE
+    WHEN has_portal_access = true THEN 'active'
+    WHEN invitation_sent_at IS NOT NULL AND COALESCE(invitation_accepted, false) = false THEN
+      CASE WHEN invitation_expires_at > NOW() THEN 'invited' ELSE 'expired' END
+    ELSE 'not_invited'
+  END
+`;
+
+const PORTAL_STATUS_KEYS = Object.keys(PORTAL_STATUS_LABELS) as PortalStatusKey[];
+
 export default class ClientPortalClientsController extends ClientPortalControllerBase {
+
+  /**
+   * One row per client for the global Chats inbox: every client that has at least one project
+   * (a lead with no project has nothing to message about yet), whether or not it has messages.
+   * The whole conversation is one thread per client, so the row id is the client id.
+   * `unreadCount` is client-sent messages the team has not opened yet.
+   */
+  static async getChatConversations(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const teamId = (req.user as any)?.team_id;
+      if (!teamId) {
+        return res
+          .status(400)
+          .json(new ServerResponse(false, null, "Organization ID is required"));
+      }
+
+      const query = `
+        SELECT base.*, (${PORTAL_STATUS_SQL}) AS portal_status_key
+        FROM (
+          SELECT
+            c.id,
+            COALESCE(NULLIF(TRIM(c.company_name), ''), c.name) AS display_name,
+            (SELECT COUNT(*)::int FROM projects p WHERE p.client_id = c.id) AS projects_count,
+            (
+              SELECT COUNT(*)::int
+              FROM client_portal_chat_messages um
+              WHERE um.client_id = c.id
+                AND um.organization_team_id = $1
+                AND um.sender_type = 'client'
+                AND um.read_at IS NULL
+            ) AS unread_count,
+            lm.message AS last_message,
+            lm.created_at AS last_message_at,
+            lm.sender_type AS last_sender_type,
+            lm.sender_name AS last_sender_name,
+            ${PORTAL_STATE_COLUMNS_SQL}
+          FROM clients c
+          LEFT JOIN LATERAL (
+            SELECT
+              m.message,
+              m.created_at,
+              m.sender_type,
+              CASE WHEN m.sender_type = 'team_member' THEN u.name ELSE cu.name END AS sender_name
+            FROM client_portal_chat_messages m
+            LEFT JOIN users u ON m.sender_type = 'team_member' AND m.sender_id = u.id
+            LEFT JOIN client_users cu ON m.sender_type = 'client' AND m.sender_id = cu.id
+            WHERE m.client_id = c.id AND m.organization_team_id = $1
+            ORDER BY m.created_at DESC
+            LIMIT 1
+          ) lm ON true
+          WHERE c.team_id = $1
+            AND EXISTS (SELECT 1 FROM projects p WHERE p.client_id = c.id)
+        ) AS base
+        ORDER BY base.last_message_at DESC NULLS LAST, base.display_name ASC, base.id ASC
+      `;
+
+      const result = await db.query(query, [teamId]);
+
+      const conversations = result.rows.map((row: any) => {
+        const portalStatusKey = row.portal_status_key as PortalStatusKey;
+        return {
+          id: row.id,
+          clientId: row.id,
+          name: row.display_name,
+          projectsCount: row.projects_count ?? 0,
+          portalStatus: { status: portalStatusKey, ...PORTAL_STATUS_LABELS[portalStatusKey] },
+          unreadCount: row.unread_count ?? 0,
+          lastMessage: row.last_message ?? null,
+          lastMessageAt: row.last_message_at ?? null,
+          lastSenderType: row.last_sender_type ?? null,
+          lastSenderName: row.last_sender_name ?? null,
+        };
+      });
+
+      return res.json(new ServerResponse(true, { conversations }, null));
+    } catch (error) {
+      console.error("Error fetching chat conversations:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve chat conversations"));
+    }
+  }
 
   static async getClients(
     req: AuthenticatedClientRequest,
@@ -50,27 +198,22 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           c.created_at,
           c.updated_at,
           COUNT(DISTINCT p.id) as assigned_projects_count,
-          -- Portal access: check if any active client_user exists for this client
-          CASE WHEN EXISTS (
-            SELECT 1 FROM client_users cu
-            WHERE cu.client_id = c.id AND cu.status = 'active'
-          ) THEN true ELSE false END as has_portal_access,
-          -- Get the latest invitation info
+          -- Most recent portal sign-in across this client's users
           (
-            SELECT ci.created_at
-            FROM client_invitations ci
-            WHERE ci.client_id = c.id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) as invitation_sent_at,
-          -- Check if invitation was accepted
+            SELECT MAX(cu.last_login)
+            FROM client_users cu
+            WHERE cu.client_id = c.id
+          ) as last_login_at,
+          -- Every POC of the company (a company can have zero, one or several)
+          COALESCE((
+            SELECT array_agg(cc.name::text ORDER BY cc.created_at, cc.id)
+            FROM client_contacts cc
+            WHERE cc.client_id = c.id AND cc.role = 'poc'
+          ), ARRAY[]::text[]) as poc_names,
           (
-            SELECT ci.status = 'accepted'
-            FROM client_invitations ci
-            WHERE ci.client_id = c.id
-            ORDER BY ci.created_at DESC
-            LIMIT 1
-          ) as invitation_accepted
+            SELECT COUNT(*)::int FROM client_contacts cc WHERE cc.client_id = c.id
+          ) as company_users_count,
+          ${PORTAL_STATE_COLUMNS_SQL}
         FROM clients c
         LEFT JOIN projects p ON c.id = p.client_id
       `;
@@ -98,11 +241,15 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       }
 
       // Add status filter
+      // `status` carries either a client status (inactive / pending) or a portal status
+      // (active / invited / not_invited / expired). "active" is a portal status: a client with an
+      // active portal user is always an active client (deactivating a client also deactivates its
+      // users), so it is filtered below together with the other portal statuses.
       if (status) {
         // Normalize status to lowercase and validate
         const normalizedStatus = String(status).toLowerCase().trim();
         // Only apply filter if status is one of the valid values
-        if (["active", "inactive", "pending"].includes(normalizedStatus)) {
+        if (["inactive", "pending"].includes(normalizedStatus)) {
           // Use COALESCE to treat NULL status as 'active' (the default)
           whereConditions.push(`LOWER(COALESCE(c.status, 'active')) = $${queryParams.length + 1}`);
           queryParams.push(normalizedStatus);
@@ -121,23 +268,13 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       // apply the portal status filter and pagination on the outer query. This ensures
       // filtering happens before LIMIT/OFFSET so all matching clients across every page
       // are included and the total count is accurate.
-      const portalStatuses = ["active", "invited", "not_invited", "expired"];
       const normalizedPortalStatus = status ? String(status).toLowerCase().trim() : null;
-      const isPortalStatusFilter = !!normalizedPortalStatus && portalStatuses.includes(normalizedPortalStatus);
-
-      // The portal_status expression derives the status from the already-computed columns.
-      const portalStatusExpr = `
-        CASE
-          WHEN has_portal_access = true THEN 'active'
-          WHEN invitation_sent_at IS NULL THEN 'not_invited'
-          WHEN invitation_accepted = true THEN 'active'
-          WHEN invitation_sent_at > NOW() - INTERVAL '7 days' THEN 'invited'
-          ELSE 'expired'
-        END
-      `;
+      const isPortalStatusFilter =
+        !!normalizedPortalStatus &&
+        (PORTAL_STATUS_KEYS as string[]).includes(normalizedPortalStatus);
 
       const outerWhere = isPortalStatusFilter
-        ? `WHERE (${portalStatusExpr}) = $${queryParams.length + 1}`
+        ? `WHERE (${PORTAL_STATUS_SQL}) = $${queryParams.length + 1}`
         : "";
 
       if (isPortalStatusFilter) {
@@ -154,16 +291,22 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         "created_at",
         "updated_at",
         "assigned_projects_count",
+        "portal_status_key",
+        "last_login_at",
+        "poc_names",
       ];
       const safeSortField = validSortFields.includes(sortField) ? sortField : "name";
 
-      // Company-first sorting: when sorting by name, sort using company name fallback to record name.
+      // Sort by the exact field the column displays. "assigned_projects_count" is a computed
+      // alias (COUNT(DISTINCT p.id)) rather than a raw column, so it needs to be referenced as-is;
+      // every other field maps 1:1 to what its column shows (e.g. "name" sorts by the client's own
+      // name, matching the Client column — company-name sorting belongs to the separate Company
+      // column, which already sorts by "company_name").
       const sortColumn =
-        safeSortField === "assigned_projects_count"
-          ? "assigned_projects_count"
-          : safeSortField === "name"
-          ? "COALESCE(NULLIF(TRIM(company_name), ''), name)"
-          : safeSortField;
+        safeSortField === "assigned_projects_count" ? "assigned_projects_count" : safeSortField;
+      // Clients who never signed in have a null last_login_at, which should always sort to the
+      // end (as the least-recent activity) regardless of direction, not lead a DESC sort.
+      const sortNulls = safeSortField === "last_login_at" ? "NULLS LAST" : "";
 
       // Count against the filtered subquery for an accurate total.
       const countQuery = `
@@ -177,10 +320,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Paginated data query — ORDER BY and LIMIT/OFFSET applied after the portal filter.
       const offset = (Number(page) - 1) * Number(limit);
+      // `id` breaks ties so rows never repeat or go missing between pages.
       const dataQuery = `
-        SELECT * FROM (${baseQuery}) AS base
+        SELECT base.*, (${PORTAL_STATUS_SQL}) AS portal_status_key
+        FROM (${baseQuery}) AS base
         ${outerWhere}
-        ORDER BY ${sortColumn} ${sortDirection}
+        ORDER BY ${sortColumn} ${sortDirection} ${sortNulls}, id ASC
         LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}
       `;
       queryParams.push(Number(limit), offset);
@@ -188,26 +333,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const result = await db.query(dataQuery, queryParams);
 
       const clients = result.rows.map((row: any) => {
-        // Determine portal status based on the data
-        let portalStatus: { status: string; label: string; color: string };
-
-        if (row.has_portal_access) {
-          portalStatus = { status: "active", label: "Active", color: "green" };
-        } else if (row.invitation_sent_at && !row.invitation_accepted) {
-          const invitationDate = new Date(row.invitation_sent_at);
-          const expiryDate = new Date(
-            invitationDate.getTime() + 7 * 24 * 60 * 60 * 1000
-          );
-          const isExpired = expiryDate < new Date();
-
-          if (isExpired) {
-            portalStatus = { status: "expired", label: "Expired", color: "red" };
-          } else {
-            portalStatus = { status: "invited", label: "Invited", color: "orange" };
-          }
-        } else {
-          portalStatus = { status: "not_invited", label: "Not Invited", color: "default" };
-        }
+        const portalStatusKey = row.portal_status_key as PortalStatusKey;
+        const portalStatus = { status: portalStatusKey, ...PORTAL_STATUS_LABELS[portalStatusKey] };
 
         return {
           id: row.id,
@@ -218,6 +345,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           phone_country_code: row.phone_country_code,
           address: row.address,
           contact_person: row.contact_person,
+          poc_names: row.poc_names ?? [],
+          company_users_count: row.company_users_count ?? 0,
           status: row.status || "active",
           created_at: row.created_at,
           updated_at: row.updated_at,
@@ -228,6 +357,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           has_portal_access: row.has_portal_access || false,
           invitation_sent_at: row.invitation_sent_at,
           invitation_accepted: row.invitation_accepted || false,
+          last_login_at: row.last_login_at,
           portal_status: portalStatus,
         };
       });
@@ -249,6 +379,90 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       return res
         .status(500)
         .json(new ServerResponse(false, null, "Failed to retrieve clients"));
+    }
+  }
+
+  /**
+   * Counts for the Clients page header: clients by portal status, and the client messages that
+   * are still waiting for a team reply. Computed in SQL over the whole team so the numbers do not
+   * depend on which page of the list is loaded.
+   */
+  static async getClientsStats(
+    req: AuthenticatedClientRequest,
+    res: IWorkLenzResponse
+  ) {
+    try {
+      const teamId = (req.user as any)?.team_id;
+      if (!teamId) {
+        return res
+          .status(401)
+          .json(new ServerResponse(false, null, "Authentication required"));
+      }
+
+      const clientsQuery = `
+        WITH client_state AS (
+          SELECT
+            c.id,
+            ${PORTAL_STATE_COLUMNS_SQL}
+          FROM clients c
+          WHERE c.team_id = $1
+        ),
+        classified AS (
+          SELECT id, (${PORTAL_STATUS_SQL}) AS portal_status
+          FROM client_state
+        )
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE portal_status = 'active')::int AS active,
+          COUNT(*) FILTER (WHERE portal_status = 'invited')::int AS invited,
+          COUNT(*) FILTER (WHERE portal_status = 'expired')::int AS expired,
+          COUNT(*) FILTER (WHERE portal_status = 'not_invited')::int AS not_invited
+        FROM classified
+      `;
+
+      // A client message is "unanswered" while no team member has replied after it.
+      const messagesQuery = `
+        WITH last_team_reply AS (
+          SELECT client_id, MAX(created_at) AS replied_at
+          FROM client_portal_chat_messages
+          WHERE organization_team_id = $1 AND sender_type = 'team_member'
+          GROUP BY client_id
+        )
+        SELECT COUNT(*)::int AS unanswered_messages
+        FROM client_portal_chat_messages m
+        JOIN clients c ON c.id = m.client_id AND COALESCE(c.status, 'active') <> 'inactive'
+        LEFT JOIN last_team_reply r ON r.client_id = m.client_id
+        WHERE m.organization_team_id = $1
+          AND m.sender_type = 'client'
+          AND (r.replied_at IS NULL OR m.created_at > r.replied_at)
+      `;
+
+      const [clientsResult, messagesResult] = await Promise.all([
+        db.query(clientsQuery, [teamId]),
+        db.query(messagesQuery, [teamId]),
+      ]);
+
+      const counts = clientsResult.rows[0] || {};
+
+      return res.json(
+        new ServerResponse(
+          true,
+          {
+            total: counts.total || 0,
+            active: counts.active || 0,
+            invited: counts.invited || 0,
+            expired: counts.expired || 0,
+            not_invited: counts.not_invited || 0,
+            unanswered_messages: messagesResult.rows[0]?.unanswered_messages || 0,
+          },
+          null
+        )
+      );
+    } catch (error) {
+      console.error("Error fetching clients stats:", error);
+      return res
+        .status(500)
+        .json(new ServerResponse(false, null, "Failed to retrieve clients stats"));
     }
   }
 
@@ -452,7 +666,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days from now
       const inviteToken = TokenService.generateInviteToken();
 
-      // Create invitation record in database
+      // Create invitation record in database, tied to the company's contact for this email so the
+      // contact's portal status can be read from it
       await TokenService.createInvitation({
         clientId: client.id,
         email: client.email,
@@ -460,6 +675,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         role: "member",
         invitedBy,
         token: inviteToken,
+        clientContactId: await ensureContactIdForClient(db, teamId, client),
       });
 
       // Get the email template
@@ -511,8 +727,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       // Get client information
       const clientQuery = `
-        SELECT id, name, email, company_name, phone
-        FROM clients 
+        SELECT id, name, email, company_name, phone, contact_person
+        FROM clients
         WHERE id = $1 AND team_id = $2
       `;
       const clientResult = await db.query(clientQuery, [clientId, teamId]);
@@ -1247,6 +1463,9 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           p.status_id,
           sps.name as status_name,
           sps.color_code as status_color,
+          p.end_date,
+          sph.name as health_name,
+          sph.color_code as health_color,
           p.created_at,
           p.updated_at,
           COUNT(t.id) as total_tasks,
@@ -1262,6 +1481,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
           ) as completed_tasks
         FROM projects p
         LEFT JOIN sys_project_statuses sps ON p.status_id = sps.id
+        LEFT JOIN sys_project_healths sph ON p.health_id = sph.id
         -- Only consider non-archived tasks when calculating progress
         LEFT JOIN tasks t ON p.id = t.project_id AND t.archived IS FALSE
         LEFT JOIN task_statuses ts ON t.status_id = ts.id
@@ -1278,7 +1498,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         paramIndex++;
       }
 
-      query += ` GROUP BY p.id, p.name, p.notes, p.status_id, sps.name, sps.color_code, p.created_at, p.updated_at`;
+      query += ` GROUP BY p.id, p.name, p.notes, p.status_id, sps.name, sps.color_code, p.end_date, sph.name, sph.color_code, p.created_at, p.updated_at`;
 
       // Get total count
       const countQuery = `
@@ -1306,6 +1526,9 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         description: row.notes,
         status: row.status_name,
         status_color: row.status_color,
+        end_date: row.end_date,
+        health_name: row.health_name,
+        health_color: row.health_color,
         created_at: row.created_at,
         updated_at: row.updated_at,
         total_tasks: parseInt(row.total_tasks || "0"),
@@ -1507,6 +1730,12 @@ export default class ClientPortalClientsController extends ClientPortalControlle
 
       const updatedProject = updateResult.rows[0];
 
+      // The project is no longer the company's, so drop every company user's access to it
+      await db.query(
+        "DELETE FROM client_contact_project_access WHERE project_id = $1",
+        [projectId]
+      );
+
       return res.json(
         new ServerResponse(
           true,
@@ -1568,23 +1797,89 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         [id]
       );
 
-      // Get team member statistics (placeholder - team members not implemented yet)
-      const teamMemberStats = {
-        total_team_members: 0,
-        active_team_members: 0,
-      };
+      // Everything below reads real data. The workspace's Overview and rail show these numbers, so
+      // a placeholder zero here would read as "nothing open" rather than "not counted".
+      const [
+        contactStats,
+        requestStats,
+        invoiceStats,
+        outstanding,
+        taskStats,
+        messageStats,
+        loginStats,
+        portalState,
+      ] = await Promise.all([
+        db.query(
+          `SELECT COUNT(*)::int AS total,
+                  COUNT(*) FILTER (WHERE disabled_at IS NULL)::int AS enabled
+           FROM client_contacts
+           WHERE client_id = $1 AND team_id = $2`,
+          [id, teamId]
+        ),
+        db.query(
+          `SELECT COUNT(*)::int AS total,
+                  COUNT(*) FILTER (WHERE status NOT IN ('completed', 'cancelled', 'rejected'))::int AS pending
+           FROM client_portal_requests
+           WHERE client_id = $1`,
+          [id]
+        ),
+        // An invoice is due once it has been sent and is not fully paid. Drafts are not due yet.
+        db.query(
+          `SELECT COUNT(*)::int AS total,
+                  COUNT(*) FILTER (WHERE status IN ('sent', 'pending', 'overdue') AND payment_status <> 'paid')::int AS due
+           FROM client_portal_invoices
+           WHERE client_id = $1 AND organization_team_id = $2`,
+          [id, teamId]
+        ),
+        db.query(
+          `SELECT currency, SUM(amount - paid_amount)::float AS amount
+           FROM client_portal_invoices
+           WHERE client_id = $1 AND organization_team_id = $2
+             AND status IN ('sent', 'pending', 'overdue') AND payment_status <> 'paid'
+           GROUP BY currency
+           ORDER BY SUM(amount - paid_amount) DESC`,
+          [id, teamId]
+        ),
+        db.query(
+          `SELECT COUNT(t.id)::int AS open_tasks
+           FROM tasks t
+           JOIN projects p ON p.id = t.project_id
+           LEFT JOIN task_statuses ts ON ts.id = t.status_id
+           LEFT JOIN sys_task_status_categories tsc ON tsc.id = ts.category_id
+           WHERE p.client_id = $1 AND p.team_id = $2
+             AND t.archived IS FALSE
+             AND COALESCE(tsc.is_done, FALSE) = FALSE`,
+          [id, teamId]
+        ),
+        // The same "unanswered" rule as the Clients page: client messages sent after the team's
+        // last reply.
+        db.query(
+          `SELECT COUNT(*)::int AS unanswered
+           FROM client_portal_chat_messages m
+           WHERE m.client_id = $1 AND m.organization_team_id = $2 AND m.sender_type = 'client'
+             AND m.created_at > COALESCE((
+               SELECT MAX(r.created_at) FROM client_portal_chat_messages r
+               WHERE r.client_id = $1 AND r.organization_team_id = $2 AND r.sender_type = 'team_member'
+             ), 'epoch'::timestamptz)`,
+          [id, teamId]
+        ),
+        db.query(
+          `SELECT MAX(last_login) AS last_login_at, COUNT(*) FILTER (WHERE last_login IS NOT NULL)::int AS signed_in
+           FROM client_users WHERE client_id = $1`,
+          [id]
+        ),
+        db.query(
+          `SELECT (${PORTAL_STATUS_SQL}) AS portal_status_key, invitation_sent_at
+           FROM (
+             SELECT c.id, ${PORTAL_STATE_COLUMNS_SQL}
+             FROM clients c
+             WHERE c.id = $1 AND c.team_id = $2
+           ) AS base`,
+          [id, teamId]
+        ),
+      ]);
 
-      // Get request statistics (placeholder - requests not implemented yet)
-      const requestStats = {
-        total_requests: 0,
-        pending_requests: 0,
-      };
-
-      // Get invoice statistics (placeholder - invoices not implemented yet)
-      const invoiceStats = {
-        total_invoices: 0,
-        unpaid_invoices: 0,
-      };
+      const portalStatusKey = (portalState.rows[0]?.portal_status_key ?? "not_invited") as PortalStatusKey;
 
       const stats = {
         totalProjects: parseInt(projectStats.rows[0]?.total_projects || "0"),
@@ -1592,12 +1887,27 @@ export default class ClientPortalClientsController extends ClientPortalControlle
         completedProjects: parseInt(
           projectStats.rows[0]?.completed_projects || "0"
         ),
-        totalTeamMembers: teamMemberStats.total_team_members,
-        activeTeamMembers: teamMemberStats.active_team_members,
-        totalRequests: requestStats.total_requests,
-        pendingRequests: requestStats.pending_requests,
-        totalInvoices: invoiceStats.total_invoices,
-        unpaidInvoices: invoiceStats.unpaid_invoices,
+        // Kept for existing consumers: company users are the "team members" of a client.
+        totalTeamMembers: contactStats.rows[0]?.total ?? 0,
+        activeTeamMembers: contactStats.rows[0]?.enabled ?? 0,
+        totalRequests: requestStats.rows[0]?.total ?? 0,
+        pendingRequests: requestStats.rows[0]?.pending ?? 0,
+        totalInvoices: invoiceStats.rows[0]?.total ?? 0,
+        unpaidInvoices: invoiceStats.rows[0]?.due ?? 0,
+        // What the client workspace shows
+        tasksOpen: taskStats.rows[0]?.open_tasks ?? 0,
+        invoicesDue: invoiceStats.rows[0]?.due ?? 0,
+        unansweredMessages: messageStats.rows[0]?.unanswered ?? 0,
+        // Money owed, per currency, largest first. Currencies are never added together.
+        outstanding: outstanding.rows.map((row: any) => ({
+          currency: row.currency,
+          amount: Number(row.amount),
+        })),
+        lastLoginAt: loginStats.rows[0]?.last_login_at ?? null,
+        // When the latest invitation was sent, for a client that has not signed in yet
+        invitedAt: portalState.rows[0]?.invitation_sent_at ?? null,
+        hasSignedIn: (loginStats.rows[0]?.signed_in ?? 0) > 0,
+        portalStatus: { status: portalStatusKey, ...PORTAL_STATUS_LABELS[portalStatusKey] },
       };
 
       return res.json(
@@ -1702,8 +2012,8 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             i.invoice_no as reference_name,
             COALESCE(i.sent_at, i.created_at) as activity_date,
             CASE
+              WHEN i.payment_status = 'paid' THEN 'Invoice ' || i.invoice_no || ' paid'
               WHEN i.status = 'sent' THEN 'Invoice ' || i.invoice_no || ' sent'
-              WHEN i.status = 'paid' THEN 'Invoice ' || i.invoice_no || ' paid'
               ELSE 'Invoice ' || i.invoice_no || ' ' || i.status
             END as description,
             i.status,
@@ -1725,9 +2035,10 @@ export default class ClientPortalClientsController extends ClientPortalControlle
             m.id as reference_id,
             DATE(m.created_at)::text as reference_name,
             m.created_at as activity_date,
+            -- Seen from the team's side: the client wrote it, or a team member did.
             CASE
-              WHEN m.sender_type = 'client' THEN 'You sent a message'
-              ELSE u.name || ' sent a message'
+              WHEN m.sender_type = 'client' THEN 'Client sent a message'
+              ELSE COALESCE(u.name, 'Team member') || ' sent a message'
             END as description,
             'active' as status,
             'chat' as category
@@ -1879,7 +2190,7 @@ export default class ClientPortalClientsController extends ClientPortalControlle
       ) {
         const invoicesQuery = `
           SELECT
-            i.id, i.invoice_no, i.amount, i.currency, i.status,
+            i.id, i.invoice_no, i.amount, i.currency, i.status, i.payment_status, i.paid_amount,
             i.due_date, i.sent_at, i.paid_at, i.created_at, i.updated_at
           FROM client_portal_invoices i
           WHERE i.client_id = $1

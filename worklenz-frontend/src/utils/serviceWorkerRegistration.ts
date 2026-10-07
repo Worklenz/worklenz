@@ -2,6 +2,7 @@
 // Handles registration, updates, and error handling
 
 import React, { startTransition } from 'react';
+import CacheCleanup from './cache-cleanup';
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
@@ -55,7 +56,35 @@ const syncStoredVersionWithLoadedBuild = (): string | null => {
 let isRegistering = false;
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
+/**
+ * Development only: the worker just gets in the way (it caches responses and can
+ * replay stale ones when the dev API restarts), so instead of registering it,
+ * remove any worker and this app's caches left over from earlier sessions.
+ * Only touches `worklenz-*` caches - never storage or cookies, so nobody is logged out.
+ */
+async function removeDevServiceWorker(): Promise<null> {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration => registration.unregister()));
+      if (registrations.length > 0) {
+        console.log('Dev: removed the service worker left over from an earlier session.');
+      }
+    }
+    await CacheCleanup.clearSpecificCaches(['worklenz-']);
+  } catch (error) {
+    console.warn('Dev: could not clean up the service worker / caches:', error);
+  }
+  return null;
+}
+
 export function registerSW(config?: Config) {
+  // Only register in production, or when explicitly testing the worker locally
+  // (set VITE_ENABLE_SW=true).
+  if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_SW !== 'true') {
+    return removeDevServiceWorker();
+  }
+
   if ('serviceWorker' in navigator) {
     // Check if service worker is already registered
     const checkExisting = navigator.serviceWorker.getRegistration();

@@ -10,6 +10,8 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store';
 import { ITeamMembersViewModel } from '@/types/teamMembers/teamMembersViewModel.types';
 import { sortTeamMembers } from '@/utils/sort-team-members';
+import { useTranslation } from 'react-i18next';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
 
 interface TaskPhaseDropdownProps {
   task: Task;
@@ -49,7 +51,10 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   const rafIdRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const { t } = useTranslation('task-list-table');
   const { phaseList } = useAppSelector(state => state.phaseReducer);
+  const projectType = useAppSelector(state => state.projectReducer.project?.project_type);
+  const isSoftwareProject = isSoftwareProjectType(projectType);
   const members = useSelector((state: RootState) => state.teamMembersReducer.teamMembers);
 
   // Find current phase details - task.phase can be phase ID or phase name
@@ -66,6 +71,27 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
 
     return found || null;
   }, [phaseList, task.phase]);
+
+  // Software projects: completed sprints can no longer receive issues
+  const selectablePhases = useMemo(() => {
+    if (!isSoftwareProject) return phaseList;
+    return phaseList.filter(
+      phase => phase.sprint_status !== 'completed' || phase.id === currentPhase?.id
+    );
+  }, [isSoftwareProject, phaseList, currentPhase?.id]);
+
+  const emptyPhaseLabel = isSoftwareProject
+    ? t('backlogNoSprint', { defaultValue: 'Backlog' })
+    : t('noPhase', { defaultValue: 'No Phase' });
+  const placeholderLabel = isSoftwareProject
+    ? t('backlogNoSprint', { defaultValue: 'Backlog' })
+    : t('selectPhase', { defaultValue: 'Select' });
+
+  const getSprintStatusLabel = (status?: string) => {
+    if (status === 'active') return t('sprintStatusActive', { defaultValue: 'Active' });
+    if (status === 'completed') return t('sprintStatusCompleted', { defaultValue: 'Completed' });
+    return t('sprintStatusPlanned', { defaultValue: 'Planned' });
+  };
 
   const filteredMembers = useMemo(() => {
     return teamMembers?.data?.filter(member =>
@@ -252,10 +278,13 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
   }, []);
 
   // Format phase name for display
-  const formatPhaseName = useCallback((name: string) => {
-    if (!name) return 'Select';
-    return name;
-  }, []);
+  const formatPhaseName = useCallback(
+    (name: string) => {
+      if (!name) return placeholderLabel;
+      return name;
+    },
+    [placeholderLabel]
+  );
 
   // Determine if no phase is selected
   const hasPhase = task.phase && task.phase.trim() !== '';
@@ -299,7 +328,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                 maxWidth: '100%',
               }}
             >
-              {hasPhase && currentPhase ? formatPhaseName(currentPhase.name || '') : 'Select'}
+              {hasPhase && currentPhase ? formatPhaseName(currentPhase.name || '') : placeholderLabel}
             </span>
             <svg
               className={`w-3 h-3 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
@@ -372,7 +401,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                   style={{ backgroundColor: isDarkMode ? '#4b5563' : '#9ca3af' }}
                 />
 
-                <span className="flex-1 truncate">No Phase</span>
+                <span className="flex-1 truncate">{emptyPhaseLabel}</span>
 
                 {!hasPhase && (
                   <div className="flex items-center gap-1">
@@ -382,15 +411,15 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                     <span
                       className={`text-xs font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}
                     >
-                      Current
+                      {t('currentPhase', { defaultValue: 'Current' })}
                     </span>
                   </div>
                 )}
               </button>
 
               {/* Phase Options */}
-              {phaseList.map((phase, index) => {
-                const isSelected = phase.name === task.phase;
+              {selectablePhases.map((phase, index) => {
+                const isSelected = !!currentPhase && phase.id === currentPhase.id;
 
                 return (
                   <button
@@ -426,6 +455,22 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
 
                     <span className="flex-1 truncate">{formatPhaseName(phase.name || '')}</span>
 
+                    {isSoftwareProject && !isSelected && (
+                      <span
+                        className={`text-[10px] uppercase tracking-wide ${
+                          phase.sprint_status === 'active'
+                            ? isDarkMode
+                              ? 'text-green-400'
+                              : 'text-green-600'
+                            : isDarkMode
+                              ? 'text-gray-400'
+                              : 'text-gray-500'
+                        }`}
+                      >
+                        {getSprintStatusLabel(phase.sprint_status)}
+                      </span>
+                    )}
+
                     {isSelected && (
                       <div className="flex items-center gap-1">
                         <div
@@ -434,7 +479,7 @@ const TaskPhaseDropdown: React.FC<TaskPhaseDropdownProps> = ({
                         <span
                           className={`text-xs font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-600'}`}
                         >
-                          Current
+                          {t('currentPhase', { defaultValue: 'Current' })}
                         </span>
                       </div>
                     )}

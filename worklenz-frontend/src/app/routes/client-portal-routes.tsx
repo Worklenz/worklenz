@@ -4,16 +4,6 @@ import { Spin } from '@/shared/antd-imports';
 import ClientPortalLayout from '@/layouts/client-portal-layout';
 import ChunkErrorHandler from '@/utils/chunk-error-handler';
 import NavSurfaceIndexRedirect from '@/features/navigation/NavSurfaceIndexRedirect';
-import FeatureUpgradePreview from '@/components/upgrade/FeatureUpgradePreview';
-import { useClientPortalFeaturePreviews } from '@/components/upgrade/clientPortalFeaturePreviews';
-
-// Wrapped in its own component (rather than inline JSX in the route config)
-// so it can call the translation hook — route `element`s can't call hooks
-// directly.
-const ClientPortalTicketingComingSoon = () => {
-  const previews = useClientPortalFeaturePreviews();
-  return <FeatureUpgradePreview {...previews.ticketing} showCta={false} />;
-};
 
 // Lazy load all client portal components with chunk error handling
 const ClientPortalClients = lazy(
@@ -22,16 +12,22 @@ const ClientPortalClients = lazy(
     'ClientPortalClients'
   )
 );
+const ClientWorkspacePage = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/clients/workspace/ClientWorkspacePage'),
+    'ClientWorkspacePage'
+  )
+);
 const ClientPortalRequests = lazy(
   ChunkErrorHandler.wrapLazyImport(
     () => import('@/pages/client-portal/requests/client-portal-requests'),
     'ClientPortalRequests'
   )
 );
-const ClientPortalRequestDetails = lazy(
+const RequestDetailModal = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/requests/request-details/client-portal-request-details'),
-    'ClientPortalRequestDetails'
+    () => import('@/pages/client-portal/requests/request-details/RequestDetailModal'),
+    'RequestDetailModal'
   )
 );
 const ClientPortalServices = lazy(
@@ -40,16 +36,10 @@ const ClientPortalServices = lazy(
     'ClientPortalServices'
   )
 );
-const ClientPortalAddServices = lazy(
+const ServiceModal = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/services/add-service/ClientPortalAddServices'),
-    'ClientPortalAddServices'
-  )
-);
-const ClientPortalEditService = lazy(
-  ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/services/edit-service/client-portal-edit-service'),
-    'ClientPortalEditService'
+    () => import('@/pages/client-portal/services/ServiceModal'),
+    'ServiceModal'
   )
 );
 const ClientPortalChats = lazy(
@@ -70,16 +60,46 @@ const ClientPortalInvoices = lazy(
     'ClientPortalInvoices'
   )
 );
-const ClientPortalInvoiceDetails = lazy(
+const InvoiceDetailModal = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/invoices/invoice-details/client-portal-invoice-details'),
-    'ClientPortalInvoiceDetails'
+    () => import('@/pages/client-portal/invoices/InvoiceDetailModal'),
+    'InvoiceDetailModal'
   )
 );
-const InvoiceBuilder = lazy(
+const CreateInvoiceModal = lazy(
   ChunkErrorHandler.wrapLazyImport(
-    () => import('@/pages/client-portal/invoices/invoice-builder/invoice-builder'),
-    'InvoiceBuilder'
+    () => import('@/pages/client-portal/invoices/CreateInvoiceModal'),
+    'CreateInvoiceModal'
+  )
+);
+const ClientPortalQuotes = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/quotes/client-portal-quotes'),
+    'ClientPortalQuotes'
+  )
+);
+const QuoteDetailModal = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/quotes/QuoteDetailModal'),
+    'QuoteDetailModal'
+  )
+);
+const CreateQuoteModal = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/quotes/CreateQuoteModal'),
+    'CreateQuoteModal'
+  )
+);
+const ClientPortalTickets = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/tickets/client-portal-tickets'),
+    'ClientPortalTickets'
+  )
+);
+const TicketDetailModal = lazy(
+  ChunkErrorHandler.wrapLazyImport(
+    () => import('@/pages/client-portal/tickets/ticket-details/TicketDetailModal'),
+    'TicketDetailModal'
   )
 );
 
@@ -98,6 +118,21 @@ const clientPortalRoutes: RouteObject[] = [
             <ClientPortalClients />
           </Suspense>
         ),
+        children: [
+          {
+            // One workspace per client, opened as a modal over the list. Every way of
+            // opening a client links here, and a direct/shared link still works: the
+            // list (this route's parent) renders underneath it either way.
+            path: ':id',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <ClientWorkspacePage />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
         path: 'requests',
@@ -108,16 +143,21 @@ const clientPortalRoutes: RouteObject[] = [
             <ClientPortalRequests />
           </Suspense>
         ),
-      },
-      {
-        path: 'requests/:id',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalRequestDetails />
-          </Suspense>
-        ),
+        children: [
+          {
+            // One modal per request, opened over the list. Every way of opening a request
+            // links here, and a direct/shared link still works: the list (this route's
+            // parent) renders underneath it either way.
+            path: ':id',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <RequestDetailModal />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
         path: 'services',
@@ -128,26 +168,31 @@ const clientPortalRoutes: RouteObject[] = [
             <ClientPortalServices />
           </Suspense>
         ),
-      },
-      {
-        path: 'add-service',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalAddServices />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'edit-service/:id',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalEditService />
-          </Suspense>
-        ),
+        children: [
+          {
+            // Create / edit are modals opened over the list. Every way of opening a service
+            // links here, and a direct/shared link still works: the list (this route's parent)
+            // renders underneath it either way.
+            path: 'create',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <ServiceModal />
+              </Suspense>
+            ),
+          },
+          {
+            path: ':id/edit',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <ServiceModal />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
         path: 'chats',
@@ -168,49 +213,100 @@ const clientPortalRoutes: RouteObject[] = [
             <ClientPortalInvoices />
           </Suspense>
         ),
+        children: [
+          {
+            // Create / edit / view are modals opened over the list. Every way of opening an
+            // invoice links here, and a direct/shared link still works: the list (this route's
+            // parent) renders underneath it either way.
+            path: 'create',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <CreateInvoiceModal />
+              </Suspense>
+            ),
+          },
+          {
+            path: ':invoiceId/edit',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <CreateInvoiceModal />
+              </Suspense>
+            ),
+          },
+          {
+            path: ':invoiceId',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <InvoiceDetailModal />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
-        path: 'invoices/create',
+        path: 'quotes',
         element: (
           <Suspense
             fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
           >
-            <InvoiceBuilder />
+            <ClientPortalQuotes />
           </Suspense>
         ),
+        children: [
+          {
+            // Create / view are modals opened over the list, like invoices. A direct or shared
+            // link still works: the list (this route's parent) renders underneath it.
+            path: 'create',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <CreateQuoteModal />
+              </Suspense>
+            ),
+          },
+          {
+            path: ':quoteId',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <QuoteDetailModal />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
-        path: 'invoices/:invoiceId/edit',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <InvoiceBuilder />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'invoices/:invoiceId',
-        element: (
-          <Suspense
-            fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
-          >
-            <ClientPortalInvoiceDetails />
-          </Suspense>
-        ),
-      },
-      {
-        // No real feature behind this yet (see nav-registry.tsx's `soon: true`
-        // on the 'ticketing' rail item) — route exists so it's ready the
-        // moment that flag comes off.
         path: 'ticketing',
         element: (
           <Suspense
             fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
           >
-            <ClientPortalTicketingComingSoon />
+            <ClientPortalTickets />
           </Suspense>
         ),
+        children: [
+          {
+            // One modal per ticket, opened over the list/board. Every way of opening a
+            // ticket links here, and a direct/shared link still works: the queue (this
+            // route's parent) renders underneath it either way.
+            path: ':id',
+            element: (
+              <Suspense
+                fallback={<Spin size="large" style={{ display: 'block', margin: '50px auto' }} />}
+              >
+                <TicketDetailModal />
+              </Suspense>
+            ),
+          },
+        ],
       },
       {
         path: 'settings',

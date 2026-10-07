@@ -146,6 +146,7 @@
       "statusChanged": "{{userName}} changed status of project {{projectName}}",
       "managerAssigned": "{{userName}} assigned project manager to {{projectName}}",
       "managerRemoved": "{{userName}} removed project manager from {{projectName}}",
+      "managerFinanceChanged": "{{userName}} changed project manager finance access on {{projectName}}",
       "memberAdded": "{{userName}} added {{memberName}} to project {{projectName}}",
       "memberRemoved": "{{userName}} removed {{memberName}} from project {{projectName}}"
     },

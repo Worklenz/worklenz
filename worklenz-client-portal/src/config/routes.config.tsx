@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Spin } from '@/shared/antd-imports';
 
 // Layout Components
 import ClientLayout from '@/components/layout/ClientLayout';
@@ -7,28 +8,29 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import PublicRoute from '@/components/PublicRoute';
 
 // Page Components
-import LoginPage from '@/pages/LoginPage';
-import InvitePage from '@/pages/InvitePage';
-import ForgotPasswordPage from '@/pages/ForgotPasswordPage';
-import ResetPasswordPage from '@/pages/ResetPasswordPage';
-import DashboardPage from '@/pages/DashboardPage';
-import ServicesPage from '@/pages/ServicesPage';
-import ServiceDetailsPage from '@/pages/ServiceDetailsPage';
-import RequestsPage from '@/pages/RequestsPage';
-import NewRequestPage from '@/pages/NewRequestPage';
-import RequestDetailsPage from '@/pages/RequestDetailsPage';
-import ProjectsPage from '@/pages/ProjectsPage';
-import ProjectDetailsPage from '@/pages/ProjectDetailsPage';
-import InvoicesPage from '@/pages/InvoicesPage';
-import InvoiceDetailsPage from '@/pages/InvoiceDetailsPage';
-import EditInvoicePage from '@/pages/EditInvoicePage';
-import ChatsPage from '@/pages/ChatsPage';
-import ChatDetailsPage from '@/pages/ChatDetailsPage';
-import SettingsPage from '@/pages/SettingsPage';
-import ProfilePage from '@/pages/ProfilePage';
+const LoginPage = lazy(() => import('@/pages/LoginPage'));
+const InvitePage = lazy(() => import('@/pages/InvitePage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage'));
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const ServicesPage = lazy(() => import('@/pages/ServicesPage'));
+const ServiceDetailsPage = lazy(() => import('@/pages/ServiceDetailsPage'));
+const RequestsPage = lazy(() => import('@/pages/RequestsPage'));
+const NewRequestPage = lazy(() => import('@/pages/NewRequestPage'));
+const RequestDetailsPage = lazy(() => import('@/pages/RequestDetailsPage'));
+const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
+const ProjectDetailsPage = lazy(() => import('@/pages/ProjectDetailsPage'));
+const InvoicesPage = lazy(() => import('@/pages/InvoicesPage'));
+const InvoiceDetailsPage = lazy(() => import('@/pages/InvoiceDetailsPage'));
+const EditInvoicePage = lazy(() => import('@/pages/EditInvoicePage'));
+const ChatsPage = lazy(() => import('@/pages/ChatsPage'));
+const ChatDetailsPage = lazy(() => import('@/pages/ChatDetailsPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 
 export const AppRoutes: React.FC = () => (
-  <Routes>
+  <Suspense fallback={<Spin fullscreen />}>
+    <Routes>
     {/* Public Routes */}
     <Route
       path="/auth/login"
@@ -103,7 +105,8 @@ export const AppRoutes: React.FC = () => (
 
     {/* Catch all route */}
     <Route path="*" element={<Navigate to="/auth/login" replace />} />
-  </Routes>
+    </Routes>
+  </Suspense>
 );
 
 

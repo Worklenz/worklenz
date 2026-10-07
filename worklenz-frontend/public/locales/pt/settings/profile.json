@@ -4,7 +4,7 @@
   "upload": "Carregar",
   "nameLabel": "Nome",
   "nameRequiredError": "Nome é obrigatório",
-  "emailLabel": "Email",
+  "emailLabel": "E-mail",
   "emailRequiredError": "Email é obrigatório",
   "saveChanges": "Salvar Alterações",
   "save": "Salvar",

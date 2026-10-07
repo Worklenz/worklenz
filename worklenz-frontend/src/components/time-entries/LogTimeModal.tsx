@@ -382,14 +382,13 @@ export const LogTimeModal: React.FC<LogTimeModalProps> = ({ open, onClose, onSuc
           />
         </Form.Item>
 
-        <Form.Item style={{ marginBottom: 0 }}>
+        <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button
             type="primary"
             htmlType="submit"
-            block
-            size="large"
             loading={submitting}
             disabled={!isFormValid()}
+            style={{ height: 30, fontSize: 12, borderRadius: 7, paddingInline: 12 }}
           >
             {t('logTimeButton', { defaultValue: 'Log Time' })}
           </Button>

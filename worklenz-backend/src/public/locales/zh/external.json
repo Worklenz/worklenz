@@ -1,0 +1,64 @@
+{
+  "slack": {
+    "task_created": {
+      "title": "任务已创建"
+    },
+    "task_assigned": {
+      "title": "任务已指派"
+    },
+    "task_completed": {
+      "title": "任务已完成"
+    },
+    "comment_added": {
+      "title": "评论已添加"
+    },
+    "priority_changed": {
+      "title": "优先级已变更"
+    },
+    "due_date_changed": {
+      "title": "截止日期已变更"
+    },
+    "task_updated": {
+      "title": "任务已更新"
+    },
+    "task_status_changed": {
+      "title": "任务状态已变更"
+    },
+    "viewTask": "查看任务",
+    "assignedTo": "👥 指派给",
+    "assignedBy": "👤 指派人",
+    "statusChange": "📊 状态变更",
+    "changedBy": "👤 修改人",
+    "createdBy": "👤 创建人",
+    "commentedBy": "💬 评论人",
+    "updatedBy": "👤 更新人",
+    "status": "📊 状态",
+    "currentStatus": "📊 当前状态",
+    "priority": "优先级",
+    "dueDate": "截止日期",
+    "assignees": "👥 负责人",
+    "comment": "评论",
+    "priorityChanged": "🔺 优先级已变更",
+    "dueDateChanged": "📅 截止日期已变更",
+    "updatedByWithUser": "由 {{user}} 更新"
+  },
+  "teams": {
+    "task": "任务",
+    "project": "项目",
+    "assignees": "负责人",
+    "assignedBy": "指派人",
+    "createdBy": "创建人",
+    "commentedBy": "评论人",
+    "updatedBy": "更新人",
+    "status": "状态",
+    "priority": "优先级",
+    "dueDate": "截止日期",
+    "previousStatus": "之前状态",
+    "newStatus": "新状态",
+    "previousPriority": "之前优先级",
+    "newPriority": "新优先级",
+    "statusChange": "状态变更",
+    "changedBy": "修改人",
+    "viewTask": "查看任务"
+  }
+}

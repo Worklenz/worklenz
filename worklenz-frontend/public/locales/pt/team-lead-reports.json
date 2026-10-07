@@ -1,7 +1,6 @@
 {
   "title": "Relatórios da Minha Equipe",
   "subtitle": "Rastreamento de tempo e insights de desempenho para os membros da sua equipe",
-
   "dateRange": {
     "label": "Intervalo de Datas",
     "showing": "Mostrando",
@@ -17,7 +16,6 @@
     "custom": "Intervalo Personalizado",
     "apply": "Aplicar"
   },
-
   "summary": {
     "totalMembers": "Total de Membros",
     "totalMembersTooltip": "Número total de membros da equipe que registraram tempo durante o intervalo de datas selecionado.",
@@ -28,7 +26,6 @@
     "avgCompletionRate": "Taxa de Conclusão Média",
     "hours": "horas"
   },
-
   "timeTracking": {
     "title": "Resumo de Rastreamento de Tempo",
     "chartTitle": "Gráfico de Rastreamento de Tempo da Equipe",
@@ -51,7 +48,6 @@
     "projectsTooltip": "Número de projetos distintos nos quais este membro registrou tempo durante o intervalo de datas selecionado.",
     "activeDaysTooltip": "Número de dias distintos nos quais este membro registrou tempo durante o intervalo de datas selecionado."
   },
-
   "performance": {
     "title": "Desempenho da Equipe",
     "member": "Membro",
@@ -70,7 +66,6 @@
     "projectsInvolved": "Projetos Envolvidos",
     "noData": "Nenhum dado de desempenho disponível"
   },
-
   "detailedLogs": {
     "title": "Registros de Tempo Detalhados",
     "for": "para",
@@ -82,24 +77,21 @@
     "description": "Descrição",
     "method": "Método",
     "type": "Tipo",
-    "manual": "Manual",
+    "manual": "Manuais",
     "timer": "Temporizador",
     "noLogs": "Nenhum registro detalhado encontrado",
     "close": "Fechar",
     "timeLogsRange": "registros de tempo"
   },
-
   "errors": {
     "failedToLoad": "Falha ao carregar relatórios da equipe",
     "tryAgain": "Por favor, tente novamente",
     "noTeamMembers": "Nenhum membro da equipe encontrado",
     "loadingError": "Erro ao carregar dados"
   },
-
   "loading": {
     "fetchingData": "Carregando relatórios da equipe...",
     "fetchingLogs": "Carregando registros detalhados..."
   },
-
   "export": "Exportar"
 }

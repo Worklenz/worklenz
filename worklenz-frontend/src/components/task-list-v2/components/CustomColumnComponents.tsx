@@ -134,7 +134,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
         name: defaultFieldTitle,
         key: columnKey,
         field_type: 'text',
-        width: 120,
+        width: 180,
         is_visible: true,
         configuration,
       });
@@ -144,7 +144,7 @@ export const AddCustomColumnButton: React.FC = memo(() => {
           key: columnKey,
           name: defaultFieldTitle,
           columnHeader: null, // Will be rendered dynamically
-          width: 120,
+          width: 180,
           isVisible: true,
           custom_column: true,
           custom_column_obj: {
@@ -381,7 +381,7 @@ export const CustomColumnHeader: React.FC<{
       const response = await tasksCustomColumnsService.updateCustomColumn(columnId, {
         name: editValue.trim(),
         field_type: existingConfig.fieldType || 'text',
-        width: Number.parseInt(String(column.width || 120), 10) || 120,
+        width: Number.parseInt(String(column.width || 180), 10) || 180,
         is_visible: true,
         configuration,
       });
@@ -434,7 +434,7 @@ export const CustomColumnHeader: React.FC<{
 
   if (isEditing && !isGuest) {
     return (
-      <Flex align="center" gap={4} className="w-full px-2" style={{ minWidth: 0 }}>
+      <Flex align="center" gap={4} className="w-full" style={{ width: '100%', minWidth: 0 }}>
         <Input
           ref={inputRef}
           value={editValue}
@@ -452,7 +452,7 @@ export const CustomColumnHeader: React.FC<{
             icon={<span style={{ color: '#52c41a' }}>✓</span>}
             onClick={handleSave}
             loading={isSaving}
-            style={{ padding: '0 4px', minWidth: 24 }}
+            style={{ padding: '0 4px', minWidth: 20 }}
           />
         </Tooltip>
         <Tooltip title={t('cancel', { defaultValue: 'Cancel' })}>
@@ -462,7 +462,7 @@ export const CustomColumnHeader: React.FC<{
             icon={<span style={{ color: '#ff4d4f' }}>✕</span>}
             onClick={handleCancel}
             disabled={isSaving}
-            style={{ padding: '0 4px', minWidth: 24 }}
+            style={{ padding: '0 4px', minWidth: 20 }}
           />
         </Tooltip>
       </Flex>

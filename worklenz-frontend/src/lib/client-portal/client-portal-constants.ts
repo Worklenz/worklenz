@@ -13,6 +13,9 @@ const ClientPortalChats = lazy(() => import('../../pages/client-portal/chats/cli
 const ClientPortalInvoices = lazy(
   () => import('../../pages/client-portal/invoices/client-portal-invoices')
 );
+const ClientPortalQuotes = lazy(
+  () => import('../../pages/client-portal/quotes/client-portal-quotes')
+);
 const ClientPortalSettings = lazy(
   () => import('../../pages/client-portal/settings/ClientPortalSettings')
 );
@@ -21,6 +24,7 @@ import {
   AppstoreOutlined,
   CommentOutlined,
   FileDoneOutlined,
+  FileTextOutlined,
   GroupOutlined,
   SettingOutlined,
   UnorderedListOutlined,
@@ -58,11 +62,11 @@ export const clientPortalItems: ClientPortalMenuItems[] = [
     element: React.createElement(ClientPortalServices),
   },
   {
-    key: 'chats',
-    name: 'chats',
-    endpoint: 'chats',
-    icon: React.createElement(CommentOutlined),
-    element: React.createElement(ClientPortalChats),
+    key: 'quotes',
+    name: 'quotes',
+    endpoint: 'quotes',
+    icon: React.createElement(FileTextOutlined),
+    element: React.createElement(ClientPortalQuotes),
   },
   {
     key: 'invoices',
@@ -70,6 +74,13 @@ export const clientPortalItems: ClientPortalMenuItems[] = [
     endpoint: 'invoices',
     icon: React.createElement(FileDoneOutlined),
     element: React.createElement(ClientPortalInvoices),
+  },
+  {
+    key: 'chats',
+    name: 'chats',
+    endpoint: 'chats',
+    icon: React.createElement(CommentOutlined),
+    element: React.createElement(ClientPortalChats),
   },
   {
     key: 'settings',

@@ -1,6 +1,7 @@
-import { createClient, fetchClients } from '@/features/settings/client/clientSlice';
+import { createClient } from '@/features/settings/client/clientSlice';
+import { clientsApiService } from '@/api/clients/clients.api.service';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
-import { IClientsViewModel } from '@/types/client.types';
+import { IClient, IClientsViewModel } from '@/types/client.types';
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { QuestionCircleOutlined } from '@/shared/antd-imports';
 import {
@@ -13,7 +14,7 @@ import {
   Typography,
 } from '@/shared/antd-imports';
 import { TFunction } from 'i18next';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { safeTextDisplay } from '@/utils/html-entities';
 
 interface ProjectClientSectionProps {
@@ -35,6 +36,8 @@ const ProjectClientSection = ({
 }: ProjectClientSectionProps) => {
   const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [clientOptionsData, setClientOptionsData] = useState<IClient[]>([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
 
   const getClientDisplayName = (client: { company_name?: string; name?: string }) => {
     const companyName = client.company_name?.trim();
@@ -45,14 +48,35 @@ const ProjectClientSection = ({
     return client.name?.trim() || '';
   };
 
+  useEffect(() => {
+    const loadClients = async () => {
+      setLoadingSearch(true);
+
+      try {
+        const response = await clientsApiService.getClientsLookup();
+
+        if (response.done && Array.isArray(response.body)) {
+          setClientOptionsData(response.body);
+        }
+      } catch (error) {
+        console.error('Failed to load clients:', error);
+        setClientOptionsData([]);
+      } finally {
+        setLoadingSearch(false);
+      }
+    };
+
+    loadClients();
+  }, []);
+
   const clientOptions = [
-    ...(clients.data?.map((client, index) => ({
+    ...clientOptionsData.map((client, index) => ({
       key: index,
       value: client.id,
       label: safeTextDisplay(getClientDisplayName(client)),
       displayName: getClientDisplayName(client),
-    })) || []),
-    ...(searchTerm && clients.data?.length === 0 && !loadingClients
+    })),
+    ...(searchTerm && clientOptionsData.length === 0 && !loadingClients && !loadingSearch
       ? [
           {
             key: 'create',
@@ -91,12 +115,22 @@ const ProjectClientSection = ({
     form.setFieldsValue({ client_name: value });
   };
 
-  const handleClientSearch = (value: string): void => {
-    if (value.length > 2) {
-      dispatch(
-        fetchClients({ index: 1, size: 5, field: null, order: null, search: value || null })
-      );
-      form.setFieldValue('client_name', value);
+  const handleClientSearch = async (value: string): Promise<void> => {
+    setSearchTerm(value);
+    form.setFieldValue('client_name', value);
+    setLoadingSearch(true);
+
+    try {
+      const response = await clientsApiService.getClientsLookup(value);
+
+      if (response.done && Array.isArray(response.body)) {
+        setClientOptionsData(response.body);
+      }
+    } catch (error) {
+      console.error('Failed to search clients:', error);
+      setClientOptionsData([]);
+    } finally {
+      setLoadingSearch(false);
     }
   };
 
@@ -125,7 +159,7 @@ const ProjectClientSection = ({
           placeholder={t('typeToSearchClients')}
           dropdownRender={menu => (
             <>
-              {loadingClients && (
+              {(loadingClients || loadingSearch) && (
                 <Flex justify="center" align="center" style={{ height: '100px' }}>
                   <Spin />
                 </Flex>

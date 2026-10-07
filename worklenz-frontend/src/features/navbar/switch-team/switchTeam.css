@@ -50,7 +50,23 @@
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.switch-team-menu.ant-menu {
+/*
+ * NOTE: A `Menu` rendered inside an antd `Dropdown` popup (via `dropdownRender`)
+ * does NOT use the `ant-menu` prefix. antd's internal `OverrideProvider` forces
+ * the Dropdown prefix + vertical mode, so the root <ul> actually renders as
+ * `.ant-dropdown-menu.ant-dropdown-menu-root.ant-dropdown-menu-vertical`.
+ *
+ * That matters because antd's own Dropdown stylesheet ships:
+ *   .ant-dropdown-menu-vertical { max-height: 100vh; overflow-y: auto; }
+ * ("Makes vertical dropdowns have a scrollbar once they become taller than the
+ * viewport.") Nested inside `.switch-team-menu-scroll` this produced a second
+ * scrollbar right next to ours once the team list grew tall. We neutralise it
+ * here, making `.switch-team-menu-scroll` the only scroll container.
+ *
+ * Scoped to `.navbar-switch-team-dropdown` (this component's own overlay class)
+ * so it never collides with the LicenseExpiredModal's `.switch-team-dropdown`.
+ */
+.navbar-switch-team-dropdown .switch-team-menu.ant-dropdown-menu {
   padding: 0 !important;
   border-radius: 0;
   border: none;
@@ -59,11 +75,34 @@
   overflow: visible !important;
 }
 
-.switch-team-menu .ant-menu-item {
+.navbar-switch-team-dropdown .switch-team-menu .ant-dropdown-menu-item {
   padding: 0 !important;
   height: auto !important;
   line-height: normal !important;
+}
+
+.navbar-switch-team-dropdown
+  .switch-team-menu
+  .ant-dropdown-menu-item
+  .ant-dropdown-menu-title-content {
+  display: block;
+  width: 100%;
+}
+
+.navbar-switch-team-dropdown
+  .switch-team-menu
+  .ant-dropdown-menu-item
+  .switch-team-card {
+  width: 100% !important;
+  margin: 0;
   transition: background-color 0.2s ease;
+}
+
+.navbar-switch-team-dropdown
+  .switch-team-menu
+  .ant-dropdown-menu-item:hover
+  .switch-team-card {
+  background-color: rgba(22, 119, 255, 0.08);
 }
 
 .switch-team-card .ant-card-body {

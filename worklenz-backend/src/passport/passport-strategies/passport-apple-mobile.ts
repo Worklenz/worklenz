@@ -5,6 +5,7 @@ import jwksClient from "jwks-rsa";
 import db from "../../config/db";
 import { log_error } from "../../shared/utils";
 import { ERROR_KEY } from "./passport-constants";
+import { BLOCKED_SIGNUP_EMAIL_MESSAGE, isSignupEmailDomainBlocked } from "../../shared/signup-email-domain-policy";
 
 /**
  * Apple ID Token Payload Interface
@@ -222,6 +223,13 @@ async function handleAppleMobileAuth(req: Request, done: any) {
       });
     }
 
+    if (await isSignupEmailDomainBlocked(email)) {
+      return done(null, false, {
+        message: BLOCKED_SIGNUP_EMAIL_MESSAGE,
+        [ERROR_KEY]: "EMAIL_DOMAIN_NOT_SUPPORTED"
+      });
+    }
+
     // Prepare user data for registration
     const appleUserData = {
       id: appleId,
@@ -251,6 +259,13 @@ async function handleAppleMobileAuth(req: Request, done: any) {
         return done(null, false, {
           message: `An account with email ${email} already exists.`,
           [ERROR_KEY]: "EMAIL_EXISTS"
+        });
+      }
+
+      if (error.message?.includes("ERROR_SIGNUP_EMAIL_DOMAIN_BLOCKED")) {
+        return done(null, false, {
+          message: BLOCKED_SIGNUP_EMAIL_MESSAGE,
+          [ERROR_KEY]: "EMAIL_DOMAIN_NOT_SUPPORTED"
         });
       }
 
@@ -288,5 +303,5 @@ async function handleAppleMobileAuth(req: Request, done: any) {
   }
 }
 
-// Export the custom strategy
-export default new CustomStrategy(handleAppleMobileAuth);
+// Cast needed: passport-custom ships @types/express@5 while the app uses @types/express@4
+export default new CustomStrategy(handleAppleMobileAuth as never) as any;

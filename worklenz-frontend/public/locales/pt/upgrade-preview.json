@@ -187,16 +187,6 @@
           "Visão geral do status do pagamento"
         ]
       },
-      "ticketing": {
-        "title": "Tickets",
-        "description": "Permita que os clientes criem e rastreiem tickets de suporte diretamente em seu portal.",
-        "features": [
-          "Tickets de suporte enviados pelo cliente",
-          "Acompanhamento e atualizações de status de tickets",
-          "Notas internas e tarefas",
-          "Marcação de prioridade e SLA"
-        ]
-      },
       "settings": {
         "title": "Configurações do Portal",
         "description": "Personalize o portal do seu cliente com sua própria marca.",
@@ -273,23 +263,6 @@
       "dateColumn": "Data",
       "rowsPerPage": "Linhas por página: {{count}}"
     }
-  },
-  "ticketingMockup": {
-    "openTickets": "Ingressos abertos",
-    "inProgress": "Em progresso",
-    "resolvedToday": "Resolvido hoje",
-    "avgResponseTime": "Média Tempo de resposta",
-    "ticketsCard": "Ingressos",
-    "ticketNoColumn": "Bilhete #",
-    "clientColumn": "Cliente",
-    "subjectColumn": "Assunto",
-    "priorityColumn": "Prioridade",
-    "statusColumn": "Estado",
-    "priorityHigh": "Alta",
-    "priorityMedium": "Média",
-    "priorityLow": "Baixa",
-    "statusOpen": "Abrir",
-    "statusResolved": "Resolvido"
   },
   "plannerMockup": {
     "chrome": {

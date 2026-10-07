@@ -1,62 +1,77 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { TempServicesType } from '../../../types/client-portal/temp-client-portal.types';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-const TempServices: TempServicesType[] = [
-  {
-    id: '1',
-    name: 'Marketing video',
-    created_by: 'sachintha prasad',
-    status: 'pending',
-    no_of_requests: 20,
-    service_data: {
-      description: 'A promotional marketing video service.',
-      images: [],
-      request_form: [],
-    },
-  },
-  {
-    id: '2',
-    name: 'Product portfolio video',
-    created_by: 'sachintha prasad',
-    status: 'in_progress',
-    no_of_requests: 10,
-    service_data: {
-      description: 'A product showcase video service.',
-      images: [],
-      request_form: [],
-    },
-  },
-  {
-    id: '3',
-    name: 'Animated video',
-    created_by: 'sachintha prasad',
-    status: 'accepted',
-    no_of_requests: 30,
-    service_data: {
-      description: 'An animated explainer video service.',
-      images: [],
-      request_form: [],
-    },
-  },
-];
-
-type ServicesState = {
-  services: TempServicesType[];
+export type ServicesState = {
+  // Filter and Pagination State (for UI controls) — mirrors requests-slice.ts so the two lists
+  // behave identically.
+  filters: {
+    search: string;
+    status: string;
+    sortBy: string;
+    sortOrder: 'asc' | 'desc';
+  };
+  pagination: {
+    page: number;
+    limit: number;
+  };
 };
 
 const initialState: ServicesState = {
-  services: TempServices,
+  filters: {
+    search: '',
+    status: 'all',
+    sortBy: 'name',
+    sortOrder: 'asc',
+  },
+  pagination: {
+    page: 1,
+    limit: 10,
+  },
 };
 
 const servicesSlice = createSlice({
   name: 'servicesReducer',
   initialState,
   reducers: {
-    addService: (state, action) => {
-      state.services.push(action.payload);
+    setSearchFilter: (state, action: PayloadAction<string>) => {
+      state.filters.search = action.payload;
+      state.pagination.page = 1;
+    },
+    setStatusFilter: (state, action: PayloadAction<string>) => {
+      state.filters.status = action.payload;
+      state.pagination.page = 1;
+    },
+    setSortBy: (state, action: PayloadAction<string>) => {
+      state.filters.sortBy = action.payload;
+    },
+    setSortOrder: (state, action: PayloadAction<'asc' | 'desc'>) => {
+      state.filters.sortOrder = action.payload;
+    },
+    setPage: (state, action: PayloadAction<number>) => {
+      state.pagination.page = action.payload;
+    },
+    setLimit: (state, action: PayloadAction<number>) => {
+      state.pagination.limit = action.payload;
+      state.pagination.page = 1;
+    },
+    clearFilters: state => {
+      state.filters = {
+        search: '',
+        status: 'all',
+        sortBy: 'name',
+        sortOrder: 'asc',
+      };
+      state.pagination.page = 1;
     },
   },
 });
 
-export const { addService } = servicesSlice.actions;
+export const {
+  setSearchFilter,
+  setStatusFilter,
+  setSortBy,
+  setSortOrder,
+  setPage,
+  setLimit,
+  clearFilters,
+} = servicesSlice.actions;
 export default servicesSlice.reducer;

@@ -22,14 +22,21 @@ import { useNavigate } from 'react-router-dom';
 import { Tooltip } from 'antd';
 import { ClientPortalInvoiceDetails } from '@/api/client-portal/client-portal-api';
 import { useAppSelector } from '@/hooks/useAppSelector';
-import config from '@/config/env';
-import { API_BASE_URL } from '@/shared/constants';
+import { getInvoiceDownloadUrl } from '../invoices-list-helpers';
+import { isInvoiceOverdue, normalizePaymentStatus } from '../invoices-list-helpers';
+import '../invoices.css';
 
 const { Title, Text } = Typography;
-const { useToken } = theme;
 
-const getInvoiceDownloadUrl = (invoiceId: string) =>
-  `${config.apiUrl.replace(/\/$/, '')}${API_BASE_URL}/clients/portal/invoices/${invoiceId}/download`;
+// Line items and notes are typed by staff and written into a print document, so escape them.
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+const { useToken } = theme;
 
 interface InvoicePreviewModalProps {
   open: boolean;
@@ -44,8 +51,17 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
   const organizationPhone = invoice.organization?.phone || '';
   const organizationAddressLine1 = invoice.organization?.addressLine1 || '';
   const organizationAddressLine2 = invoice.organization?.addressLine2 || '';
+  const organizationCityStateZip = [
+    [invoice.organization?.city, invoice.organization?.state].filter(Boolean).join(', '),
+    invoice.organization?.zipCode,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const organizationCountry = invoice.organization?.country || '';
   const organizationLogo = invoice.organization?.logoUrl || undefined;
   const invoiceFooterMessage = invoice.organization?.invoiceFooterMessage || '';
+  const templateStyle = invoice.organization?.templateStyle === 'modern' ? 'modern' : 'classic';
+  const showLogo = invoice.organization?.showLogo !== false;
   const { t } = useTranslation('client-portal-invoices');
   const printRef = useRef<HTMLDivElement>(null);
   const { token } = useToken();
@@ -95,21 +111,17 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
     }).format(amount);
   };
 
-  // Get status text
+  // The badge on the document shows how much has been paid, not the lifecycle status.
+  const paymentStatus = normalizePaymentStatus(invoice.paymentStatus);
+  const isOverdue = isInvoiceOverdue(invoice);
   const getStatusText = (status: string) => {
     switch (status) {
       case 'paid':
-        return t('statusPaid');
-      case 'sent':
-        return t('statusSent');
-      case 'draft':
-        return t('statusDraft');
-      case 'overdue':
-        return t('statusOverdue');
-      case 'cancelled':
-        return t('statusCancelled');
+        return t('paymentStatusPaid', { defaultValue: 'Paid' });
+      case 'partially_paid':
+        return t('paymentStatusPartiallyPaid', { defaultValue: 'Partially Paid' });
       default:
-        return status;
+        return t('paymentStatusUnpaid', { defaultValue: 'Unpaid' });
     }
   };
 
@@ -118,12 +130,10 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
     switch (status) {
       case 'paid':
         return 'background: #f6ffed; color: #52c41a;';
-      case 'sent':
-        return 'background: #e6f7ff; color: #1890ff;';
-      case 'overdue':
-        return 'background: #fff2f0; color: #ff4d4f;';
+      case 'partially_paid':
+        return 'background: #fff7e6; color: #d46b08;';
       default:
-        return 'background: #f5f5f5; color: #666;';
+        return 'background: #fff2f0; color: #ff4d4f;';
     }
   };
 
@@ -140,8 +150,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
   // Handle print - generates a clean, professional print-ready invoice
   const handlePrint = () => {
     const primaryColor = invoice.organization?.primaryColor || '#1890ff';
-    const serviceName = invoice.request?.service?.name || t('serviceItems');
     const clientAddressParts = getClientAddress();
+    const printLineItems = lineItems;
 
     const printContent = `
       <!DOCTYPE html>
@@ -233,7 +243,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
               font-weight: 600;
               text-transform: uppercase;
               letter-spacing: 0.5px;
-              ${getStatusBadgeStyle(invoice.status)}
+              ${getStatusBadgeStyle(paymentStatus)}
             }
             .meta-section {
               display: flex;
@@ -383,31 +393,56 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 padding: 0;
               }
             }
+            .invoice-container.modern {
+              border-left: 6px solid ${primaryColor};
+              padding-left: 34px;
+            }
+            .invoice-container.modern .header {
+              border-bottom: none;
+              padding-bottom: 0;
+            }
+            .invoice-container.modern .invoice-title-section h2 {
+              color: ${primaryColor};
+              font-weight: 700;
+              letter-spacing: 0;
+            }
+            .invoice-container.modern .items-table th {
+              background: transparent;
+              border-bottom: 2px solid ${primaryColor};
+            }
+            .invoice-container.modern .items-table td {
+              border-bottom: none;
+            }
+            .invoice-container.modern .items-table tr:nth-child(even) td {
+              background: #fafafa;
+            }
           </style>
         </head>
         <body>
-          <div class="invoice-container">
+          <div class="invoice-container${templateStyle === 'modern' ? ' modern' : ''}">
             <div class="header">
               <div class="company-section">
-                <div class="company-logo">
+                ${showLogo ? `<div class="company-logo">
                   ${
                     organizationLogo
                       ? `<img src="${organizationLogo}" alt="Logo" />`
                       : organizationName.charAt(0).toUpperCase()
                   }
-                </div>
+                </div>` : ''}
                 <div class="company-info">
                   <h1>${organizationName}</h1>
                   ${organizationEmail ? `<p>${organizationEmail}</p>` : ''}
                   ${organizationPhone ? `<p>${organizationPhone}</p>` : ''}
                   ${organizationAddressLine1 ? `<p>${organizationAddressLine1}</p>` : ''}
                   ${organizationAddressLine2 ? `<p>${organizationAddressLine2}</p>` : ''}
+                  ${organizationCityStateZip ? `<p>${organizationCityStateZip}</p>` : ''}
+                  ${organizationCountry ? `<p>${organizationCountry}</p>` : ''}
                 </div>
               </div>
               <div class="invoice-title-section">
                 <h2>${t('invoiceTitle').toUpperCase()}</h2>
                 <p class="invoice-number">#${invoice.invoiceNumber}</p>
-                <span class="status-badge">${getStatusText(invoice.status)}</span>
+                <span class="status-badge">${getStatusText(paymentStatus)}</span>
               </div>
             </div>
 
@@ -427,7 +462,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                   </div>
                   <div class="detail-item">
                     <p class="label">${t('dueDateLabel')}</p>
-                    <p class="value ${invoice.isOverdue ? 'danger' : ''}">${formatDate(invoice.dueDate)}</p>
+                    <p class="value ${isOverdue ? 'danger' : ''}">${formatDate(invoice.dueDate)}</p>
                   </div>
                   <div class="detail-item">
                     <p class="label">${t('reference')}</p>
@@ -451,12 +486,17 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 </tr>
               </thead>
               <tbody>
+                ${printLineItems
+                  .map(
+                    item => `
                 <tr>
-                  <td>${serviceName}</td>
-                  <td>1</td>
-                  <td>${formatCurrency(invoice.amount, invoice.currency)}</td>
-                  <td>${formatCurrency(invoice.amount, invoice.currency)}</td>
-                </tr>
+                  <td>${escapeHtml(item.description)}</td>
+                  <td>${item.quantity}</td>
+                  <td>${formatCurrency(item.rate, invoice.currency)}</td>
+                  <td>${formatCurrency(item.amount, invoice.currency)}</td>
+                </tr>`
+                  )
+                  .join('')}
               </tbody>
             </table>
 
@@ -498,7 +538,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 ? `
               <div class="notes-section">
                 <h3>${t('notes')}</h3>
-                <p>${invoice.notes}</p>
+                <p>${escapeHtml(invoice.notes)}</p>
               </div>
             `
                 : ''
@@ -546,16 +586,19 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
     }
   };
 
-  // Line items for the table (mock for now, can be extended)
-  const lineItems = [
-    {
-      key: '1',
-      description: invoice.request?.service?.name || t('serviceItems'),
-      quantity: 1,
-      rate: invoice.amount,
-      amount: invoice.amount,
-    },
-  ];
+  // Saved line items, or one line for the whole amount for invoices created before line items existed.
+  const lineItems = (
+    invoice.lineItems?.length
+      ? invoice.lineItems
+      : [
+          {
+            description: invoice.request?.service?.name || invoice.projectName || t('serviceItems'),
+            quantity: 1,
+            rate: invoice.subtotal || invoice.amount,
+            amount: invoice.subtotal || invoice.amount,
+          },
+        ]
+  ).map((item, index) => ({ key: String(index), ...item }));
 
   const columns = [
     {
@@ -593,16 +636,19 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
     <Modal
       open={open}
       onCancel={onClose}
-      width={900}
-      title={<Text strong>{t('invoicePreview')}</Text>}
+      rootClassName="invoices-modal"
+      width="min(900px, 96vw)"
+      title={<Text strong style={{ fontSize: 14 }}>{t('invoicePreview')}</Text>}
       footer={
         <Flex justify="flex-end" gap={8}>
           <Button icon={<PrinterOutlined />} onClick={handlePrint}>
             {t('print')}
           </Button>
-          <Button icon={<DownloadOutlined />} type="primary" onClick={handleDownload}>
-            {t('downloadInvoice')}
-          </Button>
+          {invoice.id && (
+            <Button icon={<DownloadOutlined />} type="primary" onClick={handleDownload}>
+              {t('downloadInvoice')}
+            </Button>
+          )}
         </Flex>
       }
       styles={{
@@ -620,13 +666,14 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
           padding: 40,
           backgroundColor: colors.background,
           minHeight: 600,
+          borderLeft: templateStyle === 'modern' ? `6px solid ${colors.primary}` : undefined,
         }}
       >
         {/* Invoice Header */}
         <Row justify="space-between" align="top" style={{ marginBottom: 40 }}>
           <Col>
             <Flex align="center" gap={12} style={{ marginBottom: 12 }}>
-              {organizationLogo ? (
+              {showLogo && (organizationLogo ? (
                 <img src={organizationLogo} alt="Logo" style={{ height: 48, width: 'auto' }} />
               ) : (
                 <div
@@ -645,8 +692,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 >
                   {organizationName.charAt(0).toUpperCase()}
                 </div>
-              )}
-              <Title level={4} style={{ margin: 0, color: colors.primary }}>
+              ))}
+              <Title level={4} style={{ margin: 0, fontSize: 16, color: colors.primary }}>
                 {organizationName}
               </Title>
               <Tooltip title={t('companyDetailsTooltip')}>
@@ -681,50 +728,62 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                 {organizationAddressLine2}
               </Text>
             )}
+            {organizationCityStateZip && (
+              <Text type="secondary" style={{ display: 'block' }}>
+                {organizationCityStateZip}
+              </Text>
+            )}
+            {organizationCountry && (
+              <Text type="secondary" style={{ display: 'block' }}>
+                {organizationCountry}
+              </Text>
+            )}
           </Col>
           <Col style={{ textAlign: 'right' }}>
-            <Title level={2} style={{ margin: 0, color: colors.text }}>
+            <Title
+              level={2}
+              className="invoices-preview-title"
+              style={
+                templateStyle === 'modern'
+                  ? { margin: 0, color: colors.primary, fontWeight: 700, letterSpacing: 0 }
+                  : { margin: 0, color: colors.text }
+              }
+            >
               {t('invoiceTitle').toUpperCase()}
             </Title>
-            <Text type="secondary" style={{ fontSize: 16 }}>
+            <Text type="secondary" style={{ fontSize: 14 }}>
               #{invoice.invoiceNumber}
             </Text>
             <div style={{ marginTop: 8 }}>
               <span
-                className={`status-badge status-${invoice.status}`}
+                className="status-badge"
                 style={{
                   display: 'inline-block',
-                  padding: '4px 12px',
+                  padding: '3px 10px',
                   borderRadius: 4,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 500,
                   backgroundColor:
-                    invoice.status === 'paid'
+                    paymentStatus === 'paid'
                       ? isDark
                         ? 'rgba(82, 196, 26, 0.15)'
                         : '#f6ffed'
-                      : invoice.status === 'sent'
+                      : paymentStatus === 'partially_paid'
                         ? isDark
-                          ? 'rgba(24, 144, 255, 0.15)'
-                          : '#e6f7ff'
-                        : invoice.status === 'overdue'
-                          ? isDark
-                            ? 'rgba(255, 77, 79, 0.15)'
-                            : '#fff2f0'
-                          : isDark
-                            ? 'rgba(255, 255, 255, 0.08)'
-                            : '#f5f5f5',
+                          ? 'rgba(250, 173, 20, 0.15)'
+                          : '#fff7e6'
+                        : isDark
+                          ? 'rgba(255, 77, 79, 0.15)'
+                          : '#fff2f0',
                   color:
-                    invoice.status === 'paid'
+                    paymentStatus === 'paid'
                       ? colors.success
-                      : invoice.status === 'sent'
-                        ? colors.primary
-                        : invoice.status === 'overdue'
-                          ? colors.error
-                          : colors.textSecondary,
+                      : paymentStatus === 'partially_paid'
+                        ? colors.warning
+                        : colors.error,
                 }}
               >
-                {getStatusText(invoice.status)}
+                {getStatusText(paymentStatus)}
               </span>
             </div>
           </Col>
@@ -752,7 +811,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
               {t('billedTo')}
             </Text>
             <div style={{ marginTop: 8 }}>
-              <Text strong style={{ fontSize: 16, display: 'block' }}>
+              <Text strong style={{ fontSize: 14, display: 'block' }}>
                 {invoice.client?.name || '-'}
               </Text>
               {invoice.client?.companyName && (
@@ -804,7 +863,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                   {t('dueDateLabel')}
                 </Text>
                 <div style={{ marginTop: 4 }}>
-                  <Text strong type={invoice.isOverdue ? 'danger' : undefined}>
+                  <Text strong type={isOverdue ? 'danger' : undefined}>
                     {formatDate(invoice.dueDate)}
                   </Text>
                 </div>
@@ -836,7 +895,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
                   {t('total')}
                 </Text>
                 <div style={{ marginTop: 4 }}>
-                  <Text strong style={{ fontSize: 18, color: colors.primary }}>
+                  <Text strong style={{ fontSize: 14, color: colors.primary }}>
                     {formatCurrency(invoice.amount, invoice.currency)}
                   </Text>
                 </div>
@@ -850,7 +909,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
           dataSource={lineItems}
           columns={columns}
           pagination={false}
-          size="middle"
+          size="small"
+          bordered={templateStyle === 'classic'}
           style={{ marginBottom: 24 }}
         />
 
@@ -885,10 +945,10 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ open, onClose
             )}
             <Divider style={{ margin: '12px 0' }} />
             <Flex justify="space-between" style={{ padding: '8px 0' }}>
-              <Text strong style={{ fontSize: 16 }}>
+              <Text strong style={{ fontSize: 14 }}>
                 {t('total')}
               </Text>
-              <Text strong style={{ fontSize: 18, color: colors.primary }}>
+              <Text strong style={{ fontSize: 14, color: colors.primary }}>
                 {formatCurrency(invoice.amount, invoice.currency)}
               </Text>
             </Flex>

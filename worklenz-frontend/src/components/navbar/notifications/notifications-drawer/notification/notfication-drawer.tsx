@@ -48,6 +48,9 @@ import { APPSUMO_DRAWER_IMAGE_URL } from '@/config/appsumo-promo.config';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import { MixpanelBillingEvents } from '@/types/mixpanel-events.types';
 import { stripHtmlTags } from '@/utils/sanitizeInput';
+import { renderNotificationMessage } from '@/utils/notification-message-renderer';
+
+const HTML_TAG_REGEXP = /<[^>]*>/g;
 
 const NotificationDrawer = () => {
   const { token } = theme.useToken();
@@ -57,6 +60,7 @@ const NotificationDrawer = () => {
   const billingInfo = useAppSelector(state => state.adminCenterReducer.billingInfo);
   const dispatch = useAppDispatch();
   const { t } = useTranslation('navbar');
+  const { t: tNotifications } = useTranslation('notifications');
   const { trackMixpanelEvent } = useMixpanelTracking();
   const { socket, connected } = useSocket();
   const [notificationsSettings, setNotificationsSettings] = useState<INotificationSettings>({});
@@ -120,7 +124,7 @@ const NotificationDrawer = () => {
         url += q;
       }
 
-      createPush(notification.message, title, notification.team_id, url);
+      createPush(renderNotificationMessage(notification, tNotifications), title, notification.team_id, url);
     }
 
     // Show notification using the template
@@ -132,7 +136,10 @@ const NotificationDrawer = () => {
       id: data.id || '',
       team: data.team_name || '',
       team_id: data.team_id || '',
-      message: `You have been invited to join ${data.team_name || 'a team'}`,
+      message: t('notificationsDrawer.teamInvitation', {
+        teamName: data.team_name || 'a team',
+        defaultValue: `You have been invited to join ${data.team_name || 'a team'}`,
+      }),
     };
 
     if (isPushEnabled()) {

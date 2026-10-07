@@ -15,8 +15,11 @@ export interface ILocalSession extends IUserType {
   is_member?: boolean;
   role_name?: string;
   is_guest?: boolean;
+  /** Phase 5 — may create projects from templates (Owner/Admin always true). */
+  can_create_projects_from_templates?: boolean;
   build_v?: string;
   is_google?: boolean;
+  has_password?: boolean;
   setup_completed?: boolean;
   my_setup_completed?: boolean;
   timezone?: string;

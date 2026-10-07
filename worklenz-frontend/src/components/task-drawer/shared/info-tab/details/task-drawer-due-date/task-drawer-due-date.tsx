@@ -66,12 +66,13 @@ const TaskDrawerDueDate = ({ task, t, form, disabled = false }: TaskDrawerDueDat
   };
 
   const handleStartDateChange = (date: Dayjs | null) => {
+    if (disabled) return;
     try {
       socket?.emit(
         SocketEvents.TASK_START_DATE_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
-          start_date: date?.format('YYYY-MM-DD'),
+          start_date: date ? date.format('YYYY-MM-DD') : null,
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name
@@ -92,12 +93,13 @@ const TaskDrawerDueDate = ({ task, t, form, disabled = false }: TaskDrawerDueDat
   };
 
   const handleEndDateChange = (date: Dayjs | null) => {
+    if (disabled) return;
     try {
       socket?.emit(
         SocketEvents.TASK_END_DATE_CHANGE.toString(),
         JSON.stringify({
           task_id: task.id,
-          end_date: date?.format('YYYY-MM-DD'),
+          end_date: date ? date.format('YYYY-MM-DD') : null,
           parent_task: task.parent_task_id,
           time_zone: getUserSession()?.timezone_name
             ? getUserSession()?.timezone_name
@@ -122,6 +124,7 @@ const TaskDrawerDueDate = ({ task, t, form, disabled = false }: TaskDrawerDueDat
 
 const handleDueTimeChange = useCallback(
   (_time: dayjs.Dayjs | null, timeString: string | string[]) => {
+    if (disabled) return;
     try {
       const value = Array.isArray(timeString) ? timeString[0] : timeString;
       const dueTime = value || null;
@@ -153,7 +156,7 @@ const handleDueTimeChange = useCallback(
       logger.error('Failed to update due time:', error);
     }
   },
-  [socket, dispatch, task.id]
+  [socket, dispatch, task.id, disabled]
 );
 
   return (
@@ -187,6 +190,7 @@ const handleDueTimeChange = useCallback(
             type="text"
             onClick={() => setIsShowStartDate(prev => !prev)}
             style={{ color: isShowStartDate ? 'red' : colors.skyBlue }}
+            disabled={disabled}
           >
             {isShowStartDate
               ? t('taskInfoTab.details.hide-start-date', { defaultValue: 'Hide Start Date' })

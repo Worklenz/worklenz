@@ -16,11 +16,54 @@ import { getTeamMemberSeatLimit } from "../shared/subscription-limits";
 import { getGuestSeatLimit } from "../shared/guest-seat-limits";
 import { NotificationsService } from "../services/notifications/notifications.service";
 import { sendInvitationEmail } from "../shared/email-templates";
-import { hasTeamAdminPrivileges } from "../shared/team-permissions";
+import { hasTeamAdminPrivileges, normalizeTeamRoleName, TEAM_ROLE_NAMES } from "../shared/team-permissions";
+import { getProjectAccessForRequest } from "../shared/project-access";
+import { IO } from "../shared/io";
+import { SocketEvents } from "../socket.io/events";
+import { AUDIT_EVENT_TYPE } from "../shared/audit-log-constants";
+import { logAuditEvent, resolveOrganizationIdForUserId } from "../services/audit-log.service";
+import {
+  captureTeamMember,
+  getProjectMemberLabelsById,
+  logProjectMemberAdded,
+  logProjectMemberRemoved,
+  logTeamEvent,
+  logTeamMemberEvent,
+} from "../services/team-member-audit.service";
 
 const normalizeProjectAccessLevel = (value: unknown): string => {
   const accessLevel = String(value ?? '').trim().toUpperCase();
   return accessLevel || 'MEMBER';
+};
+
+const PM_ELEVATED_ACCESS_LEVELS = new Set([
+  "PROJECT_MANAGER",
+  "ADMIN",
+  "TEAM_LEAD",
+  "TEAM-LEAD",
+]);
+
+const isMemberOrGuestAccess = (accessLevel: string): boolean =>
+  accessLevel === "MEMBER" || accessLevel === "GUEST";
+
+/**
+ * Without assignPm (PMs / Team Leads), only Member or Guest may be assigned.
+ * Returns an error ServerResponse payload shape for the caller, or null if OK.
+ */
+const enforceNonElevatedAccessLevel = (
+  accessLevel: string
+): { status: number; body: ServerResponse<null> } | null => {
+  if (PM_ELEVATED_ACCESS_LEVELS.has(accessLevel)) {
+    return {
+      status: 403,
+      body: new ServerResponse(
+        false,
+        null,
+        "You are not authorized to assign project managers or admins."
+      ),
+    };
+  }
+  return null;
 };
 
 export default class ProjectMembersController extends WorklenzControllerBase {
@@ -53,7 +96,11 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     return data.exists;
   }
 
-  public static async createOrInviteMembers(body: any) {
+  /**
+   * @param auditUser Session of the person adding the member; when given, the addition is
+   * written to the workspace Audit Log. Omitted for self-service joins, which log their own entry.
+   */
+  public static async createOrInviteMembers(body: any, auditUser?: IPassportSession) {
     if (!body) return;
 
     const q = `SELECT create_project_member($1) AS res;`;
@@ -62,6 +109,10 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     const [data] = result.rows;
 
     const response = data.res;
+
+    if (auditUser && body.project_id && body.team_member_id) {
+      await logProjectMemberAdded(auditUser, body.project_id, body.team_member_id);
+    }
 
     if (response?.notification && response?.member_user_id) {
       NotificationsService.sendNotification({
@@ -111,13 +162,32 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
     }
 
+    const projectId = (req.body.project_id || req.query.current_project_id) as string | undefined;
+    if (!projectId) {
+      return res.status(200).send(new ServerResponse(false, null, "Project id is required."));
+    }
+
     req.body.user_id = sessionUser.id;
     req.body.team_id = teamId;
+    req.body.project_id = projectId;
+
     // Default to MEMBER access level - can be changed later if needed
     const inheritedAccessLevel = !req.body.access_level
       ? await ProjectMembersController.getInheritedAccessLevel(req.body.team_member_id, teamId)
       : undefined;
     req.body.access_level = normalizeProjectAccessLevel(inheritedAccessLevel || req.body.access_level);
+
+    // Phase 2: PMs may only add Member/Guest — never promote to PM/Admin.
+    const access = await getProjectAccessForRequest(req, projectId);
+    if (!access.permissions.assignPm) {
+      const elevatedError = enforceNonElevatedAccessLevel(req.body.access_level);
+      if (elevatedError) {
+        return res.status(elevatedError.status).send(elevatedError.body);
+      }
+      if (!isMemberOrGuestAccess(req.body.access_level)) {
+        req.body.access_level = "MEMBER";
+      }
+    }
 
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
     const guestLimitError = await ProjectMembersController.getGuestLimitError(teamId, req.body.access_level, subscriptionData);
@@ -126,14 +196,15 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       return res.status(200).send(guestLimitError);
     }
 
-    const data = await ProjectMembersController.createOrInviteMembers(req.body);
+    const data = await ProjectMembersController.createOrInviteMembers(req.body, sessionUser);
     return res.status(200).send(new ServerResponse(true, data));
   }
 
   @HandleExceptions({
     raisedExceptions: {
       "ERROR_EMAIL_INVITATION_EXISTS": "Member already have a pending invitation that has not been accepted.",
-      "MEMBER_DIFFERENT_ACCESS_LEVEL": "Guest users cannot also be regular team members, and vice versa. This user already has a conflicting access level in another project. To change their role, first remove them from all projects within this team."
+      "MEMBER_DIFFERENT_ACCESS_LEVEL": "Guest users cannot also be regular team members, and vice versa. This user already has a conflicting access level in another project. To change their role, first remove them from all projects within this team.",
+      "ERROR_TRIAL_MEMBER_LIMIT_EXCEEDED": "Trial users cannot exceed {0} team members. Please upgrade to add more members."
     }
   })
   public static async createByEmail(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
@@ -141,12 +212,57 @@ export default class ProjectMembersController extends WorklenzControllerBase {
     const teamId = sessionUser?.team_id;
     if (!sessionUser || !teamId) return res.status(200).send(new ServerResponse(false, "Required fields are missing."));
 
+    const projectId = (req.body.project_id || req.query.current_project_id) as string | undefined;
+    if (!projectId) {
+      return res.status(200).send(new ServerResponse(false, null, "Project id is required."));
+    }
+
     req.body.user_id = sessionUser.id;
     req.body.team_id = teamId;
+    req.body.project_id = projectId;
     req.body.access_level = normalizeProjectAccessLevel(req.body.access_level);
+
+    // PMs (no assignPm) may only invite Member/Guest; cannot set Admin / Team Lead team roles.
+    const access = await getProjectAccessForRequest(req, projectId);
+    if (!access.permissions.assignPm) {
+      const elevatedError = enforceNonElevatedAccessLevel(req.body.access_level);
+      if (elevatedError) {
+        return res.status(elevatedError.status).send(elevatedError.body);
+      }
+      if (!isMemberOrGuestAccess(req.body.access_level)) {
+        req.body.access_level = "MEMBER";
+      }
+      req.body.role_name = TEAM_ROLE_NAMES.MEMBER;
+      req.body.is_admin = false;
+    }
 
     // check the subscription status
     const subscriptionData = await checkTeamSubscriptionStatus(teamId);
+
+    if (statusExclude.includes(subscriptionData.subscription_status)) {
+      return res.status(200).send(new ServerResponse(false, null, "Unable to add user! Please check your subscription status."));
+    }
+
+    if (
+      subscriptionData.subscription_status === "trialing" &&
+      subscriptionData.team_member_limit_override !== true
+    ) {
+      const currentTrialMembers = parseInt(subscriptionData.current_count) || 0;
+
+      if (currentTrialMembers + 1 > TRIAL_MEMBER_LIMIT) {
+        return res.status(200).send(
+          new ServerResponse(
+            false,
+            {
+              error_code: "SEAT_LIMIT_EXCEEDED",
+              current_members: currentTrialMembers,
+              plan_seat_limit: TRIAL_MEMBER_LIMIT,
+            },
+            `Trial users cannot exceed ${TRIAL_MEMBER_LIMIT} team members. Please upgrade to add more members.`,
+          ),
+        );
+      }
+    }
 
     const guestLimitError = await ProjectMembersController.getGuestLimitError(teamId, req.body.access_level, subscriptionData);
     if (guestLimitError) {
@@ -185,7 +301,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           user_id: sessionUser.id,
           access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
         };
-        const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq);
+        const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq, sessionUser);
 
         // Send email invitation to existing team member for the project
         // This ensures they receive an email notification and can access the project
@@ -242,7 +358,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         user_id: sessionUser.id,
         access_level: req.body.access_level || "MEMBER" // Use provided access_level or default to MEMBER
       };
-      const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq);
+      const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq, sessionUser);
       return res.status(200).send(new ServerResponse(true, data.member));
     }
 
@@ -402,7 +518,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       user_id: sessionUser.id,
       access_level: req.body.access_level || "MEMBER"
     };
-    const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq);
+    const data = await ProjectMembersController.createOrInviteMembers(projectMemberReq, sessionUser);
     return res.status(200).send(new ServerResponse(true, data.member));
   }
 
@@ -439,9 +555,69 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async deleteById(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const projectMemberId = req.params.id;
+    const projectId = (req.query.current_project_id || req.body?.project_id) as string | undefined;
+
+    if (projectId) {
+      const access = await getProjectAccessForRequest(req, projectId);
+      const targetResult = await db.query(
+        `
+          SELECT
+            pal.key AS access_level,
+            r.name AS team_role,
+            COALESCE(tm.is_guest, FALSE) AS is_guest
+          FROM project_members pm
+          JOIN project_access_levels pal ON pal.id = pm.project_access_level_id
+          JOIN team_members tm ON tm.id = pm.team_member_id
+          JOIN roles r ON r.id = tm.role_id
+          WHERE pm.id = $1::UUID
+          LIMIT 1
+        `,
+        [projectMemberId]
+      );
+      const target = targetResult.rows[0] as
+        | { access_level: string; team_role: string; is_guest: boolean }
+        | undefined;
+
+      if (target) {
+        const targetAccess = normalizeProjectAccessLevel(target.access_level);
+        const targetTeamRole = normalizeTeamRoleName(target.team_role);
+        const isProtectedTeamRole =
+          targetTeamRole === TEAM_ROLE_NAMES.OWNER ||
+          targetTeamRole === TEAM_ROLE_NAMES.ADMIN;
+        const isOtherPm = targetAccess === "PROJECT_MANAGER";
+
+        // PMs cannot remove another PM or a team Owner/Admin.
+        if (!access.permissions.assignPm) {
+          if (isOtherPm || isProtectedTeamRole) {
+            return res.status(403).send(
+              new ServerResponse(
+                false,
+                null,
+                "You are not authorized to remove this project member."
+              )
+            );
+          }
+        } else if (!hasTeamAdminPrivileges(req.user) && isProtectedTeamRole) {
+          // Non-admin with assignPm should not exist, but keep a hard stop.
+          return res.status(403).send(
+            new ServerResponse(
+              false,
+              null,
+              "You are not authorized to remove this project member."
+            )
+          );
+        }
+      }
+    }
+
+    const removedMemberLabels = await getProjectMemberLabelsById(req.user, projectMemberId);
+
     const q = `SELECT remove_project_member($1, $2, $3) AS res;`;
-    const result = await db.query(q, [req.params.id, req.user?.id, req.user?.team_id]);
+    const result = await db.query(q, [projectMemberId, req.user?.id, req.user?.team_id]);
     const [data] = result.rows;
+
+    logProjectMemberRemoved(req.user, removedMemberLabels);
 
     const response = data.res;
 
@@ -457,6 +633,14 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       });
     }
 
+    if (response?.project_id) {
+      const socket = IO.getSocketById(req.user?.socket_id as string);
+      if (socket) {
+        socket.emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+        socket.to(response.project_id).emit(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString());
+      }
+    }
+
     return res.status(200).send(new ServerResponse(true, result.rows));
   }
 
@@ -464,13 +648,28 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async generateProjectInvitationLink(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { project_id, job_title_id, role_name = 'MEMBER', is_admin = false, max_usage = null } = req.body;
-    const accessLevel = normalizeProjectAccessLevel(req.body.access_level);
+    const { project_id, job_title_id, max_usage = null } = req.body;
+    let { role_name = 'MEMBER', is_admin = false } = req.body;
+    let accessLevel = normalizeProjectAccessLevel(req.body.access_level);
     const teamId = req.user?.team_id;
     const userId = req.user?.id;
 
     if (!teamId || !userId || !project_id) {
       return res.status(200).send(new ServerResponse(false, null, "Required fields are missing."));
+    }
+
+    // PMs may only generate Member/Guest invitation links.
+    const access = await getProjectAccessForRequest(req, project_id);
+    if (!access.permissions.assignPm) {
+      const elevatedError = enforceNonElevatedAccessLevel(accessLevel);
+      if (elevatedError) {
+        return res.status(elevatedError.status).send(elevatedError.body);
+      }
+      if (!isMemberOrGuestAccess(accessLevel)) {
+        accessLevel = "MEMBER";
+      }
+      role_name = TEAM_ROLE_NAMES.MEMBER;
+      is_admin = false;
     }
 
     // Check if user has access to the project
@@ -687,6 +886,15 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
           invitationLink = result.rows[0];
         }
+      }
+
+      const isReusedLink = invitationLink === activeLink;
+      if (!isReusedLink) {
+        logTeamEvent(
+          req.user,
+          AUDIT_EVENT_TYPE.INVITATION_LINK_CREATED.id,
+          `Created an invitation link for project "${project.name}" (access: ${accessLevel}, expires in 7 days)`
+        );
       }
 
       // Generate the full invitation URL
@@ -972,6 +1180,19 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           const setActiveTeamQuery = `SELECT set_active_team($1, $2)`;
           await db.query(setActiveTeamQuery, [userId, teamId]);
         }
+
+        // The joining user may not belong to the workspace yet, so it's resolved from the team owner.
+        const workspace = await resolveOrganizationIdForUserId(owner.id, teamId);
+        if (workspace) {
+          const projectNameResult = await db.query(`SELECT name FROM projects WHERE id = $1`, [projectId]);
+          logAuditEvent({
+            organizationId: workspace.organizationId,
+            teamId,
+            actor: { userId: userId || null, name: name || email },
+            eventType: AUDIT_EVENT_TYPE.MEMBER_JOINED.id,
+            description: `${name || email} joined project "${projectNameResult.rows[0]?.name ?? projectId}" using an invitation link`,
+          });
+        }
       }
 
       return res.status(200).send(new ServerResponse(true, { team_id: teamId, project_id: projectId, member: projectMemberResult }, "Successfully joined the project!"));
@@ -1167,6 +1388,12 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       }
 
       const newStatus = result.rows[0].active;
+      await logTeamMemberEvent(
+        req.user,
+        newStatus ? AUDIT_EVENT_TYPE.MEMBER_ACTIVATED.id : AUDIT_EVENT_TYPE.MEMBER_DEACTIVATED.id,
+        resolvedTeamMemberId,
+        (memberLabel) => `${newStatus ? "Activated" : "Deactivated"} guest ${memberLabel}`
+      );
       return res.status(200).send(
         new ServerResponse(true, { active: newStatus }, 
           newStatus ? "Guest member activated successfully" : "Guest member deactivated successfully")
@@ -1197,6 +1424,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
         return res.status(200).send(new ServerResponse(false, null, resolution.error));
       }
       const resolvedTeamMemberId = resolution.teamMemberId;
+      const guestBefore = await captureTeamMember(req.user, resolvedTeamMemberId);
 
       const query = `
         DELETE FROM project_members
@@ -1213,6 +1441,12 @@ export default class ProjectMembersController extends WorklenzControllerBase {
           new ServerResponse(false, null, "Guest member not found")
         );
       }
+
+      logTeamEvent(
+        req.user,
+        AUDIT_EVENT_TYPE.MEMBER_REMOVED.id,
+        `Removed guest ${guestBefore?.label || "a guest"} from all projects`
+      );
 
       return res.status(200).send(
         new ServerResponse(true, null, "Guest member deleted successfully")
@@ -1307,7 +1541,7 @@ export default class ProjectMembersController extends WorklenzControllerBase {
 
     // Check if user has access to the project
     const projectAccessQuery = `
-      SELECT id FROM projects 
+      SELECT id, name FROM projects 
       WHERE id = $1 AND team_id = $2
     `;
     const projectResult = await db.query(projectAccessQuery, [project_id, teamId]);
@@ -1329,6 +1563,12 @@ export default class ProjectMembersController extends WorklenzControllerBase {
       if (result.rows.length === 0) {
         return res.status(200).send(new ServerResponse(false, null, "No active invitation link found."));
       }
+
+      logTeamEvent(
+        req.user,
+        AUDIT_EVENT_TYPE.INVITATION_LINK_REVOKED.id,
+        `Revoked the invitation link for project "${projectResult.rows[0].name}"`
+      );
 
       return res.status(200).send(new ServerResponse(true, null, "Project invitation link has been deactivated."));
 

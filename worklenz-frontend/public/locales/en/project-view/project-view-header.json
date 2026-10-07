@@ -1,7 +1,10 @@
 {
   "importTasks": "Import tasks",
   "importTask": "Import task",
+  "importTasksFromCsv": "Import tasks from CSV",
   "createTask": "Create task",
+  "createIssue": "Create Issue",
+  "createIssueTooltip": "Create a new issue",
   "settings": "Settings",
   "subscribe": "Subscribe",
   "unsubscribe": "Unsubscribe",
@@ -23,6 +26,7 @@
   "inviteTooltip": "Invite team members to this project",
   "createTaskTooltip": "Create a new task",
   "importTaskTooltip": "Import task from template",
+  "importTasksFromCsvTooltip": "Import tasks from a CSV file",
   "navigateBackTooltip": "Go back to projects list",
   "projectStatusTooltip": "Project status",
   "projectDatesInfo": "Project timeline information",

@@ -1,59 +1,42 @@
-import { Flex, Typography, Card } from '@/shared/antd-imports';
+import { Typography } from '@/shared/antd-imports';
 import { useTranslation } from 'react-i18next';
-import { FileTextOutlined } from '@ant-design/icons';
-import { useResponsive } from '../../../hooks/useResponsive';
+import { Outlet } from 'react-router-dom';
 import RequestsTable from './requests-table';
+
+const { Title } = Typography;
 
 const ClientPortalRequests = () => {
   // localization
   const { t } = useTranslation('client-portal-requests');
-  const { isDesktop } = useResponsive();
 
   return (
     <div
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
         maxWidth: '100%',
-        minHeight: 'calc(100vh - 120px)',
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: isDesktop ? 32 : 24 }}>
-        <Flex align="center" justify="space-between" style={{ width: '100%' }} wrap="wrap" gap={16}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-              <FileTextOutlined style={{ fontSize: 20 }} />
-              <Typography.Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: '20px',
-                }}
-              >
-                {t('title') || 'Requests'}
-              </Typography.Title>
-            </Flex>
-            <Typography.Text
-              type="secondary"
-              style={{
-                fontSize: isDesktop ? '16px' : '14px',
-                lineHeight: 1.5,
-              }}
-            >
-              {t('description') || 'Manage and track client requests'}
-            </Typography.Text>
-          </div>
-        </Flex>
+      <div style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Title level={4} style={{ margin: 0, fontSize: 22 }}>
+          {t('title', { defaultValue: 'Requests' })}
+        </Title>
+        <Typography.Text type="secondary">
+          {t('description', {
+            defaultValue: 'Client requests based on your service offerings and custom requests',
+          })}
+        </Typography.Text>
       </div>
 
-      {/* Requests Table */}
-      <Card
-        style={{
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderRadius: 8,
-        }}
-      >
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <RequestsTable />
-      </Card>
+      </div>
+
+      {/* requests/:id renders here as a modal over this list, so a direct or shared link
+          still shows the list underneath it instead of a blank page. */}
+      <Outlet />
     </div>
   );
 };

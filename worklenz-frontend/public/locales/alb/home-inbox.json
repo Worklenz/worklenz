@@ -32,5 +32,7 @@
   "clientsLockedTooltip": "I disponueshëm në planin Business",
   "clientChatLockedTitle": "Biseda me klientët e bllokuar",
   "clientChatLockedBody": "Bisedimi me klientët tuaj direkt nga Kutia hyrëse është i disponueshëm në planin Business.",
-  "upgradeNow": "Bëj upgrade tani"
+  "upgradeNow": "Bëj upgrade tani",
+  "today": "Sot",
+  "edited": "(e modifikuar)"
 }

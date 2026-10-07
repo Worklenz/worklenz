@@ -46,5 +46,10 @@
   "convertToTaskError": "Falha ao criar a tarefa",
   "convertToTaskEmpty": "A mensagem não tem texto para usar como nome da tarefa",
   "attachFile": "Anexar arquivo",
-  "attachmentUploadError": "Falha ao enviar o anexo"
+  "attachmentUploadError": "Falha ao enviar o anexo",
+  "edited": "(editado)",
+  "editedTooltip": "Editado {{time}} por {{author}}",
+  "unknown": "Desconhecido",
+  "you": "Você",
+  "attachment": "Anexo"
 }

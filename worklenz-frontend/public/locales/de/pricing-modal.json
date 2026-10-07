@@ -120,7 +120,7 @@
       ]
     },
     "enterprise": {
-      "name": "Enterprise",
+      "name": "Unternehmen",
       "description": "Für große Organisationen",
       "features": [
         "Alles in Business Groß",
@@ -196,7 +196,7 @@
   "planDetails": {
     "title": "Plan-Details",
     "features": "Funktionen",
-    "limits": "Limits",
+    "limits": "Grenzen",
     "projects": "Projekte",
     "users": "Benutzer",
     "storage": "Speicher",
@@ -223,7 +223,7 @@
     "title": "Bestätigen Sie Ihr Abonnement",
     "subtitle": "Überprüfen Sie Ihre Plan-Details vor dem Fortfahren",
     "summary": "Abonnement-Zusammenfassung",
-    "plan": "Plan",
+    "plan": "Planen",
     "teamSize": "Teamgröße",
     "discount": "Rabatt",
     "total": "Gesamt",

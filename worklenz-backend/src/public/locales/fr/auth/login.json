@@ -1,0 +1,38 @@
+{
+  "headline": "Bon retour",
+  "headerDescription": "Connectez-vous à votre espace de travail Worklenz.",
+  "signInWithLabel": "Connectez-vous avec",
+  "orText": "ou",
+  "emailLabel": "Courriel",
+  "emailPlaceholder": "vous@entreprise.com",
+  "emailRequired": "Veuillez entrer votre e-mail !",
+  "nextButton": "Suivant",
+  "changeEmailLink": "Changement",
+  "passwordLabel": "Mot de passe",
+  "passwordPlaceholder": "Entrez votre mot de passe",
+  "passwordRequired": "Veuillez entrer votre mot de passe !",
+  "loginButton": "Connectez-vous",
+  "signupButton": "Inscrivez-vous",
+  "forgotPasswordButton": "Mot de passe oublié ?",
+  "signInWithGoogleButton": "Google",
+  "signInWithGoogleAriaLabel": "Connectez-vous avec Google",
+  "signInWithAppleButton": "Pomme",
+  "signInWithAppleAriaLabel": "Connectez-vous avec Apple",
+  "dontHaveAccountText": "Vous n'avez pas de compte ?",
+  "bySigningInText": "En vous connectant, vous comprenez et acceptez notre",
+  "andText": "et",
+  "termsOfServiceLink": "Conditions d'utilisation",
+  "privacyPolicyLink": "Politique de confidentialité",
+  "successMessage": "Vous êtes connecté avec succès !",
+  "loginError": "La connexion a échoué",
+  "googleLoginError": "La connexion à Google a échoué",
+  "appleLoginError": "La connexion Apple a échoué",
+  "validationMessages": {
+    "email": "Veuillez saisir une adresse e-mail valide",
+    "password": "Le mot de passe doit comporter au moins 8 caractères"
+  },
+  "errorMessages": {
+    "loginErrorTitle": "La connexion a échoué",
+    "loginErrorMessage": "Veuillez vérifier votre e-mail et votre mot de passe et réessayer"
+  }
+}

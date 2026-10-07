@@ -27,5 +27,18 @@
   "invite": "Fto",
   "Invite": "Fto",
   "removeSuccess": "{{name}} u hoq nga projekti",
-  "removeError": "Dështoi në heqjen e anëtarit"
+  "removeError": "Dështoi në heqjen e anëtarit",
+  "memberNotFound": "Informacioni i anëtarit të ekipit nuk u gjet",
+  "manageTimeOff": "Menaxho pushimet",
+  "seatLimitReached": "U arrit kufiri i vendeve",
+  "memberDeactivated": "Anëtari u çaktivizua me sukses",
+  "memberActivated": "Anëtari u aktivizua me sukses",
+  "statusChangeError": "Ndryshimi i statusit të anëtarit dështoi",
+  "deactivateTooltip": "Çaktivizo anëtarin",
+  "activateTooltip": "Aktivizo anëtarin",
+  "editTooltip": "Redakto anëtarin",
+  "moreOptions": "Më shumë opsione",
+  "changeMemberStatusConfirmation": "Jeni të sigurt që dëshironi të ndryshoni statusin e këtij anëtari?",
+  "yesProceed": "Po, vazhdo",
+  "cancel": "Anulo"
 }

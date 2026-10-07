@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, ReactNode } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -46,6 +46,7 @@ import ProjectCategorySection from '../project-drawer/project-category-section/p
 import ProjectClientSection from '../project-drawer/project-client-section/project-client-section';
 import ProjectPrioritySection from '../project-drawer/project-priority-section/project-priority-section';
 import { ProjectDatePicker } from '../project-drawer/components/ProjectDatePicker';
+import useProjectPermissions from '@/hooks/useProjectPermissions';
 
 import SettingsCard from './components/settings-card';
 import StatusesSettingsSection from './sections/statuses-settings-section';
@@ -56,6 +57,7 @@ import TaskExportSettingsSection from './sections/task-export-settings-section';
 import DangerZoneSection from './sections/danger-zone-section';
 import { getAddonSlotItems } from '@/addons/addon-slots';
 import PrivacySettingsSection from './sections/privacy-settings-section';
+import DeliveryConfidenceSettingsSection from './sections/delivery-confidence-settings-section';
 
 import { IProjectViewModel } from '@/types/project/projectViewModel.types';
 import { ITeamMemberViewModel } from '@/types/teamMembers/teamMembersGetResponse.types';
@@ -76,6 +78,7 @@ import { hasTaskExportRoleAccess } from '@/utils/task-export-access';
 import { isTeamLeadRole } from '@/types/roles/role.types';
 import { evt_projects_create } from '@/shared/worklenz-analytics-events';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
+import { progressTrackingApiService } from '@/api/reporting/progress-tracking.api.service';
 import { hasBusinessFeatureAccess, isFreeUser } from '@/utils/subscription-utils';
 import {
   CrownOutlined,
@@ -95,8 +98,18 @@ import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { ensureCsrfToken, refreshCsrfToken } from '@/api/api-client';
 import { CURRENCY_OPTIONS } from '@/shared/currencies';
 import { projectFinanceApiService } from '@/api/project-finance-ratecard/project-finance.api.service';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { SoftwareProjectSettingsModal } from '../software-project-settings-modal/software-project-settings-modal';
 
 export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
+  const { projectId, project } = useAppSelector(state => state.projectDrawerReducer);
+  const isSoftwareProject = Boolean(projectId) && isSoftwareProjectType(project?.project_type);
+
+  if (isSoftwareProject) return <SoftwareProjectSettingsModal onClose={onClose} />;
+  return <GeneralProjectSettingsModal onClose={onClose} />;
+};
+
+const GeneralProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
@@ -118,6 +131,11 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [activeSection, setActiveSection] = useState<string>('general');
   const [isDeletingProject, setIsDeletingProjectState] = useState<boolean>(false);
+  const savedConfidenceRef = useRef<{ status: 'green' | 'amber' | 'red' | null; note: string | null }>({
+    status: null,
+    note: null,
+  });
+  const confidenceLoadedRef = useRef(false);
 
   // Selectors
   const { clients, loading: loadingClients } = useAppSelector(state => state.clientReducer);
@@ -201,20 +219,24 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     []
   );
 
-  // Auth and permissions
-  const isProjectManager = currentSession?.team_member_id == selectedProjectManager?.id;
+  // Auth and permissions — keyed by the modal's project id (not team role / form PM field).
+  const { permissions, isProjectManager, financeAccess } = useProjectPermissions(projectId);
   const isOwnerorAdmin = authService.isOwnerOrAdmin();
   const isTeamLead = isTeamLeadRole(authService.role);
-  const isEditable = isProjectManager || isOwnerorAdmin;
+  // Create mode (no project yet): Owner/Admin only. Edit mode: server permissions for that project.
+  const isEditable = projectId ? permissions.settings : isOwnerorAdmin;
   const isFree = isFreeUser(currentSession);
   const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
-  // Show Task Export tab by role; Business plan gates the actions inside the section.
   const canViewExport = hasTaskExportRoleAccess(
     isOwnerorAdmin,
     isProjectManager,
     isTeamLead
   );
-  const canManageBudgetSettings = hasBusinessAccess && (isProjectManager || isOwnerorAdmin);
+  const canManageBudgetSettings = projectId
+    ? hasBusinessAccess && permissions.finance && financeAccess
+    : hasBusinessAccess && isOwnerorAdmin;
+  const canAssignPm = projectId ? permissions.assignPm : isOwnerorAdmin;
+  const canDeleteProject = projectId ? permissions.delete : false;
 
   // Effects
   useEffect(() => {
@@ -266,6 +288,10 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         form.setFieldsValue({
           ...formValues,
           project_manager: projectManager,
+          finance_access:
+            typeof project.project_manager?.finance_access === 'boolean'
+              ? project.project_manager.finance_access
+              : true,
         });
 
         if (formValues.start_date && formValues.end_date) {
@@ -483,6 +509,38 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     dispatch(toggleUpgradeModal());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (!modalVisible || !projectId) {
+      confidenceLoadedRef.current = false;
+      return;
+    }
+
+    let cancelled = false;
+    confidenceLoadedRef.current = false;
+
+    const loadConfidence = async () => {
+      try {
+        const response = await progressTrackingApiService.getConfidence(projectId);
+        if (cancelled || !response.done || !response.body) return;
+        const status = response.body.confidence;
+        const note = response.body.confidence_note;
+        savedConfidenceRef.current = { status, note };
+        confidenceLoadedRef.current = true;
+        form.setFieldsValue({
+          delivery_confidence: status ?? 'unset',
+          delivery_confidence_note: note ?? '',
+        });
+      } catch (error) {
+        logger.error('Error loading delivery confidence', error);
+      }
+    };
+
+    void loadConfidence();
+    return () => {
+      cancelled = true;
+    };
+  }, [form, modalVisible, projectId]);
+
   const handleFormSubmit = async (values: any) => {
     try {
       const csrfToken = await ensureCsrfToken();
@@ -513,6 +571,9 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         man_days: parseInt(values.man_days),
         hours_per_day: parseInt(values.hours_per_day),
         project_manager: selectedProjectManager,
+        ...(canAssignPm
+          ? { finance_access: values.finance_access !== false }
+          : {}),
         use_manual_progress: Boolean(values.use_manual_progress),
         use_weighted_progress: Boolean(values.use_weighted_progress),
         use_time_progress: Boolean(values.use_time_progress),
@@ -520,7 +581,7 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         restrict_task_creation: Boolean(values.restrict_task_creation),
         phase_assignees_enabled: Boolean(values.phase_assignees_enabled),
         auto_assign_subtask_phase: Boolean(values.auto_assign_subtask_phase),
-        ...(isOwnerorAdmin
+        ...(permissions.settings
           ? { restrict_tasks_to_assignee: Boolean(values.restrict_tasks_to_assignee) }
           : {}),
         health_id: values.health_id,
@@ -550,6 +611,38 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
 
           if (selectedCurrency !== currentCurrency) {
             await projectFinanceApiService.updateProjectCurrency(projectId, selectedCurrency);
+          }
+        }
+
+        if (editMode && projectId && isEditable && confidenceLoadedRef.current) {
+          const rawStatus = values.delivery_confidence;
+          const nextStatus = !rawStatus || rawStatus === 'unset' ? null : rawStatus;
+          const nextNote =
+            typeof values.delivery_confidence_note === 'string' && values.delivery_confidence_note.trim()
+              ? values.delivery_confidence_note.trim()
+              : null;
+          const saved = savedConfidenceRef.current;
+          if (nextStatus !== saved.status || nextNote !== saved.note) {
+            try {
+              const confidenceResponse = await progressTrackingApiService.updateConfidence(projectId, {
+                status: nextStatus,
+                note: nextNote,
+              });
+              if (!confidenceResponse.done) {
+                notification.error({
+                  message: t('deliveryConfidenceSaveFailed', {
+                    defaultValue: 'Could not save Delivery Confidence.',
+                  }),
+                });
+              }
+            } catch (error) {
+              logger.error('Error saving delivery confidence', error);
+              notification.error({
+                message: t('deliveryConfidenceSaveFailed', {
+                  defaultValue: 'Could not save Delivery Confidence.',
+                }),
+              });
+            }
           }
         }
 
@@ -717,7 +810,7 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     }
   };
 
-  const disabledForNonManagers = !isProjectManager && !isOwnerorAdmin;
+  const disabledForNonManagers = projectId ? !permissions.settings : !isOwnerorAdmin;
 
   // ─── Sidebar sections ───────────────────────────────────────────────────
   const sectionItems = useMemo(() => {
@@ -768,6 +861,13 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
                 t={t}
                 disabled={isFree || disabledForNonManagers}
               />
+              {editMode && projectId ? (
+                <DeliveryConfidenceSettingsSection
+                  form={form}
+                  t={t}
+                  disabled={disabledForNonManagers}
+                />
+              ) : null}
               <ProjectCategorySection
                 form={form}
                 t={t}
@@ -827,9 +927,29 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
                 <ProjectManagerDropdown
                   selectedProjectManager={selectedProjectManager}
                   setSelectedProjectManager={setSelectedProjectManager}
-                  disabled={isFree || disabledForNonManagers}
+                  disabled={isFree || disabledForNonManagers || !canAssignPm}
                 />
               </Form.Item>
+              {canAssignPm && selectedProjectManager?.id && (
+                <Form.Item
+                  name="finance_access"
+                  label={t('financeAccessLabel', {
+                    defaultValue: 'Finance access',
+                  })}
+                  valuePropName="checked"
+                  extra={t('financeAccessHelp', {
+                    defaultValue:
+                      'When on, this project manager can view and edit the Finance tab, budget, and rate card.',
+                  })}
+                >
+                  <Switch
+                    disabled={isFree || disabledForNonManagers}
+                    aria-label={t('financeAccessLabel', {
+                      defaultValue: 'Finance access',
+                    })}
+                  />
+                </Form.Item>
+              )}
             </SettingsCard>
 
             <SettingsCard
@@ -1164,11 +1284,13 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
             },
           ]
         : []),
-      {
-        key: 'budget',
-        icon: <DollarOutlined />,
-        label: t('budgetSettingsTab', { defaultValue: 'Budget Settings' }),
-        children: (
+      ...(canManageBudgetSettings
+        ? [
+            {
+              key: 'budget',
+              icon: <DollarOutlined />,
+              label: t('budgetSettingsTab', { defaultValue: 'Budget Settings' }),
+              children: (
           <SettingsCard
             title={t('budgetSettingsTab', { defaultValue: 'Budget Settings' })}
           >
@@ -1266,6 +1388,8 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           </SettingsCard>
         ),
       },
+    ]
+        : []),
     ];
 
     items.push(
@@ -1340,7 +1464,7 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           <DangerZoneSection
             onConfirmDelete={handleDeleteProject}
             isDeleting={isDeletingProject}
-            canDelete={isProjectManager || isOwnerorAdmin}
+            canDelete={canDeleteProject}
           />
         ),
       }
@@ -1373,6 +1497,9 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
     isDeletingProject,
     isProjectManager,
     isOwnerorAdmin,
+    canDeleteProject,
+    canAssignPm,
+    permissions.settings,
     canViewExport,
     handleDeleteProject,
   ]);
@@ -1401,6 +1528,9 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         </Typography.Text>
       }
       width={1040}
+      // Antd anchors the dialog 100px down and reserves 24px beneath it, which pushed
+      // the footer off-screen; a 24px offset keeps the whole dialog inside the viewport.
+      style={{ top: 24 }}
       open={isProjectSettingsModalOpen}
       onCancel={handleModalClose}
       destroyOnClose
@@ -1412,7 +1542,9 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
           margin: 0,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
         },
-        body: { padding: 0 },
+        // The body is the single scroll container: capping its height keeps the dialog
+        // (and .ant-modal-wrap) inside the viewport while header and footer stay put.
+        body: { padding: 0, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' },
         footer: {
           padding: '12px 20px',
           margin: 0,
@@ -1421,7 +1553,7 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
       }}
       footer={
         <Flex justify="end">
-          {(isProjectManager || isOwnerorAdmin) && (
+          {(projectId ? permissions.settings : isOwnerorAdmin) && (
             <Button
               type="primary"
               onClick={() => form.submit()}
@@ -1440,26 +1572,37 @@ export const ProjectSettingsModal = ({ onClose }: { onClose: () => void }) => {
         loading={editMode && (loading || projectLoading)}
         style={{ padding: '20px 24px' }}
       >
-        <Flex style={{ minHeight: 480 }}>
+        <Flex style={{ minHeight: 'min(480px, calc(100vh - 200px))' }}>
           <div
             style={{
               width: 248,
               flexShrink: 0,
               borderRight: `1px solid ${token.colorBorderSecondary}`,
               background: token.colorFillTertiary,
-              padding: '12px 8px',
             }}
           >
-            <Menu
-              mode="inline"
-              selectedKeys={[activeItem.key]}
-              items={menuItems}
-              onClick={({ key }) => setActiveSection(key)}
-              style={{ border: 'none', background: 'transparent' }}
-            />
+            <div
+              // Sticky so the section nav stays in view while the settings content
+              // scrolls underneath it inside the height-capped modal body.
+              style={{
+                position: 'sticky',
+                top: 0,
+                padding: '12px 8px',
+                maxHeight: 'calc(100vh - 200px)',
+                overflowY: 'auto',
+              }}
+            >
+              <Menu
+                mode="inline"
+                selectedKeys={[activeItem.key]}
+                items={menuItems}
+                onClick={({ key }) => setActiveSection(key)}
+                style={{ border: 'none', background: 'transparent' }}
+              />
+            </div>
           </div>
 
-          <div style={{ flex: 1, padding: '20px 24px', overflowY: 'auto', maxHeight: '70vh' }}>
+          <div style={{ flex: 1, padding: '20px 24px' }}>
             {!isEditable && (
               <Alert
                 message={t('noPermission')}

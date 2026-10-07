@@ -1,0 +1,23 @@
+{
+  "nameColumn": "Nom",
+  "deleteConfirmationTitle": "Es-tu sûr?",
+  "deleteConfirmationOk": "Oui",
+  "deleteConfirmationCancel": "Annuler",
+  "searchPlaceholder": "Rechercher par nom",
+  "createJobTitleButton": "Créer un titre de poste",
+  "pinTooltip": "Cliquez pour épingler ceci dans le menu principal",
+  "createJobTitleDrawerTitle": "Créer un titre de poste",
+  "updateJobTitleDrawerTitle": "Mettre à jour le titre du poste",
+  "nameLabel": "Nom",
+  "namePlaceholder": "Nom",
+  "nameRequiredError": "Veuillez entrer un nom",
+  "createButton": "Créer",
+  "updateButton": "Mise à jour",
+  "createJobTitleSuccessMessage": "Créez du succès dans votre titre de poste !",
+  "createJobTitleErrorMessage": "Échec de la création du titre du poste !",
+  "updateJobTitleSuccessMessage": "Mettre à jour le succès du titre de poste !",
+  "updateJobTitleErrorMessage": "Échec de la mise à jour du titre du poste !",
+  "paginationTotal": "{{start}}-{{end}} sur {{total}} éléments",
+  "editTooltip": "Modifier",
+  "deleteTooltip": "Supprimer"
+}

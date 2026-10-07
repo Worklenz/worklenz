@@ -90,11 +90,34 @@ export interface ClientPortalInvoice {
   updatedAt: string;
   requestNumber?: string;
   serviceName?: string;
+  clientId?: string;
+  clientName?: string;
   isOverdue?: boolean;
+  /** Payment progress, independent of the document `status`. */
+  paymentStatus?: 'unpaid' | 'partially_paid' | 'paid';
+  /** Always within [0, amount]. */
+  paidAmount?: number;
+  projectName?: string | null;
+}
+
+export interface ClientPortalInvoiceLineItem {
+  id?: string;
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+}
+
+/** Organization-wide sums for the Invoices stat cards (not just the visible page). */
+export interface ClientPortalInvoiceTotals {
+  totalInvoiced: number;
+  totalPaid: number;
+  totalOutstanding: number;
 }
 
 export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
   notes?: string;
+  lineItems?: ClientPortalInvoiceLineItem[];
   paymentProofUrl?: string | null;
   taxRate?: number;
   taxAmount?: number;
@@ -133,7 +156,13 @@ export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
     phone: string | null;
     addressLine1: string | null;
     addressLine2: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    country: string | null;
     invoiceFooterMessage: string | null;
+    templateStyle?: 'classic' | 'modern';
+    showLogo?: boolean;
   };
 }
 
@@ -141,9 +170,12 @@ export interface ClientPortalInvoiceDetails extends ClientPortalInvoice {
 export interface UpdateInvoiceRequest {
   amount?: number;
   currency?: string;
-  dueDate?: string;
+  /** `null` clears the due date. */
+  dueDate?: string | null;
   notes?: string;
   status?: string;
+  projectName?: string;
+  lineItems?: Array<Omit<ClientPortalInvoiceLineItem, 'id'>>;
   taxRate?: number;
   taxAmount?: number;
   discountType?: string;
@@ -208,6 +240,25 @@ export interface ClientPortalChat {
   unreadCount: number;
 }
 
+/** A client's whole conversation, as listed in the global Chats inbox (`id` is the client id). */
+export interface ClientPortalChatConversation {
+  id: string;
+  clientId: string;
+  name: string;
+  projectsCount: number;
+  portalStatus: {
+    status: 'active' | 'invited' | 'not_invited' | 'expired';
+    label: string;
+    color: string;
+  };
+  /** Client-sent messages the team has not opened yet. */
+  unreadCount: number;
+  lastMessage: string | null;
+  lastMessageAt: string | null;
+  lastSenderType: 'team_member' | 'client' | null;
+  lastSenderName: string | null;
+}
+
 export interface ClientPortalSettings {
   company_name: string;
   contact_person: string;
@@ -265,6 +316,10 @@ export interface ClientPortalClient {
   zip_code?: string;
   country?: string;
   contact_person?: string;
+  /** Names of the company's POCs (a company can have zero, one or several). */
+  poc_names?: string[];
+  /** How many company users (people with, or waiting for, portal access) the company has. */
+  company_users_count?: number;
   assigned_projects_count: number;
   projects: ClientPortalProject[];
   team_members: ClientPortalTeamMember[];
@@ -273,13 +328,30 @@ export interface ClientPortalClient {
   updated_at: string;
   // Portal access fields
   has_portal_access?: boolean;
-  invitation_sent_at?: string;
+  invitation_sent_at?: string | null;
   invitation_accepted?: boolean;
+  last_login_at?: string | null;
   portal_status?: {
     status: 'active' | 'invited' | 'not_invited' | 'expired';
     label: string;
     color: string;
   };
+}
+
+export interface ClientsStats {
+  total: number;
+  active: number;
+  invited: number;
+  expired: number;
+  not_invited: number;
+  unanswered_messages: number;
+}
+
+export interface ClientsStatsResponse {
+  done: boolean;
+  body: ClientsStats;
+  title: string | null;
+  message: string | null;
 }
 
 export interface ClientPortalTeamMember {
@@ -485,15 +557,23 @@ export const clientPortalApi = createApi({
   tagTypes: [
     'Client',
     'Clients',
+    'CompanyUsers',
+    'CompanyUsersStats',
     'ClientTeam',
     'ClientStats',
     'ClientActivity',
     'ClientProjects',
     'Dashboard',
     'Services',
+    'ServiceOptionValues',
     'Requests',
+    'RequestCustomStatuses',
+    'Tickets',
+    'TicketCustomStatuses',
+    'TicketAttachments',
     'Projects',
     'Invoices',
+    'Quotes',
     'Chats',
     'Settings',
     'Profile',
@@ -662,6 +742,7 @@ export const clientPortalApi = createApi({
           total: number;
           page: number;
           limit: number;
+          totals?: ClientPortalInvoiceTotals;
         };
         message: string;
       },
@@ -669,7 +750,12 @@ export const clientPortalApi = createApi({
         page?: number;
         limit?: number;
         status?: string;
+        paymentStatus?: string;
         search?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        /** Only this client's invoices (the client workspace's Billing tab). */
+        clientId?: string;
       } | void
     >({
       query: params => {
@@ -677,7 +763,11 @@ export const clientPortalApi = createApi({
         if (params && params.page) searchParams.set('page', String(params.page));
         if (params && params.limit) searchParams.set('limit', String(params.limit));
         if (params && params.status) searchParams.set('status', params.status);
+        if (params && params.paymentStatus) searchParams.set('paymentStatus', params.paymentStatus);
         if (params && params.search) searchParams.set('search', params.search);
+        if (params && params.sortBy) searchParams.set('sortBy', params.sortBy);
+        if (params && params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+        if (params && params.clientId) searchParams.set('clientId', params.clientId);
 
         const queryString = searchParams.toString();
         const url = `/clients/portal/invoices${queryString ? `?${queryString}` : ''}`;
@@ -753,12 +843,22 @@ export const clientPortalApi = createApi({
         message: string;
       },
       {
-        requestId: string;
+        /** Optional: an invoice without a request is a standalone invoice and needs `clientId`. */
+        requestId?: string;
+        clientId?: string;
+        projectName?: string;
         amount: number;
         currency?: string;
-        dueDate?: string;
+        dueDate?: string | null;
         notes?: string;
         status?: string;
+        lineItems?: Array<Omit<ClientPortalInvoiceLineItem, 'id'>>;
+        taxRate?: number;
+        taxAmount?: number;
+        discountType?: string;
+        discountValue?: number;
+        discountAmount?: number;
+        subtotal?: number;
       }
     >({
       query: invoiceData => ({
@@ -769,8 +869,43 @@ export const clientPortalApi = createApi({
       invalidatesTags: (result, error, invoiceData) => [
         'Invoices',
         'Dashboard',
-        { type: 'Requests', id: invoiceData.requestId },
+        ...(invoiceData.requestId ? [{ type: 'Requests' as const, id: invoiceData.requestId }] : []),
       ],
+    }),
+
+    // Record Payment: sets payment status + paid amount and optionally attaches a proof file
+    // (sent as a base64 data URL, like the other client portal uploads).
+    recordInvoicePayment: builder.mutation<
+      { done: boolean; body: ClientPortalInvoice; message: string },
+      {
+        id: string;
+        paymentStatus: 'unpaid' | 'partially_paid' | 'paid';
+        paidAmount?: number;
+        proof?: { fileName: string; fileType: string; fileData: string } | null;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/clients/portal/invoices/${id}/payment`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Invoices', id },
+        'Invoices',
+        'Dashboard',
+      ],
+    }),
+
+    // Copies an invoice as a fresh draft: unpaid, nothing paid, issued today.
+    duplicateInvoice: builder.mutation<
+      { done: boolean; body: { id: string; invoiceNumber: string }; message: string },
+      string
+    >({
+      query: id => ({
+        url: `/clients/portal/invoices/${id}/duplicate`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Invoices', 'Dashboard'],
     }),
 
     updateInvoice: builder.mutation<
@@ -888,6 +1023,13 @@ export const clientPortalApi = createApi({
         }
         return response;
       },
+      providesTags: ['Chats'],
+    }),
+
+    // One row per client (with at least one project) for the global Chats inbox
+    getChatConversations: builder.query<ClientPortalChatConversation[], void>({
+      query: () => '/clients/portal/chats/conversations',
+      transformResponse: (response: any) => response?.body?.conversations ?? [],
       providesTags: ['Chats'],
     }),
 
@@ -1061,6 +1203,11 @@ export const clientPortalApi = createApi({
         url: '/clients/portal/clients',
         params,
       }),
+      providesTags: ['Clients'],
+    }),
+
+    getClientsStats: builder.query<ClientsStatsResponse, void>({
+      query: () => '/clients/portal/clients/stats',
       providesTags: ['Clients'],
     }),
 
@@ -1315,6 +1462,165 @@ export const clientPortalApi = createApi({
       providesTags: ['Requests'],
     }),
 
+    deleteOrganizationRequest: builder.mutation<any, string>({
+      query: id => ({
+        url: `/clients/portal/requests/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Requests'],
+    }),
+
+    getRequestCustomStatuses: builder.query<
+      { done: boolean; body: { id: string; name: string; color: string }[] },
+      void
+    >({
+      query: () => '/clients/portal/request-custom-statuses',
+      providesTags: ['RequestCustomStatuses'],
+    }),
+
+    createRequestCustomStatus: builder.mutation<any, { name: string; color: string }>({
+      query: data => ({
+        url: '/clients/portal/request-custom-statuses',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['RequestCustomStatuses'],
+    }),
+
+    deleteRequestCustomStatus: builder.mutation<any, string>({
+      query: id => ({
+        url: `/clients/portal/request-custom-statuses/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['RequestCustomStatuses'],
+    }),
+
+    // Lightweight {id, name} list of every client on the team, for filter dropdowns
+    // (e.g. the Ticketing List view's Client column filter).
+    getClientsLookup: builder.query<
+      { done: boolean; body: { id: string; name: string }[] },
+      void
+    >({
+      query: () => '/clients/lookup',
+      providesTags: ['Clients'],
+    }),
+
+    // Organization-side Ticketing (admin queue only)
+    getTickets: builder.query<
+      any,
+      {
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+        client_id?: string;
+        priority?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+      }
+    >({
+      query: params => ({
+        url: '/clients/portal/tickets',
+        params,
+      }),
+      providesTags: ['Tickets'],
+    }),
+
+    getTicketsStats: builder.query<any, void>({
+      query: () => '/clients/portal/tickets/stats',
+      providesTags: ['Tickets'],
+    }),
+
+    getTicketById: builder.query<any, string>({
+      query: id => `/clients/portal/tickets/${id}`,
+      providesTags: (result, error, id) => [{ type: 'Tickets', id }],
+    }),
+
+    updateTicketStatus: builder.mutation<any, { id: string; status: string }>({
+      query: ({ id, status }) => ({
+        url: `/clients/portal/tickets/${id}/status`,
+        method: 'PUT',
+        body: { status },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Tickets', id }, 'Tickets'],
+    }),
+
+    getTicketComments: builder.query<any, string>({
+      query: id => `/clients/portal/tickets/${id}/comments`,
+      providesTags: (result, error, id) => [{ type: 'Tickets', id: `${id}-comments` }],
+    }),
+
+    addTicketComment: builder.mutation<any, { id: string; comment: string }>({
+      query: ({ id, comment }) => ({
+        url: `/clients/portal/tickets/${id}/comments`,
+        method: 'POST',
+        body: { comment },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Tickets', id: `${id}-comments` }],
+    }),
+
+    convertTicketToTask: builder.mutation<
+      { done: boolean; body: { task_id: string; project_id: string }; message: string | null },
+      { id: string; project_id: string }
+    >({
+      query: ({ id, project_id }) => ({
+        url: `/clients/portal/tickets/${id}/convert-to-task`,
+        method: 'POST',
+        body: { project_id },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Tickets', id }, 'Tickets'],
+    }),
+
+    getTicketCustomStatuses: builder.query<
+      { done: boolean; body: { id: string; name: string; color: string }[] },
+      void
+    >({
+      query: () => '/clients/portal/ticket-custom-statuses',
+      providesTags: ['TicketCustomStatuses'],
+    }),
+
+    createTicketCustomStatus: builder.mutation<any, { name: string; color: string }>({
+      query: data => ({
+        url: '/clients/portal/ticket-custom-statuses',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['TicketCustomStatuses'],
+    }),
+
+    deleteTicketCustomStatus: builder.mutation<any, string>({
+      query: id => ({
+        url: `/clients/portal/ticket-custom-statuses/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['TicketCustomStatuses'],
+    }),
+
+    getTicketAttachments: builder.query<any, string>({
+      query: id => `/clients/portal/tickets/${id}/attachments`,
+      providesTags: (result, error, id) => [{ type: 'TicketAttachments', id }],
+    }),
+
+    uploadTicketAttachment: builder.mutation<
+      any,
+      { id: string; fileData: string; fileName: string; fileType: string }
+    >({
+      query: ({ id, ...data }) => ({
+        url: `/clients/portal/tickets/${id}/attachments`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'TicketAttachments', id }],
+    }),
+
+    deleteTicketAttachment: builder.mutation<any, { id: string; attachmentId: string }>({
+      query: ({ id, attachmentId }) => ({
+        url: `/clients/portal/tickets/${id}/attachments/${attachmentId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'TicketAttachments', id }],
+    }),
+
     getOrganizationServices: builder.query<
       {
         done: boolean;
@@ -1329,6 +1635,7 @@ export const clientPortalApi = createApi({
         page?: number;
         limit?: number;
         search?: string;
+        status?: string;
         sortBy?: string;
         sortOrder?: 'asc' | 'desc';
       }
@@ -1356,6 +1663,7 @@ export const clientPortalApi = createApi({
         price?: number | null;
         currency?: string;
         category?: string;
+        billing_type?: string;
         imageData?: string;
         imageName?: string;
         imageType?: string;
@@ -1383,6 +1691,7 @@ export const clientPortalApi = createApi({
           price?: number | null;
           currency?: string;
           category?: string;
+          billing_type?: string;
           imageData?: string;
           imageName?: string;
           imageType?: string;
@@ -1405,6 +1714,39 @@ export const clientPortalApi = createApi({
       invalidatesTags: ['Services'],
     }),
 
+    // Team-defined Category / Billing type picklist values (layered on top of each field's
+    // built-in options in the UI, same relationship RequestCustomStatuses has to status).
+    getServiceOptionValues: builder.query<
+      { done: boolean; body: { id: string; kind: 'category' | 'billing_type'; value: string }[] },
+      'category' | 'billing_type'
+    >({
+      query: kind => ({
+        url: '/clients/portal/service-option-values',
+        params: { kind },
+      }),
+      providesTags: ['ServiceOptionValues'],
+    }),
+
+    createServiceOptionValue: builder.mutation<
+      any,
+      { kind: 'category' | 'billing_type'; value: string }
+    >({
+      query: data => ({
+        url: '/clients/portal/service-option-values',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['ServiceOptionValues'],
+    }),
+
+    deleteServiceOptionValue: builder.mutation<any, string>({
+      query: id => ({
+        url: `/clients/portal/service-option-values/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['ServiceOptionValues'],
+    }),
+
     // Client Invitation Management
     generateClientInvitationLink: builder.mutation<any, { clientId: string }>({
       query: ({ clientId }) => ({
@@ -1412,6 +1754,8 @@ export const clientPortalApi = createApi({
         method: 'POST',
         body: { clientId },
       }),
+      // A generated invitation moves the client to "Invited", so the list and stats must refresh.
+      invalidatesTags: ['Clients'],
     }),
 
     resendClientInvitation: builder.mutation<
@@ -1478,6 +1822,8 @@ export const {
   usePayInvoiceMutation,
   useDownloadInvoiceQuery,
   useCreateInvoiceMutation,
+  useRecordInvoicePaymentMutation,
+  useDuplicateInvoiceMutation,
   useUpdateInvoiceMutation,
   useSendInvoiceMutation,
   useMarkInvoiceAsPaidMutation,
@@ -1508,6 +1854,7 @@ export const {
 
   // Client Management
   useGetClientsQuery,
+  useGetClientsStatsQuery,
   useGetClientByIdQuery,
   useGetClientDetailsQuery,
   useLazyGetClientDetailsQuery,
@@ -1542,14 +1889,40 @@ export const {
   useUpdateOrganizationRequestStatusMutation,
   useAssignOrganizationRequestMutation,
   useGetOrganizationRequestsStatsQuery,
+  useDeleteOrganizationRequestMutation,
+  useGetRequestCustomStatusesQuery,
+  useCreateRequestCustomStatusMutation,
+  useDeleteRequestCustomStatusMutation,
+
+  useGetClientsLookupQuery,
+
+  // Organization-side Ticketing
+  useGetTicketsQuery,
+  useGetTicketsStatsQuery,
+  useGetTicketByIdQuery,
+  useUpdateTicketStatusMutation,
+  useGetTicketCommentsQuery,
+  useAddTicketCommentMutation,
+  useConvertTicketToTaskMutation,
+  useGetTicketCustomStatusesQuery,
+  useCreateTicketCustomStatusMutation,
+  useDeleteTicketCustomStatusMutation,
+  useGetTicketAttachmentsQuery,
+  useUploadTicketAttachmentMutation,
+  useDeleteTicketAttachmentMutation,
+
   useGetOrganizationServicesQuery,
   useGetOrganizationServiceByIdQuery,
   useCreateOrganizationServiceMutation,
   useUpdateOrganizationServiceMutation,
   useDeleteOrganizationServiceMutation,
+  useGetServiceOptionValuesQuery,
+  useCreateServiceOptionValueMutation,
+  useDeleteServiceOptionValueMutation,
 
   // Organization-side Client Portal Chats
   useGetOrganizationChatsQuery,
+  useGetChatConversationsQuery,
   useGetOrganizationChatByIdQuery,
   useCreateOrganizationChatMutation,
   useUploadOrganizationChatFileMutation,

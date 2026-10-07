@@ -66,7 +66,9 @@ export async function on_task_priority_change(_io: Server, socket: Socket, data?
           projectId,
           body.task_id,
           "priority_changed",
-          userName
+          userName,
+          undefined,
+          userId
         );
       }
     } catch (notifError) {

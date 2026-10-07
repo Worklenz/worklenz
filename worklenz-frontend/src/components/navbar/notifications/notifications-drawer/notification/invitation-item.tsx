@@ -8,6 +8,7 @@ import { ITeamInvitationViewModel } from '@/types/notifications/notifications.ty
 import { IAcceptTeamInvite } from '@/types/teams/team.type';
 import logger from '@/utils/errorLogger';
 import { TFunction } from 'i18next';
+import { Trans } from 'react-i18next';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -87,7 +88,13 @@ const InvitationItem: React.FC<InvitationItemProps> = ({ item, isUnreadNotificat
     >
       <div className="ant-notification-notice-content">
         <div className="ant-notification-notice-description">
-          You have been invited to work with <b>{item.team_name}</b>.
+          <Trans
+            i18nKey="notificationsDrawer.invitationMessage"
+            t={t}
+            values={{ teamName: item.team_name }}
+            components={{ 1: <b /> }}
+            defaults="You have been invited to work with <b>{{teamName}}</b>."
+          />
         </div>
         {isUnreadNotifications && (
           <div
@@ -104,7 +111,7 @@ const InvitationItem: React.FC<InvitationItemProps> = ({ item, isUnreadNotificat
                 cursor: inProgress() ? 'not-allowed' : 'pointer',
               }}
             >
-              {item.accepting ? 'Loading...' : <u>{t('notificationsDrawer.markAsRead')}</u>}
+              {item.accepting ? t('notificationsDrawer.loading', { defaultValue: 'Loading...' }) : <u>{t('notificationsDrawer.markAsRead', { defaultValue: 'Mark as read' })}</u>}
             </button>
             <button
               onClick={() => acceptAndJoin()}
@@ -115,7 +122,7 @@ const InvitationItem: React.FC<InvitationItemProps> = ({ item, isUnreadNotificat
                 cursor: inProgress() ? 'not-allowed' : 'pointer',
               }}
             >
-              {item.joining ? 'Loading...' : <u>{t('notificationsDrawer.readAndJoin')}</u>}
+              {item.joining ? t('notificationsDrawer.loading', { defaultValue: 'Loading...' }) : <u>{t('notificationsDrawer.readAndJoin', { defaultValue: 'Read & Join' })}</u>}
             </button>
           </div>
         )}

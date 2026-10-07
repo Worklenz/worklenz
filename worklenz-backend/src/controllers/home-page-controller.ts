@@ -144,6 +144,7 @@ export default class HomePageController extends WorklenzControllerBase {
              p.color_code AS project_color,
              ts.name AS status,
              COALESCE(ts.color_code, stc.color_code) AS status_color,
+             COALESCE(ts.color_code, stc.color_code_dark, stc.color_code) AS status_color_dark,
              (CASE
                 WHEN stc.id IS NULL THEN '{}'::JSON
                 ELSE JSON_BUILD_OBJECT('is_done', stc.is_done, 'is_doing', stc.is_doing, 'is_todo', stc.is_todo)
@@ -182,7 +183,8 @@ export default class HomePageController extends WorklenzControllerBase {
                FROM (
                  SELECT s.id,
                         s.name,
-                        COALESCE(s.color_code, cat.color_code) AS color_code
+                        COALESCE(s.color_code, cat.color_code) AS color_code,
+                        COALESCE(s.color_code, cat.color_code_dark, cat.color_code) AS color_code_dark
                  FROM task_statuses s
                  LEFT JOIN sys_task_status_categories cat ON cat.id = s.category_id
                  WHERE s.project_id = t.project_id
@@ -875,6 +877,10 @@ export default class HomePageController extends WorklenzControllerBase {
             FROM task_statuses ts
             LEFT JOIN sys_task_status_categories stc ON stc.id = ts.category_id
             WHERE ts.id = t.status_id) AS status_color,
+            (SELECT COALESCE(ts.color_code, stc.color_code_dark, stc.color_code)
+            FROM task_statuses ts
+            LEFT JOIN sys_task_status_categories stc ON stc.id = ts.category_id
+            WHERE ts.id = t.status_id) AS status_color_dark,
              is_todo(t.status_id, t.project_id) AS is_todo,
              is_doing(t.status_id, t.project_id) AS is_doing,
              is_completed(t.status_id, t.project_id) AS is_completed,

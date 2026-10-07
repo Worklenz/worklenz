@@ -284,7 +284,10 @@ export default class FinanceReportsController extends WorklenzControllerBase {
 
     const params: Array<string | number> = [teamId];
     let filterSql = "";
-    if (status) {
+    // "paid" is a payment state now, not a lifecycle status, but the page still filters by it.
+    if (status === "paid") {
+      filterSql += ` AND i.payment_status = 'paid'`;
+    } else if (status) {
       params.push(status);
       filterSql += ` AND i.status = $${params.length}`;
     }
@@ -320,6 +323,8 @@ export default class FinanceReportsController extends WorklenzControllerBase {
           i.amount::FLOAT AS amount,
           COALESCE(i.currency, 'USD') AS currency,
           i.status,
+          i.payment_status,
+          i.paid_amount::FLOAT AS paid_amount,
           i.due_date,
           i.sent_at,
           i.paid_at,
@@ -355,8 +360,8 @@ export default class FinanceReportsController extends WorklenzControllerBase {
         `
         SELECT
           COALESCE(SUM(i.amount), 0)::FLOAT AS total_invoiced,
-          COALESCE(SUM(CASE WHEN i.status = 'paid' THEN i.amount ELSE 0 END), 0)::FLOAT AS total_paid,
-          COALESCE(SUM(CASE WHEN i.status IN ('sent', 'overdue') THEN i.amount ELSE 0 END), 0)::FLOAT AS total_outstanding
+          COALESCE(SUM(i.paid_amount), 0)::FLOAT AS total_paid,
+          COALESCE(SUM(CASE WHEN i.status IN ('sent', 'pending', 'overdue') THEN i.amount - i.paid_amount ELSE 0 END), 0)::FLOAT AS total_outstanding
         FROM client_portal_invoices i
         WHERE i.organization_team_id = $1
           AND i.status <> 'cancelled'
@@ -369,6 +374,7 @@ export default class FinanceReportsController extends WorklenzControllerBase {
     const invoices = result.rows.map((row: Record<string, unknown>) => {
       const amount = toNumber(row.amount);
       const statusValue = String(row.status || "draft");
+      const paymentStatusValue = String(row.payment_status || "unpaid");
       // due_date is a plain SQL DATE, returned as a Date at UTC midnight.
       // An invoice isn't overdue until the end of its due date (in UTC, to
       // match how it's stored) — not the instant midnight ticks over, and
@@ -387,14 +393,16 @@ export default class FinanceReportsController extends WorklenzControllerBase {
         Boolean(dueDateEndOfDay) &&
         dueDateEndOfDay !== null &&
         dueDateEndOfDay < new Date() &&
-        statusValue !== "paid" &&
+        paymentStatusValue !== "paid" &&
         statusValue !== "cancelled" &&
         statusValue !== "draft";
-      const paymentStatus = statusValue === "paid"
+      const paymentStatus = paymentStatusValue === "paid"
         ? "paid"
         : isOverdue || statusValue === "overdue"
           ? "overdue"
-          : statusValue;
+          : paymentStatusValue === "partially_paid"
+            ? "partially_paid"
+            : statusValue;
 
       return {
         id: row.id,
@@ -405,7 +413,7 @@ export default class FinanceReportsController extends WorklenzControllerBase {
         amount,
         currency: row.currency || "USD",
         payment_status: paymentStatus,
-        paid_amount: statusValue === "paid" ? amount : 0,
+        paid_amount: toNumber(row.paid_amount),
         status: statusValue,
         issued_at: row.created_at,
         due_date: row.due_date,
@@ -758,8 +766,8 @@ export default class FinanceReportsController extends WorklenzControllerBase {
       db.query(
         `
         SELECT
-          COALESCE(SUM(CASE WHEN i.status = 'paid' THEN i.amount ELSE 0 END), 0)::FLOAT AS paid_revenue,
-          COALESCE(SUM(CASE WHEN i.status IN ('sent', 'paid', 'overdue') THEN i.amount ELSE 0 END), 0)::FLOAT AS invoiced_revenue
+          COALESCE(SUM(i.paid_amount), 0)::FLOAT AS paid_revenue,
+          COALESCE(SUM(CASE WHEN i.status IN ('sent', 'pending', 'paid', 'overdue') THEN i.amount ELSE 0 END), 0)::FLOAT AS invoiced_revenue
         FROM client_portal_invoices i
         WHERE i.organization_team_id = $1
           AND i.status <> 'cancelled'
@@ -782,7 +790,7 @@ export default class FinanceReportsController extends WorklenzControllerBase {
             SELECT SUM(i.amount)
             FROM client_portal_invoices i
             WHERE i.organization_team_id = $1
-              AND i.status IN ('sent', 'paid', 'overdue')
+              AND i.status IN ('sent', 'pending', 'paid', 'overdue')
               AND date_trunc('month', i.created_at) = m.month_start
           ), 0)::FLOAT AS revenue,
           COALESCE((
@@ -899,7 +907,7 @@ export default class FinanceReportsController extends WorklenzControllerBase {
             SELECT SUM(i.amount)
             FROM client_portal_invoices i
             WHERE i.organization_team_id = $1
-              AND i.status IN ('sent', 'paid', 'overdue')
+              AND i.status IN ('sent', 'pending', 'paid', 'overdue')
               AND date_trunc('month', i.created_at) = m.month_start
           ), 0)::FLOAT AS revenue,
           COALESCE((

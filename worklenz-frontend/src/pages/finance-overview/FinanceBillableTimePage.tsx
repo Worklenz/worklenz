@@ -277,7 +277,7 @@ export const FinanceBillableTimePage = () => {
             pageSize,
             total,
             showSizeChanger: true,
-            pageSizeOptions: [5, 10, 20, 50],
+            pageSizeOptions: [10, 20, 50, 100],
             onChange: (nextPage, nextSize) => {
               setPage(nextPage);
               setPageSize(nextSize);

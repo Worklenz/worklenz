@@ -7,6 +7,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { TASK_STATUS_COLOR_ALPHA } from "../shared/constants";
 import { getColor } from "../shared/utils";
+import { captureProjectSettings, logProjectSettingChanges } from "../services/project-settings-audit.service";
 import moment from "moment";
 import Excel from "exceljs";
 
@@ -411,8 +412,8 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         SELECT 
           ts.id,
           ts.name as group_name,
-          stsc.color_code::text,
-          stsc.color_code_dark::text
+          COALESCE(ts.color_code, stsc.color_code)::text AS color_code,
+          COALESCE(ts.color_code, stsc.color_code_dark, stsc.color_code)::text AS color_code_dark
         FROM task_statuses ts
         INNER JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
         WHERE ts.project_id = $1
@@ -1460,8 +1461,8 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
         SELECT 
           ts.id,
           ts.name as group_name,
-          stsc.color_code::text,
-          stsc.color_code_dark::text
+          COALESCE(ts.color_code, stsc.color_code)::text AS color_code,
+          COALESCE(ts.color_code, stsc.color_code_dark, stsc.color_code)::text AS color_code_dark
         FROM task_statuses ts
         INNER JOIN sys_task_status_categories stsc ON ts.category_id = stsc.id
         WHERE ts.project_id = $1
@@ -1671,6 +1672,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     }
 
     const project = projectCheckResult.rows[0];
+    const settingsBefore = await captureProjectSettings(req.user, projectId);
 
     // Update project currency
     const updateQuery = `
@@ -1704,6 +1706,8 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
       console.error("Failed to log currency change:", error);
       // Don't fail the request if logging fails
     }
+
+    await logProjectSettingChanges(req.user, projectId, settingsBefore);
 
     return res.status(200).send(new ServerResponse(true, {
       id: updatedProject.id,
@@ -1744,6 +1748,7 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
     }
 
     const project = projectCheckResult.rows[0];
+    const settingsBefore = await captureProjectSettings(req.user, projectId);
 
     // Update project budget
     const updateQuery = `
@@ -1777,6 +1782,8 @@ export default class ProjectfinanceController extends WorklenzControllerBase {
       console.error("Failed to log budget change:", error);
       // Don't fail the request if logging fails
     }
+
+    await logProjectSettingChanges(req.user, projectId, settingsBefore);
 
     return res.status(200).send(new ServerResponse(true, {
       id: updatedProject.id,

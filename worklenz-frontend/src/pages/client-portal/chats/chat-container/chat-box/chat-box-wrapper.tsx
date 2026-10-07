@@ -239,7 +239,7 @@ const ChatBoxWrapper = ({
               size="large"
               style={{
                 height: 44,
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 500,
                 paddingInline: 28,
                 borderRadius: 8,

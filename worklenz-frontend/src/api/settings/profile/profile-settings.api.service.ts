@@ -8,6 +8,7 @@ import {
   IAccountSetupResponse,
 } from '@/types/project-templates/project-templates.types';
 import { ITeam } from '@/types/teams/team.type';
+import { IClientPortalSettings } from '@/types/settings/client-portal-settings.types';
 
 const rootUrl = `${API_BASE_URL}/settings`;
 const digestUrl = `${API_BASE_URL}/digest`;
@@ -91,13 +92,20 @@ export const profileSettingsApiService = {
   },
 
   // Client Portal Settings
-  getClientPortalSettings: async (): Promise<IServerResponse<any>> => {
-    const response = await apiClient.get<IServerResponse<any>>(`${rootUrl}/client-portal`);
+  getClientPortalSettings: async (): Promise<IServerResponse<IClientPortalSettings>> => {
+    const response = await apiClient.get<IServerResponse<IClientPortalSettings>>(
+      `${rootUrl}/client-portal`
+    );
     return response.data;
   },
 
-  updateClientPortalSettings: async (body: any): Promise<IServerResponse<any>> => {
-    const response = await apiClient.put<IServerResponse<any>>(`${rootUrl}/client-portal`, body);
+  updateClientPortalSettings: async (
+    body: Partial<IClientPortalSettings>
+  ): Promise<IServerResponse<IClientPortalSettings>> => {
+    const response = await apiClient.put<IServerResponse<IClientPortalSettings>>(
+      `${rootUrl}/client-portal`,
+      body
+    );
     return response.data;
   },
 

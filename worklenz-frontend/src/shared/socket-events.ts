@@ -55,6 +55,8 @@ export enum SocketEvents {
   SCHEDULE_MEMBER_START_DATE_CHANGE,
   SCHEDULE_MEMBER_END_DATE_CHANGE,
   PROJECT_DATA_CHANGE,
+  /** Phase 6 — PM/finance/membership access changed; clients must re-check permissions. */
+  PROJECT_PERMISSION_CHANGED,
   TASK_BILLABLE_CHANGE,
   TASK_RECURRING_CHANGE,
   TASK_ASSIGNEES_CHANGE,
@@ -111,4 +113,8 @@ export enum SocketEvents {
   // Personal task events
   PERSONAL_TASK_CREATED,
   PERSONAL_TASK_UPDATED,
+
+  // Task attachments changed (created/deleted) so open task lists can refresh
+  // without a manual reload. Appended last to keep existing numeric values.
+  TASK_ATTACHMENTS_UPDATED,
 }

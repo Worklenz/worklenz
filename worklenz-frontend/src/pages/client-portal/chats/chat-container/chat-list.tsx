@@ -93,7 +93,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
           borderBottom: `1px solid ${themeWiseColor('#f0f0f0', '#303030', themeMode)}`,
         }}
       >
-        <Typography.Text strong style={{ fontSize: 16 }}>
+        <Typography.Text strong style={{ fontSize: 14 }}>
           {t('chatsTitle')}
         </Typography.Text>
       </Flex>
@@ -174,7 +174,7 @@ const ChatList = ({ chatList, setOpenedChatId, selectedChatId }: ChatListProps) 
                   <Typography.Text
                     strong={!!chat.unreadCount}
                     style={{
-                      fontSize: 14,
+                      fontSize: 12,
                       textTransform: 'capitalize',
                       maxWidth: 150,
                     }}

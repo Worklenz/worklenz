@@ -4,7 +4,6 @@
   "signInAnotherAccount": "Identifikohu me një llogari tjetër",
   "switchToLightMode": "Kalo në modalitetin e ndritshëm",
   "switchToDarkMode": "Kalo në modalitetin e errët",
-
   "stepOrganization": "Organizata",
   "stepProject": "Projekti",
   "stepInviteTeam": "Fto Ekipin",
@@ -13,7 +12,6 @@
   "retry": "Provo përsëri",
   "untitledTemplate": "Shabllon pa titull",
   "templatesLoadError": "Ngarkimi i shablloneve dështoi",
-
   "setupYourAccount": "Konfiguro llogarinë tënde.",
   "organizationStepTitle": "Emërto organizatën tënde",
   "organizationStepLabel": "Emri i organizatës",
@@ -116,9 +114,7 @@
   "aboutYouStepName": "Rreth teje",
   "yourNeedsStepName": "Nevojat e tua",
   "discoveryStepName": "Zbulimi",
-
   "stepProgress": "Hapi {{step}} nga 3: {{title}}",
-
   "projectStepHeader": "Le të krijojmë projektin tënd të parë",
   "projectStepSubheader": "Fillo nga e para ose përdor një shabllon për të filluar më shpejt",
   "startFromScratch": "Fillo nga e para",
@@ -146,8 +142,8 @@
   "surveyStepTitle": "Na trego për veten tënde",
   "surveyStepLabel": "Na ndihmo të personalizojmë përvojën tënde në Worklenz duke iu përgjigjur disa pyetjeve.",
   "organizationType": "Cila përshkruan më mirë organizatën tënde?",
-  "organizationTypeFreelancer": "Freelancer",
-  "organizationTypeStartup": "Startup",
+  "organizationTypeFreelancer": "Punonjës i pavarur",
+  "organizationTypeStartup": "Fillimi",
   "organizationTypeSmallMediumBusiness": "Biznes i Vogël ose i Mesëm",
   "organizationTypeAgency": "Agjenci",
   "organizationTypeEnterprise": "Ndërmarrje",
@@ -175,14 +171,12 @@
   "howHeardAboutFriendColleague": "Një mik ose koleg",
   "howHeardAboutBlogArticle": "Një blog ose artikull",
   "howHeardAboutOther": "Tjetër",
-
   "aboutYouStepTitle": "Na trego për veten",
   "aboutYouStepDescription": "Na ndihmo të personalizojmë përvojën tënde",
   "yourNeedsStepTitle": "Cilat janë nevojat e tua kryesore?",
   "yourNeedsStepDescription": "Zgjidh të gjitha që aplikohen për të na ndihmuar të konfigurojmë hapësirën tënde të punës",
   "selected": "zgjedhur",
   "previousToolsLabel": "Çfarë mjetesh ke përdorur më parë? (Opsionale)",
-
   "roleSuggestions": {
     "designer": "UI/UX, Grafikë, Kreativ",
     "developer": "Frontend, Backend, Full-stack",
@@ -191,7 +185,6 @@
     "sales": "Zhvillim Biznesi, Marrëdhënie me Klientë",
     "operations": "Administratë, HR, Financa"
   },
-
   "languages": {
     "en": "Anglisht",
     "es": "Spanjisht",
@@ -200,21 +193,54 @@
     "alb": "Shqip",
     "zh": "Kinezçe"
   },
-
   "orgSuggestions": {
-    "tech": ["TechCorp", "DevStudio", "CodeCraft", "PixelForge"],
-    "creative": ["Creative Hub", "Design Studio", "Brand Works", "Visual Arts"],
-    "consulting": ["Strategy Group", "Business Solutions", "Expert Advisors", "Growth Partners"],
-    "startup": ["Innovation Labs", "Future Works", "Venture Co", "Next Gen"]
+    "tech": [
+      "TechCorp",
+      "DevStudio",
+      "CodeCraft",
+      "PixelForge"
+    ],
+    "creative": [
+      "Creative Hub",
+      "Design Studio",
+      "Brand Works",
+      "Visual Arts"
+    ],
+    "consulting": [
+      "Strategy Group",
+      "Business Solutions",
+      "Expert Advisors",
+      "Growth Partners"
+    ],
+    "startup": [
+      "Innovation Labs",
+      "Future Works",
+      "Venture Co",
+      "Next Gen"
+    ]
   },
-
   "projectSuggestions": {
-    "freelancer": ["Projekti i Klientit", "Përditësim Portfolio", "Markë Personale"],
-    "startup": ["Zhvillim MVP", "Lansim Produkti", "Kërkim Tregu"],
-    "agency": ["Fushatë Klienti", "Strategji Markë", "Ridizajnim Website"],
-    "enterprise": ["Migrim Sistemi", "Optimizim Procesesh", "Trajnim Ekipi"]
+    "freelancer": [
+      "Projekti i Klientit",
+      "Përditësim Portfolio",
+      "Markë Personale"
+    ],
+    "startup": [
+      "Zhvillim MVP",
+      "Lansim Produkti",
+      "Kërkim Tregu"
+    ],
+    "agency": [
+      "Fushatë Klienti",
+      "Strategji Markë",
+      "Ridizajnim Website"
+    ],
+    "enterprise": [
+      "Migrim Sistemi",
+      "Optimizim Procesesh",
+      "Trajnim Ekipi"
+    ]
   },
-
   "useCaseDescriptions": {
     "taskManagement": "Organizoj dhe ndjek detyrat",
     "teamCollaboration": "Punojmë së bashku pa probleme",

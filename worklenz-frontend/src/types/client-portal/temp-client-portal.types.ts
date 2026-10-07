@@ -35,6 +35,7 @@ export type TempServicesType = {
   price?: number | null;
   currency?: string;
   category?: string;
+  billing_type?: string;
   service_data?: {
     description?: ReactNode | string;
     images?: string[] | null;

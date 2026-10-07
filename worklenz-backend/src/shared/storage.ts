@@ -182,6 +182,26 @@ export function getTaskExportStorageKey(
   return keyPath;
 }
 
+/**
+ * Object key for async Audit Log CSV export artifacts (Audit log spec, task 5.2) -
+ * mirrors getTaskExportStorageKey's shape, scoped by organization instead of project since
+ * the Audit Log itself is organization-wide (see the scope note in
+ * database/pg-migrations/1791193625587_create-audit-events-table.js).
+ */
+export function getAuditLogExportStorageKey(organizationId: string, jobId: string) {
+  const keyPath = path
+    .join(
+      getRootDir(),
+      "organizations",
+      organizationId,
+      "audit-log-exports",
+      `${jobId}.csv`,
+    )
+    .replace(/\\/g, "/");
+
+  return keyPath;
+}
+
 export function getAvatarKey(userId: string, type: string) {
   const keyPath = path
     .join("avatars", getRootDir(), `${userId}.${type}`)
@@ -229,6 +249,7 @@ export function getEnvironmentPrefix(): string {
  */
 export type ClientPortalStoragePurpose =
   | "request-attachments"
+  | "ticket-attachments"
   | "chat-files"
   | "avatars"
   | "service-images"

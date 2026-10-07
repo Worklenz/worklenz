@@ -6,13 +6,17 @@ import { createPortal } from 'react-dom';
 import {
   Button,
   ConfigProvider,
+  DownOutlined,
+  Dropdown,
   Flex,
+  SettingOutlined,
   Tabs,
   Tooltip,
   PushpinFilled,
   PushpinOutlined,
   message,
 } from '@/shared/antd-imports';
+import type { MenuProps } from '@/shared/antd-imports';
 import { CrownOutlined } from '@ant-design/icons';
 
 import { useAppDispatch } from '@/hooks/useAppDispatch';
@@ -22,7 +26,7 @@ import { SocketEvents } from '@/shared/socket-events';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { hasBusinessFeatureAccess } from '@/utils/subscription-utils';
 import { hasFinanceViewPermission } from '@/utils/finance-permissions';
-import { getProject, setProjectId, setProjectView } from '@/features/project/project.slice';
+import { getProject, setProjectId, setProjectView, clearProjectAccessForId } from '@/features/project/project.slice';
 import {
   fetchStatuses,
   fetchStatusesCategories,
@@ -31,12 +35,22 @@ import {
 import { projectsApiService } from '@/api/projects/projects.api.service';
 import { useDocumentTitle } from '@/hooks/useDoumentTItle';
 import ProjectViewHeader from './project-view-header';
+import { SprintHealthBar } from '@/components/projects/sprint-health-bar/sprint-health-bar';
+import { isSoftwareProjectType } from '@/lib/project/software-project';
+import { CreateIssueModal } from '@/components/projects/create-issue/create-issue-modal';
+import { resetSoftwareQuickFilters } from '@/features/projects/singleProject/quick-filters/software-quick-filters.slice';
+import { resetReleases } from '@/features/projects/singleProject/releases/releases.slice';
 import './project-view.css';
 import { resetTaskListData, restoreFilters, setTaskListProjectId, fetchTaskAssignees, fetchLabelsByProject, startFilterRestoration, endFilterRestoration, restoreStatusFilters } from '@/features/tasks/tasks.slice';
 import { resetBoardData } from '@/features/board/board-slice';
 import { resetTaskManagement, fetchTasksV3 } from '@/features/task-management/task-management.slice';
 import { store } from '@/app/store';
-import { resetGrouping, initGroupingFromServer, selectCurrentGrouping } from '@/features/task-management/grouping.slice';
+import {
+  resetGrouping,
+  initGroupingFromServer,
+  isGroupingType,
+  GroupingType,
+} from '@/features/task-management/grouping.slice';
 import { resetSelection } from '@/features/task-management/selection.slice';
 import { resetFields, setProjectContext } from '@/features/task-management/taskListFields.slice';
 import { fetchLabels } from '@/features/taskAttributes/taskLabelSlice';
@@ -45,6 +59,7 @@ import {
   tabItems,
   updateTabLabels,
   getFilteredTabItems,
+  SOFTWARE_PRIMARY_TABS,
 } from '@/lib/project/project-view-constants';
 import {
   setSelectedTaskId,
@@ -60,7 +75,11 @@ import ProjectViewSkeleton from './project-view-skeleton';
 import { ProjectSetupBanner } from '@/components/projects/project-setup-banner/project-setup-banner';
 import { useTranslation } from 'react-i18next';
 import alertService from '@/services/alerts/alertService';
-import { setProjectId as setDrawerProjectId, setProjectData } from '@/features/project/project-drawer.slice';
+import {
+  fetchProjectData,
+  setProjectId as setDrawerProjectId,
+  setProjectData,
+} from '@/features/project/project-drawer.slice';
 import { openProjectSettingsModal } from '@/features/project/project-settings-modal.slice';
 import { useTimerInitialization } from '@/hooks/useTimerInitialization';
 import { useAuthService } from '@/hooks/useAuth';
@@ -172,20 +191,38 @@ const ProjectView = React.memo(() => {
     const notify = (descKey: string) => () =>
       alertService.info(t('projectUpdated'), t(descKey));
 
-    const handlers: Record<string, () => void> = {
-      [SocketEvents.PROJECT_DATA_CHANGE.toString()]:       notify('projectDataUpdatedDesc'),
-      [SocketEvents.PROJECT_HEALTH_CHANGE.toString()]:     notify('projectHealthUpdatedDesc'),
-      [SocketEvents.PROJECT_STATUS_CHANGE.toString()]:     notify('projectStatusUpdatedDesc'),
+    const handlePermissionChanged = (payload?: {
+      project_id?: string;
+      reason?: string;
+    }) => {
+      if (payload?.project_id && payload.project_id !== projectId) return;
+
+      dispatch(clearProjectAccessForId(projectId));
+      void dispatch(getProject(projectId));
+
+      message.warning(
+        t('permissionLostDesc', {
+          defaultValue:
+            'Your permissions on this project were updated. Reloading your view.',
+        })
+      );
+    };
+
+    const handlers: Record<string, (...args: any[]) => void> = {
+      [SocketEvents.PROJECT_DATA_CHANGE.toString()]: notify('projectDataUpdatedDesc'),
+      [SocketEvents.PROJECT_HEALTH_CHANGE.toString()]: notify('projectHealthUpdatedDesc'),
+      [SocketEvents.PROJECT_STATUS_CHANGE.toString()]: notify('projectStatusUpdatedDesc'),
       [SocketEvents.PROJECT_START_DATE_CHANGE.toString()]: notify('projectDatesUpdatedDesc'),
-      [SocketEvents.PROJECT_END_DATE_CHANGE.toString()]:   notify('projectDatesUpdatedDesc'),
-      [SocketEvents.PROJECT_CATEGORY_CHANGE.toString()]:   notify('projectCategoryUpdatedDesc'),
+      [SocketEvents.PROJECT_END_DATE_CHANGE.toString()]: notify('projectDatesUpdatedDesc'),
+      [SocketEvents.PROJECT_CATEGORY_CHANGE.toString()]: notify('projectCategoryUpdatedDesc'),
+      [SocketEvents.PROJECT_PERMISSION_CHANGED.toString()]: handlePermissionChanged,
     };
 
     Object.entries(handlers).forEach(([event, handler]) => socket.on(event, handler));
     return () => {
       Object.entries(handlers).forEach(([event, handler]) => socket.off(event, handler));
     };
-  }, [socket, projectId, t]);
+  }, [socket, projectId, t, dispatch]);
 
   // Update local state when URL params change
   useEffect(() => {
@@ -204,6 +241,11 @@ const ProjectView = React.memo(() => {
       const firstAvailableTab = filteredTabItems.find(item => !item.disabled);
       if (firstAvailableTab) {
         setActiveTab(firstAvailableTab.key);
+        if (searchParams.get('tab') && searchParams.get('tab') !== firstAvailableTab.key) {
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.set('tab', firstAvailableTab.key);
+          navigate({ pathname: location.pathname, search: nextParams.toString() }, { replace: true });
+        }
       }
     } else if (requestedTab?.disabled) {
       // If tab is disabled, redirect to first available tab and show upgrade modal
@@ -229,7 +271,7 @@ const ProjectView = React.memo(() => {
     }
 
     setTaskId(urlParams.taskId);
-  }, [urlParams, currentSession, selectedProject, dispatch]);
+  }, [urlParams, currentSession, selectedProject, dispatch, searchParams, navigate, location.pathname]);
 
   // Remove translation preloading since we're using simple load-as-you-go approach
   useEffect(() => {
@@ -256,6 +298,8 @@ const ProjectView = React.memo(() => {
     dispatch(resetSelection());
     dispatch(resetFields());
     dispatch(resetEnhancedKanbanState());
+    dispatch(resetSoftwareQuickFilters());
+    dispatch(resetReleases());
 
     // Reset project insights
     dispatch(setInsightsProjectId(''));
@@ -307,6 +351,8 @@ const ProjectView = React.memo(() => {
           dispatch(resetBoardData());
           dispatch(resetTaskManagement());
           dispatch(resetEnhancedKanbanState());
+          dispatch(resetSoftwareQuickFilters());
+          dispatch(resetReleases());
           dispatch(deselectAll());
 
           // Load new project data
@@ -317,16 +363,24 @@ const ProjectView = React.memo(() => {
           dispatch(setProjectContext(projectId));
 
           const requestedTab = searchParams.get('tab') || 'tasks-list';
-          const shouldPreloadTaskList = requestedTab === 'tasks-list';
+          const shouldPreloadTaskList =
+            requestedTab === 'tasks-list' || requestedTab === 'backlog';
 
-          // Load project and essential data in parallel
+          // Block filter persistence until the new project's saved filters are restored,
+          // otherwise useFilterPersistence can write the previous project's filters under
+          // this project's storage key.
+          if (shouldPreloadTaskList) {
+            dispatch(startFilterRestoration());
+          }
+
+          // Load project metadata first. The task list itself is fetched once, below,
+          // after grouping and filters are known — so the request is never repeated.
           const [projectResult] = await Promise.allSettled([
             dispatch(getProject(projectId)),
             dispatch(fetchStatuses(projectId)),
             dispatch(fetchLabels()),
             ...(shouldPreloadTaskList
               ? [
-                  dispatch(fetchTasksV3(projectId)),
                   dispatch(fetchTaskListColumns(projectId)),
                   dispatch(fetchPhasesByProjectId(projectId)),
                   dispatch(fetchStatusesCategories()),
@@ -335,48 +389,6 @@ const ProjectView = React.memo(() => {
                 ]
               : []),
           ]);
-
-          // Restore persisted filters after loading project data
-          // CRITICAL: Restore filters AFTER all project data (statuses, members, labels) is loaded
-          // so we can match saved filter IDs to actual entities.
-          // This sequence prevents the race condition where useFilterPersistence reads stale
-          // old-project filter state while taskReducer hasn't been reset yet, then writes it
-          // under the new project's storage key, clobbering the new project's saved filters.
-          if (shouldPreloadTaskList) {
-            // Step 1: Signal that filter restoration is starting so persistence stays blocked
-            // until the new project's saved state has been restored.
-            dispatch(startFilterRestoration());
-
-            // Step 2: Restore basic filters from localStorage first.
-            // Step 3: Wait for the freshly loaded status list before restoring saved status filters,
-            // because the status store is populated asynchronously when the project loads.
-            const restoreSavedFilters = async () => {
-              dispatch(restoreFilters());
-
-              let allAvailableStatuses = store.getState().taskStatusReducer?.status || [];
-              let attempts = 0;
-
-              while (allAvailableStatuses.length === 0 && attempts < 20) {
-                await new Promise(resolve => setTimeout(resolve, 50));
-                allAvailableStatuses = store.getState().taskStatusReducer?.status || [];
-                attempts += 1;
-              }
-
-              if (allAvailableStatuses.length > 0) {
-                // restoreStatusFilters also calls endFilterRestoration() internally
-                dispatch(restoreStatusFilters(allAvailableStatuses));
-              } else {
-                // If no statuses are available, allow persistence to resume safely.
-                dispatch(endFilterRestoration());
-              }
-
-              // The initial task request runs before persisted filters are restored.
-              // Fetch again so the task list matches the restored filter state.
-              dispatch(fetchTasksV3(projectId));
-            };
-
-            void restoreSavedFilters();
-          }
 
           // Check if project fetch was rejected (access denied or not found)
           if (projectResult.status === 'rejected') {
@@ -430,59 +442,54 @@ const ProjectView = React.memo(() => {
               return;
             }
 
-            // Initialize grouping preferences from server data.
-            // If the server value differs from what was already in Redux (loaded from
-            // localStorage before the project data arrived), re-fetch tasks so the
-            // task list reflects the correct saved grouping without requiring a refresh.
             const projectData = result.payload as any;
-            const validGroupings = ['status', 'priority', 'phase'] as const;
-            type GroupingType = typeof validGroupings[number];
-
-            const taskListGroupBy: GroupingType = validGroupings.includes(projectData?.task_list_group_by)
+            const taskListGroupBy: GroupingType = isGroupingType(projectData?.task_list_group_by)
               ? projectData.task_list_group_by
               : 'status';
 
-            const boardGroupBy: GroupingType = validGroupings.includes(projectData?.board_group_by)
+            const boardGroupBy: GroupingType = isGroupingType(projectData?.board_group_by)
               ? projectData.board_group_by
               : 'status';
-
-            // Read current Redux grouping BEFORE dispatching the init action
-            const currentListGrouping = selectCurrentGrouping(store.getState());
 
             dispatch(initGroupingFromServer({ grouping: taskListGroupBy, projectId }));
             dispatch(initKanbanGroupingFromServer({ groupBy: boardGroupBy as IGroupBy, projectId }));
 
-            // If the task list was already fetched in parallel but with the wrong grouping,
-            // re-fetch now that the correct grouping is in Redux state
-            if (shouldPreloadTaskList && currentListGrouping !== taskListGroupBy) {
-              dispatch(fetchTasksV3(projectId));
-            }
-          }
-
-          // After successful project load, refresh session to update team info in UI
-          // This handles cases where backend automatically switched teams
-          try {
-            // Store current team ID before refresh
-            const currentTeamId = currentSession?.team_id;
-            
-            const authResult = await dispatch(verifyAuthentication()).unwrap();
-            if (authResult.authenticated) {
-              dispatch(setUser(authResult.user));
-              authService.setCurrentSession(authResult.user);
-              
-              // Check if team switched - if so, force page reload to update all components
-              const newTeamId = authResult.user?.team_id;
-              if (currentTeamId && newTeamId && currentTeamId !== newTeamId) {
-                window.location.reload();
-                return;
+            if (shouldPreloadTaskList) {
+              // Statuses, members and labels are loaded above, so saved filter IDs can be
+              // matched against real entities synchronously — no polling needed.
+              dispatch(restoreFilters());
+              const availableStatuses = store.getState().taskStatusReducer?.status || [];
+              if (availableStatuses.length > 0) {
+                dispatch(restoreStatusFilters(availableStatuses));
+              } else {
+                dispatch(endFilterRestoration());
               }
+
+              // Grouping and filters are now correct: fetch the task list exactly once.
+              await dispatch(fetchTasksV3(projectId));
             }
-          } catch (authError) {
-            console.error('Failed to refresh session:', authError);
-            // Continue anyway - project is loaded
           }
 
           setIsInitialized(true);
+
+          // Refresh the session in the background so it never blocks first render.
+          // The backend may have switched teams to grant project access; when the team
+          // changes, reload so every component picks up the new team context.
+          const currentTeamId = currentSession?.team_id;
+          dispatch(verifyAuthentication())
+            .unwrap()
+            .then(authResult => {
+              if (!authResult.authenticated) return;
+              dispatch(setUser(authResult.user));
+              authService.setCurrentSession(authResult.user);
+              const newTeamId = authResult.user?.team_id;
+              if (currentTeamId && newTeamId && currentTeamId !== newTeamId) {
+                window.location.reload();
+              }
+            })
+            .catch(authError => {
+              console.error('Failed to refresh session:', authError);
+            });
         } catch (error) {
           console.error('Error loading project data:', error);
           navigate('/worklenz/projects');
@@ -606,6 +613,10 @@ const ProjectView = React.memo(() => {
         dispatch(setShowTaskDrawer(false));
       }
 
+      if (key === 'tasks-list' && activeTab !== 'tasks-list' && projectId) {
+        dispatch(fetchTasksV3(projectId));
+      }
+
       setActiveTab(key);
       dispatch(setProjectView(key === 'board' ? 'kanban' : 'list'));
 
@@ -632,8 +643,11 @@ const ProjectView = React.memo(() => {
       trackMixpanelEvent,
       canCreateTask,
       showTaskDrawer,
+      activeTab,
     ]
   );
+
+  const isSoftwareProject = isSoftwareProjectType(selectedProject?.project_type);
 
   // Memoized tab menu items with enhanced styling
   const tabMenuItems = useMemo(() => {
@@ -643,8 +657,13 @@ const ProjectView = React.memo(() => {
     }
 
     const filteredTabItems = getFilteredTabItems(currentSession, selectedProject, canCreateTask);
+    const visibleTabItems = isSoftwareProject
+      ? filteredTabItems.filter(
+          item => SOFTWARE_PRIMARY_TABS.includes(item.key) || item.key === activeTab
+        )
+      : filteredTabItems;
 
-    const menuItems = filteredTabItems.map(item => {
+    const menuItems = visibleTabItems.map(item => {
       const premiumTabs = ['finance', 'project-insights-member-overview', 'roadmap', 'workload'];
       const isPremiumTab = premiumTabs.includes(item.key);
 
@@ -666,7 +685,8 @@ const ProjectView = React.memo(() => {
               {item.disabled && (
                 <CrownOutlined style={{ fontSize: '14px', color: '#faad14', marginLeft: '4px' }} />
               )}
-              {(item.key === 'tasks-list' || item.key === 'board') && !item.disabled && (
+              {((item.key === 'tasks-list' && !isSoftwareProject) || item.key === 'board') &&
+                !item.disabled && (
                 <ConfigProvider wave={{ disabled: true }}>
                   <Button
                     className="borderless-icon-btn"
@@ -717,7 +737,75 @@ const ProjectView = React.memo(() => {
     });
 
     return menuItems;
-  }, [pinnedTab, pinToDefaultTab, t, translationsReady, currentSession, selectedProject, canCreateTask]);
+  }, [
+    pinnedTab,
+    pinToDefaultTab,
+    t,
+    translationsReady,
+    currentSession,
+    selectedProject,
+    canCreateTask,
+    isSoftwareProject,
+    activeTab,
+  ]);
+
+  const handleOpenProjectSettings = useCallback(() => {
+    if (!selectedProject?.id) return;
+    dispatch(setDrawerProjectId(selectedProject.id));
+    dispatch(fetchProjectData(selectedProject.id))
+      .unwrap()
+      .catch(() => dispatch(setProjectData(selectedProject)))
+      .finally(() => dispatch(openProjectSettingsModal()));
+  }, [dispatch, selectedProject]);
+
+  const moreTabsMenu = useMemo<MenuProps | null>(() => {
+    if (!isSoftwareProject || !translationsReady) return null;
+
+    const overflowTabs = getFilteredTabItems(currentSession, selectedProject, canCreateTask).filter(
+      item => !SOFTWARE_PRIMARY_TABS.includes(item.key)
+    );
+    const isGuest = selectedProject?.is_guest === true;
+    const items: MenuProps['items'] = overflowTabs.map(item => ({
+      key: item.key,
+      label: (
+        <Flex align="center" gap={6}>
+          {item.label}
+          {item.disabled && <CrownOutlined style={{ fontSize: 12, color: '#faad14' }} />}
+        </Flex>
+      ),
+    }));
+    if (!isGuest) {
+      if (items.length) items.push({ type: 'divider' });
+      items.push({
+        key: PROJECT_SETTINGS_MENU_KEY,
+        icon: <SettingOutlined />,
+        label: t('projectSettings', { defaultValue: 'Project settings' }),
+      });
+    }
+
+    return {
+      items,
+      selectable: true,
+      selectedKeys: overflowTabs.some(item => item.key === activeTab) ? [activeTab] : [],
+      onClick: ({ key }) => {
+        if (key === PROJECT_SETTINGS_MENU_KEY) {
+          handleOpenProjectSettings();
+          return;
+        }
+        handleTabChange(key);
+      },
+    };
+  }, [
+    activeTab,
+    canCreateTask,
+    currentSession,
+    handleOpenProjectSettings,
+    handleTabChange,
+    isSoftwareProject,
+    selectedProject,
+    t,
+    translationsReady,
+  ]);
 
   // Optimized secondary components loading with better UX
   const [shouldLoadSecondaryComponents, setShouldLoadSecondaryComponents] = useState(false);
@@ -804,11 +892,36 @@ const ProjectView = React.memo(() => {
         <ProjectSetupBanner projectId={projectId} />
       )}
 
+      {projectId && isSoftwareProjectType(selectedProject?.project_type) && (
+        <>
+          <SprintHealthBar projectId={projectId} />
+          <CreateIssueModal projectId={projectId} />
+        </>
+      )}
+
       <Tabs
         className="project-view-tabs"
         activeKey={activeTab}
         onChange={handleTabChange}
         items={tabMenuItems}
+        tabBarExtraContent={
+          moreTabsMenu
+            ? {
+                right: (
+                  <Dropdown menu={moreTabsMenu} trigger={['click']} placement="bottomRight">
+                    <Button type="text" size="small" aria-haspopup="menu">
+                      <Flex align="center" gap={4}>
+                        <span style={{ fontWeight: 500, fontSize: '13px' }}>
+                          {t('moreTabs', { defaultValue: 'More' })}
+                        </span>
+                        <DownOutlined style={{ fontSize: 10 }} />
+                      </Flex>
+                    </Button>
+                  </Dropdown>
+                ),
+              }
+            : undefined
+        }
         destroyOnHidden={true}
         animated={{
           inkBar: true,
@@ -823,5 +936,7 @@ const ProjectView = React.memo(() => {
 });
 
 ProjectView.displayName = 'ProjectView';
+
+const PROJECT_SETTINGS_MENU_KEY = '__project_settings__';
 
 export default ProjectView;

@@ -1,33 +1,20 @@
-import {
-  Button,
-  Flex,
-  Typography,
-  Card,
-  Statistic,
-  Spin,
-  Row,
-  Col,
-  Space,
-} from '@/shared/antd-imports';
-import {
-  PlusOutlined,
-  UserOutlined,
-  TeamOutlined,
-  ProjectOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons';
+import { Badge, Button, Flex, Typography, Space, theme } from '@/shared/antd-imports';
+import PillToggle from '@/pages/home/PillToggle';
+import { PlusOutlined, ShareAltOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { toggleAddClientDrawer } from '@/features/clients-portal/clients/clients-slice';
-import { useGetClientsQuery, ClientPortalClient } from '@/api/client-portal/client-portal-api';
+import { useGetClientsStatsQuery } from '@/api/client-portal/client-portal-api';
+import { useGetCompanyUsersStatsQuery } from '@/api/client-portal/company-users-api';
 import ClientsTable from './ClientsTable';
+import { ClientsStats } from './ClientsStats';
+import { CompanyUsersTab } from './company-users/CompanyUsersTab';
+import { clientWorkspacePath } from './workspace/workspace-helpers';
 import ClientDetailsDrawer from '@/components/client-portal/ClientDetailsDrawer';
-import ClientTeamsDrawer from '@/components/client-portal/ClientTeamsDrawer';
-import ClientSettingsDrawer from '@/components/client-portal/ClientSettingsDrawer';
 import InviteLinkModal from '@/components/client-portal/InviteLinkModal';
-import { useResponsive } from '@/hooks/useResponsive';
 import { createPortal } from 'react-dom';
-import React, { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMixpanelTracking } from '@/hooks/useMixpanelTracking';
 import {
   MixpanelEvents,
@@ -37,62 +24,54 @@ import {
 
 const { Title } = Typography;
 
+type ClientsView = 'company' | 'users';
+
 const ClientPortalClients = () => {
   const { t } = useTranslation('client-portal-clients');
+  const { t: tUsers } = useTranslation('client-portal-company-users');
+  const { token } = theme.useToken();
   const dispatch = useAppDispatch();
-  const { isMobile, isTablet, isDesktop } = useResponsive();
+  const navigate = useNavigate();
   const { trackMixpanelEvent } = useMixpanelTracking();
 
-  // State for invite modal
-  const [showInviteModal, setShowInviteModal] = React.useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
-  // RTK Query hook for clients data
-  const {
-    data: clientsData,
-    isLoading,
-    error,
-  } = useGetClientsQuery({
-    page: 1,
-    limit: 1000, // Get all clients for stats
-  });
+  // The view lives in the URL so coming back from a client keeps the tab that was open.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeView: ClientsView = searchParams.get('view') === 'users' ? 'users' : 'company';
+  const { data: usersStats } = useGetCompanyUsersStatsQuery();
 
-  const handleCloseInviteModal = () => {
-    setShowInviteModal(false);
+  const handleViewChange = (key: string) => {
+    setSearchParams(
+      previous => {
+        const next = new URLSearchParams(previous);
+        if (key === 'users') next.set('view', 'users');
+        else next.delete('view');
+        return next;
+      },
+      { replace: true }
+    );
   };
 
-  // Calculate statistics - properly access the nested structure
-  const totalClients = clientsData?.body?.total || 0;
-  // Active clients should be based on portal status, not general client status
-  // A client is "active" if they have portal access (has_portal_access === true)
-  const activeClients =
-    clientsData?.body?.clients?.filter((client: ClientPortalClient) => {
-      // Check if client has active portal access
-      return client.has_portal_access === true || client.portal_status?.status === 'active';
-    }).length || 0;
-  const totalProjects =
-    clientsData?.body?.clients?.reduce(
-      (sum: number, client: ClientPortalClient) => sum + (client.assigned_projects_count || 0),
-      0
-    ) || 0;
-  const totalTeamMembers =
-    clientsData?.body?.clients?.reduce(
-      (sum: number, client: ClientPortalClient) => sum + (client.team_members?.length || 0),
-      0
-    ) || 0;
+  // Shares its cache entry with the stat cards, so this does not add a request.
+  const { data: statsData, isLoading: isStatsLoading } = useGetClientsStatsQuery();
+  const hasTrackedVisit = useRef(false);
 
-  // Track page visit
+  // Track the page visit once, as soon as the total is known (or the stats request has failed).
   useEffect(() => {
+    if (isStatsLoading || hasTrackedVisit.current) return;
+    hasTrackedVisit.current = true;
+
     const pageEventProps: ClientPortalEventProps = {
       page: 'clients',
       section: 'client_portal',
-      total_items: totalClients,
+      total_items: statsData?.body?.total ?? 0,
       source: 'direct_visit',
     };
 
     trackMixpanelEvent(MixpanelEvents.CLIENT_PORTAL_PAGE_VISITED, pageEventProps);
-  }, [trackMixpanelEvent, totalClients]);
+  }, [isStatsLoading, statsData, trackMixpanelEvent]);
 
-  // Enhanced action handlers with tracking
   const handleAddClientWithTracking = () => {
     const actionProps: ClientPortalActionEventProps = {
       action_type: 'create',
@@ -122,138 +101,104 @@ const ClientPortalClients = () => {
   return (
     <div
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: 0,
         maxWidth: '100%',
-        minHeight: 'calc(100vh - 120px)',
       }}
     >
-      {/* Header */}
-      <div style={{ marginBottom: isDesktop ? 32 : 24 }}>
-        <Flex justify="space-between" align="center" wrap="wrap" gap={16}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <Flex align="center" gap={12} style={{ marginBottom: 8 }}>
-              <UserOutlined style={{ fontSize: 20 }} />
-              <Title
-                level={4}
-                style={{
-                  margin: 0,
-                  fontSize: '20px',
-                }}
-              >
-                {t('pageTitle') || 'Clients'}
-              </Title>
-            </Flex>
-            <Typography.Text
-              type="secondary"
-              style={{
-                fontSize: isDesktop ? '16px' : '14px',
-                lineHeight: 1.5,
-              }}
-            >
-              {t('pageDescription') || 'Manage your clients and their access to the portal'}
-            </Typography.Text>
-          </div>
-          <Space wrap>
-            <Button
-              icon={<ShareAltOutlined />}
-              onClick={handleShowInviteModalWithTracking}
-              size={isMobile ? 'small' : 'middle'}
-            >
-              {t('inviteButton') || 'Invite'}
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddClientWithTracking}
-              size={isMobile ? 'small' : 'middle'}
-            >
-              {t('addClientButton') || 'Add Client'}
-            </Button>
-          </Space>
-        </Flex>
+      <div style={{ marginBottom: 16, flexShrink: 0 }}>
+        <Title level={4} style={{ margin: 0, fontSize: 22 }}>
+          {t('pageTitle', { defaultValue: 'Clients' })}
+        </Title>
+        <Typography.Text type="secondary">
+          {t('pageDescription', {
+            defaultValue: 'Manage your clients and their access to the portal',
+          })}
+        </Typography.Text>
       </div>
 
-      {/* Statistics Cards */}
-      <Row gutter={[16, 16]} style={{ marginBottom: isDesktop ? 32 : 24 }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              height: '100%',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Statistic
-              title={t('totalClientsLabel') || 'Total Clients'}
-              value={totalClients}
-              prefix={<UserOutlined />}
-              valueStyle={{ color: '#1890ff', fontSize: isDesktop ? '24px' : '20px' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              height: '100%',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Statistic
-              title={t('activeClientsLabel') || 'Active Clients'}
-              value={activeClients}
-              valueStyle={{ color: '#3f8600', fontSize: isDesktop ? '24px' : '20px' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              height: '100%',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Statistic
-              title={t('totalProjectsLabel') || 'Total Projects'}
-              value={totalProjects}
-              prefix={<ProjectOutlined />}
-              valueStyle={{ color: '#722ed1', fontSize: isDesktop ? '24px' : '20px' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            style={{
-              height: '100%',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            }}
-          >
-            <Statistic
-              title={t('totalTeamMembersLabel') || 'Team Members'}
-              value={totalTeamMembers}
-              prefix={<TeamOutlined />}
-              valueStyle={{ color: '#eb2f96', fontSize: isDesktop ? '24px' : '20px' }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* Clients Table */}
-      <Card
-        style={{
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          borderRadius: 8,
-        }}
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={16}
+        style={{ marginBottom: 16, flexShrink: 0 }}
       >
-        <Spin spinning={isLoading}>
-          <ClientsTable />
-        </Spin>
-      </Card>
+        <PillToggle<ClientsView>
+          value={activeView}
+          onChange={handleViewChange}
+          ariaLabel={t('viewToggleLabel', { defaultValue: 'Clients view' })}
+          options={[
+            { value: 'company', label: t('companyTab', { defaultValue: 'Clients' }) },
+            {
+              value: 'users',
+              label: (
+                <Flex align="center" gap={8}>
+                  <span>{t('companyUsersTab', { defaultValue: 'Client Users' })}</span>
+                  <Badge
+                    count={usersStats?.body?.total ?? 0}
+                    showZero
+                    overflowCount={999}
+                    style={{
+                      backgroundColor:
+                        activeView === 'users' ? token.colorBgContainer : token.colorPrimary,
+                      color:
+                        activeView === 'users' ? token.colorPrimary : token.colorTextLightSolid,
+                      boxShadow: 'none',
+                    }}
+                    aria-label={tUsers('tabCountLabel', { defaultValue: 'Total client users' })}
+                  />
+                </Flex>
+              ),
+            },
+          ]}
+        />
 
-      {/* Drawers */}
+        <Space wrap>
+          <Button
+            icon={<ShareAltOutlined />}
+            onClick={handleShowInviteModalWithTracking}
+            size="small"
+          >
+            {t('inviteButton', { defaultValue: 'Send Invitation' })}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddClientWithTracking}
+            size="small"
+          >
+            {t('addClientButton', { defaultValue: 'Add new' })}
+          </Button>
+        </Space>
+      </Flex>
+
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        {activeView === 'company' ? (
+          <>
+            <div style={{ flexShrink: 0 }}>
+              <ClientsStats />
+            </div>
+            <ClientsTable />
+          </>
+        ) : (
+          <CompanyUsersTab
+            onAdd={handleAddClientWithTracking}
+            onOpenCompany={clientId => navigate(clientWorkspacePath(clientId))}
+          />
+        )}
+      </div>
+
+      {/* Edit Client opens this modal. Everything else about a client lives in its workspace. */}
       {createPortal(<ClientDetailsDrawer />, document.body)}
-      {createPortal(<ClientTeamsDrawer />, document.body)}
-      {createPortal(<ClientSettingsDrawer />, document.body)}
 
-      {/* Invite Link Modal */}
-      <InviteLinkModal visible={showInviteModal} onClose={handleCloseInviteModal} />
+      <InviteLinkModal visible={showInviteModal} onClose={() => setShowInviteModal(false)} />
+
+      {/* clients/:id renders here as a modal over this list, so a direct or shared link
+          still shows the list underneath it instead of a blank page. */}
+      <Outlet />
     </div>
   );
 };

@@ -3,24 +3,19 @@
   "membersButton": "Mitglieder",
   "tasksButton": "Aufgaben",
   "searchByNameInputPlaceholder": "Nach Namen suchen",
-
   "overviewTab": "Übersicht",
   "membersTab": "Mitglieder",
   "tasksTab": "Aufgaben",
-
   "completedTasksText": "Abgeschlossene Aufgaben",
   "incompleteTasksText": "Unvollständige Aufgaben",
   "overdueTasksText": "Überfällige Aufgaben",
   "allocatedHoursText": "Zugewiesene Stunden",
   "loggedHoursText": "Erfasste Stunden",
-
   "tasksText": "Aufgaben",
   "allText": "Alle",
-
   "tasksByStatusText": "Aufgaben nach Status",
   "tasksByPriorityText": "Aufgaben nach Priorität",
   "tasksByDueDateText": "Aufgaben nach Fälligkeit",
-
   "todoText": "Zu erledigen",
   "doingText": "Tun",
   "doneText": "Erledigt",
@@ -31,7 +26,6 @@
   "upcomingText": "Bevorstehend",
   "overdueText": "Überfällig",
   "noDueDateText": "Kein Fälligkeitsdatum",
-
   "nameColumn": "Name",
   "tasksCountColumn": "Anzahl Aufgaben",
   "completedTasksColumn": "Abgeschlossene Aufgaben",
@@ -42,7 +36,7 @@
   "loggedTimeColumn": "Erfasste Zeit",
   "taskColumn": "Aufgabe",
   "projectColumn": "Projekt",
-  "statusColumn": "Status",
+  "statusColumn": "Alle Status",
   "priorityColumn": "Priorität",
   "phaseColumn": "Phase",
   "dueDateColumn": "Fälligkeitsdatum",
@@ -51,9 +45,8 @@
   "overloggedTimeColumn": "Übererfasste Zeit",
   "completedOnColumn": "Abgeschlossen am",
   "daysOverdueColumn": "Tage überfällig",
-
   "groupByText": "Gruppieren nach:",
-  "statusText": "Status",
+  "statusText": "Alle Status",
   "priorityText": "Priorität",
   "phaseText": "Phase"
 }
