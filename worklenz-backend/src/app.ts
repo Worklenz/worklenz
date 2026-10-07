@@ -10,6 +10,7 @@ import { csrfSync } from "csrf-sync";
 import cors from "cors";
 import flash from "connect-flash";
 import hpp from "hpp";
+import rateLimit from "express-rate-limit";
 
 import passportConfig from "./passport";
 import apiRouter from "./routes/apis";
@@ -38,6 +39,15 @@ import { IWorkLenzRequest } from "./interfaces/worklenz-request";
 
 const app = express();
 
+// Keep application-level protection in place even when a deployment is not
+// fronted by the nginx rate-limit configuration.
+const globalRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 1_000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 if (process.env.IMPORT_WORKER_ENABLED !== "false") {
   importWorker.start();
 }
@@ -63,6 +73,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false, limit: "50mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
+app.use(globalRateLimiter);
 app.use(hpp());
 
 // Helmet security headers

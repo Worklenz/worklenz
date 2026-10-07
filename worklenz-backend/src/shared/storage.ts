@@ -64,9 +64,7 @@ if (STORAGE_PROVIDER === "azure") {
       azureContainerClient =
         azureBlobServiceClient.getContainerClient(containerName);
 
-      console.log(
-        `Azure Blob Storage initialized with account: ${AZURE_STORAGE_ACCOUNT_NAME}, container: ${containerName}`,
-      );
+      console.log("Azure Blob Storage initialized");
     }
   } catch (error) {
     console.error("Failed to initialize Azure Blob Storage:", error);

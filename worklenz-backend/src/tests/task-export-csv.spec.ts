@@ -206,7 +206,7 @@ describe("tasks CSV encoding fixtures (TE-12)", () => {
       []
     );
 
-    expect(row[2]).toBe("alert('x')&lt;safe&gt;");
+    expect(row[2]).toBe("&lt;safe&gt;");
   });
 
   it("generates a multi-task CSV with header then one row per task", () => {

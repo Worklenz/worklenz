@@ -1,4 +1,5 @@
 import moment from "moment";
+import sanitizeHtml from "sanitize-html";
 import { TaskExportNamedRef } from "./types";
 
 const DATE_ONLY_FORMAT = "YYYY-MM-DD";
@@ -19,10 +20,14 @@ export const stripHtmlToPlainText = (value: string | null | undefined): string =
     // Decode ampersands last so already-encoded entities are decoded only once.
     .replace(/&amp;/gi, "&");
 
-  return decodedValue
+  const textWithLineBreaks = decodedValue
     .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
+    .replace(/<\/p>/gi, "\n");
+
+  return sanitizeHtml(textWithLineBreaks, {
+    allowedTags: [],
+    allowedAttributes: {},
+  })
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 };
