@@ -1,5 +1,5 @@
 import { Card, Flex, Skeleton, Table, Typography } from '@/shared/antd-imports';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { colors } from '@/styles/colors';
 import { TableProps } from 'antd/lib';
 import { simpleDateFormat } from '@/utils/simpleDateFormat';
@@ -9,52 +9,85 @@ import ProjectStatsCard from '@/components/projects/project-stats-card';
 import warningIcon from '@assets/icons/insightsIcons/warning.png';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useTranslation } from 'react-i18next';
-import {format} from 'date-fns'
+import { format } from 'date-fns';
 import { IDeadlineTaskStats } from '@/types/project/project-insights.types';
 import { IInsightTasks } from '@/types/project/projectInsights.types';
+import { useSocket } from '@/socket/socketContext';
+import { SocketEvents } from '@/shared/socket-events';
+import { useAdaptivePageSize } from './use-adaptive-page-size';
 
 const ProjectDeadline = () => {
   const { includeArchivedTasks, projectId } = useAppSelector(state => state.projectInsightsReducer);
   const { t } = useTranslation('project-view-insights');
+  const { socket } = useSocket();
 
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<IDeadlineTaskStats | null>(null);
   const { refreshTimestamp } = useAppSelector(state => state.projectReducer);
+  const requestIdRef = useRef(0);
+  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null);
+  const tableWrapperRef = useRef<HTMLDivElement>(null);
+  const { pageSize: adaptivePageSize } = useAdaptivePageSize(tableWrapperRef);
+  const pageSize = pageSizeOverride ?? adaptivePageSize;
 
-  const getProjectDeadline = async () => {
+  const getProjectDeadline = useCallback(async () => {
     if (!projectId) return;
+    const currentRequestId = ++requestIdRef.current;
     try {
       setLoading(true);
       const res = await projectInsightsApiService.getProjectDeadlineStats(
         projectId,
         includeArchivedTasks
       );
+      if (currentRequestId !== requestIdRef.current) return;
       if (res.done) {
         setData(res.body);
       }
     } catch {
-      logger.error('Error fetching project deadline stats', { projectId, includeArchivedTasks });
+      if (currentRequestId === requestIdRef.current) {
+        logger.error('Error fetching project deadline stats', { projectId, includeArchivedTasks });
+      }
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [projectId, includeArchivedTasks]);
 
   useEffect(() => {
     getProjectDeadline();
-  }, [projectId, includeArchivedTasks, refreshTimestamp]);
+  }, [projectId, includeArchivedTasks, refreshTimestamp, getProjectDeadline]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = () => {
+      getProjectDeadline();
+    };
+
+    socket.on(SocketEvents.TASK_STATUS_CHANGE.toString(), handleUpdate);
+    socket.on(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(), handleUpdate);
+    socket.on(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleUpdate);
+
+    return () => {
+      socket.off(SocketEvents.TASK_STATUS_CHANGE.toString(), handleUpdate);
+      socket.off(SocketEvents.PROJECT_UPDATES_AVAILABLE.toString(), handleUpdate);
+      socket.off(SocketEvents.PROJECT_STATUS_CHANGE.toString(), handleUpdate);
+    };
+  }, [socket, getProjectDeadline]);
 
   // table columns
   const columns: TableProps['columns'] = [
     {
       key: 'name',
       title: t('common.name', { defaultValue: 'Name' }),
-      // render: (record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
+      dataIndex: 'name',
       render: (_: any, record: IInsightTasks) => <Typography.Text>{record.name}</Typography.Text>,
     },
     {
       key: 'status',
       title: t('common.status', { defaultValue: 'Status' }),
-      // render: (record: IInsightTasks) => (
+      dataIndex: 'status',
       render: (_: any, record: IInsightTasks) => (
         <Flex
           gap={4}
@@ -74,7 +107,7 @@ const ProjectDeadline = () => {
               fontSize: 13,
             }}
           >
-            {record.status_name}
+            {record.status_name || record.status}
           </Typography.Text>
         </Flex>
       ),
@@ -119,24 +152,39 @@ const ProjectDeadline = () => {
             />
           </Skeleton>
         </Flex>
-        <Table
-          className="custom-two-colors-row-table insights-overview-table"
-          dataSource={data?.tasks}
-          columns={columns}
-          // rowKey={record => record.taskId}
-          rowKey={record => record.id}
-          pagination={{
-            showSizeChanger: true,
-            defaultPageSize: 20,
-          }}
-          onRow={record => {
-            return {
-              style: {
-                cursor: 'pointer',
+        <div ref={tableWrapperRef}>
+          <Table
+            className="custom-two-colors-row-table insights-overview-table"
+            dataSource={data?.tasks}
+            columns={columns}
+            // rowKey={record => record.taskId}
+            rowKey={record => record.id}
+            pagination={{
+              showSizeChanger: true,
+              pageSize,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: (_page, size) => {
+                if (size !== pageSize) {
+                  setPageSizeOverride(size);
+                }
               },
-            };
-          }}
-        />
+              showTotal: (totalCount, range) =>
+                t('common.paginationRange', {
+                  from: range[0],
+                  to: range[1],
+                  total: totalCount,
+                  defaultValue: '{{from}}–{{to}} of {{total}}',
+                }),
+            }}
+            onRow={record => {
+              return {
+                style: {
+                  cursor: 'pointer',
+                },
+              };
+            }}
+          />
+        </div>
       </Flex>
     </Card>
   );

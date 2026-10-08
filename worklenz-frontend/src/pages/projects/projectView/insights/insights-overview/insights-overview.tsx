@@ -25,6 +25,7 @@ const InsightsOverview = ({ t }: { t: TFunction }) => {
 
   return (
     <div
+      data-insights-scroll-container
       className="overflow-y-auto overflow-x-hidden px-6"
       style={{
         height: 'calc(100vh - 220px)',
