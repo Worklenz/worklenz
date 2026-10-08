@@ -1469,6 +1469,7 @@ const PlannerScheduleView: React.FC = () => {
         <Space size={4}>
           <Tooltip title={t('refreshSchedule', { defaultValue: 'Refresh Schedule' })}>
             <Button
+              size="small"
               shape="circle"
               icon={<SyncOutlined spin={isRefreshing} />}
               onClick={handleRefresh}
