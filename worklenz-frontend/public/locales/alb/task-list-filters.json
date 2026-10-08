@@ -113,10 +113,10 @@
   "showingYourTasksOnlyTooltip": "Ky projekt shfaq vetëm detyrat që ju janë caktuar. Numrat dhe e ecuria pasqyrojnë atë nëngrup.",
   "filters": "Filtrat",
   "quickFilters": "Filtra të shpejta",
-  "addFilter": "Add a filter",
-  "allFiltersApplied": "All filter options applied",
-  "removeFilter": "Remove filter",
-  "selectAll": "Select all",
-  "clear": "Clear",
-  "noFiltersAvailable": "No filters available"
+  "addFilter": "Shto një filtër",
+  "allFiltersApplied": "Janë aplikuar të gjitha opsionet e filtrit",
+  "removeFilter": "Hiq filtrin",
+  "selectAll": "Zgjidh të gjitha",
+  "clear": "Pastro",
+  "noFiltersAvailable": "Nuk ka filtra të disponueshëm"
 }
