@@ -1,0 +1,60 @@
+{
+  "title": "Choose a plan",
+  "subtitle": "Pay only for the people on your team. Prices are per user.",
+  "monthly": "Monthly",
+  "annual": "Annual",
+  "saveUpTo": "Save up to {{percent}}%",
+  "seats": "Users",
+  "seatsHelp": "You currently have {{count}} active users.",
+  "perUserPerMonth": "per user / month",
+  "billedAnnually": "billed annually ({{total}} per user / year)",
+  "totalMonthly": "{{total}} per month for {{count}} users",
+  "totalAnnual": "{{total}} per year for {{count}} users",
+  "currentPlan": "Current plan",
+  "select": "Select plan",
+  "switch": "Switch to this plan",
+  "unavailable": "This plan is not available for the selected billing period.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Everything you need to run projects and track time.",
+      "features": [
+        "Unlimited projects",
+        "Time tracking and reports",
+        "Custom fields and templates",
+        "Up to 5 guests"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planning, finance and client tools for growing teams.",
+      "features": [
+        "Everything in Pro",
+        "Planner: schedule, timeline and workload",
+        "Finance and client portal",
+        "Unlimited guests and Slack"
+      ]
+    },
+    "expansion": {
+      "name": "AppSumo Expansion",
+      "description": "Add Business seats on top of your AppSumo codes.",
+      "features": [
+        "Business features",
+        "Extra seats billed per user",
+        "For AppSumo customers"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Replace your current plan?",
+    "content": "You are on a legacy plan. Subscribing to a new plan ends your legacy price, and your current subscription will be cancelled when the new one starts.",
+    "ok": "Continue",
+    "cancel": "Keep current plan"
+  },
+  "messages": {
+    "success": "Subscription updated successfully!",
+    "changed": "Subscription plan changed successfully!",
+    "error": "We could not start checkout. Please try again.",
+    "checkoutError": "Error during checkout: {{message}}"
+  }
+}

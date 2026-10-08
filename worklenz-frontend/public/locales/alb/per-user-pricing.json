@@ -1,0 +1,60 @@
+{
+  "title": "Zgjidhni një plan",
+  "subtitle": "Paguani vetëm për njerëzit e ekipit tuaj. Çmimet janë për përdorues.",
+  "monthly": "Mujor",
+  "annual": "Vjetor",
+  "saveUpTo": "Kurseni deri në {{percent}}%",
+  "seats": "Përdorues",
+  "seatsHelp": "Aktualisht keni {{count}} përdorues aktivë.",
+  "perUserPerMonth": "për përdorues / muaj",
+  "billedAnnually": "faturohet çdo vit ({{total}} për përdorues / vit)",
+  "totalMonthly": "{{total}} në muaj për {{count}} përdorues",
+  "totalAnnual": "{{total}} në vit për {{count}} përdorues",
+  "currentPlan": "Plani aktual",
+  "select": "Zgjidh planin",
+  "switch": "Kalo te ky plan",
+  "unavailable": "Ky plan nuk është i disponueshëm për periudhën e zgjedhur të faturimit.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Gjithçka që ju nevojitet për të menaxhuar projekte dhe për të regjistruar kohën.",
+      "features": [
+        "Projekte të pakufizuara",
+        "Regjistrim i kohës dhe raporte",
+        "Fusha të personalizuara dhe shabllone",
+        "Deri në 5 të ftuar"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planifikim, financa dhe mjete klienti për ekipe në rritje.",
+      "features": [
+        "Gjithçka nga Pro",
+        "Planifikuesi: orari, kronologjia dhe ngarkesa",
+        "Financa dhe portali i klientëve",
+        "Të ftuar të pakufizuar dhe Slack"
+      ]
+    },
+    "expansion": {
+      "name": "Zgjerimi AppSumo",
+      "description": "Shtoni vende Business përveç kodeve tuaja AppSumo.",
+      "features": [
+        "Veçoritë Business",
+        "Vende shtesë të faturuara për përdorues",
+        "Për klientët e AppSumo"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Të zëvendësohet plani aktual?",
+    "content": "Jeni në një plan të vjetër. Abonimi në një plan të ri e mbyll çmimin tuaj të vjetër dhe abonimi aktual do të anulohet kur të fillojë i riu.",
+    "ok": "Vazhdo",
+    "cancel": "Ruaj planin aktual"
+  },
+  "messages": {
+    "success": "Abonimi u përditësua me sukses!",
+    "changed": "Plani i abonimit u ndryshua me sukses!",
+    "error": "Nuk mundëm të nisim pagesën. Provoni përsëri.",
+    "checkoutError": "Gabim gjatë pagesës: {{message}}"
+  }
+}

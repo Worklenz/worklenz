@@ -1,0 +1,60 @@
+{
+  "title": "Wählen Sie einen Tarif",
+  "subtitle": "Sie zahlen nur für die Personen in Ihrem Team. Die Preise gelten pro Benutzer.",
+  "monthly": "Monatlich",
+  "annual": "Jährlich",
+  "saveUpTo": "Sparen Sie bis zu {{percent}} %",
+  "seats": "Benutzer",
+  "seatsHelp": "Sie haben derzeit {{count}} aktive Benutzer.",
+  "perUserPerMonth": "pro Benutzer / Monat",
+  "billedAnnually": "jährliche Abrechnung ({{total}} pro Benutzer / Jahr)",
+  "totalMonthly": "{{total}} pro Monat für {{count}} Benutzer",
+  "totalAnnual": "{{total}} pro Jahr für {{count}} Benutzer",
+  "currentPlan": "Aktueller Tarif",
+  "select": "Tarif auswählen",
+  "switch": "Zu diesem Tarif wechseln",
+  "unavailable": "Dieser Tarif ist für den gewählten Abrechnungszeitraum nicht verfügbar.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Alles, was Sie für Projekte und Zeiterfassung brauchen.",
+      "features": [
+        "Unbegrenzte Projekte",
+        "Zeiterfassung und Berichte",
+        "Benutzerdefinierte Felder und Vorlagen",
+        "Bis zu 5 Gäste"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planung, Finanzen und Kundentools für wachsende Teams.",
+      "features": [
+        "Alles aus Pro",
+        "Planer: Zeitplan, Timeline und Auslastung",
+        "Finanzen und Kundenportal",
+        "Unbegrenzte Gäste und Slack"
+      ]
+    },
+    "expansion": {
+      "name": "AppSumo-Erweiterung",
+      "description": "Zusätzliche Business-Plätze zu Ihren AppSumo-Codes.",
+      "features": [
+        "Business-Funktionen",
+        "Zusätzliche Plätze pro Benutzer abgerechnet",
+        "Für AppSumo-Kunden"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Aktuellen Tarif ersetzen?",
+    "content": "Sie nutzen einen älteren Tarif. Mit einem neuen Tarif endet Ihr bisheriger Preis, und Ihr aktuelles Abonnement wird gekündigt, sobald das neue beginnt.",
+    "ok": "Fortfahren",
+    "cancel": "Aktuellen Tarif behalten"
+  },
+  "messages": {
+    "success": "Abonnement erfolgreich aktualisiert!",
+    "changed": "Tarif erfolgreich gewechselt!",
+    "error": "Die Zahlung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+    "checkoutError": "Fehler beim Bezahlvorgang: {{message}}"
+  }
+}

@@ -6,7 +6,7 @@ import { useAuthService } from '@/hooks/useAuth';
 import { useRegionCheck } from '@/hooks/useRegionCheck';
 import { toggleUpgradeModal } from '@/features/admin-center/admin-center.slice';
 import { isAppSumoUser as checkIsAppSumoUser } from '@/ee/utils/subscription-utils';
-import UpgradePlans from '@/ee/components/admin-center/billing/drawers/upgrade-plans/UpgradePlans';
+import UpgradePlansSwitch from '@/ee/components/admin-center/billing/drawers/upgrade-plans-per-user/UpgradePlansSwitch';
 import UpgradePlansLKR from '@/ee/components/admin-center/billing/drawers/upgrade-plans-lkr/upgrade-plans-lkr';
 
 // The single "Upgrade Now" pricing modal, driven by isUpgradeModalOpen and
@@ -48,7 +48,7 @@ const GlobalUpgradeModal: React.FC = () => {
     >
       <div style={{ padding: '20px' }}>
         {regionCheckComplete ? (
-          isLkrUser ? <UpgradePlansLKR /> : <UpgradePlans />
+          isLkrUser ? <UpgradePlansLKR /> : <UpgradePlansSwitch />
         ) : (
           <div style={{ textAlign: 'center', padding: '40px' }}>Loading...</div>
         )}

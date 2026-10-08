@@ -79,16 +79,47 @@ export interface IPricingTier {
   sort_order: number;
 }
 
+export type PerUserPlanKey = 'pro' | 'business' | 'business_appsumo_expansion';
+
+export interface IPerUserPlan {
+  id: string;
+  name: string;
+  plan_key: PerUserPlanKey;
+  billing_type: 'month' | 'year';
+  /** Per user, per billing period: monthly plans are per month, annual plans are per year. */
+  price: number;
+}
+
+export interface IPerUserPlansResponse {
+  plans: IPerUserPlan[];
+  has_ltd_codes: boolean;
+  has_legacy_subscription: boolean;
+  has_billing_subscription: boolean;
+}
+
 const rootUrl = `${API_BASE_URL}/billing`;
 export const billingApiService = {
+  /** Per-user plans sold on Paddle Billing; `plans` is empty until they are activated. */
+  async getPerUserPlans(): Promise<IServerResponse<IPerUserPlansResponse>> {
+    const response = await apiClient.get<IServerResponse<IPerUserPlansResponse>>(
+      `${rootUrl}/per-user-plans`
+    );
+    return response.data;
+  },
+
   async upgradeToPaidPlan(
     plan: string,
     pricingModel: 'per_user' | 'regular',
-    seatCount?: number
+    seatCount?: number,
+    replaceLegacy?: boolean
   ): Promise<IServerResponse<IUpgradeSubscriptionPlanResponse>> {
     const params: any = { plan, pricing_model: pricingModel };
     if (pricingModel === 'per_user' && seatCount) {
       params.seatCount = seatCount;
+    }
+    // The customer agreed to replace their legacy subscription with this plan.
+    if (replaceLegacy) {
+      params.replaceLegacy = true;
     }
     const q = toQueryString(params);
     const response = await apiClient.get<IServerResponse<any>>(

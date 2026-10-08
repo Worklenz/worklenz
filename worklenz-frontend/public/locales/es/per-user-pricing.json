@@ -1,0 +1,60 @@
+{
+  "title": "Elige un plan",
+  "subtitle": "Paga solo por las personas de tu equipo. Los precios son por usuario.",
+  "monthly": "Mensual",
+  "annual": "Anual",
+  "saveUpTo": "Ahorra hasta un {{percent}} %",
+  "seats": "Usuarios",
+  "seatsHelp": "Actualmente tienes {{count}} usuarios activos.",
+  "perUserPerMonth": "por usuario / mes",
+  "billedAnnually": "facturado anualmente ({{total}} por usuario / año)",
+  "totalMonthly": "{{total}} al mes por {{count}} usuarios",
+  "totalAnnual": "{{total}} al año por {{count}} usuarios",
+  "currentPlan": "Plan actual",
+  "select": "Elegir plan",
+  "switch": "Cambiar a este plan",
+  "unavailable": "Este plan no está disponible para el periodo de facturación seleccionado.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Todo lo que necesitas para gestionar proyectos y registrar tiempo.",
+      "features": [
+        "Proyectos ilimitados",
+        "Registro de tiempo e informes",
+        "Campos personalizados y plantillas",
+        "Hasta 5 invitados"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planificación, finanzas y herramientas de clientes para equipos en crecimiento.",
+      "features": [
+        "Todo lo de Pro",
+        "Planificador: calendario, cronograma y carga de trabajo",
+        "Finanzas y portal de clientes",
+        "Invitados ilimitados y Slack"
+      ]
+    },
+    "expansion": {
+      "name": "Ampliación AppSumo",
+      "description": "Añade puestos Business además de tus códigos de AppSumo.",
+      "features": [
+        "Funciones Business",
+        "Puestos adicionales facturados por usuario",
+        "Para clientes de AppSumo"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "¿Reemplazar tu plan actual?",
+    "content": "Tienes un plan anterior. Al suscribirte a un plan nuevo termina tu precio anterior y tu suscripción actual se cancelará cuando empiece la nueva.",
+    "ok": "Continuar",
+    "cancel": "Mantener el plan actual"
+  },
+  "messages": {
+    "success": "¡Suscripción actualizada correctamente!",
+    "changed": "¡Plan de suscripción cambiado correctamente!",
+    "error": "No pudimos iniciar el pago. Inténtalo de nuevo.",
+    "checkoutError": "Error durante el pago: {{message}}"
+  }
+}

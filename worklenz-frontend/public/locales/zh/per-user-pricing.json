@@ -1,0 +1,60 @@
+{
+  "title": "选择套餐",
+  "subtitle": "只为团队成员付费，价格按每位用户计算。",
+  "monthly": "按月",
+  "annual": "按年",
+  "saveUpTo": "最高节省 {{percent}}%",
+  "seats": "用户数",
+  "seatsHelp": "您目前有 {{count}} 位活跃用户。",
+  "perUserPerMonth": "每用户 / 月",
+  "billedAnnually": "按年计费（每用户 / 年 {{total}}）",
+  "totalMonthly": "{{count}} 位用户，每月 {{total}}",
+  "totalAnnual": "{{count}} 位用户，每年 {{total}}",
+  "currentPlan": "当前套餐",
+  "select": "选择套餐",
+  "switch": "切换到此套餐",
+  "unavailable": "所选计费周期不提供此套餐。",
+  "plans": {
+    "pro": {
+      "name": "专业版",
+      "description": "管理项目和记录工时所需的一切。",
+      "features": [
+        "无限项目",
+        "工时记录与报表",
+        "自定义字段和模板",
+        "最多 5 位访客"
+      ]
+    },
+    "business": {
+      "name": "商业版",
+      "description": "面向成长型团队的规划、财务和客户工具。",
+      "features": [
+        "包含专业版全部功能",
+        "规划器：日程、时间线和工作量",
+        "财务与客户门户",
+        "无限访客和 Slack"
+      ]
+    },
+    "expansion": {
+      "name": "AppSumo 扩展",
+      "description": "在 AppSumo 兑换码基础上增加商业版席位。",
+      "features": [
+        "商业版功能",
+        "额外席位按用户计费",
+        "面向 AppSumo 客户"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "替换当前套餐？",
+    "content": "您正在使用旧版套餐。订阅新套餐后，旧版价格将终止，新套餐开始时当前订阅将被取消。",
+    "ok": "继续",
+    "cancel": "保留当前套餐"
+  },
+  "messages": {
+    "success": "订阅更新成功！",
+    "changed": "订阅套餐更换成功！",
+    "error": "无法开始结账，请重试。",
+    "checkoutError": "结账时出错：{{message}}"
+  }
+}

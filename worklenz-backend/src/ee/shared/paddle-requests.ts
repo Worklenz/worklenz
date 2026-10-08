@@ -21,13 +21,20 @@ async function post(endpoint: string, body: Record<string, unknown>) {
   }
 }
 
-export async function generatePayLinkRequest(teamMemberData: any, plan: string, owner_id = "", user_id = "") {
+export async function generatePayLinkRequest(
+  teamMemberData: any,
+  plan: string,
+  owner_id = "",
+  user_id = "",
+  replaceLegacy = false
+) {
   return post("generate-pay-link", {
     plan,
     quantity: teamMemberData.user_count,
     customer_email: teamMemberData.email,
     owner_id,
     user_id,
+    replace_legacy: replaceLegacy,
   });
 }
 

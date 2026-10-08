@@ -35,15 +35,66 @@ export default class BillingController extends WorklenzControllerBase {
 
   @HandleExceptions()
   public static async upgradeToPaidPlan(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
-    const { plan, seatCount } = req.query;
+    const { plan, seatCount, replaceLegacy } = req.query;
 
     const teamMemberData = await getTeamMemberCount(req.user?.owner_id ?? "");
     if (seatCount) {
       teamMemberData.user_count = parseInt(seatCount as string, 10);
     }
-    const axiosResponse = await generatePayLinkRequest(teamMemberData, plan as string, req.user?.owner_id, req.user?.id);
+    const axiosResponse = await generatePayLinkRequest(
+      teamMemberData,
+      plan as string,
+      req.user?.owner_id,
+      req.user?.id,
+      replaceLegacy === "true"
+    );
 
     return res.status(200).send(new ServerResponse(true, axiosResponse.body));
+  }
+
+  /**
+   * Per-user plans sold on Paddle Billing. Empty until the plans are activated, which is what
+   * switches the upgrade modal over from the legacy plans. AppSumo Expansion plans are only offered
+   * to organizations that hold a redeemed AppSumo code.
+   */
+  @HandleExceptions()
+  public static async getPerUserPlans(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
+    const ownerId = req.user?.owner_id ?? "";
+
+    const [plansResult, ownerResult] = await Promise.all([
+      db.query(
+        `SELECT id, name, plan_key, billing_type, recurring_price::NUMERIC AS price
+           FROM licensing_pricing_plans
+          WHERE billing_provider = 'paddle_billing' AND active IS TRUE AND is_legacy IS FALSE
+            AND paddle_price_id IS NOT NULL
+          ORDER BY plan_key, billing_type;`
+      ),
+      db.query(
+        `SELECT EXISTS(SELECT 1 FROM licensing_coupon_codes
+                        WHERE redeemed_by = $1 AND is_redeemed = TRUE AND is_refunded = FALSE) AS has_ltd_codes,
+                EXISTS(SELECT 1 FROM licensing_user_subscriptions
+                        WHERE user_id = $1 AND active IS TRUE AND COALESCE(status, '') <> 'deleted'
+                          AND billing_provider = 'paddle_classic' AND subscription_id IS NOT NULL) AS has_legacy_subscription,
+                EXISTS(SELECT 1 FROM licensing_user_subscriptions
+                        WHERE user_id = $1 AND active IS TRUE AND COALESCE(status, '') <> 'deleted'
+                          AND billing_provider = 'paddle_billing') AS has_billing_subscription;`,
+        [ownerId]
+      ),
+    ]);
+
+    const owner = ownerResult.rows[0] ?? {};
+    const plans = plansResult.rows
+      .filter((plan) => plan.plan_key !== "business_appsumo_expansion" || owner.has_ltd_codes === true)
+      .map((plan) => ({ ...plan, price: Number(plan.price) }));
+
+    return res.status(200).send(
+      new ServerResponse(true, {
+        plans,
+        has_ltd_codes: owner.has_ltd_codes === true,
+        has_legacy_subscription: owner.has_legacy_subscription === true,
+        has_billing_subscription: owner.has_billing_subscription === true,
+      })
+    );
   }
 
   @HandleExceptions()

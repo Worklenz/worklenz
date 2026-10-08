@@ -1,0 +1,60 @@
+{
+  "title": "Escolha um plano",
+  "subtitle": "Pague apenas pelas pessoas da sua equipa. Os preços são por utilizador.",
+  "monthly": "Mensal",
+  "annual": "Anual",
+  "saveUpTo": "Poupe até {{percent}}%",
+  "seats": "Utilizadores",
+  "seatsHelp": "Atualmente tem {{count}} utilizadores ativos.",
+  "perUserPerMonth": "por utilizador / mês",
+  "billedAnnually": "faturado anualmente ({{total}} por utilizador / ano)",
+  "totalMonthly": "{{total}} por mês para {{count}} utilizadores",
+  "totalAnnual": "{{total}} por ano para {{count}} utilizadores",
+  "currentPlan": "Plano atual",
+  "select": "Escolher plano",
+  "switch": "Mudar para este plano",
+  "unavailable": "Este plano não está disponível para o período de faturação selecionado.",
+  "plans": {
+    "pro": {
+      "name": "Pro",
+      "description": "Tudo o que precisa para gerir projetos e registar tempo.",
+      "features": [
+        "Projetos ilimitados",
+        "Registo de tempo e relatórios",
+        "Campos personalizados e modelos",
+        "Até 5 convidados"
+      ]
+    },
+    "business": {
+      "name": "Business",
+      "description": "Planeamento, finanças e ferramentas de clientes para equipas em crescimento.",
+      "features": [
+        "Tudo do Pro",
+        "Planeador: agenda, cronograma e carga de trabalho",
+        "Finanças e portal de clientes",
+        "Convidados ilimitados e Slack"
+      ]
+    },
+    "expansion": {
+      "name": "Expansão AppSumo",
+      "description": "Adicione lugares Business além dos seus códigos AppSumo.",
+      "features": [
+        "Funcionalidades Business",
+        "Lugares extra faturados por utilizador",
+        "Para clientes AppSumo"
+      ]
+    }
+  },
+  "legacyConfirm": {
+    "title": "Substituir o seu plano atual?",
+    "content": "Tem um plano antigo. Ao subscrever um plano novo, o seu preço anterior termina e a subscrição atual será cancelada quando a nova começar.",
+    "ok": "Continuar",
+    "cancel": "Manter o plano atual"
+  },
+  "messages": {
+    "success": "Subscrição atualizada com sucesso!",
+    "changed": "Plano de subscrição alterado com sucesso!",
+    "error": "Não foi possível iniciar o pagamento. Tente novamente.",
+    "checkoutError": "Erro durante o pagamento: {{message}}"
+  }
+}

@@ -10,6 +10,7 @@ billingApiRouter.post("/purchase-more-seats", teamOwnerOrAdminValidator, Billing
 
 billingApiRouter.get("/contact-us", BillingController.contactUs);
 billingApiRouter.get("/pricing-plans", BillingController.getPricingPlans);
+billingApiRouter.get("/per-user-plans", BillingController.getPerUserPlans);
 billingApiRouter.get("/check-region", BillingController.checkRegion);
 billingApiRouter.get("/lkr-pricing", BillingController.getLkrPricing);
 
