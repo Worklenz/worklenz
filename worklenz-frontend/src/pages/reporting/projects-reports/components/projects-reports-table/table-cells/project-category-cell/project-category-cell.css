@@ -17,3 +17,30 @@
   align-items: center;
   height: 32px;
 }
+.category-pill-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  height: 22px;
+  padding-inline: 8px;
+  border-radius:4px;
+  font-size: 13px;
+  text-transform: capitalize;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.category-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.category-pill-icon {
+  flex-shrink: 0;
+  font-size: 10px;
+}
