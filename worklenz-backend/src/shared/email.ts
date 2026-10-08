@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESClient } from "@aws-sdk/client-ses";
+import nodemailer from "nodemailer";
 import { Validator } from "jsonschema";
 import { QueryResult } from "pg";
 import lodash from "lodash";
@@ -8,6 +9,55 @@ import emailRequestSchema from "../json_schemas/email-request-schema";
 import db from "../config/db";
 
 const sesClient = new SESClient({ region: process.env.AWS_REGION });
+
+type EmailProvider = "ses" | "smtp";
+
+interface EmailConfiguration {
+  provider: EmailProvider;
+  from: string;
+}
+
+function getEmailConfiguration(): EmailConfiguration {
+  const configuredProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase() || "ses";
+  const provider: EmailProvider = configuredProvider === "smtp" ? "smtp" : "ses";
+
+  return {
+    provider,
+    // Backwards-compatible default for existing SES installations.
+    from: process.env.EMAIL_FROM?.trim() || "Worklenz <noreply@worklenz.com>",
+  };
+}
+
+export function getEmailConfigurationErrors(): string[] {
+  const { provider, from } = getEmailConfiguration();
+  const errors: string[] = [];
+
+  if (!from) errors.push("EMAIL_FROM is required");
+
+  const requiredKeys = provider === "smtp"
+    ? ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD"]
+    : ["AWS_REGION", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"];
+
+  for (const key of requiredKeys) {
+    if (!process.env[key]?.trim()) {
+      errors.push(`${key} is required when EMAIL_PROVIDER=${provider}`);
+    }
+  }
+
+  return errors;
+}
+
+function createSmtpTransport() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number.parseInt(process.env.SMTP_PORT || "", 10),
+    secure: process.env.SMTP_SECURE?.trim().toLowerCase() === "true",
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
+}
 
 export interface IEmail {
   to?: string[];
@@ -207,6 +257,17 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       };
     }
 
+    const configurationErrors = getEmailConfigurationErrors();
+    if (configurationErrors.length) {
+      return {
+        success: false,
+        error: {
+          code: "EMAIL_CONFIGURATION_ERROR",
+          message: configurationErrors.join("; "),
+        },
+      };
+    }
+
     // Log email attempt for each recipient
     for (const recipient of options.to) {
       const logId = await logEmailAttempt(
@@ -220,9 +281,9 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
     }
 
     let messageId: string | undefined;
+    const { provider, from } = getEmailConfiguration();
 
-    // Send via AWS SES
-    console.log("\n📧 Sending email via AWS SES...");
+    console.log(`\n📧 Sending email via ${provider.toUpperCase()}...`);
     console.log("To:", options.to.join(", "));
     console.log("Subject:", options.subject);
 
@@ -237,31 +298,30 @@ export async function sendEmailEnhanced(email: IEmail): Promise<IEmailResult> {
       .replace(/\s+/g, ' ')
       .trim();
     
-    const command = new SendEmailCommand({
-      Destination: {
-        ToAddresses: options.to,
-      },
-      Message: {
-        Subject: {
-          Charset: charset,
-          Data: options.subject,
-        },
-        Body: {
-          Html: {
-            Charset: charset,
-            Data: options.html,
+    if (provider === "smtp") {
+      const response = await createSmtpTransport().sendMail({
+        from,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: plainText,
+      });
+      messageId = response.messageId;
+    } else {
+      const command = new SendEmailCommand({
+        Destination: { ToAddresses: options.to },
+        Message: {
+          Subject: { Charset: charset, Data: options.subject },
+          Body: {
+            Html: { Charset: charset, Data: options.html },
+            Text: { Charset: charset, Data: plainText },
           },
-          Text: {
-            Charset: charset,
-            Data: plainText,
-          },
         },
-      },
-      Source: "Worklenz <noreply@worklenz.com>",
-    });
-
-    const res = await sesClient.send(command);
-    messageId = res.MessageId;
+        Source: from,
+      });
+      const response = await sesClient.send(command);
+      messageId = response.MessageId;
+    }
     console.log("✅ Email sent successfully!");
     console.log("Message ID:", messageId);
 

@@ -2,6 +2,7 @@ import moment from "moment";
 import db from "../config/db";
 import {IDeserializeCallback} from "../interfaces/deserialize-callback";
 import {IPassportSession} from "../interfaces/passport-session";
+import { getDeploymentMode, isSelfHostedDeployment } from "../shared/deployment-mode";
 
 async function setLastActive(id: string) {
   try {
@@ -43,6 +44,10 @@ export async function deserialize(user: { id: string | null }, done: IDeserializ
         // short in every downstream check that reads req.user.
 
         data.user.is_member = !!data.user.team_member_id;
+        // This UI hint is derived server-side. Protected APIs independently
+        // enforce the same rule, so browser storage cannot elevate access.
+        data.user.business_features_enabled = isSelfHostedDeployment();
+        data.user.deployment_mode = getDeploymentMode();
         if (excludedSubscriptionTypes.includes(data.user.subscription_type)) data.user.is_expired = realExpiredDate.isBefore(moment(), "days");
 
         void setLastActive(data.user.id);

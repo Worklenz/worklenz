@@ -23,4 +23,6 @@ export interface IPassportSession extends IUser {
   subscription_status?: string;
   mobile_app_banner_dismissed?: boolean;
   appsumo_popup_frequency_days?: number;
+  business_features_enabled?: boolean;
+  deployment_mode?: "cloud" | "self_hosted";
 }

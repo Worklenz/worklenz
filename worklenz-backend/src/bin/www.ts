@@ -18,6 +18,7 @@ import {startTaskExportCleanupJob} from "../cron_jobs/task-export-cleanup-job";
 import FileConstants from "../shared/file-constants";
 import {initRedis} from "../redis/client";
 import DbTaskStatusChangeListener from "../pg_notify_listeners/db-task-status-changed";
+import { getEmailConfigurationErrors } from "../shared/email";
 
 function normalizePort(val?: string) {
   const p = parseInt(val || "0", 10);
@@ -27,6 +28,10 @@ function normalizePort(val?: string) {
 }
 
 const port = normalizePort(process.env.PORT);
+const emailConfigurationErrors = getEmailConfigurationErrors();
+if (emailConfigurationErrors.length) {
+  console.warn(`Email delivery is not configured: ${emailConfigurationErrors.join("; ")}`);
+}
 app.set("port", port);
 
 const server = http.createServer(app);
