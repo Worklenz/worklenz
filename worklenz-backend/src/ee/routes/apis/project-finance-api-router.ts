@@ -4,12 +4,12 @@ import ProjectfinanceController from "../../controllers/project-finance-controll
 import idParamValidator from "../../../middlewares/validators/id-param-validator";
 import teamLeadFinanceValidator from "../../../middlewares/validators/team-lead-finance-validator";
 import safeControllerFunction from "../../../shared/safe-controller-function";
-import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
+import { requireFeature } from "../../../shared/entitlements/gates";
 
 const projectFinanceApiRouter = express.Router();
 
 // Project finance is a Business Edition feature — gate every route server-side.
-projectFinanceApiRouter.use(requireBusinessPlan);
+projectFinanceApiRouter.use(requireFeature("finance_module"));
 
 projectFinanceApiRouter.get(
   "/project/:project_id/tasks",

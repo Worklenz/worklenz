@@ -23,4 +23,12 @@ export interface IPassportSession extends IUser {
   subscription_status?: string;
   mobile_app_banner_dismissed?: boolean;
   appsumo_popup_frequency_days?: number;
+  entitlements?: {
+    tier: "free" | "pro" | "business" | "enterprise";
+    features: string[];
+    guest_limit: number; // -1 = unlimited
+    seat_limit: number | null; // -1 = unlimited, null = unknown
+    primary_source: string;
+    enforced: boolean; // true when gates follow entitlements (ENTITLEMENTS_ENFORCE=on)
+  };
 }

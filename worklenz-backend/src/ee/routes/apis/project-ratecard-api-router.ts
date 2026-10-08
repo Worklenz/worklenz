@@ -3,12 +3,12 @@ import ProjectRateCardController from "../../controllers/project-ratecard-contro
 import idParamValidator from "../../../middlewares/validators/id-param-validator";
 import safeControllerFunction from "../../../shared/safe-controller-function";
 import projectManagerValidator from "../../../middlewares/validators/project-manager-validator";
-import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
+import { requireFeature } from "../../../shared/entitlements/gates";
 
 const projectRatecardApiRouter = express.Router();
 
 // Project rate cards are a Business Edition feature — gate every route server-side.
-projectRatecardApiRouter.use(requireBusinessPlan);
+projectRatecardApiRouter.use(requireFeature("finance_module"));
 
 projectRatecardApiRouter.post("/", projectManagerValidator, safeControllerFunction(ProjectRateCardController.createMany));
 projectRatecardApiRouter.post("/create-project-rate-card-role",projectManagerValidator,safeControllerFunction(ProjectRateCardController.createOne));

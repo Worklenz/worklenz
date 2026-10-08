@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useAppSelector } from '@/hooks/useAppSelector';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/ee/utils/subscription-utils';
 import { getSessionRoleName } from '@/utils/role-permissions.utils';
 import { ROLE_NAMES } from '@/types/roles/role.types';
 
@@ -44,7 +44,7 @@ export const getTaskCreationPermission = ({
   }
 
   // If not on a Business plan, no restrictions apply
-  if (!hasBusinessFeatureAccess(session ?? null)) {
+  if (!canUseFeature(session ?? null, 'restrict_task_creation')) {
     return { canCreateTask: true, isRestricted: false };
   }
 

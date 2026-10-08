@@ -7,6 +7,7 @@ import WorklenzControllerBase from "./worklenz-controller-base";
 import HandleExceptions from "../decorators/handle-exceptions";
 import { checkTeamSubscriptionStatus } from "../ee/shared/paddle-utils";
 import { LICENSING_SETTINGS } from "../shared/licensing_settings";
+import { canUseFeature, isEnforceMode } from "../shared/entitlements/gates";
 
 const CUSTOM_FIELD_LIMIT = LICENSING_SETTINGS.CUSTOM_FIELDS_LIMIT;
 
@@ -66,7 +67,19 @@ export default class CustomcolumnsController extends WorklenzControllerBase {
     const teamId = req.user?.team_id;
     if (teamId) {
       const subscriptionData = await checkTeamSubscriptionStatus(teamId);
-      if (subscriptionData && !hasBusinessAccess(subscriptionData)) {
+      if (subscriptionData && isEnforceMode()) {
+        // Matrix: custom fields are Pro and above (unlimited).
+        if (!canUseFeature(subscriptionData, "custom_fields")) {
+          return res.status(200).send(
+            new ServerResponse(
+              false,
+              { error_code: "CUSTOM_FIELD_LIMIT_EXCEEDED" },
+              "Custom fields require a Pro plan or above. Upgrade to add custom fields."
+            )
+          );
+        }
+      } else if (subscriptionData && !hasBusinessAccess(subscriptionData)) {
+        // Legacy: per-project cap for non-Business plans.
         const currentCount = await getCustomColumnCount(project_id);
         if (currentCount >= CUSTOM_FIELD_LIMIT) {
           return res.status(200).send(

@@ -2,7 +2,7 @@ import express, { NextFunction } from "express";
 
 import TaskExportController from "../../controllers/task-export-controller";
 import requireTaskExportAccess from "../../middlewares/validators/task-export-access-validator";
-import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
+import { requireFeature } from "../../shared/entitlements/gates";
 import safeControllerFunction from "../../shared/safe-controller-function";
 import { isValidUuid } from "../../shared/validation-helpers";
 import { ServerResponse } from "../../models/server-response";
@@ -28,7 +28,7 @@ const validateJobId = (
 };
 
 // Task export is Business-plan only, then Owner/Admin/PM/Team Lead (TE-19).
-taskExportApiRouter.use(requireBusinessPlan);
+taskExportApiRouter.use(requireFeature("task_export"));
 taskExportApiRouter.use(requireTaskExportAccess);
 
 taskExportApiRouter.post(

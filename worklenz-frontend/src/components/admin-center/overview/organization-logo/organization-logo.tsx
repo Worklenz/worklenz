@@ -20,7 +20,7 @@ import { getBase64 } from '@/utils/file-utils';
 import { adminCenterApiService } from '@/api/admin-center/admin-center.api.service';
 import logger from '@/utils/errorLogger';
 import { IOrganization } from '@/types/admin-center/admin-center.types';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/ee/utils/subscription-utils';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
 import { openUpgradeModal, setOrganizationLogo } from '@/features/admin-center/admin-center.slice';
 import { useAuthService } from '@/hooks/useAuth';
@@ -54,7 +54,7 @@ const OrganizationLogo: React.FC<OrganizationLogoProps> = ({
   const [fileSize, setFileSize] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const hasLogoFeatureAccess = hasBusinessFeatureAccess(currentSession);
+  const hasLogoFeatureAccess = canUseFeature(currentSession, 'client_portal_branding');
 
   useEffect(() => {
     if (organization?.logo_url) {

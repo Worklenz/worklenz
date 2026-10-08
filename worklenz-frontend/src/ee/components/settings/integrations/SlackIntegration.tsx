@@ -8,7 +8,7 @@ import {
   type ISlackChannel,
 } from '@/ee/api/slack/slack.api.service';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/ee/utils/subscription-utils';
 
 import {
   SlackConnectedCard,
@@ -44,7 +44,7 @@ export function SlackIntegration() {
   const authService = useAuthService();
   const currentSession = useMemo(() => authService.getCurrentSession(), [authService]);
   const hasBusinessAccess = useMemo(
-    () => hasBusinessFeatureAccess(currentSession),
+    () => canUseFeature(currentSession, 'slack_integration'),
     [currentSession]
   );
   const [isConnected, setIsConnected] = useState(false);

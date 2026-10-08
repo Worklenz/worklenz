@@ -45,7 +45,7 @@ import { useSocket } from '@/socket/socketContext';
 import { SocketEvents } from '@/shared/socket-events';
 import RateCardTable from '@/ee/components/projects/project-finance/ratecard-table/RateCardTable';
 import ProjectBudgetSettingsDrawer from '@/components/projects/project-budget-settings-drawer/ProjectBudgetSettingsDrawer';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/ee/utils/subscription-utils';
 import { UpgradeOverlayCard, useUpgradeMaskBackground } from '@/components/upgrade/FeatureUpgradePreview';
 
 const ProjectViewFinance = () => {
@@ -75,7 +75,7 @@ const ProjectViewFinance = () => {
   const auth = useAuthService();
   const currentSession = auth.getCurrentSession();
   const hasEditPermission = hasFinanceEditPermission(currentSession, project);
-  const hasBusinessAccess = hasBusinessFeatureAccess(currentSession);
+  const hasBusinessAccess = canUseFeature(currentSession, 'finance_module');
   const maskBackground = useUpgradeMaskBackground();
 
   // Get project-specific currency from finance API response, fallback to project reducer, then default

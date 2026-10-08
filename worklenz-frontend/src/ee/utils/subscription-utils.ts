@@ -57,6 +57,35 @@ export const hasBusinessFeatureAccess = (session: ILocalSession | null): boolean
 };
 
 /**
+ * Features the legacy UI gated behind Business. When the backend is not enforcing entitlements
+ * (session.entitlements.enforced is false), canUseFeature() falls back to
+ * hasBusinessFeatureAccess() for these and treats every other feature as open, exactly as before.
+ */
+const LEGACY_BUSINESS_FEATURES = new Set([
+  'client_portal',
+  'client_portal_branding',
+  'client_portal_invoices',
+  'finance_module',
+  'slack_integration',
+  'restrict_task_creation',
+  'planner_schedule',
+  'planner_timeline',
+  'planner_workload',
+  'task_export',
+]);
+
+/**
+ * Can the current session use a feature? Follows the backend's resolved entitlements once it is
+ * enforcing them; until then it reproduces the legacy plan checks.
+ */
+export const canUseFeature = (session: ILocalSession | null, feature: string): boolean => {
+  if (!session) return false;
+  const entitlements = session.entitlements;
+  if (entitlements?.enforced) return entitlements.features.includes(feature);
+  return LEGACY_BUSINESS_FEATURES.has(feature) ? hasBusinessFeatureAccess(session) : true;
+};
+
+/**
  * Checks if user is on a business plan specifically
  */
 export const isBusinessPlan = (session: ILocalSession | null): boolean => {

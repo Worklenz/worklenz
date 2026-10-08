@@ -1,12 +1,12 @@
 import express from "express";
 
 import RatecardController from "../../controllers/ratecard-controller";
-import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
+import { requireFeature } from "../../../shared/entitlements/gates";
 
 const ratecardApiRouter = express.Router();
 
 // Rate cards are a Business Edition feature — gate every route server-side.
-ratecardApiRouter.use(requireBusinessPlan);
+ratecardApiRouter.use(requireFeature("finance_module"));
 
 ratecardApiRouter.post("/", RatecardController.create);
 ratecardApiRouter.get("/", RatecardController.get);

@@ -23,7 +23,7 @@ import { useGetProjectsByTeamQuery } from '@/api/home-page/home-page.api.service
 import PhoneInput from '@/components/PhoneInput/PhoneInput';
 import { validatePhoneNumber } from '@/utils/validatePhoneNumber';
 import { useAuthService } from '@/hooks/useAuth';
-import { hasBusinessFeatureAccess } from '@/ee/utils/subscription-utils';
+import { canUseFeature } from '@/ee/utils/subscription-utils';
 import { showUpgradePrompt } from '@/features/admin-center/admin-center.slice';
 import { useResponsive } from '@/hooks/useResponsive';
 import dayjs from 'dayjs';
@@ -59,7 +59,7 @@ const HomeAddClient: React.FC = () => {
   const { t } = useTranslation(['home', 'client-portal-clients']);
   const dispatch = useAppDispatch();
   const authService = useAuthService();
-  const hasBusinessAccess = hasBusinessFeatureAccess(authService.getCurrentSession());
+  const hasBusinessAccess = canUseFeature(authService.getCurrentSession(), 'client_portal');
   const { isDesktop, isMobile } = useResponsive();
   const formRef = useRef<HTMLDivElement>(null);
   const [form] = Form.useForm();

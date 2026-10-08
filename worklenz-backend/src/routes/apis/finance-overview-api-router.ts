@@ -3,13 +3,13 @@ import FinanceOverviewController from "../../controllers/finance-overview-contro
 import FinanceReportsController from "../../ee/controllers/finance-reports-controller";
 import teamLeadFinanceValidator from "../../middlewares/validators/team-lead-finance-validator";
 import safeControllerFunction from "../../shared/safe-controller-function";
-import { requireBusinessPlan } from "../../ee/middlewares/subscription-middleware";
+import { requireFeature } from "../../shared/entitlements/gates";
 
 const financeOverviewApiRouter = express.Router();
 
 // Portfolio-wide finance reporting is a Business Edition feature, same tier as
 // per-project finance (ee/routes/apis/project-finance-api-router.ts) — gate every route.
-financeOverviewApiRouter.use(requireBusinessPlan);
+financeOverviewApiRouter.use(requireFeature("finance_module"));
 
 /**
  * GET /api/finance-overview/portfolio

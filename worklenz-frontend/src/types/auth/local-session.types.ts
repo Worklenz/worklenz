@@ -52,6 +52,15 @@ export interface ILocalSession extends IUserType {
   effective_user_limit?: number;
   base_user_limit?: number;
   ltd_users?: number;
+  // Resolved plan entitlements (backend resolveEntitlements). Gates read it through canUseFeature() in subscription-utils.
+  entitlements?: {
+    tier: 'free' | 'pro' | 'business' | 'enterprise';
+    features: string[];
+    guest_limit: number; // -1 = unlimited
+    seat_limit: number | null; // -1 = unlimited, null = unknown
+    primary_source: string;
+    enforced: boolean; // true when gates follow entitlements (backend ENTITLEMENTS_ENFORCE=on)
+  };
   // Timestamp fields
   created_at?: string;
   updated_at?: string;

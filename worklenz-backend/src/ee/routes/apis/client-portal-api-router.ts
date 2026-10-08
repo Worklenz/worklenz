@@ -13,7 +13,7 @@ import ClientPortalNotificationsController from "../../controllers/client-portal
 import ClientPortalAttachmentController from "../../controllers/client-portal-attachment-controller";
 import safeControllerFunction from "../../../shared/safe-controller-function";
 import { authenticateClient, requireClientPermission } from "../../../middlewares/client-auth-middleware";
-import { requireBusinessPlanForOrganization } from "../../middlewares/subscription-middleware";
+import { requireFeatureForOrganization } from "../../../shared/entitlements/gates";
 import phoneNumberValidator from "../../../middlewares/validators/phone-number-validator";
 import { resetPasswordLimiter, updatePasswordLimiter } from "../../../middlewares/reset-password-rate-limiter";
 
@@ -41,7 +41,7 @@ router.get("/organizations", safeControllerFunction(ClientPortalAuthController.g
 router.post("/organizations/switch", safeControllerFunction(ClientPortalAuthController.switchOrganization));
 
 // Client Portal authorization
-router.use(requireBusinessPlanForOrganization);
+router.use(requireFeatureForOrganization("client_portal"));
 
 // Dashboard
 router.get("/dashboard", safeControllerFunction(ClientPortalDashboardController.getDashboard));

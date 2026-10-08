@@ -5,7 +5,7 @@ import idParamValidator from "../../../middlewares/validators/id-param-validator
 import configIdParamValidator from "../../../middlewares/validators/config-id-param-validator";
 import projectIdParamValidator from "../../../middlewares/validators/project-id-param-validator";
 import safeControllerFunction from "../../../shared/safe-controller-function";
-import { requireBusinessPlan } from "../../middlewares/subscription-middleware";
+import { requireFeature } from "../../../shared/entitlements/gates";
 import {
   slackOAuthValidator,
   channelSyncValidator,
@@ -36,13 +36,13 @@ slackApiRouter.use(slackRateLimiter);
 // Status and setup routes (simple endpoints matching frontend expectations)
 slackApiRouter.get(
   "/status",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   safeControllerFunction(SlackController.getStatus)
 );
 
 slackApiRouter.get(
   "/install-url",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   safeControllerFunction(SlackController.getInstallUrl)
 );
 
@@ -53,19 +53,19 @@ slackApiRouter.get(
 
 slackApiRouter.delete(
   "/disconnect",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   safeControllerFunction(SlackController.disconnect)
 );
 
 slackApiRouter.get(
   "/channels",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   safeControllerFunction(SlackController.getAvailableChannels)
 );
 
 slackApiRouter.post(
   "/channels/refresh",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   safeControllerFunction(SlackController.refreshChannels)
 );
 
@@ -109,7 +109,7 @@ slackApiRouter.get(
 
 slackApiRouter.post(
   "/channel-configs",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   channelConfigValidator,
   safeControllerFunction(SlackController.createChannelConfig)
 );
@@ -136,7 +136,7 @@ slackApiRouter.post(
 // Legacy routes for more specific queries
 slackApiRouter.get(
   "/channel-configs/project/:projectId",
-  requireBusinessPlan,
+  requireFeature("slack_integration"),
   projectIdParamValidator,
   safeControllerFunction(SlackController.getProjectChannelConfigs)
 );
