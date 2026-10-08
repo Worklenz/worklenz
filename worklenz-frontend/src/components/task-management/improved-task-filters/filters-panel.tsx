@@ -324,84 +324,81 @@ export const Filters: React.FC<FilterOptionsProps> = ({
   );
 
   return (
-    <Popover
-      content={panelContent}
-      trigger="click"
-      placement="bottomLeft"
-      open={isOpen}
-      onOpenChange={handleOpenChange}
-      // Unmount on close: antd otherwise keeps a frozen copy of the content
-      // mounted while hidden (and of anything that was "open" inside it).
-      destroyOnHidden
-      styles={{
-        root: { padding: 0 },
-        body: {
-          padding: '12px 14px',
-          borderRadius: 8,
-          backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
-          border: `1px solid ${isDarkMode ? '#303030' : '#e5e7eb'}`,
-          boxShadow: isDarkMode
-            ? '0 6px 16px 0 rgba(0, 0, 0, 0.48)'
-            : '0 6px 16px 0 rgba(0, 0, 0, 0.08)',
-        },
-      }}
+    <div
+      className={`
+        inline-flex items-stretch rounded-md border overflow-hidden
+        transition-all duration-200 ease-in-out
+        ${themeClasses.buttonBg} ${themeClasses.buttonBorder}
+        hover:shadow-sm
+        ${className}
+      `}
     >
-      <button
-        type="button"
-        aria-label={
-          appliedFilterCount > 0
-            ? `${t('filters', { defaultValue: 'Filters' })} (${appliedFilterCount})`
-            : t('filters', { defaultValue: 'Filters' })
-        }
-        aria-expanded={isOpen}
-        className={`
-          inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md
-          border transition-all duration-200 ease-in-out
-          ${themeClasses.buttonBg} ${themeClasses.buttonBorder} ${themeClasses.buttonText}
-          hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-          ${isDarkMode ? 'focus:ring-offset-gray-900' : 'focus:ring-offset-white'}
-          ${className}
-        `}
+      <Popover
+        content={panelContent}
+        trigger="click"
+        placement="bottomLeft"
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        // Unmount on close: antd otherwise keeps a frozen copy of the content
+        // mounted while hidden (and of anything that was "open" inside it).
+        destroyOnHidden
+        styles={{
+          root: { padding: 0 },
+          body: {
+            padding: '12px 14px',
+            borderRadius: 8,
+            backgroundColor: isDarkMode ? '#1f1f1f' : '#ffffff',
+            border: `1px solid ${isDarkMode ? '#303030' : '#e5e7eb'}`,
+            boxShadow: isDarkMode
+              ? '0 6px 16px 0 rgba(0, 0, 0, 0.48)'
+              : '0 6px 16px 0 rgba(0, 0, 0, 0.08)',
+          },
+        }}
       >
-        <FilterOutlined className="w-3.5 h-3.5" />
-        <span>{t('filters', { defaultValue: 'Filters' })}</span>
-        {appliedFilterCount > 0 && (
-          <span
-            aria-hidden="true"
-            className={`inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold rounded-full ${
-              isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'
-            }`}
-          >
-            {appliedFilterCount}
-          </span>
-        )}
-        {appliedFilterCount > 0 && (
-          <span
-            role="button"
-            tabIndex={0}
-            title={t('clearAll', { defaultValue: 'Clear all' })}
-            aria-label={t('clearAll', { defaultValue: 'Clear all' })}
-            onClick={event => {
-              event.stopPropagation();
-              onClearAttributeFilters();
-              onDropdownClose();
-            }}
-            onMouseDown={event => event.stopPropagation()}
-            onKeyDown={event => {
-              if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                event.stopPropagation();
-                onClearAttributeFilters();
-                onDropdownClose();
-              }
-            }}
-            className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-red-500 hover:text-red-600 dark:text-red-400 cursor-pointer transition-colors duration-150"
-          >
-            <CloseOutlined className="w-3 h-3" />
-          </span>
-        )}
-      </button>
-    </Popover>
+        <button
+          type="button"
+          aria-label={
+            appliedFilterCount > 0
+              ? `${t('filters', { defaultValue: 'Filters' })} (${appliedFilterCount})`
+              : t('filters', { defaultValue: 'Filters' })
+          }
+          aria-expanded={isOpen}
+          className={`
+            inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium
+            ${themeClasses.buttonText}
+            focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-inset
+          `}
+        >
+          <FilterOutlined className="w-3.5 h-3.5" />
+          <span>{t('filters', { defaultValue: 'Filters' })}</span>
+          {appliedFilterCount > 0 && (
+            <span
+              aria-hidden="true"
+              className={`inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-bold rounded-full ${
+                isDarkMode ? 'bg-gray-600 text-white' : 'bg-gray-200 text-gray-800'
+              }`}
+            >
+              {appliedFilterCount}
+            </span>
+          )}
+        </button>
+      </Popover>
+
+      {appliedFilterCount > 0 && (
+        <button
+          type="button"
+          title={t('clearAll', { defaultValue: 'Clear all' })}
+          aria-label={t('clearAll', { defaultValue: 'Clear all' })}
+          onClick={() => {
+            onClearAttributeFilters();
+            onDropdownClose();
+          }}
+          className="inline-flex items-center justify-center w-6 text-red-500 hover:text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-inset"
+        >
+          <CloseOutlined className="w-3 h-3" />
+        </button>
+      )}
+    </div>
   );
 };
 
