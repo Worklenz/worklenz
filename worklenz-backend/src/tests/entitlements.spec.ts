@@ -151,6 +151,25 @@ describe("resolveEntitlements", () => {
     expect(hasFeature(e, "client_portal")).toBe(true);
   });
 
+  it("AppSumo Expansion subscriber with LTD codes: Business features, LTD seats plus paid seats", () => {
+    const e = resolveEntitlements(
+      {
+        subscription_type: "PADDLE",
+        plan_name: "Business AppSumo Expansion (per seat, monthly)",
+        billing_provider: "paddle_billing",
+        quantity: 3,
+        is_ltd: true,
+        redeemed_codes_count: 2,
+      },
+      NOW,
+    );
+    expect(e.tier).toBe("business");
+    expect(e.sources.map((s) => s.kind).sort()).toEqual(["appsumo_ltd", "paddle_billing"]);
+    expect(e.seatLimit).toBe(13); // 2 codes x 5 seats + 3 paid seats
+    expect(e.guestLimit).toBe(-1);
+    expect(hasFeature(e, "client_portal")).toBe(true);
+  });
+
   it("self hosted and manual override are Business with unlimited seats and guests", () => {
     for (const snapshot of [{ subscription_type: "SELF_HOSTED" }, { subscription_type: "FREE", business_plan_override: true }]) {
       const e = resolveEntitlements(snapshot, NOW);

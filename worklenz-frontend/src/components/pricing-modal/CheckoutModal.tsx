@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { PricingCalculation, UserPersonalization } from './PricingModal';
 import {
   IPaddleCheckoutParams,
-  IUpgradeSubscriptionPlanResponse,
+  IPaddleClassicCheckoutResponse,
 } from '@/types/admin-center/admin-center.types';
 
 interface CheckoutModalProps {
@@ -178,7 +178,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   }, [visible]);
 
   // Get checkout parameters from backend
-  const getCheckoutParams = useCallback(async (): Promise<IUpgradeSubscriptionPlanResponse> => {
+  const getCheckoutParams = useCallback(async (): Promise<IPaddleClassicCheckoutResponse> => {
     if (!calculation || !organizationId) {
       throw new Error('Missing required checkout information');
     }

@@ -27,7 +27,15 @@ import {
   PricingModel,
 } from '@/types/mixpanel-events.types';
 import { evt_trial_converted } from '@/shared/worklenz-analytics-events';
-import { IUpgradeSubscriptionPlanResponse } from '@/types/admin-center/admin-center.types';
+import {
+  IPaddleClassicCheckoutResponse,
+  IUpgradeSubscriptionPlanResponse,
+} from '@/types/admin-center/admin-center.types';
+import {
+  ILegacyCheckoutEvent,
+  isPaddleBillingCheckout,
+  openPaddleBillingCheckout,
+} from '@/ee/utils/paddle-billing-checkout';
 
 declare const Paddle: any;
 
@@ -212,7 +220,7 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
     }
   };
 
-  const configurePaddle = (data: IUpgradeSubscriptionPlanResponse) => {
+  const configurePaddle = (data: IPaddleClassicCheckoutResponse) => {
     try {
       if (data.sandbox) Paddle.Environment.set('sandbox');
       Paddle.Setup({
@@ -234,7 +242,23 @@ export function usePaddleCheckout(options: UsePaddleCheckoutOptions) {
     setPaddleLoading(true);
     setPaddleError(null);
 
-    if (window.Paddle) {
+    // Paddle Billing plans use Paddle.js v2; its events are adapted to the Classic shape handled above.
+    if (isPaddleBillingCheckout(data)) {
+      openPaddleBillingCheckout(data, (event: ILegacyCheckoutEvent) => {
+        void handlePaddleCallback(event);
+      }).catch(error => {
+        setSwitchingToPaddlePlan(false);
+        setPaddleLoading(false);
+        setLoadingPlanType(null);
+        setPaddleError('Failed to initialize checkout');
+        message.error('Failed to initialize checkout');
+        logger.error('Error initializing Paddle Billing', error);
+      });
+      return;
+    }
+
+    // Classic Paddle.js (v1) exposes Setup; a v2 global from an earlier Billing checkout does not.
+    if (typeof (window as unknown as { Paddle?: { Setup?: unknown } }).Paddle?.Setup === 'function') {
       configurePaddle(data);
       return;
     }

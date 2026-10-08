@@ -54,17 +54,6 @@ import { TEAM_SIZE_THRESHOLD, MAX_TEAM_SIZE } from './constants';
 
 import './upgrade-plans.css';
 
-// Extend Window interface to include Paddle
-declare global {
-  interface Window {
-    Paddle?: {
-      Environment: { set: (env: string) => void };
-      Setup: (config: { vendor: number; eventCallback: (data: any) => void }) => void;
-      Checkout: { open: (params: any) => void };
-    };
-  }
-}
-
 const UpgradePlans = () => {
   const dispatch = useAppDispatch();
   const { t } = useTranslation(['admin-center/current-bill', 'pricing-modal', 'admin-center/overview']);

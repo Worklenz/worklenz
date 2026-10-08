@@ -141,13 +141,32 @@ export interface IPaddleCheckoutParams {
   vat_street?: string;
 }
 
-export interface IUpgradeSubscriptionPlanResponse {
+/** Checkout payload for a Paddle Classic plan (Paddle.js v1: Setup + Checkout.open(params)). */
+export interface IPaddleClassicCheckoutResponse {
+  provider?: 'paddle_classic';
   params: IPaddleCheckoutParams;
   sandbox: boolean;
   vendor_id: string;
   pricing_model?: 'per_user' | 'flat_rate';
   plan_variant?: any;
 }
+
+/** Checkout payload for a Paddle Billing plan (Paddle.js v2: Initialize + Checkout.open(items)). */
+export interface IPaddleBillingCheckoutResponse {
+  provider: 'paddle_billing';
+  environment: 'sandbox' | 'production';
+  sandbox: boolean;
+  client_token: string;
+  items: Array<{ priceId: string; quantity: number }>;
+  customer: { email: string; address?: { countryCode: string; postalCode?: string } };
+  customData: Record<string, unknown>;
+  settings?: Record<string, unknown>;
+  plan_details?: any;
+}
+
+export type IUpgradeSubscriptionPlanResponse =
+  | IPaddleClassicCheckoutResponse
+  | IPaddleBillingCheckoutResponse;
 
 export interface IPricingOption {
   plan_id: string;
