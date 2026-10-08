@@ -43,6 +43,8 @@ export interface ILocalSession extends IUserType {
   post_trial_plan_name?: string; // Plan the user will drop to once the active trial ends
   // Manual override flags
   business_plan_override?: boolean; // Manual override for business plan feature access
+  business_features_enabled?: boolean;
+  deployment_mode?: 'cloud' | 'self_hosted';
   team_member_limit_override?: boolean; // Manual override to bypass team member limits
   // AppSumo eligibility
   appsumo_business_eligible?: boolean; // True if user has 5+ redeemed coupon codes
