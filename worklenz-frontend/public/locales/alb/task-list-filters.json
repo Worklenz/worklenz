@@ -110,5 +110,13 @@
   "currentSort": "Renditja aktuale: {{field}} {{order}}",
   "apply": "Apliko",
   "showingYourTasksOnly": "Duke shfaqur vetëm detyrat tuaja",
-  "showingYourTasksOnlyTooltip": "Ky projekt tregon vetëm detyrat që ju janë caktuar. Numërimi dhe progresi pasqyrojnë atë nëngrup."
+  "showingYourTasksOnlyTooltip": "Ky projekt shfaq vetëm detyrat që ju janë caktuar. Numrat dhe e ecuria pasqyrojnë atë nëngrup.",
+  "filters": "Filtrat",
+  "quickFilters": "Filtra të shpejta",
+  "addFilter": "Add a filter",
+  "allFiltersApplied": "All filter options applied",
+  "removeFilter": "Remove filter",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noFiltersAvailable": "No filters available"
 }

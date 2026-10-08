@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import {
   Avatar,
   CheckOutlined,
-  DownOutlined,
   SearchOutlined,
   SettingOutlined,
 } from '@/shared/antd-imports';
@@ -53,9 +52,11 @@ interface FilterDropdownProps {
   onSelectionChange: (sectionId: string, values: string[]) => void;
   isOpen: boolean;
   onToggle: () => void;
+  onClose?: () => void;
   themeClasses: ThemeClasses;
   isDarkMode: boolean;
   className?: string;
+  dropdownAlign?: 'left' | 'right';
   onManageStatus?: () => void;
   onManagePhase?: () => void;
 }
@@ -65,9 +66,11 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   onSelectionChange,
   isOpen,
   onToggle,
+  onClose,
   themeClasses,
   isDarkMode,
   className = '',
+  dropdownAlign = 'left',
   onManageStatus,
   onManagePhase,
 }) => {
@@ -76,10 +79,9 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const isProjectManager = useIsProjectManager();
   const canConfigure = isOwnerOrAdmin || isProjectManager;
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredOptions, setFilteredOptions] = useState(section.options);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const filteredOptionsMemo = useMemo(() => {
+  const filteredOptions = useMemo(() => {
     if (!section.searchable || !searchTerm.trim()) {
       return section.options;
     }
@@ -89,19 +91,21 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   }, [searchTerm, section.options, section.searchable]);
 
   useEffect(() => {
-    setFilteredOptions(filteredOptionsMemo);
-  }, [filteredOptionsMemo]);
+    if (!isOpen) return;
 
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        if (isOpen) onToggle();
+        if (onClose) {
+          onClose();
+        } else {
+          onToggle();
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onToggle]);
+  }, [isOpen, onClose, onToggle]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -144,9 +148,16 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
       }
 
       onSelectionChange(section.id, [optionValue]);
-      onToggle();
+      // Close instead of toggling: selecting a value already closes the dropdown
+      // when the section lives inside the "Filters" popover, and toggling would
+      // re-open it (the shared openDropdown id is still the section's id).
+      if (onClose) {
+        onClose();
+      } else {
+        onToggle();
+      }
     },
-    [section, onSelectionChange, onToggle]
+    [section, onSelectionChange, onToggle, onClose]
   );
 
   const selectedCount = section.selectedValues.length;
@@ -181,14 +192,16 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
             {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
           </span>
         )}
-        {section.id !== 'groupBy' && selectedCount > 0 && (
+        {section.id !== 'groupBy' && selectedCount === 1 && (
+          <span className={`text-xs ${isDarkMode ? 'text-gray-200' : 'text-gray-700'} font-normal`}>
+            {section.options.find(opt => opt.value === section.selectedValues[0])?.label}
+          </span>
+        )}
+        {section.id !== 'groupBy' && selectedCount > 1 && (
           <span className="inline-flex items-center justify-center w-4 h-4 text-xs font-bold text-white bg-gray-500 rounded-full">
             {selectedCount}
           </span>
         )}
-        <DownOutlined
-          className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
       </button>
 
       {section.id === 'groupBy' && canConfigure && (
@@ -210,7 +223,9 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
 
       {isOpen && (
         <div
-          className={`absolute top-full left-0 z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
+          className={`absolute top-full ${
+            dropdownAlign === 'right' ? 'right-0' : 'left-0'
+          } z-50 mt-1 w-64 ${themeClasses.dropdownBg} rounded-md shadow-sm border ${themeClasses.dropdownBorder}`}
         >
           {section.searchable && (
             <div className={`p-2 border-b ${themeClasses.dividerBorder}`}>
