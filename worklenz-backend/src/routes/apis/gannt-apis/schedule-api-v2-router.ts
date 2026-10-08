@@ -12,17 +12,46 @@ import WorkloadController from "../../../controllers/schedule-v2/workload-contro
 import { verifyNonGuestProjectAccess } from "../../../middlewares/verify-project-access";
 import verifyTaskAccess, { verifyNonGuestTaskAccess } from "../../../middlewares/verify-task-access";
 import verifyNonGuestPlannerAccess from "../../../middlewares/verify-non-guest-planner-access";
+import { requireAnyFeature } from "../../../shared/entitlements/gates";
+import { PLANNER_FEATURES } from "../../../shared/entitlements/feature-registry";
 
 const scheduleApiRouter = express.Router();
 
 // Guests do not have access to the Planner (Schedule/Timeline/Workload) at all.
 scheduleApiRouter.use(verifyNonGuestPlannerAccess);
 
+// Shared endpoints, available on every plan because screens outside the Planner use them:
+//  - working days/hours settings (admin-center settings, utilization calculations)
+//  - time-off, a personal calendar feature (Home calendar, quick actions)
+// Everything registered after the requireAnyFeature gate below is Planner-only.
+scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
+scheduleApiRouter.put("/settings", safeControllerFunction(ScheduleControllerV2.updateSettings));
+
+// ============================================
+// Time-Off Management Endpoints
+// ============================================
+// Get time-off entries
+scheduleApiRouter.get("/time-off", safeControllerFunction(TimeOffController.getTimeOff));
+
+// Get time-off summary for date range
+scheduleApiRouter.get("/time-off/summary", safeControllerFunction(TimeOffController.getTimeOffSummary));
+
+// Create time-off entry
+scheduleApiRouter.post("/time-off", safeControllerFunction(TimeOffController.createTimeOff));
+
+// Update time-off entry
+scheduleApiRouter.put("/time-off/:id", idParamValidator, safeControllerFunction(TimeOffController.updateTimeOff));
+
+// Delete time-off entry
+scheduleApiRouter.delete("/time-off/:id", idParamValidator, safeControllerFunction(TimeOffController.deleteTimeOff));
+
+// Planner-only endpoints: Schedule, Timeline and Workload (any of them grants API access).
+scheduleApiRouter.use(requireAnyFeature(PLANNER_FEATURES));
+
+
 // ============================================
 // Existing Schedule Endpoints (Project View)
 // ============================================
-scheduleApiRouter.get("/settings", safeControllerFunction(ScheduleControllerV2.getSettings));
-scheduleApiRouter.put("/settings", safeControllerFunction(ScheduleControllerV2.updateSettings));
 scheduleApiRouter.get("/dates/:date/:type", safeControllerFunction(ScheduleControllerV2.getDates));
 scheduleApiRouter.get("/members", safeControllerFunction(ScheduleControllerV2.getOrganizationMembers));
 scheduleApiRouter.get("/members/projects/:id", safeControllerFunction(ScheduleControllerV2.getOrganizationMemberProjects));
@@ -71,24 +100,6 @@ scheduleApiRouter.get("/timeline/projects", safeControllerFunction(ProjectTimeli
 
 // Update a project's start/end date (drag-resize on the Timeline bar)
 scheduleApiRouter.put("/timeline/projects/:id/dates", idParamValidator, safeControllerFunction(ProjectTimelineController.updateProjectDates));
-
-// ============================================
-// Time-Off Management Endpoints
-// ============================================
-// Get time-off entries
-scheduleApiRouter.get("/time-off", safeControllerFunction(TimeOffController.getTimeOff));
-
-// Get time-off summary for date range
-scheduleApiRouter.get("/time-off/summary", safeControllerFunction(TimeOffController.getTimeOffSummary));
-
-// Create time-off entry
-scheduleApiRouter.post("/time-off", safeControllerFunction(TimeOffController.createTimeOff));
-
-// Update time-off entry
-scheduleApiRouter.put("/time-off/:id", idParamValidator, safeControllerFunction(TimeOffController.updateTimeOff));
-
-// Delete time-off entry
-scheduleApiRouter.delete("/time-off/:id", idParamValidator, safeControllerFunction(TimeOffController.deleteTimeOff));
 
 // ============================================
 // Workload Management Endpoints (NEW)

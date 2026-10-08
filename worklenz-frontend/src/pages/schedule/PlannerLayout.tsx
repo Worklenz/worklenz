@@ -35,6 +35,7 @@ const StatusDrawer = lazy(
 );
 
 const PLANNER_BASE_PATH = '/worklenz/planner';
+const PLANNER_FEATURE_KEYS = ['planner_schedule', 'planner_timeline', 'planner_workload'];
 
 // Shell for the Planner section: left rail plus drawers rendered outside the
 // routed sub-views. Each sub-view (Schedule, Timeline, Workload) is a routed
@@ -125,6 +126,7 @@ const PlannerLayout: React.FC = () => {
   // Per-view access: legacy mode gates all three on Business; once entitlements are enforced the
   // registry decides (e.g. AppSumo gets Timeline and Workload but not Schedule).
   const hasViewAccess = canUseFeature(currentSession, `planner_${activeView}`);
+  const hasAnyPlannerAccess = PLANNER_FEATURE_KEYS.some(key => canUseFeature(currentSession, key));
 
   const handleViewChange = useCallback(
     (view: PlannerView) => {
@@ -177,8 +179,13 @@ const PlannerLayout: React.FC = () => {
         )}
       </div>
 
-      <ScheduleSettingsDrawer />
-      <ScheduleDrawer />
+      {/* These drawers fetch Planner data on mount, so only mount them when the plan allows it */}
+      {hasAnyPlannerAccess && (
+        <>
+          <ScheduleSettingsDrawer />
+          <ScheduleDrawer />
+        </>
+      )}
       <Suspense fallback={null}>
         <StatusDrawer />
       </Suspense>

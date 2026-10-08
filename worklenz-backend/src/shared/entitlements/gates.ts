@@ -71,6 +71,20 @@ export const requireFeature = (feature: FeatureKey) =>
     next();
   };
 
+/** Like requireFeature, but passes when the plan grants at least one of the features. */
+export const requireAnyFeature = (features: FeatureKey[]) =>
+  (req: IWorkLenzRequest, res: IWorkLenzResponse, next: () => void): void => {
+    if (!req.user) {
+      res.status(401).send(new ServerResponse(false, null, "Unauthorized"));
+      return;
+    }
+    if (!features.some((feature) => canUseFeature(req.user, feature))) {
+      res.status(403).send(new ServerResponse(false, null, upgradeMessage(features[0])));
+      return;
+    }
+    next();
+  };
+
 /**
  * Middleware for team-scoped requests authenticated by x-client-token (client portal), where
  * req.user is empty. Resolves the plan from req.organizationId (the client's team_id).

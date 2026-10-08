@@ -125,6 +125,9 @@ export const FEATURE_REGISTRY = {
 
 export type FeatureKey = keyof typeof FEATURE_REGISTRY;
 
+/** Any of these grants access to the Planner APIs (Schedule, Timeline, Workload). */
+export const PLANNER_FEATURES: FeatureKey[] = ["planner_schedule", "planner_timeline", "planner_workload"];
+
 export const FEATURE_KEYS = Object.keys(FEATURE_REGISTRY) as FeatureKey[];
 
 /** Free-tier numeric limits, from the matrix. Paid tiers have no member cap (billed per user). */

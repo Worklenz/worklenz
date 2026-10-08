@@ -141,3 +141,43 @@ describe("guest limit under enforcement", () => {
     expect(result.plan_tier).toBe("PROFESSIONAL");
   });
 });
+
+describe("requireAnyFeature", () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { requireAnyFeature } = require("../shared/entitlements/gates");
+  const planner = ["planner_schedule", "planner_timeline", "planner_workload"];
+  const ltd = { subscription_type: "LIFE_TIME_DEAL", is_ltd: true, redeemed_codes_count: 1 };
+
+  it("legacy mode: Business only", () => {
+    const next = jest.fn();
+    requireAnyFeature(planner)({ user: business } as any, makeRes(), next);
+    expect(next).toHaveBeenCalledTimes(1);
+
+    const res = makeRes();
+    const blocked = jest.fn();
+    requireAnyFeature(planner)({ user: ltd } as any, res, blocked);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(blocked).not.toHaveBeenCalled();
+  });
+
+  it("enforce mode: AppSumo passes via Timeline/Workload, Pro and Free do not", () => {
+    process.env.ENTITLEMENTS_ENFORCE = "on";
+    const pass = jest.fn();
+    requireAnyFeature(planner)({ user: ltd } as any, makeRes(), pass);
+    expect(pass).toHaveBeenCalled();
+
+    for (const user of [proClassic, free]) {
+      const res = makeRes();
+      const next = jest.fn();
+      requireAnyFeature(planner)({ user } as any, res, next);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    }
+  });
+
+  it("401 without a user", () => {
+    const res = makeRes();
+    requireAnyFeature(planner)({} as any, res, jest.fn());
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+});
