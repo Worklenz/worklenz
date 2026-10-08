@@ -103,5 +103,13 @@
   "currentSort": "Current sort: {{field}} {{order}}",
   "apply": "Apply",
   "showingYourTasksOnly": "Showing your tasks only",
-  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
+  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset.",
+  "filters": "Filters",
+  "quickFilters": "Quick filters",
+  "addFilter": "Add a filter",
+  "allFiltersApplied": "All filter options applied",
+  "removeFilter": "Remove filter",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noFiltersAvailable": "No filters available"
 }

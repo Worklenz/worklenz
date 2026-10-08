@@ -96,6 +96,14 @@
   "descendingOrder": "降序",
   "currentSort": "当前排序：{{field}} {{order}}",
   "apply": "应用",
-  "showingYourTasksOnly": "Showing your tasks only",
-  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
+  "showingYourTasksOnly": "仅显示您的任务",
+  "showingYourTasksOnlyTooltip": "此项目仅显示分配给您的任务。计数和进度反映的是该子集的情况。",
+  "filters": "筛选",
+  "quickFilters": "快速筛选",
+  "addFilter": "添加筛选器",
+  "allFiltersApplied": "已应用所有筛选选项",
+  "removeFilter": "移除筛选条件",
+  "selectAll": "全选",
+  "clear": "清除",
+  "noFiltersAvailable": "暂无筛选条件"
 }

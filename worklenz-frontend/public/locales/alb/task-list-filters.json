@@ -96,6 +96,14 @@
   "descendingOrder": "Zbritës",
   "currentSort": "Renditja aktuale: {{field}} {{order}}",
   "apply": "Apliko",
-  "showingYourTasksOnly": "Showing your tasks only",
-  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
+  "showingYourTasksOnly": "Duke shfaqur vetëm detyrat tuaja",
+  "showingYourTasksOnlyTooltip": "Ky projekt shfaq vetëm detyrat që ju janë caktuar. Numrat dhe e ecuria pasqyrojnë atë nëngrup.",
+  "filters": "Filtrat",
+  "quickFilters": "Filtra të shpejta",
+  "addFilter": "Add a filter",
+  "allFiltersApplied": "All filter options applied",
+  "removeFilter": "Remove filter",
+  "selectAll": "Select all",
+  "clear": "Clear",
+  "noFiltersAvailable": "No filters available"
 }

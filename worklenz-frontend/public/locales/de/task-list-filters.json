@@ -96,6 +96,14 @@
   "descendingOrder": "Absteigend",
   "currentSort": "Aktuelle Sortierung: {{field}} {{order}}",
   "apply": "Anwenden",
-  "showingYourTasksOnly": "Showing your tasks only",
-  "showingYourTasksOnlyTooltip": "This project only shows tasks assigned to you. Counts and progress reflect that subset."
+  "showingYourTasksOnly": "Nur Ihre Aufgaben anzeigen",
+  "showingYourTasksOnlyTooltip": "Dieses Projekt zeigt nur die Ihnen zugewiesenen Aufgaben an. Die Anzahl und der Fortschritt beziehen sich auf diese Teilmenge.",
+  "filters": "Filtern",
+  "quickFilters": "Schnellfilter",
+  "addFilter": "Filter hinzufügen",
+  "allFiltersApplied": "Alle Filteroptionen angewendet",
+  "removeFilter": "Filter entfernen",
+  "selectAll": "Alle auswählen",
+  "clear": "Leeren",
+  "noFiltersAvailable": "Keine Filter verfügbar"
 }
