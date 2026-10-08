@@ -42,10 +42,7 @@ function getEmailConfiguration(): EmailConfiguration {
 /** Lists configuration problems without exposing credential values. */
 export function getEmailConfigurationErrors(): string[] {
   const provider = getEmailProvider();
-  const { from } = getEmailConfiguration();
   const errors: string[] = [];
-
-  if (!from) errors.push("EMAIL_FROM is required");
 
   if (!provider) {
     errors.push("EMAIL_PROVIDER must be either ses or smtp");
@@ -54,7 +51,7 @@ export function getEmailConfigurationErrors(): string[] {
 
   const requiredKeys = provider === "smtp"
     ? ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD"]
-    : ["AWS_REGION", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"];
+    : ["AWS_REGION"];
 
   for (const key of requiredKeys) {
     if (!process.env[key]?.trim()) {
@@ -64,6 +61,10 @@ export function getEmailConfigurationErrors(): string[] {
 
   if (provider === "smtp" && !getSmtpPort()) {
     errors.push("SMTP_PORT must be an integer from 1 to 65535");
+  }
+
+  if (provider === "smtp" && !process.env.EMAIL_FROM?.trim()) {
+    errors.push("EMAIL_FROM is required when EMAIL_PROVIDER=smtp");
   }
 
   return errors;

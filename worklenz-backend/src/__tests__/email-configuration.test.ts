@@ -34,15 +34,26 @@ const setEnvironment = (values: Partial<Record<(typeof emailConfigurationKeys)[n
 afterAll(() => setEnvironment(originalEnvironment));
 
 describe("getEmailConfigurationErrors", () => {
-  it("defaults an unset provider to SES", () => {
+  it("allows SES to use the AWS SDK credential provider chain", () => {
     setEnvironment({
-      EMAIL_FROM: "Worklenz <noreply@example.com>",
       AWS_REGION: "us-east-1",
-      AWS_ACCESS_KEY_ID: "key",
-      AWS_SECRET_ACCESS_KEY: "secret",
     });
 
     expect(getEmailConfigurationErrors()).toEqual([]);
+  });
+
+  it("requires an explicit sender for SMTP", () => {
+    setEnvironment({
+      EMAIL_PROVIDER: "smtp",
+      SMTP_HOST: "smtp.example.com",
+      SMTP_PORT: "587",
+      SMTP_USER: "user",
+      SMTP_PASSWORD: "password",
+    });
+
+    expect(getEmailConfigurationErrors()).toContain(
+      "EMAIL_FROM is required when EMAIL_PROVIDER=smtp",
+    );
   });
 
   it("rejects an unsupported provider", () => {
