@@ -16,7 +16,7 @@
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@reduxjs/toolkit": "^2.2.1",
     "antd": "^5.20.1",
-    "axios": "^1.7.9",
+    "axios": "^1.20.0",
     "i18next": "^25.3.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
