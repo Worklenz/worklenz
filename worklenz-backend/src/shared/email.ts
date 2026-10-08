@@ -17,22 +17,40 @@ interface EmailConfiguration {
   from: string;
 }
 
-function getEmailConfiguration(): EmailConfiguration {
-  const configuredProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase() || "ses";
-  const provider: EmailProvider = configuredProvider === "smtp" ? "smtp" : "ses";
+/** Resolves a supported provider, or null when the configured value is invalid. */
+function getEmailProvider(): EmailProvider | null {
+  const configuredProvider = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 
+  if (!configuredProvider || configuredProvider === "ses") {
+    return "ses";
+  }
+
+  return configuredProvider === "smtp" ? "smtp" : null;
+}
+
+/** Returns the selected provider and sender address with backwards-compatible defaults. */
+function getEmailConfiguration(): EmailConfiguration {
   return {
-    provider,
+    // A configuration error prevents mail delivery before this fallback can be
+    // used to create a transport.
+    provider: getEmailProvider() || "ses",
     // Backwards-compatible default for existing SES installations.
     from: process.env.EMAIL_FROM?.trim() || "Worklenz <noreply@worklenz.com>",
   };
 }
 
+/** Lists configuration problems without exposing credential values. */
 export function getEmailConfigurationErrors(): string[] {
-  const { provider, from } = getEmailConfiguration();
+  const provider = getEmailProvider();
+  const { from } = getEmailConfiguration();
   const errors: string[] = [];
 
   if (!from) errors.push("EMAIL_FROM is required");
+
+  if (!provider) {
+    errors.push("EMAIL_PROVIDER must be either ses or smtp");
+    return errors;
+  }
 
   const requiredKeys = provider === "smtp"
     ? ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD"]
@@ -44,13 +62,34 @@ export function getEmailConfigurationErrors(): string[] {
     }
   }
 
+  if (provider === "smtp" && !getSmtpPort()) {
+    errors.push("SMTP_PORT must be an integer from 1 to 65535");
+  }
+
   return errors;
 }
 
+/** Parses a valid TCP port without accepting malformed numeric prefixes. */
+function getSmtpPort(): number | null {
+  const rawPort = process.env.SMTP_PORT?.trim();
+  if (!rawPort || !/^\d+$/.test(rawPort)) {
+    return null;
+  }
+
+  const port = Number(rawPort);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : null;
+}
+
+/** Creates an SMTP transport after getEmailConfigurationErrors has validated it. */
 function createSmtpTransport() {
+  const port = getSmtpPort();
+  if (!port) {
+    throw new Error("SMTP_PORT must be an integer from 1 to 65535");
+  }
+
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number.parseInt(process.env.SMTP_PORT || "", 10),
+    port,
     secure: process.env.SMTP_SECURE?.trim().toLowerCase() === "true",
     auth: {
       user: process.env.SMTP_USER,
