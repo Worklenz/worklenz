@@ -2105,7 +2105,7 @@ export default class TeamMembersController extends WorklenzControllerBase {
     if (!subscriptionData.is_credit && !subscriptionData.is_custom) {
       if (subscriptionData.subscription_status === "active") {
         const response = await updateUsers(
-          subscriptionData.subscription_id,
+          subscriptionData.subscription_ref ?? subscriptionData.subscription_id,
           subscriptionData.quantity + (req.body.emails.length || 1),
         );
         if (!response.body.subscription_id)

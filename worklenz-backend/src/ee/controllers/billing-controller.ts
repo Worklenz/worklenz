@@ -5,7 +5,7 @@ import db from "../../config/db";
 import { ServerResponse } from "../../models/server-response";
 import WorklenzControllerBase from "../../controllers/worklenz-controller-base";
 import HandleExceptions from "../../decorators/handle-exceptions";
-import { getTeamMemberCount } from "../shared/paddle-utils";
+import { getCurrentSubscriptionRef, getTeamMemberCount } from "../shared/paddle-utils";
 import { generatePayLinkRequest, updateUsers } from "../shared/paddle-requests";
 
 import axios from "axios";
@@ -50,13 +50,12 @@ export default class BillingController extends WorklenzControllerBase {
   public static async addMoreSeats(req: IWorkLenzRequest, res: IWorkLenzResponse): Promise<IWorkLenzResponse> {
     const { seatCount } = req.body;
 
-    const q = `SELECT subscription_id
-    FROM licensing_user_subscriptions lus
-    WHERE user_id = $1;`;
-    const result = await db.query(q, [req.user?.owner_id]);
-    const [data] = result.rows;
+    const subscriptionRef = await getCurrentSubscriptionRef(req.user?.owner_id ?? "");
+    if (!subscriptionRef) {
+      return res.status(200).send(new ServerResponse(false, null, "Please check your subscription."));
+    }
 
-    const response = await updateUsers(data.subscription_id, seatCount);
+    const response = await updateUsers(subscriptionRef, seatCount);
 
     if (!response.body.subscription_id) {
       return res.status(200).send(new ServerResponse(false, null, response.message || "Please check your subscription."));
